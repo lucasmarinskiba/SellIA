@@ -1,0 +1,56 @@
+# OWASP ZAP Rules Configuration for SellIA
+# Format: rule_id\tthreshold\tstrength
+# Threshold: DEFAULT, OFF, LOW, MEDIUM, HIGH
+# Strength: DEFAULT, LOW, MEDIUM, HIGH, INSANE
+
+# Informational rules — disable noise in CI
+10010	IGNORE	DEFAULT	# Cookie No HttpOnly Flag — we set it in code
+10011	IGNORE	DEFAULT	# Cookie Without Secure Flag — we set it in code
+10012	IGNORE	DEFAULT	# Password Autocomplete
+10015	IGNORE	DEFAULT	# Incomplete or No Cache-control Header
+10017	IGNORE	DEFAULT	# Cross-Domain JavaScript Source File
+10019	IGNORE	DEFAULT	# Content-Type Header Missing
+10020	IGNORE	DEFAULT	# X-Frame-Options Header
+10021	IGNORE	DEFAULT	# X-Content-Type-Options Header
+10023	IGNORE	DEFAULT	# Information Disclosure - Debug Error Messages
+10024	IGNORE	DEFAULT	# Information Disclosure - Sensitive Information in URL
+10025	IGNORE	DEFAULT	# Information Disclosure - Sensitive Information on HTTP Referrer
+10026	IGNORE	DEFAULT	# HTTP Parameter Override
+10027	IGNORE	DEFAULT	# Information Disclosure - Suspicious Comments
+10032	IGNORE	DEFAULT	# Viewstate Scanner
+10040	IGNORE	DEFAULT	# Secure Pages Include Mixed Content
+10041	IGNORE	DEFAULT	# HTTP Authentication over HTTP
+10042	IGNORE	DEFAULT	# HttpOnly Site
+10043	IGNORE	DEFAULT	# User Controllable HTML Element Attribute (Potential XSS)
+10044	IGNORE	DEFAULT	# Big Redirect Detected
+10050	IGNORE	DEFAULT	# Retrieved from Cache
+10052	IGNORE	DEFAULT	# X-ChromeLogger-Data Header Information Leak
+10054	IGNORE	DEFAULT	# Cookie Without SameSite Attribute
+10055	IGNORE	DEFAULT	# Content Security Policy (CSP) Header
+10056	IGNORE	DEFAULT	# X-Debug-Token Information Leak
+10057	IGNORE	DEFAULT	# Username Hash Found
+10061	IGNORE	DEFAULT	# X-AspNet-Version Response Header
+10062	IGNORE	DEFAULT	# PII Disclosure
+10063	IGNORE	DEFAULT	# Permissions Policy Header
+10096	IGNORE	DEFAULT	# Timestamp Disclosure
+10097	IGNORE	DEFAULT	# Hash Disclosure
+10098	IGNORE	DEFAULT	# Cross-Domain Misconfiguration
+10104	IGNORE	DEFAULT	# User Agent Fuzzer
+10105	IGNORE	DEFAULT	# Weak Authentication Method
+10109	IGNORE	DEFAULT	# Modern Web Application
+10110	IGNORE	DEFAULT	# Dangerous JS Functions
+10202	IGNORE	DEFAULT	# Absence of Anti-CSRF Tokens
+2	IGNORE	DEFAULT	# Private IP Disclosure
+3	IGNORE	DEFAULT	# Session ID in URL Rewrite
+50001	IGNORE	DEFAULT	# Script Passive Scan Rules
+90001	IGNORE	DEFAULT	# Insecure JSF ViewState
+90002	IGNORE	DEFAULT	# Java Serialization Object
+90003	IGNORE	DEFAULT	# Subresource Integrity Attribute Missing
+90004	IGNORE	DEFAULT	# Insufficient Site Isolation Against Spectre Vulnerability
+90005	IGNORE	DEFAULT	# Fetch Metadata Request Headers
+90011	IGNORE	DEFAULT	# Charset Mismatch
+90022	IGNORE	DEFAULT	# Application Error Disclosure
+90033	IGNORE	DEFAULT	# Loosely Scoped Cookie
+90034	IGNORE	DEFAULT	# Cloud Metadata Potentially Exposed
+90035	IGNORE	DEFAULT	# Server Leaks Information via X-Powered-By HTTP Response Header
+90036	IGNORE	DEFAULT	# Server Leaks Version Information via Server HTTP Response Header

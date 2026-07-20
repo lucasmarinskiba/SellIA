@@ -1,0 +1,9 @@
+{
+  "category": "customer_advocacy_program",
+  "description": "Turn customers into advocates: referral loops, case studies, reviews, testimonials",
+  "items": [
+    {"id": "adv_001", "name": "Referral program mechanics", "tactic": "Referrer + referee both benefit ($$$). Referrer gets $100 credit. Referee gets $50 off. Viral coefficient 1.5+ = exponential growth."},
+    {"id": "adv_002", "name": "Case study mining", "tactic": "Best customers = case studies. Quantify: before/after metrics. Get permission + quote. Use in sales (80% higher conversion with case studies)."},
+    {"id": "adv_003", "name": "Review generation (authentic)", "tactic": "Ask happy customers: \"Would you recommend us?\" If yes → ask for review. Authentic > incentivized reviews."}
+  ]
+}

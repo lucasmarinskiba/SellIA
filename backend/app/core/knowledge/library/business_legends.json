@@ -1,0 +1,110 @@
+{
+  "category": "business_legends",
+  "description": "Principios de los grandes constructores de negocios de la historia",
+  "items": [
+    {
+      "id": "business_legends_001",
+      "subcategory": "valor",
+      "principle": "El precio es lo que pagas; el valor es lo que recibes. Es mucho mejor comprar una empresa maravillosa a precio justo que una empresa mediocre a precio maravilloso.",
+      "tactic": "Evalúa toda decisión por el valor compuesto a largo plazo, no por el costo inmediato. Prioriza calidad y foso competitivo sobre baratura.",
+      "framework": "Inversión en valor: foso competitivo + dirección honesta + precio razonable",
+      "script_template": "No mire solo el costo de hoy; mire qué le devuelve esto durante los próximos años. La opción barata suele ser la más cara al final.",
+      "when_to_use": ["cliente foca solo en precio", "decisión de inversión", "comparación con alternativa barata"],
+      "when_not_to_use": ["commodity sin diferenciación", "compra forzada por presupuesto fijo"],
+      "tags": ["valor", "largo_plazo", "inversion", "warren_buffett"],
+      "_source_hint": "Warren Buffett",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "business_legends_002",
+      "subcategory": "producto",
+      "principle": "La gente no sabe lo que quiere hasta que se lo muestras. Empieza por la experiencia del cliente y trabaja hacia atrás hasta la tecnología.",
+      "tactic": "Diseña desde la necesidad del usuario, no desde la capacidad técnica. Simplifica hasta que quede solo lo esencial: foco es decir no a mil ideas buenas.",
+      "framework": "Customer experience first → tecnología después; simplicidad radical",
+      "script_template": "Olvidémonos un momento de las funciones. ¿Cómo quiere que se sienta usar esto cada día? Construyamos para esa experiencia.",
+      "when_to_use": ["diseño de producto", "priorización de features", "diferenciación"],
+      "when_not_to_use": ["mercado regulado con specs fijas", "venta de commodity"],
+      "tags": ["producto", "experiencia", "simplicidad", "foco", "steve_jobs"],
+      "_source_hint": "Steve Jobs",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "business_legends_003",
+      "subcategory": "cliente",
+      "principle": "La obsesión por el cliente, no por el competidor, es lo que construye empresas duraderas. Tu margen es la oportunidad de otro.",
+      "tactic": "Empieza cada plan con el cliente y retrocede. Invierte en lo que NO cambia: clientes siempre querrán más rápido, más barato, mejor. Apuesta a esas constantes.",
+      "framework": "Working backwards desde el cliente; foco en lo invariante",
+      "script_template": "Pensemos qué va a seguir importándole a su cliente dentro de diez años. Eso es donde conviene invertir hoy.",
+      "when_to_use": ["estrategia de largo plazo", "definir prioridades", "competir contra grandes"],
+      "when_not_to_use": ["supervivencia de caja a corto plazo", "crisis operativa inmediata"],
+      "tags": ["cliente", "largo_plazo", "invariante", "jeff_bezos"],
+      "_source_hint": "Jeff Bezos",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "business_legends_004",
+      "subcategory": "costos",
+      "principle": "Controla los gastos mejor que tu competencia. Ahí está siempre la ventaja competitiva que puedes encontrar.",
+      "tactic": "Trata cada peso como propio. La eficiencia operativa permite precios más bajos, que atraen volumen, que reduce más los costos: el círculo virtuoso del bajo costo.",
+      "framework": "Liderazgo en costos → precios bajos → volumen → más eficiencia",
+      "script_template": "Le puedo dar este precio porque operamos sin grasa. Cada ahorro nuestro se lo trasladamos a usted, no a gastos inútiles.",
+      "when_to_use": ["competir por precio", "negocio de volumen", "mercado sensible al costo"],
+      "when_not_to_use": ["producto premium de alto margen", "venta basada en estatus"],
+      "tags": ["costos", "eficiencia", "volumen", "sam_walton"],
+      "_source_hint": "Sam Walton — Walmart",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "business_legends_005",
+      "subcategory": "ejecucion",
+      "principle": "No es la idea, es la ejecución y los sistemas. La calidad y la consistencia replicable vencen al talento aislado.",
+      "tactic": "Documenta y sistematiza lo que funciona para que sea repetible por cualquiera. Un proceso mediocre ejecutado con disciplina supera a uno brillante ejecutado al azar.",
+      "framework": "Sistemas replicables: estandariza → mide → mejora",
+      "script_template": "Lo importante no es hacerlo una vez bien, sino que funcione igual la milésima vez. Montemos el sistema para que no dependa de nadie en particular.",
+      "when_to_use": ["escalar operación", "franquiciar", "delegar"],
+      "when_not_to_use": ["fase de exploración temprana", "producto aún sin validar"],
+      "tags": ["ejecucion", "sistemas", "consistencia", "ray_kroc"],
+      "_source_hint": "Ray Kroc — McDonald's",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "business_legends_006",
+      "subcategory": "gestion",
+      "principle": "El propósito de un negocio es crear y mantener un cliente. Por eso solo tiene dos funciones esenciales: marketing e innovación.",
+      "tactic": "Mide lo que importa: lo que se mide se gestiona. Concentra recursos en las pocas actividades que generan la mayor parte del resultado y abandona el resto.",
+      "framework": "Gestión por objetivos + foco en marketing e innovación",
+      "script_template": "¿Cuáles son las dos o tres cosas que de verdad mueven la aguja en su negocio? Pongamos ahí el foco y soltemos lo demás.",
+      "when_to_use": ["definir estrategia", "priorización de recursos", "diagnóstico de negocio"],
+      "when_not_to_use": ["decisión puramente táctica", "urgencia operativa de hoy"],
+      "tags": ["gestion", "marketing", "innovacion", "foco", "peter_drucker"],
+      "_source_hint": "Peter Drucker",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "business_legends_007",
+      "subcategory": "riesgo",
+      "principle": "Sé radicalmente honesto y transparente. El dolor más la reflexión equivale a progreso; los errores son datos para mejorar el sistema.",
+      "tactic": "Convierte cada error en un principio documentado para no repetirlo. Busca activamente quien te contradiga: la mejor decisión sale de la meritocracia de ideas, no del ego.",
+      "framework": "Dolor + Reflexión = Progreso; meritocracia de ideas",
+      "script_template": "Hagamos una autopsia sin culpas de qué falló, y saquemos una regla concreta para que no vuelva a pasar.",
+      "when_to_use": ["post-mortem", "toma de decisiones bajo incertidumbre", "cultura de equipo"],
+      "when_not_to_use": ["necesidad de decisión inmediata sin tiempo de análisis"],
+      "tags": ["riesgo", "transparencia", "aprendizaje", "ray_dalio"],
+      "_source_hint": "Ray Dalio — Principios",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "business_legends_008",
+      "subcategory": "crecimiento",
+      "principle": "Si no te avergüenza la primera versión de tu producto, lanzaste demasiado tarde. La velocidad de aprendizaje supera a la perfección.",
+      "tactic": "Lanza rápido, mide, itera. Prioriza el aprendizaje validado sobre la planificación perfecta. La ventaja competitiva muchas veces es escala obtenida antes que el resto.",
+      "framework": "Lanzar → medir → aprender → iterar (blitzscaling)",
+      "script_template": "No esperemos a tenerlo perfecto. Saquemos una versión que resuelva lo esencial, vemos cómo reacciona el mercado y ajustamos rápido.",
+      "when_to_use": ["lanzamiento de producto", "startup en fase temprana", "mercado en movimiento"],
+      "when_not_to_use": ["producto crítico de seguridad o salud", "una sola oportunidad sin segunda chance"],
+      "tags": ["crecimiento", "velocidad", "iteracion", "reid_hoffman"],
+      "_source_hint": "Reid Hoffman — Blitzscaling",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

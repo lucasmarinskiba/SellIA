@@ -1,0 +1,11 @@
+{
+  "category": "per_platform_analytics",
+  "description": "Native analytics per marketplace, unified dashboard",
+  "items": [
+    {"id": "ana_001", "name": "MercadoLibre metrics", "tactic": "Views, clicks, sell-through-rate, feedback rating, seller reputation. Target 95%+."},
+    {"id": "ana_002", "name": "Amazon metrics", "tactic": "ACoS, conversion_rate, ASIN ranking, review_count, BSR."},
+    {"id": "ana_003", "name": "TikTok Shop metrics", "tactic": "Views, likes, saves, shares, CTR, average_order_value."},
+    {"id": "ana_004", "name": "Unified KPI dashboard", "tactic": "Revenue, margin, CAC, LTV, ROI per platform. Compare profitability."},
+    {"id": "ana_005", "name": "Anomaly detection", "tactic": "Sales suddenly 0 = delist? Competitor underselling? Auto-alert."}
+  ]
+}

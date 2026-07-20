@@ -1,0 +1,84 @@
+{
+  "category": "belfort_method",
+  "description": "Sistema Línea Recta de venta y persuasión de Jordan Belfort",
+  "items": [
+    {
+      "id": "belfort_001",
+      "subcategory": "tres_dieces",
+      "principle": "Toda venta se cierra cuando el prospecto está al diez en tres cosas: el producto, la confianza en ti y la confianza en tu empresa. Sin las tres, no hay cierre.",
+      "tactic": "Mide en qué punto está el prospecto en cada uno de los tres ejes y eleva el más bajo. No empujes el cierre si la confianza en ti o en la empresa está baja: primero sube esos números.",
+      "framework": "Los 3 dieces: producto + tú + empresa, todos al máximo",
+      "script_template": "Veo que el producto le cierra. Déjeme contarle por qué puede confiar en mí y en cómo trabajamos, para que decida tranquilo.",
+      "when_to_use": ["diagnosticar por qué no cierra", "venta consultiva", "elevar confianza"],
+      "when_not_to_use": ["compra impulsiva de bajo ticket", "cliente ya decidido"],
+      "tags": ["tres_dieces", "confianza", "certeza", "jordan_belfort", "linea_recta"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "belfort_002",
+      "subcategory": "tonalidad",
+      "principle": "El tono comunica más que las palabras: la misma frase dicha con certeza absoluta o con duda produce resultados opuestos. La gente compra la certeza del vendedor.",
+      "tactic": "Domina las tonalidades clave: certeza declarativa, escasez, misterio, 'me importas de verdad'. Baja la voz en los puntos importantes para que el otro se incline a escuchar. La transferencia de certeza cierra.",
+      "framework": "Transferencia de certeza por tonalidad",
+      "script_template": "(tono bajo y seguro) Esto es exactamente lo que usted necesita. Lo digo porque lo he visto funcionar una y otra vez.",
+      "when_to_use": ["llamada telefónica", "transmitir seguridad", "momentos clave del pitch"],
+      "when_not_to_use": ["comunicación 100% escrita sin voz", "audiencia que rechaza el énfasis"],
+      "tags": ["tonalidad", "certeza", "voz", "jordan_belfort"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "belfort_003",
+      "subcategory": "linea_recta",
+      "principle": "Mantén la venta sobre la línea recta entre la apertura y el cierre. Cada desvío del prospecto es una objeción que debes resolver para volver a la línea.",
+      "tactic": "Controla la conversación con preguntas que avancen hacia el cierre, sin perderte en charla irrelevante. Cuando el prospecto se desvía, reconócelo y redirige a la línea. Avanzas, nunca retrocedes.",
+      "framework": "Línea recta: apertura → control → cierre, sin desvíos",
+      "script_template": "Buena pregunta, ya se la respondo. Y volviendo a lo importante: para avanzar, necesito entender solo una cosa más...",
+      "when_to_use": ["mantener control de la conversación", "prospecto que divaga", "acortar el ciclo de venta"],
+      "when_not_to_use": ["venta consultiva que requiere exploración amplia", "relación que pide conversación libre"],
+      "tags": ["linea_recta", "control", "foco", "jordan_belfort"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "belfort_004",
+      "subcategory": "primeros_segundos",
+      "principle": "En los primeros cuatro segundos el prospecto decide si eres afilado, entusiasta y una autoridad en tu campo. Si fallas ahí, todo lo demás cuesta el doble.",
+      "tactic": "Abre con energía, claridad y dominio del tema desde la primera frase. Habla rápido y con propósito para proyectar competencia. La primera impresión fija el marco de toda la conversación.",
+      "framework": "Primeros 4 segundos: afilado + entusiasta + experto",
+      "script_template": "¡Qué tal! Le hablo porque tengo algo que de verdad puede cambiar cómo maneja [problema]. Déjeme ser directo y mostrarle por qué.",
+      "when_to_use": ["apertura de llamada o reunión", "primer contacto", "captar atención rápido"],
+      "when_not_to_use": ["relación ya consolidada", "contexto que pide cercanía pausada"],
+      "tags": ["primera_impresion", "energia", "autoridad", "jordan_belfort"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "belfort_005",
+      "subcategory": "manejo_objeciones",
+      "principle": "Las objeciones no son rechazos, son pedidos de más certeza. 'Lo voy a pensar' casi nunca es sobre pensar: es falta de certeza en alguno de los tres dieces.",
+      "tactic": "No discutas la objeción: úsala como señal de qué eje de certeza está bajo y refuérzalo con un bucle (loop) que eleve el número y regrese al cierre. Repite el bucle cuantas veces sea necesario.",
+      "framework": "Looping: objeción → elevar certeza → re-cierre",
+      "script_template": "Entiendo que quiera pensarlo, tiene todo el sentido. Solo para asegurarme: ¿qué parte específicamente lo deja con dudas?",
+      "when_to_use": ["objeción de duda o postergación", "'lo voy a pensar'", "elevar certeza antes del cierre"],
+      "when_not_to_use": ["objeción real e insalvable (no encaja)", "cliente pidió no insistir"],
+      "tags": ["objeciones", "looping", "certeza", "jordan_belfort"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "belfort_006",
+      "subcategory": "prospeccion",
+      "principle": "No malgastes munición: califica rápido. Un buen vendedor identifica en minutos si el prospecto tiene necesidad, dolor y capacidad de comprar, y descarta al resto sin culpa.",
+      "tactic": "Haz preguntas de calificación temprano para no invertir energía en quien no comprará. Concéntrate en los prospectos con dolor real y poder de decisión. Volumen calificado supera a volumen ciego.",
+      "framework": "Calificar temprano: necesidad + dolor + capacidad + decisión",
+      "script_template": "Para no hacerle perder tiempo: ¿esto es algo que necesita resolver pronto, y es usted quien toma la decisión?",
+      "when_to_use": ["filtrar prospectos", "optimizar tiempo de venta", "pipeline grande"],
+      "when_not_to_use": ["construcción de relación de largo plazo sin urgencia", "pocos prospectos de alto valor"],
+      "tags": ["prospeccion", "calificacion", "eficiencia", "jordan_belfort"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

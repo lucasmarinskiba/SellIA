@@ -1,0 +1,61 @@
+{
+  "category": "intelligent_onboarding",
+  "description": "Onboarding inteligente: mínima info (5 min) → deducción automática de contexto → activación inmediata de stack óptimo.",
+  "items": [
+    {
+      "id": "onboard_001",
+      "subcategory": "quick_capture",
+      "principle": "5 preguntas critales capturan 90% del contexto. El resto: IA deduce del patrón + knowledge base.",
+      "tactic": "Preguntas: 1) ¿Qué vendés? (producto/servicio/ambos). 2) ¿Precio típico? (USD 100 / 1k / 10k / 100k). 3) ¿Dónde está tu cliente? (LinkedIn / IG / WA / directo). 4) ¿Primera venta o escalando? (startup / crecimiento / escala). 5) ¿Link real? (1 URL válida de venta/red). Después: IA completa perfil, activa agentes.",
+      "framework": "5 preguntas → Profile auto-complete → Auto-activate → GO",
+      "script_template": "'¿Qué vendés en una frase?' → '[producto]' → ¿Cuánto vale?' → '~USD [X]' → ¿Dónde vendes?' → '[canal]' → ¿Etapa?' → '[startup/escala]' → URL → ¡Comenzamos!'",
+      "tags": ["onboarding", "rapido", "5_minutos", "auto_activate"],
+      "_source_hint": "Lean Startup / Rapid Onboarding",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "onboard_002",
+      "subcategory": "industry_detection",
+      "principle": "Desde 2-3 palabras ('software SaaS' o 'ropa ecommerce') → IA clasifica industria + aplica métodos óptimos automáticamente.",
+      "tactic": "Keyword matching + contexto (precio, canal, ticket) → Clasifica: SaaS/Ecommerce/Servicios/Bienes raíces/Etc. Asigna automáticamente: industria_strategies, métodos de venta, KPIs apropiados, benchmarks reales. No selección manual.",
+      "framework": "Palabras clave → Industria detectada → Stack óptimo auto-cargado",
+      "script_template": "Usuario: 'Software de accounting para contadores' → IA: 'Detectado: SaaS B2B, ticket medio, ciclo 30-60 días' → Auto-activa: SPIN + Hermozi + saas_enterprise_strategy",
+      "tags": ["detection", "auto", "industria", "inteligente"],
+      "_source_hint": "NLP text classification",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "onboard_003",
+      "subcategory": "auto_stack_activation",
+      "principle": "Basado en industria + ticket + etapa → automático activa combinación de agentes que maximiza probabilidad de venta en el PRIMER mes.",
+      "tactic": "Stack por tipo: SaaS SMB → (master_seller + SPIN + trial free + onboarding_specialist). Ecommerce → (master_seller + impulse + urgency + retention_qbr). Servicios → (consultative + relationship + success_manager). Lujo → (exclusivity + positioning). No manual: va directo a vender.",
+      "framework": "Tipo negocio → Contexto → Agentes óptimos → Auto-start vendiendo",
+      "script_template": "SaaS SMB detectado → Activa: 1) Master seller (5 pasos). 2) SPIN discovery. 3) Trial free 14d. 4) Onboarding 48h. 5) Lead scoring. TODO automático sin config.",
+      "tags": ["auto_activate", "stack", "cero_config", "listo"],
+      "_source_hint": "Auto-orchestration",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "onboard_004",
+      "subcategory": "learning_loop",
+      "principle": "Cada venta → métricas → feedback → mejora automática de scripts. Sistema aprende mientras vende.",
+      "tactic": "Logging de cada evento: mensaje enviado → respuesta recibida → conversion/no. IA analiza: ¿qué script convirtió? ¿qué objeción recurrente? ¿qué tone funcionó? A/B test automático de variantes. Winner → se convierte en default. Proceso iterativo: mes 1 = 28% win rate, mes 3 = 40%.",
+      "framework": "Evento → Análisis → Hipótesis mejora → A/B test → Winner auto-activa → Mejora continua",
+      "script_template": "Script original: 'Hola, tengo solución X' (20% conversión). IA prueba: 'Vi que usas Y, te falta Z' (28% conversión). Auto-cambia winner. Semana después: prueba variante 3 (32%). Mejora constante.",
+      "tags": ["learning", "feedback", "adaptacion", "mejora_continua"],
+      "_source_hint": "ML feedback loops",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "onboard_005",
+      "subcategory": "escalation_path",
+      "principle": "Minuto 0: básico operacional. A medida que crece MRR → automático activa features avanzadas, sin intervención.",
+      "tactic": "Roadmap automático: MRR <1k → Solo master_seller + discovery. MRR 1-5k → + lifecycle mgmt + upsell detection. MRR 5-20k → + CRM sync + smart scheduling + A/B testing. MRR 20k+ → + ML optimization + sales forecasting + custom playbooks. Escalación transparente sin manual upgrades.",
+      "framework": "MRR threshold → Auto-unlock features",
+      "script_template": "Mes 1: MRR 800 → Basic features. Mes 3: MRR 3500 → Unlock lifecycle. Mes 6: MRR 18000 → Unlock CRM sync + testing. Mes 12: MRR 45000 → Unlock ML optimization.",
+      "tags": ["escalation", "auto", "features", "crecimiento"],
+      "_source_hint": "Progressive disclosure",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "category": "sales_metrics_kpis",
+  "description": "Métricas y KPIs que demuestran negocio en marcha: qué medir, por qué, umbrales de salud.",
+  "items": [
+    {
+      "id": "kpi_001",
+      "subcategory": "conversion_metrics",
+      "principle": "Conversion funnel es el pulso del negocio. Cada etapa tiene benchmarks. Si cae una, el negocio sufre.",
+      "tactic": "Rastrear: 1) Leads generados/día. 2) % que pasan lead→qualified (discovery completo). 3) % que pasan qualified→propuesta (ofertas enviadas). 4) % que cierran propuesta (cierre final). Cada % × leads iniciales = ventas. Mejora 1% en etapa 3 = 10% más ventas.",
+      "framework": "Leads → Qualified % → Propuesta % → Cierre % = Revenue",
+      "metrics": {
+        "leads_per_day": {"benchmark": 5, "ideal": 15, "unit": "leads"},
+        "discovery_completion_rate": {"benchmark": 0.3, "ideal": 0.6, "unit": "%"},
+        "proposal_sent_rate": {"benchmark": 0.5, "ideal": 0.8, "unit": "%"},
+        "close_rate": {"benchmark": 0.2, "ideal": 0.4, "unit": "%"}
+      },
+      "tags": ["conversion", "funnel", "leads", "pipeline"],
+      "_source_hint": "Sales Funnel Analytics",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "kpi_002",
+      "subcategory": "revenue_metrics",
+      "principle": "Revenue es lo que cuenta. Pero importa CÓMO: MRR (recurring) > transaccional. MRR predecible = negocio saludable.",
+      "tactic": "Rastrear: 1) MRR (Monthly Recurring Revenue): qué clientes pagan mes a mes. 2) ARR (Annual): MRR × 12. 3) ARPU (Average Revenue Per User): revenue total / clientes activos. 4) CAC payback: cuánto tarda en recuperar costo de adquisición. Ideal: CAC payback < 12 meses (mejor < 6).",
+      "framework": "MRR → ARR → ARPU + CAC Payback = Salud financiera",
+      "metrics": {
+        "mrr": {"benchmark": 1000, "ideal": 10000, "unit": "USD"},
+        "arr": {"benchmark": 12000, "ideal": 120000, "unit": "USD"},
+        "arpu": {"benchmark": 500, "ideal": 2000, "unit": "USD/customer"},
+        "cac_payback_months": {"benchmark": 12, "ideal": 6, "unit": "months"}
+      },
+      "tags": ["revenue", "mrr", "arr", "financial"],
+      "_source_hint": "SaaS Metrics",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "kpi_003",
+      "subcategory": "retention_churn",
+      "principle": "Retención es MÁS importante que adquisición. Perder clientes = acelerar la rueda. MRR churn >5%/mes = problema crítico.",
+      "tactic": "Rastrear: 1) MRR churn rate (USD revenue perdido / mes). 2) Customer churn rate (% clientes que se van). 3) NRR (Net Revenue Retention: revenue actual vs esperado sin churn). NRR >100% = expansión (upsell > churn). 4) LTV (Lifetime Value: revenue total por cliente antes de churn).",
+      "framework": "MRR Churn < 5% · Customer Churn < 5% · NRR > 100% · LTV > CAC × 3",
+      "metrics": {
+        "mrr_churn_rate": {"benchmark": 0.1, "ideal": 0.02, "unit": "%"},
+        "customer_churn_rate": {"benchmark": 0.05, "ideal": 0.01, "unit": "%"},
+        "nrr": {"benchmark": 0.95, "ideal": 1.2, "unit": "ratio"},
+        "ltv": {"benchmark": 5000, "ideal": 50000, "unit": "USD"}
+      },
+      "tags": ["retention", "churn", "ltv", "nrr"],
+      "_source_hint": "SaaS Metrics / Retention Economics",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "kpi_004",
+      "subcategory": "sales_velocity",
+      "principle": "Velocidad de venta muestra eficiencia. Ciclo largo = capital inmóvil. Ciclo corto = cash flow rápido.",
+      "tactic": "Rastrear: 1) Sales cycle (días desde primer contacto a firma). 2) Deal velocity (deals cerrados / mes). 3) Win rate (cierre % por oportunidad abierta). 4) Time to first response (cuánto tarda vendedor en responder lead). Benchmark: B2B enterprise 90 días; SaaS SMB 14 días.",
+      "framework": "Sales Cycle ↓ · Deal Velocity ↑ · Win Rate ↑ · Time to Response ↓",
+      "metrics": {
+        "average_sales_cycle_days": {"benchmark": 90, "ideal": 30, "unit": "days"},
+        "deals_closed_per_month": {"benchmark": 2, "ideal": 10, "unit": "deals"},
+        "win_rate": {"benchmark": 0.2, "ideal": 0.4, "unit": "%"},
+        "time_to_first_response_hours": {"benchmark": 24, "ideal": 1, "unit": "hours"}
+      },
+      "tags": ["velocity", "cycle", "efficiency", "cash_flow"],
+      "_source_hint": "Sales Velocity Framework",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "kpi_005",
+      "subcategory": "growth_trajectory",
+      "principle": "Crecimiento es lo que importa a inversores/mercado. MoM growth rate 5-10% = tractor saludable.",
+      "tactic": "Rastrear: 1) MoM (Month-over-Month) growth rate (% MRR creció vs mes anterior). 2) YoY (Year-over-Year) para ciclos más largos. 3) Aceleración (MoM de este mes > MoM mes anterior = aceleración positiva). 4) Runway (cuántos meses aguantas con cash actual a burn rate).",
+      "framework": "MoM Growth 5-10% · Aceleración positiva · Runway > 12 meses",
+      "metrics": {
+        "mom_growth_rate": {"benchmark": 0.03, "ideal": 0.1, "unit": "%"},
+        "yoy_growth_rate": {"benchmark": 0.5, "ideal": 2.0, "unit": "ratio"},
+        "acceleration": {"benchmark": 0.0, "ideal": 0.02, "unit": "growth of growth %"},
+        "runway_months": {"benchmark": 12, "ideal": 24, "unit": "months"}
+      },
+      "tags": ["growth", "mom", "yoy", "trajectory", "funding"],
+      "_source_hint": "Startup Metrics / Growth Accounting",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

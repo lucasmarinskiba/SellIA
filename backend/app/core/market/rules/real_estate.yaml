@@ -1,0 +1,76 @@
+sales_phases:
+  - qualification
+  - property_analysis
+  - inspection
+  - offer
+  - negotiation
+  - closing
+
+sales_cycle:
+  min: 30
+  avg: 60
+  max: 180
+
+phase_durations:
+  qualification:
+    min: 3
+    avg: 7
+    max: 14
+  property_analysis:
+    min: 5
+    avg: 10
+    max: 21
+  inspection:
+    min: 2
+    avg: 7
+    max: 14
+  offer:
+    min: 1
+    avg: 3
+    max: 7
+  negotiation:
+    min: 5
+    avg: 14
+    max: 30
+  closing:
+    min: 7
+    avg: 14
+    max: 30
+
+pricing_rules:
+  type: negotiable
+  base: "market_comparable"
+  adjustments:
+    - "property_condition"
+    - "location"
+    - "market_conditions"
+
+payment_rules:
+  type: installments
+  terms:
+    down_payment: 0.20
+    mortgage_periods: 360
+    alternative_cash: true
+
+commission_structure:
+  type: percentage
+  rate: 5.0
+  split: "agent_broker_split"
+
+legal_requirements:
+  default:
+    - "disclosure_requirements"
+    - "title_verification"
+    - "property_inspection"
+    - "financing_verification"
+    - "closing_coordination"
+  Argentina:
+    - "escribanía"
+    - "iva_verification"
+    - "registro_property"
+  Mexico:
+    - "notary"
+    - "sat_clearance"
+  Brazil:
+    - "cartorio"
+    - "cpf_verification"

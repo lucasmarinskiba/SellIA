@@ -1,0 +1,110 @@
+{
+  "category": "persuasion",
+  "description": "Principios de persuasión, influencia y pre-suasión",
+  "items": [
+    {
+      "id": "pers_001",
+      "subcategory": "reciprocidad",
+      "principle": "Las personas sienten una obligación psicológica de devolver lo que reciben. Un favor genuino genera reciprocidad real.",
+      "tactic": "Da algo de valor ANTES de pedir. Información útil, introducción valiosa, recurso exclusivo. El valor debe ser inesperado y personalizado.",
+      "framework": "Dar-Recibir: Valor inesperado → Pausa → Petición alineada",
+      "script_template": "Antes de continuar, le quiero compartir [recurso valioso específico para su industria] que armé pensando en su situación. No tiene ningún costo, simplemente creo que le puede ser útil. [Enviar recurso]. Por cierto, hablando de eso...",
+      "when_to_use": ["primer contacto", "necesidad de apertura", "prospecto frío"],
+      "when_not_to_use": ["cliente ya está comprometido", "transacción en curso"],
+      "tags": ["reciprocidad", "valor", "apertura", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "pers_002",
+      "subcategory": "prueba_social",
+      "principle": "Las personas miran el comportamiento de otros para determinar el propio, especialmente en situaciones de incertidumbre.",
+      "tactic": "Usa prueba social específica (misma industria, tamaño similar), no genérica. Números concretos. Testimonios con nombre, foto y resultado medible.",
+      "framework": "3P: Persona similar → Problema idéntico → Resultado medible",
+      "script_template": "Un cliente en [su misma industria] con [tamaño similar] tenía exactamente el mismo desafío. Implementaron nuestra solución y en [tiempo específico] lograron [resultado concreto con número]. Puedo conectarle con ellos si quiere escuchar su experiencia directamente.",
+      "when_to_use": ["cliente indeciso", "necesidad de validación", "objeción de riesgo"],
+      "when_not_to_use": ["cliente ya convencido", "privacidad extrema"],
+      "tags": ["prueba_social", "testimonios", "credibilidad", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "pers_003",
+      "subcategory": "autoridad",
+      "principle": "Las personas tienden a obedecer a figuras de autoridad. Pero la autoridad real no se impone; se demuestra.",
+      "tactic": "Demuestra competencia con insights profundos del sector. Comparte datos que solo un experto conocería. Cita estudios relevantes.",
+      "framework": "DEM: Demostrar → Educar → Monetizar",
+      "script_template": "En nuestro análisis del sector [su industria], descubrimos algo que pocos están viendo: [insight profundo y específico]. Esto cambia cómo deberían pensar sobre [tema]. ¿Le gustaría que le muestre cómo esto aplica a su caso específico?",
+      "when_to_use": ["cliente escéptico", "primera impresión", "posicionamiento"],
+      "when_not_to_use": ["cliente ya confía", "relación establecida"],
+      "tags": ["autoridad", "expertise", "credibilidad", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "pers_004",
+      "subcategory": "consistencia",
+      "principle": "Las personas desean ser coherentes con sus compromisos previos. Un compromiso pequeño lleva a compromisos mayores.",
+      "tactic": "Obtén micro-compromisos (síes) tempranos. Haz que el cliente afirme su propio problema y deseo de solución. Luego apégate a eso.",
+      "framework": "Foot-in-the-Door: Pequeño sí → Compromiso público → Sí mayor",
+      "script_template": "Si entiendo bien, usted está buscando resolver [problema] porque está costándole [consecuencia]. ¿Es correcto? [Esperar sí]. Y si hubiera una forma de eliminar eso en [plazo razonable], ¿eso sería valioso para usted? [Esperar sí]. Excelente, entonces déjeme mostrarle exactamente cómo funciona...",
+      "when_to_use": ["descubrimiento", "construcción de compromiso", "ventas complejas"],
+      "when_not_to_use": ["transacción rápida", "cliente ya decidió"],
+      "tags": ["consistencia", "compromiso", "micro_sies", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "pers_005",
+      "subcategory": "simpatia",
+      "principle": "Preferimos decir que sí a las personas que nos caen bien. La simpatía genuina supera a la manipulación.",
+      "tactic": "Encuentra similitudes genuinas. Dale elogios específicos y sinceros. Sonríe (incluso por teléfono, se nota en la voz). Usa su nombre.",
+      "framework": "LENS: Listen → Elogiar → Nombre → Similitud",
+      "script_template": "Me encanta lo que están haciendo con [proyecto/iniciativa específica del cliente]. De verdad es impresionante cómo [detalle concreto]. Hablando con personas como usted que realmente entienden [tema], la conversación siempre es enriquecedora...",
+      "when_to_use": ["primer contacto", "construcción de rapport", "cliente frío"],
+      "when_not_to_use": ["negociación tensa", "conflicto activo"],
+      "tags": ["simpatia", "rapport", "elogio", "dale_carnegie", "cia_ldini"],
+      "_source_hint": "Carnegie + Cialdini",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "pers_006",
+      "subcategory": "escasez",
+      "principle": "Las oportunidades parecen más valiosas cuando su disponibilidad es limitada. Pero debe ser escasez REAL.",
+      "tactic": "Muestra lo que se pierde, no solo lo que se gana. Escasez de tiempo, cantidad o acceso. Nunca inventes escasez; usa la realidad del negocio.",
+      "framework": "Escasez Real: Cantidad limitada → Plazo definido → Acceso exclusivo",
+      "script_template": "Solo para ser transparente: tenemos capacidad para tomar [X] clientes nuevos este trimestre porque queremos asegurar la calidad del servicio. Ya tenemos [Y] confirmados. Si esto le interesa, necesitaríamos definirlo antes de [fecha] para asegurarle el slot.",
+      "when_to_use": ["cliente posterga", "cierre final", "oferta limitada real"],
+      "when_not_to_use": ["escasez inventada", "cliente sensible a presión"],
+      "tags": ["escasez", "urgencia", "cierre", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "pers_007",
+      "subcategory": "pre_suasion",
+      "principle": "El mejor persuasor no cambia la actitud, cambia el estado de atención momentáneo para que la persona sea receptiva al mensaje correcto.",
+      "tactic": "Antes de tu mensaje clave, planta un concepto relacionado. Haz una pregunta que oriente la atención. Usa palabras clave que activen el frame deseado.",
+      "framework": "Pre-suasion: Foco → Frame → Mensaje",
+      "script_template": "¿Le importa la calidad o prefiere la opción más barata? [Esperar: calidad]. Perfecto, porque lo que le voy a mostrar está diseñado específicamente para quienes priorizan [calidad/resultado/durabilidad] sobre el costo inicial...",
+      "when_to_use": ["presentación de propuesta", "manejo de objeciones", "posicionamiento"],
+      "when_not_to_use": ["cliente ya convencido", "transacción simple"],
+      "tags": ["pre_suasion", "framing", "atencion", "cia_ldini"],
+      "_source_hint": "Cialdini - Pre-suasion",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "pers_008",
+      "subcategory": "influencia_social",
+      "principle": "Las personas siguen el ejemplo de personas similares a ellas. La influencia de pares es más poderosa que la autoridad.",
+      "tactic": "Muestra lo que otros como él ya hicieron. Usa testimoniales de perfiles similares. Crea comunidad alrededor de tu solución.",
+      "framework": "SIM: Similar → Identificable → Motivante",
+      "script_template": "Sé que puede sonar a promesa genérica, pero mejor escuche a [nombre], que está en [misma industria] y tenía [mismo problema]. [Testimonial breve con resultado]. ¿Le gustaría ver si eso es posible para usted también?",
+      "when_to_use": ["duda", "riesgo percibido", "primer cliente en su segmento"],
+      "when_not_to_use": ["cliente pionero", "prefiere ser first-mover"],
+      "tags": ["influencia_social", "pares", "testimonial", "cia_ldini"],
+      "_source_hint": "Cialdini",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

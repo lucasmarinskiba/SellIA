@@ -1,0 +1,11 @@
+{
+  "category": "international_expansion",
+  "description": "Sell globally: currency, tax, shipping, localization, compliance",
+  "items": [
+    {"id": "intl_001", "name": "Market selection", "tactic": "Choose by GDP/capita, ecommerce adoption, competition. Brazil/Mexico = easy."},
+    {"id": "intl_002", "name": "Currency + FX", "tactic": "Price in local currency. Real-time FX rates. Hedge if forecast >30 days."},
+    {"id": "intl_003", "name": "Tax compliance", "tactic": "Brazil 17% VAT. Mexico 16% VAT. Auto-calculate per destination."},
+    {"id": "intl_004", "name": "Local payment methods", "tactic": "Brazil PIX. Mexico OXXO. Argentina Mercado Pago. USA credit card."},
+    {"id": "intl_005", "name": "Shipping carriers", "tactic": "Americas DHL (fast). Regional local (cheap). EasyPost integration."}
+  ]
+}

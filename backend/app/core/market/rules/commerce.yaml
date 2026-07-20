@@ -1,0 +1,61 @@
+sales_phases:
+  - lead
+  - demo
+  - proposal
+  - negotiation
+  - close
+
+sales_cycle:
+  min: 5
+  avg: 30
+  max: 90
+
+phase_durations:
+  lead:
+    min: 1
+    avg: 3
+    max: 7
+  demo:
+    min: 1
+    avg: 2
+    max: 5
+  proposal:
+    min: 2
+    avg: 5
+    max: 10
+  negotiation:
+    min: 3
+    avg: 7
+    max: 14
+  close:
+    min: 1
+    avg: 2
+    max: 5
+
+pricing_rules:
+  type: flexible
+  strategies:
+    - "fixed"
+    - "dynamic"
+    - "negotiable"
+
+payment_rules:
+  type: mixed
+  options:
+    - "one_time"
+    - "installments"
+    - "recurring"
+  terms: 30
+
+commission_structure:
+  type: percentage
+  rate: 10.0
+  tiered:
+    - "volume_based"
+    - "product_based"
+
+legal_requirements:
+  default:
+    - "contract"
+    - "payment_terms"
+    - "warranty"

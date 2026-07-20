@@ -1,0 +1,84 @@
+{
+  "category": "habits",
+  "description": "Formación de hábitos, cambio de comportamiento y consistencia",
+  "items": [
+    {
+      "id": "hab_001",
+      "subcategory": "atomic_habits",
+      "principle": "Los cambios pequeños y consistentes, acumulados durante el tiempo, producen resultados extraordinarios. No busques perfección, busca repetición.",
+      "tactic": "Aplica la Ley del 1%: mejorá 1% cada día. Enfócate en el sistema, no en la meta. Diseña tu entorno para que el hábito deseado sea el camino de menor resistencia.",
+      "framework": "4 Leyes del Cambio: Hacerlo Obvio → Atractivo → Fácil → Satisfactorio",
+      "script_template": "En lugar de intentar revolucionar todo su proceso de ventas de una vez, le propongo un enfoque diferente: vamos a implementar UN cambio esta semana que mejore sus resultados en solo 1%. Ese cambio es [acción específica y pequeña]. En 3 meses, eso se convierte en una mejora del 97%. ¿Le parece manejable?",
+      "when_to_use": ["cliente abrumado", "necesidad de implementación gradual", "cambio organizacional"],
+      "when_not_to_use": ["urgencia inmediata", "crisis"],
+      "tags": ["habitos", "consistencia", "sistema", "james_clear"],
+      "_source_hint": "James Clear - Atomic Habits",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "hab_002",
+      "subcategory": "habit_stacking",
+      "principle": "Una de las mejores formas de construir un nuevo hábito es identificar un hábito actual que ya realizas y apilar el nuevo comportamiento sobre él.",
+      "tactic": "Busca el 'Después de [hábito actual], haré [nuevo hábito]'. El hábito actual actúa como señal (cue) para el nuevo.",
+      "framework": "Habit Stacking: Hábito actual → Nuevo hábito → Recompensa",
+      "script_template": "Ya que su equipo revisa métricas todos los lunes a las 9am [hábito actual], ¿qué le parece si inmediatamente después dedican 10 minutos a [nuevo hábito de ventas]? No es algo extra; es el siguiente paso natural de algo que ya hacen.",
+      "when_to_use": ["implementación de nuevo proceso", "adopción de herramienta", "cambio de comportamiento"],
+      "when_not_to_use": ["no hay hábito existente", "proceso totalmente nuevo"],
+      "tags": ["habit_stacking", "implementacion", "james_clear"],
+      "_source_hint": "James Clear",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "hab_003",
+      "subcategory": "identity_change",
+      "principle": "Los hábitos duraderos no se construyen enfocándose en QUÉ quieres lograr, sino en QUIÉN quieres ser. La identidad conduce al comportamiento.",
+      "tactic": "Ayuda al cliente a visualizarse como alguien que YA usa tu solución exitosamente. Cada acción es un voto por esa identidad.",
+      "framework": "Identity-Based Habits: Identidad → Proceso → Resultado",
+      "script_template": "No se trata solo de 'usar una herramienta nueva'. Se trata de convertirse en el tipo de empresa que [resultado deseado]. Cada vez que [acción con la herramienta], están votando por ser esa empresa. En 6 meses, no será algo que 'usan'; será simplemente cómo operan.",
+      "when_to_use": ["onboarding", "retención", "cambio cultural"],
+      "when_not_to_use": ["venta inicial", "transacción única"],
+      "tags": ["identidad", "onboarding", "james_clear", "retencion"],
+      "_source_hint": "James Clear",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "hab_004",
+      "subcategory": "environment_design",
+      "principle": "No confíes en la motivación. Diseña tu entorno para que sea más fácil hacer lo correcto que lo incorrecto. La motivación es volátil; el diseño es permanente.",
+      "tactic": "Elimina fricción del comportamiento deseado. Aumenta fricción del comportamiento no deseado. Automatiza lo que puedas.",
+      "framework": "Environment > Motivation: Reducir fricción → Aumentar señales → Automatizar",
+      "script_template": "En lugar de depender de que su equipo 'recuerde' hacer [acción], vamos a configurar su sistema para que sea más difícil NO hacerlo. Así no depende de la motivación del día; el entorno lo guía automáticamente.",
+      "when_to_use": ["implementación", "adopción", "procesos repetitivos"],
+      "when_not_to_use": ["tareas creativas", "decisiones estratégicas"],
+      "tags": ["entorno", "friccion", "automacion", "james_clear", "duhigg"],
+      "_source_hint": "James Clear + Duhigg",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "hab_005",
+      "subcategory": "cue_routine_reward",
+      "principle": "Todo hábito tiene un loop: señal (cue) → rutina → recompensa. Para cambiar un hábito, mantén la señal y la recompensa, cambia la rutina.",
+      "tactic": "Identifica el loop actual del cliente. ¿Qué desencadena el comportamiento que quiere cambiar? ¿Qué recompensa obtiene? Intercambia solo la rutina.",
+      "framework": "Golden Rule of Habit Change: Misma Cue → Nueva Rutina → Misma Recompensa",
+      "script_template": "Cuando surge [situación habitual], en lugar de [respuesta vieja], su equipo ahora hará [respuesta nueva con nuestra solución]. La situación es la misma, la recompensa también, pero la rutina es mejor. Eso es todo lo que cambia.",
+      "when_to_use": ["cambio de proceso", "migración de herramienta", "capacitación"],
+      "when_not_to_use": ["no hay hábito previo", "primera vez"],
+      "tags": ["cue_routine_reward", "cambio_habito", "charles_duhigg"],
+      "_source_hint": "Charles Duhigg - Power of Habits",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "hab_006",
+      "subcategory": "implementation_intentions",
+      "principle": "Las intenciones de implementación (si X ocurre, haré Y) duplican la probabilidad de seguimiento de un comportamiento.",
+      "tactic": "Convierte intenciones vagas en planes específicos con momento y lugar definidos. 'Voy a intentarlo' → 'Si son las 9am del lunes, abro el dashboard y reviso leads'.",
+      "framework": "If-Then Planning: Si [situación] → Entonces [acción específica]",
+      "script_template": "Vamos a hacer esto concreto. Si [trigger específico], entonces su equipo hará [acción específica con nuestra herramienta]. No es 'cuando puedan'; es exactamente CUÁNDO. Ese plan específico duplica las probabilidades de que suceda.",
+      "when_to_use": ["compromiso final", "plan de acción", "onboarding"],
+      "when_not_to_use": ["exploración inicial", "no hay decisión"],
+      "tags": ["implementation_intentions", "planificacion", "james_clear"],
+      "_source_hint": "James Clear",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

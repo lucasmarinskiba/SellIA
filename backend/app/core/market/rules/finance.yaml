@@ -1,0 +1,54 @@
+sales_phases:
+  - qualification
+  - kyc
+  - proposal
+  - risk_review
+  - execution
+
+sales_cycle:
+  min: 14
+  avg: 45
+  max: 120
+
+phase_durations:
+  qualification:
+    min: 1
+    avg: 3
+    max: 7
+  kyc:
+    min: 3
+    avg: 7
+    max: 14
+  proposal:
+    min: 2
+    avg: 5
+    max: 10
+  risk_review:
+    min: 5
+    avg: 10
+    max: 20
+  execution:
+    min: 3
+    avg: 7
+    max: 14
+
+pricing_rules:
+  type: market_based
+  models:
+    - "bid_ask_spread"
+    - "fees"
+
+payment_rules:
+  type: settlement_based
+  settlement_period: 2
+
+commission_structure:
+  type: percentage
+  rate: 0.5
+
+legal_requirements:
+  default:
+    - "aml_kyc"
+    - "regulatory_approval"
+    - "compliance_check"
+    - "audit_trail"

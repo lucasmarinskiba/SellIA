@@ -1,0 +1,75 @@
+{
+  "category": "email_marketing",
+  "description": "Email marketing: secuencias automation, segmentación, retención. 40% revenue de vendedor típico viene de email.",
+  "items": [
+    {
+      "id": "email_001",
+      "subcategory": "welcome_sequence",
+      "principle": "Primeras 3 emails (48h) son críticas. Establece expectativa, entrega valor, genera conversión. Workflow: Welcome (día 0) → Value (día 1) → CTA Offer (día 2).",
+      "tactic": "Email 1 (inmediato): 'Bienvenido! Acá tu X'. Email 2 (24h): Valor + educación + storytelling. Email 3 (48h): Oferta, descuento, CTA. Open rate típico: 40%, click-through: 8%, conversión: 2-5% (de subscribers).",
+      "framework": "Welcome (expectativa) → Educate (valor) → Offer (cierre)",
+      "examples": [
+        "SaaS: E1 'Bienvenido a [Product]! Empezá aquí'. E2 'Tutorial 5 min + use case de cliente'. E3 'Upgrade ahora, 20% off'.",
+        "E-commerce: E1 'Gracias por suscribirte!'. E2 '5 tips para elegir [producto]'. E3 'Código BIENVENIDA15 (15% off, válido 72h)'."
+      ],
+      "tags": ["email", "automation", "welcome", "sequence"],
+      "_source_hint": "Email funnel optimization",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "email_002",
+      "subcategory": "nurture_sequences",
+      "principle": "Después welcome: educate + build trust. Frecuencia: 2x por semana (no spam). Contenido: tips, case studies, customer stories, insights. Goal: top-of-mind cuando cliente listo comprar.",
+      "tactic": "Cadencia: lunes + jueves. L: Educational. J: Offer/CTA. Segmentar por interés (si browsed 'pricing' → nudge diferente vs 'feature deep-dive'). Tasa abierta target: 25-35%. Si cae <15% → revisar subject lines.",
+      "framework": "Education (Mon) → Offer (Thu) → Repeat",
+      "examples": [
+        "SaaS: Mon email 'How to [use case]' + demo video. Thu email 'Customer using this to [result], ready to start?'.",
+        "Consultancy: Mon 'Market insights report'. Thu 'Book your free 30min audit'."
+      ],
+      "tags": ["email", "nurture", "education", "trust"],
+      "_source_hint": "Email sequences",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "email_003",
+      "subcategory": "cart_abandonment",
+      "principle": "70% carritos abandonados. Recuperar con email sequence: trigger basado en tiempo (1h, 24h, 72h). ROI típico 30:1 (por dólar gastado, retorna $30).",
+      "tactic": "Email 1 (1h): 'Olvidaste tu carrito! [Items] están en tu carrito por 24h'. Email 2 (24h): 'Apurá, solo 1 left!' (scarcity). Email 3 (72h): 'Último aviso + extra 10% off si completás hoy'.",
+      "framework": "1h nudge → 24h scarcity → 72h final offer",
+      "examples": [
+        "E-commerce: Cart $150. E1 'Completá compra'. E2 'Stock limitado!'. E3 '10% off, expira hoy'. Recovery rate típico: 10-15% (15-22 de 150 carritos)."
+      ],
+      "tags": ["email", "cart_recovery", "automation", "revenue"],
+      "_source_hint": "Ecommerce abandoned cart",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "email_004",
+      "subcategory": "segmentation",
+      "principle": "Mismo email a todo mundo = low engagement. Segmentar: por behavior (browsed, clicked, bought), demographics (nuevo vs loyal), engagement (activo vs inactive).",
+      "tactic": "Segmentos: Hot (clicked 3x en 7d) → aggressive upsell. Warm (abren, no click) → educate. Cold (no abierto 30d) → win-back. Enviar diferente copy/offer cada segmento. Engagement sube 20-40% con segmentación.",
+      "framework": "Behavior tracking → Segment assignment → Personalized email",
+      "examples": [
+        "E-commerce: Segment 'Viewed shoes 5x, no buy' → email 'People who like shoes also love [insoles]. 30% off if you buy both'. Conversion: +45%.",
+        "SaaS: Segment 'Used feature X heavily' → upsell 'Pro plan has advanced X'. Conversion: +30%."
+      ],
+      "tags": ["segmentation", "personalization", "behavior", "targeting"],
+      "_source_hint": "Email segmentation patterns",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "email_005",
+      "subcategory": "reactivation_winback",
+      "principle": "Clientes inactivos (0 compra en 90d) = churn risk. Win-back sequence: especial (descuento, regalo), razón (pregunta qué falló), reminder (beneficios).",
+      "tactic": "Email 1 'Hace tiempo no nos ves! 20% off for you'. Email 2 'Qué pasó? Podemos mejorar?'. Email 3 'Clientes como vos están comprando [new thing]. 25% off'.",
+      "framework": "Reactivate (offer) → Understand (feedback) → Remind (benefit)",
+      "examples": [
+        "SaaS: Inactive 90d → 'Come back, $50 credit' → 'Help us improve' → 'See what's new'. Win-back rate 5-10%.",
+        "Retail: No compra 60d → 'VIP exclusive 30% off' → 'Not interested?' → 'Fresh items just arrived'. Reactivation: 3-8%."
+      ],
+      "tags": ["retention", "winback", "churn", "reactivation"],
+      "_source_hint": "Churn prevention",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

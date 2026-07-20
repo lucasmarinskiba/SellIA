@@ -1,0 +1,10 @@
+{
+  "category": "customer_psychology_profiles",
+  "description": "Psychological profiles: spender, saver, risk-taker, analytical, impulser",
+  "items": [
+    {"id": "psych_001", "name": "Spender (loves deals, discount-driven)", "sell_to": "Urgency, scarcity, time-limited. Price-sensitive but action-fast."},
+    {"id": "psych_002", "name": "Saver (cautious, needs proof)", "sell_to": "Money-back guarantee, testimonials, ROI calculation. Time-patient."},
+    {"id": "psych_003", "name": "Risk-taker (early adopter, FOMO)", "sell_to": "Exclusive access, limited spots, new feature first. Excitement, status."},
+    {"id": "psych_004", "name": "Analytical (numbers matter)", "sell_to": "Data, comparison, specs, case studies. No emotions, facts only."}
+  ]
+}

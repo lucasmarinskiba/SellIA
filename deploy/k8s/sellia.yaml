@@ -1,0 +1,146 @@
+# Self-hosted alternative · k3s/k8s on Hetzner CCX23.
+# Use: kubectl apply -f sellia.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sellia
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sellia-secrets
+  namespace: sellia
+type: Opaque
+stringData:
+  # Replace via `kubectl create secret generic sellia-secrets --from-env-file=.env.production`
+  DATABASE_URL: postgresql+asyncpg://...
+  REDIS_URL: rediss://...
+  JWT_SECRET: replace-me
+  SECRET_KEY: replace-me
+  ANTHROPIC_API_KEY: ""
+  STRIPE_SECRET_KEY: ""
+  STRIPE_WEBHOOK_SECRET: ""
+  WA_VERIFY_TOKEN: ""
+  WA_APP_SECRET: ""
+  WA_ACCESS_TOKEN: ""
+  WA_PHONE_NUMBER_ID: ""
+  SENTRY_DSN: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: sellia
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sellia-api
+  template:
+    metadata:
+      labels:
+        app: sellia-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/sellia/api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef: { name: sellia-secrets }
+          env:
+            - { name: ENV, value: prod }
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { cpu: 1000m, memory: 1Gi }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: sellia
+spec:
+  selector: { app: sellia-api }
+  ports:
+    - port: 80
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: sellia
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: sellia-worker }
+  template:
+    metadata:
+      labels: { app: sellia-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/sellia/api:latest
+          command: ["python", "-m", "app.jobs.worker"]
+          envFrom:
+            - secretRef: { name: sellia-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 768Mi }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: sellia
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [api.sellia.app]
+      secretName: api-tls
+  rules:
+    - host: api.sellia.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port: { number: 80 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-hpa
+  namespace: sellia
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }

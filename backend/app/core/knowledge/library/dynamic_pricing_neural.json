@@ -1,0 +1,27 @@
+{
+  "category": "dynamic_pricing_neural_net",
+  "description": "Pricing neural: ajusta precio automáticamente según demand, competition, inventory, time. +20-40% margen.",
+  "items": [
+    {
+      "id": "dyn_001",
+      "name": "Demand-based pricing",
+      "inputs": ["traffic_last_hour", "conversion_rate", "stock_level", "time_of_day", "day_of_week"],
+      "logic": "Si tráfico alto + stock bajo + hora pico → sube precio 10-20%. Si tráfico bajo → baja 5-10%.",
+      "output": "new_price = base_price * (demand_multiplier)"
+    },
+    {
+      "id": "dyn_002",
+      "name": "Competitor-based pricing",
+      "inputs": ["competitor_price", "our_quality_score", "our_reviews_avg"],
+      "logic": "Si nuestro quality > competitor → precio +5-15%. Si quality similar → precio -5% para ganar volumen.",
+      "output": "new_price = competitor_price * (quality_ratio)"
+    },
+    {
+      "id": "dyn_003",
+      "name": "Inventory depletion",
+      "inputs": ["stock_left", "days_to_expire_or_season_end", "conversion_rate"],
+      "logic": "Si stock 1-2 left → sube 20-30% (scarcity). Si expira en 7 días → baja 10-20% (urgency vender).",
+      "output": "new_price = base_price * (urgency_multiplier)"
+    }
+  ]
+}

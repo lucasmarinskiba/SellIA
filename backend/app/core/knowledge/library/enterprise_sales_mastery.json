@@ -1,0 +1,9 @@
+{
+  "category": "enterprise_sales_mastery",
+  "description": "Enterprise sales: $100k+ deals, multi-stakeholder, long cycles, consensus-building",
+  "items": [
+    {"id": "ent_001", "name": "Multiple stakeholder management", "tactic": "Map: Economic Buyer, User, Champion, Influencer. Each has different concerns. Economic: ROI. User: ease of use. Champion: career advancement. Sell to each separately."},
+    {"id": "ent_002", "name": "Consensus-building sequences", "tactic": "Don't close with one. Build consensus: champion → influencer → user → economic. Each step removes objection for next."},
+    {"id": "ent_003", "name": "Procurement process navigation", "tactic": "RFP, vendor evaluation, references, pilots. Shorten cycle: offer pilot early. Prove value. Procurement rubber-stamps."}
+  ]
+}

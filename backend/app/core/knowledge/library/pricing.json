@@ -1,0 +1,84 @@
+{
+  "category": "pricing",
+  "description": "Estrategia y psicología de precios para maximizar valor capturado",
+  "items": [
+    {
+      "id": "pricing_001",
+      "subcategory": "valor_vs_costo",
+      "principle": "El precio se fija por el valor percibido por el cliente, no por tus costos. El costo pone el piso; el valor pone el techo, y entre ambos vive tu margen.",
+      "tactic": "Investiga qué resultado económico produce tu oferta para el cliente y ancla el precio a una fracción de ese valor, nunca a un markup sobre el costo. Cost-plus deja dinero sobre la mesa.",
+      "framework": "Value-based pricing: precio = fracción del valor entregado, no costo + margen",
+      "script_template": "Esto le genera [valor cuantificado]. Cobrar [precio] es capturar solo una parte de lo que usted gana. El costo nuestro es irrelevante para su decisión.",
+      "when_to_use": ["fijar precio de producto nuevo", "justificar premium", "venta B2B de ROI"],
+      "when_not_to_use": ["commodity con precio de mercado rígido", "sin forma de cuantificar valor"],
+      "tags": ["pricing", "valor", "value_based", "margen"],
+      "_source_hint": "Nagle & Hogan — The Strategy and Tactics of Pricing",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "pricing_002",
+      "subcategory": "anclaje",
+      "principle": "El primer precio que ve el cliente ancla toda su percepción. Mostrar primero una opción cara hace que las demás parezcan razonables.",
+      "tactic": "Presenta siempre la opción más cara primero (anchoring) o incluye un plan premium que reencuadra al plan objetivo como la elección sensata. El contraste vende, no el número absoluto.",
+      "framework": "Anchoring: ancla alta → el precio objetivo parece moderado",
+      "script_template": "El plan completo es [precio alto]. La mayoría elige el intermedio en [precio objetivo], que cubre justo lo que usted necesita.",
+      "when_to_use": ["presentar planes", "negociar desde arriba", "reencuadrar percepción de caro"],
+      "when_not_to_use": ["cliente que ya conoce precios de referencia exactos", "mercado totalmente transparente"],
+      "tags": ["anclaje", "anchoring", "contraste", "psicologia_precio"],
+      "_source_hint": "Kahneman / psicología del precio",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "pricing_003",
+      "subcategory": "decoy",
+      "principle": "Una tercera opción deliberadamente peor (señuelo) empuja al cliente hacia la opción que querés vender. La gente no elige en abstracto, elige por comparación.",
+      "tactic": "Diseña tres planes donde el del medio o el premium sea claramente superior al señuelo por poco más de dinero. El señuelo no se vende: existe para hacer brillar al objetivo.",
+      "framework": "Efecto señuelo (decoy): tres opciones, una hace obvio el objetivo",
+      "script_template": "Por [poco más] que el plan básico, el completo le da [mucho más valor]. La diferencia es mínima y el salto de valor enorme.",
+      "when_to_use": ["estructura de planes/tiers", "subir ticket promedio", "guiar la elección"],
+      "when_not_to_use": ["oferta de un solo producto", "cliente que detecta y rechaza la manipulación"],
+      "tags": ["decoy", "señuelo", "tiers", "planes"],
+      "_source_hint": "Dan Ariely — Predictably Irrational",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "pricing_004",
+      "subcategory": "tiers",
+      "principle": "Tres planes (bueno/mejor/óptimo) capturan a clientes con distinta disposición a pagar sin perder a nadie por precio único. Cada uno paga lo que vale para él.",
+      "tactic": "Crea 3 niveles con diferencias claras de valor, no solo de cantidad. Nombra el plan objetivo como 'más popular' o 'recomendado' para guiar por defecto. Limita a 3-4 para no paralizar la decisión.",
+      "framework": "Good-Better-Best: segmentar por disposición a pagar",
+      "script_template": "Tenemos tres opciones según lo que necesite. La recomendada para casos como el suyo es [plan objetivo], que equilibra precio y alcance.",
+      "when_to_use": ["SaaS y suscripciones", "segmentar clientes", "subir LTV"],
+      "when_not_to_use": ["producto único indivisible", "audiencia que se abruma con opciones"],
+      "tags": ["tiers", "planes", "segmentacion", "good_better_best"],
+      "_source_hint": "Práctica estándar de pricing SaaS",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "pricing_005",
+      "subcategory": "psicologia_numero",
+      "principle": "La forma del número importa tanto como su magnitud. Precios terminados en 9, sin separadores, o presentados sin signo de moneda cambian la percepción de gasto.",
+      "tactic": "Usa charm pricing (terminación 9/7) para percepción de oferta, o precios redondos para premium/lujo. Reduce la 'fricción de gasto' quitando símbolos y dígitos innecesarios. Alinea la forma con el posicionamiento.",
+      "framework": "Forma del precio: charm para valor, redondo para premium",
+      "script_template": "Para una oferta accesible: 97. Para posicionar premium: 100 limpio, sin descuentos que abaraten la percepción.",
+      "when_to_use": ["definir display del precio", "campañas promocionales", "alinear precio con marca"],
+      "when_not_to_use": ["B2B con compras racionales por contrato", "ticket donde el centavo es irrelevante"],
+      "tags": ["charm_pricing", "psicologia", "display", "percepcion"],
+      "_source_hint": "Investigación de pricing conductual",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "pricing_006",
+      "subcategory": "subir_precio",
+      "principle": "Subir precios es la palanca más rápida de rentabilidad: un aumento que se sostiene cae casi íntegro al margen. El miedo a subir suele costar más que la fuga real.",
+      "tactic": "Sube precios con justificación de valor (nuevas funciones, resultados), avisa con anticipación, respeta a clientes legacy un tiempo y mide la elasticidad real. La mayoría tolera aumentos razonables si el valor es claro.",
+      "framework": "Aumento de precio: justificar valor → grandfathering → medir elasticidad",
+      "script_template": "Desde [fecha] el precio se ajusta a [nuevo], reflejando [valor agregado]. Como cliente actual, mantenés tu tarifa por [periodo].",
+      "when_to_use": ["mejorar margen", "después de agregar valor real", "precio por debajo del mercado"],
+      "when_not_to_use": ["sin valor adicional que justifique", "mercado hipercompetitivo y elástico"],
+      "tags": ["aumento", "margen", "elasticidad", "grandfathering"],
+      "_source_hint": "Práctica de revenue management",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

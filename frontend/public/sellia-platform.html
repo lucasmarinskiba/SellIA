@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SellIA — Plataforma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060812;--bg2:#08091a;--bg3:#0d0f26;--sb:#070a14;
+  --or:#FF6B35;--or2:#FF8C5A;--od:rgba(255,107,53,.12);
+  --vi:#7C3AED;--vi2:#9F6EF0;--vd:rgba(124,58,237,.12);
+  --te:#00D4AA;--te2:#33E0BF;--td:rgba(0,212,170,.12);
+  --bl:#0EA5E9;--bld:rgba(14,165,233,.12);
+  --wh:#F0F2FF;--mu:rgba(240,242,255,.42);--fa:rgba(240,242,255,.04);
+  --bo:rgba(240,242,255,.07);--bo2:rgba(240,242,255,.12);
+  --FD:'Syne',sans-serif;--FB:'Inter',sans-serif;--sb-w:260px;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--wh);font-family:var(--FB)}
+body{display:flex;cursor:default}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:var(--bo2);border-radius:2px}
+
+/* SIDEBAR */
+#sidebar{width:var(--sb-w);min-width:var(--sb-w);height:100vh;background:var(--sb);border-right:1px solid var(--bo);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;position:relative;z-index:100}
+.sb-logo{padding:18px 20px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bo)}
+.sb-logo-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--or),var(--vi));display:flex;align-items:center;justify-content:center;font-family:var(--FD);font-weight:800;font-size:16px;color:#fff}
+.sb-logo-text{font-family:var(--FD);font-size:19px;font-weight:800;background:linear-gradient(135deg,var(--or),var(--vi));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sb-badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:100px;background:var(--od);color:var(--or);border:1px solid rgba(255,107,53,.2);text-transform:uppercase;letter-spacing:.08em}
+.sb-nav{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:1px}
+.sb-section{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(240,242,255,.22);padding:10px 10px 5px;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;font-size:12.5px;font-weight:500;color:rgba(240,242,255,.4);cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap}
+.nav-item:hover{background:rgba(240,242,255,.04);color:rgba(240,242,255,.7)}
+.nav-item.active{background:var(--od);color:var(--or);border-color:rgba(255,107,53,.2)}
+.nav-item .ni{font-size:14px;min-width:18px;text-align:center}
+.sb-plan{margin:10px;padding:14px;background:linear-gradient(135deg,rgba(255,107,53,.08),rgba(124,58,237,.08));border:1px solid rgba(255,107,53,.18);border-radius:12px}
+.sb-plan-title{font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.sb-plan-name{font-family:var(--FD);font-size:14px;font-weight:700;color:var(--or)}
+.sb-plan-info{font-size:10px;color:var(--mu);margin-top:2px}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:0}
+#topbar{height:58px;min-height:58px;background:var(--bg2);border-bottom:1px solid var(--bo);display:flex;align-items:center;padding:0 22px;gap:14px;flex-shrink:0}
+.tb-title{font-family:var(--FD);font-size:16px;font-weight:700;flex:1}
+.tb-search{display:flex;align-items:center;gap:8px;background:var(--fa);border:1px solid var(--bo);border-radius:10px;padding:7px 13px;min-width:200px}
+.tb-search input{background:transparent;border:none;outline:none;color:var(--wh);font-size:12.5px;font-family:var(--FB);width:100%}
+.tb-search input::placeholder{color:var(--mu)}
+.tb-icon{width:33px;height:33px;border-radius:9px;background:var(--fa);border:1px solid var(--bo);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all .2s;position:relative}
+.tb-icon:hover{background:var(--od);border-color:rgba(255,107,53,.2)}
+.tb-dot{position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--or)}
+.tb-avatar{width:33px;height:33px;border-radius:50%;background:linear-gradient(135deg,var(--or),var(--vi));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer}
+.lang-sel{background:var(--fa);border:1px solid var(--bo);border-radius:9px;color:var(--wh);font-size:12px;padding:7px 9px;font-family:var(--FB);cursor:pointer;outline:none}
+.lang-sel option{background:var(--bg2)}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);position:relative}
+.page{display:none;padding:26px;animation:pgIn .3s ease-out}
+.page.active{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.pg-head{margin-bottom:22px}
+.pg-h1{font-family:var(--FD);font-size:24px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.pg-sub{font-size:13px;color:var(--mu);margin-top:5px}
+
+/* CARDS */
+.card{background:var(--fa);border:1px solid var(--bo);border-radius:16px;padding:20px;transition:border-color .25s}
+.card:hover{border-color:var(--bo2)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{padding:18px;background:var(--fa);border:1px solid var(--bo);border-radius:14px;display:flex;flex-direction:column;gap:10px;transition:all .25s}
+.stat-card:hover{border-color:var(--bo2);transform:translateY(-2px)}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between}
+.sc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.sc-trend{font-size:11px;font-weight:600;padding:3px 8px;border-radius:100px}
+.sc-val{font-family:var(--FD);font-size:25px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.sc-label{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-family:var(--FD);font-size:15px;font-weight:700}
+.sec-subtitle{font-size:12px;color:var(--mu);margin-top:2px}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:var(--FB)}
+.btn-primary{background:linear-gradient(135deg,var(--or),var(--vi));color:#fff;box-shadow:0 0 24px rgba(255,107,53,.2)}
+.btn-primary:hover{opacity:.88;transform:scale(1.02)}
+.btn-ghost{background:var(--fa);border:1px solid var(--bo2);color:var(--wh)}
+.btn-ghost:hover{background:var(--od);border-color:rgba(255,107,53,.3);color:var(--or)}
+.btn-sm{padding:6px 14px;font-size:11px}
+.btn-teal{background:var(--td);border:1px solid rgba(0,212,170,.2);color:var(--te)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.badge-or{background:var(--od);color:var(--or);border:1px solid rgba(255,107,53,.2)}
+.badge-te{background:var(--td);color:var(--te);border:1px solid rgba(0,212,170,.2)}
+.badge-vi{background:var(--vd);color:var(--vi2);border:1px solid rgba(124,58,237,.2)}
+.badge-bl{background:var(--bld);color:var(--bl);border:1px solid rgba(14,165,233,.2)}
+.badge-live::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;animation:bl 1.5s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TABS */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px}
+.tab{padding:7px 15px;border-radius:100px;font-size:12px;font-weight:600;color:var(--mu);cursor:pointer;transition:all .18s;white-space:nowrap;background:var(--fa);border:1px solid var(--bo)}
+.tab:hover{color:var(--wh)}
+.tab.on{background:var(--od);color:var(--or);border-color:rgba(255,107,53,.25)}
+
+/* AGENT CARDS */
+.ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px}
+.agent-card{padding:16px;background:var(--fa);border:1px solid var(--bo);border-radius:14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.agent-card:hover{border-color:rgba(255,107,53,.28);background:rgba(255,107,53,.04);transform:translateY(-3px)}
+.ae{font-size:24px;margin-bottom:9px;display:block}
+.ag-name{font-family:var(--FD);font-size:13px;font-weight:700;margin-bottom:2px}
+.ag-role{font-size:10.5px;color:var(--mu);line-height:1.35;min-height:28px}
+
+/* CHARTS */
+.chart-bars{display:flex;align-items:flex-end;gap:3px;height:90px;padding-top:8px}
+.chart-bar{flex:1;border-radius:3px 3px 0 0;min-height:4px;transition:opacity .2s}
+.chart-bar:hover{opacity:.7}
+
+/* TOGGLE */
+.toggle{position:relative;width:38px;height:20px;flex-shrink:0;display:inline-block}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(240,242,255,.12);border-radius:100px;cursor:pointer;transition:background .2s}
+.toggle-slider::before{content:'';position:absolute;height:14px;width:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle input:checked+.toggle-slider{background:var(--te)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px)}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);padding:10px 14px;text-align:left;border-bottom:1px solid var(--bo)}
+.data-table td{font-size:12px;padding:11px 14px;border-bottom:1px solid var(--bo);color:rgba(240,242,255,.75)}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+
+/* KANBAN */
+.kanban{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+.k-col{min-width:185px;max-width:200px;background:var(--fa);border:1px solid var(--bo);border-radius:14px;padding:12px;flex-shrink:0}
+.k-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.k-title{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.k-count{font-size:10px;padding:2px 7px;border-radius:100px;background:rgba(240,242,255,.07);color:var(--mu);font-weight:600}
+.k-card{padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--bo);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.k-card:hover{border-color:rgba(255,107,53,.28);background:rgba(255,107,53,.04)}
+.k-cn{font-size:11px;font-weight:600;margin-bottom:3px}
+.k-cv{font-size:13px;font-weight:800;color:var(--te)}
+.k-cp{font-size:10px;color:var(--mu)}
+.k-add{width:100%;padding:8px;background:transparent;border:1px dashed var(--bo);border-radius:9px;color:var(--mu);font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--FB)}
+.k-add:hover{border-color:rgba(255,107,53,.3);color:var(--or)}
+
+/* CHANNELS */
+.ch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.chc{padding:20px 14px;background:var(--fa);border:1px solid var(--bo);border-radius:16px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;transition:all .28s}
+.chc.connected{border-color:rgba(0,212,170,.28);background:rgba(0,212,170,.04)}
+.chc:hover{transform:translateY(-4px);box-shadow:0 14px 44px rgba(0,0,0,.4)}
+.chc-icon{font-size:26px}.chc-name{font-size:12px;font-weight:600}
+.chc-status{font-size:9px;padding:3px 9px;border-radius:100px;font-weight:700;letter-spacing:.06em}
+.chc.connected .chc-status{background:var(--td);color:var(--te)}
+.chc:not(.connected) .chc-status{background:var(--fa);color:var(--mu);border:1px solid var(--bo)}
+
+/* SKILLS */
+.skill-card{padding:16px;background:var(--fa);border:1px solid var(--bo);border-radius:14px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.skill-card:hover{border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.04);transform:translateY(-3px)}
+.sk-emo{font-size:22px;margin-bottom:8px;display:block}
+.sk-name{font-family:var(--FD);font-size:12.5px;font-weight:700;margin-bottom:3px}
+.sk-desc{font-size:10.5px;color:var(--mu);line-height:1.4;min-height:30px}
+.sk-cmd{font-size:9.5px;color:var(--te);margin-top:8px;font-family:monospace}
+
+/* FUNNEL */
+.fv-row{display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:8px}
+.fv-label{min-width:90px;color:var(--mu)}
+.fv-bar-wrap{flex:1;height:9px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.fv-fill{height:100%;border-radius:5px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.fv-pct{min-width:36px;text-align:right;font-size:11px;color:var(--mu)}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;text-align:center;color:var(--mu)}
+.empty-icon{font-size:42px;margin-bottom:12px;opacity:.5}
+.empty-title{font-size:15px;font-weight:600;margin-bottom:6px;color:rgba(240,242,255,.6)}
+
+/* AGENT CHAT PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:190;display:none}
+.overlay.show{display:block}
+.agent-chat-panel{position:fixed;top:0;right:0;width:420px;max-width:100vw;height:100vh;background:var(--bg2);border-left:1px solid var(--bo2);z-index:200;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s ease;box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+.agent-chat-panel.open{transform:translateX(0)}
+.acp-hdr{padding:18px 20px;border-bottom:1px solid var(--bo);display:flex;align-items:center;gap:12px}
+.acp-name{font-family:var(--FD);font-size:15px;font-weight:700}
+.acp-role{font-size:11px;color:var(--mu)}
+.acp-close{margin-left:auto;font-size:20px;cursor:pointer;color:var(--mu);transition:color .2s}
+.acp-close:hover{color:var(--wh)}
+.acp-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:80%;display:flex;flex-direction:column;gap:3px}
+.msg.in{align-self:flex-start}.msg.out{align-self:flex-end}
+.msg-from{font-size:10px;font-weight:600;color:var(--or)}
+.msg-bub{padding:10px 13px;border-radius:13px;font-size:12.5px;line-height:1.5}
+.msg.in .msg-bub{background:rgba(255,255,255,.06);border:1px solid var(--bo);border-bottom-left-radius:4px}
+.msg.out .msg-bub{background:linear-gradient(135deg,rgba(255,107,53,.22),rgba(124,58,237,.18));border:1px solid rgba(255,107,53,.2);border-bottom-right-radius:4px}
+.msg-meta{font-size:9px;color:rgba(240,242,255,.25)}
+.acp-input-row{padding:14px;border-top:1px solid var(--bo);display:flex;gap:8px}
+.acp-input{flex:1;background:var(--fa);border:1px solid var(--bo);border-radius:10px;padding:9px 13px;color:var(--wh);font-size:12px;font-family:var(--FB);outline:none}
+.acp-send{padding:9px 16px;background:linear-gradient(135deg,var(--or),var(--vi));border:none;border-radius:100px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.acp-mic{padding:9px 12px;background:var(--td);border:1px solid rgba(0,212,170,.25);border-radius:100px;color:var(--te);font-size:13px;cursor:pointer}
+
+/* TOAST */
+#toasts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--bg3);border:1px solid var(--bo2);border-radius:12px;padding:12px 18px;font-size:13px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;animation:toastIn .3s ease-out;max-width:90vw}
+@keyframes toastIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* MODAL */
+#modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+#modalWrap.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bo2);border-radius:20px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modal-hdr{padding:20px;border-bottom:1px solid var(--bo);display:flex;align-items:center;gap:12px}
+.modal-title{font-family:var(--FD);font-size:17px;font-weight:700;flex:1}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.field label{font-size:11px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--fa);border:1px solid var(--bo);border-radius:10px;padding:10px 13px;color:var(--wh);font-size:13px;font-family:var(--FB);outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(255,107,53,.3)}
+.field select option{background:var(--bg2)}
+
+/* ====== VOICE / MANOS LIBRE ====== */
+#voiceFab{position:fixed;bottom:26px;right:26px;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--or),var(--vi));border:none;cursor:pointer;z-index:350;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 8px 30px rgba(255,107,53,.45);transition:transform .2s}
+#voiceFab:hover{transform:scale(1.07)}
+#voiceFab.listening{animation:fabPulse 1.4s ease-in-out infinite}
+@keyframes fabPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,170,.5)}50%{box-shadow:0 0 0 18px rgba(0,212,170,0)}}
+#voiceFab .wave-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--te);opacity:0}
+#voiceFab.listening .wave-ring{animation:waveRing 1.4s ease-out infinite}
+@keyframes waveRing{0%{opacity:.7;transform:scale(.9)}100%{opacity:0;transform:scale(1.5)}}
+
+#voiceOverlay{position:fixed;inset:0;z-index:360;background:radial-gradient(circle at 50% 60%,rgba(124,58,237,.18),rgba(6,8,18,.96));backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px}
+#voiceOverlay.show{display:flex}
+.vo-orb{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--te),var(--vi) 70%,transparent);position:relative;display:flex;align-items:center;justify-content:center;box-shadow:0 0 80px rgba(0,212,170,.4)}
+.vo-orb::before,.vo-orb::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(0,212,170,.4)}
+.vo-orb.active::before{animation:orbR 2s ease-out infinite}
+.vo-orb.active::after{animation:orbR 2s ease-out infinite .6s}
+@keyframes orbR{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.6);opacity:0}}
+.vo-orb-icon{font-size:50px;animation:orbFloat 3s ease-in-out infinite}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.vo-status{font-family:var(--FD);font-size:22px;font-weight:700;text-align:center}
+.vo-heard{font-size:15px;color:var(--te);min-height:24px;text-align:center;max-width:560px}
+.vo-hint{font-size:12.5px;color:var(--mu);text-align:center}
+.vo-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:700px}
+.vo-chip{padding:10px 16px;border-radius:100px;background:var(--fa);border:1px solid var(--bo2);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px}
+.vo-chip:hover{background:var(--od);border-color:rgba(255,107,53,.3);color:var(--or);transform:translateY(-2px)}
+.vo-close{position:absolute;top:24px;right:28px;font-size:28px;cursor:pointer;color:var(--mu)}
+.vo-close:hover{color:var(--wh)}
+.vo-bars{display:flex;align-items:flex-end;gap:4px;height:34px}
+.vo-bars span{width:5px;background:var(--te);border-radius:3px;height:8px}
+#voiceOverlay.listening .vo-bars span{animation:voBar .8s ease-in-out infinite}
+.vo-bars span:nth-child(2){animation-delay:.1s}.vo-bars span:nth-child(3){animation-delay:.2s}.vo-bars span:nth-child(4){animation-delay:.3s}.vo-bars span:nth-child(5){animation-delay:.15s}
+@keyframes voBar{0%,100%{height:8px}50%{height:30px}}
+
+@media(max-width:900px){
+  :root{--sb-w:0px}#sidebar{display:none}
+  .stats-row,.grid-2,.grid-3,.grid-4,.ch-grid{grid-template-columns:1fr 1fr}
+  .agent-chat-panel{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">S</div>
+    <div class="sb-logo-text">SellIA</div>
+    <div class="sb-badge">Pro</div>
+  </div>
+  <nav class="sb-nav" id="sbNav"></nav>
+  <div class="sb-plan">
+    <div class="sb-plan-title">Plan actual</div>
+    <div class="sb-plan-name">Pro ⚡</div>
+    <div class="sb-plan-info">50 agentes · Todos los canales · Tokens ilimitados</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="tb-title" id="tbTitle">Dashboard</div>
+    <div class="tb-search"><span style="color:var(--mu);font-size:13px">🔍</span><input id="globalSearch" placeholder="Buscar agentes, deals, canales..."></div>
+    <select class="lang-sel" id="langSel" onchange="setLang(this.value)" title="Idioma">
+      <option value="es">🇪🇸 ES</option><option value="en">🇬🇧 EN</option><option value="pt">🇧🇷 PT</option>
+      <option value="fr">🇫🇷 FR</option><option value="it">🇮🇹 IT</option><option value="de">🇩🇪 DE</option>
+    </select>
+    <div class="tb-icon" onclick="openVoice()" title="Modo Manos Libres (di 'Hola SellIA')">🎙️</div>
+    <div class="tb-icon" onclick="navigate('alertas')" title="Alertas">🔔<span class="tb-dot"></span></div>
+    <div class="tb-avatar" title="Lucas">L</div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<!-- OVERLAY + AGENT PANEL -->
+<div class="overlay" id="overlay" onclick="closeAgentPanel()"></div>
+<div class="agent-chat-panel" id="agentPanel">
+  <div class="acp-hdr">
+    <div style="font-size:30px" id="apEmo">🤖</div>
+    <div><div class="acp-name" id="apName">Agente</div><div class="acp-role" id="apRole">Especialista</div></div>
+    <div class="acp-close" onclick="closeAgentPanel()">×</div>
+  </div>
+  <div class="acp-msgs" id="apMsgs"></div>
+  <div class="acp-input-row">
+    <input class="acp-input" id="apInput" placeholder="Escribí tu consulta..." onkeydown="if(event.key==='Enter')sendToAgent()">
+    <button class="acp-mic" onclick="dictateToAgent()" title="Dictar">🎤</button>
+    <button class="acp-send" onclick="sendToAgent()">Enviar</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap" onclick="if(event.target===this)closeModal()"><div class="modal" id="modalBox"></div></div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<!-- VOICE -->
+<button id="voiceFab" onclick="toggleWake()" title="Activar escucha 'Hola SellIA'"><span class="wave-ring"></span>🎤</button>
+<div id="voiceOverlay">
+  <div class="vo-close" onclick="closeVoice()">×</div>
+  <div class="vo-orb active" id="voOrb" onclick="startCommand()"><div class="vo-orb-icon">🧠</div></div>
+  <div class="vo-bars" id="voBars"><span></span><span></span><span></span><span></span><span></span></div>
+  <div class="vo-status" id="voStatus">Hola, soy SellIA</div>
+  <div class="vo-heard" id="voHeard"></div>
+  <div class="vo-hint" id="voHint">Decí una indicación o tocá una opción</div>
+  <div class="vo-chips" id="voChips"></div>
+</div>
+
+<script>
+/* ============================================================
+   SELLIA PLATFORM — core data
+   ============================================================ */
+const NAV=[
+  {s:'Principal'},
+  {id:'dashboard',icon:'📊',label:'Dashboard'},
+  {id:'negocios',icon:'🏢',label:'Mis Negocios'},
+  {id:'catalogo',icon:'📦',label:'Catálogo'},
+  {s:'Ventas'},
+  {id:'crm',icon:'🗂️',label:'CRM Pipeline'},
+  {id:'ordenes',icon:'🛒',label:'Órdenes'},
+  {id:'envios',icon:'🚚',label:'Envíos'},
+  {id:'agenda',icon:'📅',label:'Agenda'},
+  {id:'finanzas',icon:'💰',label:'Finanzas'},
+  {s:'IA & Automatización'},
+  {id:'agentes',icon:'🤖',label:'Agentes IA'},
+  {id:'skills',icon:'🎓',label:'Skills & Conocimiento'},
+  {id:'automatizaciones',icon:'⚡',label:'Automatizaciones'},
+  {id:'sequences',icon:'📧',label:'Secuencias'},
+  {id:'integraciones',icon:'🔌',label:'Integraciones API'},
+  {s:'Comunicación'},
+  {id:'conversaciones',icon:'💬',label:'Conversaciones'},
+  {id:'canales',icon:'📡',label:'Canales'},
+  {s:'Inteligencia'},
+  {id:'analytics',icon:'📈',label:'Analytics'},
+  {id:'objetivos',icon:'🎯',label:'Objetivos & KPIs'},
+  {id:'retencion',icon:'❤️',label:'Retención'},
+  {id:'inteligencia',icon:'🧠',label:'Inteligencia'},
+  {id:'recomendaciones',icon:'💡',label:'Recomendaciones'},
+  {s:'Sistema'},
+  {id:'planes',icon:'👑',label:'Planes'},
+  {id:'alertas',icon:'🔔',label:'Alertas'},
+  {id:'seguridad',icon:'🔒',label:'Seguridad'},
+  {id:'sessions',icon:'🔑',label:'Sesiones'},
+];
+const TITLES={};NAV.forEach(n=>{if(n.id)TITLES[n.id]=n.label});
+
+/* ============ I18N ============ */
+const I18N={
+  es:{voiceGreet:'Hola, soy SellIA',voiceHint:'Decí una indicación o tocá una opción',voiceListening:'Escuchando...',voiceWake:"Decí «Hola SellIA» para activar",speakGreet:'Hola, soy SellIA, tu cerebro de ventas. ¿En qué te ayudo?',navOk:'Abriendo'},
+  en:{voiceGreet:"Hi, I'm SellIA",voiceHint:'Say a command or tap an option',voiceListening:'Listening...',voiceWake:'Say "Hello SellIA" to activate',speakGreet:"Hi, I'm SellIA, your sales brain. How can I help?",navOk:'Opening'},
+  pt:{voiceGreet:'Olá, sou a SellIA',voiceHint:'Diga um comando ou toque numa opção',voiceListening:'Ouvindo...',voiceWake:'Diga "Olá SellIA" para ativar',speakGreet:'Olá, sou a SellIA, seu cérebro de vendas. Como posso ajudar?',navOk:'Abrindo'},
+  fr:{voiceGreet:'Bonjour, je suis SellIA',voiceHint:'Dites une commande ou touchez une option',voiceListening:'Écoute...',voiceWake:'Dites "Bonjour SellIA" pour activer',speakGreet:'Bonjour, je suis SellIA, votre cerveau commercial. Comment puis-je aider?',navOk:'Ouverture'},
+  it:{voiceGreet:'Ciao, sono SellIA',voiceHint:'Pronuncia un comando o tocca un\'opzione',voiceListening:'In ascolto...',voiceWake:'Di\' "Ciao SellIA" per attivare',speakGreet:'Ciao, sono SellIA, il tuo cervello di vendita. Come posso aiutarti?',navOk:'Apertura'},
+  de:{voiceGreet:'Hallo, ich bin SellIA',voiceHint:'Sag einen Befehl oder tippe eine Option',voiceListening:'Höre zu...',voiceWake:'Sag "Hallo SellIA" zum Aktivieren',speakGreet:'Hallo, ich bin SellIA, dein Verkaufsgehirn. Wie kann ich helfen?',navOk:'Öffne'},
+};
+const LANG_CODES={es:'es-ES',en:'en-US',pt:'pt-BR',fr:'fr-FR',it:'it-IT',de:'de-DE'};
+let LANG=(navigator.language||'es').slice(0,2);if(!I18N[LANG])LANG='es';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.es[k]||k}
+function setLang(l){LANG=l;document.documentElement.lang=l;localStorage.setItem('sellia_lang',l);toast('🌐 '+({es:'Idioma: Español',en:'Language: English',pt:'Idioma: Português',fr:'Langue: Français',it:'Lingua: Italiano',de:'Sprache: Deutsch'})[l]);pickVoice()}
+
+/* ============ BUILD SIDEBAR ============ */
+const sbNav=document.getElementById('sbNav');
+NAV.forEach(n=>{
+  if(n.s){const d=document.createElement('div');d.className='sb-section';d.textContent=n.s;sbNav.appendChild(d)}
+  else{const d=document.createElement('div');d.className='nav-item'+(n.id==='dashboard'?' active':'');d.dataset.id=n.id;d.innerHTML='<span class="ni">'+n.icon+'</span>'+n.label;d.onclick=()=>navigate(n.id);sbNav.appendChild(d)}
+});
+
+/* ============ NAVIGATION ============ */
+let curPage='';
+function navigate(id){
+  if(!RENDER[id]){toast('🚧 Sección en construcción');return}
+  curPage=id;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.id===id));
+  document.getElementById('tbTitle').textContent=TITLES[id]||id;
+  const c=document.getElementById('content');
+  c.innerHTML='<div class="page active" id="pg-'+id+'"></div>';
+  RENDER[id](document.getElementById('pg-'+id));
+  c.scrollTop=0;
+}
+
+/* ============ TOAST ============ */
+function toast(msg,ms){const w=document.getElementById('toasts');const d=document.createElement('div');d.className='toast';d.innerHTML=msg;w.appendChild(d);setTimeout(()=>{d.style.transition='opacity .3s';d.style.opacity='0';setTimeout(()=>d.remove(),300)},ms||2600)}
+
+/* ============ MODAL ============ */
+function openModal(title,bodyHTML){document.getElementById('modalBox').innerHTML='<div class="modal-hdr"><div class="modal-title">'+title+'</div><div class="acp-close" onclick="closeModal()">×</div></div><div class="modal-body">'+bodyHTML+'</div>';document.getElementById('modalWrap').classList.add('show')}
+function closeModal(){document.getElementById('modalWrap').classList.remove('show')}
+
+const RENDER={};
+
+/* ============================================================
+   AGENTS — leyendas mundiales de negocios
+   ============================================================ */
+const AGENTS=[
+  // Leyendas / Inversores
+  {e:'🏆',n:'Warren Buffett',r:'Inversión & valor a largo plazo',cat:'Inversores'},
+  {e:'📈',n:'Ray Dalio',r:'Principios & macro-inversión',cat:'Inversores'},
+  {e:'💎',n:'Charlie Munger',r:'Modelos mentales & decisiones',cat:'Inversores'},
+  {e:'🔮',n:'Peter Lynch',r:'Invertir en lo que conocés',cat:'Inversores'},
+  {e:'🐂',n:'Carl Icahn',r:'Activismo & negociación dura',cat:'Inversores'},
+  // Fundadores / Visionarios
+  {e:'💼',n:'Steve Jobs',r:'Producto, diseño & visión',cat:'Visionarios'},
+  {e:'🚀',n:'Elon Musk',r:'Primeros principios & escala',cat:'Visionarios'},
+  {e:'📦',n:'Jeff Bezos',r:'Obsesión por el cliente & largo plazo',cat:'Visionarios'},
+  {e:'🪟',n:'Bill Gates',r:'Software, escala & filantropía',cat:'Visionarios'},
+  {e:'📘',n:'Mark Zuckerberg',r:'Redes, growth & producto',cat:'Visionarios'},
+  {e:'🎬',n:'Walt Disney',r:'Storytelling & experiencia de marca',cat:'Visionarios'},
+  {e:'🚗',n:'Henry Ford',r:'Producción en masa & eficiencia',cat:'Visionarios'},
+  {e:'🏭',n:'Andrew Carnegie',r:'Industria & ventaja de costos',cat:'Visionarios'},
+  // Marketing
+  {e:'🦁',n:'Alex Hormozi',r:'Ofertas irresistibles & escalado',cat:'Marketing'},
+  {e:'🌊',n:'Russell Brunson',r:'Funnels, webinars & DotCom',cat:'Marketing'},
+  {e:'📩',n:'Dan Kennedy',r:'Direct response & copy magnético',cat:'Marketing'},
+  {e:'🐶',n:'Seth Godin',r:'Marketing de permiso & tribus',cat:'Marketing'},
+  {e:'🧲',n:'Gary Halbert',r:'Copywriting de respuesta directa',cat:'Marketing'},
+  {e:'🎯',n:'Philip Kotler',r:'Marketing estratégico & 4P',cat:'Marketing'},
+  {e:'🔴',n:'Neil Patel',r:'SEO, growth & contenido',cat:'Marketing'},
+  // Social media / Contenido
+  {e:'📱',n:'Gary Vee',r:'Social media & atención',cat:'Social Media'},
+  {e:'🎥',n:'MrBeast',r:'Viralidad & retención de video',cat:'Social Media'},
+  {e:'📸',n:'Influencer Pro',r:'Crecimiento Instagram & Reels',cat:'Social Media'},
+  {e:'🎵',n:'TikTok Strategist',r:'Tendencias & hooks virales',cat:'Social Media'},
+  {e:'💼',n:'LinkedIn Closer',r:'Social selling B2B & autoridad',cat:'Social Media'},
+  // Ventas
+  {e:'💰',n:'Grant Cardone',r:'Cierre masivo & mentalidad 10X',cat:'Ventas'},
+  {e:'🤝',n:'Jordan Belfort',r:'Straight Line & persuasión',cat:'Ventas'},
+  {e:'📞',n:'Zig Ziglar',r:'Ventas con propósito & actitud',cat:'Ventas'},
+  {e:'🎩',n:'Brian Tracy',r:'Psicología de la venta',cat:'Ventas'},
+  {e:'🥇',n:'B2B Closer',r:'Ventas enterprise & MEDDIC',cat:'Ventas'},
+  {e:'🎣',n:'Lead Qualifier',r:'Calificación BANT & scoring',cat:'Ventas'},
+  // Persuasión / Mindset
+  {e:'📐',n:'Robert Cialdini',r:'6 principios de influencia',cat:'Mindset'},
+  {e:'🗣️',n:'Dale Carnegie',r:'Relaciones & persuasión',cat:'Mindset'},
+  {e:'🔥',n:'Tony Robbins',r:'Coaching & peak performance',cat:'Mindset'},
+  {e:'🧭',n:'Napoleon Hill',r:'Mentalidad de éxito',cat:'Mindset'},
+  {e:'❓',n:'Simon Sinek',r:'El "porqué" & liderazgo',cat:'Mindset'},
+  {e:'💲',n:'Patrick Bet-David',r:'Estrategia & ValueTainment',cat:'Mindset'},
+  // Mujeres líderes
+  {e:'👑',n:'Oprah Winfrey',r:'Conexión emocional & storytelling',cat:'Mujeres Líderes'},
+  {e:'🩱',n:'Sara Blakely',r:'Emprendimiento bootstrap',cat:'Mujeres Líderes'},
+  {e:'🏠',n:'Barbara Corcoran',r:'Real estate & negociación',cat:'Mujeres Líderes'},
+  {e:'⏱️',n:'Mel Robbins',r:'Acción & regla 5 segundos',cat:'Mujeres Líderes'},
+  {e:'💄',n:'Estée Lauder',r:'Branding de lujo & belleza',cat:'Mujeres Líderes'},
+  // Brokers / Finanzas
+  {e:'🏦',n:'Broker Pro',r:'Inversiones & mercados',cat:'Finanzas'},
+  {e:'📊',n:'CFO Virtual',r:'Finanzas corporativas & cashflow',cat:'Finanzas'},
+  {e:'🧮',n:'Contador IA',r:'Contabilidad & impuestos',cat:'Finanzas'},
+  {e:'🌐',n:'Economista Macro',r:'Macro & microeconomía',cat:'Finanzas'},
+  // Profesiones
+  {e:'🔌',n:'Electricista Pro',r:'Presupuestos & servicios técnicos',cat:'Profesiones'},
+  {e:'🦷',n:'Dentista Pro',r:'Salud & captación de pacientes',cat:'Profesiones'},
+  {e:'📷',n:'Fotógrafo Pro',r:'Eventos & paquetes premium',cat:'Profesiones'},
+  {e:'💻',n:'Developer Pro',r:'Software & proyectos web',cat:'Profesiones'},
+  {e:'👨‍🍳',n:'Chef Pro',r:'Gastronomía, delivery & catering',cat:'Profesiones'},
+  {e:'🏋️',n:'Coach Fitness',r:'Membresías & planes online',cat:'Profesiones'},
+  // Operación / Data
+  {e:'📡',n:'KPI Tracker',r:'Métricas, dashboards & alertas',cat:'Operación'},
+  {e:'🔄',n:'Retention Specialist',r:'Churn, winback & upsell',cat:'Operación'},
+  {e:'🎨',n:'Diseñador Gráfico',r:'Identidad visual & creatividades',cat:'Operación'},
+  {e:'📣',n:'Community Manager',r:'Gestión & engagement de comunidad',cat:'Operación'},
+];
+const CAT_COLORS={'Inversores':'#f59e0b','Visionarios':'var(--or)','Marketing':'var(--or)','Social Media':'var(--vi)','Ventas':'var(--te)','Mindset':'var(--vi2)','Mujeres Líderes':'#ec4899','Finanzas':'#06b6d4','Profesiones':'var(--te)','Operación':'var(--bl)'};
+
+/* ============================================================
+   SKILLS — conocimiento (skill-creator style)
+   ============================================================ */
+const SKILLS=[
+  {e:'💰',n:'Procesos de Venta',d:'Diseña y optimiza pipelines, scripts y cierres end-to-end.',cmd:'/skill venta-proceso',cat:'Ventas'},
+  {e:'🚀',n:'Emprendimiento',d:'Validación de ideas, MVP, product-market fit y escalado.',cmd:'/skill emprendimiento',cat:'Negocios'},
+  {e:'🧠',n:'Autonomía Comercial',d:'Agentes que deciden y ejecutan acciones de venta solos.',cmd:'/skill autonomia',cat:'IA'},
+  {e:'😊',n:'Feedback de Clientes',d:'Encuestas NPS, análisis de sentimiento y mejora continua.',cmd:'/skill feedback-cliente',cat:'CX'},
+  {e:'🔍',n:'Feedback de Prospectos',d:'Detecta objeciones y señales de compra en potenciales.',cmd:'/skill feedback-prospecto',cat:'CX'},
+  {e:'📊',n:'Estudio de Mercado',d:'Tamaño de mercado, TAM/SAM/SOM y segmentación.',cmd:'/skill estudio-mercado',cat:'Análisis'},
+  {e:'📈',n:'Análisis de Datos',d:'Dashboards, cohortes y modelos predictivos de venta.',cmd:'/skill analisis-datos',cat:'Análisis'},
+  {e:'🎨',n:'Branding de Negocios',d:'Identidad, posicionamiento y propuesta de valor.',cmd:'/skill branding',cat:'Marca'},
+  {e:'🎵',n:'TikTok Growth',d:'Hooks, tendencias y guiones para viralidad.',cmd:'/skill tiktok',cat:'Social'},
+  {e:'📸',n:'Instagram & Reels',d:'Estrategia de contenido, parrilla y crecimiento.',cmd:'/skill instagram',cat:'Social'},
+  {e:'💼',n:'LinkedIn B2B',d:'Social selling, autoridad y outreach automatizado.',cmd:'/skill linkedin',cat:'Social'},
+  {e:'🛒',n:'MercadoLibre',d:'Optimización de publicaciones, reputación y ventas.',cmd:'/skill mercadolibre',cat:'Marketplace'},
+  {e:'📦',n:'Amazon FBA',d:'Listings, A9, PPC y ranking de productos.',cmd:'/skill amazon',cat:'Marketplace'},
+  {e:'🔥',n:'Hotmart & Digitales',d:'Lanzamientos, afiliados y productos digitales.',cmd:'/skill hotmart',cat:'Marketplace'},
+  {e:'📐',n:'Estadística Aplicada',d:'Tests A/B, significancia y muestreo.',cmd:'/skill estadistica',cat:'Análisis'},
+  {e:'🎲',n:'Probabilidades',d:'Forecast de ventas, riesgo y escenarios.',cmd:'/skill probabilidad',cat:'Análisis'},
+  {e:'🕵️',n:'Análisis de Competencia',d:'Benchmark, precios y posicionamiento rival.',cmd:'/skill competencia',cat:'Análisis'},
+  {e:'🧮',n:'Contaduría',d:'Balances, conciliación y reportes contables.',cmd:'/skill contaduria',cat:'Finanzas'},
+  {e:'💵',n:'Finanzas',d:'Flujo de caja, márgenes, unit economics y pricing.',cmd:'/skill finanzas',cat:'Finanzas'},
+  {e:'🌍',n:'Macroeconomía',d:'Contexto país, inflación y tasas para decisiones.',cmd:'/skill macro',cat:'Finanzas'},
+  {e:'🏪',n:'Microeconomía',d:'Oferta, demanda, elasticidad y pricing óptimo.',cmd:'/skill micro',cat:'Finanzas'},
+  {e:'✍️',n:'Creación de Contenido',d:'Calendarios, guiones y copys por red social.',cmd:'/skill contenido',cat:'Contenido'},
+  {e:'📣',n:'Publicidad Paga',d:'Meta, Google y TikTok Ads: creativos y targeting.',cmd:'/skill ads',cat:'Contenido'},
+  {e:'🔎',n:'SEO',d:'Keywords, on-page, link building y contenido top.',cmd:'/skill seo',cat:'Contenido'},
+  {e:'👥',n:'Community Manager',d:'Gestión de comunidad, moderación y engagement.',cmd:'/skill community',cat:'Social'},
+  {e:'🎨',n:'Diseño Gráfico',d:'Identidad visual, plantillas y creatividades.',cmd:'/skill diseno',cat:'Marca'},
+  {e:'🏢',n:'Agencia Digital',d:'Orquesta SEO, ads, contenido y reportería completa.',cmd:'/skill agencia',cat:'Contenido'},
+  {e:'🤝',n:'Negociación',d:'BATNA, anclaje y tácticas de cierre avanzadas.',cmd:'/skill negociacion',cat:'Ventas'},
+];
+const SKILL_CATS=['Todos',...new Set(SKILLS.map(s=>s.cat))];
+window.SELLIA={agents:AGENTS,skills:SKILLS};
+
+/* ============ helpers ============ */
+function head(h1,sub,btns){return '<div class="pg-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px"><div><div class="pg-h1">'+h1+'</div><div class="pg-sub">'+sub+'</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">'+(btns||'')+'</div></div>'}
+function statCard(ico,bg,val,label,trend,tc){return '<div class="stat-card"><div class="sc-top"><div class="sc-icon" style="background:'+bg+'">'+ico+'</div>'+(trend?'<div class="sc-trend" style="background:'+tc+'22;color:'+tc+'">'+trend+'</div>':'')+'</div><div class="sc-val">'+val+'</div><div class="sc-label">'+label+'</div></div>'}
+function barChart(vals,c1,c2){const mx=Math.max(...vals);return '<div class="chart-bars">'+vals.map(v=>'<div class="chart-bar" style="height:'+(v/mx*100)+'%;background:linear-gradient(to top,'+c1+','+c2+');opacity:.85"></div>').join('')+'</div>'}
+
+/* ============ DASHBOARD ============ */
+RENDER.dashboard=el=>{
+  el.innerHTML=head('📊 Dashboard','Visión general de tu cerebro de ventas en tiempo real',
+    '<button class="btn btn-ghost btn-sm" onclick="openVoice()">🎙️ Manos Libres</button><button class="btn btn-primary btn-sm" onclick="growthFlow()">🚀 Ayúdame a crecer</button>')
+  +'<div class="stats-row">'
+    +statCard('💰','var(--td)','$48,320','Ingresos del mes','+23%','#22C55E')
+    +statCard('🤝','var(--od)','127','Deals activos','+12%','#22C55E')
+    +statCard('🤖','var(--vd)','54','Agentes trabajando','LIVE','#00D4AA')
+    +statCard('💬','var(--bld)','1,847','Conversaciones','+8%','#22C55E')
+  +'</div>'
+  +'<div class="grid-2" style="margin-bottom:14px"><div class="card"><div class="sec-hdr"><div><div class="sec-title">Ventas — últimos 30 días</div><div class="sec-subtitle">Cierres diarios automatizados</div></div><span class="badge badge-te badge-live">EN VIVO</span></div>'
+    +barChart([28,42,38,55,62,48,71,58,84,67,92,76,88,94,71,65,80,93,58,74,88,70,64,82,95,78,68,85,93,91],'var(--or)','var(--vi)')+'</div>'
+  +'<div class="card"><div class="sec-hdr"><div class="sec-title">Agentes activos</div><span class="badge badge-or">TOP 5</span></div><div id="dashAgents"></div></div></div>'
+  +'<div class="card"><div class="sec-hdr"><div class="sec-title">⚡ Acciones rápidas</div></div><div class="grid-4">'
+    +'<button class="btn btn-ghost" onclick="navigate(\'agentes\')">🤖 Ver agentes</button>'
+    +'<button class="btn btn-ghost" onclick="newDealModal()">➕ Nuevo deal</button>'
+    +'<button class="btn btn-ghost" onclick="navigate(\'conversaciones\')">💬 Conversaciones</button>'
+    +'<button class="btn btn-ghost" onclick="navigate(\'skills\')">🎓 Skills</button></div></div>';
+  const da=el.querySelector('#dashAgents');
+  [['🦁','Alex Hormozi','3 convs activas'],['🏆','Warren Buffett','1 conv activa'],['👑','Oprah Winfrey','2 convs activas'],['🥇','B2B Closer','5 convs activas'],['💰','Grant Cardone','1 conv activa']].forEach(a=>{
+    da.innerHTML+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bo)"><div style="width:34px;height:34px;border-radius:50%;background:var(--fa);border:1px solid var(--bo);display:flex;align-items:center;justify-content:center;font-size:17px">'+a[0]+'</div><div style="flex:1"><div style="font-size:12px;font-weight:600">'+a[1]+'</div><div style="font-size:10px;color:var(--mu)">'+a[2]+'</div></div><div style="width:7px;height:7px;border-radius:50%;background:var(--te)"></div></div>';
+  });
+};
+
+/* ============ AGENTES ============ */
+let agFilter=null,agQuery='';
+RENDER.agentes=el=>{
+  const cats=['Todos',...new Set(AGENTS.map(a=>a.cat))];
+  el.innerHTML=head('🤖 Agentes IA','+'+AGENTS.length+' especialistas con conocimiento de las leyendas mundiales de los negocios','<button class="btn btn-primary btn-sm" onclick="toast(\'🧠 500+ personalidades disponibles en plan Enterprise\')">+ Crear agente</button>')
+   +'<div class="tabs" id="agCats">'+cats.map(c=>'<div class="tab'+(c==='Todos'?' on':'')+'" onclick="setAgFilter(\''+c+'\',this)">'+c+'</div>').join('')+'</div>'
+   +'<div style="margin-bottom:16px"><input id="agSearch" oninput="agQuery=this.value;drawAgents()" placeholder="🔍 Buscar agente por nombre o especialidad..." style="width:100%;max-width:440px;background:var(--fa);border:1px solid var(--bo);border-radius:10px;padding:10px 14px;color:var(--wh);font-size:13px;outline:none"></div>'
+   +'<div class="ag-grid" id="agGrid"></div>';
+  agFilter=null;agQuery='';drawAgents();
+};
+function setAgFilter(c,e){agFilter=c==='Todos'?null:c;document.querySelectorAll('#agCats .tab').forEach(t=>t.classList.remove('on'));e.classList.add('on');drawAgents()}
+function drawAgents(){const g=document.getElementById('agGrid');if(!g)return;let list=agFilter?AGENTS.filter(a=>a.cat===agFilter):AGENTS;if(agQuery){const q=agQuery.toLowerCase();list=list.filter(a=>a.n.toLowerCase().includes(q)||a.r.toLowerCase().includes(q))}
+  g.innerHTML=list.map(a=>'<div class="agent-card" onclick=\'openAgent('+JSON.stringify(a)+')\'><span class="ae">'+a.e+'</span><div class="ag-name">'+a.n+'</div><div class="ag-role">'+a.r+'</div><span style="display:inline-block;margin-top:9px;padding:3px 10px;border-radius:100px;font-size:9px;font-weight:700;background:rgba(255,255,255,.06);color:'+(CAT_COLORS[a.cat]||'var(--or)')+'">'+a.cat+'</span></div>').join('')||'<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div></div>';
+}
+
+/* ============ SKILLS ============ */
+let skFilter=null;
+RENDER.skills=el=>{
+  el.innerHTML=head('🎓 Skills & Conocimiento','Módulos de conocimiento experto que potencian a cada agente — estilo /skill-creator','<button class="btn btn-primary btn-sm" onclick="newSkillModal()">+ Crear skill</button>')
+   +'<div class="tabs" id="skCats">'+SKILL_CATS.map(c=>'<div class="tab'+(c==='Todos'?' on':'')+'" onclick="setSkFilter(\''+c+'\',this)">'+c+'</div>').join('')+'</div>'
+   +'<div class="grid-4" id="skGrid"></div>';
+  skFilter=null;drawSkills();
+};
+function setSkFilter(c,e){skFilter=c==='Todos'?null:c;document.querySelectorAll('#skCats .tab').forEach(t=>t.classList.remove('on'));e.classList.add('on');drawSkills()}
+function drawSkills(){const g=document.getElementById('skGrid');if(!g)return;const list=skFilter?SKILLS.filter(s=>s.cat===skFilter):SKILLS;
+  g.innerHTML=list.map(s=>'<div class="skill-card" onclick="toast(\'✅ Skill activada: '+s.n+'\');speak(\''+s.n+' activada\')"><span class="sk-emo">'+s.e+'</span><div class="sk-name">'+s.n+'</div><div class="sk-desc">'+s.d+'</div><div class="sk-cmd">'+s.cmd+'</div></div>').join('');
+}
+function newSkillModal(){openModal('🎓 Crear nueva skill','<div class="field"><label>Nombre</label><input id="skN" placeholder="Ej: Email Marketing Avanzado"></div><div class="field"><label>Descripción</label><textarea id="skD" rows="3" placeholder="Qué conocimiento aporta..."></textarea></div><div class="field"><label>Categoría</label><select id="skC"><option>Ventas</option><option>Marketing</option><option>Social</option><option>Análisis</option><option>Finanzas</option><option>Contenido</option><option>Marca</option><option>IA</option></select></div><button class="btn btn-primary" style="width:100%" onclick="saveSkill()">Crear skill</button>')}
+function saveSkill(){const n=document.getElementById('skN').value.trim();if(!n)return toast('⚠️ Poné un nombre');SKILLS.push({e:'✨',n,d:document.getElementById('skD').value||'Skill personalizada',cmd:'/skill '+n.toLowerCase().replace(/\s+/g,'-'),cat:document.getElementById('skC').value});closeModal();toast('✅ Skill «'+n+'» creada');if(curPage==='skills')RENDER.skills(document.getElementById('pg-skills'))}
+
+/* ============ CRM ============ */
+RENDER.crm=el=>{
+  el.innerHTML=head('🗂️ CRM Pipeline','Gestión de oportunidades y pipeline de leads','<button class="btn btn-primary btn-sm" onclick="newDealModal()">+ Nuevo deal</button>')
+   +'<div class="stats-row">'+statCard('🎯','var(--bld)','127','Total deals','','')+statCard('💵','var(--td)','$284K','Valor pipeline','+18%','#22C55E')+statCard('🔥','var(--od)','23','Hot leads','','')+statCard('📊','var(--vd)','34%','Win rate','+4%','#22C55E')+'</div>'
+   +'<div class="kanban" id="kanban"></div>';
+  const stages=[
+    {n:'Nuevo Lead',c:'#3B82F6',d:[['Tech Solutions SA','$8,400','15%'],['Moda Express','$2,100','20%']]},
+    {n:'Contactado',c:'#8B5CF6',d:[['Restaurante El Fogón','$3,200','35%'],['Legal & Co.','$15K','25%']]},
+    {n:'Cualificado',c:'var(--te)',d:[['AutoParts Norte','$6,800','50%']]},
+    {n:'Propuesta',c:'#F59E0B',d:[['Salud Integral','$22K','60%'],['EduTech','$9,400','55%']]},
+    {n:'Negociando',c:'var(--or)',d:[['Inmobiliaria Sur','$45K','75%']]},
+    {n:'Cerrado ✅',c:'#22C55E',d:[['Farmacia Central','$5,800','100%'],['Logistics Pro','$12.4K','100%']]},
+    {n:'Nurture',c:'#64748B',d:[['Empresa ABC','$7K','30%']]},
+  ];
+  const b=el.querySelector('#kanban');
+  stages.forEach(s=>{b.innerHTML+='<div class="k-col"><div class="k-head"><span class="k-title" style="color:'+s.c+'">'+s.n+'</span><span class="k-count">'+s.d.length+'</span></div>'+s.d.map(d=>'<div class="k-card" onclick="toast(\'📋 '+d[0]+'\')"><div class="k-cn">'+d[0]+'</div><div class="k-cv">'+d[1]+'</div><div class="k-cp">Prob: '+d[2]+'</div></div>').join('')+'<button class="k-add" onclick="newDealModal()">+ Agregar deal</button></div>'});
+};
+function newDealModal(){openModal('➕ Nuevo Deal','<div class="field"><label>Título</label><input id="dT" placeholder="Nombre del deal"></div><div class="field"><label>Contacto</label><input id="dC" placeholder="Nombre del contacto"></div><div class="field"><label>Valor estimado</label><input id="dV" type="number" placeholder="0"></div><div class="field"><label>Etapa</label><select id="dS"><option>Nuevo Lead</option><option>Contactado</option><option>Cualificado</option><option>Propuesta</option><option>Negociando</option></select></div><button class="btn btn-primary" style="width:100%" onclick="saveDeal()">Crear deal</button>')}
+function saveDeal(){const t=document.getElementById('dT').value.trim();if(!t)return toast('⚠️ Poné un título');closeModal();toast('✅ Deal «'+t+'» creado');speak('Deal creado: '+t)}
+
+/* ============ CONVERSACIONES ============ */
+RENDER.conversaciones=el=>{
+  const convs=[
+    {e:'👤',n:'María González',msg:'¿Cuál es el precio del plan premium?',ch:'WhatsApp',t:'2m',unread:2,bg:'#25d366'},
+    {e:'👤',n:'Carlos Ruiz',msg:'¿Hacen envíos a Córdoba?',ch:'Instagram',t:'8m',unread:1,bg:'#e1306c'},
+    {e:'👤',n:'Ana Martínez',msg:'Me interesa el pack de 10 sesiones',ch:'Webchat',t:'15m',unread:0,bg:'var(--or)'},
+    {e:'👤',n:'Tech Solutions',msg:'Quiero hablar con el equipo',ch:'Telegram',t:'1h',unread:0,bg:'#0088cc'},
+    {e:'👤',n:'Luis Fernández',msg:'¿Descuento para empresas?',ch:'WhatsApp',t:'2h',unread:0,bg:'#25d366'},
+  ];
+  const msgs=[
+    {t:'Hola! Vi sus servicios en Instagram y me interesa el plan premium. ¿Cuánto cuesta?',d:'in',from:'María González',time:'10:28'},
+    {t:'Hola María! 🦁 El plan premium incluye todos los servicios por $2,500/mes con resultados garantizados. ¿Qué resultados buscás lograr?',d:'out',from:'Alex Hormozi · SellIA',time:'10:28'},
+    {t:'Busco aumentar mis ventas al menos un 50% en 3 meses',d:'in',from:'María González',time:'10:29'},
+    {t:'Perfecto. En negocios similares el promedio de mejora en 90 días es 67%. ¿Te hago 3 preguntas rápidas para confirmar que somos la solución correcta?',d:'out',from:'Alex Hormozi · SellIA',time:'10:29'},
+  ];
+  el.innerHTML='<div class="pg-head"><div class="pg-h1">💬 Conversaciones</div><div class="pg-sub">Bandeja unificada de todos tus canales</div></div>'
+   +'<div style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 168px);border:1px solid var(--bo);border-radius:16px;overflow:hidden">'
+   +'<div style="background:var(--sb);border-right:1px solid var(--bo);overflow-y:auto">'
+   +convs.map((c,i)=>'<div style="display:flex;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--bo);'+(i===0?'background:var(--od)':'')+'" onclick="this.parentElement.querySelectorAll(\'div[onclick]\').forEach(x=>x.style.background=\'\');this.style.background=\'var(--od)\'"><div style="width:34px;height:34px;border-radius:50%;background:'+c.bg+'22;display:flex;align-items:center;justify-content:center;font-size:16px">'+c.e+'</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">'+c.n+'</span><span style="font-size:9px;color:var(--mu)">'+c.t+'</span></div><div style="font-size:11px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.msg+'</div><div style="font-size:9px;color:var(--mu);margin-top:2px">'+c.ch+(c.unread?' · <span style="color:var(--or)">'+c.unread+' nuevos</span>':'')+'</div></div></div>').join('')
+   +'</div>'
+   +'<div style="display:flex;flex-direction:column;background:var(--bg)">'
+   +'<div style="padding:14px 18px;border-bottom:1px solid var(--bo);background:var(--bg2);display:flex;align-items:center;gap:12px"><div style="font-size:22px">👤</div><div><div style="font-size:14px;font-weight:600">María González</div><div style="font-size:11px;color:var(--te)">● Agente Alex Hormozi activo</div></div><button class="btn btn-teal btn-sm" style="margin-left:auto" onclick="toast(\'💰 Deal creado desde conversación\')">Cerrar deal</button></div>'
+   +'<div id="convMsgs" style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px">'+msgs.map(m=>'<div class="msg '+m.d+'"><div class="msg-from" style="color:'+(m.d==='out'?'var(--or)':'var(--mu)')+'">'+m.from+'</div><div class="msg-bub">'+m.t+'</div><div class="msg-meta">'+m.time+'</div></div>').join('')+'</div>'
+   +'<div style="padding:14px 18px;border-top:1px solid var(--bo);background:var(--bg2);display:flex;gap:8px"><input id="convInput" placeholder="Escribí o dejá que la IA responda..." onkeydown="if(event.key===\'Enter\')sendConv()" style="flex:1;background:var(--fa);border:1px solid var(--bo);border-radius:12px;padding:10px 14px;color:var(--wh);font-size:13px;outline:none"><button class="btn btn-ghost btn-sm" onclick="toast(\'🤖 IA respondiendo automáticamente\')">🤖 IA auto</button><button class="acp-send" onclick="sendConv()">Enviar</button></div>'
+   +'</div></div>';
+};
+function sendConv(){const i=document.getElementById('convInput');const v=i.value.trim();if(!v)return;const cm=document.getElementById('convMsgs');cm.innerHTML+='<div class="msg out"><div class="msg-from">Vos · ahora</div><div class="msg-bub">'+v+'</div><div class="msg-meta">ahora</div></div>';i.value='';cm.scrollTop=cm.scrollHeight;setTimeout(()=>{cm.innerHTML+='<div class="msg in"><div class="msg-from" style="color:var(--mu)">María González</div><div class="msg-bub">¡Gracias! Lo pienso y te aviso.</div><div class="msg-meta">ahora</div></div>';cm.scrollTop=cm.scrollHeight},1200)}
+
+/* ============ AUTOMATIZACIONES ============ */
+let autoTab='workflows';
+RENDER.automatizaciones=el=>{
+  el.innerHTML=head('⚡ Automatizaciones','Workflows, secuencias y reglas que venden por vos 24/7','<button class="btn btn-primary btn-sm" onclick="toast(\'⚡ Workflow builder abierto\')">+ Nuevo workflow</button>')
+   +'<div class="tabs">'+['workflows','templates','sequences','rules'].map(x=>'<div class="tab'+(x===autoTab?' on':'')+'" onclick="setAutoTab(\''+x+'\',this)">'+({workflows:'Workflows',templates:'Plantillas',sequences:'Secuencias',rules:'Reglas Chatbot'})[x]+'</div>').join('')+'</div>'
+   +'<div id="autoContent"></div>';
+  drawAuto();
+};
+function setAutoTab(x,e){autoTab=x;document.querySelectorAll('#pg-automatizaciones .tab').forEach(t=>t.classList.remove('on'));e.classList.add('on');drawAuto()}
+function drawAuto(){const c=document.getElementById('autoContent');if(!c)return;
+  if(autoTab==='workflows'){const w=[['🎯','Bienvenida a nuevo lead','Mensaje personalizado + asigna agente por perfil','Nuevo Lead',1,1247],['🔄','Seguimiento post-venta 7d','Email de satisfacción + upsell contextual','Post-venta',1,892],['🧪','A/B test oferta premium','Prueba 2 variantes de cierre, ganador en 48h','Propuesta',1,445],['📧','Reactivación lead frío','Secuencia 3 pasos si no responde en 72h','Inactiva',0,234],['⭐','Solicitud de reseña','Pide reseña 30d post-compra en Google','Post-venta',1,567]];
+    c.innerHTML=w.map(x=>'<div class="card" style="display:flex;gap:14px;align-items:flex-start;margin-bottom:10px"><div class="sc-icon" style="background:var(--vd)">'+x[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+x[1]+'</div><div style="font-size:11px;color:var(--mu);margin-bottom:8px">'+x[2]+'</div><span class="badge badge-bl">'+x[3]+'</span> <span style="font-size:10px;color:var(--mu)">'+x[5].toLocaleString()+' ejecuciones</span></div><label class="toggle"><input type="checkbox" '+(x[4]?'checked':'')+' onchange="toast(this.checked?\'✅ Activado\':\'⏸️ Pausado\')"><div class="toggle-slider"></div></label></div>').join('');
+  }else if(autoTab==='templates'){const tp=[['📩','Bienvenida Premium','Onboarding HTML para nuevos clientes'],['🛒','Carrito abandonado','Recordatorio con 10% off por 24h'],['🎂','Cumpleaños','Regalo sorpresa + código único'],['📊','Reporte mensual','KPIs y logros del mes automático']];
+    c.innerHTML='<div class="grid-3">'+tp.map(x=>'<div class="card" style="cursor:pointer" onclick="toast(\'📝 '+x[1]+'\')"><div style="font-size:30px;margin-bottom:10px">'+x[0]+'</div><div style="font-size:13px;font-weight:600;margin-bottom:5px">'+x[1]+'</div><div style="font-size:11px;color:var(--mu)">'+x[2]+'</div></div>').join('')+'</div>';
+  }else if(autoTab==='sequences'){const sq=[['🚰','Onboarding nuevo cliente','5 emails en 14 días',5,'68%'],['🔥','Nurturing lead tibio','7 emails en 21 días',7,'52%'],['💔','Win-back perdidos','3 emails en 7 días',3,'34%']];
+    c.innerHTML=sq.map(x=>'<div class="card" style="display:flex;gap:14px;align-items:center;margin-bottom:10px"><div class="sc-icon" style="background:var(--od)">'+x[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600">'+x[1]+'</div><div style="font-size:11px;color:var(--mu)">'+x[2]+'</div></div><span class="badge badge-te">'+x[3]+' emails</span><span class="badge badge-or">Open '+x[4]+'</span></div>').join('');
+  }else{const r=[['Saludo','¡Hola! Soy SellIA. ¿En qué te ayudo?',1],['Precio','Los planes empiezan desde $49/mes. ¿Te cuento más?',1],['Disponibilidad','Tenemos disponibilidad inmediata. ¿Cuándo charlamos?',1],['Objeción','Entiendo tu duda, muchos clientes pensaban igual y hoy están felices.',1],['Reclamo','Lamento el inconveniente. Te transfiero con un especialista.',0]];
+    c.innerHTML='<div class="card" style="padding:0;overflow:hidden"><table class="data-table"><thead><tr><th>Intent</th><th>Respuesta automática</th><th>Estado</th></tr></thead><tbody>'+r.map(x=>'<tr><td><span class="badge badge-bl">'+x[0]+'</span></td><td style="max-width:380px">'+x[1]+'</td><td><label class="toggle"><input type="checkbox" '+(x[2]?'checked':'')+'><div class="toggle-slider"></div></label></td></tr>').join('')+'</tbody></table></div>';
+  }
+}
+
+/* ============ INTEGRACIONES API (open source / tokens ilimitados) ============ */
+RENDER.integraciones=el=>{
+  const ints=[
+    {e:'⚡',n:'Groq',d:'Inferencia ultrarrápida LLaMA 3 — free tier generoso',s:'Conectado',c:true,tag:'Tokens gratis'},
+    {e:'🦙',n:'Ollama',d:'LLMs locales open-source, 100% gratis y privado',s:'Conectado',c:true,tag:'Local · ∞ tokens'},
+    {e:'🤗',n:'HuggingFace',d:'Miles de modelos open-source vía Inference API',s:'Conectado',c:true,tag:'Open source'},
+    {e:'🔷',n:'Together AI',d:'Modelos abiertos a bajo costo y alta escala',s:'Conectar',c:false,tag:'SaaS'},
+    {e:'🌪️',n:'Mistral AI',d:'Modelos europeos open-weight de alto rendimiento',s:'Conectar',c:false,tag:'Open weight'},
+    {e:'🧠',n:'OpenAI Compatible',d:'Cualquier endpoint compatible (LM Studio, vLLM)',s:'Conectar',c:false,tag:'Estándar'},
+    {e:'🔍',n:'Tavily / SerpAPI',d:'Búsqueda web en tiempo real para research',s:'Conectado',c:true,tag:'Web data'},
+    {e:'🗣️',n:'Coqui / Piper TTS',d:'Voz neuronal open-source para SellIA humana',s:'Conectado',c:true,tag:'Voz IA'},
+  ];
+  el.innerHTML=head('🔌 Integraciones API','Código abierto + APIs de tokens ilimitados que alimentan el cerebro SellIA','<button class="btn btn-primary btn-sm" onclick="openApiModal()">+ Conectar API</button>')
+   +'<div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(0,212,170,.07),rgba(124,58,237,.07))"><div style="font-size:30px">♾️</div><div><div style="font-size:14px;font-weight:700">Tokens ilimitados activos</div><div style="font-size:12px;color:var(--mu)">Combinando Ollama local + Groq + HuggingFace, SellIA opera sin límites de costo por token.</div></div></div>'
+   +'<div class="grid-2">'+ints.map(x=>'<div class="card" style="display:flex;gap:14px;align-items:flex-start"><div class="sc-icon" style="background:'+(x.c?'var(--td)':'var(--fa)')+'">'+x.e+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;margin-bottom:3px">'+x.n+'</div><div style="font-size:11px;color:var(--mu);margin-bottom:8px">'+x.d+'</div><span class="badge '+(x.c?'badge-te':'badge-vi')+'">'+x.tag+'</span></div><button class="btn btn-sm '+(x.c?'btn-teal':'btn-ghost')+'" onclick="toast(\''+(x.c?'✅ '+x.n+' conectado':'🔌 Conectando '+x.n+'...')+'\')">'+x.s+'</button></div>').join('')+'</div>';
+};
+function openApiModal(){openModal('🔌 Conectar API','<div class="field"><label>Proveedor</label><select><option>Groq</option><option>Ollama (local)</option><option>HuggingFace</option><option>Together AI</option><option>Mistral</option><option>OpenAI Compatible</option></select></div><div class="field"><label>Endpoint / Base URL</label><input placeholder="http://localhost:11434 o https://api..."></div><div class="field"><label>API Key (opcional para local)</label><input placeholder="Ingresá tu key — no se comparte"></div><button class="btn btn-primary" style="width:100%" onclick="closeModal();toast(\'✅ API conectada — tokens ilimitados\')">Conectar</button>')}
+
+/* ============ ANALYTICS ============ */
+RENDER.analytics=el=>{
+  el.innerHTML=head('📈 Analytics','Inteligencia de negocio sobre todo tu embudo','')
+   +'<div class="grid-3" style="margin-bottom:14px">'+statCard('💵','var(--td)','$48,320','Revenue','+23%','#22C55E')+statCard('🎯','var(--bld)','3,420','Leads','+15%','#22C55E')+statCard('📊','var(--vd)','34%','Conversión','+4%','#22C55E')+'</div>'
+   +'<div class="grid-2"><div class="card"><div class="sec-hdr"><div class="sec-title">Revenue diario</div><span class="badge badge-te">30d</span></div>'+barChart([42,58,51,73,88,65,79,94,62,71,83,67,91,85,70,88,95,74,62,80,93,77,66,84,98,71,59,82,90,88],'var(--te)','var(--vi)')+'</div>'
+   +'<div class="card"><div class="sec-hdr"><div class="sec-title">Embudo de conversión</div></div><div id="funnel"></div></div></div>';
+  const f=el.querySelector('#funnel');
+  [['Leads captados',100,'#0EA5E9'],['Calificados',62,'#7C3AED'],['Propuestas',38,'#F59E0B'],['Cerrados',22,'#00D4AA'],['Órdenes',14,'#FF6B35']].forEach(x=>{f.innerHTML+='<div class="fv-row"><span class="fv-label">'+x[0]+'</span><div class="fv-bar-wrap"><div class="fv-fill" style="width:0;background:'+x[2]+'"></div></div><span class="fv-pct">'+x[1]+'%</span></div>'});
+  setTimeout(()=>f.querySelectorAll('.fv-fill').forEach((b,i)=>{b.style.width=[100,62,38,22,14][i]+'%'}),100);
+};
+
+/* ============ CANALES ============ */
+RENDER.canales=el=>{
+  const chs=[['💬','WhatsApp','Conectado',1],['📸','Instagram','Conectado',1],['✈️','Telegram','Conectado',1],['💭','Messenger','Conectado',1],['🌐','Webchat','Conectado',1],['💼','LinkedIn','Conectado',1],['🎵','TikTok','Conectar',0],['🛒','MercadoLibre','Conectar',0],['📦','Amazon','Conectar',0],['🔥','Hotmart','Conectar',0],['🏪','Shopify','Conectar',0],['📢','Meta Ads','Próximo',0]];
+  el.innerHTML=head('📡 Canales','Conectá todos tus puntos de contacto en un solo cerebro','')
+   +'<div class="ch-grid">'+chs.map(c=>'<div class="chc'+(c[3]?' connected':'')+'" onclick="toast(\''+(c[3]?'✅ '+c[1]+' conectado':'🔌 Conectando '+c[1]+'...')+'\')"><div class="chc-icon">'+c[0]+'</div><div class="chc-name">'+c[1]+'</div><div class="chc-status">'+c[2]+'</div></div>').join('')+'</div>';
+};
+
+/* ============ CATALOGO ============ */
+RENDER.catalogo=el=>{
+  const p=[['🎯','Consultoría Ventas IA','$2,500','Servicio'],['📦','Pack Growth 3 meses','$6,800','Pack'],['📱','Setup Canales Premium','$1,200','Servicio'],['🎓','Curso Ventas con IA','$497','Digital'],['🤖','Bot WhatsApp custom','$850','Servicio'],['📊','Dashboard Analytics','$350','Digital'],['🔌','Integración API','$1,800','Servicio'],['⚡','Plan Autopilot','$149','Suscripción']];
+  el.innerHTML=head('📦 Catálogo','Tus productos y servicios que los agentes venden','<button class="btn btn-primary btn-sm" onclick="toast(\'📦 Nuevo producto\')">+ Producto</button>')
+   +'<div class="grid-4">'+p.map(x=>'<div class="card" style="cursor:pointer" onclick="toast(\'📦 '+x[1]+'\')"><div style="height:90px;border-radius:10px;background:var(--fa);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:10px">'+x[0]+'</div><div style="font-size:13px;font-weight:600">'+x[1]+'</div><div style="font-size:16px;font-weight:800;color:var(--te);margin-top:3px">'+x[2]+'</div><div style="font-size:10px;color:var(--mu)">'+x[3]+'</div></div>').join('')+'</div>';
+};
+
+/* ============ FINANZAS ============ */
+RENDER.finanzas=el=>{
+  el.innerHTML=head('💰 Finanzas','Salud financiera de tu negocio en tiempo real','')
+   +'<div class="card" style="margin-bottom:16px;text-align:center;padding:30px"><div style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.1em">Ingresos totales del mes</div><div style="font-family:var(--FD);font-size:44px;font-weight:800;background:linear-gradient(135deg,var(--te),var(--vi2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0">$48,320</div><div style="font-size:13px;color:#22C55E">▲ 23% vs mes anterior</div></div>'
+   +'<div class="stats-row">'+statCard('📈','var(--td)','$38,200','Ingresos','+18%','#22C55E')+statCard('📉','var(--od)','$12,400','Gastos','-5%','#22C55E')+statCard('💎','var(--vd)','$25,800','Beneficio neto','+31%','#22C55E')+statCard('🎯','var(--bld)','67%','Margen','+6%','#22C55E')+'</div>';
+};
+
+/* ============ PLANES ============ */
+RENDER.planes=el=>{
+  const plans=[['Starter','$49','1 agente · 1 canal · 500 conv',['1 agente IA','WhatsApp','500 conversaciones/mes','Dashboard básico'],0],['Pro','$149','50 agentes · Todos los canales · Tokens ∞',['50 agentes IA','Todos los canales','Conversaciones ilimitadas','Automatizaciones','Manos Libres + Voz','Tokens ilimitados'],1],['Enterprise','Custom','500+ agentes · API · SLA',['500+ agentes','API dedicada','Skills personalizadas','SLA & soporte 24/7','On-premise / Ollama'],0]];
+  el.innerHTML=head('👑 Planes','Escalá tu cerebro de ventas','')
+   +'<div class="grid-3">'+plans.map(p=>'<div class="card" style="'+(p[4]?'border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.04)':'')+'">'+(p[4]?'<span class="badge badge-or" style="margin-bottom:10px">★ Recomendado</span>':'')+'<div style="font-family:var(--FD);font-size:18px;font-weight:800">'+p[0]+'</div><div style="font-family:var(--FD);font-size:34px;font-weight:800;margin:6px 0">'+p[1]+'<span style="font-size:13px;color:var(--mu);font-weight:400">'+(p[1]!=='Custom'?'/mes':'')+'</span></div><div style="font-size:11px;color:var(--mu);margin-bottom:14px">'+p[2]+'</div>'+p[3].map(f=>'<div style="font-size:12px;padding:5px 0;color:rgba(240,242,255,.75)">✓ '+f+'</div>').join('')+'<button class="btn '+(p[4]?'btn-primary':'btn-ghost')+'" style="width:100%;margin-top:14px" onclick="toast(\'👑 Plan '+p[0]+' seleccionado\')">Elegir '+p[0]+'</button></div>').join('')+'</div>';
+};
+
+/* ============ ALERTAS ============ */
+RENDER.alertas=el=>{
+  const a=[['🔥','Lead caliente detectado','Tech Solutions SA score 94/100. Alex Hormozi asignado.','2 min','var(--or)'],['✅','Venta cerrada','Farmacia Central cerró $5,800. Post-venta en 7d.','15 min','var(--te)'],['📧','Secuencia completada','45 leads completaron onboarding. Open rate 68%.','1h','var(--vi2)'],['⚠️','Canal requiere atención','Instagram: token expira en 3 días.','3h','#f59e0b'],['📊','Reporte semanal listo','Métricas de la semana disponibles.','6h','#06b6d4']];
+  el.innerHTML=head('🔔 Alertas','Eventos importantes de tu sistema','<button class="btn btn-ghost btn-sm" onclick="toast(\'✅ Todas marcadas como leídas\')">Marcar leídas</button>')
+   +a.map(x=>'<div class="card" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;border-left:3px solid '+x[4]+'"><div style="font-size:20px">'+x[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600;margin-bottom:3px">'+x[1]+'</div><div style="font-size:12px;color:var(--mu)">'+x[2]+'</div></div><div style="font-size:10px;color:var(--mu);white-space:nowrap">'+x[3]+'</div></div>').join('');
+};
+
+/* ============ SEGURIDAD ============ */
+RENDER.seguridad=el=>{
+  const s=[['🔐','Autenticación 2FA','Activa para todos los usuarios','OK','var(--te)'],['🛡️','Cifrado end-to-end','Conversaciones cifradas','OK','var(--te)'],['🔑','Tokens API','3 activos, rotación automática','OK','var(--te)'],['👁️','Auditoría de accesos','Registro completo de actividad','OK','var(--te)'],['⚠️','Sesión sospechosa','Login desde IP nueva (Madrid)','Revisar','#f59e0b']];
+  el.innerHTML=head('🔒 Seguridad','Protección de tu cerebro de ventas y datos','')
+   +s.map(x=>'<div class="card" style="display:flex;gap:14px;align-items:center;margin-bottom:10px"><div style="font-size:20px">'+x[0]+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600">'+x[1]+'</div><div style="font-size:11px;color:var(--mu)">'+x[2]+'</div></div><span class="badge" style="background:'+x[4]+'22;color:'+x[4]+'">'+x[3]+'</span></div>').join('');
+};
+
+/* ============ GENERIC pages ============ */
+[['negocios','🏢','Mis Negocios','Gestioná todos tus negocios desde un solo cerebro'],['ordenes','🛒','Órdenes','Pedidos y su estado en tiempo real'],['envios','🚚','Envíos','Logística y tracking de entregas'],['agenda','📅','Agenda','Reuniones y citas agendadas por la IA'],['sequences','📧','Secuencias','Secuencias de email automatizadas'],['objetivos','🎯','Objetivos & KPIs','Metas y su progreso'],['retencion','❤️','Retención','Reducí churn y aumentá LTV'],['inteligencia','🧠','Inteligencia','Insights del cerebro SellIA'],['recomendaciones','💡','Recomendaciones','Acciones sugeridas por la IA'],['sessions','🔑','Sesiones','Dispositivos y sesiones activas']].forEach(p=>{
+  RENDER[p[0]]=el=>{el.innerHTML=head(p[1]+' '+p[2],p[3],'')+'<div class="empty"><div class="empty-icon">'+p[1]+'</div><div class="empty-title">'+p[2]+'</div><div style="font-size:13px">Módulo activo. Datos en tiempo real al conectar tu negocio.</div><button class="btn btn-primary btn-sm" style="margin-top:16px" onclick="navigate(\'dashboard\')">← Volver al Dashboard</button></div>'};
+});
+
+/* ============ AGENT PANEL ============ */
+let curAgent=null;
+const agentReplies={
+  'Warren Buffett':['Invertir es sencillo pero no fácil. Buscá valor intrínseco.','Nunca inviertas en algo que no podés explicar en una oración.','El precio es lo que pagás, el valor es lo que recibís.'],
+  'Alex Hormozi':['Si tu oferta requiere explicación, la oferta es el problema.','La gente no compra productos, compra el "después". Vendé el resultado.','Hacé una oferta tan buena que se sientan estúpidos diciendo que no.'],
+  'Grant Cardone':['Pensá en 10X. Tu meta es demasiado pequeña.','El seguimiento es donde se cierra la venta, no en el primer contacto.'],
+  'default':['Entiendo tu consulta, déjame ayudarte.','Excelente pregunta. Basado en mi experiencia...','Enfocá tu propuesta en el valor diferencial.']
+};
+function openAgent(a){curAgent=a;document.getElementById('apEmo').textContent=a.e;document.getElementById('apName').textContent=a.n;document.getElementById('apRole').textContent=a.r;
+  document.getElementById('apMsgs').innerHTML='<div class="msg in"><div class="msg-from">'+a.e+' '+a.n+'</div><div class="msg-bub">¡Hola! Soy '+a.n+'. Te ayudo con '+a.r.toLowerCase()+'. ¿Qué necesitás?</div><div class="msg-meta">ahora</div></div>';
+  document.getElementById('agentPanel').classList.add('open');document.getElementById('overlay').classList.add('show');}
+function closeAgentPanel(){document.getElementById('agentPanel').classList.remove('open');document.getElementById('overlay').classList.remove('show')}
+function sendToAgent(){const i=document.getElementById('apInput');const v=i.value.trim();if(!v)return;const m=document.getElementById('apMsgs');m.innerHTML+='<div class="msg out"><div class="msg-bub">'+v+'</div><div class="msg-meta">Vos · ahora</div></div>';i.value='';m.scrollTop=m.scrollHeight;
+  setTimeout(()=>{const rs=agentReplies[curAgent?.n]||agentReplies.default;const r=rs[Math.floor(Math.random()*rs.length)];m.innerHTML+='<div class="msg in"><div class="msg-from">'+(curAgent?.e||'🤖')+' '+(curAgent?.n||'Agente')+'</div><div class="msg-bub">'+r+'</div><div class="msg-meta">ahora</div></div>';m.scrollTop=m.scrollHeight;speak(r)},700)}
+function dictateToAgent(){startDictation(txt=>{document.getElementById('apInput').value=txt;sendToAgent()})}
+
+/* ============================================================
+   VOICE / TTS / MANOS LIBRE  (Web Speech API)
+   ============================================================ */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const synth = window.speechSynthesis || null;
+let voices = [];
+let chosenVoice = null;
+let wakeRec = null;      // continuous wake-word recognizer
+let cmdRec = null;       // single-shot command recognizer
+let wakeActive = false;  // is wake loop listening
+let dictRec = null;      // dictation recognizer
+
+/* Wake words across many languages */
+const WAKE_WORDS = [
+  'sellia','sell ia','sel ia','hola sellia','hola sell ia','ola sellia',
+  'hello sellia','hey sellia','hi sellia','ok sellia','okay sellia',
+  'bonjour sellia','salut sellia','ciao sellia','hallo sellia','hej sellia',
+  'ola sell ia','oi sellia','olá sellia','hallo sell ia','hola celia','hola selia'
+];
+
+function normalize(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+
+/* ---- TTS voice selection: most human voice per language ---- */
+function loadVoices(){
+  if(!synth)return;
+  voices = synth.getVoices()||[];
+  pickVoice();
+}
+function pickVoice(){
+  if(!voices.length){voices=(synth&&synth.getVoices())||[]}
+  if(!voices.length)return;
+  const code = (LANG_CODES&&LANG_CODES[LANG])||navigator.language||'es-ES';
+  const lang2 = code.slice(0,2).toLowerCase();
+  // Preference: natural/neural/online voices for the active language
+  const prefer = ['google','natural','neural','premium','enhanced','online','wavenet'];
+  const sameLang = voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith(lang2));
+  const pool = sameLang.length?sameLang:voices;
+  let best = pool.find(v=>prefer.some(p=>(v.name||'').toLowerCase().includes(p)));
+  if(!best) best = pool.find(v=>v.lang&&v.lang.toLowerCase()===code.toLowerCase());
+  chosenVoice = best || pool[0] || voices[0];
+}
+function speak(text){
+  if(!synth||!text)return;
+  try{
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if(chosenVoice) u.voice = chosenVoice;
+    u.lang = (chosenVoice&&chosenVoice.lang) || (LANG_CODES&&LANG_CODES[LANG]) || 'es-ES';
+    u.rate = 1.02; u.pitch = 1.04; u.volume = 1;
+    synth.speak(u);
+  }catch(e){}
+}
+
+/* ---- Voice overlay open/close ---- */
+function openVoice(){
+  const ov=document.getElementById('voiceOverlay');
+  if(!ov)return;
+  ov.classList.add('show');
+  renderVoiceChips();
+  setVoiceStatus('Tocá el orbe o decí un comando…');
+  startCommand();
+}
+function closeVoice(){
+  const ov=document.getElementById('voiceOverlay');
+  if(ov)ov.classList.remove('show');
+  stopCommand();
+}
+function setVoiceStatus(t){const e=document.getElementById('voStatus');if(e)e.textContent=t}
+function setVoiceHeard(t){const e=document.getElementById('voHeard');if(e)e.textContent=t?'"'+t+'"':''}
+function setVoiceBars(on){const ov=document.getElementById('voiceOverlay');if(ov)ov.classList.toggle('listening',!!on)}
+
+/* ---- Command chips (hands-free quick actions) ---- */
+const VOICE_CHIPS = [
+  {t:'🚀 Ayudame a crecer la cuenta',c:'growth'},
+  {t:'📊 Mostrame el dashboard',c:'go dashboard'},
+  {t:'🤖 Abrí los agentes IA',c:'go agentes'},
+  {t:'💼 Mostrame el CRM',c:'go crm'},
+  {t:'⚡ Ver automatizaciones',c:'go automatizaciones'},
+  {t:'💬 Conversaciones',c:'go conversaciones'},
+  {t:'📈 Analytics',c:'go analytics'},
+  {t:'🔌 Integraciones & tokens',c:'go integraciones'}
+];
+function renderVoiceChips(){
+  const w=document.getElementById('voChips');if(!w)return;
+  w.innerHTML=VOICE_CHIPS.map(c=>'<button class="vo-chip" onclick="handleCommand(\''+c.c+'\',true)">'+c.t+'</button>').join('');
+}
+
+/* ---- Command recognition (single utterance) ---- */
+function startCommand(){
+  if(!SR){setVoiceStatus('Tu navegador no soporta reconocimiento de voz. Usá los botones.');return}
+  stopCommand();
+  cmdRec = new SR();
+  cmdRec.lang = (LANG_CODES&&LANG_CODES[LANG])||'es-ES';
+  cmdRec.interimResults = true;
+  cmdRec.continuous = false;
+  cmdRec.onstart=()=>{setVoiceBars(true);setVoiceStatus('Escuchando…')};
+  cmdRec.onresult=e=>{
+    let txt='';for(let i=0;i<e.results.length;i++)txt+=e.results[i][0].transcript;
+    setVoiceHeard(txt);
+    if(e.results[e.results.length-1].isFinal){handleCommand(txt,false)}
+  };
+  cmdRec.onerror=()=>{setVoiceBars(false);setVoiceStatus('No te escuché. Probá de nuevo.')};
+  cmdRec.onend=()=>{setVoiceBars(false)};
+  try{cmdRec.start()}catch(e){}
+}
+function stopCommand(){if(cmdRec){try{cmdRec.stop()}catch(e){}cmdRec=null}setVoiceBars(false)}
+
+/* ---- Command parser: phrase -> action ---- */
+const NAV_KEYWORDS = {
+  dashboard:['dashboard','inicio','panel','tablero'],
+  agentes:['agente','agentes','asesor','expertos'],
+  skills:['skill','skills','habilidad','conocimiento'],
+  crm:['crm','pipeline','embudo','negocios','deals','oportunidad'],
+  conversaciones:['conversacion','conversaciones','chat','mensajes','chats'],
+  automatizaciones:['automatizacion','automatizaciones','workflow','flujo','automatiza'],
+  integraciones:['integracion','integraciones','token','tokens','api','apis','conectar'],
+  analytics:['analytics','analitica','metricas','estadisticas','reportes','numeros'],
+  canales:['canal','canales','whatsapp','instagram','telegram'],
+  catalogo:['catalogo','productos','catálogo'],
+  finanzas:['finanzas','dinero','ingresos','facturacion','contabilidad'],
+  planes:['plan','planes','precio','precios','suscripcion'],
+  alertas:['alerta','alertas','notificacion','notificaciones'],
+  seguridad:['seguridad','proteccion','privacidad']
+};
+function handleCommand(raw, fromChip){
+  const t = normalize(raw);
+  if(!t)return;
+  setVoiceHeard(raw);
+  // explicit chip command form: "go <page>"
+  if(t.startsWith('go ')){const id=t.slice(3).trim();speak('Abriendo '+(TITLES[id]||id));navigate(id);setVoiceStatus('Listo: '+(TITLES[id]||id));setTimeout(closeVoice,800);return}
+  // growth flow
+  if(t==='growth'||/crec|grow|aumenta|escala|vender mas|mas ventas|impulsa/.test(t)){growthFlow();return}
+  // strip wake word if present
+  let cmd=t;
+  WAKE_WORDS.forEach(w=>{if(cmd.startsWith(w))cmd=cmd.slice(w.length).trim()});
+  // navigation intents
+  for(const id in NAV_KEYWORDS){
+    if(NAV_KEYWORDS[id].some(k=>cmd.includes(k))){
+      speak('Abriendo '+(TITLES[id]||id));
+      navigate(id);
+      setVoiceStatus('✅ '+(TITLES[id]||id));
+      setTimeout(closeVoice,900);
+      return;
+    }
+  }
+  // create deal
+  if(/nuevo negocio|nuevo deal|crear oportunidad|agregar negocio/.test(cmd)){navigate('crm');setTimeout(()=>{if(window.newDealModal)newDealModal()},300);speak('Creando un nuevo negocio');setTimeout(closeVoice,800);return}
+  // help
+  if(/ayuda|que podes hacer|opciones|comandos/.test(cmd)){speak('Puedo abrir cualquier sección, crear negocios, mostrar tus métricas o ayudarte a crecer la cuenta. Decime qué necesitás.');setVoiceStatus('Probá: "SellIA, ayudame a crecer la cuenta"');return}
+  // fallback -> ask an agent / unknown
+  setVoiceStatus('No reconocí el comando. Probá un chip o repetí.');
+  speak('No entendí el comando. ¿Podés repetirlo?');
+  if(!fromChip)setTimeout(startCommand,400);
+}
+
+/* ---- Growth flow: "ayúdame a crecer la cuenta" ---- */
+function growthFlow(){
+  setVoiceStatus('🚀 Activando plan de crecimiento…');
+  speak('Perfecto. Estoy activando tu plan de crecimiento: voy a analizar tus leads, optimizar las secuencias y poner a trabajar a los agentes de ventas.');
+  const steps=[
+    '🔍 Analizando 1.247 leads con scoring IA…',
+    '🎯 Alex Hormozi optimizando tu oferta…',
+    '📧 Activando 3 secuencias de nurturing…',
+    '🤖 Asignando agentes a leads calientes…',
+    '📈 Proyección: +32% conversión en 30 días'
+  ];
+  let i=0;
+  const tick=()=>{
+    if(i<steps.length){setVoiceStatus(steps[i]);toast(steps[i]);i++;setTimeout(tick,1100)}
+    else{speak('Listo. Tu motor de crecimiento está activo. Te llevo al panel de inteligencia.');navigate('inteligencia');setTimeout(closeVoice,1000)}
+  };
+  tick();
+}
+
+/* ---- Dictation (generic, returns text via callback) ---- */
+function startDictation(cb){
+  if(!SR){toast('🚫 Reconocimiento de voz no soportado');return}
+  if(dictRec){try{dictRec.stop()}catch(e){}}
+  dictRec=new SR();
+  dictRec.lang=(LANG_CODES&&LANG_CODES[LANG])||'es-ES';
+  dictRec.interimResults=false;dictRec.continuous=false;
+  toast('🎙️ Hablá ahora…');
+  dictRec.onresult=e=>{const txt=e.results[0][0].transcript;if(cb)cb(txt)};
+  dictRec.onerror=()=>toast('🚫 No te escuché');
+  try{dictRec.start()}catch(e){}
+}
+
+/* ---- Wake-word loop ("Hola SellIA" hands-free) ---- */
+function toggleWake(){
+  if(wakeActive){stopWake();return}
+  startWake();
+}
+function startWake(){
+  if(!SR){toast('🚫 Tu navegador no soporta el modo manos libres');return}
+  wakeActive=true;
+  const fab=document.getElementById('voiceFab');if(fab)fab.classList.add('listening');
+  toast('🎙️ Manos libres activo — decí "Hola SellIA"');
+  wakeRec=new SR();
+  wakeRec.lang=(LANG_CODES&&LANG_CODES[LANG])||'es-ES';
+  wakeRec.continuous=true;wakeRec.interimResults=true;
+  wakeRec.onresult=e=>{
+    let txt='';for(let i=e.resultIndex;i<e.results.length;i++)txt+=e.results[i][0].transcript;
+    const n=normalize(txt);
+    if(WAKE_WORDS.some(w=>n.includes(w))){
+      try{wakeRec.stop()}catch(_){}
+      speak('Sí, te escucho');
+      openVoice();
+    }
+  };
+  wakeRec.onerror=ev=>{if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){stopWake();toast('🚫 Permiso de micrófono denegado')}};
+  wakeRec.onend=()=>{if(wakeActive){try{wakeRec.start()}catch(e){}}};
+  try{wakeRec.start()}catch(e){}
+}
+function stopWake(){
+  wakeActive=false;
+  const fab=document.getElementById('voiceFab');if(fab)fab.classList.remove('listening');
+  if(wakeRec){try{wakeRec.stop()}catch(e){}wakeRec=null}
+  toast('🔇 Manos libres desactivado');
+}
+
+/* ============ INIT (fixes black screen) ============ */
+if(synth){synth.onvoiceschanged=loadVoices;loadVoices()}
+function initPlatform(){
+  const saved=localStorage.getItem('sellia_lang');
+  if(saved&&I18N[saved])LANG=saved;
+  document.documentElement.lang=LANG;
+  const sel=document.getElementById('langSel');if(sel)sel.value=LANG;
+  navigate('dashboard');
+  setTimeout(loadVoices,300);
+}
+if(document.readyState==='loading'){
+  window.addEventListener('DOMContentLoaded',initPlatform);
+}else{
+  initPlatform();
+}
+</script>
+</body>
+</html>

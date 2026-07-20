@@ -1,0 +1,54 @@
+{{ if .Values.clamav.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sellia.fullname" . }}-clamav
+  labels:
+    {{- include "sellia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+spec:
+  replicas: {{ .Values.clamav.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sellia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: clamav
+  template:
+    metadata:
+      labels:
+        {{- include "sellia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: clamav
+    spec:
+      serviceAccountName: {{ include "sellia.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: clamav
+          image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+          imagePullPolicy: {{ .Values.clamav.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: clamav
+              containerPort: 3310
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.clamav.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clamav
+      volumes:
+        - name: data
+          {{- if .Values.clamav.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "sellia.fullname" . }}-clamav-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{ end }}

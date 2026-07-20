@@ -1,0 +1,9 @@
+{
+  "category": "seasonal_campaigns",
+  "description": "Seasonal selling: Black Friday, Navidad, New Year, back-to-school, etc. 3-6x revenue spikes",
+  "items": [
+    {"id": "seasonal_001", "name": "Black Friday/Cyber Monday strategy", "tactic": "Preparar 3 meses antes. Email list prep. Inventory. Landing page. Ads budget. Día: 40-50% de annual revenue posible. Scarcity real."},
+    {"id": "seasonal_002", "name": "Holiday gift campaigns (Navidad)", "tactic": "Reframe producto como regalo. Gift guides. Packaging premium. Free shipping threshold. 2x conversion Nov-Dec."},
+    {"id": "seasonal_003", "name": "New Year resolution selling", "tactic": "Enero = fitness, productivity, learning. Message: \"New year, new you\". Growth 5x en enero."}
+  ]
+}

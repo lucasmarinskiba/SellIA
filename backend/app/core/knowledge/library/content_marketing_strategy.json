@@ -1,0 +1,32 @@
+{
+  "category": "content_marketing",
+  "description": "Content marketing: SEO, blog, video, podcast. Atrae tráfico gratis, builds authority. 3-6 meses antes de ROI.",
+  "items": [
+    {
+      "id": "content_001",
+      "subcategory": "seo_blog_strategy",
+      "principle": "Blog SEO: ranking en Google = tráfico gratis permanente. 1 artículo bien posicionado = 100-1000 visitas/mes (según competencia).",
+      "tactic": "Estrategia: Atacar keywords long-tail (baja competencia). Ej 'Cómo elegir laptop para programación' (20 búsquedas/mes, baja competencia) vs 'Laptop' (1M búsquedas, imposible rankear). Artículos 2000+ palabras. Publicar 2x por mes. 6 meses → 20 artículos → 50-200 visitas/día (si well-optimized).",
+      "framework": "Keyword research (low competition) → Long-form article (2000+w) → Optimize (title, meta, images) → Link building",
+      "examples": [
+        "Keyword 'Best laptop for photo editing under $1000': 500 búsquedas/mes, low competition. Artículo → rank position 3 → 50 visitas/día → 1500/mes → conversión 2% = 30 leads.",
+        "Blog 24 artículos en 12 meses → 200 visitas/día → 6000/mes → 5% conversión = 300 clientes anuales (vs $0 paid ads)"
+      ],
+      "tags": ["seo", "blog", "content", "organic_traffic"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "content_002",
+      "subcategory": "video_youtube",
+      "principle": "YouTube: 2.5B usuarios. Videos 2-5 min → email capture o producto link. Ranking YouTube + Google.",
+      "tactic": "Serie videos: Tutoriales (product how-to), Comparativas (vs competitors), Testimonios (customer stories). Publicar 1x por semana. Link en descripción. Acceso early: email list → notificación → email capture. 100+ suscriptores → ingresos monetización.",
+      "framework": "Recurring video series → Email capture → Product link → Newsletter",
+      "examples": [
+        "SaaS: Weekly '5 min product tips' → 5000 suscriptores en 12 meses → 50-100 visitas/video → 2-5 conversiones/video.",
+        "E-commerce: 'How to style [product]' (user-generated) → link to shop → 10% of views buy (video 100 views = 10 sales)."
+      ],
+      "tags": ["video", "youtube", "engagement", "conversion"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+# ============================================================
+# SellIA Backend — Render Blueprint (Infrastructure as Code)
+#
+# Deploy del cerebro completo (FastAPI + registry + brain graph/activity) a
+# api.sellia.app, con Postgres y Redis gestionados + worker/beat de Celery.
+#
+# Uso:
+#   1. Render → New → Blueprint → conectar este repo (rama main).
+#   2. Render lee este render.yaml y crea: web, worker, beat, postgres, redis.
+#   3. Setear secrets marcados (sync:false) en el dashboard.
+#   4. Web service → Settings → Custom Domain → api.sellia.app (+ CNAME DNS).
+#   5. Migraciones: ver preDeployCommand (alembic upgrade head).
+# ============================================================
+
+databases:
+  - name: sellia-db
+    plan: starter            # subir a standard en prod real
+    region: oregon
+    postgresMajorVersion: "16"
+
+services:
+  # ---- Redis (cache + rate limit + celery broker) ----
+  - type: redis
+    name: sellia-redis
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []          # sólo servicios internos de Render
+
+  # ---- API web (FastAPI / uvicorn) ----
+  - type: web
+    name: sellia-api
+    runtime: docker
+    repo: https://github.com/REEMPLAZAR/sellia.git   # ← tu repo
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    # Migraciones antes de cada deploy (plan con preDeploy; si no, correr manual).
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: "8000"
+      - key: SECRET_KEY
+        generateValue: true          # ≥32 chars, generado por Render
+      - key: FERNET_SECRET
+        generateValue: true          # ≥32 chars
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sellia-db
+          property: connectionString  # postgres:// → config lo normaliza a +asyncpg
+      - key: REDIS_URL
+        fromService:
+          name: sellia-redis
+          type: redis
+          property: connectionString
+      - key: FRONTEND_URL
+        value: https://sellia-brain.vercel.app   # CORS allow-origin (coma-separado)
+      # APIs de IA — setear en el dashboard (no commitear)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  # ---- Celery worker (automatizaciones / tareas async) ----
+  - type: worker
+    name: sellia-celery-worker
+    runtime: docker
+    repo: https://github.com/REEMPLAZAR/sellia.git
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    dockerCommand: celery -A app.tasks.celery_app worker --loglevel=info
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        fromService:
+          name: sellia-api
+          type: web
+          envVarKey: SECRET_KEY
+      - key: FERNET_SECRET
+        fromService:
+          name: sellia-api
+          type: web
+          envVarKey: FERNET_SECRET
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sellia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sellia-redis
+          type: redis
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+  # ---- Celery beat (scheduler) ----
+  - type: worker
+    name: sellia-celery-beat
+    runtime: docker
+    repo: https://github.com/REEMPLAZAR/sellia.git
+    branch: main
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sellia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sellia-redis
+          type: redis
+          property: connectionString

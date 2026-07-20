@@ -1,0 +1,22 @@
+{
+  "category": "customer_success",
+  "description": "Post-venta: onboarding, health checks, QBR. Prevenir churn proactivamente.",
+  "items": [
+    {
+      "id": "cs_001",
+      "subcategory": "onboarding",
+      "principle": "Primer 7d críticos. Aha moment (cliente ve valor) → retención sube 90%.",
+      "tactic": "Day 1: video tutorial. Day 3: email 'Quick wins'. Day 7: check-in call (si B2B). Métrica: 80%+ usuarios activos día 7.",
+      "tags": ["onboarding", "retention", "success", "engagement"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "cs_002",
+      "subcategory": "health_checks",
+      "principle": "Usage bajo = churn risk. Alert team, outreach. Proactivo vs reactive.",
+      "tactic": "Métrica: días sin login >14 OR feature usage <20%. Alert CS team → personalized email 'Miss you!' + help.",
+      "tags": ["health_checks", "churn_prevention", "proactive"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>SellIA</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0e1a 0%, #0c0a1a 100%);
+      color: #fff;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ec4899, #a855f7, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 16px;
+    }
+    .auth-block, .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+    }
+    input:focus { border-color: rgba(168,85,247,0.5); }
+    button {
+      background: linear-gradient(90deg, #a855f7, #ec4899);
+      border: none;
+      border-radius: 8px;
+      padding: 9px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    button:hover { opacity: 0.9; }
+    .ghost {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      padding: 8px 0;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .dot.off { background: #6b7280; box-shadow: none; }
+    hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+    .stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; }
+    .stat-val { font-weight: bold; color: #22c55e; }
+    .pair-box {
+      border: 1px solid rgba(168,85,247,0.4);
+      background: rgba(168,85,247,0.08);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .pair-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; }
+    .pair-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 0.25em;
+      margin: 8px 0;
+      background: linear-gradient(90deg, #ec4899, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pair-url { font-size: 10px; color: rgba(255,255,255,0.55); word-break: break-all; margin-bottom: 8px; }
+    .pair-hint { font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(168,85,247,0.3);
+      border-top-color: #a855f7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <h1>SellIA</h1>
+  <p class="sub">Companion · v0.1.0</p>
+
+  <div id="auth-needed" class="auth-block" style="display:none;">
+    <p class="sub" style="margin:0 0 4px;">Vincula tu cuenta sin contraseña.</p>
+    <button id="login-btn">🔐 Vincular con SellIA</button>
+    <button class="ghost" id="signup-btn">Crear cuenta</button>
+  </div>
+
+  <div id="pairing" style="display:none;">
+    <div class="pair-box">
+      <div class="pair-label">Código de vinculación</div>
+      <div id="user-code" class="pair-code">······</div>
+      <div class="pair-hint">Abrimos esta página en tu navegador:</div>
+      <div id="verify-url" class="pair-url">—</div>
+      <div class="pair-label" style="margin-top:6px;"><span class="spinner"></span>Esperando aprobación…</div>
+    </div>
+    <button class="ghost" id="cancel-pair-btn" style="margin-top:10px;">Cancelar</button>
+  </div>
+
+  <div id="logged-in" style="display:none;">
+    <div class="status">
+      <div class="dot" id="ws-dot"></div>
+      <span id="ws-text">Conectado al brain</span>
+    </div>
+    <div class="actions">
+      <button id="capture-btn">📸 Capturar página</button>
+      <button class="ghost" id="sidepanel-btn">📋 Abrir panel</button>
+      <button class="ghost" id="dashboard-btn">🌐 Dashboard web</button>
+    </div>
+    <hr>
+    <div class="stat"><span>Capturas hoy</span><span class="stat-val" id="stat-captures">—</span></div>
+    <div class="stat"><span>Ventas detectadas</span><span class="stat-val" id="stat-sales">—</span></div>
+    <div class="stat"><span>Ahorrado en clicks</span><span class="stat-val" id="stat-clicks">—</span></div>
+    <hr>
+    <button class="ghost" id="logout-btn">Cerrar sesión</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

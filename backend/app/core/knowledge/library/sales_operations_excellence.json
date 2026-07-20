@@ -1,0 +1,9 @@
+{
+  "category": "sales_operations_excellence",
+  "description": "Sales ops: pipeline management, forecasting, territory management, compensation",
+  "items": [
+    {"id": "ops_001", "name": "Pipeline management (funnel)", "tactic": "Track: opportunities in each stage (lead → qual → proposal → negotiation → closed). Target conversion rate per stage. Forecast revenue."},
+    {"id": "ops_002", "name": "Sales forecasting", "tactic": "Weighted forecast: (opportunity value × close probability) = revenue forecast. Accuracy improves with data."},
+    {"id": "ops_003", "name": "Commission structure optimization", "tactic": "Align incentives: high commission on profitable products, lower on low-margin. Transparent = motivation."}
+  ]
+}

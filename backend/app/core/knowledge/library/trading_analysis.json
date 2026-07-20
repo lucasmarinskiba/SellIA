@@ -1,0 +1,78 @@
+{
+  "category": "trading_analysis",
+  "description": "Estilos de análisis para mercados financieros, cripto e inmobiliario, y gestión de riesgo. Educativo y de soporte de decisión: el agente propone, el usuario aprueba y ejecuta. No ejecuta operaciones.",
+  "items": [
+    {
+      "id": "ta_001",
+      "subcategory": "multi_timeframe",
+      "principle": "El análisis multi-temporal alinea la tendencia mayor (diario/semanal) con la entrada en marco menor (horario), evitando operar contra la corriente dominante.",
+      "tactic": "Define dirección en el marco alto, busca el gatillo en el bajo; si chocan, no operes.",
+      "framework": "Top-down: macro-tendencia → setup → gatillo",
+      "when_to_use": ["timing de entrada", "cripto", "forex", "acciones"],
+      "when_not_to_use": ["recomendar sin contexto de riesgo", "ejecutar la orden"],
+      "tags": ["multi_timeframe", "tendencia", "tecnico"],
+      "_source_hint": "Análisis técnico multi-temporal",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "ta_002",
+      "subcategory": "relative_valuation",
+      "principle": "La valuación relativa compara múltiplos (PER, EV/EBITDA, P/B) contra pares e histórico para detectar si un activo está caro o barato en su contexto.",
+      "tactic": "Compara siempre contra la industria y el propio histórico, no en absoluto.",
+      "framework": "Múltiplos vs pares vs histórico",
+      "when_to_use": ["acciones", "screening", "comparar empresas"],
+      "when_not_to_use": ["garantizar valor", "consejo personalizado"],
+      "tags": ["relative_valuation", "multiplos", "fundamental"],
+      "_source_hint": "Damodaran / valuación relativa",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "ta_003",
+      "subcategory": "on_chain_sentiment",
+      "principle": "En cripto, datos on-chain (flujos a exchanges, holders, actividad de red) y el índice miedo/codicia funcionan como señales, a menudo contrarias en extremos.",
+      "tactic": "Usa extremos de sentimiento como alerta de riesgo, no como gatillo único.",
+      "framework": "On-chain + sentimiento como confirmación, no como única señal",
+      "when_to_use": ["cripto", "lectura de mercado", "gestión de riesgo"],
+      "when_not_to_use": ["predecir precio exacto", "operar por el usuario"],
+      "tags": ["on_chain", "sentimiento", "cripto"],
+      "_source_hint": "Análisis on-chain",
+      "_confidence_weight": 0.9
+    },
+    {
+      "id": "ta_004",
+      "subcategory": "real_estate_approaches",
+      "principle": "El inmobiliario se valúa por tres enfoques: ingreso (NOI/cap rate), comparables (comps de la zona) y costo (reposición menos depreciación).",
+      "tactic": "Triangula los tres enfoques; si divergen mucho, investiga por qué antes de concluir.",
+      "framework": "Ingreso + Comparables + Costo → triangulación",
+      "when_to_use": ["valuar inmuebles", "inversión en renta", "flipping"],
+      "when_not_to_use": ["firmar ofertas", "garantizar plusvalía"],
+      "tags": ["real_estate", "cap_rate", "comps", "valuacion"],
+      "_source_hint": "Métodos de tasación inmobiliaria",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "ta_005",
+      "subcategory": "risk_management",
+      "principle": "El dimensionamiento de posición se calcula desde el riesgo: tamaño = (capital × % riesgo) / distancia al stop. Busca R-multiple ≥ 1:2.",
+      "tactic": "No arriesgues más del 1-2% por operación; todo trade con stop-loss definido.",
+      "framework": "Riesgo fijo % → position sizing → stop/target (R≥1:2)",
+      "when_to_use": ["toda propuesta de trade", "money management"],
+      "when_not_to_use": ["operar sin stop", "ejecutar por el usuario"],
+      "tags": ["risk_management", "position_sizing", "stop_loss", "r_multiple"],
+      "_source_hint": "Money management / Van Tharp",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "ta_006",
+      "subcategory": "guardrail",
+      "principle": "Modelo copy-trade SUPERVISADO: el agente analiza y PROPONE; el usuario debe estar activo y aceptar/rechazar. Al aprobar, el USUARIO ejecuta la orden. El agente NUNCA compra/vende, mueve fondos ni ingresa credenciales.",
+      "tactic": "Si no hay presencia activa del usuario, no se proponen operaciones. Toda ejecución se deriva al usuario.",
+      "framework": "Propone (agente) → aprueba (humano activo) → ejecuta (humano)",
+      "when_to_use": ["siempre en operativa de activos"],
+      "when_not_to_use": ["nunca ejecutar transacciones financieras por el usuario"],
+      "tags": ["guardrail", "copy_trade", "compliance", "human_in_the_loop"],
+      "_source_hint": "Política de seguridad SellIA",
+      "_confidence_weight": 1.5
+    }
+  ]
+}

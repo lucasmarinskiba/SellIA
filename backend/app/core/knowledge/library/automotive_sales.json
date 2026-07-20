@@ -1,0 +1,9 @@
+{
+  "category": "automotive_sales",
+  "description": "Automotive: new/used cars, F&I products, dealership operations",
+  "items": [
+    {"id": "auto_001", "name": "Test drive conversion", "tactic": "Test drive = 65% close rate. Setup: comfortable, no pressure, competitive comparison available."},
+    {"id": "auto_002", "name": "Finance & Insurance (F&I)", "tactic": "Most profit = F&I (warranty, gap insurance, coating). Pitch after vehicle locked. \"Protect your investment.\""},
+    {"id": "auto_003", "name": "Trade-in negotiation", "tactic": "Trade-in is leverage. Show: KBB value, market comps, condition. Let buyer feel they got good deal."}
+  ]
+}

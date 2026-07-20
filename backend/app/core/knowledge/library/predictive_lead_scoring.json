@@ -1,0 +1,9 @@
+{
+  "category": "predictive_lead_scoring_ml",
+  "description": "ML-based lead scoring: predict conversion before contacting, reduce wasted effort",
+  "items": [
+    {"id": "ml_001", "name": "Historical conversion modeling", "tactic": "Gather 100+ lead attributes (company size, industry, job title, engagement, pricing signal, etc). Build model: what converts? Score new leads 0-100."},
+    {"id": "ml_002", "name": "Intent signals (behavioral)", "tactic": "Website: pages visited, time spent, forms filled, pricing page views, demo requests. High intent = 3x conversion."},
+    {"id": "ml_003", "name": "Churn prediction (retention)", "tactic": "Customer success: usage drop, support tickets up, engagement down = churn risk. Intervene 30 days early, save 40%."}
+  ]
+}

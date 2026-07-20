@@ -1,0 +1,61 @@
+{
+  "category": "customer_lifecycle",
+  "description": "Estrategias por etapa del ciclo de vida del cliente: onboarding, engagement, upsell/cross-sell, retention, churn prevention.",
+  "items": [
+    {
+      "id": "lifecycle_001",
+      "subcategory": "onboarding_first_aha",
+      "principle": "Onboarding: cliente acababa de comprar pero aún NO vio valor. Tarea crítica: lograr 'aha moment' en 48h. Si no lo consigue, churn alto (30-50%).",
+      "tactic": "Onboarding sequence (48h): Email 1 (bienvenida + acceso + 3 primeros pasos). Email 2 (día 1: priming video 5min + check-in vía chat). Email 3 (día 2: 'tu primer resultado' = guía paso a paso). Call 15min (día 3: soporte + celebrar pequeño win). Métrica: % que logra primer resultado en 48h.",
+      "framework": "Email bienvenida → Video priming → Guía paso a paso → Call celebrando primer win",
+      "script_template": "'Bienvenido. Hoy lograrás [primer resultado pequeño]. Acá los pasos… Estoy aquí si atasas.'",
+      "tags": ["onboarding", "aha_moment", "retention", "primeros_pasos"],
+      "_source_hint": "SaaS Onboarding Best Practices",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "lifecycle_002",
+      "subcategory": "engagement_habit_formation",
+      "principle": "Engagement (semanas 2-4): objetivo es que cliente use producto/servicio regularmente (cree hábito). Patrón: uso consistente → mejores resultados → ama producto.",
+      "tactic": "Engagement sequence: Email semanal (miércoles) con 1 tip + 1 use case de otro cliente + 1 métrica de su progreso. Chat bot: check-in diario ('¿usaste hoy?'). In-app: notificación cuando no usa (3+ días sin actividad). Evento: webinar semanal de usuarios (comunidad).",
+      "framework": "Email tips semanales + Check-in diario + Notificaciones ausencia + Comunidad/webinars",
+      "script_template": "'Hola, vi que no usaste 3 días. Este tip te ahorra 2h/semana: [tip]. ¿Lo probamos hoy?'",
+      "tags": ["engagement", "habito", "retencion", "comunidad"],
+      "_source_hint": "Habit Formation (BJ Fogg) + Product Led Growth",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "lifecycle_003",
+      "subcategory": "upsell_crosssell_expansion",
+      "principle": "Upsell/Cross-sell (meses 2-6): cliente está happy, abierto a más. Oferta: upgrade a plan mayor O complemento que amplía uso. Métrica: CAC ya pagado → revenue por cliente sube 30-50%.",
+      "tactic": "Trigger: cuando cliente usa 70%+ de features del plan actual → Oferta upgrade ('plan próximo + X feature + apoyo especializado'). Cross-sell: 'Clientes como vos que usan [producto] también adoptan [complemento]. ¿Pruebas?'. Timing: no presione; espere a que esté happy primero (semana 6+).",
+      "framework": "Upgrade cuando usa 70%+ → Cross-sell complemento → Timing: después aha moment",
+      "script_template": "'Veo que amas [feature]. El siguiente plan te desbloquea [3 features más]. Vale USD X extra/mes, recuperas en 2 meses con eficiencia. ¿Lo miramos?'",
+      "tags": ["upsell", "crosssell", "expansion", "arpu"],
+      "_source_hint": "SaaS Monetization / Expansion Revenue",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "lifecycle_004",
+      "subcategory": "retention_success_metrics",
+      "principle": "Retención (meses 6+): mantener cliente activo + happy. Métrica: MRR churn <5%/mes. Tácticas: success stories, optimización constante, customer advisory board.",
+      "tactic": "Retención stack: 1) Success manager dedicado (si enterprise). 2) Quarterly business review (QBR: cómo va ROI). 3) Benchmarking ('comparado a otros en tu industria, estás en top 10%'). 4) Innovación ('nuevo feature para tu use case'). 5) Advocacy ('¿referís a 2 amigos? Descuento de $X').",
+      "framework": "Success manager + QBR trimestral + Benchmarking + Innovación + Referral program",
+      "script_template": "'Tu ROI este trimestre: USD X (vs meta $Y). Te acompañamos a llegar a $Z. Además: nuevo feature que pediste.'",
+      "tags": ["retention", "success_metrics", "mrr", "advocacy"],
+      "_source_hint": "Customer Success Management",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "lifecycle_005",
+      "subcategory": "churn_prevention_winback",
+      "principle": "Churn prevention (señales de riesgo): cliente que baja uso 30%+ vs promedio es riesgo ALTO. Intervención rápida (48h) puede retener 40-60%.",
+      "tactic": "Sistema de alerta: IA detecta caída de uso → Automático: call/email dentro 48h ('notamos que bajó uso, ¿hay un problema?'). Investigación: '¿qué te falta? ¿competencia mejor?' Si dice 'precio', win-back: oferta (descuento temporal + plan ajustado). Si dice 'no encaja', salida ordenada con puerta abierta ('vuelve si cambias de idea').",
+      "framework": "Detección automática caída uso → Intervención 48h → Diagnóstico → Win-back o salida ordenada",
+      "script_template": "'Notamos que bajó uso. ¿Hay algo que no te funciona? ¿Rival mejor? Contame, arreglamos.'",
+      "tags": ["churn_prevention", "alerta", "winback", "retention"],
+      "_source_hint": "Churn Reduction Playbook",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

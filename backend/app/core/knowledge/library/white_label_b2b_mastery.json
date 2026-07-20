@@ -1,0 +1,11 @@
+{
+  "category": "white_label_wholesale",
+  "description": "Multi-tenant, reseller tiers, wholesale automation",
+  "items": [
+    {"id": "wl_001", "name": "Reseller accounts", "tactic": "Each reseller: unique brand, discount tier (5%/10%/20%), inventory allocation, payout method."},
+    {"id": "wl_002", "name": "Tiered pricing", "tactic": "1-10 units full. 11-50: 10% off. 51+: 20% off. Auto-apply for resellers."},
+    {"id": "wl_003", "name": "Reseller portal", "tactic": "See inventory, download catalog (white-labeled), track sales/commissions, request payout."},
+    {"id": "wl_004", "name": "Automated payout", "tactic": "Weekly calc. Pay bank/PayPal. Auto-deduct returns/chargebacks."},
+    {"id": "wl_005", "name": "Brand protection", "tactic": "Resellers can't modify pricing <20%. Territory restrictions. Track unauthorized."}
+  ]
+}

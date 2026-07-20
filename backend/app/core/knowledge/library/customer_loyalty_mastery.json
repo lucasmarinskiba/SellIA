@@ -1,0 +1,24 @@
+{
+  "category": "customer_loyalty_mastery",
+  "description": "Fidelización: NPS, churn prevention, referral loops, lifetime value optimization",
+  "items": [
+    {
+      "id": "loyalty_001",
+      "name": "NPS Optimization (Score > 50 = promoters)",
+      "framework": "Ask: How likely 0-10? Promoters (9-10) → referral loop. Passives (7-8) → risk. Detractors (0-6) → churn risk.",
+      "action": "Promoters: referral program ($50 per signup). Detractors: support call + concession."
+    },
+    {
+      "id": "loyalty_002",
+      "name": "Churn Prediction (prevent before happens)",
+      "signals": "Usage decline >50%, no logins 14+ days, support tickets spiking, email opens drop",
+      "action": "Automated: win-back email (special offer) → CS call → escalation"
+    },
+    {
+      "id": "loyalty_003",
+      "name": "Referral Mechanics (viral loop, 2-3x growth)",
+      "structure": "Refer → get $X discount. Referred friend gets $X discount. Both benefit.",
+      "growth": "If 20% customers refer, +20% MRR. Repeat → compound growth."
+    }
+  ]
+}

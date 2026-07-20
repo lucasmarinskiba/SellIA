@@ -1,0 +1,72 @@
+# ============================================================
+#  SellIA Production Overrides
+# ============================================================
+
+backend:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+frontend:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+nginx:
+  replicaCount: 2
+
+clamav:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Usar servicios externos en producción (RDS / ElastiCache)
+postgresql:
+  enabled: false
+
+redis:
+  enabled: false
+
+# Ingress con dominio real
+ingress:
+  enabled: true
+  hosts:
+    - host: app.sellia.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+  tls:
+    - secretName: sellia-tls
+      hosts:
+        - app.sellia.com

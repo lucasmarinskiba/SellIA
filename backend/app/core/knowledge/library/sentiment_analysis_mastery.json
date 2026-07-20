@@ -1,0 +1,11 @@
+{
+  "category": "customer_sentiment_analysis",
+  "description": "Auto-analyze reviews, detect trends, churn signals",
+  "items": [
+    {"id": "sent_001", "name": "Review classification", "tactic": "5-4 stars = positive. 3 = neutral. 2-1 = negative. Extract topics."},
+    {"id": "sent_002", "name": "Churn detection", "tactic": "Negative about alternatives = risky. Poor support = escalate. Track patterns."},
+    {"id": "sent_003", "name": "Trending complaints", "tactic": "20% mention slow shipping? Alert logistics manager. Fix early."},
+    {"id": "sent_004", "name": "NPS calculation", "tactic": "Score 0-10. NPS = (promoters - detractors) / total * 100. Target >50."},
+    {"id": "sent_005", "name": "Auto-response system", "tactic": "Negative review → Computer Use replies (WhatsApp/email): apology + refund offer."}
+  ]
+}

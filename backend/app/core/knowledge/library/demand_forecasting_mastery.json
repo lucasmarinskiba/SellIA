@@ -1,0 +1,11 @@
+{
+  "category": "predictive_demand_forecasting",
+  "description": "Predict demand, optimize inventory, prevent stockouts",
+  "items": [
+    {"id": "dem_001", "name": "Historical patterns", "tactic": "Look back 12 months. Identify seasonality (Jan spike, Aug dip). Regression model."},
+    {"id": "dem_002", "name": "Trend detection", "tactic": "Product trending up/down? Viral moments = spike incoming. Prepare."},
+    {"id": "dem_003", "name": "Inventory optimization", "tactic": "Forecast 30d. Order: forecast * 1.2 - current. Avoid overstock."},
+    {"id": "dem_004", "name": "Stockout prevention", "tactic": "Forecast says sell week 2 → reorder week 1. Backorder if can't replenish."},
+    {"id": "dem_005", "name": "Markdown timing", "tactic": "Overstock predicted? Discount early (recoup) vs late (clearance). ML optimal."}
+  ]
+}

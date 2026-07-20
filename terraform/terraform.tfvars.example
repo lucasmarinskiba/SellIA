@@ -1,0 +1,31 @@
+# SellIA Terraform Configuration Example
+# Copy to terraform.tfvars and fill in your values
+
+aws_region = "us-east-1"
+environment = "production"
+
+# VPC Configuration
+vpc_cidr              = "10.0.0.0/16"
+public_subnet_cidrs   = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs  = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# Database Configuration
+db_name       = "selliadb"
+db_username   = "selliauser"
+db_password   = "GENERATE_STRONG_PASSWORD_HERE"  # Min 16 characters
+db_instance_class = "db.t4g.large"
+db_instance_count = 2
+
+# Redis Configuration
+redis_node_type  = "cache.t4g.medium"
+redis_node_count = 2
+
+# Monitoring
+ops_email = "ops@selldia.app"
+
+# Additional tags
+tags = {
+  Project = "SellIA"
+  Owner   = "Engineering"
+  CostCenter = "Product"
+}

@@ -1,0 +1,110 @@
+{
+  "category": "sales_frameworks",
+  "description": "Metodologías y frameworks operativos de venta consultiva y compleja",
+  "items": [
+    {
+      "id": "framework_001",
+      "subcategory": "spin",
+      "principle": "En la venta compleja, las preguntas que descubren y amplifican el dolor cierran más que cualquier argumento. El cliente se convence con sus propias respuestas.",
+      "tactic": "Aplica SPIN en orden: preguntas de Situación (contexto, pocas), de Problema (dificultades), de Implicación (consecuencias de no resolver, las más potentes) y de Necesidad de pago (qué valor tendría resolverlo). La implicación construye urgencia.",
+      "framework": "SPIN: Situación → Problema → Implicación → Necesidad de pago",
+      "script_template": "¿Cómo manejan hoy [proceso]? ¿Qué problemas les genera? Si eso sigue, ¿qué les cuesta en tiempo/dinero? Si lo resolvieran, ¿qué cambiaría?",
+      "when_to_use": ["venta consultiva B2B", "ticket alto", "discovery call"],
+      "when_not_to_use": ["compra impulsiva de bajo ticket", "cliente ya decidido"],
+      "tags": ["spin", "preguntas", "implicacion", "neil_rackham"],
+      "_source_hint": "Neil Rackham — SPIN Selling",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "framework_002",
+      "subcategory": "challenger",
+      "principle": "Los mejores vendedores no construyen relación: enseñan, adaptan y toman control. Aportan una perspectiva nueva que el cliente no había considerado.",
+      "tactic": "Enseña al cliente algo valioso sobre su propio negocio (reencuadre comercial), adapta el mensaje a sus motores económicos y toma el control de la conversación, incluso desafiando con respeto su statu quo.",
+      "framework": "Challenger: Enseñar → Adaptar → Tomar control",
+      "script_template": "La mayoría en su sector cree que el problema es X. Los datos muestran que el verdadero costo está en Y, que casi nadie mide. Déjeme mostrarle.",
+      "when_to_use": ["cliente experto o escéptico", "venta de valor compleja", "diferenciarte por insight"],
+      "when_not_to_use": ["cliente que solo quiere ejecución rápida", "relación frágil que rechaza el desafío"],
+      "tags": ["challenger", "insight", "ensenar", "dixon_adamson"],
+      "_source_hint": "Dixon & Adamson — The Challenger Sale",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "framework_003",
+      "subcategory": "calificacion",
+      "principle": "No todos los prospectos merecen tu tiempo. Calificar con rigor evita perseguir tratos que nunca cerrarán y concentra el esfuerzo donde sí hay negocio.",
+      "tactic": "Califica con MEDDIC: Métricas (impacto económico), comprador Económico (quién firma), Criterios de decisión, Proceso de decisión, Identificar el dolor y Champion (aliado interno). Si faltan piezas clave, consíguelas antes de avanzar.",
+      "framework": "MEDDIC: Métricas, Económico, Criterios, Decisión, dolor (Identify), Champion",
+      "script_template": "Para ayudarlo bien: ¿qué impacto económico tendría resolver esto, quién aprueba la decisión y cómo es el proceso para avanzar?",
+      "when_to_use": ["venta B2B compleja", "pipeline con muchos prospectos", "pronóstico de ventas"],
+      "when_not_to_use": ["venta transaccional simple", "un solo decisor obvio y trato pequeño"],
+      "tags": ["meddic", "calificacion", "pipeline", "venta_compleja"],
+      "_source_hint": "MEDDIC — metodología de venta empresarial",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "framework_004",
+      "subcategory": "sandler",
+      "principle": "El que pregunta controla. No persigas al cliente ni des soluciones gratis: establece reglas claras (contrato previo) y deja que él se venda solo.",
+      "tactic": "Acuerda al inicio qué pasará en la reunión y que un 'no' es una salida válida (contrato previo). Quita la presión, descubre el dolor real y el presupuesto antes de presentar. Nunca presentes sin saber si hay encaje y dinero.",
+      "framework": "Sandler: Contrato previo → Dolor → Presupuesto → Decisión → recién ahí, presentar",
+      "script_template": "Para no hacerle perder tiempo: si al final esto no encaja, decirme que no está perfecto. ¿Le parece? Cuénteme qué lo trajo a buscar esto.",
+      "when_to_use": ["evitar presentaciones prematuras", "quitar presión al cliente", "calificar dolor y presupuesto"],
+      "when_not_to_use": ["compra simple sin necesidad de calificación", "cliente que pide demo directa y ya decidió"],
+      "tags": ["sandler", "contrato_previo", "dolor", "control"],
+      "_source_hint": "David Sandler — Sandler Selling System",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "framework_005",
+      "subcategory": "gap_selling",
+      "principle": "Vendes el cambio entre el estado actual y el estado deseado. Cuanto más grande y claro sea ese gap, mayor el valor percibido y la urgencia.",
+      "tactic": "Define con precisión dónde está el cliente hoy (estado actual con métricas), dónde quiere estar (estado futuro) y cuantifica la brecha. Tu solución es el puente. Sin gap medible, no hay venta: hay charla.",
+      "framework": "Gap Selling: Estado actual → Estado futuro → cuantificar la brecha → puente",
+      "script_template": "Hoy están en [estado actual medido]. Quieren llegar a [estado deseado]. Esa diferencia les cuesta [X]. Mi trabajo es cerrar ese gap.",
+      "when_to_use": ["justificar el valor con números", "crear urgencia con datos", "venta consultiva"],
+      "when_not_to_use": ["cliente sin métricas ni claridad de meta", "compra emocional de bajo ticket"],
+      "tags": ["gap_selling", "estado_actual", "valor", "keenan"],
+      "_source_hint": "Keenan — Gap Selling",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "framework_006",
+      "subcategory": "solution_selling",
+      "principle": "Deja de vender productos y empieza a vender soluciones a problemas de negocio. El cliente no quiere tu herramienta; quiere el resultado que produce.",
+      "tactic": "Diagnostica el problema de negocio antes de proponer. Co-construye la visión de la solución con el cliente para que sienta autoría. Vincula cada función a un resultado de negocio medible, no a una característica.",
+      "framework": "Solution Selling: diagnóstico → visión compartida de solución → resultado de negocio",
+      "script_template": "Antes de mostrarle qué hacemos, entendamos bien su problema. Luego diseñamos juntos cómo se vería resuelto, y recién ahí le muestro el cómo.",
+      "when_to_use": ["venta consultiva", "problemas de negocio complejos", "diferenciarte de proveedores de producto"],
+      "when_not_to_use": ["commodity estandarizado", "cliente que solo compara precio y specs"],
+      "tags": ["solution_selling", "diagnostico", "resultado", "venta_consultiva"],
+      "_source_hint": "Solution Selling — metodología clásica",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "framework_007",
+      "subcategory": "seguimiento",
+      "principle": "La fortuna está en el seguimiento: la mayoría de las ventas ocurre después del quinto contacto, pero la mayoría de los vendedores se rinde en el segundo.",
+      "tactic": "Diseña una cadencia de seguimiento sistemática y multicanal que aporte valor en cada toque (no solo '¿ya decidió?'). Lleva registro y persiste con respeto: cada contacto suma una razón nueva para avanzar.",
+      "framework": "Cadencia de seguimiento: múltiples toques con valor en cada uno",
+      "script_template": "Vi esto y pensé que le sumaba a lo que hablamos: [recurso útil]. Cuando quiera retomamos; sin apuro, cuando le sirva.",
+      "when_to_use": ["después del primer no o silencio", "ciclos de decisión largos", "mantener el pipeline vivo"],
+      "when_not_to_use": ["cliente pidió explícitamente no ser contactado", "rechazo definitivo claro"],
+      "tags": ["seguimiento", "cadencia", "persistencia", "sales_frameworks"],
+      "_source_hint": "Estadísticas y prácticas de venta profesional",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "framework_008",
+      "subcategory": "venta_por_valor",
+      "principle": "Vende el valor, no el precio. Cuando el cliente percibe que gana mucho más de lo que paga, el precio deja de ser objeción y pasa a ser inversión.",
+      "tactic": "Cuantifica el retorno: ahorro, ingreso adicional o riesgo evitado, en números del cliente. Ancla el precio contra el costo de no actuar, no contra competidores. Presenta el precio recién después de instalar el valor.",
+      "framework": "Value selling: cuantificar ROI → anclar contra costo de inacción → luego precio",
+      "script_template": "Esto le genera [valor anual cuantificado]. La inversión es [precio], apenas una fracción de eso. La pregunta no es si es caro, sino cuánto pierde por no tenerlo.",
+      "when_to_use": ["objeción de precio", "justificar ticket alto", "venta B2B de ROI"],
+      "when_not_to_use": ["sin datos para cuantificar valor", "compra puramente emocional o de impulso"],
+      "tags": ["valor", "roi", "precio", "venta_por_valor"],
+      "_source_hint": "Value Selling — práctica profesional",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

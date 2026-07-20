@@ -1,0 +1,21 @@
+#!/bin/sh
+# SellIA · pre-commit — regenera el snapshot del cerebro antes de cada commit.
+#
+# Mantiene frontend/src/data/brain-graph.json al día con el registry de Python.
+# Best-effort: si falta Python o el backend, no bloquea el commit.
+#
+# Activar (una vez):  git config core.hooksPath .githooks
+# (el `prepare` de frontend/package.json lo setea solo tras `npm install`)
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$ROOT" ] && [ -d "$ROOT/frontend" ] || exit 0
+
+node "$ROOT/frontend/scripts/gen-brain-graph.mjs" || exit 0
+
+# Stage del snapshot si cambió
+if ! git diff --quiet -- "$ROOT/frontend/src/data/brain-graph.json" 2>/dev/null; then
+  git add "$ROOT/frontend/src/data/brain-graph.json"
+  echo "[pre-commit] brain-graph.json regenerado y staged."
+fi
+
+exit 0

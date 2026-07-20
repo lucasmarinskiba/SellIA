@@ -1,0 +1,58 @@
+{
+  "category": "negotiation",
+  "description": "Negociación, resolución de conflictos y alianzas estratégicas",
+  "items": [
+    {
+      "id": "neg_001",
+      "subcategory": "interes_vs_posicion",
+      "principle": "No negocies posiciones; negocia intereses. Detrás de toda posición opuesta hay un interés legítimo que, una vez identificado, permite crear opciones mutuamente beneficiosas.",
+      "tactic": "Haz preguntas profundas para descubrir el POR QUÉ detrás de la posición. Usa el círculo dorado invertido. Nunca rechaces una posición sin entender el interés.",
+      "framework": "Harvard: Intereses → Opciones → Criterios → Alternativas",
+      "script_template": "Entiendo que su posición es [X]. Ayúdeme a entender: ¿qué necesidad resuelve [X] para usted? ¿Qué le preocupa que pueda pasar si no es [X]? [Escuchar]. Interesante. Entonces el objetivo real es [interés subyacente]. ¿Le parece si exploramos formas de lograr [interés] que quizás no contemplamos?",
+      "when_to_use": ["negociación de precio", "trato atascado", "conflicto de intereses"],
+      "when_not_to_use": ["cliente no tiene flexibilidad", "regulaciones rígidas"],
+      "tags": ["negociacion", "intereses", "harvard", "win_win"],
+      "_source_hint": "Getting to Yes - Harvard",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "neg_002",
+      "subcategory": "batna",
+      "principle": "Tu poder en una negociación proviene de tu BATNA (Best Alternative to a Negotiated Agreement). Mejora tu alternativa antes de negociar.",
+      "tactic": "Nunca entres a negociar sin saber tu BATNA. Nunca aceptes menos que tu BATNA. Trabaja activamente para mejorar tu BATNA antes y durante la negociación.",
+      "framework": "BATNA: Identificar → Mejorar → Proteger → Revelar selectivamente",
+      "script_template": "Quiero ser transparente: hemos evaluado otras opciones en el mercado y sabemos qué es razonable esperar. Mi objetivo no es maximizar lo que paguen, sino asegurar que la relación sea sostenible y valiosa para ambos. Basándonos en [alternativa concreta], creo que [propuesta] es justo para ambos. ¿Qué piensa?",
+      "when_to_use": ["negociación de contrato", "discusión de términos", "objeciones de precio"],
+      "when_not_to_use": ["sin alternativas", "cliente único"],
+      "tags": ["batna", "alternativas", "poder_negociacion", "harvard"],
+      "_source_hint": "Getting to Yes",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "neg_003",
+      "subcategory": "ancla",
+      "principle": "El primer número mencionado en una negociación actúa como ancla y sesga todo lo que sigue. Quien pone el ancla primero, marca el terreno.",
+      "tactic": "Si tienes información de mercado sólida, ancla alto con justificación. Si no, deja que el otro ancle primero y luego rebaja con datos.",
+      "framework": "Anclaje: Primero → Justificado → Flexible en formato",
+      "script_template": "Basado en el valor que esto genera —que según nuestros cálculos es de [cantidad concreta] anual— y comparado con soluciones similares del mercado, la inversión está en el rango de [rango alto]. Pero entiendo que cada situación es diferente. ¿Qué rango tenían considerado ustedes?",
+      "when_to_use": ["discusión de precio", "negociación inicial", "cuando tienes datos"],
+      "when_not_to_use": ["no sabes el mercado", "cliente extremadamente price-sensitive"],
+      "tags": ["anclaje", "precio", "psicologia", "negociacion"],
+      "_source_hint": "Kahneman + Harvard",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "neg_004",
+      "subcategory": "no_esquina",
+      "principle": "Nunca pongas al otro contra la pared. Las personas luchan por su dignidad más que por sus intereses. Dale una salida honorable.",
+      "tactic": "Siempre deja que el otro salve la cara. Presenta la concesión como su idea. Dale crédito por la solución.",
+      "framework": "Face-Saving: Salida honorable → Crédito al otro → Relación preservada",
+      "script_template": "Me parece excelente su punto sobre [objeción]. De hecho, lo que me hace pensar es que podríamos [solución que es lo que querías desde el principio]. Usted tiene razón en que eso resuelve el tema. ¿Le parece bien así?",
+      "when_to_use": ["negociación tensa", "error del cliente", "necesidad de ceder"],
+      "when_not_to_use": ["cliente abusivo", "sin margen de maniobra"],
+      "tags": ["dignidad", "salida_honorable", "relacion", "dale_carnegie"],
+      "_source_hint": "Carnegie + Harvard",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "category": "business_models",
+  "description": "Modelos de negocio y unit economics: SaaS, marketplace, e-commerce, suscripción, afiliados, franquicia.",
+  "items": [
+    {
+      "id": "bm_001",
+      "subcategory": "unit_economics",
+      "principle": "Un negocio escala solo si el LTV (valor de vida del cliente) supera al CAC (costo de adquisición), idealmente en una relación 3:1 o mayor.",
+      "tactic": "Calcula LTV y CAC antes de invertir en crecimiento; si la relación es mala, arregla el modelo antes de escalar.",
+      "framework": "LTV:CAC ≥ 3:1, payback < 12 meses",
+      "when_to_use": ["evaluar viabilidad", "decidir escalar", "pricing"],
+      "when_not_to_use": ["prometer retornos", "ignorar el margen"],
+      "tags": ["unit_economics", "ltv", "cac", "escalar"],
+      "_source_hint": "SaaS / growth economics",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "bm_002",
+      "subcategory": "recurrencia",
+      "principle": "Los modelos de suscripción (MRR/ARR) dan ingresos predecibles. Reducir el churn vale más que sumar clientes nuevos cuando se busca escalar.",
+      "tactic": "Prioriza retención y expansión (upsell) antes de subir el gasto en adquisición.",
+      "framework": "Retención > adquisición; MRR neto = nuevo + expansión − churn",
+      "when_to_use": ["modelo de suscripción", "SaaS", "membresías"],
+      "when_not_to_use": ["negocios puramente transaccionales sin recompra"],
+      "tags": ["suscripcion", "mrr", "churn", "retencion"],
+      "_source_hint": "Economía de la suscripción",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "bm_003",
+      "subcategory": "marketplace",
+      "principle": "Un marketplace enfrenta el problema del huevo y la gallina: hay que resolver primero el lado escaso (normalmente la oferta) para activar la demanda.",
+      "tactic": "Concentra la liquidez en un nicho/geografía antes de expandir; densidad antes que amplitud.",
+      "framework": "Resolver lado escaso → liquidez en nicho → expandir",
+      "when_to_use": ["plataformas de dos lados", "marketplace"],
+      "when_not_to_use": ["venta directa simple"],
+      "tags": ["marketplace", "liquidez", "two_sided"],
+      "_source_hint": "Estrategia de plataformas",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "bm_004",
+      "subcategory": "validacion",
+      "principle": "La tracción manda: valida con ingresos reales antes de invertir en escala. Un modelo elegante sin demanda probada no es negocio.",
+      "tactic": "Lanza un MVP, mide conversión y disposición a pagar; itera el modelo antes de escalar gasto.",
+      "framework": "MVP → ingresos reales → iterar → escalar",
+      "when_to_use": ["nuevo modelo", "lanzamiento", "pivote"],
+      "when_not_to_use": ["prometer éxito garantizado"],
+      "tags": ["validacion", "mvp", "traccion"],
+      "_source_hint": "Lean startup",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

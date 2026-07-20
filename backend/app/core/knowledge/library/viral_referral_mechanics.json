@@ -1,0 +1,9 @@
+{
+  "category": "viral_referral_mechanics",
+  "description": "Referral loops: viral coefficients, incentive structures, word-of-mouth",
+  "items": [
+    {"id": "viral_001", "name": "Viral Coefficient (K-factor)", "formula": "K = invite_rate × conversion_rate. K > 1 = viral. K=1.5 = 10x growth."},
+    {"id": "viral_002", "name": "Double-Sided Incentives", "tactic": "Referrer gets $50 credit. Referee gets $50 off. Both incentivized. Win-win."},
+    {"id": "viral_003", "name": "Viral Loops (built into product)", "tactic": "Share link → friend joins → both get points. Dropbox: +1GB per referral. Simple, powerful."}
+  ]
+}

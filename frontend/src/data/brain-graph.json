@@ -1,0 +1,6586 @@
+{
+"nodes": [
+{
+"id": "platform.whatsapp",
+"label": "WhatsApp",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "mensajeria",
+"group_label": "Mensajería",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"whatsapp"
+]
+},
+{
+"id": "platform.instagram",
+"label": "Instagram",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"instagram"
+]
+},
+{
+"id": "platform.facebook",
+"label": "Facebook",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"facebook"
+]
+},
+{
+"id": "platform.tiktok",
+"label": "TikTok",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"tiktok"
+]
+},
+{
+"id": "platform.linkedin",
+"label": "LinkedIn",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"linkedin"
+]
+},
+{
+"id": "platform.email",
+"label": "Email",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "mensajeria",
+"group_label": "Mensajería",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"email"
+]
+},
+{
+"id": "platform.telegram",
+"label": "Telegram",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "mensajeria",
+"group_label": "Mensajería",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"telegram"
+]
+},
+{
+"id": "platform.mercadolibre",
+"label": "Mercado Libre",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"mercadolibre"
+]
+},
+{
+"id": "platform.amazon",
+"label": "Amazon",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"amazon"
+]
+},
+{
+"id": "platform.shopify",
+"label": "Shopify",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"shopify"
+]
+},
+{
+"id": "platform.tiendanube",
+"label": "Tienda Nube",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"tiendanube"
+]
+},
+{
+"id": "platform.hotmart",
+"label": "Hotmart",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"hotmart"
+]
+},
+{
+"id": "platform.meta_ads",
+"label": "Meta Ads",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "anuncios",
+"group_label": "Anuncios",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"meta_ads"
+]
+},
+{
+"id": "platform.google_ads",
+"label": "Google Ads",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "anuncios",
+"group_label": "Anuncios",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"google_ads"
+]
+},
+{
+"id": "platform.stripe",
+"label": "Stripe",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "pagos",
+"group_label": "Pagos",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"stripe"
+]
+},
+{
+"id": "platform.mercadopago",
+"label": "Mercado Pago",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "pagos",
+"group_label": "Pagos",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"mercadopago"
+]
+},
+{
+"id": "platform.arca",
+"label": "ARCA/AFIP",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "fiscal",
+"group_label": "Fiscal",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"arca"
+]
+},
+{
+"id": "platform.web",
+"label": "Web/Landing",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "web",
+"group_label": "Web",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"web"
+]
+},
+{
+"id": "platform.messenger",
+"label": "Messenger",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "mensajeria",
+"group_label": "Mensajería",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"messenger"
+]
+},
+{
+"id": "platform.sms",
+"label": "SMS",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "mensajeria",
+"group_label": "Mensajería",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"sms"
+]
+},
+{
+"id": "platform.youtube",
+"label": "YouTube",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"youtube"
+]
+},
+{
+"id": "platform.twitter",
+"label": "X (Twitter)",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"twitter"
+]
+},
+{
+"id": "platform.pinterest",
+"label": "Pinterest",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"pinterest"
+]
+},
+{
+"id": "platform.threads",
+"label": "Threads",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "publicacion",
+"group_label": "Publicación",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"threads"
+]
+},
+{
+"id": "platform.woocommerce",
+"label": "WooCommerce",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"woocommerce"
+]
+},
+{
+"id": "platform.vtex",
+"label": "VTEX",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"vtex"
+]
+},
+{
+"id": "platform.etsy",
+"label": "Etsy",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"etsy"
+]
+},
+{
+"id": "platform.ebay",
+"label": "eBay",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "ventas",
+"group_label": "Ventas",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"ebay"
+]
+},
+{
+"id": "platform.tiktok_ads",
+"label": "TikTok Ads",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "anuncios",
+"group_label": "Anuncios",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"tiktok_ads"
+]
+},
+{
+"id": "platform.linkedin_ads",
+"label": "LinkedIn Ads",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "anuncios",
+"group_label": "Anuncios",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"linkedin_ads"
+]
+},
+{
+"id": "platform.paypal",
+"label": "PayPal",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "pagos",
+"group_label": "Pagos",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"paypal"
+]
+},
+{
+"id": "platform.getnet",
+"label": "Getnet",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "pagos",
+"group_label": "Pagos",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"getnet"
+]
+},
+{
+"id": "platform.sat",
+"label": "SAT (MX)",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "fiscal",
+"group_label": "Fiscal",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"sat"
+]
+},
+{
+"id": "platform.dian",
+"label": "DIAN (CO)",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "fiscal",
+"group_label": "Fiscal",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"dian"
+]
+},
+{
+"id": "platform.hubspot",
+"label": "HubSpot",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"hubspot"
+]
+},
+{
+"id": "platform.salesforce",
+"label": "Salesforce",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"salesforce"
+]
+},
+{
+"id": "platform.notion",
+"label": "Notion",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"notion"
+]
+},
+{
+"id": "platform.google_sheets",
+"label": "Google Sheets",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"google_sheets"
+]
+},
+{
+"id": "platform.google_calendar",
+"label": "Google Calendar",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"google_calendar"
+]
+},
+{
+"id": "platform.slack",
+"label": "Slack",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"slack"
+]
+},
+{
+"id": "platform.zapier",
+"label": "Zapier",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"zapier"
+]
+},
+{
+"id": "platform.webhooks",
+"label": "Webhooks",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "crm",
+"group_label": "CRM/Integraciones",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"webhooks"
+]
+},
+{
+"id": "platform.github",
+"label": "GitHub",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "web",
+"group_label": "Web",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"github"
+]
+},
+{
+"id": "platform.linktree",
+"label": "Linktree",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "web",
+"group_label": "Web",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"linktree"
+]
+},
+{
+"id": "platform.beacons",
+"label": "Beacons",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "web",
+"group_label": "Web",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"beacons"
+]
+},
+{
+"id": "platform.canva",
+"label": "Canva",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"canva"
+]
+},
+{
+"id": "platform.manychat",
+"label": "ManyChat",
+"kind": "platform",
+"category": "Plataforma",
+"layer": 0,
+"group": "web",
+"group_label": "Web",
+"health": 1.0,
+"tags": [
+"platform",
+"canal",
+"manychat"
+]
+},
+{
+"id": "skill.knowledge.advanced_industry_strategies",
+"label": "Advanced Industry Strategies",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"advanced_industry_strategies"
+]
+},
+{
+"id": "skill.knowledge.advanced_marketing_playbooks",
+"label": "Advanced Marketing Playbooks",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8,
+"tags": [
+"conocimiento",
+"advanced_marketing_playbooks"
+]
+},
+{
+"id": "skill.knowledge.advanced_sales_methods",
+"label": "Advanced Sales Methods",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8999999999999999,
+"tags": [
+"conocimiento",
+"advanced_sales_methods"
+]
+},
+{
+"id": "skill.knowledge.analytics_business_intelligence",
+"label": "Analytics Business Intelligence",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"analytics_business_intelligence"
+]
+},
+{
+"id": "skill.knowledge.automation_workflows",
+"label": "Automation Workflows",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"automation_workflows"
+]
+},
+{
+"id": "skill.knowledge.automotive_sales",
+"label": "Automotive Sales",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"automotive_sales"
+]
+},
+{
+"id": "skill.knowledge.b2b_enterprise_outbound",
+"label": "B2B Enterprise Outbound",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"b2b_enterprise_outbound"
+]
+},
+{
+"id": "skill.knowledge.b2b_outbound_enterprise",
+"label": "B2B Outbound Enterprise",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"b2b_outbound_enterprise"
+]
+},
+{
+"id": "skill.knowledge.belfort_method",
+"label": "Belfort Method",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"belfort_method"
+]
+},
+{
+"id": "skill.knowledge.branding",
+"label": "Branding",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"branding"
+]
+},
+{
+"id": "skill.knowledge.business_legends",
+"label": "Business Legends",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"business_legends"
+]
+},
+{
+"id": "skill.knowledge.business_models",
+"label": "Business Models",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6799999999999999,
+"tags": [
+"conocimiento",
+"business_models"
+]
+},
+{
+"id": "skill.knowledge.buyer_psychology",
+"label": "Buyer Psychology",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"buyer_psychology"
+]
+},
+{
+"id": "skill.knowledge.churn_prevention_engine",
+"label": "Churn Prevention Engine",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"churn_prevention_engine"
+]
+},
+{
+"id": "skill.knowledge.communication",
+"label": "Communication",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"communication"
+]
+},
+{
+"id": "skill.knowledge.content_marketing",
+"label": "Content Marketing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"content_marketing"
+]
+},
+{
+"id": "skill.knowledge.conversion_rate_optimization",
+"label": "Conversion Rate Optimization",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"conversion_rate_optimization"
+]
+},
+{
+"id": "skill.knowledge.copywriting",
+"label": "Copywriting",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"copywriting"
+]
+},
+{
+"id": "skill.knowledge.crisis_management",
+"label": "Crisis Management",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"crisis_management"
+]
+},
+{
+"id": "skill.knowledge.inventory_deduplication",
+"label": "Inventory Deduplication",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"inventory_deduplication"
+]
+},
+{
+"id": "skill.knowledge.crypto",
+"label": "Crypto",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6799999999999999,
+"tags": [
+"conocimiento",
+"crypto"
+]
+},
+{
+"id": "skill.knowledge.customer_advocacy_program",
+"label": "Customer Advocacy Program",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"customer_advocacy_program"
+]
+},
+{
+"id": "skill.knowledge.customer_lifecycle",
+"label": "Customer Lifecycle",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"customer_lifecycle"
+]
+},
+{
+"id": "skill.knowledge.customer_loyalty_mastery",
+"label": "Customer Loyalty Mastery",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"customer_loyalty_mastery"
+]
+},
+{
+"id": "skill.knowledge.customer_psychology_profiles",
+"label": "Customer Psychology Profiles",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6799999999999999,
+"tags": [
+"conocimiento",
+"customer_psychology_profiles"
+]
+},
+{
+"id": "skill.knowledge.customer_segmentation",
+"label": "Customer Segmentation",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"customer_segmentation"
+]
+},
+{
+"id": "skill.knowledge.customer_success",
+"label": "Customer Success",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"customer_success"
+]
+},
+{
+"id": "skill.knowledge.predictive_demand_forecasting",
+"label": "Predictive Demand Forecasting",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"predictive_demand_forecasting"
+]
+},
+{
+"id": "skill.knowledge.dynamic_pricing_neural_net",
+"label": "Dynamic Pricing Neural Net",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"dynamic_pricing_neural_net"
+]
+},
+{
+"id": "skill.knowledge.dynamic_yield_management",
+"label": "Dynamic Yield Management",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"dynamic_yield_management"
+]
+},
+{
+"id": "skill.knowledge.ecommerce_conversion_master",
+"label": "Ecommerce Conversion Master",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"ecommerce_conversion_master"
+]
+},
+{
+"id": "skill.knowledge.ecommerce_essentials",
+"label": "Ecommerce Essentials",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8,
+"tags": [
+"conocimiento",
+"ecommerce_essentials"
+]
+},
+{
+"id": "skill.knowledge.email_marketing",
+"label": "Email Marketing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"email_marketing"
+]
+},
+{
+"id": "skill.knowledge.enterprise_sales_mastery",
+"label": "Enterprise Sales Mastery",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"enterprise_sales_mastery"
+]
+},
+{
+"id": "skill.knowledge.entrepreneurship",
+"label": "Entrepreneurship",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"entrepreneurship"
+]
+},
+{
+"id": "skill.knowledge.error_scenarios_recovery",
+"label": "Error Scenarios Recovery",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"error_scenarios_recovery"
+]
+},
+{
+"id": "skill.knowledge.great_orators",
+"label": "Great Orators",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"great_orators"
+]
+},
+{
+"id": "skill.knowledge.habits",
+"label": "Habits",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"habits"
+]
+},
+{
+"id": "skill.knowledge.high_ticket_closing",
+"label": "High Ticket Closing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"high_ticket_closing"
+]
+},
+{
+"id": "skill.knowledge.industry_strategies",
+"label": "Industry Strategies",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"industry_strategies"
+]
+},
+{
+"id": "skill.knowledge.influencer_marketing_coordination",
+"label": "Influencer Marketing Coordination",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"influencer_marketing_coordination"
+]
+},
+{
+"id": "skill.knowledge.intelligent_onboarding",
+"label": "Intelligent Onboarding",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"intelligent_onboarding"
+]
+},
+{
+"id": "skill.knowledge.international_expansion",
+"label": "International Expansion",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"international_expansion"
+]
+},
+{
+"id": "skill.knowledge.investing",
+"label": "Investing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"investing"
+]
+},
+{
+"id": "skill.knowledge.juan_pablo_ii",
+"label": "Juan Pablo Ii",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"juan_pablo_ii"
+]
+},
+{
+"id": "skill.knowledge.legendary_sellers",
+"label": "Legendary Sellers",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8,
+"tags": [
+"conocimiento",
+"legendary_sellers"
+]
+},
+{
+"id": "skill.knowledge.logistics_tracking",
+"label": "Logistics Tracking",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"logistics_tracking"
+]
+},
+{
+"id": "skill.knowledge.loyalty_programs",
+"label": "Loyalty Programs",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"loyalty_programs"
+]
+},
+{
+"id": "skill.knowledge.luxury_positioning",
+"label": "Luxury Positioning",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"luxury_positioning"
+]
+},
+{
+"id": "skill.knowledge.marketing_funnels",
+"label": "Marketing Funnels",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"marketing_funnels"
+]
+},
+{
+"id": "skill.knowledge.marketplace_algorithm_optimization",
+"label": "Marketplace Algorithm Optimization",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"marketplace_algorithm_optimization"
+]
+},
+{
+"id": "skill.knowledge.marketplace_optimization",
+"label": "Marketplace Optimization",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"marketplace_optimization"
+]
+},
+{
+"id": "skill.knowledge.master_persuaders",
+"label": "Master Persuaders",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"master_persuaders"
+]
+},
+{
+"id": "skill.knowledge.meta_ads",
+"label": "Meta Ads",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.96,
+"tags": [
+"conocimiento",
+"meta_ads"
+]
+},
+{
+"id": "skill.knowledge.negotiation",
+"label": "Negotiation",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6799999999999999,
+"tags": [
+"conocimiento",
+"negotiation"
+]
+},
+{
+"id": "skill.knowledge.negotiation_legends",
+"label": "Negotiation Legends",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"negotiation_legends"
+]
+},
+{
+"id": "skill.knowledge.partnerships_affiliate",
+"label": "Partnerships Affiliate",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.64,
+"tags": [
+"conocimiento",
+"partnerships_affiliate"
+]
+},
+{
+"id": "skill.knowledge.persuasion",
+"label": "Persuasion",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"persuasion"
+]
+},
+{
+"id": "skill.knowledge.per_platform_analytics",
+"label": "Per Platform Analytics",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"per_platform_analytics"
+]
+},
+{
+"id": "skill.knowledge.predictive_lead_scoring_ml",
+"label": "Predictive Lead Scoring Ml",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"predictive_lead_scoring_ml"
+]
+},
+{
+"id": "skill.knowledge.pricing",
+"label": "Pricing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"pricing"
+]
+},
+{
+"id": "skill.knowledge.pricing_psychology",
+"label": "Pricing Psychology",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"pricing_psychology"
+]
+},
+{
+"id": "skill.knowledge.psychology",
+"label": "Psychology",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"psychology"
+]
+},
+{
+"id": "skill.knowledge.real_estate",
+"label": "Real Estate",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6799999999999999,
+"tags": [
+"conocimiento",
+"real_estate"
+]
+},
+{
+"id": "skill.knowledge.real_estate_selling",
+"label": "Real Estate Selling",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"real_estate_selling"
+]
+},
+{
+"id": "skill.knowledge.real_time_inventory_sync",
+"label": "Real Time Inventory Sync",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"real_time_inventory_sync"
+]
+},
+{
+"id": "skill.knowledge.resilience_patterns",
+"label": "Resilience Patterns",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"resilience_patterns"
+]
+},
+{
+"id": "skill.knowledge.saas_metrics",
+"label": "Saas Metrics",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"saas_metrics"
+]
+},
+{
+"id": "skill.knowledge.saas_selling_mastery",
+"label": "Saas Selling Mastery",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"saas_selling_mastery"
+]
+},
+{
+"id": "skill.knowledge.sales",
+"label": "Sales",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8,
+"tags": [
+"conocimiento",
+"sales"
+]
+},
+{
+"id": "skill.knowledge.sales_frameworks",
+"label": "Sales Frameworks",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"sales_frameworks"
+]
+},
+{
+"id": "skill.knowledge.sales_legends",
+"label": "Sales Legends",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.76,
+"tags": [
+"conocimiento",
+"sales_legends"
+]
+},
+{
+"id": "skill.knowledge.sales_legends_extended",
+"label": "Sales Legends Extended",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.74,
+"tags": [
+"conocimiento",
+"sales_legends_extended"
+]
+},
+{
+"id": "skill.knowledge.sales_metrics_kpis",
+"label": "Sales Metrics Kpis",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"sales_metrics_kpis"
+]
+},
+{
+"id": "skill.knowledge.sales_operations_excellence",
+"label": "Sales Operations Excellence",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"sales_operations_excellence"
+]
+},
+{
+"id": "skill.knowledge.seasonal_campaigns",
+"label": "Seasonal Campaigns",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"seasonal_campaigns"
+]
+},
+{
+"id": "skill.knowledge.customer_sentiment_analysis",
+"label": "Customer Sentiment Analysis",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"customer_sentiment_analysis"
+]
+},
+{
+"id": "skill.knowledge.services_selling_framework",
+"label": "Services Selling Framework",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"services_selling_framework"
+]
+},
+{
+"id": "skill.knowledge.statecraft_legends",
+"label": "Statecraft Legends",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 1.0,
+"tags": [
+"conocimiento",
+"statecraft_legends"
+]
+},
+{
+"id": "skill.knowledge.strategy",
+"label": "Strategy",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"strategy"
+]
+},
+{
+"id": "skill.knowledge.subscription_billing",
+"label": "Subscription Billing",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"subscription_billing"
+]
+},
+{
+"id": "skill.knowledge.trading_analysis",
+"label": "Trading Analysis",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"trading_analysis"
+]
+},
+{
+"id": "skill.knowledge.trump_dealmaking",
+"label": "Trump Dealmaking",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.72,
+"tags": [
+"conocimiento",
+"trump_dealmaking"
+]
+},
+{
+"id": "skill.knowledge.unified_sales_agent",
+"label": "Unified Sales Agent",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.8,
+"tags": [
+"conocimiento",
+"unified_sales_agent"
+]
+},
+{
+"id": "skill.knowledge.viral_referral_mechanics",
+"label": "Viral Referral Mechanics",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.6599999999999999,
+"tags": [
+"conocimiento",
+"viral_referral_mechanics"
+]
+},
+{
+"id": "skill.knowledge.warren_buffett",
+"label": "Warren Buffett",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.84,
+"tags": [
+"conocimiento",
+"warren_buffett"
+]
+},
+{
+"id": "skill.knowledge.wealth",
+"label": "Wealth",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"wealth"
+]
+},
+{
+"id": "skill.knowledge.white_label_wholesale",
+"label": "White Label Wholesale",
+"kind": "skill",
+"category": "Conocimiento",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.7,
+"tags": [
+"conocimiento",
+"white_label_wholesale"
+]
+},
+{
+"id": "skill.tool.search_products",
+"label": "Búsqueda de Catálogo",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.customer_history",
+"label": "Historial de Cliente",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.check_inventory",
+"label": "Chequeo de Inventario",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.search_memory",
+"label": "Memoria de Largo Plazo",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.crm_sync",
+"label": "Sincronía CRM",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.lead_enrichment",
+"label": "Enriquecimiento de Leads",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.retrieve_knowledge",
+"label": "Recuperar Conocimiento",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"conocimiento"
+]
+},
+{
+"id": "skill.tool.retrieve_documents",
+"label": "Recuperar Documentos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"conocimiento"
+]
+},
+{
+"id": "skill.tool.deal_scoring",
+"label": "Scoring de Deals",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.lead_scoring",
+"label": "Lead Scoring",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 1.0,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.dashboards",
+"label": "Dashboards",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.forecast",
+"label": "Pronóstico de Ventas",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.cohort_analysis",
+"label": "Análisis de Cohortes",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.ab_testing",
+"label": "A/B Testing",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.competitor_intel",
+"label": "Inteligencia Competitiva",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.image_gen",
+"label": "Generación de Imágenes",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.copy_gen",
+"label": "Generación de Copy",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.video_reels",
+"label": "Generación de Reels",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.ad_creative",
+"label": "Creativos de Ads",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.brand_design",
+"label": "Diseño de Marca",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.wa_inbox",
+"label": "Inbox WhatsApp",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.95,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.ig_dm",
+"label": "DMs Instagram",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.email_compose",
+"label": "Redacción de Email",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.live_chat",
+"label": "Chat en Vivo",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.voice_session",
+"label": "Sesión de Voz",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.seo_audit",
+"label": "Auditoría SEO",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "seo",
+"group_label": "SEO",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"seo"
+]
+},
+{
+"id": "skill.tool.keyword_research",
+"label": "Keyword Research",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "seo",
+"group_label": "SEO",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"seo"
+]
+},
+{
+"id": "skill.tool.content_brief",
+"label": "Brief de Contenido",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "seo",
+"group_label": "SEO",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"seo"
+]
+},
+{
+"id": "skill.tool.schema_markup",
+"label": "Schema/SEO técnico",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "seo",
+"group_label": "SEO",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"seo"
+]
+},
+{
+"id": "skill.tool.carousel_gen",
+"label": "Generador de Carruseles",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.thumbnail_gen",
+"label": "Thumbnails",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.logo_gen",
+"label": "Generador de Logos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.65,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.voiceover",
+"label": "Voz IA",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.ugc_script",
+"label": "Guiones UGC",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.landing_gen",
+"label": "Generador de Landings",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.roas_tracker",
+"label": "Tracker de ROAS",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.attribution",
+"label": "Atribución",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.churn_predict",
+"label": "Predicción de Churn",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.sentiment",
+"label": "Análisis de Sentimiento",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.price_optimizer",
+"label": "Optimizador de Precios",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.funnel_analytics",
+"label": "Analítica de Embudo",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.messenger_inbox",
+"label": "Inbox Messenger",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.sms_send",
+"label": "Envío de SMS",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.comment_responder",
+"label": "Respuesta a Comentarios",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.dm_outreach",
+"label": "Outreach por DM",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.faq_bot",
+"label": "Bot de FAQ",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.appointment_booker",
+"label": "Agendador",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.winning_product_finder",
+"label": "Buscador de Producto Ganador",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.cost_estimator",
+"label": "Estimador de Costos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.cashflow_planner",
+"label": "Planificador de Caja",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.asset_liability_tracker",
+"label": "Activos vs Pasivos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.breakeven_calc",
+"label": "Cálculo de Breakeven",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.budget_forecaster",
+"label": "Pronóstico Presupuestario",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.crypto_screener",
+"label": "Screener Cripto",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.property_valuator",
+"label": "Valuador Inmobiliario",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.trading_signals",
+"label": "Señales de Trading",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.crypto_dca",
+"label": "Bot DCA Cripto",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.risk_sizing",
+"label": "Gestión de Riesgo",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.design_canva",
+"label": "Diseño en Canva",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.crm_dedupe",
+"label": "Deduplicación CRM",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.segment_builder",
+"label": "Segmentador",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.sheet_sync",
+"label": "Sync Planillas",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.calendar_sync",
+"label": "Sync Calendario",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.data_export",
+"label": "Exportar Datos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.contract_gen",
+"label": "Generador de Contratos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.7,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.invoice_gen",
+"label": "Generador de Facturas",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.payment_link",
+"label": "Link de Pago",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.manychat_flow",
+"label": "Flujo ManyChat",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.lead_disqualify",
+"label": "Descalificación de Leads",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.brief_intake",
+"label": "Toma de Brief",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.campaign_planner",
+"label": "Planificador de Campañas",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.brand_naming",
+"label": "Naming de Marca",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.brand_palette",
+"label": "Paleta de Marca",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.brand_voice",
+"label": "Tono de Voz",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.brand_kit_export",
+"label": "Exportador de Brand Kit",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.reframe_engine",
+"label": "Motor de Reframe de Valor",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.pivot_matrix",
+"label": "Matriz de Pivote",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.objection_reframe",
+"label": "Reframe de Objeciones",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.irresistible_offer",
+"label": "Constructor de Oferta Irresistible",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.origin_storyteller",
+"label": "Narrador de Origen",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"creatividad"
+]
+},
+{
+"id": "skill.tool.method_selector",
+"label": "Selector de Método",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.roadmap_builder",
+"label": "Constructor de Roadmap",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.objection_master",
+"label": "Maestro de Objeciones",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.sales_metrics",
+"label": "Métricas de Venta",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.spin_executor",
+"label": "Ejecutor SPIN",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.meddic_tracker",
+"label": "Tracker MEDDIC",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.consultative_guide",
+"label": "Guía Consultativa",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.master_script_gen",
+"label": "Generador Script Maestro",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.95,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.five_step_sales",
+"label": "Venta en 5 Pasos",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.tone_calibrator",
+"label": "Calibrador de Tonalidad",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.objection_master_final",
+"label": "Maestro de Objeciones Final",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.irresistible_offer_final",
+"label": "Oferta Irresistible Final",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.master_close",
+"label": "Cierre Maestro",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"chat"
+]
+},
+{
+"id": "skill.tool.lifecycle_detector",
+"label": "Detector de Etapa Lifecycle",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.aha_moment_tracker",
+"label": "Rastreador de Aha Moment",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.crm_sync",
+"label": "Sincronizador de CRM",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.smart_scheduler",
+"label": "Programador Inteligente",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.churn_detector",
+"label": "Detector de Churn",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.85,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.tool.qbr_builder",
+"label": "Constructor de QBR",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8,
+"tags": [
+"tool",
+"react",
+"datos"
+]
+},
+{
+"id": "skill.tool.ab_test_runner",
+"label": "Ejecutor de A/B Tests",
+"kind": "skill",
+"category": "Herramienta",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.75,
+"tags": [
+"tool",
+"react",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.sales_strategy",
+"label": "Estrategia de Ventas",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.9666666666666666,
+"tags": [
+"computer_use",
+"skill_domain",
+"sales_strategy",
+"conocimiento"
+]
+},
+{
+"id": "skill.computer_use.prospecting",
+"label": "Prospección / SDR",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"prospecting",
+"chat"
+]
+},
+{
+"id": "skill.computer_use.outreach",
+"label": "Outreach en Frío",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"outreach",
+"chat"
+]
+},
+{
+"id": "skill.computer_use.negotiation",
+"label": "Negociación y Cierre",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"negotiation",
+"conocimiento"
+]
+},
+{
+"id": "skill.computer_use.customer_success",
+"label": "Customer Success / Retención",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "chat",
+"group_label": "Chat",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"customer_success",
+"chat"
+]
+},
+{
+"id": "skill.computer_use.content_creator",
+"label": "Creación de Contenido",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.9666666666666666,
+"tags": [
+"computer_use",
+"skill_domain",
+"content_creator",
+"creatividad"
+]
+},
+{
+"id": "skill.computer_use.social_media",
+"label": "Gestión de Redes Sociales",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "creatividad",
+"group_label": "Creatividad",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"social_media",
+"creatividad"
+]
+},
+{
+"id": "skill.computer_use.ads_management",
+"label": "Gestión de Publicidad (Ads)",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9666666666666666,
+"tags": [
+"computer_use",
+"skill_domain",
+"ads_management",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.sales_platforms",
+"label": "Plataformas de Venta / E-commerce",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"sales_platforms",
+"datos"
+]
+},
+{
+"id": "skill.computer_use.seo_marketing",
+"label": "SEO y Marketing de Contenidos",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "seo",
+"group_label": "SEO",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"seo_marketing",
+"seo"
+]
+},
+{
+"id": "skill.computer_use.market_intel",
+"label": "Inteligencia de Mercado",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"market_intel",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.analytics",
+"label": "Analítica y Reporting",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"analytics",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.crm_ops",
+"label": "CRM / Operaciones de Datos",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"crm_ops",
+"datos"
+]
+},
+{
+"id": "skill.computer_use.crypto",
+"label": "Criptomonedas / Blockchain",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"crypto",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.stock_market",
+"label": "Bolsa de Valores / Acciones",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"stock_market",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.market_analysis",
+"label": "Estilos de Análisis de Mercado",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"market_analysis",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.financial_markets",
+"label": "Mercados Financieros",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"financial_markets",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.real_estate",
+"label": "Mercado Inmobiliario",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"real_estate",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.trading_platforms",
+"label": "Plataformas de Trading / Inversión",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"trading_platforms",
+"datos"
+]
+},
+{
+"id": "skill.computer_use.risk_management",
+"label": "Gestión de Riesgo de Trading",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "analisis",
+"group_label": "Análisis",
+"health": 0.9666666666666666,
+"tags": [
+"computer_use",
+"skill_domain",
+"risk_management",
+"analisis"
+]
+},
+{
+"id": "skill.computer_use.business_models",
+"label": "Modelos de Negocio",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "conocimiento",
+"group_label": "Conocimiento",
+"health": 0.9333333333333333,
+"tags": [
+"computer_use",
+"skill_domain",
+"business_models",
+"conocimiento"
+]
+},
+{
+"id": "skill.computer_use.tool_handling",
+"label": "Manejo de Herramientas Web",
+"kind": "skill",
+"category": "Dominio Computer Use",
+"layer": 1,
+"group": "datos",
+"group_label": "Datos/CRM",
+"health": 0.8999999999999999,
+"tags": [
+"computer_use",
+"skill_domain",
+"tool_handling",
+"datos"
+]
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "captacion",
+"group_label": "Captación",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "captacion",
+"group_label": "Captación",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.nutridor",
+"label": "Nutridor",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "captacion",
+"group_label": "Captación",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.propuesta",
+"label": "Propuesta",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.objeciones",
+"label": "Gestor de Objeciones",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "retencion",
+"group_label": "Retención",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"category": "Pipeline",
+"layer": 2,
+"group": "retencion",
+"group_label": "Retención",
+"health": 1.0,
+"tags": [
+"pipeline",
+"ventas"
+]
+},
+{
+"id": "agent.expert.acquisition_strategist",
+"label": "Estratega de Adquisición",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.market_analyst",
+"label": "Analista de Mercado",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.financial_planner",
+"label": "Planificador Financiero",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.kpi_architect",
+"label": "Arquitecto de KPIs",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.ad_copywriter",
+"label": "Copywriter de Ads",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.brand_visual",
+"label": "Director de Marca",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.crm_builder",
+"label": "Constructor de CRM",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.landing_builder",
+"label": "Constructor de Landings",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.app_builder",
+"label": "Constructor de Apps",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.investor_pitch",
+"label": "Pitch a Inversores",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.viral_video",
+"label": "Productor Viral",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.music_agent",
+"label": "Agente de Audio",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.customer_service",
+"label": "Servicio al Cliente",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.lead_qualifier",
+"label": "Calificador de Leads",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.product_scout",
+"label": "Buscador de Productos Ganadores",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.budget_analyst",
+"label": "Analista de Costos/Presupuesto",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.wealth_strategist",
+"label": "Estratega Patrimonial",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.blockchain_analyst",
+"label": "Analista Cripto/Blockchain",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.realestate_analyst",
+"label": "Analista Inmobiliario",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.startup_architect",
+"label": "Arquitecto de Emprendimientos",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.portfolio_strategist",
+"label": "Gestor de Cartera (señales)",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.design_studio",
+"label": "Estudio de Diseño (Canva)",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.lead_filter",
+"label": "Filtro de Leads (ManyChat)",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.campaign_architect",
+"label": "Arquitecto de Campañas",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.brand_designer",
+"label": "Diseñador de Identidad de Marca",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.impossible_seller",
+"label": "Vendedor de lo Invendible",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.sales_architect",
+"label": "Arquitecto de Sistemas de Venta",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.master_seller",
+"label": "Vendedor Maestro",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.lifecycle_manager",
+"label": "Gestor de Ciclo de Vida",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.onboarding_specialist",
+"label": "Especialista en Onboarding",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.retention_specialist",
+"label": "Especialista en Retención",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.expert.churn_preventer",
+"label": "Prevensor de Churn",
+"kind": "agent",
+"category": "Experto",
+"layer": 2,
+"group": "experto",
+"group_label": "Experto",
+"health": 0.95,
+"tags": [
+"experto"
+]
+},
+{
+"id": "agent.legend.buffett",
+"label": "Warren Buffett",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.hormozi",
+"label": "Alex Hormozi",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.cardone",
+"label": "Grant Cardone",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.godin",
+"label": "Seth Godin",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.belfort",
+"label": "Jordan Belfort",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.vaynerchuk",
+"label": "Gary Vaynerchuk",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.hopkins",
+"label": "Tom Hopkins",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.woolworth",
+"label": "Frank Woolworth",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "agent.legend.ross",
+"label": "Aaron Ross",
+"kind": "agent",
+"category": "Leyenda",
+"layer": 2,
+"group": "leyenda",
+"group_label": "Leyenda",
+"health": 0.9,
+"tags": [
+"leyenda",
+"mentor"
+]
+},
+{
+"id": "automation.cart_recovery",
+"label": "Recuperación de Carritos",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.wa_bot_247",
+"label": "Bot WhatsApp 24/7",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
+},
+{
+"id": "automation.lead_nurturing",
+"label": "Nurturing de Leads",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.meta_ads_optimizer",
+"label": "Optimizador Meta Ads",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.google_ads_optimizer",
+"label": "Optimizador Google Ads",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.social_content",
+"label": "Contenido Social Diario",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.email_lifecycle",
+"label": "Email Lifecycle",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.review_responder",
+"label": "Gestor de Reseñas",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.deal_reactivation",
+"label": "Reactivación de Deals",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
+},
+{
+"id": "automation.invoicing",
+"label": "Facturación Electrónica",
+"kind": "automation",
+"category": "Core",
+"layer": 3,
+"group": "core",
+"group_label": "Core",
+"health": 0.97,
+"tags": [
+"automation",
+"core"
+]
+},
+{
+"id": "automation.referral_engine",
+"label": "Motor de Referidos",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.inventory_sync",
+"label": "Sincronía de Inventario",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.research_winning_products",
+"label": "Research de Producto Ganador",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.budget_costing",
+"label": "Costos y Presupuesto",
+"kind": "automation",
+"category": "Finanzas",
+"layer": 3,
+"group": "finanzas",
+"group_label": "Finanzas",
+"health": 0.97,
+"tags": [
+"automation",
+"finanzas"
+]
+},
+{
+"id": "automation.financial_dashboard",
+"label": "Tablero Financiero",
+"kind": "automation",
+"category": "Finanzas",
+"layer": 3,
+"group": "finanzas",
+"group_label": "Finanzas",
+"health": 0.97,
+"tags": [
+"automation",
+"finanzas"
+]
+},
+{
+"id": "automation.business_structuring",
+"label": "Estructuración del Negocio",
+"kind": "automation",
+"category": "Core",
+"layer": 3,
+"group": "core",
+"group_label": "Core",
+"health": 0.97,
+"tags": [
+"automation",
+"core"
+]
+},
+{
+"id": "automation.crypto_watchlist",
+"label": "Watchlist Cripto (educativa)",
+"kind": "automation",
+"category": "Finanzas",
+"layer": 3,
+"group": "finanzas",
+"group_label": "Finanzas",
+"health": 0.97,
+"tags": [
+"automation",
+"finanzas"
+]
+},
+{
+"id": "automation.real_estate_scan",
+"label": "Análisis Inmobiliario",
+"kind": "automation",
+"category": "Finanzas",
+"layer": 3,
+"group": "finanzas",
+"group_label": "Finanzas",
+"health": 0.97,
+"tags": [
+"automation",
+"finanzas"
+]
+},
+{
+"id": "automation.manychat_qualify",
+"label": "ManyChat: Filtrar Leads Malos",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.lead_capture",
+"label": "Captación Inteligente de Leads",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.brief_to_campaign",
+"label": "Brief → Campaña 360°",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.brand_identity",
+"label": "Generador de Identidad de Marca",
+"kind": "automation",
+"category": "Core",
+"layer": 3,
+"group": "core",
+"group_label": "Core",
+"health": 0.97,
+"tags": [
+"automation",
+"core"
+]
+},
+{
+"id": "automation.impossible_sale",
+"label": "Vender lo Invendible",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
+},
+{
+"id": "automation.advanced_sales_system",
+"label": "Sistema Avanzado de Ventas",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
+},
+{
+"id": "automation.master_seller_dispatch",
+"label": "Vendedor Maestro Activado",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
+},
+{
+"id": "automation.onboarding_sequence",
+"label": "Secuencia de Onboarding",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.engagement_loops",
+"label": "Loops de Engagement",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.upsell_detection",
+"label": "Detección Automática de Upsell",
+"kind": "automation",
+"category": "Expansión",
+"layer": 3,
+"group": "core",
+"group_label": "Core",
+"health": 0.97,
+"tags": [
+"automation",
+"expansión"
+]
+},
+{
+"id": "automation.retention_qbr",
+"label": "QBR Trimestral Automatizada",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+},
+{
+"id": "automation.churn_alerts",
+"label": "Alertas de Churn Automáticas",
+"kind": "automation",
+"category": "Retención",
+"layer": 3,
+"group": "retencion",
+"group_label": "Retención",
+"health": 0.97,
+"tags": [
+"automation",
+"retención"
+]
+}
+],
+"edges": [
+{
+"source": "platform.whatsapp",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.whatsapp",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.instagram",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.instagram",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.facebook",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.facebook",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.tiktok",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.tiktok",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.linkedin",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.linkedin",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.email",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.email",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.telegram",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.telegram",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.mercadolibre",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.mercadolibre",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.amazon",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.amazon",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.shopify",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.shopify",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.tiendanube",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.tiendanube",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.hotmart",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.hotmart",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.meta_ads",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.google_ads",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.stripe",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.mercadopago",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.arca",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.web",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.web",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.messenger",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.messenger",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.sms",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.sms",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.youtube",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.youtube",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.twitter",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.twitter",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.pinterest",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.threads",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.threads",
+"target": "agent.expert.customer_service",
+"rel": "atiende"
+},
+{
+"source": "platform.woocommerce",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.woocommerce",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.vtex",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.vtex",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.etsy",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.etsy",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.ebay",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.ebay",
+"target": "agent.pipeline.retentor",
+"rel": "recompra"
+},
+{
+"source": "platform.tiktok_ads",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.linkedin_ads",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.paypal",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.getnet",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.sat",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.dian",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.hubspot",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.salesforce",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.notion",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.google_sheets",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.google_calendar",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.slack",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.zapier",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.webhooks",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.github",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.linktree",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.beacons",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.canva",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "platform.manychat",
+"target": "agent.pipeline.captador",
+"rel": "alimenta"
+},
+{
+"source": "automation.cart_recovery",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "automation.cart_recovery",
+"target": "platform.email",
+"rel": "opera"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "platform.email",
+"rel": "opera"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "automation.meta_ads_optimizer",
+"target": "platform.meta_ads",
+"rel": "opera"
+},
+{
+"source": "automation.google_ads_optimizer",
+"target": "platform.google_ads",
+"rel": "opera"
+},
+{
+"source": "automation.social_content",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "automation.social_content",
+"target": "platform.tiktok",
+"rel": "opera"
+},
+{
+"source": "automation.social_content",
+"target": "platform.facebook",
+"rel": "opera"
+},
+{
+"source": "automation.email_lifecycle",
+"target": "platform.email",
+"rel": "opera"
+},
+{
+"source": "automation.review_responder",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "platform.email",
+"rel": "opera"
+},
+{
+"source": "automation.invoicing",
+"target": "platform.arca",
+"rel": "opera"
+},
+{
+"source": "automation.referral_engine",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "automation.inventory_sync",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "automation.inventory_sync",
+"target": "platform.shopify",
+"rel": "opera"
+},
+{
+"source": "automation.inventory_sync",
+"target": "platform.tiendanube",
+"rel": "opera"
+},
+{
+"source": "automation.cart_recovery",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.cart_recovery",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.meta_ads_optimizer",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.meta_ads_optimizer",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.meta_ads_optimizer",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.google_ads_optimizer",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.google_ads_optimizer",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.google_ads_optimizer",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.social_content",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.social_content",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.social_content",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.email_lifecycle",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.email_lifecycle",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.review_responder",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.review_responder",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.invoicing",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.referral_engine",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.referral_engine",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.referral_engine",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.inventory_sync",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.inventory_sync",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.research_winning_products",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.research_winning_products",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.research_winning_products",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.business_structuring",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.manychat_qualify",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.manychat_qualify",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.manychat_qualify",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_capture",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_capture",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_capture",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.brief_to_campaign",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.brief_to_campaign",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.brief_to_campaign",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.brand_identity",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.onboarding_sequence",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.onboarding_sequence",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.engagement_loops",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.engagement_loops",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.retention_qbr",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.retention_qbr",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.churn_alerts",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.churn_alerts",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.nutridor",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.nutridor",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.nutridor",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.propuesta",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.propuesta",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.propuesta",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.objeciones",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.objeciones",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.objeciones",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.retrieve_knowledge",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.search_memory",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.nutridor",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.propuesta",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.objeciones",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.knowledge.intelligent_onboarding",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.acquisition_strategist",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.computer_use.market_intel",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.computer_use.stock_market",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.computer_use.market_analysis",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.financial_planner",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.financial_planner",
+"target": "skill.computer_use.financial_markets",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.kpi_architect",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.ad_copywriter",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.brand_visual",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.crm_builder",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.crm_builder",
+"target": "skill.computer_use.crm_ops",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.landing_builder",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.app_builder",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.investor_pitch",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.viral_video",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.viral_video",
+"target": "skill.knowledge.viral_referral_mechanics",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.music_agent",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_advocacy_program",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_lifecycle",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_loyalty_mastery",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_psychology_profiles",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_segmentation",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_success",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.customer_sentiment_analysis",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.computer_use.customer_success",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lead_qualifier",
+"target": "skill.knowledge.predictive_lead_scoring_ml",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lead_qualifier",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.product_scout",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.budget_analyst",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.wealth_strategist",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.wealth_strategist",
+"target": "skill.knowledge.wealth",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.blockchain_analyst",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.realestate_analyst",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.startup_architect",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.portfolio_strategist",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.design_studio",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lead_filter",
+"target": "skill.knowledge.predictive_lead_scoring_ml",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lead_filter",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.campaign_architect",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.brand_designer",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.impossible_seller",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.advanced_sales_methods",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.automotive_sales",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.enterprise_sales_mastery",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales_frameworks",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales_legends",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales_legends_extended",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales_metrics_kpis",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.sales_operations_excellence",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.computer_use.sales_strategy",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.sales_architect",
+"target": "skill.computer_use.sales_platforms",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.master_seller",
+"target": "skill.knowledge.ecommerce_conversion_master",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.master_seller",
+"target": "skill.knowledge.master_persuaders",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.master_seller",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lifecycle_manager",
+"target": "skill.knowledge.customer_lifecycle",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.lifecycle_manager",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.onboarding_specialist",
+"target": "skill.knowledge.intelligent_onboarding",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.onboarding_specialist",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.retention_specialist",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.churn_preventer",
+"target": "skill.knowledge.churn_prevention_engine",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.churn_preventer",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.buffett",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.buffett",
+"target": "skill.knowledge.warren_buffett",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.hormozi",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.cardone",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.godin",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.belfort",
+"target": "skill.knowledge.belfort_method",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.belfort",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.vaynerchuk",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.hopkins",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.woolworth",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.legend.ross",
+"target": "skill.knowledge.unified_sales_agent",
+"rel": "consulta"
+},
+{
+"source": "agent.expert.ad_copywriter",
+"target": "skill.tool.copy_gen",
+"rel": "usa"
+},
+{
+"source": "agent.expert.ad_copywriter",
+"target": "skill.tool.ad_creative",
+"rel": "usa"
+},
+{
+"source": "agent.expert.brand_visual",
+"target": "skill.tool.brand_design",
+"rel": "usa"
+},
+{
+"source": "agent.expert.brand_visual",
+"target": "skill.tool.image_gen",
+"rel": "usa"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.tool.competitor_intel",
+"rel": "usa"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.tool.dashboards",
+"rel": "usa"
+},
+{
+"source": "agent.expert.market_analyst",
+"target": "skill.tool.forecast",
+"rel": "usa"
+},
+{
+"source": "agent.expert.kpi_architect",
+"target": "skill.tool.dashboards",
+"rel": "usa"
+},
+{
+"source": "agent.expert.kpi_architect",
+"target": "skill.tool.cohort_analysis",
+"rel": "usa"
+},
+{
+"source": "agent.expert.crm_builder",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "agent.expert.crm_builder",
+"target": "skill.tool.lead_enrichment",
+"rel": "usa"
+},
+{
+"source": "agent.expert.landing_builder",
+"target": "skill.tool.ab_testing",
+"rel": "usa"
+},
+{
+"source": "agent.expert.landing_builder",
+"target": "skill.tool.seo_audit",
+"rel": "usa"
+},
+{
+"source": "agent.expert.viral_video",
+"target": "skill.tool.video_reels",
+"rel": "usa"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.tool.wa_inbox",
+"rel": "usa"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.tool.live_chat",
+"rel": "usa"
+},
+{
+"source": "agent.expert.customer_service",
+"target": "skill.tool.voice_session",
+"rel": "usa"
+},
+{
+"source": "agent.expert.lead_qualifier",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.expert.lead_qualifier",
+"target": "skill.tool.lead_enrichment",
+"rel": "usa"
+},
+{
+"source": "skill.tool.wa_inbox",
+"target": "platform.whatsapp",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ig_dm",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.email_compose",
+"target": "platform.email",
+"rel": "produce"
+},
+{
+"source": "skill.tool.live_chat",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.voice_session",
+"target": "platform.whatsapp",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.meta_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.google_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.tiktok_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.linkedin_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.image_gen",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.image_gen",
+"target": "platform.meta_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.image_gen",
+"target": "platform.pinterest",
+"rel": "produce"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.meta_ads",
+"rel": "produce"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.email",
+"rel": "produce"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.twitter",
+"rel": "produce"
+},
+{
+"source": "skill.tool.video_reels",
+"target": "platform.tiktok",
+"rel": "produce"
+},
+{
+"source": "skill.tool.video_reels",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.video_reels",
+"target": "platform.youtube",
+"rel": "produce"
+},
+{
+"source": "skill.tool.brand_design",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.schema_markup",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.landing_gen",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.carousel_gen",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.carousel_gen",
+"target": "platform.linkedin",
+"rel": "produce"
+},
+{
+"source": "skill.tool.thumbnail_gen",
+"target": "platform.youtube",
+"rel": "produce"
+},
+{
+"source": "skill.tool.voiceover",
+"target": "platform.youtube",
+"rel": "produce"
+},
+{
+"source": "skill.tool.voiceover",
+"target": "platform.tiktok",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ugc_script",
+"target": "platform.tiktok",
+"rel": "produce"
+},
+{
+"source": "skill.tool.ugc_script",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.messenger_inbox",
+"target": "platform.messenger",
+"rel": "produce"
+},
+{
+"source": "skill.tool.sms_send",
+"target": "platform.sms",
+"rel": "produce"
+},
+{
+"source": "skill.tool.comment_responder",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.comment_responder",
+"target": "platform.facebook",
+"rel": "produce"
+},
+{
+"source": "skill.tool.dm_outreach",
+"target": "platform.linkedin",
+"rel": "produce"
+},
+{
+"source": "skill.tool.dm_outreach",
+"target": "platform.instagram",
+"rel": "produce"
+},
+{
+"source": "skill.tool.dm_outreach",
+"target": "platform.twitter",
+"rel": "produce"
+},
+{
+"source": "skill.tool.faq_bot",
+"target": "platform.web",
+"rel": "produce"
+},
+{
+"source": "skill.tool.faq_bot",
+"target": "platform.whatsapp",
+"rel": "produce"
+},
+{
+"source": "skill.tool.appointment_booker",
+"target": "platform.google_calendar",
+"rel": "produce"
+},
+{
+"source": "skill.tool.calendar_sync",
+"target": "platform.google_calendar",
+"rel": "produce"
+},
+{
+"source": "skill.tool.sheet_sync",
+"target": "platform.google_sheets",
+"rel": "produce"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.hubspot",
+"rel": "produce"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.salesforce",
+"rel": "produce"
+},
+{
+"source": "skill.tool.crm_dedupe",
+"target": "platform.hubspot",
+"rel": "produce"
+},
+{
+"source": "skill.tool.segment_builder",
+"target": "platform.hubspot",
+"rel": "produce"
+},
+{
+"source": "skill.tool.data_export",
+"target": "platform.google_sheets",
+"rel": "produce"
+},
+{
+"source": "skill.tool.invoice_gen",
+"target": "platform.arca",
+"rel": "produce"
+},
+{
+"source": "skill.tool.invoice_gen",
+"target": "platform.sat",
+"rel": "produce"
+},
+{
+"source": "skill.tool.invoice_gen",
+"target": "platform.dian",
+"rel": "produce"
+},
+{
+"source": "skill.tool.payment_link",
+"target": "platform.stripe",
+"rel": "produce"
+},
+{
+"source": "skill.tool.payment_link",
+"target": "platform.mercadopago",
+"rel": "produce"
+},
+{
+"source": "skill.tool.payment_link",
+"target": "platform.paypal",
+"rel": "produce"
+},
+{
+"source": "skill.tool.contract_gen",
+"target": "platform.notion",
+"rel": "produce"
+}
+],
+"counts": {
+"agents": 50,
+"skills": 210,
+"automations": 30,
+"platforms": 47,
+"total": 337
+},
+"health": 0.8571
+}

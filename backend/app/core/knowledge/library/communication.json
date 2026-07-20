@@ -1,0 +1,84 @@
+{
+  "category": "communication",
+  "description": "Comunicación efectiva, hablar en público, liderazgo verbal",
+  "items": [
+    {
+      "id": "com_001",
+      "subcategory": "hablar_publico",
+      "principle": "El miedo a hablar en público es universal. La diferencia entre quienes lo dominan y quienes no es la preparación sistemática, no el talento natural.",
+      "tactic": "Preparación > Talentos. Conoce a tu audiencia mejor que a ti mismo. Ten un mensaje único y claro. Practica en voz alta, no en tu cabeza.",
+      "framework": "PREP: Point → Reason → Example → Point",
+      "script_template": "Hablemos claro. El punto principal es [X]. La razón es [Y]. Por ejemplo, [historia concreta]. Entonces, [X] es la clave. ¿Le hace sentido?",
+      "when_to_use": ["presentaciones", "pitches", "demos"],
+      "when_not_to_use": ["conversación casual", "chat informal"],
+      "tags": ["hablar_publico", "presentacion", "prep", "dale_carnegie"],
+      "_source_hint": "Dale Carnegie - Public Speaking",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "com_002",
+      "subcategory": "escucha_empatica",
+      "principle": "Para ser interesante, sé interesado. La escucha empática es la habilidad de comunicación más subestimada y poderosa.",
+      "tactic": "Escucha para entender, no para responder. Refleja emociones. Pregunta profundamente. Silencios estratégicos.",
+      "framework": "LEAP: Listen → Empathize → Ask → Pause",
+      "script_template": "[Escuchar sin interrumpir]. Entonces lo que estás sintiendo es [emoción] porque [causa]. ¿Es así? [Pausa]. Cuéntame más sobre eso.",
+      "when_to_use": ["descubrimiento", "conflicto", "negociación", "soporte"],
+      "when_not_to_use": ["transacción rápida", "cliente pide datos"],
+      "tags": ["escucha", "empatia", "comunicacion", "dale_carnegie"],
+      "_source_hint": "Dale Carnegie",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "com_003",
+      "subcategory": "hablar_eficazmente",
+      "principle": "No es lo que dices, es cómo lo dices. La comunicación efectiva es 7% palabras, 38% tono, 55% lenguaje corporal.",
+      "tactic": "Simplifica el mensaje. Una idea por frase. Usa analogías. Varía el ritmo. Pausas dramáticas.",
+      "framework": "KISS: Keep It Simple, Specific",
+      "script_template": "Déjeme simplificar: esto es como [analogía simple]. Usted tiene [situación actual]. Nosotros hacemos [solución simple]. El resultado es [resultado claro]. Sin tecnicismos, sin complicaciones. ¿Tiene sentido?",
+      "when_to_use": ["explicación compleja", "demo técnica", "pitch a no técnicos"],
+      "when_not_to_use": ["audiencia técnica avanzada", "documentación detallada"],
+      "tags": ["simplicidad", "analogia", "comunicacion", "dale_carnegie"],
+      "_source_hint": "Dale Carnegie",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "com_004",
+      "subcategory": "feedback",
+      "principle": "El feedback es un regalo, pero solo si se da correctamente. La crítica destruye; el feedback constructivo construye.",
+      "tactic": "Sándwich no; feedback SBI (Situación-Comportamiento-Impacto). Sé específico. Sé oportuno. Sé orientado a acción.",
+      "framework": "SBI: Situación → Comportamiento específico → Impacto concreto → Acción futura",
+      "script_template": "En la reunión de ayer [situación], cuando mencionaste [comportamiento específico], eso generó [impacto concreto]. Para la próxima, ¿qué te parece [acción alternativa]? ¿Cómo ves eso?",
+      "when_to_use": ["gestión de equipo", "coaching", "mejora continua"],
+      "when_not_to_use": ["primera interacción", "cliente externo"],
+      "tags": ["feedback", "sbi", "comunicacion", "covey"],
+      "_source_hint": "Covey + Carnegie",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "com_005",
+      "subcategory": "preocupacion",
+      "principle": "La preocupación no resuelve problemas; los empeora. El remedio es la acción decidida y el análisis de lo peor que puede pasar.",
+      "tactic": "Técnica del '¿Y qué?': Identifica el peor escenario. Acepta mentalmente que puede pasar. Luego enfócate en mejorar las probabilidades.",
+      "framework": "Worry-Buster: Escribir → Preguntar ¿puedo hacer algo? → Si sí, actuar. Si no, soltar.",
+      "script_template": "Veo que está preocupado por [riesgo]. Hagamos el ejercicio: ¿cuál es lo PEOR que podría pasar? [Identificar]. ¿Puede vivir con eso? [Generalmente sí]. Ahora, ¿qué podemos hacer HOY para reducir esa probabilidad? Eso es lo único que controlamos.",
+      "when_to_use": ["cliente ansioso", "riesgo percibido", "pre-venta"],
+      "when_not_to_use": ["cliente ya decidido", "celebración"],
+      "tags": ["preocupacion", "accion", "gestion_emocional", "dale_carnegie"],
+      "_source_hint": "Dale Carnegie - How to Stop Worrying",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "com_006",
+      "subcategory": "habitos_efectivos",
+      "principle": "La efectividad personal es la base de toda efectividad organizacional. Los hábitos internos determinan los resultados externos.",
+      "tactic": "Los 7 hábitos aplicados a ventas: Sé proactivo → Comienza con el fin en mente → Pon primero lo primero → Piensa ganar-ganar → Entender primero, luego ser entendido → Sinergizar → Afilar la sierra.",
+      "framework": "7H applied to Sales: Proactividad → Visión → Priorización → Ganar-ganar → Escucha → Sinergia → Mejora continua",
+      "script_template": "Veo que su equipo está reactivo. Aplicando el principio 'Pon primero lo primero': ¿qué son las 2-3 actividades que REALMENTE generan ventas? ¿Cuánto tiempo les dedican vs. tareas urgentes pero no importantes? Nuestra herramienta les devuelve ese tiempo.",
+      "when_to_use": ["consultoría", "transformación organizacional", "coaching de ventas"],
+      "when_not_to_use": ["transacción simple", "compra impulsiva"],
+      "tags": ["habitos", "efectividad", "liderazgo", "covey"],
+      "_source_hint": "Stephen Covey",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

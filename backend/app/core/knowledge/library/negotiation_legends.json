@@ -1,0 +1,110 @@
+{
+  "category": "negotiation_legends",
+  "description": "Tácticas de negociación de los grandes negociadores de la historia",
+  "items": [
+    {
+      "id": "neg_legends_001",
+      "subcategory": "empatia_tactica",
+      "principle": "La negociación no es una batalla de argumentos, es un proceso de descubrimiento. Quien controla las emociones del otro controla la mesa.",
+      "tactic": "Usa empatía táctica: etiqueta las emociones del otro en voz alta ('parece que esto le preocupa') para desactivarlas. El reflejo (repetir sus últimas 3 palabras) lo hace seguir hablando y revelar información.",
+      "framework": "Empatía táctica: etiquetar → reflejar → silencio",
+      "script_template": "Parece que el plazo es lo que más le preocupa... ¿el plazo? (silencio). Ayúdeme a entender qué hace que este sea el momento difícil.",
+      "when_to_use": ["cliente emocional o tenso", "extraer información oculta", "desactivar conflicto"],
+      "when_not_to_use": ["negociación puramente numérica y rápida", "contraparte que exige cierre inmediato"],
+      "tags": ["empatia", "etiquetar", "reflejo", "chris_voss"],
+      "_source_hint": "Chris Voss — Never Split the Difference",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "neg_legends_002",
+      "subcategory": "no_orientado",
+      "principle": "El 'no' no es el final, es el comienzo de la negociación. Buscar el 'sí' temprano genera resistencia; provocar un 'no' da al otro sensación de control.",
+      "tactic": "Formula preguntas que inviten a un 'no' seguro ('¿sería absurdo si...?'). Persigue el 'así es' (no el 'tiene razón') resumiendo su mundo hasta que confirme que lo entendiste.",
+      "framework": "Preguntas orientadas al No → resumen → 'así es'",
+      "script_template": "¿Estaría en contra de explorar una alternativa que le ahorre tiempo? ... Entonces, lo que necesita es resolver X sin arriesgar Y, ¿es así?",
+      "when_to_use": ["contraparte a la defensiva", "destrabar negociación frenada", "generar compromiso real"],
+      "when_not_to_use": ["acuerdo ya cerrado", "trato trivial de bajo monto"],
+      "tags": ["no", "asi_es", "preguntas_calibradas", "chris_voss"],
+      "_source_hint": "Chris Voss — Never Split the Difference",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "neg_legends_003",
+      "subcategory": "leverage",
+      "principle": "El peor error es parecer desesperado por cerrar. El poder en la negociación viene de poder retirarse y de pensar en grande desde el inicio.",
+      "tactic": "Maximiza tus opciones y nunca te ates a un solo trato. Apunta alto: el techo que pides ancla todo el rango. Mantén siempre la disposición creíble a levantarte de la mesa.",
+      "framework": "Apuntar alto + maximizar opciones + apalancamiento",
+      "script_template": "Tengo varias alternativas sobre la mesa, así que esto tiene que tener sentido para mí. Lo ideal sería [oferta ambiciosa]; veamos si podemos llegar ahí.",
+      "when_to_use": ["tienes alternativas reales", "fijar el ancla inicial", "contraparte presiona por urgencia"],
+      "when_not_to_use": ["sin alternativas reales (faroleo riesgoso)", "relación de confianza a largo plazo frágil"],
+      "tags": ["leverage", "ancla_alta", "opciones", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "neg_legends_004",
+      "subcategory": "todo_negociable",
+      "principle": "Todo es negociable. Los límites suelen estar en tu cabeza, no en la realidad. El poder es percepción: si crees tenerlo, lo tienes.",
+      "tactic": "Nunca aceptes el primer 'no' ni el precio de lista como fijos. Cuida tres palancas: poder (percibido), tiempo (quien tiene menos prisa gana) e información (quien sabe más manda). Pide con calma; lo peor es un no.",
+      "framework": "Poder + Tiempo + Información",
+      "script_template": "Entiendo que ese es el precio publicado. ¿Qué flexibilidad hay si avanzamos hoy / si tomo mayor volumen / si ajustamos los plazos?",
+      "when_to_use": ["precio presentado como innegociable", "compras grandes", "crear margen donde parece no haber"],
+      "when_not_to_use": ["contextos de precio fijo regulado", "regatear daña la relación o la marca"],
+      "tags": ["todo_negociable", "poder", "tiempo", "informacion", "herb_cohen"],
+      "_source_hint": "Herb Cohen — You Can Negotiate Anything",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "neg_legends_005",
+      "subcategory": "valor_intangible",
+      "principle": "Consigue más enfocándote en lo que el otro valora, no solo en el dinero. Los pagos emocionales y los intangibles muchas veces cierran tratos que las cifras no pueden.",
+      "tactic": "Encuentra ítems de distinto valor para cada parte e intercámbialos (a ti te cuesta poco, a él le vale mucho). Haz preguntas, no supuestos. Las personas son irracionales: negocia con la persona, no con el problema abstracto.",
+      "framework": "Intercambio de ítems de valor desigual + foco en intereses del otro",
+      "script_template": "Más allá del precio, ¿qué haría que esto sea una gran decisión para usted? Quizá pueda ceder en [X que me cuesta poco] a cambio de [Y que necesito].",
+      "when_to_use": ["margen de precio agotado", "negociación multi-variable", "ambas partes pueden ganar"],
+      "when_not_to_use": ["transacción de una sola variable (solo precio)", "contraparte sin interés en colaborar"],
+      "tags": ["intangibles", "intercambio", "intereses", "stuart_diamond"],
+      "_source_hint": "Stuart Diamond — Getting More",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "neg_legends_006",
+      "subcategory": "reencuadre",
+      "principle": "Negocia el proceso antes que la sustancia. Cuando el trato parece imposible, el problema suele ser cómo se enmarca, no las posiciones.",
+      "tactic": "Reencuadra el conflicto como un problema conjunto a resolver. Construye un puente dorado para que el otro pueda decir sí sin perder la cara. Acuerda primero las reglas del juego.",
+      "framework": "Negociar el proceso → reencuadrar → puente dorado (salida digna)",
+      "script_template": "Antes de discutir números, pongámonos de acuerdo en cómo vamos a decidir esto de forma justa para los dos. ¿Le parece?",
+      "when_to_use": ["negociación trabada o tensa", "partes con posiciones enfrentadas", "tratos complejos"],
+      "when_not_to_use": ["acuerdo simple y rápido", "no hay tiempo para construir proceso"],
+      "tags": ["reencuadre", "proceso", "puente_dorado", "deepak_malhotra"],
+      "_source_hint": "Deepak Malhotra — Negotiating the Impossible",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "neg_legends_007",
+      "subcategory": "estilo_propio",
+      "principle": "La negociación efectiva empieza por conocer tu propio estilo y el del otro. No hay una técnica universal: hay adaptación.",
+      "tactic": "Identifica si la contraparte es competitiva o cooperativa y ajusta. Prepárate más que el otro: información, intereses y estándares objetivos ('precio de mercado', 'norma del sector') ganan discusiones.",
+      "framework": "Preparación + estilo adaptado + estándares objetivos",
+      "script_template": "Para que sea justo para ambos, basémonos en una referencia objetiva: ¿qué dice el mercado / qué pagan otros por algo equivalente?",
+      "when_to_use": ["preparar una negociación importante", "justificar tu posición sin confrontar", "contrapartes diversas"],
+      "when_not_to_use": ["improvisación de bajo riesgo", "sin datos de referencia disponibles"],
+      "tags": ["preparacion", "estilo", "estandares_objetivos", "richard_shell"],
+      "_source_hint": "G. Richard Shell — Bargaining for Advantage",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "neg_legends_008",
+      "subcategory": "superar_el_no",
+      "principle": "Frente a un no duro, no reacciones: sube al balcón. Ganar al otro como aliado vence a derrotarlo como adversario.",
+      "tactic": "Controla tu reacción (pausa, perspectiva). Ponte del lado del otro escuchando y reconociendo, luego reencuadra hacia intereses. Hazle fácil decir sí y difícil decir no, mostrando el costo de no acordar.",
+      "framework": "Subir al balcón → ponerse del lado → reencuadrar → puente → costo del no acuerdo",
+      "script_template": "Entiendo su posición y tiene sentido desde su lugar. Veamos juntos qué pasa si NO llegamos a un acuerdo... ¿no le conviene más que encontremos una salida hoy?",
+      "when_to_use": ["contraparte hostil o cerrada", "rechazo frontal", "destrabar un no rotundo"],
+      "when_not_to_use": ["clima ya colaborativo", "trato menor sin fricción"],
+      "tags": ["superar_no", "balcon", "reencuadre", "william_ury"],
+      "_source_hint": "William Ury — Getting Past No",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

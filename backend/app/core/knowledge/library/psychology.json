@@ -1,0 +1,45 @@
+{
+  "category": "psychology",
+  "description": "Psicología aplicada al rendimiento, aprendizaje y superación",
+  "items": [
+    {
+      "id": "psy_001",
+      "subcategory": "practicing_mind",
+      "principle": "La ansiedad viene de enfocarte en el resultado; la excelencia viene de enfocarte en el proceso presente. Practica el presente, no la perfección.",
+      "tactic": "Enfócate en el paso actual, no en la meta final. Evalúa el esfuerzo, no el resultado. Cada acción consciente es una victoria.",
+      "framework": "S.T.A.Y.: Simplify → Trust → Accept → Yield to the process",
+      "script_template": "No necesita dominar todo el sistema hoy. Hoy solo necesita [un paso específico]. Haga ese paso bien. Mañana, el siguiente. La excelencia es la suma de pequeñas ejecuciones perfectas, no un gran salto.",
+      "when_to_use": ["cliente abrumado", "onboarding", "implementación"],
+      "when_not_to_use": ["urgencia", "crisis"],
+      "tags": ["proceso", "presente", "practica", "sterner"],
+      "_source_hint": "Thomas Sterner - The Practicing Mind",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "psy_002",
+      "subcategory": "ultralearning",
+      "principle": "El aprendizaje acelerado no es un talento; es una estrategia. Metalearning + Enfoque + Direct Practice + Retrieval + Feedback = Maestría rápida.",
+      "tactic": "Aprende haciendo, no leyendo. Practica retrieval (auto-examen) en lugar de re-lectura. Busca feedback inmediato.",
+      "framework": "ULTRALEARNING: Meta-learning → Focus → Directness → Drill → Retrieval → Feedback → Retention → Intuition",
+      "script_template": "No le voy a dar un manual de 200 páginas. En su lugar, vamos a [acción directa inmediata]. Usted aprenderá más en 30 minutos haciendo que en 5 horas leyendo. Y después le doy feedback en tiempo real. ¿Listo?",
+      "when_to_use": ["capacitación", "onboarding", "adopción de herramienta"],
+      "when_not_to_use": ["cliente que prefiere teoría", "compliance training"],
+      "tags": ["aprendizaje", "practica", "feedback", "scott_young"],
+      "_source_hint": "Scott Young - Ultralearning",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "psy_003",
+      "subcategory": "mentalidad_crecimiento",
+      "principle": "Las habilidades no son fijas. Con el esfuerzo correcto y la retroalimentación adecuada, cualquiera puede mejorar drásticamente en cualquier área.",
+      "tactic": "Enfócate en 'aún no' en lugar de 'no puedo'. Celebra el esfuerzo, no solo el resultado. Modela la mejora continua.",
+      "framework": "Growth Mindset: Desafío → Esfuerzo → Aprendizaje → Feedback → Mejora",
+      "script_template": "Quizá su equipo no sea experto en [habilidad]... todavía. Pero eso es exactamente por qué implementamos esto con un proceso de aprendizaje. En 30 días verán una diferencia tangible. No porque sean 'naturales', sino porque el sistema está diseñado para hacerles mejores.",
+      "when_to_use": ["cliente inseguro", "cambio de proceso", "adopción"],
+      "when_not_to_use": ["cliente ya experto", "sin necesidad de cambio"],
+      "tags": ["crecimiento", "mentalidad", "esfuerzo", "dweck"],
+      "_source_hint": "Carol Dweck",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

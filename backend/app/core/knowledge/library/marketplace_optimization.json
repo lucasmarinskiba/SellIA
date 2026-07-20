@@ -1,0 +1,32 @@
+{
+  "category": "marketplace_optimization",
+  "description": "Vender en MercadoLibre, Amazon, Shopee: SEO, pricing, logística, competencia. Estrategias por plataforma.",
+  "items": [
+    {
+      "id": "mkt_001",
+      "subcategory": "mercadolibre_strategy",
+      "principle": "MercadoLibre: 60M+ usuarios. SEO del título, descripción, fotos son 80% de éxito. Precio competitivo vs sellers.",
+      "tactic": "Título: 'Laptop Dell 14\" Core i7 8GB SSD 256GB' (palabras clave, no fluff). Descripción: detalles, specs, shipping, envases. Fotos: 6-10 (ángulos, detalle, comparación). Precio: 3-5% abajo competencia si nuevo seller. Envío: 'Envío gratis a CABA' o partnear logística (OCA, Andreani).",
+      "framework": "SEO título → Fotos profesionales → Precio competitivo → Logística clara",
+      "examples": [
+        "Producto: Laptop. Seller A: 'laptop'. Seller B: 'Laptop Dell 14 Core i7 8GB SSD'. B: +40% clicks porque keywords match search.",
+        "Logística: Free shipping CABA → +30% conversión vs 'Envío a coordinar'. MercadoLibre da badge 'Envío Gratis'."
+      ],
+      "tags": ["marketplace", "mercadolibre", "seo", "logistics"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "mkt_002",
+      "subcategory": "amazon_fba_strategy",
+      "principle": "Amazon FBA (Fulfillment by Amazon): Amazon almacena, envía, gestiona retornos. Margen -15%, pero alcance global + Prime badge.",
+      "tactic": "Calcular: COGS $50 → precio Amazon $150. Amazon FBA cost: 30% (comisión + logística). Margen: $45 por venta. No FBA (seller fulfilled): 15% comisión, pero logística a cargo. FBA vale si >20 ventas/mes.",
+      "framework": "COGS → Precio Amazon → Restar FBA costs → Margen mínimo",
+      "examples": [
+        "Producto $150. FBA cost 30% = $45. Margen $55 (36%). Seller-fulfilled: 15% = $22.5. Margen $82 (54%). Trade-off: FBA = menos trabajo + Prime, pero margen menor.",
+        "Seller nuevo: FBA first 6 meses (build ratings) → Switch a seller-fulfilled después (margen +40%)."
+      ],
+      "tags": ["amazon", "fba", "logistics", "margin"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}

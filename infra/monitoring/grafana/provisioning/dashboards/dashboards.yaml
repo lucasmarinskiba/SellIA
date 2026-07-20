@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'sellia-default'
+    orgId: 1
+    folder: 'SellIA'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

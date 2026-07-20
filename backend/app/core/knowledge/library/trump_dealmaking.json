@@ -1,0 +1,84 @@
+{
+  "category": "trump_dealmaking",
+  "description": "Tácticas de negociación y deal-making de Donald Trump (The Art of the Deal)",
+  "items": [
+    {
+      "id": "trump_001",
+      "subcategory": "pensar_en_grande",
+      "principle": "Si vas a pensar igual, mejor piensa en grande. La mayoría piensa pequeño porque teme al éxito; el tamaño de la ambición fija el techo del resultado.",
+      "tactic": "Define la versión ambiciosa del objetivo antes de negociar: el ancla alta arrastra todo el rango hacia arriba. Pedir mucho y ceder deja al otro sintiendo que ganó, sin que pierdas lo esencial.",
+      "framework": "Pensar en grande → anclar alto → ceder hacia tu objetivo real",
+      "script_template": "Lo ideal sería [oferta ambiciosa]. Sé que es alto; por eso veamos cuánto de eso podemos lograr juntos hoy.",
+      "when_to_use": ["abrir una negociación", "fijar expectativas", "evitar conformarse con poco"],
+      "when_not_to_use": ["relación de confianza frágil que castiga la sobre-pedida", "contexto de precio fijo"],
+      "tags": ["ambicion", "ancla", "vision", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "trump_002",
+      "subcategory": "maximizar_opciones",
+      "principle": "Protégete del lado malo y el bueno se cuida solo. Mantén siempre muchas opciones en juego: nunca te enamores de un solo trato.",
+      "tactic": "Negocia varios frentes a la vez para no depender de ninguno. El que puede levantarse de la mesa tiene el poder. Calcula el peor escenario y asegúralo antes de soñar con el mejor.",
+      "framework": "Maximizar opciones + cubrir el downside = poder de mesa",
+      "script_template": "Tengo otras alternativas avanzando, así que esto tiene que cerrar bien para mí. Si no, no hay problema en seguir buscando.",
+      "when_to_use": ["tienes alternativas reales", "evitar dependencia de un solo trato", "ganar apalancamiento"],
+      "when_not_to_use": ["sin alternativas reales (riesgo de farol)", "daña una relación de largo plazo clave"],
+      "tags": ["opciones", "downside", "leverage", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "trump_003",
+      "subcategory": "apalancamiento",
+      "principle": "El peor error es parecer desesperado por cerrar: el otro lo huele y te aplasta. El apalancamiento es tener algo que el otro quiere, o mejor, que necesita.",
+      "tactic": "Identifica qué necesita el otro y conviértelo en tu palanca. Si no tienes ventaja, créala (urgencia, escasez, alternativa). Nunca transmitas necesidad aunque la tengas.",
+      "framework": "Apalancamiento: lo que el otro necesita en tus manos",
+      "script_template": "Entiendo que esto le sirve mucho. Yo tengo tiempo y opciones, así que avancemos solo si las condiciones tienen sentido.",
+      "when_to_use": ["construir poder de negociación", "contraparte que presiona", "fijar términos"],
+      "when_not_to_use": ["relación basada en confianza mutua de largo plazo", "fingir ventaja inexistente y verificable"],
+      "tags": ["apalancamiento", "necesidad", "poder", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "trump_004",
+      "subcategory": "percepcion",
+      "principle": "Juego con las fantasías de la gente: la percepción es realidad. Una pizca de hipérbole bien colocada vende más que el dato frío.",
+      "tactic": "Enmarca tu oferta como excepcional y crea sensación de oportunidad única. Maneja la percepción de valor con seguridad y entusiasmo, respaldando luego con hechos para sostener la credibilidad.",
+      "framework": "Gestión de percepción + entusiasmo + respaldo con hechos",
+      "script_template": "Esto es de lo mejor que va a ver en su categoría, y no lo digo por decir: mire estos resultados concretos.",
+      "when_to_use": ["presentar una oferta", "diferenciarte", "generar deseo"],
+      "when_not_to_use": ["audiencia técnica que castiga la exageración", "claims no verificables (riesgo de credibilidad)"],
+      "tags": ["percepcion", "marketing", "entusiasmo", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "trump_005",
+      "subcategory": "firmeza",
+      "principle": "Contraataca con fuerza cuando te tratan injustamente; pelea por lo que crees, aunque vaya contra la corriente. La debilidad invita al abuso.",
+      "tactic": "Responde con firmeza inmediata a una jugada desleal para fijar límites. No cedas por desgaste ni por presión social. La disposición visible a defender tu posición disuade futuros abusos.",
+      "framework": "Firmeza + respuesta proporcional ante el abuso",
+      "script_template": "Eso no me parece justo y se lo digo de frente. Sobre esa base no avanzo; volvamos a una propuesta razonable para ambos.",
+      "when_to_use": ["contraparte abusa o presiona desleal", "fijar límites", "negociación de desgaste"],
+      "when_not_to_use": ["error genuino del otro sin mala fe", "clima colaborativo que la dureza rompería"],
+      "tags": ["firmeza", "limites", "contraataque", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "trump_006",
+      "subcategory": "ejecucion",
+      "principle": "Puedes tener la fantasía más linda del mundo, pero no sirve de nada si no la concretas. Entrega antes de prometer y deja siempre margen para sorprender.",
+      "tactic": "Promete con prudencia y entrega de más: la sobre-entrega construye reputación y referidos. Cuida cada detalle de la ejecución; el trato no termina al firmar, sino al cumplir.",
+      "framework": "Promete con margen → sobre-entrega → reputación",
+      "script_template": "Le prometo lo que sé que puedo cumplir, y voy a buscar darle un poco más de lo esperado. Así trabajo.",
+      "when_to_use": ["cerrar y ejecutar", "construir reputación", "generar referidos"],
+      "when_not_to_use": ["fase de pura negociación sin entrega aún"],
+      "tags": ["ejecucion", "sobre_entrega", "reputacion", "trump"],
+      "_source_hint": "Donald Trump — The Art of the Deal",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

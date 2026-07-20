@@ -1,0 +1,61 @@
+{
+  "category": "industry_strategies",
+  "description": "Estrategias de venta por industria: SaaS, E-commerce, Bienes raíces, Servicios, B2B. Métodos probados en cada vertical.",
+  "items": [
+    {
+      "id": "industry_001",
+      "subcategory": "saas_enterprise",
+      "principle": "SaaS enterprise: ciclo largo (90-180 días), múltiples decisores (técnico/financiero/ejecutivo), evaluación rigurosa. No es venta; es consultoría + implementación + ROI proof.",
+      "tactic": "Fase 1 (semana 1-2): técnico. Responde objeciones técnicas, demuestra integración. Fase 2 (semana 3-6): financiero. ROI calculator, TCO vs competencia, payback en meses. Fase 3 (semana 7+): ejecutivo. Risk mitigation, soporte post-venta, SLA. Cada decisor una campaña diferente.",
+      "framework": "3 decisores → 3 campañas paralelas → Síncrona en cierre",
+      "script_template": "Técnico: 'Integra con [X sistemas]. Verifica aquí.' | Financiero: 'Payback en [X meses]. Mira TCO.' | Ejecutivo: 'Risk compartido, SLA 99.9%'",
+      "tags": ["saas", "enterprise", "multiple_decisores", "roi"],
+      "_source_hint": "Enterprise SaaS Sales Best Practices",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "industry_002",
+      "subcategory": "ecommerce_conversion",
+      "principle": "E-commerce: venta impulsiva (minutos, no días). Presión psicológica = escasez + urgencia + FOMO + garantía. Sin fricción = conversión sube 30%.",
+      "tactic": "Stack: 1) Escasez real ('solo 3 quedan'). 2) Urgencia honesta ('bono si compras hoy'). 3) Prueba social ('X compraron esta semana'). 4) Garantía ('30 días dinero de vuelta'). 5) Pago fácil (1-click, múltiples formas, wallet digital). Cada elemento reduce fricción.",
+      "framework": "Escasez + Urgencia + Prueba Social + Garantía + 1-Click = Impulso de compra",
+      "script_template": "[Foto vívida] + 'Solo 2 quedan' + 'Bono USD 20 hoy' + '[X compraron]' + '30 días OK' + '[Pagar ahora]'",
+      "tags": ["ecommerce", "impulsiva", "friccion", "urgencia"],
+      "_source_hint": "Conversion Rate Optimization (CRO)",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "industry_003",
+      "subcategory": "real_estate_emotion",
+      "principle": "Inmobiliaria: venta EMOCIONAL (comprador visualiza futuro ahí, no solo compra casa). Vende el estilo de vida, no la propiedad. Quien controla la emoción, vende.",
+      "tactic": "Tour: 1) Entrada ('bienvenida, aquí empieza tu historia'). 2) Living/comedor ('imagina cena con familia aquí'). 3) Dormitorio ('aquí descansas después de lograr tus sueños'). 4) Vista ('mira tu barrio, tu futuro'). Toda narrativa: comprador en la imagen. No descripciones técnicas; experiencias emocionales.",
+      "framework": "Narrativa de futuro + Imagen vívida + Emoción = Venta",
+      "script_template": "'Imagina: sábado, familia acá [sala], sol de la tarde, sin ruido. Ese es el barrio. Ahora entra.'",
+      "tags": ["real_estate", "emocion", "lifestyle", "visualizacion"],
+      "_source_hint": "Real Estate Sales Psychology",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "industry_004",
+      "subcategory": "services_trust",
+      "principle": "Servicios (consultoría, coaching, design): venta de CONFIANZA + expertise. Sin demostrable tangible = vendés a vos + resultados pasados. Reputación = todo.",
+      "tactic": "Elementos: 1) Portfolio de casos (resultados reales con números). 2) Testimonios específicos ('logré X en Y días'). 3) Expertise visible (contenido, escritos, talks). 4) Relación previa (diagnóstico gratis, sesión exploratoria). 5) Garantía de resultado (rebaja si no logra KPI). Construcción de confianza, no presión.",
+      "framework": "Casos reales + Testimonios + Expertise + Relación + Garantía = Confianza",
+      "script_template": "'Ayudé a [empresa similar] a lograr [X]. Aquí el caso: [resultados]. ¿Hacemos diagnóstico gratis para ver si aplica?'",
+      "tags": ["services", "trust", "expertise", "relacion"],
+      "_source_hint": "Service Industry Sales",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "industry_005",
+      "subcategory": "b2b_outbound_cold",
+      "principle": "B2B outbound en frío: presión baja, investigación alta, secuencia implacable. No es una llamada; es 5-8 toques que van construyendo contexto.",
+      "tactic": "Email 1: pitch personalizado (30 seg lectura, 1 objeción resuelta). Si no responde: Email 2 (valor nuevo, caso tangible). Email 3 (urgencia real, bono acotado). Call (si abrió email 2-3). Email 4 (si no contesta call). Cada toque = razón distinta. No parezca spam.",
+      "framework": "Secuencia 5-8 toques · Cada uno: contexto + valor nuevo · Filtro: respuesta rápida = interés",
+      "script_template": "E1: pitch personal (30s) | E2: caso similar (valor) | E3: bono (urgencia) | Call | E4: retirada desinteresada",
+      "tags": ["b2b", "outbound", "secuencia", "cold_email"],
+      "_source_hint": "Aaron Ross / Predictable Revenue",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

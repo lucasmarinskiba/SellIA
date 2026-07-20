@@ -1,0 +1,110 @@
+{
+  "category": "copywriting",
+  "description": "Principios de copywriting y respuesta directa de los grandes maestros",
+  "items": [
+    {
+      "id": "copy_001",
+      "subcategory": "titular",
+      "principle": "En promedio, cinco veces más gente lee el titular que el cuerpo. Cuando escribiste el titular, gastaste ochenta centavos de tu dólar.",
+      "tactic": "Invierte la mayor parte del esfuerzo en el titular: prometer un beneficio concreto o despertar curiosidad específica. Un titular débil entierra el mejor producto; uno fuerte gana la mitad de la batalla.",
+      "framework": "El titular vende la lectura, no el producto",
+      "script_template": "Cómo [lograr beneficio deseado] en [plazo] sin [dolor/esfuerzo temido].",
+      "when_to_use": ["asunto de email", "encabezado de anuncio o landing", "primera línea de un mensaje"],
+      "when_not_to_use": ["conversación 1:1 ya avanzada", "contexto que exige sobriedad institucional"],
+      "tags": ["titular", "headline", "beneficio", "david_ogilvy"],
+      "_source_hint": "David Ogilvy",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "copy_002",
+      "subcategory": "estado_de_conciencia",
+      "principle": "El copy entra en la conversación que ya ocurre en la mente del prospecto. Adapta el mensaje al grado de conciencia: del que no sabe que tiene el problema al que ya conoce tu producto.",
+      "tactic": "Diagnostica qué tan consciente es el prospecto del problema y de la solución, y empieza el mensaje desde ahí. A los inconscientes véndeles el problema; a los conscientes de solución, por qué TÚ.",
+      "framework": "5 niveles de conciencia: inconsciente → del problema → de la solución → del producto → del mejor producto",
+      "script_template": "¿Sabía que [problema oculto que no notaba]? Eso le está costando [consecuencia]. Existe una forma de resolverlo...",
+      "when_to_use": ["definir el ángulo del mensaje", "campañas a públicos fríos vs calientes", "segmentar copy"],
+      "when_not_to_use": ["público ya listo para comprar (ve directo al cierre)", "mensaje genérico de una sola talla"],
+      "tags": ["conciencia", "awareness", "angulo", "eugene_schwartz"],
+      "_source_hint": "Eugene Schwartz — Breakthrough Advertising",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "copy_003",
+      "subcategory": "beneficios",
+      "principle": "La gente no compra taladros, compra agujeros. Vende el resultado y la transformación, no las características técnicas.",
+      "tactic": "Traduce cada característica a un beneficio concreto y luego a un resultado emocional ('para que usted pueda...'). El cliente solo se pregunta: ¿qué gano yo con esto?",
+      "framework": "Característica → Beneficio → Resultado emocional (regla del 'para que usted...')",
+      "script_template": "Tiene [característica], lo que significa que usted [beneficio], para que finalmente pueda [resultado deseado].",
+      "when_to_use": ["presentar un producto", "página de ventas", "responder '¿qué incluye?'"],
+      "when_not_to_use": ["comprador técnico que pide specs exactas", "comparación puramente funcional"],
+      "tags": ["beneficios", "resultado", "transformacion", "copywriting"],
+      "_source_hint": "Theodore Levitt / clásicos de respuesta directa",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "copy_004",
+      "subcategory": "deslizamiento",
+      "principle": "El único propósito de la primera frase es que se lea la segunda. Cada línea debe arrastrar a la siguiente: es el resbaladero (slippery slide).",
+      "tactic": "Abre con frases cortas e intrigantes y elimina toda fricción de lectura. Usa frases puente ('pero hay más...', 'esto es lo importante...') para mantener el impulso hasta el llamado a la acción.",
+      "framework": "Slippery slide: cada línea vende la siguiente",
+      "script_template": "Déjeme contarle algo que cambia todo. Pero antes, esto: [gancho corto]. Y acá viene lo importante...",
+      "when_to_use": ["textos largos de venta", "secuencias de email", "mantener atención"],
+      "when_not_to_use": ["comunicación breve y transaccional", "documento técnico de referencia"],
+      "tags": ["fluidez", "slippery_slide", "engagement", "joseph_sugarman"],
+      "_source_hint": "Joseph Sugarman — The Adweek Copywriting Handbook",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "copy_005",
+      "subcategory": "urgencia_escasez",
+      "principle": "La razón número uno por la que la gente no compra es la falta de urgencia. Sin una razón para actuar ahora, posponen, y posponer es no comprar.",
+      "tactic": "Da un motivo real y creíble para actuar ya: stock limitado, plazo de oferta, bono que vence, precio que sube. La escasez debe ser auténtica; la falsa destruye la confianza.",
+      "framework": "Urgencia + escasez genuinas → acción inmediata",
+      "script_template": "Esta condición es por [plazo/cantidad reales]. Después vuelve a [precio/condición normal]. Si le sirve, este es el momento.",
+      "when_to_use": ["cierre", "promoción con límite real", "combatir la postergación"],
+      "when_not_to_use": ["no hay escasez real (no inventarla)", "venta consultiva de ciclo largo"],
+      "tags": ["urgencia", "escasez", "cierre", "copywriting"],
+      "_source_hint": "Gary Halbert / respuesta directa",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "copy_006",
+      "subcategory": "prueba",
+      "principle": "Las afirmaciones específicas y demostradas venden; las generalidades no. 'Pierde 5 kilos en 30 días' supera a 'mejora tu salud'.",
+      "tactic": "Reemplaza adjetivos vagos por datos, cifras, demostraciones y testimonios concretos. La especificidad genera credibilidad: los números exactos parecen más verdaderos que los redondeados.",
+      "framework": "Especificidad + prueba (datos, demos, testimonios) = credibilidad",
+      "script_template": "No le digo que es 'mejor'. Le muestro: [cifra exacta], verificado por [prueba concreta] y respaldado por [testimonio específico].",
+      "when_to_use": ["construir credibilidad", "diferenciar de la competencia", "vencer escepticismo"],
+      "when_not_to_use": ["sin datos reales que respalden", "exagerar cifras no verificables"],
+      "tags": ["prueba", "especificidad", "credibilidad", "claude_hopkins"],
+      "_source_hint": "Claude Hopkins — Scientific Advertising",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "copy_007",
+      "subcategory": "estructura",
+      "principle": "Una buena estructura persuasiva guía al lector de la atención a la acción sin saltos. AIDA sigue funcionando porque sigue el camino natural de la decisión.",
+      "tactic": "Ordena el mensaje: captura Atención, despierta Interés con un problema relevante, construye Deseo mostrando la solución y sus beneficios, y pide una Acción clara y única. Un solo llamado a la acción por mensaje.",
+      "framework": "AIDA: Atención → Interés → Deseo → Acción",
+      "script_template": "[Gancho que detiene]. ¿Le pasa que [problema]? Imagine [solución y beneficio]. Haga esto ahora: [acción única y clara].",
+      "when_to_use": ["estructurar cualquier mensaje de venta", "anuncios", "emails de conversión"],
+      "when_not_to_use": ["conversación abierta sin objetivo de cierre", "contenido puramente informativo"],
+      "tags": ["aida", "estructura", "cta", "copywriting"],
+      "_source_hint": "Principios clásicos de respuesta directa",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "copy_008",
+      "subcategory": "reversion_riesgo",
+      "principle": "Asume tú el riesgo de la transacción y eliminarás la mayor barrera del comprador: el miedo a equivocarse. Una garantía audaz vende más de lo que cuesta.",
+      "tactic": "Ofrece una garantía clara y generosa que invierta el riesgo del cliente al vendedor. Cuanto más audaz y específica, más confianza transmite. El aumento en ventas casi siempre supera las devoluciones.",
+      "framework": "Reversión de riesgo: garantía audaz → elimina el miedo a comprar",
+      "script_template": "Pruébelo [plazo]. Si no obtiene [resultado prometido], le devuelvo todo, sin preguntas. El riesgo lo asumo yo, no usted.",
+      "when_to_use": ["cierre con cliente dudoso", "objeción de riesgo", "diferenciarte por confianza"],
+      "when_not_to_use": ["no puedes sostener la garantía operativamente", "producto con alta tasa de abuso de devoluciones"],
+      "tags": ["garantia", "riesgo", "cierre", "jay_abraham"],
+      "_source_hint": "Jay Abraham / respuesta directa",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

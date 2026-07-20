@@ -1,0 +1,11 @@
+{
+  "category": "subscription_billing",
+  "description": "Recurring billing, dunning, churn prevention",
+  "items": [
+    {"id": "sub_001", "name": "Subscription tiers", "tactic": "Basic $9/mo, Pro $29/mo, Enterprise custom. Clear upgrade path."},
+    {"id": "sub_002", "name": "Billing automation", "tactic": "Stripe webhooks. Invoice on billing_date. Auto-retry 3x. Notify on success."},
+    {"id": "sub_003", "name": "Dunning workflow", "tactic": "Failed: retry 3d. Email+incentive. Suspend account. Recover 40% via dunning."},
+    {"id": "sub_004", "name": "Churn prevention", "tactic": "Usage down 30% = outreach. NPS <40 = intervention. Offer pause."},
+    {"id": "sub_005", "name": "MRR/LTV metrics", "tactic": "MRR = active * price. LTV = MRR / monthly_churn. Track health."}
+  ]
+}

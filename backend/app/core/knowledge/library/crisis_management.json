@@ -1,0 +1,22 @@
+{
+  "category": "crisis_management",
+  "description": "Errores, refunds, disputes. Cómo recuperarse sin perder cliente.",
+  "items": [
+    {
+      "id": "crisis_001",
+      "subcategory": "refund_policy",
+      "principle": "Refund fácil (30d, sin preguntas) → confianza → más compras. Paradoja: refund policy liberal = menos refunds (customer trusts).",
+      "tactic": "Policy: 'Unsatisfied? 30-day refund, no questions asked'. % refund típico: 1-2% (psicología: si fácil, menos gente refunda).",
+      "tags": ["refund", "trust", "customer_service", "retention"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "crisis_002",
+      "subcategory": "support_escalation",
+      "principle": "Problema crítico (error envío, producto roto) → escalación <1h. Compensation: refund + $20 coupon. Salva relationship.",
+      "tactic": "Tier 1 (email, 24h). Tier 2 (phone, <4h). Tier 3 (director, <1h). Compensation matrix: $50 problema → $100 compensation típico.",
+      "tags": ["support", "escalation", "crisis", "compensation"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}

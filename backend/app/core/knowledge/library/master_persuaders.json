@@ -1,0 +1,110 @@
+{
+  "category": "master_persuaders",
+  "description": "Maestros del convencimiento, la influencia y las relaciones",
+  "items": [
+    {
+      "id": "persuader_001",
+      "subcategory": "reciprocidad",
+      "principle": "La gente devuelve favores. Si das primero valor real, generás una deuda psicológica que predispone al sí.",
+      "tactic": "Entregá algo valioso y genuino antes de pedir (recurso, diagnóstico, muestra). Que sea inesperado y personalizado: maximiza el impulso de devolver.",
+      "framework": "Dar primero → reciprocidad",
+      "script_template": "Te dejo [recurso útil] sin compromiso. Si te sirve, después vemos cómo seguir.",
+      "when_to_use": ["primer contacto", "lead magnet", "cierre con duda"],
+      "when_not_to_use": ["regalo falso o interesado evidente"],
+      "tags": ["reciprocidad", "influencia", "cialdini"],
+      "_source_hint": "Robert Cialdini — Influence",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "persuader_002",
+      "subcategory": "prueba_social",
+      "principle": "Cuando dudamos, hacemos lo que hacen los demás. La prueba social baja el riesgo percibido y acelera la decisión.",
+      "tactic": "Mostrá cuántos ya compraron, testimonios específicos y casos parecidos al prospecto ('gente como vos'). La similitud pesa más que el volumen.",
+      "framework": "Prueba social = otros como vos ya lo hicieron",
+      "script_template": "[N] clientes de [su rubro] ya lo usan. Mirá lo que logró [caso similar].",
+      "when_to_use": ["objeción de riesgo", "página de ventas", "cierre"],
+      "when_not_to_use": ["sin pruebas reales (no inventar)"],
+      "tags": ["prueba_social", "testimonios", "cialdini"],
+      "_source_hint": "Robert Cialdini — Influence",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "persuader_003",
+      "subcategory": "relaciones",
+      "principle": "A nadie le importa cuánto sabés hasta que sabe cuánto te importa. La gente compra de quien le cae bien y la hace sentir importante.",
+      "tactic": "Interesate de verdad por el otro: usá su nombre, escuchá más de lo que hablás, reconocé lo bueno con sinceridad. Hacelo sentir importante y bajá su guardia.",
+      "framework": "Interés genuino → simpatía → confianza",
+      "script_template": "Contame de vos y tu negocio. ¿Qué es lo que más te enorgullece de lo que hacés?",
+      "when_to_use": ["construir rapport", "venta relacional", "networking"],
+      "when_not_to_use": ["adulación falsa (se nota y repele)"],
+      "tags": ["relaciones", "simpatia", "escucha", "carnegie"],
+      "_source_hint": "Dale Carnegie — Cómo ganar amigos",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "persuader_004",
+      "subcategory": "empatia_tactica",
+      "principle": "Etiquetar la emoción del otro la desactiva. 'Parece que esto te preocupa' abre la puerta que la presión cierra.",
+      "tactic": "Nombrá la emoción o la objeción del otro antes de que la diga ('parece que el precio te frena'). Usá silencios y preguntas calibradas ('¿cómo se supone que haga eso?').",
+      "framework": "Etiquetar → reflejar → silencio → pregunta calibrada",
+      "script_template": "Parece que [emoción/objeción]. ¿Qué tendría que pasar para que esto tenga sentido para vos?",
+      "when_to_use": ["negociación", "objeciones", "cliente tenso"],
+      "when_not_to_use": ["cliente ya decidido a comprar"],
+      "tags": ["empatia_tactica", "negociacion", "voss"],
+      "_source_hint": "Chris Voss — Never Split the Difference",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "persuader_005",
+      "subcategory": "escasez",
+      "principle": "Deseamos más lo que escasea. La posibilidad de perder algo motiva más que la de ganarlo.",
+      "tactic": "Hacé explícita la escasez REAL (cupos, plazo, bono que vence) y encuadrá en términos de pérdida ('perdés esto si no actuás'). La escasez falsa destruye la confianza.",
+      "framework": "Escasez + aversión a la pérdida",
+      "script_template": "Quedan [N reales] / hasta [fecha]. Después se pierde [beneficio]. ¿Lo asegurás ahora?",
+      "when_to_use": ["cierre", "oferta con límite real"],
+      "when_not_to_use": ["sin escasez real"],
+      "tags": ["escasez", "aversion_perdida", "cialdini"],
+      "_source_hint": "Cialdini / Kahneman (aversión a la pérdida)",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "persuader_006",
+      "subcategory": "compromiso",
+      "principle": "Quien da un pequeño sí tiende a darse el grande. La coherencia con compromisos previos guía la conducta.",
+      "tactic": "Conseguí micro-compromisos crecientes (responder, agendar, probar). Cada paso pequeño hace más probable el siguiente. Que el cliente diga 'sí' varias veces antes del cierre.",
+      "framework": "Micro-sí → coherencia → cierre",
+      "script_template": "¿Tiene sentido lo que vimos? (sí) ¿Querés que te muestre cómo aplicarlo? (sí) Entonces el paso lógico es…",
+      "when_to_use": ["venta consultiva", "ciclos largos", "secuencias"],
+      "when_not_to_use": ["compra impulsiva inmediata"],
+      "tags": ["compromiso", "coherencia", "cialdini"],
+      "_source_hint": "Robert Cialdini — Influence",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "persuader_007",
+      "subcategory": "marco",
+      "principle": "Quien define el marco, gana. La misma oferta encuadrada como 'inversión que recuperás' vende; como 'gasto' no.",
+      "tactic": "Encuadrá el precio contra el valor o el costo de no actuar, no contra competidores. Cambiá la pregunta de '¿es caro?' a '¿cuánto perdés por no tenerlo?'.",
+      "framework": "Reframe: inversión vs costo de inacción",
+      "script_template": "No es un gasto de [precio]; es recuperar [valor/ahorro] que hoy estás perdiendo cada mes.",
+      "when_to_use": ["objeción de precio", "venta por valor"],
+      "when_not_to_use": ["sin valor cuantificable"],
+      "tags": ["marco", "reframe", "valor", "persuasion"],
+      "_source_hint": "Economía conductual / value selling",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "persuader_008",
+      "subcategory": "autoridad_e_identidad",
+      "principle": "Obedecemos a la autoridad y actuamos según quiénes creemos ser. Posicionate como experto y apelá a la identidad del cliente.",
+      "tactic": "Mostrá señales de autoridad (resultados, credenciales, prensa) y conectá la compra con la identidad deseada del cliente ('los que se toman en serio su negocio usan esto'). La gente compra para ser quien quiere ser.",
+      "framework": "Autoridad + identidad ('vos sos de los que…')",
+      "script_template": "Los [identidad aspiracional, ej. dueños que escalan en serio] ya dieron este paso. ¿Sos de esos?",
+      "when_to_use": ["posicionamiento", "cierre", "premium"],
+      "when_not_to_use": ["autoridad inventada o presión abusiva"],
+      "tags": ["autoridad", "identidad", "cialdini", "convencimiento"],
+      "_source_hint": "Cialdini (autoridad/unidad) / identidad de marca",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

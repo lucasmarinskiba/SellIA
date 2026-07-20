@@ -1,0 +1,84 @@
+{
+  "category": "marketing_funnels",
+  "description": "Marketing digital, embudos de conversión y adquisición",
+  "items": [
+    {
+      "id": "funnel_001",
+      "subcategory": "embudo",
+      "principle": "Cada etapa del embudo pierde gente; tu trabajo es reducir la fuga donde más duele. Optimizar el cuello de botella rinde más que traer más tráfico al tope.",
+      "tactic": "Mapea el embudo (atracción → captura → nutrición → conversión → retención) con tasas de conversión por paso. Identifica el peor salto y arréglalo antes de gastar en más tráfico. Más leads sobre un embudo roto es desperdicio.",
+      "framework": "Embudo TOFU/MOFU/BOFU: atraer → nutrir → convertir, optimizar el cuello",
+      "script_template": "Tenés tráfico pero no convierte en [etapa]. Ahí está la fuga: arreglemos ese paso antes de traer más gente.",
+      "when_to_use": ["diagnosticar adquisición", "priorizar optimización", "escalar con eficiencia"],
+      "when_not_to_use": ["sin datos de conversión por etapa", "negocio sin embudo digital"],
+      "tags": ["embudo", "funnel", "conversion", "cuello_de_botella"],
+      "_source_hint": "Práctica de growth / funnel marketing",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "funnel_002",
+      "subcategory": "lead_magnet",
+      "principle": "Pedir la venta a un extraño frío es ineficiente. Un lead magnet de valor real captura el contacto y abre una relación antes de vender.",
+      "tactic": "Ofrece algo gratuito, específico y de valor inmediato (guía, plantilla, diagnóstico) a cambio del contacto. Debe resolver un micro-problema real del cliente ideal, no ser un folleto disfrazado. El valor del imán predice la calidad del lead.",
+      "framework": "Lead magnet: valor gratis específico → captura de contacto",
+      "script_template": "Antes de nada, llevate [recurso gratuito útil] que resuelve [micro-problema]. Si te sirve, después seguimos.",
+      "when_to_use": ["captar leads fríos", "construir lista", "tope del embudo"],
+      "when_not_to_use": ["audiencia ya caliente lista para comprar", "imán genérico sin valor real"],
+      "tags": ["lead_magnet", "captura", "lead", "tofu"],
+      "_source_hint": "Práctica de inbound / lead generation",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "funnel_003",
+      "subcategory": "nurturing",
+      "principle": "La mayoría de los leads no compra al primer contacto pero sí más tarde. La nutrición sistemática mantiene la relación viva hasta que el cliente esté listo.",
+      "tactic": "Diseña una secuencia de emails/mensajes que aporte valor (no solo venda) y eduque sobre el problema y la solución. Automatiza la cadencia y segmenta por comportamiento. El lead nutrido convierte mucho más que el abandonado.",
+      "framework": "Lead nurturing: secuencia de valor automatizada hasta la compra",
+      "script_template": "Te comparto esto que suma a lo que buscabas: [valor]. Sin apuro; cuando estés listo para [siguiente paso], avisame.",
+      "when_to_use": ["ciclos de decisión largos", "leads que no compran de inmediato", "MOFU"],
+      "when_not_to_use": ["compra impulsiva inmediata", "lead que pidió no ser contactado"],
+      "tags": ["nurturing", "email", "secuencia", "mofu"],
+      "_source_hint": "Práctica de marketing automation",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "funnel_004",
+      "subcategory": "landing",
+      "principle": "Una landing convierte cuando tiene un solo objetivo y elimina toda distracción. Cada enlace o pedido extra reduce la conversión del principal.",
+      "tactic": "Construye la landing alrededor de una sola promesa y una sola acción: titular con beneficio claro, prueba, manejo de objeción y un CTA repetido. Quita menú, enlaces externos y campos de formulario innecesarios. Una página, un objetivo.",
+      "framework": "Landing de conversión: una promesa, un CTA, cero distracción",
+      "script_template": "Beneficio principal arriba. Prueba en el medio. Una sola acción clara: [CTA]. Nada que distraiga de eso.",
+      "when_to_use": ["campañas pagas", "convertir tráfico a lead/venta", "BOFU"],
+      "when_not_to_use": ["página de navegación general", "múltiples objetivos en conflicto"],
+      "tags": ["landing", "conversion", "cta", "bofu"],
+      "_source_hint": "Práctica de CRO / landing pages",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "funnel_005",
+      "subcategory": "retargeting",
+      "principle": "La mayoría que visita no compra en la primera visita. El retargeting recupera a quien ya mostró interés, a un costo mucho menor que captar a uno nuevo.",
+      "tactic": "Segmenta a quienes visitaron pero no convirtieron y muéstrales anuncios específicos a su etapa (recordatorio, manejo de objeción, oferta). El que ya te conoce convierte más barato. No quemes con sobre-exposición.",
+      "framework": "Retargeting: recuperar visitantes tibios con mensaje por etapa",
+      "script_template": "¿Te quedaste pensando en [producto]? Acá va lo que suele frenar a la gente y por qué no debería frenarte a vos.",
+      "when_to_use": ["recuperar tráfico que no convirtió", "carritos abandonados", "bajar CAC"],
+      "when_not_to_use": ["sin pixel/datos de visitantes", "audiencia que ya rechazó explícitamente"],
+      "tags": ["retargeting", "remarketing", "recuperacion", "cac"],
+      "_source_hint": "Práctica de paid media / performance",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "funnel_006",
+      "subcategory": "canal",
+      "principle": "No necesitás estar en todos los canales, necesitás dominar el que tu cliente usa. Dispersarse en todos diluye el presupuesto y el aprendizaje.",
+      "tactic": "Identifica dónde está y decide tu cliente ideal, concentra esfuerzo en uno o dos canales hasta dominarlos, y recién entonces expande. Mide CAC por canal y reasigna al que mejor convierte. Foco antes que cobertura.",
+      "framework": "Selección de canal: dominar uno antes de expandir",
+      "script_template": "Tu cliente está en [canal]. Pongamos el foco y el presupuesto ahí hasta que rinda, antes de abrir otros frentes.",
+      "when_to_use": ["presupuesto limitado", "early stage de adquisición", "optimizar CAC"],
+      "when_not_to_use": ["marca grande con presupuesto para omnicanal", "canal único ya saturado"],
+      "tags": ["canal", "adquisicion", "foco", "cac"],
+      "_source_hint": "Weinberg & Mares — Traction / práctica de growth",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

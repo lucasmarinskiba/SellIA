@@ -1,0 +1,159 @@
+{
+  "category": "legendary_sellers",
+  "description": "Vendedores legendarios y métodos para vender lo aparentemente invendible (arena al Sahara, agua al Amazonas, hielo a un esquimal). Frameworks de reframe, identidad y valor oculto.",
+  "items": [
+    {
+      "id": "legend_001",
+      "subcategory": "reframe_de_valor",
+      "principle": "Nada se vende por lo que ES, se vende por lo que SIGNIFICA. La arena al beduino no se vende como arena: se vende como pureza ritual, como recuerdo embotellado, como arte. El producto es el mismo; el significado cambia todo.",
+      "tactic": "Antes de pitchear, listá 5 SIGNIFICADOS posibles del producto en ese contexto (ritual, recuerdo, estatus, identidad, salud, arte, regalo, espiritual, coleccionable). Elegí el significado que el comprador YA valora y vendé ESO, no el objeto.",
+      "framework": "Producto → 5 significados → vender el significado, no el objeto",
+      "script_template": "No te ofrezco [producto], te ofrezco [significado que el cliente ya valora]: [historia/imagen que lo prueba].",
+      "examples": [
+        "Arena al Sahara → arena de la Meca embotellada (significado: peregrinación/sagrado)",
+        "Agua al Amazonas → agua mineralizada con minerales específicos (significado: salud/pureza certificada)",
+        "Hielo al esquimal → hielo cristalino tallado para whisky premium (significado: estatus/ritual)",
+        "Arena a la isla → arena blanca certificada de Bora Bora en frasco souvenir (significado: recuerdo de status)"
+      ],
+      "tags": ["reframe", "significado", "identidad", "ogilvy"],
+      "_source_hint": "David Ogilvy — significado del producto / Marketing 4.0",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "legend_002",
+      "subcategory": "diferenciacion_extrema",
+      "principle": "Cuando el producto parece commodity (o sobra), la única salida es la diferenciación radical: pureza, origen, certificación, packaging, historia o ritual. La calidad percibida nace del DETALLE que el competidor no tiene.",
+      "tactic": "Andá al EXTREMO en un atributo invisible: origen (de un glaciar de 10.000 años), proceso (filtrado en cobre), pureza (99.99%), edición (limitada/numerada), packaging (vidrio soplado), historia (cosechada por monjes). Que el comprador pueda CONTARLO como historia.",
+      "framework": "Commodity → atributo extremo + historia contable",
+      "script_template": "No es [producto genérico]. Es [producto] [atributo extremo único] de [origen específico], [proceso ritual]. Edición [limitada/numerada].",
+      "examples": [
+        "Agua común → agua de iceberg ártico filtrada por glaciar de 10k años (Svalbarði: USD 100+/botella, real)",
+        "Sal común → sal rosa del Himalaya extraída a mano (commodity → premium por origen)",
+        "Hielo común → hielo glaciar tallado a mano para coctelería (Glace Luxury Ice, real)",
+        "Aire → aire de Banff embotellado (Vitality Air vende latas de aire a China, real)"
+      ],
+      "tags": ["diferenciacion", "premium", "origen", "historia"],
+      "_source_hint": "Casos reales: Svalbarði, Vitality Air, Fiji, Liquid Death",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "legend_003",
+      "subcategory": "identidad_y_estatus",
+      "principle": "La gente paga por SER alguien, no por TENER algo. Vender lo invendible = ofrecer una identidad aspiracional que el producto certifica. Quien lo compra demuestra que pertenece a una tribu superior.",
+      "tactic": "Conectá el producto con una identidad que el comprador desea (conocedor, refinado, espiritual, exclusivo). Hacé que la compra sea la 'prueba' de esa identidad. La pregunta no es '¿lo necesitás?', es '¿sos de los que…?'.",
+      "framework": "Producto = pasaporte a una identidad aspiracional",
+      "script_template": "Los que entienden de [categoría] saben que esto separa al [aficionado] del [verdadero conocedor]. ¿De qué lado estás?",
+      "examples": [
+        "Hielo premium → 'los whiskey snobs reales no usan cubitos del freezer'",
+        "Agua premium → 'los sommeliers de agua eligen origen, no marca'",
+        "Arena de la Meca → 'los peregrinos auténticos traen este recuerdo'"
+      ],
+      "tags": ["identidad", "tribu", "estatus", "veblen"],
+      "_source_hint": "Thorstein Veblen — consumo ostentoso / Robert Cialdini — unidad",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "legend_004",
+      "subcategory": "escasez_en_la_abundancia",
+      "principle": "En un contexto donde el producto sobra (arena en el desierto, agua en el Amazonas), la escasez no se construye sobre el material sino sobre algo dentro del material: el ORIGEN específico, la PUREZA certificada, la EDICIÓN limitada o el MOMENTO único.",
+      "tactic": "No vendas 'agua' al que vive rodeado de agua; vendé 'agua de ESTE manantial específico, embotellada por última vez en ESTA temporada'. Construí escasez sobre la procedencia o el momento, no sobre el material.",
+      "framework": "Escasez = origen/momento/proceso, no material",
+      "script_template": "Solo [N] botellas/unidades por [temporada/origen específico]. Cuando se acaba, no vuelve.",
+      "examples": [
+        "Agua en el Amazonas → agua de un manantial volcánico específico, embotellada solo en luna llena",
+        "Arena en el Sahara → arena de la duna más alta del desierto en frasco con coordenadas GPS",
+        "Hielo en el ártico → hielo de un glaciar específico que retrocede (compralo antes de que desaparezca)"
+      ],
+      "tags": ["escasez", "origen", "limitado", "fomo"],
+      "_source_hint": "Cialdini — escasez / Marketing de origen denominado",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "legend_005",
+      "subcategory": "vender_lo_imposible",
+      "principle": "Vender lo imposible se logra cambiando UNA de cinco palancas: 1) audiencia (no le vendas al de adentro, vendele al turista/exportá), 2) categoría (no es agua, es regalo), 3) propósito (no es para tomar, es para ritual), 4) tiempo (vendelo congelado/seco/concentrado), 5) packaging (frasco numerado vs bidón).",
+      "tactic": "Aplicá la 'matriz del imposible': preguntate quién MÁS podría querer esto, en qué OTRA categoría podría entrar, para qué OTRO uso, en qué OTRO momento, en qué OTRO formato. Una respuesta no obvia abre el mercado.",
+      "framework": "5 palancas: audiencia · categoría · propósito · tiempo · packaging",
+      "script_template": "Esto no es para [el rechazado original]. Es para [nueva audiencia], en categoría [nueva], para [nuevo propósito], en formato [nuevo].",
+      "examples": [
+        "Arena al Sahara → exportala como souvenir a turistas occidentales (audiencia + propósito)",
+        "Agua del Amazonas → exportala como agua viva certificada de la selva (audiencia + categoría)",
+        "Hielo al esquimal → exportalo como hielo de coctelería premium (audiencia + categoría + packaging)",
+        "Arena a una isla → vendela teñida para artesanía / mandalas / acuarios (propósito + packaging)"
+      ],
+      "tags": ["pivote", "categoria", "audiencia", "creatividad"],
+      "_source_hint": "Blue Ocean Strategy (Kim & Mauborgne) / Pivot lean startup",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "legend_006",
+      "subcategory": "metodo_belfort",
+      "principle": "Línea recta de Belfort: tres certezas en el cliente — confianza en el producto, en vos y en la empresa. Si falta una, no compra. El vendedor legendario no presiona: trabaja las tres certezas en orden y simultáneo, manteniendo control del ritmo con tonalidad.",
+      "tactic": "En cada interacción mové las 3 certezas: producto (lógica + caso), vendedor (rapport + tono), empresa (prueba social + garantía). Si baja una, no avances al cierre; reforzala primero.",
+      "framework": "3 certezas (producto/vos/empresa) + tonalidad + línea recta",
+      "script_template": "[Lógica del producto] · [Rapport personal] · [Empresa: caso/garantía] → cierre cuando las 3 están altas.",
+      "tags": ["belfort", "linea_recta", "certezas", "tonalidad"],
+      "_source_hint": "Jordan Belfort — Way of the Wolf / Straight Line",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "legend_007",
+      "subcategory": "oferta_hormozi",
+      "principle": "Una oferta irresistible vale más que 100 técnicas de venta. Hormozi: VALOR percibido = (sueño × probabilidad de logro) / (tiempo × esfuerzo). Para vender lo invendible, no bajes el precio: SUBÍ el sueño, SUBÍ la prueba, BAJÁ el tiempo y BAJÁ el esfuerzo.",
+      "tactic": "Reconstruí la oferta del 'producto imposible' con esta fórmula: + sueño (¿qué transformación?), + prueba (¿cómo lo garantizo?), − tiempo (¿cuándo lo tiene?), − esfuerzo (¿qué hago YO por él?). Agregá bonos que apuntalen cada palanca.",
+      "framework": "Oferta = sueño × prueba ÷ tiempo × esfuerzo + bonos + garantía + escasez real",
+      "script_template": "[Sueño concreto en imagen] · [Prueba/garantía] · [Tiempo a resultado] · [Esfuerzo mínimo del cliente] · [Bonos] · [Plazo real].",
+      "tags": ["oferta", "hormozi", "irresistible", "garantia"],
+      "_source_hint": "Alex Hormozi — $100M Offers",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "legend_008",
+      "subcategory": "objecion_imposible",
+      "principle": "Cuando el cliente dice 'no lo necesito' (el esquimal con el hielo, el beduino con la arena), la objeción real no es necesidad: es VALOR PERCIBIDO y SIGNIFICADO. Discutir la necesidad pierde; reencuadrar el significado gana.",
+      "tactic": "Frente a 'no lo necesito': nunca defendas la necesidad. Reencuadrá: '¿y si esto no fuera para [uso obvio] sino para [uso nuevo]?'. Mostrale a alguien parecido a él que YA lo usa para ese nuevo propósito. La objeción se disuelve.",
+      "framework": "Objeción de necesidad → reframe de propósito + prueba social del nuevo uso",
+      "script_template": "Tenés razón, para [uso original] no lo necesitás. Pero los que lo compran lo usan para [nuevo propósito]. ¿Lo viste así?",
+      "examples": [
+        "Esquimal: 'no necesito hielo' → 'no es hielo, es escultura cristalina para tu próxima fiesta'",
+        "Beduino: 'tengo arena de sobra' → 'no es arena, es arena bendecida que tus parientes en otra ciudad pagan por tener'",
+        "Amazónico: 'tomo agua del río' → 'no es agua para tomar, es agua certificada que vendés a turistas como souvenir vivo'"
+      ],
+      "tags": ["objeciones", "reframe", "necesidad", "valor"],
+      "_source_hint": "Voss + Cialdini + Ogilvy combinados",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "legend_009",
+      "subcategory": "ritual_y_experiencia",
+      "principle": "Lo invendible se vuelve vendible cuando se vuelve EXPERIENCIA o RITUAL. La gente paga por el RITO, no por el material. El sake ceremonial, el té de la ceremonia japonesa, el hielo del whisky: el material es secundario, el ritual es el producto.",
+      "tactic": "Diseñá un ritual alrededor del producto: cómo abrirlo, cómo servirlo, cuándo usarlo, qué decir. Filmá ese ritual. El comprador no compra el objeto: compra ser parte del ritual. Vendé el video del ritual antes que el objeto.",
+      "framework": "Producto → ritual → contenido del ritual → demanda del ritual",
+      "script_template": "El ritual: [paso 1] · [paso 2] · [paso 3]. Quien lo hace [identidad]. ¿Querés probarlo?",
+      "examples": [
+        "Hielo premium → ritual del 'rock & whisky' con piedra única tallada",
+        "Agua de manantial → ritual de meditación matinal con vaso ceremonial",
+        "Arena → ritual de mandala o de 'cápsula del tiempo' personalizada"
+      ],
+      "tags": ["ritual", "experiencia", "contenido", "marketing_experiencia"],
+      "_source_hint": "Pine & Gilmore — The Experience Economy",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "legend_010",
+      "subcategory": "narrativa_imposible",
+      "principle": "El humano compra HISTORIAS, no productos. Una historia bien construida transforma una piedra en reliquia, un agua en milagro, un hielo en arte. La historia debe tener: origen único, héroe identificable, conflicto/dificultad, momento revelador y prueba.",
+      "tactic": "Construí la narrativa del producto en 5 actos: 1) ¿de dónde viene? (origen mítico), 2) ¿quién lo trae? (héroe creíble), 3) ¿qué le costó? (conflicto), 4) ¿qué descubrió? (revelación), 5) ¿cómo lo probás? (evidencia). Pegá la historia a CADA unidad (etiqueta, QR, video).",
+      "framework": "Origen → héroe → conflicto → revelación → prueba",
+      "script_template": "Esto viene de [origen único], lo trae [héroe creíble], le costó [conflicto], descubrió que [revelación], y por eso [prueba visible].",
+      "examples": [
+        "Pet Rock (1975) → vendió 5 millones de piedras como 'mascotas' con manual de cuidados (story-only)",
+        "Liquid Death → vendió agua en lata como agua heavy-metal, USD 700M valuación (story-only)",
+        "Cheese of the World's Most Endangered Cow → premium 100x por historia de origen"
+      ],
+      "tags": ["storytelling", "narrativa", "origen", "marca"],
+      "_source_hint": "Donald Miller — StoryBrand / Casos: Pet Rock, Liquid Death",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

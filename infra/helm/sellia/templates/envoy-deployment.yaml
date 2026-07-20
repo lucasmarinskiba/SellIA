@@ -1,0 +1,119 @@
+{{ if .Values.envoy.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sellia.fullname" . }}-envoy
+  labels:
+    {{- include "sellia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: envoy
+spec:
+  replicas: {{ .Values.envoy.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sellia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: envoy
+  template:
+    metadata:
+      labels:
+        {{- include "sellia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: envoy
+    spec:
+      serviceAccountName: {{ include "sellia.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+            - name: admin
+              containerPort: 9901
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.envoy.resources | nindent 12 }}
+          volumeMounts:
+            - name: envoy-config
+              mountPath: /etc/envoy
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /envoy-health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /envoy-health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        {{ if .Values.sidecar.enabled }}
+        - name: sidecar
+          image: "{{ .Values.image.registry }}/{{ .Values.sidecar.image.repository }}:{{ .Values.sidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.sidecar.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: sidecar
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.sidecar.resources | nindent 12 }}
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sellia-secrets
+                  key: secret-key
+            - name: ALGORITHM
+              value: "HS256"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sellia-secrets
+                  key: redis-url
+            - name: ENVIRONMENT
+              value: "production"
+            - name: RATE_LIMIT_MAX
+              value: "100"
+            - name: RATE_LIMIT_AUTH_MAX
+              value: "10"
+            - name: RATE_LIMIT_WINDOW
+              value: "60"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: sidecar
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: sidecar
+            initialDelaySeconds: 3
+            periodSeconds: 5
+        {{ end }}
+      volumes:
+        - name: envoy-config
+          configMap:
+            name: {{ include "sellia.fullname" . }}-envoy-config
+        - name: tmp
+          emptyDir: {}
+{{ end }}

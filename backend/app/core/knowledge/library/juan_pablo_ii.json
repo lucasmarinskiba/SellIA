@@ -1,0 +1,84 @@
+{
+  "category": "juan_pablo_ii",
+  "description": "Liderazgo, diplomacia y persuasión moral de San Juan Pablo II",
+  "items": [
+    {
+      "id": "jp2_001",
+      "subcategory": "coraje",
+      "principle": "¡No tengáis miedo! Abrid de par en par las puertas. El miedo paraliza y empequeñece; el coraje sereno abre lo que parecía cerrado.",
+      "tactic": "Nombra el miedo del otro y reemplázalo por una visión esperanzadora y concreta. Lidera transmitiendo seguridad tranquila: la calma del que guía contagia confianza y destraba decisiones.",
+      "framework": "Disolver el miedo → ofrecer visión esperanzadora",
+      "script_template": "Entiendo que da temor dar este paso. Pero mire lo que se abre del otro lado si lo damos juntos, con cuidado y sin apuro.",
+      "when_to_use": ["cliente paralizado por miedo", "decisión que asusta", "liderar en incertidumbre"],
+      "when_not_to_use": ["el miedo es una señal racional de riesgo real", "urgencia que no admite discurso"],
+      "tags": ["coraje", "esperanza", "liderazgo", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "jp2_002",
+      "subcategory": "dignidad",
+      "principle": "Toda persona merece ser tratada como un fin, nunca como un medio. Reconocer la dignidad del otro desarma la hostilidad antes de que empiece.",
+      "tactic": "Trata a la contraparte con respeto genuino sin importar su poder o posición. Escucha de verdad antes de proponer. La persona que se siente vista y respetada baja sus defensas y coopera.",
+      "framework": "Dignidad primero: ver a la persona → bajar defensas → cooperar",
+      "script_template": "Antes que nada, quiero entender bien su situación y lo que es importante para usted. Su perspectiva me importa de verdad.",
+      "when_to_use": ["construir confianza", "contraparte a la defensiva", "relación de largo plazo"],
+      "when_not_to_use": ["transacción impersonal de un solo paso", "contraparte que explota la apertura"],
+      "tags": ["dignidad", "respeto", "escucha", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "jp2_003",
+      "subcategory": "perseverancia",
+      "principle": "La paciente persistencia, sostenida en convicciones firmes, derriba muros que ningún golpe de fuerza pudo. El cambio profundo es maratón, no sprint.",
+      "tactic": "Mantén el mensaje constante y la presencia paciente a lo largo del tiempo. No fuerces el desenlace: la repetición serena de una verdad y la coherencia terminan moviendo posiciones que parecían inamovibles.",
+      "framework": "Convicción firme + persistencia paciente = cambio duradero",
+      "script_template": "No espero que decida hoy. Voy a seguir acá, mostrándole con hechos por qué esto vale la pena, el tiempo que haga falta.",
+      "when_to_use": ["ciclos de decisión largos", "cambiar una posición arraigada", "seguimiento de largo plazo"],
+      "when_not_to_use": ["oportunidad con cierre inmediato", "contraparte que pidió no ser contactada"],
+      "tags": ["perseverancia", "paciencia", "coherencia", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "jp2_004",
+      "subcategory": "diplomacia",
+      "principle": "Tiende puentes en lugar de levantar muros: el diálogo, aun con el adversario, es siempre más fuerte que el enfrentamiento.",
+      "tactic": "Busca el punto de contacto humano antes que la diferencia. Habla el idioma y los valores del otro para acercarte. Mantén el canal abierto incluso en el desacuerdo: el puente que se conserva permite el acuerdo futuro.",
+      "framework": "Diplomacia de puentes: punto común → diálogo → canal abierto",
+      "script_template": "Quizá no coincidamos en todo, pero seguro hay algo que ambos queremos lograr. Empecemos por ahí y mantengamos la conversación.",
+      "when_to_use": ["partes enfrentadas", "mediar", "negociación de relación larga"],
+      "when_not_to_use": ["transacción rápida y puntual", "mala fe sistemática del otro"],
+      "tags": ["diplomacia", "dialogo", "puentes", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "jp2_005",
+      "subcategory": "autenticidad",
+      "principle": "La fuerza del testimonio supera a la del argumento: la gente sigue a quien vive lo que predica. La coherencia es la persuasión más poderosa.",
+      "tactic": "Predica con el ejemplo: que tus actos respalden tus palabras. No vendas lo que tú no usarías. La autenticidad genera una confianza que ninguna técnica de cierre puede fabricar.",
+      "framework": "Testimonio coherente > argumento; ejemplo > discurso",
+      "script_template": "No le pido que me crea por lo que digo, sino por lo que hago. Yo mismo confío en esto y por eso se lo recomiendo.",
+      "when_to_use": ["construir credibilidad profunda", "vender por confianza", "liderar un equipo"],
+      "when_not_to_use": ["no aplica: la coherencia siempre suma"],
+      "tags": ["autenticidad", "testimonio", "coherencia", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "jp2_006",
+      "subcategory": "esperanza",
+      "principle": "El futuro comienza hoy, no mañana. Mostrar un horizonte de esperanza concreto moviliza a la acción más que el miedo o la obligación.",
+      "tactic": "Conecta la decisión presente con un futuro mejor y tangible. Pinta el horizonte en términos que el otro pueda imaginar y desear. La esperanza bien fundada motiva la acción donde la presión solo genera resistencia.",
+      "framework": "Esperanza concreta → motivación → acción presente",
+      "script_template": "Imagine dónde puede estar dentro de un año si empezamos hoy. Ese futuro se construye con la decisión de ahora.",
+      "when_to_use": ["motivar a decidir", "venta de transformación", "inspirar a un equipo"],
+      "when_not_to_use": ["audiencia que solo quiere datos fríos", "promesas que no podrías sostener"],
+      "tags": ["esperanza", "vision", "motivacion", "juan_pablo_ii"],
+      "_source_hint": "San Juan Pablo II",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "category": "real_time_inventory_sync",
+  "description": "Real-time inventory synchronization across all platforms",
+  "items": [
+    {"id": "inv_001", "name": "Central inventory source", "tactic": "Single source of truth. DB master record. All platforms pull from DB."},
+    {"id": "inv_002", "name": "5-minute sync cycle", "tactic": "Celery beat task every 5min. Compare DB stock vs platform stock. If diff, push update to all."},
+    {"id": "inv_003", "name": "Overstock detection", "tactic": "If stock > safe_stock_level: alert, prepare discount. Prevent dead inventory."},
+    {"id": "inv_004", "name": "Understock alert", "tactic": "If stock < reorder_point: alert supplier, reduce ads spend, set backorder."},
+    {"id": "inv_005", "name": "Auto-delist on zero stock", "tactic": "When stock hits 0, Computer Use delists automatically from all platforms. Prevent lost sales."}
+  ]
+}

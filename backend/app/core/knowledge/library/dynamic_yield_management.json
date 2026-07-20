@@ -1,0 +1,9 @@
+{
+  "category": "dynamic_yield_management",
+  "description": "Yield management: optimize price dynamically, revenue management, seat selling",
+  "items": [
+    {"id": "yield_001", "name": "Price elasticity modeling", "tactic": "Know: demand curve (price vs quantity). If demand elastic = lower price increases revenue. If inelastic = raise price."},
+    {"id": "yield_002", "name": "Scarcity-driven pricing", "tactic": "Hotel: 10 rooms left = raise price 30%. Flight: 5 seats left = raise price 50%. Real scarcity = real price power."},
+    {"id": "yield_003", "name": "Personalized pricing (legal)", "tactic": "Customer value-based: enterprise = higher price, SMB = lower. Same product, different price based on willingness to pay (legal)."}
+  ]
+}

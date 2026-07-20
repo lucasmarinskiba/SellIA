@@ -1,0 +1,9 @@
+{
+  "category": "b2b_enterprise_outbound",
+  "description": "B2B enterprise outbound: $50k+ ACV, 6-12 month sales cycles, account-based marketing",
+  "items": [
+    {"id": "b2b_ent_001", "name": "ABM (Account-Based Marketing)", "tactic": "1 account = 1 team. Personalized at scale. Multi-touch: email + ads + call + LinkedIn. Higher conversion."},
+    {"id": "b2b_ent_002", "name": "Committee selling", "tactic": "No single decision-maker. Build coalition. Align incentives. Use one champion to sway others."},
+    {"id": "b2b_ent_003", "name": "Executive briefing", "tactic": "C-level doesn't want pitch. Wants: market insight, competitive threat, strategic opportunity. Lead with insight."}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "category": "logistics_tracking",
+  "description": "Track shipments, reduce RTO, optimize delivery",
+  "items": [
+    {"id": "log_001", "name": "Carrier integration", "tactic": "DHL, FedEx, UPS, regional via ShipStation. Auto-select cheapest+fastest."},
+    {"id": "log_002", "name": "Real-time tracking", "tactic": "Carrier webhooks: in_transit, out_for_delivery, delivered. Buyer auto-notified."},
+    {"id": "log_003", "name": "RTO prevention", "tactic": "Address validation + SMS 1 day before. Reduce RTO 5% → <1%."},
+    {"id": "log_004", "name": "Returns automation", "tactic": "Auto-generate return label. Track reverse logistics. Refund on delivery."},
+    {"id": "log_005", "name": "SLA monitoring", "tactic": "Promised 5d actual 6+ = alert. On-time % per carrier. Switch underperformers."}
+  ]
+}
