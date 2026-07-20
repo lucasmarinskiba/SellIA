@@ -1,0 +1,61 @@
+{
+  "category": "advanced_industry_strategies",
+  "description": "Estrategias de venta avanzadas por industria: SaaS SMB, Affiliate/Digital, Insurance, Luxury, B2C retail.",
+  "items": [
+    {
+      "id": "adv_industry_001",
+      "subcategory": "saas_smb_rapid",
+      "principle": "SaaS para SMB: presupuesto bajo (USD 500-5k/año), decisor único, compra rápida (7-14 días). Opuesto a enterprise: velocidad + simplicidad + trial gratis.",
+      "tactic": "Flujo: demo 15min → trial 14 días free → check-in día 7 ('¿te sirve?') → cierre día 12-13 (antes que trial expire). Stack: free trial + onboarding automático (email sequence) + customer success check-in + garantía dinero atrás.",
+      "framework": "Demo rápida → Trial gratis → Check-in → Cierre antes trial expire",
+      "script_template": "'15 min de demo, no creditcard. Probás 14 días gratis. Día 7 vemos cómo va. Si no te sirve, sin pagar nada.' (urgencia implícita: trial expira)",
+      "tags": ["saas_smb", "trial", "rapida", "pyme"],
+      "_source_hint": "SaaS SMB Sales Playbook",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "adv_industry_002",
+      "subcategory": "affiliate_digital_commission",
+      "principle": "Affiliate/Digital: venta por comisión, partner incentivado (50-70%). No es venta; es reclutamiento de vendedores. Quien recluta mejor partner, gana.",
+      "tactic": "Selección: busca partners con audiencia + credibilidad (influencers, newsletters, blogs). Oferta: comisión atractiva + materiales listos (copy, email templates, landing pages) + soporte. Onboarding: 30 min call → kit completo → check-in semanal. Métrica: conversión del partner (si baja, asesora u recambia).",
+      "framework": "Recluta partner calificado → Equipa con materiales → Monitorea conversión → Asesora/recambia",
+      "script_template": "'Buscamos partners como vos (audiencia X). Oferta: 60% comisión + kit completo de venta + support semanal. ¿Intentamos?'",
+      "tags": ["affiliate", "comision", "partner", "digital"],
+      "_source_hint": "Affiliate Marketing Playbook",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "adv_industry_003",
+      "subcategory": "insurance_trust_compliance",
+      "principle": "Seguros: venta de confianza + cumplimiento regulatorio. Cliente teme fraude/letra chica. Transparencia total = venta. Documentación clara > presión.",
+      "tactic": "Stack: 1) Explicar cobertura en lenguaje simple (no jerga). 2) Mostrar qué NO cubre (honestidad). 3) Comparar vs competencia abiertamente. 4) Garantía de satisfacción (30 días cancel sin pena). 5) Broker personal (contacto real para dudas). Resultado: cliente confía porque no hay trampa.",
+      "framework": "Transparencia total + Lenguaje simple + Comparativa honesta + Garantía + Contacto personal",
+      "script_template": "'Esta póliza cubre [X]. NO cubre [Y]. Vs competencia: más barato en [esto], más caro en [aquello]. 30 días para cambiar si no te gusta.'",
+      "tags": ["insurance", "confianza", "compliance", "transparencia"],
+      "_source_hint": "Insurance Sales Ethics",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "adv_industry_004",
+      "subcategory": "luxury_exclusivity_status",
+      "principle": "Lujo: venta de ESTATUS + exclusividad. Cliente paga 5x más por lo mismo porque ES LIMITADO. Vende posesión como identidad ('sos de los que…').",
+      "tactic": "Elementos: 1) Exclusividad real (cupo limitado, numerado, certificado). 2) Storytelling de origen (artesano/terroir/historia). 3) Identidad aspiracional (quién compra esto). 4) Customización (única para este cliente). 5) Comunidad VIP (eventos, acceso, contacto directo). Cierre: 'Solo X en el mundo tienen esto. Sería honor que fueras vos.'",
+      "framework": "Exclusividad + Origen + Identidad + Customización + Comunidad VIP",
+      "script_template": "'Solo 10 en el mundo. Numeradas. Historia: [origen único]. Identidad: [quién lo lleva]. ¿Una para vos?'",
+      "tags": ["luxury", "exclusivity", "status", "identidad"],
+      "_source_hint": "Luxury Goods Sales Psychology",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "adv_industry_005",
+      "subcategory": "b2c_retail_impulse_fomo",
+      "principle": "B2C retail en línea: venta de impulso. FOMO (fear of missing out) > razón. Urgencia real (stock, precio, tiempo) = conversión 3x.",
+      "tactic": "Stack de urgencia: 1) Stock visual ('Solo 2 quedan en este color'). 2) Contador regresivo ('Bono USD 20 hasta medianoche'). 3) Prueba social ('500 compraron esta semana'). 4) Bonificación acotada (bono vence hoy). 5) Pago 1-click (minimizar fricción). 6) Garantía (30 días OK, sin preguntas). Resultado: compra ahora, piensa después.",
+      "framework": "Stock real + Contador + Prueba social + Bono + 1-Click + Garantía",
+      "script_template": "[Foto vívida] + 'Solo 3' + '⏳ Bono vence hoy' + '✓ 1200 compraron' + '[1-Click pagar]' + '30 días garantía'",
+      "tags": ["retail", "impulse", "fomo", "urgencia"],
+      "_source_hint": "E-commerce Conversion Optimization",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

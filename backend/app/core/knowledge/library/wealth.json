@@ -1,0 +1,71 @@
+{
+  "category": "wealth",
+  "description": "Construcción de riqueza, finanzas personales y empresariales, mentalidad del dinero",
+  "items": [
+    {
+      "id": "wlt_001",
+      "subcategory": "mentalidad_dinero",
+      "principle": "El dinero es un efecto, no una causa. La riqueza viene de cómo piensas sobre el dinero, no de cuánto ganas.",
+      "tactic": "Distingue entre activos y pasivos. Los ricos compran activos que generan ingresos. Los pobres y la clase media compran pasivos que cuestan dinero.",
+      "framework": "Cuadrante del Flujo de Dinero: Empleado → Autoempleado → Dueño de negocio → Inversor",
+      "script_template": "Muchos clientes vienen enfocados en 'ganar más'. Pero la pregunta correcta es: ¿cada peso que gano está yendo a un activo que me paga, o a un pasivo que me cuesta? Nuestra solución actúa como un activo porque [razón concreta de ROI]. Eso cambia la ecuación de gasto a inversión.",
+      "when_to_use": ["objeción de precio", "discusión de ROI", "cliente emprendedor"],
+      "when_not_to_use": ["cliente corporativo con presupuesto fijo", "compra obligatoria"],
+      "tags": ["riqueza", "activos", "pasivos", "kiyosaki", "mentalidad"],
+      "_source_hint": "Robert Kiyosaki",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "wlt_002",
+      "subcategory": "definiteness_purpose",
+      "principle": "El deseo ardiente, definido y persistente es el punto de partida de toda riqueza. Sin un propósito claro, no hay fuerza que mueva la montaña.",
+      "tactic": "Ayuda al cliente a conectar la compra con su propósito más profundo. No vendas el producto; vende el puente entre su situación actual y su propósito.",
+      "framework": "6 Pasos de Hill: Deseo definido → Confianza → Conocimiento → Imaginación → Plan → Perseverancia",
+      "script_template": "Hablemos de por qué esto realmente importa para usted. No solo el problema de hoy, sino el negocio que quiere construir en 3 años. ¿Cómo se ve eso? [Escuchar]. Perfecto. Entonces esta decisión no es sobre [producto]; es sobre acelerar [propósito]. ¿Le parece?",
+      "when_to_use": ["venta consultiva", "cliente visionario", "decisiones estratégicas"],
+      "when_not_to_use": ["compra transaccional", "urgencia operativa"],
+      "tags": ["proposito", "deseo", "riqueza", "napoleon_hill"],
+      "_source_hint": "Napoleon Hill",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "wlt_003",
+      "subcategory": "mastermind",
+      "principle": "Ningún individuo puede tener toda la experiencia, conocimiento y capacidad para acumular una gran riqueza. Se necesita un grupo de mentes en armonía.",
+      "tactic": "Posiciona tu producto/servicio como parte del 'equipo' o 'alianza' del cliente. No eres un proveedor; eres un aliado estratégico.",
+      "framework": "Mastermind Alliance: Su negocio + Nuestra solución + Resultado combinado",
+      "script_template": "Usted tiene el conocimiento de su industria; nosotros tenemos [capacidad específica]. Juntos formamos una alianza donde [resultado combinado] es posible. No le vendemos una herramienta; le sumamos un equipo especializado a su negocio.",
+      "when_to_use": ["relación estratégica", "venta enterprise", "partnership"],
+      "when_not_to_use": ["transacción única", "cliente que no quiere dependencia"],
+      "tags": ["mastermind", "alianza", "riqueza", "napoleon_hill"],
+      "_source_hint": "Napoleon Hill",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "wlt_004",
+      "subcategory": "psicologia_dinero",
+      "principle": "Hacer riqueza y mantener riqueza son habilidades diferentes. La psicología del dinero importa más que la inteligencia financiera.",
+      "tactic": "No vendas con lógica pura; vende con historias que resuenen emocionalmente. El dinero es emocional, no matemático.",
+      "framework": "StoryWealth: Historia personal → Emoción → Decisión → Acción",
+      "script_template": "Las hojas de Excel no venden; las historias sí. Déjeme contarle de [cliente similar] que tenía exactamente [mismo miedo/duda]. Su historia con [números concretos de antes/después] muestra que no se trata de ser un genio financiero; se trata de [acción simple]. ¿Listo para escribir su propia historia?",
+      "when_to_use": ["cliente analítico pero emocional", "riesgo percibido", "inversión"],
+      "when_not_to_use": ["cliente 100% racional", "presupuesto inamovible"],
+      "tags": ["psicologia_dinero", "historias", "emocion", "morgan_housel"],
+      "_source_hint": "Morgan Housel",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "wlt_005",
+      "subcategory": "outwit_devil",
+      "principle": "El 'Diablo' interno —el miedo, la duda, la procrastinación— es lo único que te detiene. La independencia mental es la verdadera riqueza.",
+      "tactic": "Identifica el miedo específico del cliente. Nómbralo. Luego muéstrale que la decisión de actuar es más segura que la de no hacerlo.",
+      "framework": "FEAR: Face → Examine → Act → Reflect",
+      "script_template": "Detecto algo: parece que hay una preocupación detrás de su postergación. No es sobre el dinero; es sobre [miedo específico: ¿fallar? ¿arrepentirse?]. ¿Estoy en lo correcto? [Escuchar]. Entiendo. Ahora, honestamente: ¿qué le parece más arriesgado? Probar esto con [protección/garantía] o seguir exactamente como está y esperar que algo cambie solo?",
+      "when_to_use": ["cliente paralizado", "postergación crónica", "miedo al cambio"],
+      "when_not_to_use": ["cliente entusiasta", "no hay miedo"],
+      "tags": ["miedo", "accion", "independencia", "napoleon_hill"],
+      "_source_hint": "Napoleon Hill - Outwitting the Devil",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

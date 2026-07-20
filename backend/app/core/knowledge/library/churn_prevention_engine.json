@@ -1,0 +1,9 @@
+{
+  "category": "churn_prevention_engine",
+  "description": "Churn prevention: early signals, win-back campaigns, customer health scoring",
+  "items": [
+    {"id": "churn_001", "name": "Health Scoring (predict churn 60 days early)", "signals": "Usage -50%, support tickets up, engagement down, email opens 0%"},
+    {"id": "churn_002", "name": "Win-Back Sequences", "tactic": "Email: we miss you. Offer: special discount. Call: personalized. SMS: last-minute urgency. Recover 20-30%."},
+    {"id": "churn_003", "name": "Exit Interview (learn why)", "tactic": "Exit survey: qué podríamos mejorar? Use feedback para otros clientes."}
+  ]
+}

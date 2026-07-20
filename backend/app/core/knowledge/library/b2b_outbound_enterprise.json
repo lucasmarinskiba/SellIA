@@ -1,0 +1,9 @@
+{
+  "category": "b2b_outbound_enterprise",
+  "description": "B2B outbound: prospecting sequences, qualification, decision-maker mapping",
+  "items": [
+    {"id": "b2b_001", "name": "ABM (Account-Based Marketing)", "tactic": "Identify 100 target accounts. Personalized multi-channel. Higher close rate."},
+    {"id": "b2b_002", "name": "MEDDICB Framework", "tactic": "Metrics, Economic Buyer, Decision criteria, Decision process, Identify pain, Champions, Budget"},
+    {"id": "b2b_003", "name": "Follow-up Sequences (5-7 touches)", "tactic": "Email → call → email → LinkedIn → email → value add → email. Persistence = reply."}
+  ]
+}

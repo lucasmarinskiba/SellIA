@@ -1,0 +1,19 @@
+{{ if .Values.clamav.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sellia.fullname" . }}-clamav
+  labels:
+    {{- include "sellia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+spec:
+  type: {{ .Values.clamav.service.type }}
+  ports:
+    - port: {{ .Values.clamav.service.port }}
+      targetPort: clamav
+      protocol: TCP
+      name: clamav
+  selector:
+    {{- include "sellia.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: clamav
+{{ end }}

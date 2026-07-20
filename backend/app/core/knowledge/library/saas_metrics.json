@@ -1,0 +1,84 @@
+{
+  "category": "saas_metrics",
+  "description": "Métricas operativas de SaaS y negocios recurrentes",
+  "items": [
+    {
+      "id": "saas_001",
+      "subcategory": "ltv_cac",
+      "principle": "Un negocio recurrente es sano cuando lo que gana de un cliente supera con holgura lo que costó adquirirlo. La relación LTV/CAC es el termómetro de la unidad económica.",
+      "tactic": "Calcula LTV (valor de vida del cliente) y CAC (costo de adquisición) y apunta a una relación de al menos 3:1. Si es menor, el crecimiento quema caja; si es mucho mayor, probablemente estás subinvirtiendo en adquisición.",
+      "framework": "LTV/CAC ≥ 3:1 → unidad económica sana",
+      "script_template": "Cada cliente te deja [LTV] y te cuesta [CAC] traerlo. Mientras esa relación supere 3 a 1, escalar suma; debajo de eso, perdés en cada venta.",
+      "when_to_use": ["evaluar salud del negocio", "decidir si escalar adquisición", "levantar inversión"],
+      "when_not_to_use": ["negocio sin recurrencia", "datos insuficientes para LTV real"],
+      "tags": ["ltv", "cac", "unit_economics", "saas"],
+      "_source_hint": "David Skok — métricas SaaS",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "saas_002",
+      "subcategory": "mrr_arr",
+      "principle": "En recurrencia, el ingreso predecible (MRR/ARR) vale más que ventas grandes y esporádicas. El crecimiento del recurrente neto es la métrica norte del SaaS.",
+      "tactic": "Sigue el MRR descompuesto: nuevo + expansión − contracción − churn. El MRR neto nuevo te dice si crecés de verdad. Una venta puntual grande no compensa una sangría mensual de churn.",
+      "framework": "MRR neto = nuevo + expansión − contracción − churn",
+      "script_template": "No mires solo las ventas del mes: mirá el MRR neto. Si el churn se come lo nuevo, estás corriendo para quedarte quieto.",
+      "when_to_use": ["negocios de suscripción", "medir crecimiento real", "pronóstico de ingresos"],
+      "when_not_to_use": ["ventas únicas no recurrentes", "etapa pre-ingresos"],
+      "tags": ["mrr", "arr", "recurrente", "crecimiento"],
+      "_source_hint": "Práctica de métricas SaaS",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "saas_003",
+      "subcategory": "churn",
+      "principle": "El churn es el enemigo silencioso del recurrente: un pequeño porcentaje mensual compuesto destruye el crecimiento. Reducir churn rinde más que sumar clientes nuevos.",
+      "tactic": "Mide churn de clientes y de ingresos por separado. Persigue net revenue retention >100% (expansión que supera la fuga). Ataca las causas raíz del churn (falta de valor, onboarding pobre) antes de invertir en adquisición.",
+      "framework": "Churn vs NRR: retención neta >100% es crecimiento sin adquirir",
+      "script_template": "Si perdés [churn]% por mes, en un año se te va casi medio negocio. Tapar esa fuga vale más que duplicar el marketing.",
+      "when_to_use": ["diagnosticar estancamiento", "priorizar retención", "salud de recurrencia"],
+      "when_not_to_use": ["negocio sin recurrencia", "etapa demasiado temprana sin base"],
+      "tags": ["churn", "nrr", "retencion", "saas"],
+      "_source_hint": "Práctica de métricas SaaS / retención",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "saas_004",
+      "subcategory": "payback",
+      "principle": "Importa no solo cuánto rinde un cliente sino qué tan rápido recuperás lo que invertiste en traerlo. El CAC payback corto libera caja para reinvertir y crecer.",
+      "tactic": "Calcula en cuántos meses el margen del cliente repaga su CAC. Apunta a menos de 12 meses (ideal <6 en early stage). Un payback largo te obliga a financiar el crecimiento con capital externo.",
+      "framework": "CAC payback: meses para recuperar el costo de adquisición (<12)",
+      "script_template": "Recuperás lo que invertís en traer un cliente en [X] meses. Cuanto más corto, más rápido reinvertís y menos caja necesitás.",
+      "when_to_use": ["evaluar eficiencia de capital", "decidir ritmo de crecimiento", "planificar caja"],
+      "when_not_to_use": ["negocio sin recurrencia clara", "márgenes no calculables aún"],
+      "tags": ["payback", "cac", "caja", "eficiencia"],
+      "_source_hint": "Práctica de métricas SaaS / unit economics",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "saas_005",
+      "subcategory": "north_star",
+      "principle": "Una sola métrica que captura el valor entregado al cliente alinea a todo el equipo mejor que un tablero de cincuenta indicadores. La North Star Metric guía la ejecución.",
+      "tactic": "Elige la métrica que mejor representa el valor que el cliente recibe (no un vanity metric) y hazla el norte de producto, marketing y ventas. Debe predecir ingreso y retención. Todo lo demás son métricas de apoyo.",
+      "framework": "North Star Metric: una métrica de valor real que alinea al equipo",
+      "script_template": "Tu norte no son los registros, es [acción que entrega valor]. Si esa crece, el ingreso y la retención la siguen.",
+      "when_to_use": ["alinear equipo", "evitar vanity metrics", "foco de producto y growth"],
+      "when_not_to_use": ["negocio sin un valor central claro", "etapa de pura exploración"],
+      "tags": ["north_star", "metrica", "alineacion", "growth"],
+      "_source_hint": "Práctica de growth / Sean Ellis",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "saas_006",
+      "subcategory": "cohortes",
+      "principle": "Los promedios mienten; las cohortes dicen la verdad. Analizar grupos de clientes por su mes de alta revela si el producto mejora o empeora con el tiempo.",
+      "tactic": "Agrupa clientes por cohorte de adquisición y sigue su retención e ingreso a lo largo del tiempo. Si las cohortes nuevas retienen mejor que las viejas, vas bien. El promedio agregado esconde esta señal vital.",
+      "framework": "Análisis de cohortes: retención por grupo de alta en el tiempo",
+      "script_template": "No mires el promedio total. Mirá si los clientes que entraron este trimestre retienen mejor que los del anterior: ahí ves si mejorás.",
+      "when_to_use": ["medir mejora real del producto", "retención fina", "decisiones de producto"],
+      "when_not_to_use": ["base de clientes demasiado chica", "sin datos históricos suficientes"],
+      "tags": ["cohortes", "retencion", "analisis", "saas"],
+      "_source_hint": "Práctica de analytics / cohort analysis",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

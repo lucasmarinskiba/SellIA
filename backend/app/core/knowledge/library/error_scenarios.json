@@ -1,0 +1,142 @@
+{
+  "category": "error_scenarios_recovery",
+  "description": "Catálogo completo de fallos posibles + recovery automática. Sistema sabe qué falla, cómo reacciona, qué hacer después.",
+  "items": [
+    {
+      "id": "error_001",
+      "scenario": "CRM API timeout",
+      "probability": "medium",
+      "impact": "No sincroniza contacto a Salesforce/HubSpot",
+      "detection": "Timeout >5s o HTTP 504",
+      "recovery": {
+        "immediate": "Circuit breaker OPEN. Deja de intentar 60s.",
+        "degradation": "Guardar contacto en queue local. Retry cada 30min con backoff exponencial.",
+        "notification": "Admin alert: 'CRM sync offline, queued N contactos'. Datos perdidos? No, recuperables.",
+        "resume": "Cuando CRM responde: procesar queue local (FIFO, idempotent updates)"
+      },
+      "user_impact": "Mínimo. Vendedor sigue vendiendo, CRM se sincroniza después.",
+      "tags": ["integration", "external_api", "recoverable"],
+      "_source_hint": "API resilience patterns",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "error_002",
+      "scenario": "Analytics DB offline",
+      "probability": "low",
+      "impact": "Dashboard sin datos reales",
+      "detection": "Connection refused o query timeout",
+      "recovery": {
+        "immediate": "Use cache local (última consulta exitosa).",
+        "degradation": "Mostrar datos cached (marcar 'cached', timestamp). Sistema sigue vendiendo.",
+        "notification": "Dashboard muestra: 'Datos de hace Xh. Sincronizando...'",
+        "resume": "Cuando DB vuelve: actualizar cache + mostrar datos en vivo"
+      },
+      "user_impact": "Mínimo. Usuario ve datos cached (no ideal, pero válidos). Vendedor continúa.",
+      "tags": ["database", "observability", "recoverable"],
+      "_source_hint": "Cache patterns",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "error_003",
+      "scenario": "Agente (ej SPIN) falla",
+      "probability": "low",
+      "impact": "No genera respuesta de descubrimiento",
+      "detection": "Agent exception o timeout >3s",
+      "recovery": {
+        "immediate": "Circuit breaker OPEN para ese agente. Fallback a master_seller básico.",
+        "degradation": "Enviar respuesta ultra básica ('Hola! Viendo tu mensaje. Te respondo en breve.')",
+        "notification": "Log: 'Agente SPIN falló, fallback master_seller'. Admin alert si >5 fallos.",
+        "resume": "Cuando agente recupera: volver a usarlo. Logging del error para debug."
+      },
+      "user_impact": "Mínimo. Respuesta genérica pero enviada. Mejor que nada.",
+      "tags": ["agent", "ai", "recoverable"],
+      "_source_hint": "Fallback patterns",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "error_004",
+      "scenario": "Input spam/ruido detectado",
+      "probability": "high",
+      "impact": "Procesa basura (scam, viagra, etc)",
+      "detection": "Input validation rechaza (spam words, invalid email, etc)",
+      "recovery": {
+        "immediate": "Rechazar inmediatamente. No procesar.",
+        "degradation": "Loguear rechazo. Quarantine si dudoso (revisar manualmente después).",
+        "notification": "Log: 'Input rechazado: [razón]'. Quarantine flags para admin.",
+        "resume": "Admin revisa quarantine, acepta o rechaza. Aprende pattern."
+      },
+      "user_impact": "Ninguno. Spam bloqueado en entrada. Sistema limpio.",
+      "tags": ["security", "validation", "preventive"],
+      "_source_hint": "Input sanitization best practices",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "error_005",
+      "scenario": "Webhook signature inválida",
+      "probability": "low",
+      "impact": "Rechaza mensaje legítimo (false positive)",
+      "detection": "X-Hub-Signature no coincide",
+      "recovery": {
+        "immediate": "Log warning, no rechazar (aún no implementado real).",
+        "degradation": "Por ahora: procesar sin verificar (TODO). Cuando implementado: rechazar.",
+        "notification": "Log: 'Webhook signature mismatch'. Admin alert si patrón.",
+        "resume": "Una vez implementada verificación real: mejorar logging."
+      },
+      "user_impact": "Mínimo. Webhook continúa. Seguridad mejora después.",
+      "tags": ["security", "webhook", "future_improvement"],
+      "_source_hint": "Webhook security best practices",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "error_006",
+      "scenario": "Red intermitente (contacto pierde conexión)",
+      "probability": "high",
+      "impact": "Mensaje no se envía, timeout",
+      "detection": "Connection timeout o HTTP 5xx",
+      "recovery": {
+        "immediate": "Retry automático con backoff (1s, 2s, 4s).",
+        "degradation": "Si falla 3x: marcar como 'pending_send', retry cada 30min.",
+        "notification": "Log: 'Envío pendiente, retry en 30min'.",
+        "resume": "Cuando red recupera: procesar queue (idempotent, sin duplicados)"
+      },
+      "user_impact": "Mínimo. Mensaje se envía eventualmente. Delay de minutos.",
+      "tags": ["network", "recoverable", "transient"],
+      "_source_hint": "Retry patterns",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "error_007",
+      "scenario": "Evento malformado en webhook",
+      "probability": "medium",
+      "impact": "No se parsea correctamente",
+      "detection": "JSON parse error o missing required fields",
+      "recovery": {
+        "immediate": "Catch exception. Log el payload (para debug).",
+        "degradation": "Skip evento. Continuar con siguiente. No fallar webhook.",
+        "notification": "Log: 'Evento malformado: [detail]'. Opcional quarantine.",
+        "resume": "Admin revisa logs, investiga source. Posible bug en client webhook."
+      },
+      "user_impact": "Mínimo. Evento se pierde, pero webhook no falla. Otros eventos continúan.",
+      "tags": ["parsing", "data_quality", "recoverable"],
+      "_source_hint": "Defensive programming",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "error_008",
+      "scenario": "Capacidad máxima de concurrencia alcanzada",
+      "probability": "low",
+      "impact": "Sistema saturado, no procesa nuevos eventos",
+      "detection": "Queue depth > threshold o CPU >90%",
+      "recovery": {
+        "immediate": "Throttle: reduce concurrencia, queue eventos.",
+        "degradation": "Responder más lentamente (30s en vez de 2s). Sistema sigue funcionando.",
+        "notification": "Log: 'Sistema saturado, throttling activo'. Admin alert si >1h.",
+        "resume": "Cuando carga baja: procesar queue en orden (FIFO)"
+      },
+      "user_impact": "Mínimo. Respuestas más lentas. Mejor que rechazar.",
+      "tags": ["performance", "scalability", "throttling"],
+      "_source_hint": "Load management patterns",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

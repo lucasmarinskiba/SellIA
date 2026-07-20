@@ -1,0 +1,333 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository }}/backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  # Stage 1: Build & Test
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.IMAGE_BACKEND }}:latest
+            ${{ env.IMAGE_BACKEND }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE_BACKEND }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_BACKEND }}:buildcache,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_FRONTEND }}:latest
+            ${{ env.IMAGE_FRONTEND }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE_FRONTEND }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_FRONTEND }}:buildcache,mode=max
+
+  # Stage 2: Unit & Integration Tests
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_selliadb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio pytest-cov pytest-xdist
+
+      - name: Run linter
+        run: |
+          pip install ruff
+          ruff check backend/
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_selliadb
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-testing-only
+        run: |
+          pytest backend/tests/unit -v --cov=backend/app --cov-report=xml -n auto
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_selliadb
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-for-testing-only
+        run: |
+          pytest backend/tests/integration -v --cov=backend/app --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  # Stage 3: E2E Tests
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Playwright
+        run: |
+          cd frontend
+          npm install
+          npx playwright install
+
+      - name: Start Docker Compose stack
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          sleep 30
+          docker-compose -f docker-compose.test.yml exec -T backend python -m app.scripts.seed_testdata
+
+      - name: Run E2E tests
+        env:
+          FRONTEND_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+        run: |
+          cd frontend
+          npm run test:e2e
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-results
+          path: frontend/test-results
+
+      - name: Clean up
+        if: always()
+        run: docker-compose -f docker-compose.test.yml down -v
+
+  # Stage 4: Security Scanning
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Stage 5: Deploy to Production
+  deploy:
+    needs: [build, test, e2e, security]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update ECS task definition
+        run: |
+          aws ecs update-service \
+            --cluster selliaai-prod \
+            --service selliaai-backend \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy frontend to Vercel
+        run: |
+          npm install -g vercel
+          vercel deploy --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_ORG }}
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          pip install alembic sqlalchemy
+          alembic upgrade head
+
+      - name: Notify Sentry of deployment
+        run: |
+          curl https://sentry.io/api/0/organizations/${{ secrets.SENTRY_ORG }}/releases/ \
+            -X POST \
+            -H 'Authorization: Bearer ${{ secrets.SENTRY_AUTH_TOKEN }}' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "version": "${{ github.sha }}",
+              "projects": ["selliaai"],
+              "refs": [{
+                "repository": "${{ github.repository }}",
+                "commit": "${{ github.sha }}"
+              }],
+              "dateReleased": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'"
+            }'
+
+  # Stage 6: Post-Deployment Validation
+  validate:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health check
+        run: |
+          for i in {1..30}; do
+            if curl -f https://api.selldia.app/health; then
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting for API..."
+            sleep 10
+          done
+          echo "API health check failed"
+          exit 1
+
+      - name: Smoke tests
+        run: |
+          pip install requests
+          python tests/smoke_tests.py
+
+      - name: Performance baseline
+        run: |
+          npm install -g lighthouse
+          lighthouse https://selldia.app --output-path=./lighthouse-report.html
+
+  # Stage 7: Notification
+  notify:
+    needs: [deploy, validate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "text": "Deployment Status: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment*\nStatus: ${{ job.status }}\nCommit: <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\nAuthor: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+            docker compose exec -T db pg_dump -U "$DB_USER" "$DB_NAME" > backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql
+            
+            # Zero-downtime deploy
+            docker compose up -d --no-deps --scale backend=2 backend
+            sleep 15
+            docker compose up -d --no-deps --scale backend=1 backend
+            docker compose up -d frontend nginx
+            
+            # Health check
+            curl -sf http://localhost/health || exit 1
+            
+            # Cleanup
+            docker image prune -f
+            docker volume prune -f
+          EOF
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "Deploy to ${{ github.event.inputs.environment }} ${{ job.status == 'success' && '✅ succeeded' || '❌ failed' }}\nVersion: ${{ github.event.inputs.version }}\nCommit: ${{ github.sha }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

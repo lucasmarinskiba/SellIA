@@ -1,0 +1,90 @@
+{
+  "manifest_version": 3,
+  "name": "SellIA Companion",
+  "version": "0.1.0",
+  "description": "AI-powered sales assistant · scrapes, suggests, syncs across your stores.",
+  "author": "SellIA",
+  "homepage_url": "https://sellia.app",
+  "minimum_chrome_version": "120",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SellIA",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.whatsapp.com/*",
+        "https://*.amazon.com/*",
+        "https://sellercentral.amazon.com/*",
+        "https://www.mercadolibre.com.ar/*",
+        "https://*.shopify.com/*",
+        "https://www.etsy.com/*",
+        "https://*.instagram.com/*",
+        "https://*.linkedin.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "cookies",
+    "alarms",
+    "notifications",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.sellia.app/*",
+    "https://*.whatsapp.com/*",
+    "https://*.amazon.com/*",
+    "https://*.mercadolibre.com/*",
+    "https://*.mercadolibre.com.ar/*",
+    "https://*.shopify.com/*",
+    "https://*.etsy.com/*",
+    "https://*.instagram.com/*",
+    "https://*.linkedin.com/*",
+    "https://graph.facebook.com/*"
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+L",
+        "mac": "Command+Shift+L"
+      }
+    },
+    "capture-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K"
+      },
+      "description": "Capture current page to SellIA"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

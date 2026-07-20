@@ -1,0 +1,9 @@
+{
+  "category": "real_estate_selling",
+  "description": "Real estate: property sales, development, commercial, investment",
+  "items": [
+    {"id": "re_001", "name": "Property staging + virtual tours", "tactic": "Good staging = +10-15% price. Virtual tour = 70% qualified buyers. 3D walkthroughs = highest engagement."},
+    {"id": "re_002", "name": "Investor pitch (development)", "tactic": "Show: location analysis, comp analysis, ROI model, market trends, risk mitigation. Investor wants: 15-25% IRR + downside protection."},
+    {"id": "re_003", "name": "Negotiation tactics (real estate)", "tactic": "Anchor with listing price. Comps prove value. Home inspection = negotiation tool. Financing contingency = leverage."}
+  ]
+}

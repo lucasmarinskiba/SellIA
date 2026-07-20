@@ -1,0 +1,84 @@
+{
+  "category": "entrepreneurship",
+  "description": "Emprendimiento, startups, innovación y crecimiento de negocios",
+  "items": [
+    {
+      "id": "ent_001",
+      "subcategory": "mvp",
+      "principle": "No construyas el producto perfecto; construye la versión mínima que te permita aprender. El aprendizaje validado es la única métrica que importa al inicio.",
+      "tactic": "Identifica la hipótesis de riesgo más grande. Diseña el experimento más barato y rápido para validarla. Mide resultados reales, no intenciones.",
+      "framework": "Build-Measure-Learn: Construir MVP → Medir métricas → Aprender → Pivotar o perseverar",
+      "script_template": "En lugar de invertir 6 meses desarrollando todo, le propongo un enfoque Lean: en 2 semanas lanzamos una versión mínima que pruebe UNA hipótesis clave: [hipótesis]. Si funciona, escalamos. Si no, pivotamos con datos, no con opiniones. Eso reduce su riesgo en un 80%.",
+      "when_to_use": ["cliente emprendedor", "lanzamiento de producto", "innovación"],
+      "when_not_to_use": ["empresa establecida con procesos rígidos", "compra transaccional"],
+      "tags": ["mvp", "lean_startup", "experimentacion", "eric_ries"],
+      "_source_hint": "Eric Ries - Lean Startup",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ent_002",
+      "subcategory": "blue_ocean",
+      "principle": "Competir en mercados saturados es una carrera al fondo. Crea espacios de mercado incontestados donde la competencia sea irrelevante.",
+      "tactic": "Usa la Estrategia del Lienzo para eliminar, reducir, elevar y crear factores. No copies a la competencia; reinventa el valor.",
+      "framework": "Eliminar-Reducir-Elevar-Crear: Factor a eliminar → Factor a reducir → Factor a elevar → Factor a crear",
+      "script_template": "Todos sus competidores están peleando por [factor común]. Eso es un océano rojo sangrando márgenes. ¿Y si en lugar de eso, ustedes se enfocaran en [factor diferente]? Eso crearía un océano azul donde nadie compite. Nuestro producto les permite hacer exactamente eso eliminando [factor viejo] y creando [factor nuevo].",
+      "when_to_use": ["diferenciación", "mercado saturado", "estrategia competitiva"],
+      "when_not_to_use": ["monopolio natural", "mercado nuevo sin competencia"],
+      "tags": ["blue_ocean", "diferenciacion", "estrategia", "mauborgne_chan"],
+      "_source_hint": "Blue Ocean Strategy",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ent_003",
+      "subcategory": "zero_to_one",
+      "principle": "El progreso vertical (de 0 a 1) crea valor exponencial. El progreso horizontal (de 1 a n) solo copia. Las startups deben buscar secretos.",
+      "tactic": "Encuentra un 'secreto' — una verdad que pocos ven pero que es valiosa. Contrarian thinking: ¿qué es algo importante que la mayoría piensa de forma opuesta a la realidad?",
+      "framework": "Contrarian Question: ¿Qué crees que es verdad que casi nadie acepta? → ¿Cómo monetizar esa verdad?",
+      "script_template": "La mayoría en [industria] cree que [creencia común]. Pero nosotros descubrimos que [verdad contraria]. Ese insight es el secreto que nos diferencia. Y es exactamente lo que le voy a mostrar...",
+      "when_to_use": ["posicionamiento", "pitch", "diferenciación radical"],
+      "when_not_to_use": ["mercado maduro", "producto commodity"],
+      "tags": ["zero_to_one", "secretos", "contrarian", "peter_thiel"],
+      "_source_hint": "Peter Thiel - Zero to One",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "ent_004",
+      "subcategory": "libro_negro_emprendedor",
+      "principle": "El emprendedor no es quien arriesga más; es quien calcula mejor. No existe el emprendedor nato; existen habilidades desarrollables.",
+      "tactic": "Desmitifica el emprendedurismo. Enfócate en habilidades concretas: validación, ventas, gestión de cash flow, contratación.",
+      "framework": "Emprendedor = Validador + Vendedor + Gestor. No necesitas ser los 3; necesitas entenderlos.",
+      "script_template": "Muchos piensan que emprender es tener una idea brillante. La realidad es que el 90% del éxito está en validar rápido, vender antes de construir, y gestionar el cash flow. Nuestra herramienta le ayuda con [una de esas 3 habilidades]. ¿Cuál de esas es su mayor dolor ahora?",
+      "when_to_use": ["emprendedores primerizos", "mentoría", "educación"],
+      "when_not_to_use": ["empresa corporativa", "director de área"],
+      "tags": ["emprendimiento", "habilidades", "trias_de_bes"],
+      "_source_hint": "Fernando Trias de Bes",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "ent_005",
+      "subcategory": "hard_things",
+      "principle": "No hay fórmulas mágicas para los problemas difíciles de un negocio. A veces la única solución es atravesar el dolor.",
+      "tactic": "Sé honesto sobre lo difícil. No prometas que será fácil. Promete que estará ahí cuando sea difícil.",
+      "framework": "Honestidad Radical sobre Dificultad + Compromiso de Acompañamiento",
+      "script_template": "Voy a ser honesto con usted: implementar esto NO va a ser fácil. Habrá semanas de ajuste. Pero lo que le prometo es que nuestro equipo estará ahí en esas semanas difíciles. La diferencia entre éxito y fracaso no es la herramienta; es el acompañamiento cuando se pone difícil.",
+      "when_to_use": ["cliente realista", "implementación compleja", "relación a largo plazo"],
+      "when_not_to_use": ["cliente busca facilidad", "venta rápida"],
+      "tags": ["honestidad", "implementacion", "ben_horowitz"],
+      "_source_hint": "Ben Horowitz - Hard Things",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "ent_006",
+      "subcategory": "codigo_a_venta",
+      "principle": "Tener un buen producto no basta. Los desarrolladores técnicos necesitan aprender a vender, y los vendedores necesitan entender el producto.",
+      "tactic": "Puente técnico-comercial. Traduce features en beneficios medibles. Usa lenguaje del cliente, no del ingeniero.",
+      "framework": "Feature → Beneficio → Resultado medible → Historia de cliente",
+      "script_template": "Entiendo que vienen del lado técnico. Muchos founders técnicos construyen productos increíbles pero luchan con una cosa: traducir 'qué hace' en 'por qué importa al cliente'. Déjeme mostrarle cómo posicionar [feature técnico] como [beneficio de negocio concreto].",
+      "when_to_use": ["founders técnicos", "empresas SaaS", "producto complejo"],
+      "when_not_to_use": ["cliente no técnico", "producto simple"],
+      "tags": ["tecnico_comercial", "posicionamiento", "elizarraga"],
+      "_source_hint": "Nicolás Elizarraga",
+      "_confidence_weight": 1.0
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "category": "ecommerce_conversion_master",
+  "description": "Ecommerce: cart abandonment, upsell timing, post-purchase engagement",
+  "items": [
+    {"id": "ec_001", "name": "Cart Abandonment Sequences", "tactic": "1h: reminder. 24h: urgency. 48h: discount 10%. Recovery rate 30-50%."},
+    {"id": "ec_002", "name": "One-Click Upsell", "tactic": "Post-purchase upsell. 1-click. Complementary product. 10-20% acceptance."},
+    {"id": "ec_003", "name": "Subscription Conversion", "tactic": "One-time buyers → subscription. Monthly box, auto-replenish. +60% LTV."}
+  ]
+}

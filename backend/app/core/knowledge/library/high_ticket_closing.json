@@ -1,0 +1,21 @@
+{
+  "category": "high_ticket_closing",
+  "description": "$10k+ deals: consultative selling, trust building, multiple stakeholders, risk reversal",
+  "items": [
+    {
+      "id": "hc_001",
+      "name": "Consultative Selling (solving problems, not selling)",
+      "process": "Listen 70% → diagnose → present solution. No pitch, just answer to problem."
+    },
+    {
+      "id": "hc_002",
+      "name": "Multi-stakeholder navigation (buyer, users, CFO, CTO)",
+      "tactic": "Map decision-makers. Buyer wants adoption. CFO wants ROI. CTO wants integration. Customize pitch per persona."
+    },
+    {
+      "id": "hc_003",
+      "name": "Risk Reversal ($10k? Guarantee removes fear)",
+      "examples": "90-day money back. If ROI not met, full refund. Outcomes guaranteed in writing."
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "category": "investing",
+  "description": "Bolsa de valores, acciones, mercados financieros y estilos de análisis — conocimiento educativo. No es asesoramiento de inversión.",
+  "items": [
+    {
+      "id": "inv_001",
+      "subcategory": "fundamentos",
+      "principle": "Diversificar y mantener un horizonte largo, dejando trabajar el interés compuesto, suele superar al trading frecuente para el inversor común.",
+      "tactic": "Explica instrumentos (acción, ETF, índice) y el efecto de comisiones, spread e impuestos en el retorno neto.",
+      "framework": "Diversificación + horizonte largo + costos bajos",
+      "when_to_use": ["educación financiera", "explicar instrumentos"],
+      "when_not_to_use": ["recomendar comprar un ticker", "market timing"],
+      "tags": ["acciones", "etf", "largo_plazo", "interes_compuesto"],
+      "_source_hint": "Inversión en valor / indexación (Buffett, Bogle)",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "inv_002",
+      "subcategory": "analisis_tecnico",
+      "principle": "El análisis técnico estudia precio y volumen: tendencias, soportes/resistencias e indicadores (RSI, MACD, medias móviles) para leer el comportamiento del mercado.",
+      "tactic": "Describe señales como hipótesis, no certezas; combínalas con gestión de riesgo.",
+      "framework": "Tendencia → niveles → indicadores → confirmación",
+      "when_to_use": ["explicar gráficos", "lectura de TradingView"],
+      "when_not_to_use": ["prometer aciertos", "ejecutar órdenes"],
+      "tags": ["analisis_tecnico", "rsi", "macd", "tendencia"],
+      "_source_hint": "Análisis técnico clásico",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "inv_003",
+      "subcategory": "analisis_fundamental",
+      "principle": "El análisis fundamental estima el valor intrínseco vía ingresos, márgenes, deuda y flujo de caja (DCF) y múltiplos (PER), buscando precio < valor.",
+      "tactic": "Contrasta el precio de mercado con los fundamentos; explica el margen de seguridad.",
+      "framework": "DCF + múltiplos (PER/EV-EBITDA) + margen de seguridad",
+      "when_to_use": ["valuar una empresa", "explicar balances"],
+      "when_not_to_use": ["consejo personalizado", "garantizar valuación"],
+      "tags": ["analisis_fundamental", "dcf", "per", "valuacion"],
+      "_source_hint": "Graham / Buffett",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "inv_004",
+      "subcategory": "mercados_financieros",
+      "principle": "Cuando las tasas de interés suben, los bonos existentes bajan de precio (relación inversa). Divisas y commodities responden a tasas, inflación y ciclo económico.",
+      "tactic": "Explica cómo el contexto macro mueve todas las clases de activo y cambia correlaciones en crisis.",
+      "framework": "Macro: tasas → bonos → divisas → equities → commodities",
+      "when_to_use": ["contexto macro", "renta fija", "forex", "commodities"],
+      "when_not_to_use": ["operar apalancado", "predecir el mercado"],
+      "tags": ["macro", "tasas", "bonos", "forex", "commodities"],
+      "_source_hint": "Macroeconomía de mercados",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "inv_005",
+      "subcategory": "guardrail",
+      "principle": "Rendimiento pasado no garantiza resultados futuros. El agente educa e informa; NUNCA da consejo de inversión personalizado, ejecuta órdenes ni ingresa credenciales de broker.",
+      "tactic": "Ante cualquier operación o login, detente y deriva la acción al usuario con advertencia de riesgo.",
+      "framework": "Educativo + read-only + escalar al humano",
+      "when_to_use": ["siempre en temas de inversión"],
+      "when_not_to_use": ["nunca operar por el usuario"],
+      "tags": ["guardrail", "riesgo", "compliance"],
+      "_source_hint": "Política de seguridad SellIA",
+      "_confidence_weight": 1.5
+    }
+  ]
+}

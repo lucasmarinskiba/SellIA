@@ -1,0 +1,51 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend — Next.js 15 (local)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "frontend",
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "Backend — FastAPI/uvicorn (local)",
+      "runtimeExecutable": "uvicorn",
+      "runtimeArgs": ["app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "cwd": "backend",
+      "port": 8000
+    },
+    {
+      "name": "Full Stack — Docker Compose (todos los servicios)",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "--build"],
+      "port": 3001,
+      "autoPort": true
+    },
+    {
+      "name": "Backend — Docker Compose (solo backend + db + redis)",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "backend", "db", "redis"],
+      "port": 8001
+    },
+    {
+      "name": "Celery Worker — Docker Compose",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "celery-worker"],
+      "autoPort": true
+    },
+    {
+      "name": "Celery Beat — Docker Compose",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "celery-beat"],
+      "autoPort": true
+    },
+    {
+      "name": "Grafana — Monitoreo",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "grafana", "prometheus"],
+      "port": 3000
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "category": "marketplace_algorithm_optimization",
+  "description": "Master each marketplace algorithm to maximize visibility",
+  "items": [
+    {"id": "algo_001", "name": "MercadoLibre ranking", "tactic": "Titulo SEO + keywords + price competitive + seller_stats (feedback >95%). Top 3 listings = 60% clicks."},
+    {"id": "algo_002", "name": "Amazon A9 algorithm", "tactic": "Title relevance + reviews (4.5+ stars) + conversion_rate + sales_velocity. Review quality = visibility."},
+    {"id": "algo_003", "name": "eBay Best Match", "tactic": "DSR >4.5 + shipping_cost_low + category_relevance + price_competitive. Sniping kills ranking."},
+    {"id": "algo_004", "name": "TikTok Shop algorithm", "tactic": "Video recency (1-7 days) + engagement (saves/shares > likes) + completion_rate. New = boost."},
+    {"id": "algo_005", "name": "Algorithm A/B testing", "tactic": "Test title, price, images. Track ranking + CTR. Roll out winners."}
+  ]
+}

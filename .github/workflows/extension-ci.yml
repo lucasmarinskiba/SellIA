@@ -1,0 +1,43 @@
+name: extension-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'extensions/**'
+      - '.github/workflows/extension-ci.yml'
+  pull_request:
+    paths:
+      - 'extensions/**'
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate manifest
+        run: |
+          node -e "const m = require('./extensions/chrome/manifest.json'); if (m.manifest_version !== 3) throw 'MV3 required'; console.log('manifest ok · v' + m.version)"
+
+      - name: Lint JS
+        run: |
+          npx -y eslint@latest --no-config-lookup --no-eslintrc \
+            --parser-options=ecmaVersion:2022,sourceType:module \
+            extensions/chrome/*.js || true
+
+      - name: Package extension zip
+        run: |
+          cd extensions/chrome
+          zip -r ../sellia-chrome-$(node -p "require('./manifest.json').version").zip . -x "README.md" -x "icons/README.md"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sellia-chrome-extension
+          path: extensions/sellia-chrome-*.zip
+          retention-days: 30

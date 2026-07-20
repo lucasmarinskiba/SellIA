@@ -1,0 +1,25 @@
+{
+  "category": "saas_selling_mastery",
+  "description": "SaaS-específico: land expansion, net dollar retention, logo retention, expansion revenue",
+  "items": [
+    {
+      "id": "saas_001",
+      "name": "Land Expansion (ABM for SaaS)",
+      "tactic": "Land = first deal. Expansion = upsell + cross-sell. Land-Expand-Expand formula.",
+      "metrics": "CAC, LTV, CAC:LTV ratio 1:3+, MRR growth",
+      "execution": "Land: ICP targeting + outbound + product-led growth. Expand: CS onboarding + feature adoption + upsell."
+    },
+    {
+      "id": "saas_002",
+      "name": "Net Dollar Retention (NDR > 120% = rocket)",
+      "tactic": "NDR = (MRR_start + expansión - churn) / MRR_start. Si >120%, business se crece sin nuevos customers.",
+      "levers": "Churn <5%, Expansion revenue >20%, Upsell automation"
+    },
+    {
+      "id": "saas_003",
+      "name": "Product-Led Growth (usage → conversion)",
+      "tactic": "Free tier → freemium → paid. Users experience value antes de pagar. Conversion 5-10% si aha moment day 7.",
+      "metrics": "DAU, activation rate, time to value"
+    }
+  ]
+}

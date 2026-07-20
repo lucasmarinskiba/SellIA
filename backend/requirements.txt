@@ -1,0 +1,48 @@
+# Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# Payments
+stripe==7.4.0
+
+# Email
+sendgrid==6.11.0
+
+# Resilience
+circuitbreaker==1.4.0
+
+# Utils
+python-dotenv==1.0.0
+requests==2.31.0
+aiohttp==3.9.1
+
+# Logging
+python-json-logger==2.0.7
+
+# API docs
+python-jose[cryptography]==3.3.0
+
+# Security (2FA, encryption, rate limiting)
+pyotp==2.9.0                          # TOTP for 2FA
+qrcode==7.4.2                         # QR code generation
+cryptography==41.0.7                  # Encryption (Fernet)
+slowapi==0.1.9                        # Rate limiting (FastAPI integration)
+redis==5.0.1
+bcrypt==4.1.2
+fastapi-limiter==0.1.6                          # Redis client (for rate limiting, sessions)
+
+# AI providers
+anthropic==0.40.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.23.1
+pytest-cov==4.1.0

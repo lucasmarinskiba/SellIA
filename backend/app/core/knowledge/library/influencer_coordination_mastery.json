@@ -1,0 +1,11 @@
+{
+  "category": "influencer_marketing_coordination",
+  "description": "Manage multiple influencers, track performance, automate commissions",
+  "items": [
+    {"id": "infl_001", "name": "Influencer selection", "tactic": "Engagement rate > followers (10k engaged > 100k ghost). Niche alignment > size. LTV tracked."},
+    {"id": "infl_002", "name": "Promo code tracking", "tactic": "Each influencer: unique code (INFL_NAME). Link: aff.link?utm_source=infl_name. Sales 100% tracked."},
+    {"id": "infl_003", "name": "Commission automation", "tactic": "Influencer sells 10 units = 10 * commission_rate auto-calc. Pay weekly."},
+    {"id": "infl_004", "name": "Performance tiering", "tactic": "Top 20%: 20% commission. Mid 60%: 15%. Low 20%: 10%. Incentivize."},
+    {"id": "infl_005", "name": "Fraud detection", "tactic": "Sales spike = verify real. Detect fake affiliates selling to themselves."}
+  ]
+}

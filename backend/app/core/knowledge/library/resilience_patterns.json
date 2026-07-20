@@ -1,0 +1,61 @@
+{
+  "category": "resilience_patterns",
+  "description": "Patrones de resiliencia: qué falla, cómo recuperarse, cuándo reintentar. Sistema debe ser anti-frágil.",
+  "items": [
+    {
+      "id": "resilience_001",
+      "subcategory": "graceful_degradation",
+      "principle": "Sistema nunca cae. Si falla componente X, degrada a versión básica (no falla completo).",
+      "tactic": "Arquitectura: CRM sync falla → vender sin CRM (memoria local). Analytics falla → sin dashboard (vendiendo igual). Agente falla → fallback a master_seller básico. Lead scoring falla → filtro manual (user revisa). Nunca: usuario ve error 500.",
+      "framework": "Componente falla → Fallback automático → Sistema sigue vendiendo",
+      "examples": [
+        "Meta API falla → no envia DM automático, pero alerta usuario (revisar manualmente)",
+        "Lead scoring offline → todas como 'tibias' (revisión manual después)",
+        "Dashboard DB offline → cache local (últimas 24h de métricas)"
+      ],
+      "tags": ["resilience", "degradation", "fallback", "anti_fragil"],
+      "_source_hint": "Chaos engineering principles",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "resilience_002",
+      "subcategory": "intelligent_retry",
+      "principle": "No todos los errores son iguales. Reintentar idempotent operations (envío mensaje) 3x. No reintentar non-idempotent (crear contacto duplicado). Timeout ajustado por operación.",
+      "tactic": "Clasificar error: transient (red, timeout) vs permanent (invalid input, auth). Transient → retry exponencial (1s, 2s, 4s). Permanent → fail rápido (no reintentos). Webhook delivery? 3x retry. Database constraint? Fail immediate (fix needed).",
+      "framework": "Error classification → Retry strategy por tipo",
+      "tags": ["retry", "idempotent", "exponential_backoff"],
+      "_source_hint": "SRE best practices",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "resilience_003",
+      "subcategory": "circuit_breaker",
+      "principle": "Si servicio X falla 5x consecutivas → deja de intentar por 60s (circuit abierto). Después: prueba 1x lentamente (half-open). Si ok → vuelve a full traffic (closed).",
+      "tactic": "Contar fallos por servicio. Threshold: 5 fallos = OPEN. Timeout: 60s. Test lento: 1 request cada 10s. Primera ok? CLOSED. Beneficio: no gastas recursos intentando lo que ya sabe que falla.",
+      "framework": "CLOSED → OPEN (5 fallos) → HALF_OPEN (1 test lento) → CLOSED (ok) o OPEN (falla)",
+      "tags": ["circuit_breaker", "fault_tolerance"],
+      "_source_hint": "Hystrix pattern",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "resilience_004",
+      "subcategory": "input_validation",
+      "principle": "Rechaza ruido en entrada. Si input inválido → fail rápido (no procesar luego). Si dudoso → quarantine (revisar después, no vender ciego).",
+      "tactic": "Validar ANTES de procesar: producto (min 3 caracteres), precio (número positivo), URL (format válido). Si falla → error claro (qué campo, qué regla). Dudoso (ej. email malformado pero vendible) → marcar 'quarantine', revisar después.",
+      "framework": "Input → Validación estricta → Reject | Accept | Quarantine",
+      "tags": ["validation", "input_sanitization", "quarantine"],
+      "_source_hint": "Input validation best practices",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "resilience_005",
+      "subcategory": "observability",
+      "principle": "Sistema debe ser completamente debuggable. Cada acción loguea: qué, quién, cuándo, resultado. Logs searchable + alertas automáticas.",
+      "tactic": "Log format: timestamp | account_id | agent | action | status | error (if any) | duration_ms. Centralizar: todos los logs van a mismo lugar (CloudWatch, DataDog, etc). Alertas: error rate >5% → notification. Latency p99 >5s → notification.",
+      "framework": "Cada evento → Log completo + searchable + alertable",
+      "tags": ["logging", "observability", "monitoring", "debugging"],
+      "_source_hint": "Observability best practices",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "category": "strategy",
+  "description": "Estrategia empresarial, crecimiento y ventaja competitiva",
+  "items": [
+    {
+      "id": "str_001",
+      "subcategory": "océano_azul",
+      "principle": "La competencia en mercados existientes solo comprime márgenes. El crecimiento sostenible viene de crear nuevos espacios de mercado.",
+      "tactic": "Analiza tu lienzo de valor. ¿Qué factores da la industria por sentado que podrías eliminar? ¿Qué nunca se ofrece que los clientes valorarían?",
+      "framework": "Eliminar-Reducir-Elevar-Crear (ERRC): ¿Qué eliminar? ¿Qué reducir? ¿Qué elevar por encima del estándar? ¿Qué crear que no existe?",
+      "script_template": "Mire este lienzo: todos sus competidores compiten en [factores comunes]. Eso es un océano rojo. Pero nadie está ofreciendo [factor nuevo]. Si ustedes lo hacen primero, crean un océano azul donde no hay competencia. Nuestra solución les da exactamente esa capacidad.",
+      "when_to_use": ["estrategia competitiva", "diferenciación", "nuevo mercado"],
+      "when_not_to_use": ["mercado monopoly", "commodity puro"],
+      "tags": ["estrategia", "oceano_azul", "diferenciacion", "mauborgne"],
+      "_source_hint": "Blue Ocean Strategy",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "str_002",
+      "subcategory": "lean_startup",
+      "principle": "Los planes de negocio largos son ilusiones. La única forma de validar un negocio es con datos reales de clientes reales lo antes posible.",
+      "tactic": "Mide el ciclo Build-Measure-Learn. Minimiza el tiempo por ciclo. Valida antes de escalar. Pivotar no es fracasar; es aprender.",
+      "framework": "Build-Measure-Learn Loop: Idea → MVP → Métricas → Aprendizaje → Decisión",
+      "script_template": "No necesita un plan perfecto. Necesita un experimento. En 2 semanas podemos probar si [hipótesis] resuena con su mercado. Si sí, inyectamos recursos. Si no, pivotamos con datos. Eso es Lean. Eso reduce riesgo real.",
+      "when_to_use": ["emprendedores", "nuevos productos", "innovación"],
+      "when_not_to_use": ["procesos establecidos", "regulaciones rígidas"],
+      "tags": ["lean", "experimentacion", "validacion", "eric_ries"],
+      "_source_hint": "Eric Ries",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "str_003",
+      "subcategory": "concentracion",
+      "principle": "El éxito requiere concentración de energía y esfuerzo. Dividir la atención en múltiples objetivos simultáneos diluye los resultados.",
+      "tactic": "Enfócate en UNA cosa a la vez hasta dominarla. La ley del orden: antes de avanzar, asegura lo anterior.",
+      "framework": "The One Thing: ¿Qué es lo ÚNICO que puedo hacer...? → Haz eso → Repite",
+      "script_template": "Veo que están intentando mejorar [múltiples áreas] simultáneamente. Eso es agotador y poco efectivo. Elijamos UNA: ¿cuál de estas, si la resolvieran HOY, haría que las demás sean más fáciles o irrelevantes? Empecemos ahí.",
+      "when_to_use": ["cliente abrumado", "múltiples prioridades", "estrategia"],
+      "when_not_to_use": ["sin problema de foco", "ya está enfocado"],
+      "tags": ["foco", "concentracion", "prioridad", "keller"],
+      "_source_hint": "Gary Keller",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "category": "luxury_positioning",
+  "description": "Premium selling: perceived value, exclusivity, status, premium pricing psychology",
+  "items": [
+    {
+      "id": "lux_001",
+      "name": "Perceived Value > Actual Cost (luxury = dream, not spreadsheet)",
+      "tactic": "Price = perception. Rolex = accuracy + brand + status. Sell status, not watch."
+    },
+    {
+      "id": "lux_002",
+      "name": "Exclusivity Mechanics (scarcity real o perceived)",
+      "examples": "Only 10 sold annually. Membership-only access. Handcrafted, limited edition."
+    },
+    {
+      "id": "lux_003",
+      "name": "Premium Pricing Justification (why $50k not $5k?)",
+      "framework": "Quality + craftsmanship + heritage + exclusivity + lifetime access + VIP support"
+    }
+  ]
+}

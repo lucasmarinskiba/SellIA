@@ -1,0 +1,58 @@
+sales_phases:
+  - discovery
+  - proposal
+  - contract
+  - delivery
+  - retention
+
+sales_cycle:
+  min: 3
+  avg: 21
+  max: 60
+
+phase_durations:
+  discovery:
+    min: 1
+    avg: 3
+    max: 7
+  proposal:
+    min: 2
+    avg: 5
+    max: 10
+  contract:
+    min: 1
+    avg: 3
+    max: 7
+  delivery:
+    min: 7
+    avg: 30
+    max: 90
+  retention:
+    min: 30
+    avg: 365
+    max: 1095
+
+pricing_rules:
+  type: value_based
+  models:
+    - "fixed_fee"
+    - "hourly"
+    - "retainer"
+
+payment_rules:
+  type: milestone_based
+  terms:
+    upfront: 0.33
+    midway: 0.33
+    completion: 0.34
+
+commission_structure:
+  type: percentage
+  rate: 15.0
+
+legal_requirements:
+  default:
+    - "scope_of_work"
+    - "liability"
+    - "confidentiality"
+    - "termination_clause"

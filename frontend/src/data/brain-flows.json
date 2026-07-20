@@ -1,0 +1,1494 @@
+{
+"flows": [
+{
+"id": "flow.automation.cart_recovery",
+"name": "Recuperación de Carritos",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.cart_recovery",
+"label": "Recuperación de Carritos",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "skill.tool.wa_inbox",
+"label": "Wa Inbox",
+"kind": "skill",
+"group": "chat",
+"col": 2
+},
+{
+"id": "platform.whatsapp",
+"label": "Whatsapp",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+},
+{
+"id": "platform.email",
+"label": "Email",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.cart_recovery",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.cart_recovery",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.wa_inbox",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.wa_inbox",
+"rel": "usa"
+},
+{
+"source": "skill.tool.wa_inbox",
+"target": "platform.whatsapp",
+"rel": "opera"
+},
+{
+"source": "skill.tool.wa_inbox",
+"target": "platform.email",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.wa_bot_247",
+"name": "Bot WhatsApp 24/7",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.wa_bot_247",
+"label": "Bot WhatsApp 24/7",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "skill.tool.wa_inbox",
+"label": "Wa Inbox",
+"kind": "skill",
+"group": "chat",
+"col": 2
+},
+{
+"id": "platform.whatsapp",
+"label": "Whatsapp",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.wa_bot_247",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.wa_inbox",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.wa_inbox",
+"rel": "usa"
+},
+{
+"source": "skill.tool.wa_inbox",
+"target": "platform.whatsapp",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.lead_nurturing",
+"name": "Nurturing de Leads",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.lead_nurturing",
+"label": "Nurturing de Leads",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.email_compose",
+"label": "Email Compose",
+"kind": "skill",
+"group": "chat",
+"col": 2
+},
+{
+"id": "platform.email",
+"label": "Email",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+},
+{
+"id": "platform.whatsapp",
+"label": "Whatsapp",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.lead_nurturing",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_nurturing",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.email_compose",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.email_compose",
+"rel": "usa"
+},
+{
+"source": "skill.tool.email_compose",
+"target": "platform.email",
+"rel": "opera"
+},
+{
+"source": "skill.tool.email_compose",
+"target": "platform.whatsapp",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.meta_ads_optimizer",
+"name": "Optimizador Meta Ads",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.meta_ads_optimizer",
+"label": "Optimizador Meta Ads",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.ad_creative",
+"label": "Ad Creative",
+"kind": "skill",
+"group": "creatividad",
+"col": 2
+},
+{
+"id": "platform.meta_ads",
+"label": "Meta Ads",
+"kind": "platform",
+"group": "anuncios",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.meta_ads_optimizer",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.meta_ads_optimizer",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.ad_creative",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.ad_creative",
+"rel": "usa"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.meta_ads",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.google_ads_optimizer",
+"name": "Optimizador Google Ads",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.google_ads_optimizer",
+"label": "Optimizador Google Ads",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.ad_creative",
+"label": "Ad Creative",
+"kind": "skill",
+"group": "creatividad",
+"col": 2
+},
+{
+"id": "platform.google_ads",
+"label": "Google Ads",
+"kind": "platform",
+"group": "anuncios",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.google_ads_optimizer",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.google_ads_optimizer",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.ad_creative",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.ad_creative",
+"rel": "usa"
+},
+{
+"source": "skill.tool.ad_creative",
+"target": "platform.google_ads",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.social_content",
+"name": "Contenido Social Diario",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.social_content",
+"label": "Contenido Social Diario",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.copy_gen",
+"label": "Copy Gen",
+"kind": "skill",
+"group": "creatividad",
+"col": 2
+},
+{
+"id": "platform.instagram",
+"label": "Instagram",
+"kind": "platform",
+"group": "publicacion",
+"col": 3
+},
+{
+"id": "platform.tiktok",
+"label": "Tiktok",
+"kind": "platform",
+"group": "publicacion",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.social_content",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.social_content",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.copy_gen",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.copy_gen",
+"rel": "usa"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.tiktok",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.email_lifecycle",
+"name": "Email Lifecycle",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.email_lifecycle",
+"label": "Email Lifecycle",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "skill.tool.email_compose",
+"label": "Email Compose",
+"kind": "skill",
+"group": "chat",
+"col": 2
+},
+{
+"id": "platform.email",
+"label": "Email",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.email_lifecycle",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.email_lifecycle",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.email_compose",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.email_compose",
+"rel": "usa"
+},
+{
+"source": "skill.tool.email_compose",
+"target": "platform.email",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.review_responder",
+"name": "Gestor de Reseñas",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.review_responder",
+"label": "Gestor de Reseñas",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "skill.tool.competitor_intel",
+"label": "Competitor Intel",
+"kind": "skill",
+"group": "analisis",
+"col": 2
+},
+{
+"id": "platform.mercadolibre",
+"label": "Mercadolibre",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.review_responder",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.review_responder",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.competitor_intel",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.competitor_intel",
+"rel": "usa"
+},
+{
+"source": "skill.tool.competitor_intel",
+"target": "platform.mercadolibre",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.deal_reactivation",
+"name": "Reactivación de Deals",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.deal_reactivation",
+"label": "Reactivación de Deals",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "skill.tool.lead_scoring",
+"label": "Lead Scoring",
+"kind": "skill",
+"group": "analisis",
+"col": 2
+},
+{
+"id": "platform.whatsapp",
+"label": "Whatsapp",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.deal_reactivation",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.lead_scoring",
+"rel": "usa"
+},
+{
+"source": "skill.tool.lead_scoring",
+"target": "platform.whatsapp",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.invoicing",
+"name": "Facturación Electrónica",
+"category": "Core",
+"group": "core",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.invoicing",
+"label": "Facturación Electrónica",
+"kind": "automation",
+"group": "core",
+"col": 0
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "skill.tool.crm_sync",
+"label": "Crm Sync",
+"kind": "skill",
+"group": "datos",
+"col": 2
+},
+{
+"id": "platform.arca",
+"label": "Arca",
+"kind": "platform",
+"group": "fiscal",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.invoicing",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.arca",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.referral_engine",
+"name": "Motor de Referidos",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.referral_engine",
+"label": "Motor de Referidos",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.crm_sync",
+"label": "Crm Sync",
+"kind": "skill",
+"group": "datos",
+"col": 2
+},
+{
+"id": "platform.whatsapp",
+"label": "Whatsapp",
+"kind": "platform",
+"group": "mensajeria",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.referral_engine",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.referral_engine",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.whatsapp",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.inventory_sync",
+"name": "Sincronía de Inventario",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.inventory_sync",
+"label": "Sincronía de Inventario",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "skill.tool.crm_sync",
+"label": "Crm Sync",
+"kind": "skill",
+"group": "datos",
+"col": 2
+},
+{
+"id": "platform.mercadolibre",
+"label": "Mercadolibre",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.shopify",
+"label": "Shopify",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.inventory_sync",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.inventory_sync",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.onboarding",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.retentor",
+"target": "skill.tool.crm_sync",
+"rel": "usa"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "skill.tool.crm_sync",
+"target": "platform.shopify",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.research_winning_products",
+"name": "Research de Producto Ganador",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.research_winning_products",
+"label": "Research de Producto Ganador",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.research_winning_products",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.research_winning_products",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.budget_costing",
+"name": "Costos y Presupuesto",
+"category": "Finanzas",
+"group": "finanzas",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.budget_costing",
+"label": "Costos y Presupuesto",
+"kind": "automation",
+"group": "finanzas",
+"col": 0
+}
+],
+"edges": []
+},
+{
+"id": "flow.automation.financial_dashboard",
+"name": "Tablero Financiero",
+"category": "Finanzas",
+"group": "finanzas",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.financial_dashboard",
+"label": "Tablero Financiero",
+"kind": "automation",
+"group": "finanzas",
+"col": 0
+}
+],
+"edges": []
+},
+{
+"id": "flow.automation.business_structuring",
+"name": "Estructuración del Negocio",
+"category": "Core",
+"group": "core",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.business_structuring",
+"label": "Estructuración del Negocio",
+"kind": "automation",
+"group": "core",
+"col": 0
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.business_structuring",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.crypto_watchlist",
+"name": "Watchlist Cripto (educativa)",
+"category": "Finanzas",
+"group": "finanzas",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.crypto_watchlist",
+"label": "Watchlist Cripto (educativa)",
+"kind": "automation",
+"group": "finanzas",
+"col": 0
+}
+],
+"edges": []
+},
+{
+"id": "flow.automation.real_estate_scan",
+"name": "Análisis Inmobiliario",
+"category": "Finanzas",
+"group": "finanzas",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.real_estate_scan",
+"label": "Análisis Inmobiliario",
+"kind": "automation",
+"group": "finanzas",
+"col": 0
+}
+],
+"edges": []
+},
+{
+"id": "flow.automation.manychat_qualify",
+"name": "ManyChat: Filtrar Leads Malos",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.manychat_qualify",
+"label": "ManyChat: Filtrar Leads Malos",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.manychat_qualify",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.manychat_qualify",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.lead_capture",
+"name": "Captación Inteligente de Leads",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.lead_capture",
+"label": "Captación Inteligente de Leads",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.lead_capture",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.lead_capture",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.brief_to_campaign",
+"name": "Brief → Campaña 360°",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.brief_to_campaign",
+"label": "Brief → Campaña 360°",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.brief_to_campaign",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.brief_to_campaign",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.brand_identity",
+"name": "Generador de Identidad de Marca",
+"category": "Core",
+"group": "core",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.brand_identity",
+"label": "Generador de Identidad de Marca",
+"kind": "automation",
+"group": "core",
+"col": 0
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.brand_identity",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.impossible_sale",
+"name": "Vender lo Invendible",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.impossible_sale",
+"label": "Vender lo Invendible",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.impossible_sale",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.advanced_sales_system",
+"name": "Sistema Avanzado de Ventas",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.advanced_sales_system",
+"label": "Sistema Avanzado de Ventas",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.advanced_sales_system",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.master_seller_dispatch",
+"name": "Vendedor Maestro Activado",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.master_seller_dispatch",
+"label": "Vendedor Maestro Activado",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.master_seller_dispatch",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.onboarding_sequence",
+"name": "Secuencia de Onboarding",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.onboarding_sequence",
+"label": "Secuencia de Onboarding",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.onboarding_sequence",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.onboarding_sequence",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.engagement_loops",
+"name": "Loops de Engagement",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.engagement_loops",
+"label": "Loops de Engagement",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.engagement_loops",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.engagement_loops",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.upsell_detection",
+"name": "Detección Automática de Upsell",
+"category": "Expansión",
+"group": "core",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.upsell_detection",
+"label": "Detección Automática de Upsell",
+"kind": "automation",
+"group": "core",
+"col": 0
+}
+],
+"edges": []
+},
+{
+"id": "flow.automation.retention_qbr",
+"name": "QBR Trimestral Automatizada",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.retention_qbr",
+"label": "QBR Trimestral Automatizada",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.retention_qbr",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.retention_qbr",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+}
+]
+},
+{
+"id": "flow.automation.churn_alerts",
+"name": "Alertas de Churn Automáticas",
+"category": "Retención",
+"group": "retencion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.churn_alerts",
+"label": "Alertas de Churn Automáticas",
+"kind": "automation",
+"group": "retencion",
+"col": 0
+},
+{
+"id": "agent.pipeline.onboarding",
+"label": "Onboarding",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+},
+{
+"id": "agent.pipeline.retentor",
+"label": "Retentor",
+"kind": "agent",
+"group": "retencion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.churn_alerts",
+"target": "agent.pipeline.onboarding",
+"rel": "orquesta"
+},
+{
+"source": "automation.churn_alerts",
+"target": "agent.pipeline.retentor",
+"rel": "orquesta"
+}
+]
+}
+]
+}

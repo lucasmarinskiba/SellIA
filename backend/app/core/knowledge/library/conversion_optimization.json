@@ -1,0 +1,47 @@
+{
+  "category": "conversion_rate_optimization",
+  "description": "CRO: A/B testing, landing page optimization, funnel analysis. 1% conversion improvement = 10% revenue sube (si traffic plano).",
+  "items": [
+    {
+      "id": "cro_001",
+      "subcategory": "landing_page_basics",
+      "principle": "Landing page efectiva: 1 value prop, 1 CTA, <5s load, mobile optimized. Típicamente 2-5% conversion si bien diseñado.",
+      "tactic": "Estructura: Headline (valor en 5s) → Subheadline (prove it) → Visual (foto/video) → Benefits (3 bullet points) → CTA (botón grande, contraste alto). Social proof (reviews, testimonios) antes de CTA. Eliminar navegación (distrae). Test: headline 1, visual 1, CTA copy 1.",
+      "framework": "Headline → Proof → Visual → Benefits → CTA",
+      "examples": [
+        "SaaS: 'Save 10 hours/week' (headline) → '500+ companies trust us' (social proof) → Video (1min) → 'Start free trial' (button)",
+        "E-commerce: 'Free shipping on orders >$50' → '4.8/5 stars (1200 reviews)' → Product photos → 'Add to cart'"
+      ],
+      "tags": ["cro", "landing_page", "ux", "conversion"],
+      "_source_weight": 1.4
+    },
+    {
+      "id": "cro_002",
+      "subcategory": "ab_testing_framework",
+      "principle": "No hipótesis = no learning. Test 1 variable por vez (headline, button color, CTA copy). Resultado: winner → deploy, loser → iterate.",
+      "tactic": "Poder estadístico: mín 100 conversiones por variante (n=200 total). Test duration: 2 semanas o 1000 visitors (lo que sea mayor). Winner: p-value <0.05 (95% confident).",
+      "framework": "Hypothesis → Test (2 variantes, n=200) → Analyze (p<0.05?) → Deploy winner → Repeat",
+      "examples": [
+        "H: Headline 'Save time' → conversión vs 'Stop wasting money' → conversión. Test 2 semanas: 'Save time' wins 5% vs 3%. Deploy.",
+        "H: Button 'Buy now' vs 'Get started'. Test: 'Get started' +2% conversion. Deploy, savings $2k/month (1000 clicks, 1% = 10 extra sales)."
+      ],
+      "tags": ["testing", "hypothesis", "statistical_power", "experimentation"],
+      "_source_hint": "A/B testing best practices",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "cro_003",
+      "subcategory": "funnel_analysis",
+      "principle": "Conversion funnel: Landing → Page 2 → Checkout → Complete. Si leak en etapa X, no vale traffic más abajo. Optimize cada etapa.",
+      "tactic": "Medir: Landing (100%) → Page 2 (70%) → Checkout (30%) → Complete (10%). Bottleneck: Checkout solo 43% (100/100 a checkout, 43 completan). Tactic: Reduce fields, one-click pay, reduce friction.",
+      "framework": "Visualizar funnel → Identifica bottleneck (peor % drop) → Optimiza esa etapa → Remeasure",
+      "examples": [
+        "E-commerce funnel: Landing 1000 → PDP 750 → Cart 300 → Checkout 90 → Complete 45. Bottleneck: Cart → Checkout (30%). Solución: reduce cart complexity.",
+        "SaaS funnel: Landing 1000 → Signup 500 → Trial 200 → Subscribe 30. Bottleneck: Trial → Subscribe (15%). Solución: improve onboarding (aha moment en día 1)."
+      ],
+      "tags": ["funnel", "analytics", "bottleneck", "optimization"],
+      "_source_hint": "Funnel optimization",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

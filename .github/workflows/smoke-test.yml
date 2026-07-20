@@ -1,0 +1,44 @@
+name: smoke-test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15min · prod uptime check
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: API healthz
+        run: |
+          status=$(curl -sS -o /dev/null -w "%{http_code}" https://api.sellia.app/healthz)
+          if [[ "$status" != "200" ]]; then
+            echo "::error::API /healthz returned $status"
+            exit 1
+          fi
+          echo "✓ api healthy"
+
+      - name: Frontend home
+        run: |
+          status=$(curl -sS -o /dev/null -w "%{http_code}" https://app.sellia.app/)
+          if [[ "$status" -lt 200 || "$status" -ge 400 ]]; then
+            echo "::error::Frontend / returned $status"
+            exit 1
+          fi
+          echo "✓ frontend healthy"
+
+      - name: WebSocket reachable
+        run: |
+          # Test that wss responds to TCP handshake (won't auth, but should reach)
+          (timeout 5 bash -c 'cat < /dev/tcp/api.sellia.app/443' && echo "✓ ws port open") || {
+            echo "::error::wss port unreachable"
+            exit 1
+          }
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"text":"🚨 SellIA smoke test FAILED · check https://api.sellia.app/healthz"}'

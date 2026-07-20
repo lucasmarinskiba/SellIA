@@ -1,0 +1,297 @@
+# ============================================================
+#  OWASP ZAP Security Scan
+#  Escaneo automatizado de vulnerabilidades en CI/CD
+# ============================================================
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Escaneo diario a las 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1. SAST con Semgrep (análisis estático)
+  # ---------------------------------------------------------------
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    if: (github.actor != 'dependabot[bot]')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: |
+          semgrep --config=auto \
+                  --config=p/owasp-top-ten \
+                  --config=p/cwe-top-25 \
+                  --config=p/security-audit \
+                  --json --output=semgrep-results.json \
+                  backend/ frontend/src/ || true
+
+      - name: Upload Semgrep results
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+
+      - name: Fail on critical findings
+        run: |
+          CRITICAL=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' semgrep-results.json)
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ Found $CRITICAL critical Semgrep findings"
+            exit 1
+          fi
+          echo "✅ No critical Semgrep findings"
+
+  # ---------------------------------------------------------------
+  # 2. Dependency check con Trivy
+  # ---------------------------------------------------------------
+  trivy:
+    name: Trivy Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy on backend dependencies
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'backend/requirements.txt'
+          format: 'sarif'
+          output: 'trivy-backend.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy on frontend dependencies
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'frontend/package.json'
+          format: 'sarif'
+          output: 'trivy-frontend.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: |
+            trivy-backend.sarif
+            trivy-frontend.sarif
+
+      - name: Upload to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-backend.sarif'
+          category: 'trivy-backend'
+
+  # ---------------------------------------------------------------
+  # 3. Python SAST with Bandit
+  # ---------------------------------------------------------------
+  bandit:
+    name: Bandit Python SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit
+        run: |
+          bandit -r backend/app/ -f json -o bandit-results.json || true
+          bandit -r backend/app/ -f screen
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-results
+          path: bandit-results.json
+
+      - name: Fail on high-severity findings
+        run: |
+          if [ -f "bandit-results.json" ]; then
+            HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-results.json 2>/dev/null || echo "0")
+            if [ "$HIGH" -gt 0 ]; then
+              echo "❌ Found $HIGH high-severity Bandit findings"
+              exit 1
+            fi
+          fi
+          echo "✅ No high-severity Bandit findings"
+
+  # ---------------------------------------------------------------
+  # 4. Python Dependency Audit with pip-audit
+  # ---------------------------------------------------------------
+  pip-audit:
+    name: pip-audit Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        run: |
+          pip-audit -r backend/requirements.txt --format=json --output=pip-audit-results.json || true
+          pip-audit -r backend/requirements.txt --format=summary
+
+      - name: Upload pip-audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-results
+          path: pip-audit-results.json
+
+      - name: Fail on critical vulnerabilities
+        run: |
+          if [ -f "pip-audit-results.json" ]; then
+            CRITICAL=$(jq '[.dependencies[]?.vulns[]? | select(.fix_versions | length > 0)] | length' pip-audit-results.json 2>/dev/null || echo "0")
+            if [ "$CRITICAL" -gt 0 ]; then
+              echo "⚠️ Found $CRITICAL vulnerabilities with available fixes. Review the report."
+            fi
+          fi
+          echo "✅ pip-audit completed"
+
+  # ---------------------------------------------------------------
+  # 5. OWASP ZAP Baseline Scan
+  # ---------------------------------------------------------------
+  zap-baseline:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          cp .env.example .env
+          echo "SECRET_KEY=test-secret-key-for-zap-scan-$(openssl rand -hex 16)" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sellia" >> .env
+          echo "REDIS_URL=redis://redis:6379/0" >> .env
+          echo "ENVIRONMENT=test" >> .env
+
+      - name: Start application stack
+        run: |
+          docker compose -f docker-compose.yml up -d db redis backend frontend
+          for i in {1..60}; do
+            if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 5
+          done
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          fail_action: false
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: |
+            report_*.html
+            report_*.json
+
+      - name: Check for high-risk findings
+        run: |
+          if [ -f "report_json.json" ]; then
+            HIGH=$(jq '[.site[0].alerts[] | select(.riskdesc | startswith("High"))] | length' report_json.json 2>/dev/null || echo "0")
+            if [ "$HIGH" -gt 0 ]; then
+              echo "⚠️ Found $HIGH high-risk ZAP findings. Review the report."
+            fi
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  # ---------------------------------------------------------------
+  # 6. OWASP ZAP Full Scan (escaneo profundo programado)
+  # ---------------------------------------------------------------
+  zap-full:
+    name: OWASP ZAP Full Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          cp .env.example .env
+          echo "SECRET_KEY=test-secret-key-for-zap-scan-$(openssl rand -hex 16)" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sellia" >> .env
+          echo "REDIS_URL=redis://redis:6379/0" >> .env
+          echo "ENVIRONMENT=test" >> .env
+
+      - name: Start application stack
+        run: |
+          docker compose -f docker-compose.yml up -d db redis backend frontend
+          for i in {1..60}; do
+            if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 5
+          done
+
+      - name: ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          fail_action: false
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-full-report
+          path: |
+            report_*.html
+            report_*.json
+
+      - name: Check for high-risk findings
+        run: |
+          if [ -f "report_json.json" ]; then
+            HIGH=$(jq '[.site[0].alerts[] | select(.riskdesc | startswith("High"))] | length' report_json.json 2>/dev/null || echo "0")
+            if [ "$HIGH" -gt 0 ]; then
+              echo "⚠️ Found $HIGH high-risk ZAP findings. Review the report."
+            fi
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

@@ -1,0 +1,54 @@
+{
+  "category": "real_estate",
+  "description": "Mercado inmobiliario: valuación, retorno y financiación — conocimiento educativo. No constituye asesoramiento y no ejecuta operaciones.",
+  "items": [
+    {
+      "id": "re_001",
+      "subcategory": "valuacion",
+      "principle": "Ubicación manda: zona, servicios, transporte y desarrollo futuro pesan más que el inmueble en sí. Los comparables de ventas recientes anclan la valuación.",
+      "tactic": "Estima valor con comps de la misma zona y tipología antes de opinar sobre precio.",
+      "framework": "Comps + ubicación + estado + tendencia de zona",
+      "when_to_use": ["tasar", "comparar propiedades", "analizar zona"],
+      "when_not_to_use": ["firmar reservas", "garantizar plusvalía"],
+      "tags": ["valuacion", "comps", "ubicacion"],
+      "_source_hint": "Tasación inmobiliaria",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "re_002",
+      "subcategory": "retorno",
+      "principle": "El cap rate (ingreso neto anual / valor) mide el retorno de una propiedad de renta y permite compararla contra otras inversiones.",
+      "tactic": "Calcula cap rate y flujo de caja neto incluyendo impuestos, mantenimiento y vacancia.",
+      "framework": "Cap rate = NOI / valor; flujo de caja > especulación",
+      "when_to_use": ["inversión en renta", "comparar oportunidades"],
+      "when_not_to_use": ["prometer retorno", "decidir por el usuario"],
+      "tags": ["cap_rate", "roi", "flujo_de_caja", "renta"],
+      "_source_hint": "Inversión inmobiliaria",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "re_003",
+      "subcategory": "financiacion",
+      "principle": "El apalancamiento con hipoteca amplifica el retorno sobre el capital propio, pero también el riesgo si suben tasas o baja la ocupación.",
+      "tactic": "Modela escenarios (tasa, vacancia, gastos) antes de hablar de rentabilidad apalancada.",
+      "framework": "Escenarios: optimista / base / estrés",
+      "when_to_use": ["analizar hipoteca", "ROI apalancado"],
+      "when_not_to_use": ["gestionar el crédito del usuario"],
+      "tags": ["hipoteca", "apalancamiento", "riesgo"],
+      "_source_hint": "Financiación inmobiliaria",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "re_004",
+      "subcategory": "guardrail",
+      "principle": "El agente informa y analiza; NUNCA firma ofertas, reservas o pagos ni ingresa datos financieros. La decisión y la operación son del usuario.",
+      "tactic": "Ante cualquier compromiso o pago, detente y deriva al usuario.",
+      "framework": "Educativo + escalar al humano",
+      "when_to_use": ["siempre que aparezca un compromiso económico"],
+      "when_not_to_use": ["nunca operar por el usuario"],
+      "tags": ["guardrail", "compliance"],
+      "_source_hint": "Política de seguridad SellIA",
+      "_confidence_weight": 1.5
+    }
+  ]
+}

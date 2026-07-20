@@ -1,0 +1,90 @@
+{
+  "category": "pricing_psychology",
+  "description": "Psicología de precios: cómo vendedor maximiza conversión sin perder margen. Anchoring, bundling, tiering, scarcity.",
+  "items": [
+    {
+      "id": "price_001",
+      "subcategory": "price_anchoring",
+      "principle": "Primer número que ve cliente queda 'anclado' en mente. Anclaje alto → percepciones todo más barato. Anclaje bajo → cliente desconfía.",
+      "tactic": "Mostrar 'precio original' (crossed-out) vs 'precio ahora'. Si original $500 → ahora $199, cliente ve 60% descuento (psicológico). Ej: 'Normalmente $999, hoy $299' (anclaje alto). Usar en publicidad, landing, checkout.",
+      "framework": "Precio original alto → Descuento psicológico → Conversión sube 20-30%",
+      "examples": [
+        "Laptop: $1,200 → $799 (crossed-out). Cliente ve -33%, se siente ganador.",
+        "Consultoría: $500/h → Paquete anual $12,000 (vs $60k si pagaba por hora). Cliente ve 80% descuento."
+      ],
+      "tags": ["pricing", "psychology", "anchoring", "perception"],
+      "_source_hint": "Kahneman decisión irracional",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "price_002",
+      "subcategory": "price_tiers",
+      "principle": "3 opciones de precio: básico (barato, baja conversión), medio (bestseller, 70% ventas), premium (margen alto). No 1, no 2+.",
+      "tactic": "Tier 1 (Basic): $29/mo. Tier 2 (Pro, RECOMENDADO): $99/mo (+50% valor, +200% precio, 70% elige este). Tier 3 (Enterprise): $299/mo (few choose, pero high margin). Posicionar Pro como 'Best Value', highlight Pro como default.",
+      "framework": "Basic (low price, low margin) → Pro (high conversion, good margin) ← Enterprise (high margin, few)",
+      "examples": [
+        "SaaS: Free → Pro $99 → Enterprise $999. Usuario ve libertad (free), pero Pro es 'recomendado' → 70% → $99.",
+        "E-commerce: Bundle básico $50 → Bundle Pro $150 (3 items vs 1, valor psicológico +4x) → Premium $400. Pro = bestseller."
+      ],
+      "tags": ["pricing", "tiers", "strategy", "conversion"],
+      "_source_hint": "Pricing strategy patterns",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "price_003",
+      "subcategory": "bundling",
+      "principle": "Bundear productos: cliente percibe más valor, dispuesto pagar más. Ejemplo: Laptop solo $800 → Laptop + mouse + cable $999 (cliente ve +3 items, dispuesto pagar +25%).",
+      "tactic": "Bundear complementarios (no sustitutos). Laptop + mochila + protector pantalla (naturales). Mostrar valor individual (Laptop $800 + Mochila $60 + Protector $30 = $890) vs Bundle $999. Cliente ve 'ahorro' $100 (psicológico, aunque es +25% precio real).",
+      "framework": "Producto principal + complementarios → Mostrar suma individual → Bundle precio entre (no suma, no máximo)",
+      "examples": [
+        "Consultoría 1h: $150. Bundle 5 sesiones + email support: $499 (vs $750 si pagaba individual). Cliente ve 33% descuento.",
+        "Tienda: Bota $80 → Bundle Bota + cinturón + calcetines: $120 (vs $135 individual). Cliente ahorra $15."
+      ],
+      "tags": ["bundling", "perceived_value", "cross_sell"],
+      "_source_hint": "Bundling economics",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "price_004",
+      "subcategory": "scarcity_urgency",
+      "principle": "Limitación artificial crea urgencia. 'Solo 5 left', 'Offer expires in 2h'. Conversión sube 20-40% si hay escasez.",
+      "tactic": "Real scarcity (stock limitado, oferta temporal). Mostrar counter real: 'Solo 3 items left!', 'Ends in 47 minutes'. NO fake scarcity (legal issue + destroys trust). Usar en checkout, landing, email.",
+      "framework": "Escasez real → Mostrar en vivo → Urgencia psicológica → Conversión sube",
+      "examples": [
+        "E-commerce: Stock 5, counter muestra '5 left'. Comprador 1 compra → muestra '4 left'. Buyer 5 ve '1 left!' → conversion spike.",
+        "Promoción: 'Black Friday ends in 23 hours' + timer. Conversión este día vs ayer: +35%."
+      ],
+      "tags": ["scarcity", "urgency", "fomo", "conversion"],
+      "_source_hint": "FOMO psychology",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "price_005",
+      "subcategory": "payment_friction",
+      "principle": "Precio igual, pero pago puede ser barrera. 1 click checkout vs 10-step form. Conversión sube 10-20% si friction baja.",
+      "tactic": "One-click checkout. Guardar tarjeta. Pago express (Apple Pay, Google Pay). No forzar crear cuenta antes de pagar. Campo mínimos (email, tarjeta, dirección). Post-checkout: env PDF factura + link descarga inmediato (no espera).",
+      "framework": "Friction baja → Más clientes completan checkout → Conversión sube",
+      "examples": [
+        "Checkout 10 campos: 30% abandono. Checkout 3 campos (email, tarjeta, dirección): 10% abandono. +67% conversión.",
+        "App: 'Buy with Apple Pay' (1 tap) vs 'Enter card details' (3 min). Conversion 1-tap: +40%."
+      ],
+      "tags": ["ux", "checkout", "friction", "conversion_optimization"],
+      "_source_hint": "Checkout optimization",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "price_006",
+      "subcategory": "perceived_value",
+      "principle": "Mismo producto, precio +50% si posicionado bien (calidad, exclusividad, status). Ejemplo: botella agua $2 vs Evian $5.",
+      "tactic": "Storytelling valor: 'artesanal', 'premium', 'exclusive', 'limitado'. Fotos profesionales, testimonios, reviews altos. Si precio premium, justificar (materials, craftsmanship, rarity). Premium position = precio +40-60% viable si valor percibido justo.",
+      "framework": "Valor percibido = Precio × Justificación",
+      "examples": [
+        "Laptop: Especificaciones idénticas. Marca premium: $1,200. Marca desconocida: $800. Premium = storytelling + branding.",
+        "Café: Café commodity $10/kg. Café 'single-origin specialty roasted': $25/kg. Valor percibido justo si historia clara (región, proceso, cata notes)."
+      ],
+      "tags": ["perceived_value", "positioning", "branding", "premium"],
+      "_source_hint": "Luxury pricing psychology",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

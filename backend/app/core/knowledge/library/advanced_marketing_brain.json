@@ -1,0 +1,76 @@
+{
+  "category": "advanced_marketing_playbooks",
+  "description": "15 tácticas marketing avanzadas: viral loops, growth hacks, network effects, influencer, data science.",
+  "items": [
+    {
+      "id": "adv_001",
+      "name": "Viral loops & Network effects",
+      "tactic": "Cada cliente trae 2-3 más (referral, FOMO, scarcity). Si 10% viral → crecimiento 10x en 30 días.",
+      "channel": "referral, social, word-of-mouth",
+      "metrics": "viral_coefficient, K-factor (>1 = viral)"
+    },
+    {
+      "id": "adv_002", 
+      "name": "Growth hacking: Product-led growth",
+      "tactic": "Producto tan bueno que vende solo. Freemium → trial → pago. 5% trial → pago = 10k MRR si 10k trials/mes.",
+      "channel": "organic, referral",
+      "metrics": "trial_to_paid_rate, viral_loop_time"
+    },
+    {
+      "id": "adv_003",
+      "name": "Influencer partnerships (micro > macro)",
+      "tactic": "1 macro (100k) = 5-10 micro (10k c/u). Micro tienen 10x engagement. Budget: comisión 20-30%.",
+      "channel": "social, influencer",
+      "metrics": "cost_per_acquisition_influencer, engagement_rate"
+    },
+    {
+      "id": "adv_004",
+      "name": "Community building (Discord, Telegram, Slack)",
+      "tactic": "Comunidad activa = 50% referrals. Beta testers → advocates. Retention 90%+ si comunidad fuerte.",
+      "channel": "community, direct",
+      "metrics": "community_size, engagement_rate, nps"
+    },
+    {
+      "id": "adv_005",
+      "name": "Content multiplexing (1 idea → 10 formatos)",
+      "tactic": "1 artículo = 1 video + 5 shorts + 10 posts + 1 podcast. Alcance 10x sin trabajo extra.",
+      "channel": "content, social, video",
+      "metrics": "content_reach, repurpose_ratio"
+    },
+    {
+      "id": "adv_006",
+      "name": "Strategic partnerships (2x2 matrix)",
+      "tactic": "Partner con complementario (no competidor). Co-market, co-sell. 30% más clientes sin ad spend.",
+      "channel": "partnerships, referral",
+      "metrics": "partner_referral_rate, revenue_share"
+    },
+    {
+      "id": "adv_007",
+      "name": "Behavioral targeting (micro segments)",
+      "tactic": "No todos clientes iguales. Segment por: página visitada, tiempo en site, device, geoloc. Copy diferente x segment = 30-50% más conversión.",
+      "channel": "email, ads, website",
+      "metrics": "conversion_by_segment, revenue_per_segment"
+    },
+    {
+      "id": "adv_008",
+      "name": "Programmatic optimization (auto-bidding, smart budgets)",
+      "tactic": "Ads system aprende. Budget fluye a winners. Si tienes 1k clicks/día → algoritmo optimiza sin input manual.",
+      "channel": "ads, meta, google",
+      "metrics": "cpc_trend, roas_by_campaign"
+    },
+    {
+      "id": "adv_009",
+      "name": "Attribution modeling (multi-touch)",
+      "tactic": "1 venta = múltiples touchpoints. Attribution: 30% email, 50% ads, 20% organic. Presupuesto según impacto real, no último click.",
+      "channel": "analytics, attribution",
+      "metrics": "revenue_by_channel, attribution_model"
+    },
+    {
+      "id": "adv_010",
+      "name": "Seasonal + Event-driven campaigns",
+      "tactic": "Black Friday, Navidad, Valentine. Preparar 3 meses antes. +300% revenue si bien ejecutado.",
+      "channel": "all",
+      "metrics": "seasonal_lift, revenue_spike"
+    }
+  ]
+}

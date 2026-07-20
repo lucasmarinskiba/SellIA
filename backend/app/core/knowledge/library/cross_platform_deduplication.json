@@ -1,0 +1,11 @@
+{
+  "category": "inventory_deduplication",
+  "description": "Single SKU, multiple listings, unified stock",
+  "items": [
+    {"id": "ded_001", "name": "Master SKU concept", "tactic": "One canonical SKU in DB. Linked to N listings. One inventory pool."},
+    {"id": "ded_002", "name": "Multi-listing updates", "tactic": "Stock change DB → push ALL listings simultaneously. Prevent overselling."},
+    {"id": "ded_003", "name": "Price differentiation", "tactic": "Same SKU, different prices per platform (Amazon ACoS, eBay, Shopify). Legal optimal."},
+    {"id": "ded_004", "name": "Inventory split", "tactic": "100 units: 40 ML, 30 Amazon, 20 Shopify, 10 backup. Rebalance weekly."},
+    {"id": "ded_005", "name": "Zero-stock sync", "tactic": "Inventory hits 0 → delist ALL platforms in <5min via Computer Use."}
+  ]
+}

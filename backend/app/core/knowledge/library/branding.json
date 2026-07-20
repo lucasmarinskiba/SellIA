@@ -1,0 +1,84 @@
+{
+  "category": "branding",
+  "description": "Posicionamiento y construcción de marca (Ries-Trout y maestros del posicionamiento)",
+  "items": [
+    {
+      "id": "branding_001",
+      "subcategory": "posicionamiento",
+      "principle": "El posicionamiento no es lo que le hacés al producto, es lo que le hacés a la mente del prospecto. La batalla se gana en la percepción, no en el producto.",
+      "tactic": "Define qué lugar querés ocupar en la mente del cliente y comunícalo con consistencia brutal. No intentes ser todo: ocupá una casilla mental específica y defendela. La percepción vence a la realidad del producto.",
+      "framework": "Posicionamiento: ocupar una casilla en la mente del prospecto",
+      "script_template": "Cuando alguien piensa en [categoría/problema], quiero que piense primero en nosotros porque somos [el único que...].",
+      "when_to_use": ["definir estrategia de marca", "diferenciarte", "entrar a un mercado"],
+      "when_not_to_use": ["sin claridad de a quién le hablás", "querer abarcar todos los segmentos"],
+      "tags": ["posicionamiento", "percepcion", "mente", "ries_trout"],
+      "_source_hint": "Al Ries & Jack Trout — Positioning",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "branding_002",
+      "subcategory": "categoria",
+      "principle": "Si no podés ser el primero en una categoría, creá una categoría nueva en la que puedas serlo. Es mejor ser el primero que ser el mejor.",
+      "tactic": "Cuando el liderazgo de una categoría ya está tomado, redefiní el terreno: acotá o reinventá la categoría hasta que seas vos el número uno de ella. La mente premia al pionero, no al que llega segundo y mejor.",
+      "framework": "Ley del liderazgo: ser primero > ser mejor → si no, crear categoría",
+      "script_template": "No competimos en [categoría saturada]. Somos la primera [categoría nueva y específica], y en eso no hay nadie más.",
+      "when_to_use": ["mercado con líder establecido", "diferenciación radical", "lanzamiento"],
+      "when_not_to_use": ["categoría que ya dominás", "fragmentar tanto que nadie la entienda"],
+      "tags": ["categoria", "liderazgo", "pionero", "ries_trout"],
+      "_source_hint": "Ries & Trout — The 22 Immutable Laws of Marketing",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "branding_003",
+      "subcategory": "foco",
+      "principle": "La esencia del marketing es estrechar el foco. Una marca se vuelve más fuerte cuando reduce su alcance, no cuando lo amplía.",
+      "tactic": "Resistí la tentación de extender la marca a todo. Sacrificá productos, mercados y mensajes para que tu marca signifique una sola cosa con fuerza. Una palabra en la mente del cliente vale más que diez difusas.",
+      "framework": "Ley del sacrificio / del foco: menos es más fuerte",
+      "script_template": "Hacemos una sola cosa y la hacemos mejor que nadie: [propuesta única]. No nos dispersamos, por eso somos los mejores en esto.",
+      "when_to_use": ["marca difusa o sobreextendida", "construir asociación mental fuerte", "diferenciación"],
+      "when_not_to_use": ["etapa donde necesitás explorar mercado", "portafolio que requiere amplitud real"],
+      "tags": ["foco", "sacrificio", "especializacion", "ries_trout"],
+      "_source_hint": "Ries & Trout — The 22 Immutable Laws of Marketing",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "branding_004",
+      "subcategory": "diferenciacion",
+      "principle": "Diferenciate o morí. En un mercado de opciones similares, el que no ofrece una razón clara y única para elegirlo compite solo por precio.",
+      "tactic": "Encontrá un atributo diferenciador que importe al cliente y que la competencia no pueda reclamar, y construí toda la marca alrededor de él. Liderazgo, especialización, herencia o forma de hacer: elegí uno y poseelo.",
+      "framework": "Diferenciación: un atributo propio y defendible",
+      "script_template": "La diferencia con el resto es [atributo único y relevante]. Eso es lo que nadie más puede ofrecerle, y por eso nos eligen.",
+      "when_to_use": ["mercado commoditizado", "evitar guerra de precios", "construir preferencia"],
+      "when_not_to_use": ["sin atributo real defendible", "diferenciar en algo que al cliente no le importa"],
+      "tags": ["diferenciacion", "atributo", "ventaja", "trout_rivkin"],
+      "_source_hint": "Trout & Rivkin — Differentiate or Die",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "branding_005",
+      "subcategory": "consistencia",
+      "principle": "Una marca se construye por repetición y consistencia a lo largo del tiempo. Cambiar el mensaje constantemente borra lo que costó años grabar en la mente.",
+      "tactic": "Mantené el mensaje central, el tono y los símbolos estables durante años, aunque te aburran a vos. La marca recién empieza a calar cuando vos ya estás cansado de repetirla. Consistencia > novedad.",
+      "framework": "Consistencia: mismo mensaje sostenido construye marca",
+      "script_template": "Somos [mensaje central] hoy, igual que ayer y mañana. Esa coherencia es lo que hace que confíen en nosotros.",
+      "when_to_use": ["construcción de marca a largo plazo", "evitar diluir el mensaje", "fidelizar percepción"],
+      "when_not_to_use": ["reposicionamiento necesario por mercado roto", "mensaje original equivocado"],
+      "tags": ["consistencia", "repeticion", "coherencia", "marca"],
+      "_source_hint": "Principios clásicos de branding",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "branding_006",
+      "subcategory": "narrativa",
+      "principle": "La gente no compra productos, compra historias e identidad. Una marca fuerte le dice al cliente quién es él cuando la elige.",
+      "tactic": "Construí una narrativa de marca con un porqué claro (propósito) y un enemigo o statu quo que desafiás. El cliente se suma no por las features, sino por pertenecer a lo que la marca representa.",
+      "framework": "Narrativa de marca: propósito (por qué) + identidad del cliente",
+      "script_template": "No vendemos [producto]. Representamos [propósito/causa]. Quien nos elige es alguien que [identidad aspiracional].",
+      "when_to_use": ["marcas de consumo y comunidad", "construir lealtad emocional", "diferenciarte por significado"],
+      "when_not_to_use": ["compra puramente funcional y racional", "propósito inventado sin sustento real"],
+      "tags": ["narrativa", "proposito", "identidad", "storytelling"],
+      "_source_hint": "Simon Sinek — Start With Why / branding emocional",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

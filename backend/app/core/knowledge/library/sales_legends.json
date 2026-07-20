@@ -1,0 +1,110 @@
+{
+  "category": "sales_legends",
+  "description": "Principios atemporales de los vendedores legendarios de la historia",
+  "items": [
+    {
+      "id": "sales_legends_001",
+      "subcategory": "actitud",
+      "principle": "Puedes tener todo lo que quieras en la vida si ayudas a suficientes personas a conseguir lo que ellas quieren.",
+      "tactic": "Reencuadra cada venta como un acto de servicio. Antes de presentar, define en una frase qué problema real resuelves para ESTA persona. La intención de ayudar se percibe y baja la resistencia.",
+      "framework": "Servicio primero: Diagnóstico → Ayuda genuina → Venta como consecuencia",
+      "script_template": "Antes de hablar de mi producto, quiero entender bien su situación. Si al final esto no es lo mejor para usted, se lo voy a decir. ¿Qué es lo que realmente necesita resolver?",
+      "when_to_use": ["construir confianza", "primer contacto", "cliente desconfiado"],
+      "when_not_to_use": ["cliente listo para cerrar", "transacción puramente transaccional"],
+      "tags": ["actitud", "servicio", "confianza", "zig_ziglar"],
+      "_source_hint": "Zig Ziglar",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "sales_legends_002",
+      "subcategory": "estado_mental",
+      "principle": "La venta se gana o se pierde en los primeros cuatro segundos: el prospecto decide si eres afilado como un látigo, entusiasta y experto en tu campo.",
+      "tactic": "Controla tu tono y certeza antes de las palabras. Proyecta seguridad absoluta sin arrogancia. La convicción del vendedor se transfiere al comprador.",
+      "framework": "Línea Recta: mantén la conversación entre apertura y cierre, eliminando desvíos",
+      "script_template": "Le voy a hacer una pregunta directa porque valoro su tiempo: ¿qué tendría que pasar hoy para que esto sea exactamente lo que necesita?",
+      "when_to_use": ["llamada en frío", "apertura de conversación", "recuperar control de la charla"],
+      "when_not_to_use": ["relación de largo plazo ya establecida", "venta consultiva compleja"],
+      "tags": ["tono", "certeza", "control", "jordan_belfort", "linea_recta"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "sales_legends_003",
+      "subcategory": "psicologia",
+      "principle": "La gente compra por razones emocionales y justifica con lógica. Vende el sentimiento, respalda con datos.",
+      "tactic": "Identifica el motivo emocional dominante (seguridad, estatus, libertad, pertenencia) y construye el mensaje alrededor de él. Reserva las cifras para justificar después de generar el deseo.",
+      "framework": "Emoción → Justificación lógica → Decisión",
+      "script_template": "Imagine cómo se sentiría al despertar sabiendo que [problema] ya está resuelto. Y por si le sirve el número: el retorno se paga solo en [plazo].",
+      "when_to_use": ["cliente racionaliza en exceso", "necesita motivación para decidir", "venta de transformación"],
+      "when_not_to_use": ["comprador técnico que solo quiere specs", "compra por cumplimiento normativo"],
+      "tags": ["emocion", "logica", "motivos", "brian_tracy"],
+      "_source_hint": "Brian Tracy — Psicología de la venta",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "sales_legends_004",
+      "subcategory": "relacion",
+      "principle": "A la gente no le importa cuánto sabes hasta que sabe cuánto te importa. Y odian que les vendan, pero aman comprar.",
+      "tactic": "Quita presión y deja que el cliente sienta que él decide. Haz preguntas en vez de discursos. El valor se demuestra resolviendo, no afirmando.",
+      "framework": "Atracción, no persecución: aporta valor antes de pedir el cierre",
+      "script_template": "No vengo a convencerlo de nada. Le muestro cómo funciona, usted decide si encaja. ¿Le parece si reviso su caso concreto sin compromiso?",
+      "when_to_use": ["cliente reacio a la presión", "ciclo de venta largo", "ventas B2B"],
+      "when_not_to_use": ["promoción con tiempo límite real", "cliente que pide cerrar ya"],
+      "tags": ["relacion", "valor", "antipresion", "jeffrey_gitomer"],
+      "_source_hint": "Jeffrey Gitomer — Little Red Book of Selling",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "sales_legends_005",
+      "subcategory": "cierre",
+      "principle": "El miedo número uno del prospecto es cometer un error. El mejor cierre reduce el riesgo percibido a casi cero.",
+      "tactic": "Usa cierres por alternativa y elimina el riesgo con garantías concretas. Pregunta presuponiendo el sí, dando solo opciones de CÓMO, no de SÍ o NO.",
+      "framework": "Cierre por alternativa + reversión de riesgo",
+      "script_template": "¿Le conviene empezar este lunes o prefiere el primero del mes? Y para que decida tranquilo: si en 30 días no ve resultados, lo revertimos sin costo.",
+      "when_to_use": ["cliente al borde de decidir", "objeción de riesgo o miedo", "última etapa"],
+      "when_not_to_use": ["aún no hay deseo construido", "cliente sin autoridad para decidir"],
+      "tags": ["cierre", "riesgo", "garantia", "alternativa", "tom_hopkins"],
+      "_source_hint": "Tom Hopkins — How to Master the Art of Selling",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "sales_legends_006",
+      "subcategory": "habito",
+      "principle": "El entusiasmo se actúa hasta sentirse. Para entusiasmarte, actúa con entusiasmo; el sentimiento sigue a la acción.",
+      "tactic": "No esperes la motivación: comienza con energía deliberada en cada contacto. La actividad constante (más llamadas, más demos) supera al talento esporádico.",
+      "framework": "Acción genera emoción → emoción genera resultados",
+      "script_template": "¡Qué bueno hablar con usted hoy! Le tengo algo que de verdad puede cambiar cómo maneja [proceso]; déjeme mostrarle en dos minutos.",
+      "when_to_use": ["bajón de energía propio", "reactivar prospecto frío", "arranque de jornada"],
+      "when_not_to_use": ["contexto de duelo o queja grave del cliente", "negociación tensa"],
+      "tags": ["entusiasmo", "accion", "habito", "frank_bettger"],
+      "_source_hint": "Frank Bettger",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "sales_legends_007",
+      "subcategory": "prospeccion",
+      "principle": "Cava el pozo antes de tener sed: construye la relación con el cliente mucho antes de necesitar venderle.",
+      "tactic": "Nutre tu red constantemente con valor desinteresado. Cuando llegue el momento de comprar, serás la opción obvia porque ya existe confianza acumulada.",
+      "framework": "Red de relaciones a largo plazo > transacción única",
+      "script_template": "Vi esto y me acordé de su negocio, creo que le sirve aunque no trabajemos juntos. Cualquier cosa, acá estoy.",
+      "when_to_use": ["construcción de pipeline", "mercados de relación", "ventas recurrentes"],
+      "when_not_to_use": ["venta única de bajo ticket", "urgencia inmediata"],
+      "tags": ["prospeccion", "red", "relacion", "harvey_mackay"],
+      "_source_hint": "Harvey Mackay",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "sales_legends_008",
+      "subcategory": "persistencia",
+      "principle": "Persistiré hasta triunfar. El fracaso no me alcanzará si mi determinación de tener éxito es suficientemente fuerte.",
+      "tactic": "Trata cada no como un paso más cerca del sí. Lleva la cuenta: si cierras 1 de 10, cada rechazo te acerca al cierre. El seguimiento sistemático supera al carisma.",
+      "framework": "Ley de los promedios + seguimiento implacable",
+      "script_template": "Entiendo que ahora no es el momento. ¿Le parece si lo retomo en [plazo] cuando [evento relevante]? Le dejo el material para que lo tenga a mano.",
+      "when_to_use": ["seguimiento tras un no", "ciclos largos", "mantener pipeline vivo"],
+      "when_not_to_use": ["cliente pidió explícitamente no ser contactado", "rechazo definitivo claro"],
+      "tags": ["persistencia", "seguimiento", "mentalidad", "og_mandino"],
+      "_source_hint": "Og Mandino — El vendedor más grande del mundo",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

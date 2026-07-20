@@ -1,0 +1,22 @@
+{
+  "category": "loyalty_programs",
+  "description": "Loyalty: puntos, tiers, referrals. Retención +40%, LTV +60%.",
+  "items": [
+    {
+      "id": "loy_001",
+      "subcategory": "points_rewards",
+      "principle": "1 dólar comprado = 1 punto. 100 puntos = $10 descuento. Gamificación retiene.",
+      "tactic": "Tier: Bronze (100-500 pts) → Silver (500-1000) → Gold (1000+). Gold acceso early products, extra discount. Engagement sube 35%.",
+      "tags": ["loyalty", "points", "retention", "gamification"],
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "loy_002",
+      "subcategory": "referral_program",
+      "principle": "Customer refiere amigo → ambos ganan ($10 descuento each). Crecimiento viral. CAC $0.",
+      "tactic": "Link único per customer. Si amigo compra → bonus points. 10% customers refieren → 10% crecimiento gratis.",
+      "tags": ["referral", "viral", "growth", "loyalty"],
+      "_confidence_weight": 1.3
+    }
+  ]
+}

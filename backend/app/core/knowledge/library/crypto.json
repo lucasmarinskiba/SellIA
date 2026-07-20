@@ -1,0 +1,54 @@
+{
+  "category": "crypto",
+  "description": "Criptomonedas, blockchain y exchanges — conocimiento educativo. No constituye asesoramiento de inversión ni ejecuta operaciones.",
+  "items": [
+    {
+      "id": "cry_001",
+      "subcategory": "fundamentos",
+      "principle": "Una criptomoneda es un activo digital sobre una blockchain descentralizada. Su valor depende de adopción, utilidad y oferta/demanda, no de un respaldo central.",
+      "tactic": "Antes de hablar de un token, explica su caso de uso real, su red (capa 1/2) y su mecanismo de consenso (PoW/PoS).",
+      "framework": "Use-case > Hype: utilidad, red, tokenomics, equipo, liquidez",
+      "when_to_use": ["educación cripto", "explicar un proyecto", "responder dudas"],
+      "when_not_to_use": ["recomendar comprar/vender", "predecir precios"],
+      "tags": ["cripto", "blockchain", "fundamentos"],
+      "_source_hint": "Conocimiento general de blockchain",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "cry_002",
+      "subcategory": "custodia",
+      "principle": "'Not your keys, not your coins'. Los fondos en un exchange dependen de la solvencia del exchange; la autocustodia traslada el riesgo (y la responsabilidad) al usuario.",
+      "tactic": "Explica hot wallet (conectada, cómoda, más expuesta) vs cold wallet (offline, segura). Nunca pidas ni manejes seed phrases.",
+      "framework": "Custodia: exchange vs hot wallet vs cold wallet",
+      "when_to_use": ["seguridad", "almacenamiento", "onboarding cripto"],
+      "when_not_to_use": ["solicitar credenciales", "operar la wallet del usuario"],
+      "tags": ["custodia", "wallet", "seguridad"],
+      "_source_hint": "Mejores prácticas de seguridad cripto",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "cry_003",
+      "subcategory": "gestion_riesgo",
+      "principle": "La volatilidad cripto es extrema y el capital puede perderse por completo. El DCA (compra periódica fija) reduce el riesgo de timing frente a la entrada única.",
+      "tactic": "Siempre acompaña cualquier dato con la advertencia de riesgo. Invertir solo lo que se puede perder.",
+      "framework": "DCA + dimensionamiento de posición + advertencia de riesgo",
+      "when_to_use": ["educación de riesgo", "estrategias de entrada"],
+      "when_not_to_use": ["garantizar retornos", "consejo personalizado"],
+      "tags": ["riesgo", "dca", "volatilidad"],
+      "_source_hint": "Gestión de riesgo",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "cry_004",
+      "subcategory": "guardrail",
+      "principle": "El agente NUNCA ejecuta trades, transferencias ni ingresa seed phrases o credenciales. Su rol es informar y educar; la decisión y la operación son del usuario.",
+      "tactic": "Si la tarea implica operar o autenticarse, detente y pide explícitamente que el usuario lo haga.",
+      "framework": "Read-only + escalar al humano",
+      "when_to_use": ["siempre que aparezca una acción financiera"],
+      "when_not_to_use": ["nunca operar en nombre del usuario"],
+      "tags": ["guardrail", "seguridad", "compliance"],
+      "_source_hint": "Política de seguridad SellIA",
+      "_confidence_weight": 1.5
+    }
+  ]
+}

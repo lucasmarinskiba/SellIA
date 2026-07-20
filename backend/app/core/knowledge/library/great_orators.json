@@ -1,0 +1,110 @@
+{
+  "category": "great_orators",
+  "description": "Maestros de la oratoria y el discurso persuasivo",
+  "items": [
+    {
+      "id": "orator_001",
+      "subcategory": "retorica",
+      "principle": "Persuadís con tres palancas: credibilidad (ethos), emoción (pathos) y lógica (logos). Las tres juntas convencen; una sola, no alcanza.",
+      "tactic": "Antes de pedir la acción, establecé tu autoridad (ethos), conectá con la emoción del que escucha (pathos) y respaldá con datos/razón (logos). Ordenalas según la audiencia: fría necesita ethos primero.",
+      "framework": "Ethos → Pathos → Logos",
+      "script_template": "Llevo [credencial] ayudando a [a quién]. Sé lo que se siente [dolor]. Por eso esto funciona: [razón/dato].",
+      "when_to_use": ["pitch", "video de ventas", "discurso", "landing"],
+      "when_not_to_use": ["charla casual sin objetivo", "soporte técnico puro"],
+      "tags": ["retorica", "ethos", "pathos", "logos", "aristoteles"],
+      "_source_hint": "Aristóteles — Retórica",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "orator_002",
+      "subcategory": "claridad",
+      "principle": "Una idea simple y repetida vence a diez ideas complejas. El público recuerda una frase, no un párrafo.",
+      "tactic": "Reducí tu mensaje a una sola idea memorable y repetila como ancla. Usá frases cortas, contraste y ritmo. Si no entra en una línea, todavía no está listo.",
+      "framework": "Una idea + repetición + ritmo",
+      "script_template": "Si te llevás una sola cosa de esto: [idea central]. [Repetir el ancla al cierre].",
+      "when_to_use": ["apertura y cierre de pitch", "eslogan", "mensaje de marca"],
+      "when_not_to_use": ["documento técnico exhaustivo"],
+      "tags": ["claridad", "mensaje", "repeticion", "churchill"],
+      "_source_hint": "Winston Churchill — discursos",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "orator_003",
+      "subcategory": "vision",
+      "principle": "La gente no se moviliza por planes, se moviliza por un sueño. Pintá el futuro deseado con imágenes vívidas.",
+      "tactic": "Mostrá el 'sueño' (estado futuro) antes que el 'cómo'. Usá imágenes concretas y sensoriales para que la audiencia lo vea. La visión vende; los detalles confirman.",
+      "framework": "Sueño/visión → camino",
+      "script_template": "Imaginá un [futuro deseado] donde [beneficio vívido]. Ese mundo es posible, y así llegamos…",
+      "when_to_use": ["lanzamiento", "pitch a inversores", "discurso de marca"],
+      "when_not_to_use": ["objeción concreta que pide datos ya"],
+      "tags": ["vision", "sueno", "inspiracion", "mlk"],
+      "_source_hint": "Martin Luther King — I Have a Dream",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "orator_004",
+      "subcategory": "historia",
+      "principle": "Los datos informan, las historias mueven. Una historia bien contada se recuerda 22 veces más que un dato suelto.",
+      "tactic": "Envolvé tu mensaje en una historia con héroe (el cliente), problema y transformación. El producto es el guía, no el héroe. Estructura: situación → conflicto → resolución.",
+      "framework": "Storytelling: héroe → conflicto → transformación",
+      "script_template": "Había un [cliente como vos] que luchaba con [problema]. Hasta que [giro]. Hoy [resultado]. Vos podés lo mismo.",
+      "when_to_use": ["testimonios", "caso de éxito", "apertura de charla"],
+      "when_not_to_use": ["ficha técnica", "comparación de specs"],
+      "tags": ["historia", "storytelling", "heroe", "jobs"],
+      "_source_hint": "Steve Jobs — keynotes / storytelling clásico",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "orator_005",
+      "subcategory": "pausa",
+      "principle": "El silencio es un arma retórica. Una pausa antes de la idea clave la hace pesar; el apuro la diluye.",
+      "tactic": "Bajá el ritmo y hacé una pausa antes y después de la frase importante. El silencio crea expectativa y da peso. Hablá menos, pero que cada palabra cuente.",
+      "framework": "Pausa estratégica = énfasis",
+      "script_template": "Y esto… (pausa) …es lo que cambia todo.",
+      "when_to_use": ["momento clave del pitch", "revelar precio/oferta", "cierre"],
+      "when_not_to_use": ["chat escrito sin voz"],
+      "tags": ["pausa", "ritmo", "enfasis", "oratoria"],
+      "_source_hint": "Técnica clásica de oratoria (Lincoln/Reagan)",
+      "_confidence_weight": 1.0
+    },
+    {
+      "id": "orator_006",
+      "subcategory": "contraste",
+      "principle": "El significado nace del contraste: 'no preguntes qué puede hacer tu país por vos…'. Oponé dos ideas para que la tuya brille.",
+      "tactic": "Construí frases con estructura antitética (no X, sino Y) o tríadas (tres elementos). El contraste y el patrón de tres son memorables y suenan a verdad.",
+      "framework": "Antítesis + regla de tres",
+      "script_template": "No se trata de [lo viejo], sino de [lo nuevo]. Más rápido, más simple, más tuyo.",
+      "when_to_use": ["eslóganes", "cierre de discurso", "diferenciación"],
+      "when_not_to_use": ["explicación neutral de proceso"],
+      "tags": ["contraste", "antitesis", "regla_de_tres", "jfk"],
+      "_source_hint": "John F. Kennedy — discursos",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "orator_007",
+      "subcategory": "audiencia",
+      "principle": "El gran orador habla el idioma de quien escucha, no el suyo. Conocé sus miedos, deseos y palabras antes de abrir la boca.",
+      "tactic": "Investigá a la audiencia y usá sus propias palabras y referencias. Empezá donde ellos están (su problema), no donde vos querés llegar (tu solución).",
+      "framework": "Empezar en el mundo de la audiencia",
+      "script_template": "Sé que lo que más te preocupa es [su miedo en sus palabras]. Hablemos de eso primero.",
+      "when_to_use": ["abrir cualquier mensaje", "segmentar discurso", "venta consultiva"],
+      "when_not_to_use": ["mensaje masivo sin segmento definido"],
+      "tags": ["audiencia", "empatia", "lenguaje", "demostenes"],
+      "_source_hint": "Demóstenes / retórica clásica",
+      "_confidence_weight": 1.1
+    },
+    {
+      "id": "orator_008",
+      "subcategory": "llamado",
+      "principle": "Un discurso sin llamado a la acción es entretenimiento. Decile a la gente exactamente qué hacer ahora.",
+      "tactic": "Cerrá con UN llamado claro, específico y urgente. Que la acción siguiente sea obvia y fácil. La emoción sin dirección se evapora.",
+      "framework": "Cierre = un solo llamado claro",
+      "script_template": "Ahora hacé esto: [acción única, específica y simple]. Hoy, no mañana.",
+      "when_to_use": ["cierre de pitch/charla/video", "email de conversión"],
+      "when_not_to_use": ["contenido puramente informativo"],
+      "tags": ["cta", "cierre", "accion", "oratoria"],
+      "_source_hint": "Principios de discurso persuasivo",
+      "_confidence_weight": 1.1
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "category": "services_selling_framework",
+  "description": "Servicios (consulting, coaching, agencias): value-based pricing, retainer models",
+  "items": [
+    {"id": "svc_001", "name": "Value-Based Pricing (not hourly)", "tactic": "Price on outcome, not hours. If I save $100k, price $25k. Client happy, you happy."},
+    {"id": "svc_002", "name": "Retainer Models (recurring revenue)", "tactic": "$3k/month = $36k/year. Stable revenue, deep relationships."},
+    {"id": "svc_003", "name": "Productized Services", "tactic": "Service en package (Website audit $2k, Setup $5k, Monthly management $1k). Scalable, repeatable."}
+  ]
+}

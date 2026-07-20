@@ -1,0 +1,72 @@
+{
+  "category": "buyer_psychology",
+  "description": "Psicología del comprador: sesgos cognitivos, neuroventa, principios de decisión. Entiende cómo compra el cerebro, no cómo piensa.",
+  "items": [
+    {
+      "id": "psych_001",
+      "subcategory": "decision_irrationale",
+      "principle": "Kahneman: 90% decisión es emocional + subconsciente. Solo 10% racional. El comprador se JUSTIFICA racionalmente después. Tu tarea: mover emoción; razón sigue automática.",
+      "tactic": "Pitch: primero emoción (imagen vívida + anécdota + miedo/deseo). Después: datos (justificación racional). No al revés. Emoción → cerebro decide → razón justifica. Resultado: venta con convencimiento total.",
+      "framework": "Emoción (90%) → Razón (justificación 10%) = Decisión",
+      "script_template": "[Imagen emocional del futuro] → [Anécdota relatable] → [Ahora los datos: por eso funciona]",
+      "tags": ["kahneman", "emocion", "racional", "subconsciente"],
+      "_source_hint": "Daniel Kahneman — Thinking Fast and Slow",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "psych_002",
+      "subcategory": "loss_aversion",
+      "principle": "Humano teme perder 2x más de lo que desea ganar. 'Pierdas USD 1k/mes sin esto' vende más que 'ganes USD 2k/mes con esto'.",
+      "tactic": "Reframe toda oferta en términos de PÉRDIDA. No 'ganas productividad'; 'evitás perder 10 horas/semana'. No 'ganas ventas'; 'dejas de perder ventas por falta de follow-up'. Mismo hecho; emoción distinta = decisión distinta.",
+      "framework": "Ganancia → Pérdida equivalente · Aversión a pérdida > Deseo ganancia",
+      "script_template": "'Sin esto, pierdes [X] por mes/año. Con esto, recuperas [X].' (no 'ganas')",
+      "tags": ["loss_aversion", "kahneman", "miedo", "motivacion"],
+      "_source_hint": "Kahneman / Tversky — Prospect Theory",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "psych_003",
+      "subcategory": "sunk_cost_trap",
+      "principle": "Comprador ya invirtió tiempo/dinero en solución vieja. Miedo de 'perder inversión previa' lo frena de cambiar. Tu tarea: reencuadrá como 'recuperar eficiencia ya pagada'.",
+      "tactic": "Cliente con sistema viejo: 'Ya pagaste X por ese sistema. Ahora hagamos que se pague solo con la eficiencia que va a liberar.' Transforma costo hundido en activo aprovechable. Reduce fricción psicológica.",
+      "framework": "Costo hundido → Eficiencia recuperable = Racional cambiar",
+      "script_template": "'Ya pagaste [X] por el sistema viejo. Ahora recuperemos ese valor con [solución nueva que libera tiempo].'",
+      "tags": ["sunk_cost", "friccion", "cambio", "psicologia"],
+      "_source_hint": "Richard Thaler — Behavioral Economics",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "psych_004",
+      "subcategory": "choice_paralysis",
+      "principle": "Demasiadas opciones = parálisis. 3 opciones = decisión rápida. 10 opciones = indecisión. Limita las opciones explícitamente.",
+      "tactic": "Nunca presentes >3 opciones. Mejor: 1 opción clara (lo que recomiendas) + 1 alternativa (si quiere customizar). Si dice 'quiero ver más', es señal de indecisión → vuelve a diagnóstico ('¿qué falta para decidir?').",
+      "framework": "3 opciones máx = Decisión rápida · 10+ opciones = Parálisis",
+      "script_template": "'Te presento 2 opciones: [recomendado] que encaja perfecto, o [alternativa flexible]. Cuál te late?'",
+      "tags": ["choice_paralysis", "opciones", "decision", "psicologia_tienda"],
+      "_source_hint": "Barry Schwartz — The Paradox of Choice",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "psych_005",
+      "subcategory": "anchoring_bias",
+      "principle": "Primer número mencionado = ancla. Cerebro calcula todo relativo a eso. Quien dice número primero, gana. Usalo a tu favor.",
+      "tactic": "Di el precio ALTO primero ('esto vale USD 50k de solución completa'). Pausa. Después presenta opciones ($5k, $20k recomendada, $50k completa). Mente ve $20k como 'buena oferta' vs $50k, aunque sin contexto vería $20k como caro.",
+      "framework": "Ancla alta → Opciones escalonadas → Oferta media parece descuento",
+      "script_template": "'De entrada: solución completa USD 50k. Pero tengo 3 formas para hacerlo: [plan 1] USD 5k, [plan 2] USD 20k recomendado, [plan 3] USD 50k total.'",
+      "tags": ["anchoring", "precio", "psicologia_numerica"],
+      "_source_hint": "Tversky & Kahneman — Anchoring Effect",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "psych_006",
+      "subcategory": "dopamine_loop",
+      "principle": "Comprador quiere ANTICIPACIÓN más que resultado. Dopamina no por lograr, es por esperar lograr. Vende la anticipación del futuro, no el futuro mismo.",
+      "tactic": "Narrativa: 'Imaginá que en 30 días [X resultado concreto en imagen vívida]. Cómo se siente? [pausa]. Eso es posible. Empezamos hoy?' Dopamina del esperar a ese futuro motiva más que 'después tendrás X'.",
+      "framework": "Anticipación > Resultado · Imagen vívida + Dopamina = Venta",
+      "script_template": "'Imaginá en 30 días: [sueño específico]. ¿Cómo se siente? [pausa larga]. Eso es lo que empezamos hoy.'",
+      "tags": ["dopamina", "anticipacion", "futuro", "neurociencia"],
+      "_source_hint": "James Clear / Neurociencia del deseo",
+      "_confidence_weight": 1.3
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "category": "automation_workflows",
+  "description": "Automatizar todo: email, SMS, whatsapp, webhook. Herramientas: n8n, Zapier, Make.",
+  "items": [
+    {
+      "id": "auto_001",
+      "subcategory": "email_automation",
+      "principle": "Triggers: Nueva orden → factura email. 7d sin compra → 'te extrañamos'. Bajo stock → alert admin.",
+      "tactic": "n8n workflow: Order placed (trigger) → gen invoice (webhook) → send email (SMTP) → log (DB). 0 manual work.",
+      "tags": ["automation", "email", "n8n", "workflows"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "auto_002",
+      "subcategory": "integrations_platforms",
+      "principle": "Conectar sistemas: Stripe → DB → email → CRM. Cada transición automática.",
+      "tactic": "Zapier: Stripe payment → Google Sheets (log) → HubSpot (contact) → Slack (notification). No manual data entry.",
+      "tags": ["integration", "zapier", "automation", "platforms"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}

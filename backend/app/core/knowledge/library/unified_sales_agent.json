@@ -1,0 +1,125 @@
+{
+  "category": "unified_sales_agent",
+  "description": "Agente Maestro de Ventas: síntesis de todos los métodos (Belfort, SPIN, Hormozi, Vaynerchuk, Cialdini, Voss) en UNA voz coherente. Responde como el mejor vendedor del mundo para cualquier bien/servicio.",
+  "items": [
+    {
+      "id": "master_001",
+      "subcategory": "proceso_maestro",
+      "principle": "Vender ES un proceso de 5 pasos que integra Belfort (líneas rectas), SPIN (descubrimiento), Hormozi (oferta irresistible), Vaynerchuk (deuda social), Cialdini (principios de influencia). Quien domina los 5, vende cualquier cosa.",
+      "tactic": "1) RAPPORT (Vaynerchuk: genuino, sin agenda). 2) DIAGNÓSTICO (SPIN: situación → problema → implicación). 3) REFRAME (Belfort/Cialdini: reencuadrá el problema en tu favor). 4) OFERTA IRRESISTIBLE (Hormozi: sueño×prueba ÷ tiempo×esfuerzo). 5) CIERRE (Belfort: línea recta, tres certezas, tonalidad).",
+      "framework": "Rapport → Diagnóstico → Reframe → Oferta → Cierre",
+      "script_template": "[Rapport genuino] → 'Contame de vos [escucha SPIN]' → 'Veo que [problema reencuadrado]' → '[Oferta irresistible]' → '¿cuándo empezamos?'",
+      "when_to_use": ["cualquier venta", "cualquier contexto", "cualquier bien/servicio"],
+      "tags": ["maestro", "integracion", "cinco_pasos", "universal"],
+      "_source_hint": "Síntesis: Belfort+SPIN+Hormozi+Vaynerchuk+Cialdini+Voss",
+      "_confidence_weight": 1.5
+    },
+    {
+      "id": "master_002",
+      "subcategory": "tonalidad_maestro",
+      "principle": "La tonalidad NO es lo que decís, es CÓMO lo decís. Maestro: interesado genuino (no desesperado), confiado (no arrogante), empático (no manipulador). La voz es la mitad de la venta.",
+      "tactic": "Tone matrix: 1) Apertura: curiosidad cálida (quiero entender tu mundo). 2) Descubrimiento: compresión genuina (he visto eso, te entiendo). 3) Reframe: autoridad relajada (lo que no ves es…). 4) Oferta: entusiasmo sincero (por eso pienso que esto…). 5) Cierre: decisión clara (el siguiente paso es…). En cada paso, tonalidad diferente pero COHERENTE.",
+      "framework": "5 tonalidades integradas en 1 voz",
+      "script_template": "[T1 curiosidad] 'Contame sobre tu negocio' → [T2 comprensión] 'Pasa mucho' → [T3 autoridad] 'Lo que no ves es' → [T4 entusiasmo] 'Por eso esto encaja' → [T5 decisión] 'Hoy es el día'",
+      "when_to_use": ["todas las ventas", "mantener credibilidad", "pasar objeciones"],
+      "tags": ["tonalidad", "coherencia", "credibilidad", "voz"],
+      "_source_hint": "Belfort (tonalidad) + Voss (calibración acústica)",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_003",
+      "subcategory": "diagnostico_profundo",
+      "principle": "No vendas hasta no diagnosticar. SPIN es el protocolo: Situación (entiende), Problema (duele), Implicación (consecuencias sin acción), Payoff (beneficio si sí). El cliente descubre necesidad; vos confirmas.",
+      "tactic": "Sesión 1: 0% venta, 100% diagnóstico. Preguntas abiertas (situación), después focalizadas (problema). Silencio largo después de cada pregunta (5+ seg). Cliente habla 70%, vos 30%. Toma notas de: quién es, qué duele real, qué teme, qué quiere. Sesión 2 (mínimo 48h después): traé solución calibrada a TODO lo que descubriste.",
+      "framework": "SPIN + Silencio + 70/30 + 48h entre sesiones",
+      "script_template": "'¿Te molesta una pregunta?' [pausa] → '[Pregunta abierta de situación]' [pausa larga] → '[Pregunta de problema]' [pausa larga] → Repite hasta tener map completo.",
+      "when_to_use": ["ciclo 30+ días", "ticket alto", "múltiples decisores"],
+      "tags": ["diagnostico", "spin", "silencio", "descubrimiento"],
+      "_source_hint": "Neil Rackham — SPIN Selling + Belfort (líneas)",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_004",
+      "subcategory": "reframe_maestro",
+      "principle": "Reframe = cambiar la realidad percibida sin mentir. El cliente ve 'costo'; vos ves 'inversión que recupera'. Mismo hecho; significado distinto. Es el arte supremo de venta.",
+      "tactic": "Mapa de reframes probables por objeción: 'no tengo presupuesto' → 'no es presupuesto, es ahorro futuro'; 'es caro' → 'es inversión que recupera en [X meses]'; 'no lo necesito' → 'no necesitás, pero [beneficio nuevo] sí'; 'me lo pienso' → 'claro, ¿qué tiene que pasar para que sea un sí?'. Cada reframe debe ser VERDAD, no trampa.",
+      "framework": "Escucha objeción → Identifica significado actual → Reframe a significado futuro → Validá con datos/caso",
+      "script_template": "'Entiendo que te parezca [significado actual]. Pero mira desde acá: [hecho NUEVO] significa [significado reencuadrado]. Por eso [caso similar logró resultado].'",
+      "when_to_use": ["cualquier objeción", "cierre final", "cliente indeciso"],
+      "tags": ["reframe", "significado", "psicologia", "maestria"],
+      "_source_hint": "Ogilvy + Kahneman (ciencia cognitiva)",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_005",
+      "subcategory": "oferta_irresistible",
+      "principle": "Oferta = (sueño × probabilidad de logro) / (tiempo × esfuerzo). Para hacerla irresistible: SUBE sueño (¿qué transforma?), SUBE probabilidad (¿cómo garantizas?), BAJA tiempo (¿cuándo?), BAJA esfuerzo (¿qué hago yo?). Agregar: bonos, garantía, escasez, urgencia real.",
+      "tactic": "Oferta completa: 1) Transformación clara (imagen vívida de futuro). 2) Prueba de resultado (caso, garantía, peso de autoridad). 3) Tiempo a resultado (cuándo lo ve). 4) Esfuerzo mínimo tuyo (qué entregas). 5) Bono/premio (sorpresa de valor). 6) Garantía (costo de no actuar). 7) Escasez real (cupo/plazo honesto).",
+      "framework": "Oferta = Sueño + Prueba + Tiempo − Esfuerzo + Bonos + Garantía + Escasez",
+      "script_template": "[Sueño vívido en imagen] · [Prueba: caso similar] · [Tiempo: cuándo] · [Esfuerzo: qué hago yo] · [Bono] · [Garantía] · [Plazo real].",
+      "when_to_use": ["presentación de solución", "cierre", "competencia fuerte"],
+      "tags": ["oferta", "hermozi", "irresistible", "formula"],
+      "_source_hint": "Alex Hormozi — $100M Offers",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_006",
+      "subcategory": "tres_certezas",
+      "principle": "Belfort: cierre = tres certezas simultáneas. 1) Producto es solución real (lógica + caso). 2) Yo soy credible (rapport + autoridad). 3) Empresa es confiable (prueba social + garantía). Si cae una, cliente no firma.",
+      "tactic": "En cada interacción, mueve las 3 certezas en paralelo (no secuencial). Certeza 1: 'Esto funciona para gente como vos porque [caso]'. Certeza 2: '[Yo he visto esto, te entiendo, por eso te lo recomiendo]'. Certeza 3: '[N clientes como vos, resultado X, garantía Y]'. Si una cae, detente, refuerza esa línea, recién después continúa.",
+      "framework": "Producto · Vendedor · Empresa (3 líneas paralelas)",
+      "script_template": "[Logica producto] + [Rapport vendedor] + [Autoridad empresa] → Avanza solo si las 3 están altas.",
+      "when_to_use": ["todas las ventas", "navegación de objeciones", "momento de cierre"],
+      "tags": ["certezas", "belfort", "paralelo", "cierre"],
+      "_source_hint": "Jordan Belfort — Straight Line",
+      "_confidence_weight": 1.5
+    },
+    {
+      "id": "master_007",
+      "subcategory": "manejo_objeciones_maestro",
+      "principle": "Objeción = oportunidad. No es 'no'; es 'todavía no sé'. Tres tipos: real (verdadero bloqueador), falsa (síntoma de otro miedo), oculta (no la menciona). Diagnostica cuál es; responde a esa, no a la que escuchas.",
+      "tactic": "Protocolo: 1) Valida: 'Entiendo, eso es importante'. 2) Explora: '¿Qué específicamente te frena en [X]?'. 3) Diagnostica tipo: ¿es real (bloqueador financiero/técnico) o síntoma (miedo a cambiar/perder)? 4) Responde: real=reframe/flexibilidad, falsa=diagnóstico de raíz, oculta=pregunta que la salga. 5) Confirma: '¿Eso resuelve?'.",
+      "framework": "Validar → Explorar → Diagnosticar tipo → Responder → Confirmar",
+      "script_template": "'[Validación]. ¿Qué específicamente…?' [escucha] → 'Ah, es que [fondo real]. Si [solución], ¿dirías sí?'",
+      "when_to_use": ["cualquier objeción", "cliente indeciso", "últimas 2 semanas"],
+      "tags": ["objeciones", "diagnostico", "respuesta", "maestria"],
+      "_source_hint": "Voss (empatía táctica) + Belfort (líneas)",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_008",
+      "subcategory": "cierre_momento",
+      "principle": "Cierre NO es al final; es en cada interacción. Pequeños síes llevan al sí grande. Test cierre: 'Esto tiene sentido para vos?' (sí/no). Si no, continúa diagnóstico. Si sí, cierre real: 'Entonces ¿cuándo empezamos?'",
+      "tactic": "Cierre progresivo: sesión 1 (sí a reunirse), sesión 2 (sí a explorar), sesión 3 (sí a propuesta), sesión 4 (sí a términos), sesión 5 (sí a firma). Nunca pidas firma en sesión 1. Vaynerchuk: deuda social = sesiones múltiples. Cada sí pequeño = línea recta hacia firma.",
+      "framework": "Test → Pequeños síes → Cierre real en momento exacto",
+      "script_template": "'¿Tiene sentido lo que vimos?' [sí/no] → Si sí: '¿Cuándo empezamos?' [fecha exacta]. Si no: 'Qué falta?'",
+      "when_to_use": ["durante y después de cada sesión", "momento de cierre", "decisión final"],
+      "tags": ["cierre", "timing", "pequeños_sies", "progresivo"],
+      "_source_hint": "Belfort (línea recta) + Vaynerchuk (múltiples toques)",
+      "_confidence_weight": 1.4
+    },
+    {
+      "id": "master_009",
+      "subcategory": "venta_bienes_vs_servicios",
+      "principle": "Bienes: tangibles, rápidos de juzgar, precio predecible, riesgo bajo. Servicios: intangibles, verdad en humanos, precio varía con valor, riesgo alto. Ventas idénticas en estructura; diferente en énfasis.",
+      "tactic": "Bienes: énfasis en demostración + prueba social (fotos de otros usando). Servicios: énfasis en expertise + relación (quién te ayuda). Bienes cierran en días; servicios en meses. Bienes: 'pruébalo gratis 30 días'. Servicios: 'una sesión diagnóstica gratis'.",
+      "framework": "Bienes = demostración + velocidad · Servicios = relación + tiempo",
+      "script_template": "Bien: '[Demo] + [5 usan esto, mira a… ] + [30 días sin riesgo]' | Servicio: '[Yo ayudé a] + [sesión diagnóstica gratis] + [6 meses = transformación]'",
+      "when_to_use": ["diseño de venta por tipo de oferta"],
+      "tags": ["bienes", "servicios", "diferenciacion", "tactil"],
+      "_source_hint": "Consultative Sales + B2C vs B2B",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "master_010",
+      "subcategory": "deuda_social_y_confianza",
+      "principle": "Vaynerchuk: deuda social NO es transaccional, es relacional. Regala valor 6 meses SIN pedir nada. La deuda se crea en el subconsciente. Cuando venderás, cliente dirá sí porque 'le debo'.",
+      "tactic": "Mapa de deuda social: mes 1-2: valor puro (contenido, referrals, insights). Mes 3-4: mayor proximidad (café, charla personal). Mes 5-6: bono extra (bono gratis, introducción VIP). Mes 7: 'Tengo algo que creo te sirve' → 60% conversion (vs 10% sin deuda). No es trampa; es invertir relación.",
+      "framework": "Valor sin agenda (6 meses) → Deuda social acumulada → Venta trivial (mes 7-8)",
+      "script_template": "Mes 1-6: '[Valor puro]' + '[Contacto genuino]' + '[Bono sorpresa]' → Mes 7: 'Tengo algo…' → Sí automático.",
+      "when_to_use": ["personal branding", "community", "relaciones largo plazo"],
+      "tags": ["vaynerchuk", "deuda_social", "confianza", "tiempo"],
+      "_confidence_weight": 1.3
+    }
+  ]
+}

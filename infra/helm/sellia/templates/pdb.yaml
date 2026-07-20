@@ -1,0 +1,19 @@
+{{ range $component := list "backend" "frontend" }}
+{{- $values := index $.Values $component }}
+{{- if and $values.enabled $values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "sellia.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "sellia.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  minAvailable: {{ $values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "sellia.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $component }}
+---
+{{- end }}
+{{- end }}

@@ -1,0 +1,23 @@
+{{ if .Values.envoy.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sellia.fullname" . }}-envoy
+  labels:
+    {{- include "sellia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: envoy
+spec:
+  type: {{ .Values.envoy.service.type }}
+  ports:
+    - port: {{ .Values.envoy.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9901
+      targetPort: admin
+      protocol: TCP
+      name: admin
+  selector:
+    {{- include "sellia.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: envoy
+{{ end }}

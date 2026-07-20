@@ -1,0 +1,144 @@
+{
+  "category": "ecommerce_essentials",
+  "description": "Essentials para vendedor de bienes/servicios: catálogo, carrito, pagos, shipping, facturas, reviews.",
+  "items": [
+    {
+      "id": "ecom_001",
+      "subcategory": "product_catalog",
+      "principle": "Catálogo único source-of-truth. Cada producto: nombre, desc, precio, stock, fotos, SKU, categoría, tags.",
+      "tactic": "DB schema: products { id, name, description, price_usd, stock_qty, sku, images[], category, tags[], created_at, updated_at }. API: GET /products (filtros por cat/tag/precio), GET /products/:id (detalles), POST /products (admin crear).",
+      "framework": "Catálogo centralizado → Carrito lee de acá → Checkout valida stock → Inventory reduce qty",
+      "examples": [
+        "Bienes: 'Laptop Dell 14\"' $899, stock 5, cat:electrónica, tags:[portátil, i7]",
+        "Servicios: 'Consultoría 1h' $150, stock unlimited (services), tags:[consulta, experto]"
+      ],
+      "tags": ["catalog", "products", "inventory", "bienes_servicios"],
+      "_source_hint": "E-commerce best practices",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "ecom_002",
+      "subcategory": "shopping_cart",
+      "principle": "Carrito persistente: usuario agrega items, revisa antes de pagar. Soporta editar cantidad, eliminar items, aplicar cupones.",
+      "tactic": "Session-based o DB (si login). Schema: carts { id, user_id, items: [{product_id, qty, price_snapshot}], subtotal, discount_pct, total, expires_at }. API: POST /cart/add, DELETE /cart/items/:id, PATCH /cart/items/:id (qty), GET /cart (revisar).",
+      "framework": "Agregar → Revisar → Aplicar cupón → Ir a checkout",
+      "examples": [
+        "Usuario agrega 2x 'Laptop' + 1x 'Consultoría'. Cart subtotal $2048. Aplica cupón 'REGALO15' = 15% desc = total $1741.",
+        "Carrito guarda 30 min. Si no completa: email reminder con link al carrito."
+      ],
+      "tags": ["cart", "persistence", "discounts", "ux"],
+      "_source_hint": "Shopping cart patterns",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ecom_003",
+      "subcategory": "payment_processing",
+      "principle": "Pagos seguros: Stripe, PayPal, transferencia local. Cada medio tiene webhook para confirmación.",
+      "tactic": "Integration: Stripe token (PCI-DSS compliant), PayPal API, banco local (IBAN/CBU). Schema: orders { id, user_id, cart_id, total_usd, payment_method, payment_status (pending/confirmed/failed), txn_id, created_at }. API: POST /checkout (crea orden + inicia pago), webhook /payments/stripe/confirm (valida pago).",
+      "framework": "Checkout → Elegir método → Procesar pago → Webhook confirma → Orden completada",
+      "examples": [
+        "Usuario paga $1741 con Stripe. Sys crea órden, llama Stripe API, obtiene session_id, redirect a checkout page. Usuario completa datos. Stripe webhook confirma → orden pasa a fulfilled.",
+        "Método banco local: gen IBAN único x orden. Usuario transfiere. Admin revisa manualmente o auto-confirm si coincide amount exacto."
+      ],
+      "tags": ["payments", "stripe", "paypal", "security"],
+      "_source_weight": 1.3
+    },
+    {
+      "id": "ecom_004",
+      "subcategory": "shipping_tracking",
+      "principle": "Shipping integrado: soporte múltiples métodos (local pickup, shipping company, digital delivery). Tracking en vivo.",
+      "tactic": "Schema: shipments { id, order_id, method (pickup/fedex/dhl/email), address, tracking_code, status (pending/shipped/in_transit/delivered), eta, created_at }. API: POST /orders/:id/ship (crea shipment), GET /shipments/:id (tracking). Webhooks: integración con FedEx/DHL APIs.",
+      "framework": "Orden confirmada → Crear shipment (con tracking code si applies) → Status en vivo → Deliver",
+      "examples": [
+        "Bienes físicos: Usuario compra laptop. Orden confirmed → Sys crea shipment con FedEx. Tracking emitido en email. Cliente ve status 'En tránsito → Entregado hoy 5pm'.",
+        "Servicios/Digital: Usuario compra 'ebook', shipment method='email'. Auto-complete, link descarga enviado inmediatamente."
+      ],
+      "tags": ["shipping", "tracking", "logistics", "fulfillment"],
+      "_source_hint": "Logistics automation",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ecom_005",
+      "subcategory": "invoicing",
+      "principle": "Facturas automáticas: generadas al confirmar pago. PDF descargable. Datos fiscales del negocio + cliente.",
+      "tactic": "Schema: invoices { id, order_id, invoice_number, business_name, business_tax_id, customer_name, customer_email, items, subtotal, tax, total, payment_method, issued_at, due_date }. API: GET /invoices/:id (PDF), POST /invoices/:id/email (envía a cliente). Template: HTML → PDF (pdfkit/weasyprint).",
+      "framework": "Pago confirmado → Gen factura (invoice_number auto-increment) → Email a cliente + link descarga",
+      "examples": [
+        "Orden #ORD-2026-001: Invoice #INV-2026-0001. PDF con logo del negocio, detalles items, total $1741, fecha, pie de página 'Gracias por tu compra!'.",
+        "Email: 'Tu factura está lista' + link. Cliente puede descargar indefinidamente."
+      ],
+      "tags": ["invoicing", "receipts", "legal", "accounting"],
+      "_source_hint": "Invoice automation",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "ecom_006",
+      "subcategory": "reviews_testimonials",
+      "principle": "Reviews post-compra: cliente califica producto + deja testimonio. Mostrados en catálogo. AI: detecta fake reviews.",
+      "tactic": "Schema: reviews { id, product_id, customer_id, rating (1-5), text, verified_purchase, status (pending/approved/spam), created_at }. API: POST /products/:id/reviews (crear), GET /products/:id/reviews (listar con avg rating). Moderation: AI detecta spam (keywords sospechosos, múltiples reviews mismo IP, etc).",
+      "framework": "Cliente compra → 7 días después: email 'Déjanos tu review' → Sumbit → Moderation → Published",
+      "examples": [
+        "Usuario compra laptop, 7d después recibe email 'Qué te pareció?'. Deja review: '⭐⭐⭐⭐⭐ Excelente producto, llegó rápido!' → Auto-approved (no spam) → Publicado.",
+        "Producto laptop muestra 'Promedio 4.7/5 (23 reviews)' en catálogo. Usuarios leen reviews antes de comprar."
+      ],
+      "tags": ["reviews", "social_proof", "moderation", "testimonials"],
+      "_source_hint": "Social proof patterns",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ecom_007",
+      "subcategory": "promotions_discounts",
+      "principle": "Cupones + Promociones automáticas: BOGO, % descuento, free shipping, etc. Validar en checkout.",
+      "tactic": "Schema: coupons { code, discount_type (percent/fixed/freeship), discount_value, min_purchase, max_uses, used_count, expires_at, applies_to (all/category/product_id) }. API: POST /validate-coupon (verifica código válido + aplica). Automation: % off automático por cantidad (qty>=5 → 10% off), primeros N clientes (first_10 → 20% off).",
+      "framework": "Admin crea cupón → Promoción en email/web → Usuario aplica en checkout → Descuento automático",
+      "examples": [
+        "Cupón 'REGALO15': 15% off, válido 30 días, máx 100 usos. Usuario aplica → $1741 → $1479.85.",
+        "Promo automática: Compra 2+ laptops → 5% off cada una. Sys detecta qty en checkout, aplica descuento."
+      ],
+      "tags": ["discounts", "promotions", "coupons", "conversion"],
+      "_source_hint": "Promotional automation",
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "ecom_008",
+      "subcategory": "inventory_management",
+      "principle": "Stock actualizado en vivo. Avisos cuando stock bajo. Prevents oversell.",
+      "tactic": "Schema: products { stock_qty, low_stock_threshold (ej 5) }. On purchase: qty -= 1. Alert: si stock < threshold → email admin 'Stock bajo en Laptop (3 left)'. Checkout: si qty > stock → error 'Solo 2 disponibles'.",
+      "framework": "Producto created con stock_qty=10 → Usuario compra 2 → stock_qty=8 → Si stock=5 → admin alert",
+      "examples": [
+        "Laptop: stock 10, threshold 5. Usuarios compran 6 → stock=4 → Admin recibe email 'Laptop: solo 4 en stock. Repedir ASAP.'",
+        "User intenta comprar 5 unidades pero stock=2 → Error 'Solo 2 disponibles. Agregar 2 al carrito?'"
+      ],
+      "tags": ["inventory", "stock", "alerts", "logistics"],
+      "_source_hint": "Inventory systems",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ecom_009",
+      "subcategory": "customer_order_history",
+      "principle": "Cliente ve su historial de órdenes, facturas, shipments, reviews. Reorder fácil.",
+      "tactic": "API: GET /customers/:id/orders (lista todas sus órdenes con status). GET /orders/:id (detalles orden: items, invoice, tracking). POST /orders/:id/reorder (repite los items). Frontend: Dashboard cliente con 'Mis órdenes' section.",
+      "framework": "Login → Mis órdenes → Click orden → Detalles (invoice, tracking) + Reorder button",
+      "examples": [
+        "Cliente login → Ve 5 órdenes: ORD-001 (Delivered), ORD-002 (Shipped), ORD-003 (Pending payment). Click ORD-001 → Invoice PDF + 'Reorder' button que replica cart."
+      ],
+      "tags": ["customer_data", "history", "retention", "reorder"],
+      "_source_hint": "Customer portal patterns",
+      "_confidence_weight": 1.2
+    },
+    {
+      "id": "ecom_010",
+      "subcategory": "ai_recommendations",
+      "principle": "AI sugiere productos complementarios (cross-sell), upgrades (upsell), trending items.",
+      "tactic": "Algoritmo: Si compra Laptop → sugiere 'Mochila', 'Mouse', 'Cable HDMI' (productos correlacionados). Si clientes similares compraron X → suggest X. Trending: productos más vendidos/calificados este mes. API: GET /products/:id/recommendations (retorna similar items, related, trending).",
+      "framework": "Carrito → Mostrar 'Clientes también compraron' + 'Complementos para tu compra'",
+      "examples": [
+        "Usuario agrega Laptop → Carrito muestra 'Usuarios que compraron Laptop también compraron Mouse ($25), Mochila ($40), Cable ($15)'. Clickeables.",
+        "Página producto Laptop: 'Productos relacionados' → Casos (5 items). 'Clientes también miraron' → Top 5 similares. Upsell: 'Upgrade a versión Pro (+$200)'."
+      ],
+      "tags": ["recommendations", "ai", "cross_sell", "upsell"],
+      "_source_hint": "Recommendation engines",
+      "_confidence_weight": 1.2
+    }
+  ]
+}

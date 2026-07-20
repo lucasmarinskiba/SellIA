@@ -1,0 +1,32 @@
+{
+  "category": "partnerships_affiliate",
+  "description": "Partnerships + Affiliate programs: crecimiento externo. Alianzas ganar-ganar, comisiones, co-marketing.",
+  "items": [
+    {
+      "id": "part_001",
+      "subcategory": "affiliate_program",
+      "principle": "Affiliate: otros (bloggers, creators, sellers) venden tu producto, ganan comisión. Costo solo en ventas, no fixed. Ideal para escalar.",
+      "tactic": "Comisión: 20-50% típico (depende margen). Proveedor afiliados: Shareasale, Impact, CJ (B2B), Awin (global). Crear landing 'Become affiliate' → link único → tracking → pagos mensuales.",
+      "framework": "Affiliate program → Recruitment → Commission tracking → Payments",
+      "examples": [
+        "SaaS $100/mes. Affiliate comisión 30% = $30/new customer. Afiliado obtiene 50 clientes/mes = $1500/mes (passive). SaaS: +50 MRR @ $100 = +$5000/mes.",
+        "E-commerce: Producto $50, margen $20. Affiliate comisión 40% = $8/venta. 100 afiliados activos × 2 ventas/mes = 200 ventas = $1600 ingresos afiliados sin gasto en ads."
+      ],
+      "tags": ["affiliate", "growth", "partnerships", "commission"],
+      "_confidence_weight": 1.3
+    },
+    {
+      "id": "part_002",
+      "subcategory": "strategic_partnerships",
+      "principle": "Partnerships: Co-branding, cross-sell, joint ventures. Ejemplo: Seller zapatos + seller carteras → Bundle 'Matching set', ambos ganan.",
+      "tactic": "Identificar complementario (no competitor). Propuesta: 'Your product + my product = bundle. 30% extra margen cada uno'. Ej: Consultor + agencia design → 'Done-for-you branding'.",
+      "framework": "Identify complementary product → Propose bundle or co-go-to-market → Split revenue or commission",
+      "examples": [
+        "E-commerce A (zapatos) + E-commerce B (medias): Bundle 'Starter outfit' ($100 zapatos + $20 medias = $120). A gana $30 margen + $10 bundle bonus. B gana $10 margen + $5 bundle bonus. Win-win.",
+        "Consultant + Agency: Consultant refers 'Need website?' → Agency builds → Agency refers 'Need business strategy?' → Consultant. Referral revenue both."
+      ],
+      "tags": ["partnerships", "bundling", "revenue_sharing", "growth"],
+      "_confidence_weight": 1.2
+    }
+  ]
+}
