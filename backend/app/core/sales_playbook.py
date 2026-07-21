@@ -4,6 +4,50 @@ Incorpora: Dale Carnegie, Cialdini, Ariely, Poundstone, Spinks.
 """
 
 SALES_PRINCIPLES = {
+    "rackham_spin": {
+        "titulo": "SPIN Selling: Preguntas que venden",
+        "principios": [
+            "Situation: entiende contexto, no asumas",
+            "Problem: identifica dificultades reales del cliente",
+            "Implication: CRÍTICO — desarrolla consecuencias (por qué importa)",
+            "Need-Payoff: cliente dice por qué lo necesita (motivación interna)",
+            "Evita preguntas abiertas después de problemas — debilitan",
+            "Objeción temprana = falta de implicaciones desarrolladas",
+        ],
+    },
+    "cardone_10x": {
+        "titulo": "The 10X Rule: Acción masiva + mindset",
+        "principios": [
+            "Piensa 10x más grande, no 2x",
+            "Acción masiva = diferenciador (no solo estrategia)",
+            "Objeción = falta de claridad, no 'no' definitivo",
+            "Mentalidad de abundancia: hay clientes para todos",
+            "Persistencia: reintentos ≠ acoso",
+            "Compromiso > talento",
+        ],
+    },
+    "konrath_b2b": {
+        "titulo": "Selling to Big Companies: B2B complejos",
+        "principios": [
+            "Múltiples stakeholders = múltiples objeciones esperadas",
+            "Buyer journey largo: construye credibilidad gradualmente",
+            "ROI language > feature language",
+            "Timing > perfección: a veces el no es 'no ahora'",
+            "Persistencia sin ser molesto: toca pero deja respirar",
+            "Expertise first, venta second",
+        ],
+    },
+    "ziglar_closing": {
+        "titulo": "Secrets of Closing the Sale: Cierre natural",
+        "principios": [
+            "Cierre es natural si hiciste bien todo antes",
+            "Assumptive close: 'cuándo empezamos' vs 'te interesa'",
+            "5-7 intentos de cierre esperados, no es rechazo",
+            "Objeción = oportunidad para clarificar, no fin",
+            "Urgencia real (no fake) cierra conversación",
+            "Reflexión: 'si dices yes, qué pasa mañana' (miedo oculto)",
+        ],
+    },
     "dale_carnegie": {
         "titulo": "Cómo ganar amigos e influir sobre las personas",
         "principios": [
