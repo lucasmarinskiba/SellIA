@@ -122,14 +122,18 @@ SALES_PRINCIPLES = {
 
 NEGOTIATION_PRINCIPLES = {
     "fisher_getting_to_yes": {
-        "titulo": "Getting to Yes: Negocia en los méritos",
+        "titulo": "Getting to Yes: Negociación en los méritos (AVANZADA)",
         "principios": [
-            "Separa personas de problemas: ataca problema, no adversario",
-            "Focus en intereses, no posiciones: 'por qué' > 'qué'",
-            "BATNA: conoce tu mejor alternativa antes de negociar",
-            "Genera opciones para ganancia mutua: crecimiento, no reparto",
-            "Criterios objetivos: usa standard externo (mercado, costumbre)",
-            "Nunca cedes sin razón: pregunta 'por qué' a todo pedido",
+            "Separa personas de problemas: ataca problema, no adversario.",
+            "Focus en INTERESES, no posiciones: pregunta 'por qué' 7 veces.",
+            "BATNA: conoce tu mejor alternativa. Úsala como referencia, no amenaza.",
+            "Genera opciones para ganancia MUTUA: crecimiento exponencial, no reparto.",
+            "Criterios OBJETIVOS: apela a estándares externos (mercado, industria, ley).",
+            "Nunca cedes sin razón: pregunta 'por qué' antes de cualquier cambio.",
+            "Intereses múltiples: cada parte tiene varios intereses (no solo precio).",
+            "Problema shared: 'cómo resolvemos juntos' vs 'yo vs vos'.",
+            "Lluvia de ideas: genera 50+ opciones ANTES de decidir (sin evaluarlas).",
+            "Implementación clara: acuerdo es solo el 20%, ejecución es 80%.",
         ],
     },
     "voss_never_split": {
