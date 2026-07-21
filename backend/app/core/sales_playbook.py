@@ -162,6 +162,66 @@ NEGOTIATION_PRINCIPLES = {
     },
 }
 
+FUNNEL_PRINCIPLES = {
+    "brunson_dotcom_secrets": {
+        "titulo": "DotCom Secrets: Funnels & customer journey",
+        "principios": [
+            "Funnel: customer journey, no landing page one-time.",
+            "Stages: awareness → consideration → decision → retention.",
+            "Squeeze page: captura email con lead magnet (free value).",
+            "Sales page: conversión. Promesa clara + social proof + urgencia.",
+            "Upsell: ofrece más después de compra (aumenta ticket).",
+            "OTO (One-Time Offer): oferta irresistible post-checkout.",
+            "Follow-up: email sequences nutren leads (mayoría convierte después).",
+            "Frontend vs Backend: margen bajo inicial, alto después.",
+            "Tripwire: oferta súper barata (captura + confianza) → upsell.",
+        ],
+    },
+    "saleh_conversion": {
+        "titulo": "Conversion Optimization: UX + Copy = Sales",
+        "principios": [
+            "A/B testing: hypothesis-driven, cambios incrementales.",
+            "Psychology: urgencia, scarcity, social proof, authority.",
+            "Form optimization: menos campos = más conversión. Pregunta solo CRÍTICO.",
+            "Copy testing: headline + CTA + value prop (mayor impacto).",
+            "Mobile optimization: 50%+ tráfico es mobile. Optimize para thumb.",
+            "Landing page anatomy: headline → subheading → benefits → CTA.",
+            "Design clarity: reduce fricción. Contraste. Enfoque en CTA.",
+            "Incrementalism: pequeños % de mejora en cada paso = exponencial.",
+        ],
+    },
+}
+
+DIRECT_RESPONSE_PRINCIPLES = {
+    "kennedy_no_bs": {
+        "titulo": "No B.S. Direct Marketing: ROI-focused, medible, tracked",
+        "principios": [
+            "Direct response: medible, traceable. Qué anuncio → qué venta.",
+            "Tracking todo: cost per lead + conversion rate = customer value.",
+            "Big idea: qué hace diferente (monopoly + unique promise).",
+            "Copy: promesa poderosa + validación + urgencia + CTA clara.",
+            "Channels: mail, email, telemarketing, ads (cada uno medible).",
+            "Continuity: relación ongoing > one-time transaction.",
+            "Lifetime value: cliente = serie de transacciones (no una venta).",
+            "Metrics obsession: data-driven, no intuición.",
+            "Frequency: repetición. Mayoría convierte después de múltiples toques.",
+        ],
+    },
+    "marshall_8020": {
+        "titulo": "80/20 Sales and Marketing: Pareto, focus, ROI",
+        "principios": [
+            "Pareto: 20% de esfuerzo = 80% de resultados.",
+            "Clientes: 20% de clientes = 80% de revenue. Focus en ellos.",
+            "Canales: 20% de canales = 80% de resultados. Concentrate, no disperse.",
+            "Testing: 20% de tests = 80% de insights. Prioriza.",
+            "Tiempo: 80/20 de tiempo vs tareas. Identifica 20% crítico.",
+            "Conversión: 20% de optimizaciones = 80% de mejora.",
+            "No hacer más, hacer mejor: eficiencia > volumen.",
+            "CRM: concentra en top 20% de clientes (retención > adquisición).",
+        ],
+    },
+}
+
 POSITIONING_PRINCIPLES = {
     "godin_purple_cow": {
         "titulo": "Purple Cow: Ser diferente = ser memorable",
