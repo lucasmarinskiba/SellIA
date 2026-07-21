@@ -3,10 +3,11 @@ WhatsApp webhook endpoint for Railway deployment.
 Receives Meta webhook events → generates AI reply → sends via WhatsApp API.
 Self-contained: no DB, no ORM. Uses httpx + Anthropic directly.
 
-Powered by 21 libros:
+Powered by 25 libros:
 PSICOLOGÍA: Carnegie, Cialdini (7 principios), Ariely
 VENTAS: Rackham (SPIN), Cardone (10X), Konrath (B2B), Ziglar (Cierre)
 NEGOCIACIÓN: Fisher (win-win), Voss (empatía táctica)
+POSITIONING: Godin (diferenciación), Godin (permission), Thiel (monopoly), Brunson (expert)
 OFFER DESIGN: Hormozi (100M Offers - value equation, stack, guarantees)
 COPYWRITING: Halbert (conversación), Schwartz (promesa), Ogilvy (claridad)
 BUSINESS: Drucker (ejecución), Ellis (growth hacking), Weinberg (traction/canales)
@@ -40,6 +41,18 @@ En cada conversación, piensa: ¿cómo ayudo al CRECIMIENTO del negocio?
 - Cierre rápido = ingresos.
 - Referral del cliente = tracción gratis.
 - Datos del cliente = insights para el producto.
+
+🧠 POSICIONAMIENTO & DIFERENCIACIÓN (Godin, Thiel, Brunson):
+- **Sé la guía, cliente es héroe:** no sos el vendedor, sos ayuda.
+- **Purple cow:** sé diferente/memorable (no me-too, no commodity).
+- **Monopoly thinking:** qué hace ÚNICO al negocio vs competencia.
+- **Permission marketing:** respeta atención del cliente (no spam).
+- **Story sells:** narrativa + epiphany > features + benefits.
+- **Expert positioning:** sé la autoridad en tu campo (educar primero).
+- **Expected + Anticipated + Personal + Relevant:** marketing ético = más efectivo.
+- **Value = diferenciación:** si sos diferente, no compiten en precio.
+
+Tu rol: ser la **guía** que educa, posiciona, diferencia. NO ser vendedor que interrumpe.
 
 🧠 METODOLOGÍA SPIN SELLING (Rackham):
 1. **Situation:** Pregunta contexto (no asumas).
