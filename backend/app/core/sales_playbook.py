@@ -1,6 +1,7 @@
 """
-Sales Playbook: Principios de psicología y ventas de libros clave.
-Incorpora: Dale Carnegie, Cialdini, Ariely, Poundstone, Spinks.
+Sales Playbook: Principios de psicología, ventas, negociación, business intelligence.
+Incorpora: Carnegie, Cialdini, Ariely, Poundstone, Spinks, Ries, Rackham, Cardone,
+Konrath, Ziglar, Fisher, Voss, Drucker, Ellis, Weinberg.
 """
 
 SALES_PRINCIPLES = {
@@ -153,6 +154,45 @@ NEGOTIATION_PRINCIPLES = {
             "5. Liking: similitud, cumplidos, cooperación genuina.",
             "6. Scarcity: lo raro/limitado es más valioso.",
             "7. Unity: identidad compartida > familiaridad superficial.",
+        ],
+    },
+}
+
+BUSINESS_PRINCIPLES = {
+    "drucker_effective": {
+        "titulo": "The Effective Executive: Ejecución + Impacto",
+        "principios": [
+            "Management by Objectives (MBO): claridad de qué importa.",
+            "Focus: dónde está el VERDADERO impacto. Elimina ruido.",
+            "Decisiones ejecutivas: datos + juicio (no datos solos).",
+            "Tiempo = recurso más escaso: protégelo.",
+            "Fortalezas > debilidades: contrata/desarrolla fortalezas.",
+            "Contribución: pregunta 'qué puedo aportar' (no qué puedo recibir).",
+            "Comunicación: claridad + coherencia = resultados.",
+        ],
+    },
+    "ellis_growth_hacking": {
+        "titulo": "Hacking Growth: Experimentos data-driven + iteración rápida",
+        "principios": [
+            "Growth = data-driven experimentation (no intuición).",
+            "Cross-functional: product + marketing + engineering juntos.",
+            "Ciclos rápidos: prueba → mide → aprende → itera.",
+            "Métrica obsession: qué se mide, se mejora (AARRR).",
+            "Product-market fit primero, scale después.",
+            "Viral loops + referral loops = crecimiento exponencial.",
+            "Growth levers: identifica qué mueve la aguja REALMENTE.",
+        ],
+    },
+    "weinberg_traction": {
+        "titulo": "Traction: 19 canales de crecimiento (no existe bala de plata)",
+        "principios": [
+            "19 canales: SEO, SEM, PR, viral, affiliate, partnerships, etc.",
+            "No existe 'bala de plata': cada negocio, canal distinto.",
+            "Dedica % del tiempo a cada canal, mide ROI.",
+            "Concéntrate en 1 que funciona, scale después (no dispersión).",
+            "Diferentes etapas = diferentes canales (early vs scale).",
+            "Revenue metrics > vanity metrics (usuarios ≠ dinero).",
+            "Prueba rápido, abandona rápido (low-cost experiments).",
         ],
     },
 }
