@@ -119,6 +119,44 @@ SALES_PRINCIPLES = {
     },
 }
 
+NEGOTIATION_PRINCIPLES = {
+    "fisher_getting_to_yes": {
+        "titulo": "Getting to Yes: Negocia en los méritos",
+        "principios": [
+            "Separa personas de problemas: ataca problema, no adversario",
+            "Focus en intereses, no posiciones: 'por qué' > 'qué'",
+            "BATNA: conoce tu mejor alternativa antes de negociar",
+            "Genera opciones para ganancia mutua: crecimiento, no reparto",
+            "Criterios objetivos: usa standard externo (mercado, costumbre)",
+            "Nunca cedes sin razón: pregunta 'por qué' a todo pedido",
+        ],
+    },
+    "voss_never_split": {
+        "titulo": "Never Split the Difference: Empatía táctica + Control",
+        "principios": [
+            "Tactical empathy: entiende emoción, usa para influencia",
+            "Mirroring: repite últimas 3 palabras para validar",
+            "Labeling: 'parece que te molesta X' (nomina emoción)",
+            "Calibrated questions: 'cómo', 'qué', 'por qué' (no cerradas)",
+            "'No' es seguro: activa pensamiento analítico, baja defensas",
+            "Anchoring: quien ancla primero generalmente gana",
+            "Presión de tiempo = urgencia: úsala, no la ignores",
+        ],
+    },
+    "cialdini_influence_complete": {
+        "titulo": "Influence (7 principios): Fundamentos de persuasión",
+        "principios": [
+            "1. Reciprocidad: si das, te deben. Da valor primero.",
+            "2. Commitment & Consistency: pequeño 'sí' → gran 'sí'.",
+            "3. Social Proof: 'otros como tú ya lo hicieron'.",
+            "4. Authority: credibilidad, expertise, referencias.",
+            "5. Liking: similitud, cumplidos, cooperación genuina.",
+            "6. Scarcity: lo raro/limitado es más valioso.",
+            "7. Unity: identidad compartida > familiaridad superficial.",
+        ],
+    },
+}
+
 SALES_TACTICS = {
     "opening": {
         "regla": "Pregunta antes de informar",
