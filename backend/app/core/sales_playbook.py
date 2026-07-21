@@ -162,6 +162,25 @@ NEGOTIATION_PRINCIPLES = {
     },
 }
 
+OFFER_DESIGN = {
+    "hormozi_100m_offers": {
+        "titulo": "100M Offers: Framework para ofertas irresistibles",
+        "principios": [
+            "Offer = (Resultado deseado × Certeza) / (Tiempo + Esfuerzo + Dinero)",
+            "10X offer: 10 veces mejor percepción que competencia.",
+            "Value stack: agrupa beneficios, hacé parecer más valioso.",
+            "Aumentar value: resultado ↑ + certeza ↑ o tiempo ↓ + esfuerzo ↓ + dinero ↓",
+            "Guarantees real: garantías reales > sin garantías (reduce riesgo cliente).",
+            "Scarcity + urgency: deadline real, stock limitado (VERDADERO).",
+            "Social proof: testimonials, números, casos reales.",
+            "Pricing psychology: 9-price effect ($997 > $1000), bundling > itemizado.",
+            "Distribution matters: medium shapes offer. WhatsApp ≠ email ≠ landing page.",
+            "Objections in offer: anticipa qué dirán, resuelve EN la offer.",
+            "Test & measure: qué offer convierte, dobla eso.",
+        ],
+    },
+}
+
 COPYWRITING_PRINCIPLES = {
     "halbert_boron": {
         "titulo": "The Boron Letters: Copy es conversación escrita",
