@@ -162,6 +162,83 @@ NEGOTIATION_PRINCIPLES = {
     },
 }
 
+RETENTION_PRINCIPLES = {
+    "mehta_customer_success": {
+        "titulo": "Customer Success: Retención > Adquisición",
+        "principios": [
+            "Retención > adquisición: 5-25x más caro adquirir que retener.",
+            "Proactive outreach: no esperar a que se vayan (churn prediction).",
+            "Health scores: identifica clientes en riesgo antes de churn.",
+            "Onboarding: primeras 2 semanas = críticas para éxito.",
+            "Success metrics: engagement, feature adoption, expansion readiness.",
+            "Expansion revenue: upsell a clientes existentes (más fácil).",
+            "Empowerment: cliente debe tener éxito con producto.",
+            "Lifetime value: relación long-term > transacción one-time.",
+        ],
+    },
+    "reichheld_nps": {
+        "titulo": "The Ultimate Question: NPS & Advocacy",
+        "principios": [
+            "NPS = Net Promoter Score (likelihood to recommend, 0-10).",
+            "Promoters (9-10): embajadores, generan referrals (crecimiento gratis).",
+            "Passives (7-8): satisfechos pero pueden irse fácilmente.",
+            "Detractors (0-6): insatisfechos, dañan reputación.",
+            "Pregunta follow-up: 'Por qué?'. Gap analysis → mejora.",
+            "Improve loops: cierra gaps, sube NPS, genera advocacy.",
+            "Retención = referrals: cliente feliz vende por ti.",
+            "Simple metric: pregunta directa, no encuesta compleja.",
+        ],
+    },
+    "fogg_tiny_habits": {
+        "titulo": "Tiny Habits: Engagement & Behavior Change",
+        "principios": [
+            "Hábito = After [X], I will [Y]. Linked to existing behavior.",
+            "Motivation + Ability + Prompt = Behavior change.",
+            "Celebrate pequeños wins (dopamine = refuerzo).",
+            "Make it easy: reduce fricción, simplifica.",
+            "Incremental change: 1% mejor cada día = exponencial.",
+            "For product adoption: crear hábitos de uso (sticky product).",
+            "Engagement spiral: hábito → resultado → más hábito.",
+        ],
+    },
+}
+
+PROSPECTING_PRINCIPLES = {
+    "efti_outbound": {
+        "titulo": "Outbound: Cold email, sequences, prospecting sistemático",
+        "principios": [
+            "Cold email: subject line + personalization + value + CTA.",
+            "Subject lines: pregunta, curiosidad, urgencia (A/B test).",
+            "Personalization: investiga antes (LinkedIn, Company, Twitter).",
+            "Value prop clara: por qué deberían responder (no pitch).",
+            "CTA específico: next step claro (call, meeting, response).",
+            "Sequences: 5-7 emails sobre 2-3 semanas. Follow-up es clave.",
+            "Timing: Thursday-Friday mejores. Mañana 8-10am óptimo.",
+            "Persistencia sin acoso: múltiples toques normal.",
+            "Testing: A/B subject lines + copy (data-driven).",
+            "Sistemático: proceso, no random. Trackea tasa de respuesta.",
+        ],
+    },
+}
+
+ANALYTICS_PRINCIPLES = {
+    "ellis_yoskovitz_lean": {
+        "titulo": "Lean Analytics: Métricas que importan, data-driven",
+        "principios": [
+            "Actionable metrics: genera decisiones (no vanity metrics).",
+            "Cohort analysis: grupos de usuarios en mismo período.",
+            "Retention curves: qué % queda después de X tiempo.",
+            "AARRR: Awareness → Acquisition → Activation → Revenue → Retention.",
+            "Churn analysis: cuándo y por qué se van (fix = retención).",
+            "Product-market fit indicators: qué métricas lo demuestran.",
+            "Pivot/Persevere: data, no intuición. Experimenta rápido.",
+            "Learning > perfection: itera, mide, itera.",
+            "Dashboard critical: 3-5 métricas que importan (no 50).",
+            "Correlation ≠ causation: busca causa real de variaciones.",
+        ],
+    },
+}
+
 FUNNEL_PRINCIPLES = {
     "brunson_dotcom_secrets": {
         "titulo": "DotCom Secrets: Funnels & customer journey",
