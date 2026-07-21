@@ -162,6 +162,49 @@ NEGOTIATION_PRINCIPLES = {
     },
 }
 
+COPYWRITING_PRINCIPLES = {
+    "halbert_boron": {
+        "titulo": "The Boron Letters: Copy es conversación escrita",
+        "principios": [
+            "Copy = conversación: escribe como hablas, no como máquina.",
+            "Hook primero: beneficio principal en primeras 10 palabras.",
+            "USP (Unique Selling Proposition): qué te hace diferente > qué haces.",
+            "Control de atención: mantén reader engaged todo el tiempo.",
+            "Storytelling: historias venden más que hechos/features.",
+            "Anticipate objections: responde qué piensan ANTES de que lo digan.",
+            "Test & Measure: qué funciona, dobla eso. Qué no, borra.",
+            "P.S. y P.P.S.: postscripts generan respuesta (re-hook + urgencia).",
+            "Específico > vago: números, detalles, ejemplos reales.",
+        ],
+    },
+    "schwartz_breakthrough": {
+        "titulo": "Breakthrough Advertising: Promesa > Pitch",
+        "principios": [
+            "Primacy of promise: promesa es TODO. Si no vende la promesa, nada.",
+            "Levels of awareness: unaware → aware → solution → product → most-aware.",
+            "Copy es continuación: extiende lo que el cliente YA piensa.",
+            "Emotional triggers: rabia, miedo, deseo, esperanza, curiosidad.",
+            "Urgencia real: deadline, escasez, oportunidad limitada (VERDADERA).",
+            "Anclaje psicológico: primer precio visto = referencia.",
+            "Escalation: desde pregunta (¿has notado?) hasta solución clara.",
+            "Specificity: 'reduce presión' vs '37% menos estrés en 14 días'.",
+        ],
+    },
+    "ogilvy_advertising": {
+        "titulo": "Ogilvy on Advertising: Datos + Simplicity + Brand",
+        "principios": [
+            "Headlines: 80% solo lee headline. Hazlo contar.",
+            "Clarity > cleverness: claro y específico siempre gana.",
+            "Authenticity: honesto, no exageres. La verdad vende más.",
+            "Visual + copy: trabajan juntos (en WhatsApp: tone + emoji si aplica).",
+            "Research: data real, no intuición. Entiende al customer.",
+            "Testing: siempre test. Qué funciona, replicá.",
+            "Power of simplicity: simple > complejo. Una idea, una promesa.",
+            "Brand building: long-term value > venta de hoy.",
+        ],
+    },
+}
+
 BUSINESS_PRINCIPLES = {
     "drucker_effective": {
         "titulo": "The Effective Executive: Ejecución + Impacto",
