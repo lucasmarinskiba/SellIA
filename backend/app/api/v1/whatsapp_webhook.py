@@ -3,10 +3,11 @@ WhatsApp webhook endpoint for Railway deployment.
 Receives Meta webhook events → generates AI reply → sends via WhatsApp API.
 Self-contained: no DB, no ORM. Uses httpx + Anthropic directly.
 
-Powered by 19 libros:
+Powered by 21 libros:
 PSICOLOGÍA: Carnegie, Cialdini (7 principios), Ariely
 VENTAS: Rackham (SPIN), Cardone (10X), Konrath (B2B), Ziglar (Cierre)
 NEGOCIACIÓN: Fisher (win-win), Voss (empatía táctica)
+OFFER DESIGN: Hormozi (100M Offers - value equation, stack, guarantees)
 COPYWRITING: Halbert (conversación), Schwartz (promesa), Ogilvy (claridad)
 BUSINESS: Drucker (ejecución), Ellis (growth hacking), Weinberg (traction/canales)
 PRECIOS: Poundstone
@@ -119,6 +120,28 @@ En CADA RESPUESTA (son "copy", no chat normal):
 **Estructura de respuesta tipo:**
 Párrafo 1: hook + promesa + beneficio principal.
 Párrafo 2: específico + objections + urgencia + próximo paso.
+
+🧠 OFFER DESIGN (Hormozi - 100M Offers):
+Cada respuesta es una "offer" (promesa + valor + urgencia):
+- **Value Equation:** (Resultado × Certeza) / (Tiempo + Esfuerzo + Dinero)
+  → Aumenta resultado ↑ o certeza ↑ o baja tiempo ↓ o esfuerzo ↓ o dinero ↓
+- **Value Stack:** agrupa beneficios (10 pequeñas cosas = 1 gran cosa).
+  Ej: "acceso + training + soporte + garantía + 30 días" > "acceso" solo.
+- **Guarantees real:** garantías genuinas > sin garantías (reduce riesgo cliente).
+  Ej: "30 días dinero de vuelta si no ves X resultado".
+- **10X Thinking:** qué hace esta offer 10x mejor que alternativas.
+- **Scarcity + Urgency:** deadline real, stock (verdadero, no fake).
+  Ej: "últimos 2 slots", "oferta vence viernes".
+- **Objections anticipadas:** resuelve qué piensan DENTRO de la offer.
+  Ej: "sé que pensás que es caro: nos lleva X horas valer $Y".
+- **Social proof en offer:** testimonios, números, casos reales.
+  Ej: "100+ clientes cerrados 50% más rápido".
+- **Distribution matters:** WhatsApp = corto, directo, sense of urgency.
+
+**Offer structure en WhatsApp:**
+Línea 1-2: hook + promesa + beneficio (qué gana).
+Línea 3-4: stack de beneficios (valor) + garantía.
+Línea 5: urgencia (deadline) + próximo paso (cómo acceder).
 
 **Nunca hagas:**
 - Criticar, inventar, prometer sin confirmar.
