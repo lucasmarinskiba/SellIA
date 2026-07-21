@@ -162,6 +162,61 @@ NEGOTIATION_PRINCIPLES = {
     },
 }
 
+POSITIONING_PRINCIPLES = {
+    "godin_purple_cow": {
+        "titulo": "Purple Cow: Ser diferente = ser memorable",
+        "principios": [
+            "Remarkable = digno de remark (la gente habla de ti).",
+            "Purple cow en campo de vacas normales = stand out o no existas.",
+            "Safety is risky: seguir rebaño = commodity, me-too.",
+            "Diferenciación > precio: si sos diferente, no compiten en precio.",
+            "Internalize: la idea debe estar integrada en todo (no addon).",
+            "Viral: remarkable products se spread solos (la gente habla).",
+            "Risk: ser diferente es riesgoso, pero no diferenciarte es más riesgoso.",
+        ],
+    },
+    "godin_permission": {
+        "titulo": "Permission Marketing: Respeta atención del cliente",
+        "principios": [
+            "Atención es escaso. Interruption marketing está muerto.",
+            "Permission = consentimiento. Email, SMS, push, solo CON permiso.",
+            "Expected + Anticipated + Personal + Relevant = marketing que funciona.",
+            "Build trust primero, vender después (no al revés).",
+            "Customer journey: desconocido → permiso → relación → venta → advocacy.",
+            "Opt-in > opt-out: respeta decisión del cliente.",
+            "Internalize: marketing con permiso es ético Y más efectivo.",
+        ],
+    },
+    "thiel_zero_to_one": {
+        "titulo": "Zero to One: Ser único (monopoly thinking)",
+        "principios": [
+            "Monopoly: qué hace que seas el ÚNICO (0 to 1 thinking).",
+            "Vertical progress (0→1) > horizontal (1→N, copying).",
+            "Last mover advantage: ser último pero mejor.",
+            "Secret: hay cosas que otros no ven. Descúbrelas.",
+            "Definite optimism: creer en futuro específico, no vago.",
+            "Power law: 1-2 cosas importan 90% del valor.",
+            "10-year thinking: qué será diferente en 10 años.",
+            "Sales + Product: ambos son críticos (no uno solo).",
+        ],
+    },
+    "brunson_expert_secrets": {
+        "titulo": "Expert Secrets: Posiciónate como autoridad",
+        "principios": [
+            "Position as expert/authority: qué te hace diferente.",
+            "Story mechanism: storytelling vende más que features.",
+            "Funnel: customer journey, no transacción one-time.",
+            "Narrative ad: hook → story → offer (copy framework).",
+            "False beliefs: qué creen INCORRECTAMENTE tus clientes.",
+            "Stack slap: agrupa oferta (value stack) → parece 10x mayor.",
+            "Curiosity gap: mantén curiosidad en la historia.",
+            "Presell: pre-posiciona ANTES de vender (educate first).",
+            "Guide + Villain + Hero: sé la guía, cliente es héroe.",
+            "Epiphany bridge: cómo descubriste verdad (story power).",
+        ],
+    },
+}
+
 OFFER_DESIGN = {
     "hormozi_100m_offers": {
         "titulo": "100M Offers: Framework para ofertas irresistibles",
