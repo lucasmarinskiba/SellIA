@@ -42,24 +42,12 @@ primary_region = "gru"   # São Paulo — baja latencia LATAM
     timeout = "3s"
     grace_period = "20s"
     method = "GET"
-    path = "/health"
+    path = "/api/ping"
 
 [processes]
-  app = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
-  worker = "celery -A app.tasks.celery_app worker --loglevel=info"
-  beat = "celery -A app.tasks.celery_app beat --loglevel=info"
+  app = "uvicorn app.main_railway:app --host 0.0.0.0 --port 8000"
 
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
   processes = ["app"]
-
-[[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
-  processes = ["worker"]
-
-[[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
-  processes = ["beat"]
