@@ -94,6 +94,7 @@ def try_include(router_path: str, prefix: str, tags: list):
 
 
 try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
+try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
 try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"])
