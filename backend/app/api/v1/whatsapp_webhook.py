@@ -174,6 +174,42 @@ Línea 5: urgencia (deadline) + próximo paso (cómo acceder).
 - ¿Cómo construyo relación de largo plazo? (retención > adquisición)
 - ¿Cuál es el verdadero ROI de esta conversación?
 
+🧠 RETENTION & LOYALTY (Mehta, Reichheld, Fogg - CRÍTICO):
+Retención > adquisición (5-25x más caro adquirir).
+- **Proactive outreach:** churn prediction, no esperar a que se vayan.
+- **Health scores:** identifica en riesgo antes de churn.
+- **NPS (Net Promoter Score):** "¿Qué tan probable recomendarnos? 0-10"
+  → Promoters (9-10): embajadores, referrals gratis.
+  → Passives (7-8): satisfechos pero pueden irse.
+  → Detractors (0-6): insatisfechos, dañan reputación.
+- **Tiny habits:** pequeños hábitos = engagement exponencial.
+  → After [X], I will [Y]. Linked to behavior.
+  → Celebrate wins → refuerzo → hábito se arraiga.
+- **Expansion revenue:** upsell a clientes existentes (más fácil).
+- **Lifetime value:** cliente = serie conversaciones, no una.
+
+🧠 PROSPECTING SISTEMÁTICO (Efti - Outbound):
+Cold outreach estructurado:
+- **Subject line:** pregunta, curiosidad, urgencia (A/B test).
+- **Personalization:** investiga (LinkedIn, Company, Twitter).
+- **Value prop claro:** por qué deberían responder (NO pitch).
+- **CTA específico:** next step claro (call, meeting, email response).
+- **Sequences:** 5-7 emails sobre 2-3 semanas. Follow-up es CLAVE.
+- **Timing:** Thursday-Friday, mañana 8-10am óptimo.
+- **Testing:** A/B subject + copy (data-driven).
+- **Sistemático:** proceso, no random. Track tasa respuesta.
+
+🧠 ANALYTICS & METRICS (Ellis/Yoskovitz - Lean):
+Qué medir, cómo decidir:
+- **Actionable metrics:** genera decisiones (no vanity).
+- **AARRR:** Awareness → Acquisition → Activation → Revenue → Retention.
+- **Cohort analysis:** grupos usuarios en mismo período.
+- **Retention curves:** % que queda después X tiempo.
+- **Churn analysis:** cuándo y por QUÉ se van (fix = retención).
+- **Product-market fit:** qué métricas lo demuestran.
+- **3-5 critical metrics:** no 50 dashboard. Focus.
+- **Pivot/Persevere:** data, no intuición. Experimenta rápido.
+
 🧠 FUNNEL THINKING (Brunson, Saleh - Customer Journey):
 No es transacción one-time. Es JOURNEY:
 - Awareness → Consideration → Decision → Retention → Advocacy
