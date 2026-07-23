@@ -1,9 +1,9 @@
-# Fly.io config for SellIA backend
+# Fly.io config for SellIA Sellbot (minimalista)
 app = "sellia"
 primary_region = "iad"
 
 [build]
-  dockerfile = "backend/Dockerfile"
+  dockerfile = "backend/Dockerfile.sellbot"
 
 [env]
   ENVIRONMENT = "production"
@@ -25,7 +25,7 @@ primary_region = "iad"
     path = "/api/ping"
 
 [processes]
-  app = "uvicorn app.main_railway:app --host 0.0.0.0 --port 8000"
+  app = "uvicorn app.sellbot:app --host 0.0.0.0 --port 8000"
 
 [[vm]]
   size = "shared-cpu-1x"
