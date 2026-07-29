@@ -19,6 +19,7 @@ import httpx
 # Import routers
 from app.api.v1 import leads as leads_module
 from app.api.v1 import workflows as workflows_module
+from app.api.v1 import lead_sources as lead_sources_module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ app.add_middleware(
 # Registrar routers
 app.include_router(leads_module.router)
 app.include_router(workflows_module.router)
+app.include_router(lead_sources_module.router)
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
