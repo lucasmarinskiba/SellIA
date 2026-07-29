@@ -330,7 +330,26 @@
       "Bash(git rm *)",
       "Bash(.venv/Scripts/python -c \"import app.main_railway\")",
       "Bash(curl -s https://sellia-production.up.railway.app/)",
-      "mcp__claude-in-chrome__tabs_context_mcp"
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "Bash(git branch *)",
+      "PowerShell(curl -s https://sellia-production.up.railway.app/api/ping)",
+      "Bash(fly deploy *)",
+      "Bash(curl -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(timeout 60 curl -i -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test\",\"email\":\"test@test.com\",\"company\":\"Corp\",\"title\":\"CEO\",\"pain_point\":\"Issues\",\"industry\":\"Tech\"},\"offer\":\"AI agent\",\"sender_name\":\"SellIA\",\"sender_email\":\"sales@sellia.app\"}')",
+      "Bash(timeout 90 curl -i -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test User\",\"email\":\"test@test.com\",\"company\":\"TestCorp\",\"title\":\"VP Sales\",\"pain_point\":\"Low close rates\",\"industry\":\"SaaS\"},\"offer\":\"AI sales agent\",\"sender_name\":\"SellIA\",\"sender_email\":\"sales@sellia.app\"}')",
+      "Bash(curl -s https://sellia.fly.dev/api/ping)",
+      "Bash(timeout 60 curl -s -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test\",\"email\":\"test@test.com\",\"company\":\"Test\",\"title\":\"VP\",\"pain_point\":\"Low rates\",\"industry\":\"SaaS\"},\"offer\":\"AI agent\",\"sender_name\":\"SellIA\",\"sender_email\":\"sales@sellia.app\"}')",
+      "Bash(timeout 120 curl -i -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test\",\"email\":\"test@test.com\",\"company\":\"Test\",\"title\":\"VP\",\"pain_point\":\"Low rates\",\"industry\":\"SaaS\"},\"offer\":\"AI agent\",\"sender_name\":\"SellIA\",\"sender_email\":\"sales@sellia.app\"}')",
+      "Bash(python -m py_compile app/sellbot.py)",
+      "Bash(python -c \"from app.sellbot import app; print\\('✓ Imports OK'\\); print\\('FastAPI app:', app.title\\)\")",
+      "Bash(python -c \"from app.sellbot import app; print\\('Imports OK'\\); print\\('FastAPI app:', app.title\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -c \"import httpx; print\\('httpx version:', httpx.__version__\\)\")",
+      "Bash(python test_sellbot.py)",
+      "Bash(fly logs *)",
+      "Bash(timeout 30 curl -s -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test\",\"email\":\"t@t.com\",\"company\":\"T\",\"title\":\"VP\",\"pain_point\":\"Low\",\"industry\":\"SaaS\"},\"offer\":\"AI\",\"sender_name\":\"SellIA\",\"sender_email\":\"s@s.com\"}')",
+      "Bash(curl -v https://sellia.fly.dev/api/ping)"
     ]
   }
 }

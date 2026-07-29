@@ -5,6 +5,7 @@ Endpoints:
 - POST /api/v1/sequences/cold-email (Email generation)
 - POST /api/v1/knowledge/ingest (PDF knowledge)
 - GET /api/ping (Health check)
+- /api/v1/leads/* (Lead management + scoring)
 """
 import os
 import logging
@@ -14,6 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 import httpx
+
+# Import lead management router
+from app.api.v1 import leads as leads_module
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar routers
+app.include_router(leads_module.router)
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
