@@ -1,15 +1,19 @@
 """
-SellIA Sellbot - Minimalista, sin DB, sin Redis, sin dependencias complejas.
+SellIA Sellbot - Email Delivery + PostgreSQL Persistence
 Endpoints:
 - POST /api/v1/webhooks/whatsapp (Meta webhook)
+- POST /api/v1/webhooks/sendgrid (Email tracking)
 - POST /api/v1/sequences/cold-email (Email generation)
 - POST /api/v1/knowledge/ingest (PDF knowledge)
 - GET /api/ping (Health check)
 - /api/v1/leads/* (Lead management + scoring)
+- /api/v1/workflows/* (Email automation)
+- /api/v1/lead-sources/* (Prospecting)
 """
 import os
 import logging
 import json
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -20,13 +24,33 @@ import httpx
 from app.api.v1 import leads as leads_module
 from app.api.v1 import workflows as workflows_module
 from app.api.v1 import lead_sources as lead_sources_module
+from app.api.v1 import email_webhooks as email_webhooks_module
+
+# Database
+from app.db import init_db, close_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ============================================================
+# STARTUP/SHUTDOWN
+# ============================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("🚀 SellIA Sellbot starting...")
+    await init_db()
+    logger.info("✅ Database initialized")
+    yield
+    # Shutdown
+    logger.info("🛑 SellIA Sellbot shutting down...")
+    await close_db()
+    logger.info("✅ Database connection closed")
+
 app = FastAPI(
     title="SellIA Sellbot",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -41,6 +65,7 @@ app.add_middleware(
 app.include_router(leads_module.router)
 app.include_router(workflows_module.router)
 app.include_router(lead_sources_module.router)
+app.include_router(email_webhooks_module.router)
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
