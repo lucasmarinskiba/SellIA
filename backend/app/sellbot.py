@@ -13,6 +13,7 @@ Endpoints:
 import os
 import logging
 import json
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +30,13 @@ from app.api.v1 import email_webhooks as email_webhooks_module
 # Database
 from app.db import init_db, close_db
 
+# Scheduler
+from app.core.scheduler import get_scheduler
+from app.core.task_processor import init_processor, start_processor, stop_processor, get_processor_stats
+
+scheduler = None
+processor = None
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -38,14 +46,34 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    global scheduler, processor
     logger.info("🚀 SellIA Sellbot starting...")
+
     await init_db()
     logger.info("✅ Database initialized")
+
+    scheduler = await get_scheduler()
+    logger.info("✅ Redis scheduler connected")
+
+    processor = await init_processor(scheduler)
+    logger.info("✅ Task processor initialized")
+
+    # Start processor in background
+    try:
+        asyncio.create_task(start_processor())
+        logger.info("✅ Task processor started")
+    except Exception as e:
+        logger.warning(f"Processor background start warning: {e}")
+
     yield
+
     # Shutdown
     logger.info("🛑 SellIA Sellbot shutting down...")
+    await stop_processor()
     await close_db()
-    logger.info("✅ Database connection closed")
+    if scheduler:
+        await scheduler.close()
+    logger.info("✅ All services closed")
 
 app = FastAPI(
     title="SellIA Sellbot",
@@ -206,6 +234,37 @@ async def root():
 async def ping():
     """Health check."""
     return {"status": "ok", "service": "SellIA Sellbot"}
+
+@app.get("/api/v1/queue/stats")
+async def queue_stats():
+    """Get email queue statistics."""
+    try:
+        stats = await get_processor_stats()
+        return {
+            "status": "ok",
+            "queue": stats
+        }
+    except Exception as e:
+        logger.error(f"Queue stats error: {e}")
+        return {"status": "error", "detail": str(e)}
+
+@app.get("/api/v1/queue/peek")
+async def queue_peek(count: int = 5):
+    """Peek at queue (non-destructive)."""
+    global scheduler
+    if not scheduler:
+        return {"status": "error", "detail": "Scheduler not initialized"}
+
+    try:
+        tasks = await scheduler.peek_queue(count)
+        return {
+            "status": "ok",
+            "tasks": tasks,
+            "count": len(tasks)
+        }
+    except Exception as e:
+        logger.error(f"Queue peek error: {e}")
+        return {"status": "error", "detail": str(e)}
 
 @app.post("/api/v1/webhooks/whatsapp")
 async def whatsapp_webhook(request: Request):
