@@ -27,6 +27,7 @@ from app.api.v1 import workflows as workflows_module
 from app.api.v1 import lead_sources as lead_sources_module
 from app.api.v1 import email_webhooks as email_webhooks_module
 from app.api.v1 import progression as progression_module
+from app.api.v1 import analytics as analytics_module
 
 # Database
 from app.db import init_db, close_db
@@ -103,6 +104,7 @@ app.include_router(workflows_module.router)
 app.include_router(lead_sources_module.router)
 app.include_router(email_webhooks_module.router)
 app.include_router(progression_module.router)
+app.include_router(analytics_module.router)
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
