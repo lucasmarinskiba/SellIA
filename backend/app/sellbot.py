@@ -26,6 +26,7 @@ from app.api.v1 import leads as leads_module
 from app.api.v1 import workflows as workflows_module
 from app.api.v1 import lead_sources as lead_sources_module
 from app.api.v1 import email_webhooks as email_webhooks_module
+from app.api.v1 import progression as progression_module
 
 # Database
 from app.db import init_db, close_db
@@ -34,8 +35,12 @@ from app.db import init_db, close_db
 from app.core.scheduler import get_scheduler
 from app.core.task_processor import init_processor, start_processor, stop_processor, get_processor_stats
 
+# Progression
+from app.services.progression_service import init_progression_service
+
 scheduler = None
 processor = None
+progression_service = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,7 +51,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global scheduler, processor
+    global scheduler, processor, progression_service
     logger.info("🚀 SellIA Sellbot starting...")
 
     await init_db()
@@ -57,6 +62,9 @@ async def lifespan(app: FastAPI):
 
     processor = await init_processor(scheduler)
     logger.info("✅ Task processor initialized")
+
+    progression_service = await init_progression_service(scheduler)
+    logger.info("✅ Progression service initialized")
 
     # Start processor in background
     try:
@@ -94,6 +102,7 @@ app.include_router(leads_module.router)
 app.include_router(workflows_module.router)
 app.include_router(lead_sources_module.router)
 app.include_router(email_webhooks_module.router)
+app.include_router(progression_module.router)
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
