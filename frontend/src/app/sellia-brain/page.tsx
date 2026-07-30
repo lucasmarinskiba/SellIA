@@ -10,7 +10,6 @@
 
 import dynamic from 'next/dynamic'
 
-import { QueryProvider } from '@/lib/sellia-api'
 import { SettingsProvider } from '@/lib/settings'
 
 
@@ -23,9 +22,7 @@ const EnterpriseCommandCenter = dynamic(
 export default function SelliaBrainPage(): React.JSX.Element {
   return (
     <SettingsProvider>
-      <QueryProvider>
-        <EnterpriseCommandCenter />
-      </QueryProvider>
+      <EnterpriseCommandCenter />
     </SettingsProvider>
   )
 }

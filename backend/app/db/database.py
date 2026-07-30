@@ -3,25 +3,24 @@ Database initialization and session management.
 PostgreSQL + SQLAlchemy async.
 """
 import os
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from app.db.models import Base
 import logging
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 # ============================================================
 # DATABASE CONFIG
 # ============================================================
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/sellia"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Fallback to SQLite for testing
-if not DATABASE_URL.startswith("postgresql"):
+if not DATABASE_URL:
+    # Default: use SQLite for local testing
     DATABASE_URL = "sqlite+aiosqlite:///./test.db"
-    logger.warning(f"PostgreSQL not configured, using SQLite: {DATABASE_URL}")
+    logger.warning(f"DATABASE_URL not set, using SQLite: {DATABASE_URL}")
 
 # ============================================================
 # ENGINE & SESSION
