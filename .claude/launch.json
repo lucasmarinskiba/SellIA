@@ -12,7 +12,7 @@
     {
       "name": "Backend — FastAPI/uvicorn (local)",
       "runtimeExecutable": "uvicorn",
-      "runtimeArgs": ["app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "runtimeArgs": ["app.sellbot:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
       "cwd": "backend",
       "port": 8000
     },
