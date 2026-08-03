@@ -349,7 +349,12 @@
       "Bash(python test_sellbot.py)",
       "Bash(fly logs *)",
       "Bash(timeout 30 curl -s -X POST https://sellia.fly.dev/api/v1/sequences/cold-email -H 'Content-Type: application/json' -d '{\"lead\":{\"name\":\"Test\",\"email\":\"t@t.com\",\"company\":\"T\",\"title\":\"VP\",\"pain_point\":\"Low\",\"industry\":\"SaaS\"},\"offer\":\"AI\",\"sender_name\":\"SellIA\",\"sender_email\":\"s@s.com\"}')",
-      "Bash(curl -v https://sellia.fly.dev/api/ping)"
+      "Bash(curl -v https://sellia.fly.dev/api/ping)",
+      "Bash(curl -s http://localhost:8000/api/ping)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s http://localhost:8000/api/v1/analytics/summary)",
+      "Bash(curl -s http://localhost:8000/api/v1/leads)",
+      "Bash(vercel deploy *)"
     ]
   }
 }

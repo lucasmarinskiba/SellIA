@@ -8,8 +8,6 @@
 
 import dynamic from 'next/dynamic'
 
-import { QueryProvider } from '@/lib/sellia-api'
-
 
 const SellIABrainShell = dynamic(
   () => import('@/components/sellia-brain/SellIABrainShell'),
@@ -18,11 +16,7 @@ const SellIABrainShell = dynamic(
 
 
 export default function PreviewUIPage(): React.JSX.Element {
-  return (
-    <QueryProvider>
-      <SellIABrainShell />
-    </QueryProvider>
-  )
+  return <SellIABrainShell />
 }
 
 
