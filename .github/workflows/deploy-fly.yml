@@ -1,0 +1,54 @@
+name: Deploy Backend to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-fly.yml'
+  workflow_dispatch:
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Fly
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: |
+          cd backend
+          flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Health check
+        run: |
+          sleep 5
+          APP_URL=$(flyctl status --json | jq -r '.Hostname')
+          for i in {1..30}; do
+            if curl -sf "https://$APP_URL/api/ping"; then
+              echo "✅ Backend health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting for API..."
+            sleep 5
+          done
+          echo "❌ API health check failed"
+          exit 1
+
+      - name: Slack notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Backend Deploy: ${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
