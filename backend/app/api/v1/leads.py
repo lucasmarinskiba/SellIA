@@ -116,7 +116,7 @@ def calculate_lead_score(lead_data: dict) -> dict:
         fit_score += 15
 
     # Industry fit (SaaS > Tech > Others)
-    industry = lead_data.get('industry', '').lower()
+    industry = (lead_data.get('industry') or '').lower()
     if any(x in industry for x in ['saas', 'software', 'tech', 'startup']):
         fit_score += 20
     else:
