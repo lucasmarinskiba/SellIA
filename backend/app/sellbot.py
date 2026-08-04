@@ -90,12 +90,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app").split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Registrar routers
@@ -192,47 +194,74 @@ class KnowledgeIngestRequest(BaseModel):
 # ============================================================
 # FUNCIONES CORE
 # ============================================================
-async def call_anthropic_api(system_prompt: str, user_message: str) -> str:
-    """Llama a Claude API directamente."""
+async def call_anthropic_api(system_prompt: str, user_message: str, retries: int = 3) -> str:
+    """Llama a Claude API con retry logic."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 2048,
-                "system": system_prompt,
-                "messages": [{"role": "user", "content": user_message}],
-            },
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["content"][0]["text"]
+    last_error = None
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": "claude-haiku-4-5-20251001",
+                        "max_tokens": 2048,
+                        "system": system_prompt,
+                        "messages": [{"role": "user", "content": user_message}],
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                if not data.get("content") or not isinstance(data["content"], list) or len(data["content"]) == 0:
+                    raise ValueError(f"Invalid Anthropic response structure: {data}")
+                return data["content"][0]["text"]
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            last_error = e
+            if attempt < retries - 1:
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                continue
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code >= 500:  # Retry only 5xx errors
+                last_error = e
+                if attempt < retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+
+    raise HTTPException(status_code=503, detail=f"Anthropic API unavailable after {retries} attempts: {last_error}")
 
 async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str) -> dict:
     """Envía mensaje vía WhatsApp Graph API."""
     url = f"https://graph.instagram.com/v18.0/{phone_number_id}/messages"
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url,
-            params={"access_token": token},
-            json={
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": to,
-                "type": "text",
-                "text": {"body": text},
-            },
-        )
-        return response.json()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                url,
+                params={"access_token": token},
+                json={
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": to,
+                    "type": "text",
+                    "text": {"body": text},
+                },
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        logger.error(f"WhatsApp API timeout for {to}")
+        raise
+    except httpx.HTTPError as e:
+        logger.error(f"WhatsApp API error for {to}: {e}")
+        raise
 
 # ============================================================
 # ENDPOINTS
