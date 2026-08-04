@@ -2,11 +2,16 @@
 Lead Management + Scoring API
 Endpoints para CRUD leads y cálculo automático de score
 """
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime
 import logging
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db import get_db
+from app.db.models import Lead as LeadModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
@@ -16,7 +21,7 @@ router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 # ============================================================
 class LeadBase(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     phone: Optional[str] = None
     company: Optional[str] = None
     industry: Optional[str] = None
@@ -26,6 +31,20 @@ class LeadBase(BaseModel):
     timeline: Optional[str] = None  # "immediate", "3-6 months", "unknown"
     source: Optional[str] = None  # "linkedin", "website", "cold-email", "referral"
     notes: Optional[str] = None
+
+    @field_validator('name')
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Name cannot be empty")
+        return v.strip()
+
+    @field_validator('budget')
+    @classmethod
+    def budget_positive(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v < 0:
+            raise ValueError("Budget must be non-negative")
+        return v
 
 class Lead(LeadBase):
     id: int
@@ -40,7 +59,7 @@ class LeadCreate(LeadBase):
 
 class LeadUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
     company: Optional[str] = None
     industry: Optional[str] = None
@@ -59,12 +78,6 @@ class LeadScore(BaseModel):
     reasons: List[str]
     scored_at: datetime
 
-# ============================================================
-# IN-MEMORY STORAGE (Reemplazar con DB después)
-# ============================================================
-leads_db = {}
-next_lead_id = 1
-lead_scores = {}
 
 # ============================================================
 # SCORING LOGIC
@@ -169,89 +182,110 @@ def _generate_score_reasons(lead_data: dict, breakdown: dict) -> List[str]:
 # ENDPOINTS
 # ============================================================
 @router.post("/", response_model=Lead)
-async def create_lead(lead_data: LeadCreate) -> dict:
+async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db)):
     """Crear nuevo lead."""
-    global next_lead_id
-
+    # Calcular score
     lead_dict = lead_data.dict()
-    lead_dict['id'] = next_lead_id
-    lead_dict['status'] = 'new'
-    lead_dict['created_at'] = datetime.now()
-    lead_dict['updated_at'] = datetime.now()
-    lead_dict['last_contacted'] = None
-
-    # Calcular score inicial
     score_result = calculate_lead_score(lead_dict)
-    lead_dict['score'] = score_result['score']
 
-    leads_db[next_lead_id] = lead_dict
-    lead_scores[next_lead_id] = score_result
+    # Crear lead en DB
+    lead = LeadModel(
+        name=lead_data.name,
+        email=str(lead_data.email),
+        phone=lead_data.phone,
+        company=lead_data.company,
+        industry=lead_data.industry,
+        job_title=lead_data.job_title,
+        pain_points=lead_data.pain_points,
+        budget=lead_data.budget,
+        timeline=lead_data.timeline,
+        source=lead_data.source,
+        notes=lead_data.notes,
+        status='new',
+        score=score_result['score'],
+        score_breakdown=score_result['breakdown']
+    )
+    db.add(lead)
+    await db.commit()
+    await db.refresh(lead)
 
-    logger.info(f"Lead creado: {lead_dict['email']} (score: {lead_dict['score']:.1f})")
-    next_lead_id += 1
-
-    return lead_dict
+    logger.info(f"Lead creado: {lead.email} (score: {lead.score:.1f})")
+    return lead
 
 @router.get("/", response_model=List[Lead])
 async def list_leads(
     skip: int = 0,
     limit: int = 50,
     min_score: float = 0,
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
 ) -> list:
     """Listar leads con filtros."""
-    leads_list = list(leads_db.values())
+    query = select(LeadModel).where(LeadModel.score >= min_score)
 
-    # Filtrar por score
-    leads_list = [l for l in leads_list if l['score'] >= min_score]
-
-    # Filtrar por status
     if status:
-        leads_list = [l for l in leads_list if l['status'] == status]
+        query = query.where(LeadModel.status == status)
 
-    # Ordenar por score descendente
-    leads_list = sorted(leads_list, key=lambda x: x['score'], reverse=True)
+    query = query.order_by(LeadModel.score.desc()).offset(skip).limit(limit)
 
-    return leads_list[skip:skip+limit]
+    result = await db.execute(query)
+    leads = result.scalars().all()
+    return leads
 
 @router.get("/{lead_id}", response_model=Lead)
-async def get_lead(lead_id: int) -> dict:
+async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     """Obtener detalles de un lead."""
-    if lead_id not in leads_db:
+    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    lead = result.scalar_one_or_none()
+
+    if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
-    return leads_db[lead_id]
+    return lead
 
 @router.put("/{lead_id}", response_model=Lead)
-async def update_lead(lead_id: int, lead_update: LeadUpdate) -> dict:
+async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db)):
     """Actualizar lead."""
-    if lead_id not in leads_db:
+    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    lead = result.scalar_one_or_none()
+
+    if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
 
-    lead = leads_db[lead_id]
     update_data = lead_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if value is not None:
+            setattr(lead, field, value)
 
-    lead.update(update_data)
-    lead['updated_at'] = datetime.now()
+    lead.updated_at = datetime.now()
 
     # Recalcular score
-    score_result = calculate_lead_score(lead)
-    lead['score'] = score_result['score']
-    lead_scores[lead_id] = score_result
+    lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
+    score_result = calculate_lead_score(lead_dict)
+    lead.score = score_result['score']
+    lead.score_breakdown = score_result['breakdown']
 
-    logger.info(f"Lead actualizado: {lead['email']} (nuevo score: {lead['score']:.1f})")
+    await db.commit()
+    await db.refresh(lead)
+    logger.info(f"Lead actualizado: {lead.email} (nuevo score: {lead.score:.1f})")
 
     return lead
 
 @router.post("/{lead_id}/score", response_model=LeadScore)
-async def rescore_lead(lead_id: int) -> dict:
+async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     """Recalcular score de un lead (útil después de engagement)."""
-    if lead_id not in leads_db:
+    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    lead = result.scalar_one_or_none()
+
+    if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
 
-    lead = leads_db[lead_id]
-    score_result = calculate_lead_score(lead)
-    lead['score'] = score_result['score']
-    lead_scores[lead_id] = score_result
+    lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
+    score_result = calculate_lead_score(lead_dict)
+    lead.score = score_result['score']
+    lead.score_breakdown = score_result['breakdown']
+
+    await db.commit()
+    await db.refresh(lead)
 
     return {
         'lead_id': lead_id,
@@ -262,34 +296,43 @@ async def rescore_lead(lead_id: int) -> dict:
     }
 
 @router.post("/{lead_id}/contact")
-async def mark_contacted(lead_id: int) -> dict:
+async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db)):
     """Marcar lead como contactado."""
-    if lead_id not in leads_db:
+    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    lead = result.scalar_one_or_none()
+
+    if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
 
-    lead = leads_db[lead_id]
-    lead['status'] = 'contacted'
-    lead['last_contacted'] = datetime.now()
-    lead['updated_at'] = datetime.now()
+    lead.status = 'contacted'
+    lead.last_contacted = datetime.now()
+    lead.updated_at = datetime.now()
 
-    # Recalcular score (engagement sube)
-    score_result = calculate_lead_score(lead)
-    lead['score'] = score_result['score']
-    lead_scores[lead_id] = score_result
+    # Recalcular score
+    lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
+    score_result = calculate_lead_score(lead_dict)
+    lead.score = score_result['score']
+    lead.score_breakdown = score_result['breakdown']
+
+    await db.commit()
+    await db.refresh(lead)
 
     return lead
 
 @router.get("/stats/summary")
-async def get_stats():
+async def get_stats(db: AsyncSession = Depends(get_db)):
     """Resumen de leads."""
-    leads_list = list(leads_db.values())
+    result = await db.execute(select(LeadModel))
+    leads_list = result.scalars().all()
+
+    statuses = ['new', 'contacted', 'qualified', 'negotiating', 'closed', 'lost']
 
     return {
         'total': len(leads_list),
         'by_status': {
-            status: len([l for l in leads_list if l['status'] == status])
-            for status in ['new', 'contacted', 'qualified', 'negotiating', 'closed', 'lost']
+            st: len([l for l in leads_list if l.status == st])
+            for st in statuses
         },
-        'avg_score': sum(l['score'] for l in leads_list) / len(leads_list) if leads_list else 0,
-        'high_quality': len([l for l in leads_list if l['score'] >= 70]),
+        'avg_score': sum(l.score for l in leads_list) / len(leads_list) if leads_list else 0,
+        'high_quality': len([l for l in leads_list if l.score >= 70]),
     }
