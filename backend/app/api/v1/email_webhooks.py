@@ -11,9 +11,30 @@ from app.db.models import WorkflowExecution, EmailLog, WebhookEvent, Lead
 from app.db.database import AsyncSessionLocal
 from datetime import datetime
 import logging
+import os
+import hmac
+import hashlib
+import base64
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
+
+# ============================================================
+# SIGNATURE VERIFICATION
+# ============================================================
+def verify_sendgrid_signature(request_body: bytes, signature: str, timestamp: str) -> bool:
+    """Verify SendGrid webhook signature with HMAC-SHA256."""
+    webhook_key = os.getenv("SENDGRID_WEBHOOK_KEY", "")
+    if not webhook_key:
+        logger.warning("SENDGRID_WEBHOOK_KEY not set - skipping signature verification")
+        return True
+
+    msg = timestamp.encode() + request_body
+    expected_signature = base64.b64encode(
+        hmac.new(webhook_key.encode(), msg, hashlib.sha256).digest()
+    ).decode()
+
+    return hmac.compare_digest(signature, expected_signature)
 
 # ============================================================
 # SENDGRID WEBHOOK HANDLER
@@ -32,6 +53,15 @@ async def handle_sendgrid_webhook(request: Request) -> dict:
     }]
     """
     try:
+        # Verify webhook signature
+        signature = request.headers.get("X-Twilio-Email-Event-Webhook-Signature", "")
+        timestamp = request.headers.get("X-Twilio-Email-Event-Webhook-Timestamp", "")
+
+        body = await request.body()
+        if not verify_sendgrid_signature(body, signature, timestamp):
+            logger.error("Invalid SendGrid webhook signature")
+            raise HTTPException(status_code=403, detail="Invalid webhook signature")
+
         events = await request.json()
 
         async with AsyncSessionLocal() as session:
