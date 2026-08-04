@@ -301,9 +301,17 @@ async def create_workflow(workflow_data: WorkflowCreate, db: AsyncSession = Depe
     return workflow
 
 @router.get("/", response_model=List[Workflow])
-async def list_workflows(status: Optional[WorkflowStatus] = None, db: AsyncSession = Depends(get_db)):
-    """Listar workflows."""
-    query = select(WorkflowModel).order_by(WorkflowModel.created_at.desc())
+async def list_workflows(
+    status: Optional[WorkflowStatus] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Listar workflows con pagination."""
+    if limit > 100:
+        limit = 100  # Cap para evitar OOM
+
+    query = select(WorkflowModel).order_by(WorkflowModel.created_at.desc()).offset(skip).limit(limit)
 
     if status:
         query = query.where(WorkflowModel.status == status.value)

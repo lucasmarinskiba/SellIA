@@ -220,8 +220,11 @@ async def list_leads(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ) -> list:
-    """Listar leads con filtros."""
-    query = select(LeadModel).where(LeadModel.score >= min_score)
+    """Listar leads con filtros (excluye deleted)."""
+    query = select(LeadModel).where(
+        LeadModel.score >= min_score,
+        LeadModel.deleted_at == None  # Exclude soft-deleted
+    )
 
     if status:
         query = query.where(LeadModel.status == status)
@@ -245,7 +248,9 @@ async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
 @router.put("/{lead_id}", response_model=Lead)
 async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db)):
     """Actualizar lead."""
-    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    from sqlalchemy import select as sa_select
+    # Row-level lock to prevent concurrent updates
+    result = await db.execute(sa_select(LeadModel).where(LeadModel.id == lead_id).with_for_update())
     lead = result.scalar_one_or_none()
 
     if not lead:
@@ -258,14 +263,19 @@ async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = 
 
     lead.updated_at = datetime.now()
 
-    # Recalcular score
-    lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
-    score_result = calculate_lead_score(lead_dict)
-    lead.score = score_result['score']
-    lead.score_breakdown = score_result['breakdown']
+    # Recalcular score (atomically within transaction)
+    try:
+        lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
+        score_result = calculate_lead_score(lead_dict)
+        lead.score = score_result['score']
+        lead.score_breakdown = score_result['breakdown']
 
-    await db.commit()
-    await db.refresh(lead)
+        await db.commit()
+        await db.refresh(lead)
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Score calculation failed: {e}")
+        raise
     logger.info(f"Lead actualizado: {lead.email} (nuevo score: {lead.score:.1f})")
 
     return lead
@@ -308,21 +318,41 @@ async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db)):
     lead.last_contacted = datetime.now()
     lead.updated_at = datetime.now()
 
-    # Recalcular score
-    lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
-    score_result = calculate_lead_score(lead_dict)
-    lead.score = score_result['score']
-    lead.score_breakdown = score_result['breakdown']
+    # Recalcular score (atomically within transaction)
+    try:
+        lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
+        score_result = calculate_lead_score(lead_dict)
+        lead.score = score_result['score']
+        lead.score_breakdown = score_result['breakdown']
 
-    await db.commit()
-    await db.refresh(lead)
+        await db.commit()
+        await db.refresh(lead)
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Score calculation failed: {e}")
+        raise
 
     return lead
 
+@router.delete("/{lead_id}")
+async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+    """Soft delete a lead (mark as deleted, don't remove data)."""
+    result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
+    lead = result.scalar_one_or_none()
+
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+
+    lead.deleted_at = datetime.now()
+    await db.commit()
+    logger.info(f"Lead {lead_id} soft deleted")
+    return {"status": "deleted", "lead_id": lead_id}
+
 @router.get("/stats/summary")
 async def get_stats(db: AsyncSession = Depends(get_db)):
-    """Resumen de leads."""
-    result = await db.execute(select(LeadModel))
+    """Resumen de leads (solo activos)."""
+    # Only count non-deleted leads
+    result = await db.execute(select(LeadModel).where(LeadModel.deleted_at == None))
     leads_list = result.scalars().all()
 
     statuses = ['new', 'contacted', 'qualified', 'negotiating', 'closed', 'lost']

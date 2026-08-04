@@ -38,6 +38,7 @@ class Lead(Base):
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)  # Soft delete timestamp
 
     # Relationships
     workflow_executions = relationship("WorkflowExecution", back_populates="lead", cascade="all, delete-orphan")
