@@ -1,0 +1,144 @@
+================================================================================
+  SellIA - Deployment Guide
+================================================================================
+
+STATUS
+======
+
+Code:         ✅ 100% Production-Ready (5 commits)
+Frontend:     ✅ Live (https://sellia-brain.vercel.app/sellia-brain)
+Backend:      ⏳ Ready to Deploy (Render.com - one-click)
+
+================================================================================
+  QUICK DEPLOY (5 minutes)
+================================================================================
+
+STEP 1: Open Render Dashboard
+  → https://dashboard.render.com
+
+STEP 2: Create Web Service
+  Click "New +" → "Web Service"
+  Connect GitHub → lucasmarinskiba/SellIA
+
+STEP 3: Configure
+  Name:                  selliaai-backend
+  Root Directory:        backend
+  Build Command:         pip install -r requirements.txt
+  Start Command:         uvicorn app.sellbot:app --host 0.0.0.0 --port 8000
+  Region:                North America
+
+STEP 4: Environment Variables
+  ALLOWED_ORIGINS = http://localhost:3000,https://sellia-brain.vercel.app
+  ENVIRONMENT = production
+
+STEP 5: Create Web Service
+  Click button → Wait 5-10 minutes
+  Backend URL: https://selliaai-backend.onrender.com
+
+================================================================================
+  UPDATE FRONTEND
+================================================================================
+
+1. Edit: frontend/.env.production
+   Add: NEXT_PUBLIC_API_URL=https://selliaai-backend.onrender.com
+
+2. Redeploy to Vercel
+   cd frontend && vercel --prod
+
+3. Test
+   Frontend:  https://sellia-brain.vercel.app/sellia-brain
+   Backend:   https://selliaai-backend.onrender.com/api/health
+   Create:    POST /api/v1/leads/
+
+================================================================================
+  FILES READY
+================================================================================
+
+✅ backend/render.yaml              - Infrastructure config
+✅ backend/requirements.txt          - Dependencies
+✅ backend/app/sellbot.py           - Main app
+✅ DEPLOYMENT_STATUS.html           - Status dashboard
+✅ deploy-render.sh                 - Deploy script (bash)
+✅ deploy-render.bat                - Deploy script (windows)
+
+================================================================================
+  PRODUCTION FEATURES
+================================================================================
+
+DATABASE
+  ✓ SQLAlchemy ORM (async)
+  ✓ Row-level locking (prevent race conditions)
+  ✓ Soft deletes (audit trail)
+  ✓ Composite indexes (performance)
+  ✓ Audit log table
+
+API SECURITY
+  ✓ CORS restrictive (whitelist only)
+  ✓ Email validation
+  ✓ Webhook HMAC verification
+  ✓ Input validation (Pydantic)
+  ✓ Transaction isolation
+
+ERROR HANDLING
+  ✓ Exponential backoff retry
+  ✓ Dead Letter Queue for failed tasks
+  ✓ Rollback on failure
+  ✓ Structured error responses
+
+MONITORING
+  ✓ Health checks (db, Redis, processor)
+  ✓ Structured JSON logging
+  ✓ Rate limiting (100 req/min per IP)
+  ✓ DLQ visibility
+  ✓ Component status dashboard
+
+================================================================================
+  API ENDPOINTS
+================================================================================
+
+Health & Monitoring:
+  GET /api/ping                              - Simple health check
+  GET /api/health                            - Detailed status
+  GET /api/version                           - Version info
+  GET /api/queue/dlq                         - Dead letter queue
+
+Leads:
+  POST /api/v1/leads/                        - Create
+  GET /api/v1/leads/                         - List (paginated)
+  GET /api/v1/leads/{id}                     - Get details
+  PUT /api/v1/leads/{id}                     - Update
+  DELETE /api/v1/leads/{id}                  - Soft delete
+  POST /api/v1/leads/{id}/contact            - Mark contacted
+  POST /api/v1/leads/{id}/score              - Rescore
+  GET /api/v1/leads/stats/summary            - Statistics
+
+Workflows:
+  POST /api/v1/workflows/                    - Create
+  GET /api/v1/workflows/                     - List (paginated)
+  POST /api/v1/workflows/{id}/activate       - Activate
+  POST /api/v1/workflows/{id}/enroll-lead    - Enroll lead
+
+Webhooks:
+  POST /api/v1/webhooks/sendgrid             - Email tracking (HMAC verified)
+
+================================================================================
+  COMMITS
+================================================================================
+
+08c4512  Render.com deployment + Status dashboard
+75f91c3  100% Production Ready (Indexes+Logging)
+0eea608  A4-A10 + Monitoring agresivo
+f19da4b  ARQUITECTURA - Problemas senior-level
+e8e7063  Production-ready backend refactor
+
+================================================================================
+  STATUS
+================================================================================
+
+✅ Code:     100% production-ready
+✅ Frontend: Live on Vercel
+⏳ Backend:  Ready to deploy (Render - one-click)
+
+NEXT: Open Render.com dashboard and click "Create Web Service"
+
+================================================================================
