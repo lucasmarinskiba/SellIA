@@ -389,7 +389,15 @@
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/workflows/5/enroll-lead?lead_id=1\")",
       "Bash(python -m py_compile app/api/v1/leads.py app/api/v1/email_webhooks.py app/db/models.py)",
       "Bash(python -m py_compile app/sellbot.py app/core/scheduler.py app/db/models.py)",
-      "Bash(python -m py_compile app/sellbot.py app/db/models.py)"
+      "Bash(python -m py_compile app/sellbot.py app/db/models.py)",
+      "Bash(command -v flyctl)",
+      "Bash(gh run *)",
+      "Bash(curl -s --max-time 5 https://selliaai.fly.dev/api/ping)",
+      "Bash(curl -s --max-time 5 https://sellia-brain.vercel.app/sellia-brain -I)",
+      "Bash(curl -s --max-time 10 https://selliaai.fly.dev/api/ping)",
+      "Bash(curl -s --max-time 10 https://selliaai.fly.dev/api/health)",
+      "Bash(curl -s -X POST https://selliaai.fly.dev/api/v1/leads/ -H 'Content-Type: application/json' -d '{\"name\":\"Deploy Test\",\"email\":\"deploy@test.com\",\"company\":\"SellIA\",\"industry\":\"SaaS\",\"budget\":50000}' --max-time 10)",
+      "Bash(curl -s https://selliaai.fly.dev/api/v1/leads/ --max-time 10)"
     ]
   }
 }
