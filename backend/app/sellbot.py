@@ -16,10 +16,13 @@ import json
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 import httpx
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 # Import routers
 from app.api.v1 import leads as leads_module
@@ -91,6 +94,52 @@ app = FastAPI(
 )
 
 allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app").split(",")]
+
+# Rate limiter (simple in-memory)
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 100):
+        self.rpm = requests_per_minute
+        self.requests = defaultdict(list)
+
+    def is_allowed(self, ip: str) -> bool:
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        # Clean old requests
+        self.requests[ip] = [t for t in self.requests[ip] if t > minute_ago]
+        if len(self.requests[ip]) >= self.rpm:
+            return False
+        self.requests[ip].append(now)
+        return True
+
+rate_limiter = RateLimiter(requests_per_minute=100)
+
+# Logging middleware (structured)
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    import time
+    start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate limit check
+    if not rate_limiter.is_allowed(client_ip):
+        logger.warning(f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}")
+        return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
+
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    # Structured log
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "method": request.method,
+        "path": request.url.path,
+        "status_code": response.status_code,
+        "client_ip": client_ip,
+        "process_time_ms": round(process_time * 1000, 2)
+    }
+    logger.info(f"API | {log_entry}")
+
+    return response
 
 app.add_middleware(
     CORSMiddleware,
