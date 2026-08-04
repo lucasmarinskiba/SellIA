@@ -6,7 +6,7 @@ SQLAlchemy ORM Models
 - Lead Sources
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
@@ -42,6 +42,15 @@ class Lead(Base):
 
     # Relationships
     workflow_executions = relationship("WorkflowExecution", back_populates="lead", cascade="all, delete-orphan")
+
+    # Indexes for query performance
+    __table_args__ = (
+        Index("idx_lead_email", "email"),
+        Index("idx_lead_score", "score", "deleted_at"),
+        Index("idx_lead_status", "status", "deleted_at"),
+        Index("idx_lead_deleted", "deleted_at"),
+        Index("idx_lead_created", "created_at"),
+    )
 
 # ============================================================
 # WORKFLOWS
