@@ -157,3 +157,21 @@ class WebhookEvent(Base):
 
     received_at = Column(DateTime, default=datetime.now, nullable=False)
     processed_at = Column(DateTime)
+
+# ============================================================
+# AUDIT LOG (for compliance + debugging)
+# ============================================================
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True)
+    entity_type = Column(String(50))  # lead, workflow, workflow_execution
+    entity_id = Column(Integer)
+    action = Column(String(50))  # create, update, delete, status_change
+    old_values = Column(JSON)  # Previous state
+    new_values = Column(JSON)  # New state
+    user_id = Column(String(100), nullable=True)  # Who did it (API key, user email)
+    ip_address = Column(String(45), nullable=True)  # IP for traceability
+    reason = Column(String(255), nullable=True)  # Why (workflow automation, manual edit)
+
+    created_at = Column(DateTime, default=datetime.now, nullable=False)

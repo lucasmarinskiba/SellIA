@@ -101,12 +101,23 @@ app.add_middleware(
 )
 
 # Registrar routers
+# v1 routes (current stable)
 app.include_router(leads_module.router)
 app.include_router(workflows_module.router)
 app.include_router(lead_sources_module.router)
 app.include_router(email_webhooks_module.router)
 app.include_router(progression_module.router)
 app.include_router(analytics_module.router)
+
+# Legacy redirect (v1 is default)
+@app.get("/api/version", tags=["system"])
+async def get_version():
+    return {
+        "version": "1.0.0",
+        "status": "stable",
+        "deprecation": None,
+        "next_version": "2.0.0 (planned Q3 2024)"
+    }
 
 # ============================================================
 # SALES SYSTEM PROMPT - 34 libros integrados
@@ -272,8 +283,72 @@ async def root():
 
 @app.get("/api/ping")
 async def ping():
-    """Health check."""
-    return {"status": "ok", "service": "SellIA Sellbot"}
+    """Simple health check."""
+    return {"status": "ok", "service": "SellIA Sellbot", "timestamp": datetime.now().isoformat()}
+
+@app.get("/api/health", tags=["system"])
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """Detailed health check with dependency status."""
+    try:
+        # Check database
+        await db.execute(select(1))
+        db_status = "ok"
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        db_status = "failed"
+
+    # Check Redis
+    try:
+        if processor and processor.scheduler and processor.scheduler.redis:
+            await processor.scheduler.redis.ping()
+            redis_status = "ok"
+        else:
+            redis_status = "fallback"  # In-memory mode
+    except Exception as e:
+        logger.error(f"Redis health check failed: {e}")
+        redis_status = "failed"
+
+    # Check processor
+    try:
+        processor_running = processor and processor.running
+        processor_status = "ok" if processor_running else "stopped"
+    except Exception as e:
+        logger.error(f"Processor health check failed: {e}")
+        processor_status = "failed"
+
+    overall = "ok" if db_status == "ok" and processor_status == "ok" else "degraded"
+
+    return {
+        "status": overall,
+        "timestamp": datetime.now().isoformat(),
+        "components": {
+            "database": db_status,
+            "redis": redis_status,
+            "processor": processor_status,
+            "scheduler": "ok" if scheduler else "not_initialized"
+        },
+        "uptime_seconds": 0  # TODO: track from startup
+    }
+
+@app.get("/api/queue/dlq", tags=["monitoring"])
+async def get_dead_letter_queue():
+    """Get tasks that failed permanently (DLQ)."""
+    try:
+        if not scheduler or not scheduler.redis:
+            return {"status": "not_available", "dlq_size": 0}
+
+        dlq_size = await scheduler.redis.llen("sellia:dead-letter")
+        dlq_tasks = await scheduler.redis.lrange("sellia:dead-letter", 0, 10)  # Last 10
+
+        return {
+            "status": "ok",
+            "dlq_size": dlq_size,
+            "recent_tasks": [json.loads(t) if isinstance(t, str) else t for t in dlq_tasks],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"DLQ query failed: {e}")
+        return {"status": "error", "detail": str(e)}
 
 @app.get("/api/v1/queue/stats")
 async def queue_stats():

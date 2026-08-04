@@ -387,7 +387,8 @@
       "PowerShell(Stop-Process -ID 34160 -Force -ErrorAction SilentlyContinue)",
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/workflows/1/enroll-lead?workflow_id=5&lead_id=1\")",
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/workflows/5/enroll-lead?lead_id=1\")",
-      "Bash(python -m py_compile app/api/v1/leads.py app/api/v1/email_webhooks.py app/db/models.py)"
+      "Bash(python -m py_compile app/api/v1/leads.py app/api/v1/email_webhooks.py app/db/models.py)",
+      "Bash(python -m py_compile app/sellbot.py app/core/scheduler.py app/db/models.py)"
     ]
   }
 }
