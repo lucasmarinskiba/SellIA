@@ -47,7 +47,9 @@ class EmailScheduler:
         self.queue_key = "sellia:queue"
         self.delayed_key = "sellia:delayed"
         self.failed_key = "sellia:failed"
+        self.dead_letter_key = "sellia:dead-letter"  # DLQ for unrecoverable failures
         self.processing_key = "sellia:processing"
+        self.max_retries = 5  # Exponential backoff: 2, 4, 8, 16, 32 minutes
 
     async def connect(self) -> None:
         """Connect to Redis."""
@@ -259,7 +261,7 @@ class EmailScheduler:
             logger.error(f"Mark completed error: {e}")
 
     async def mark_failed(self, task: dict, error: str, retry: bool = True) -> None:
-        """Mark task as failed, optionally retry."""
+        """Mark task as failed with exponential backoff. Move to DLQ after max_retries."""
         if not self.redis:
             return
 
@@ -269,16 +271,18 @@ class EmailScheduler:
             task["last_error_at"] = datetime.now().isoformat()
 
             task_json = json.dumps(task)
+            task_id = task.get("workflow_execution_id", "unknown")
 
-            if retry and task["attempts"] < 3:
-                # Retry after 5 minutes
-                retry_at = (datetime.now() + timedelta(minutes=5)).timestamp()
-                await self.redis.zadd(self.delayed_key, {f"{task['workflow_execution_id']}:retry:{task['attempts']}": retry_at})
-                logger.warning(f"⚠️ Task failed, retry #{task['attempts']}: {task['workflow_execution_id']}")
+            if retry and task["attempts"] < self.max_retries:
+                # Exponential backoff: 2^attempt minutes
+                backoff_minutes = 2 ** task["attempts"]
+                retry_at = (datetime.now() + timedelta(minutes=backoff_minutes)).timestamp()
+                await self.redis.zadd(self.delayed_key, {f"{task_id}:retry:{task['attempts']}": retry_at})
+                logger.warning(f"⚠️ Task failed, retry #{task['attempts']} in {backoff_minutes}min: {task_id}")
             else:
-                # Move to failed
-                await self.redis.lpush(self.failed_key, task_json)
-                logger.error(f"❌ Task failed (no retry): {task['workflow_execution_id']}")
+                # Max retries exceeded → move to DLQ
+                await self.redis.lpush(self.dead_letter_key, task_json)
+                logger.error(f"❌ Task DLQ (max retries {self.max_retries}): {task_id} - {error}")
 
             await self.redis.lrem(self.processing_key, 1, task_json)
 
