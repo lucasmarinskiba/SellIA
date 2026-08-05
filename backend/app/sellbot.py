@@ -158,6 +158,11 @@ app.include_router(leads_module.router)
 #app.include_router(progression_module.router)
 #app.include_router(analytics_module.router)
 
+# Debug endpoint (no db imports)
+@app.get("/test")
+async def test():
+    return {"status": "ok", "message": "app is running"}
+
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
 async def get_version():
