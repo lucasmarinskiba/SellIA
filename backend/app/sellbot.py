@@ -15,11 +15,13 @@ import logging
 import json
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -33,7 +35,7 @@ from app.api.v1 import progression as progression_module
 from app.api.v1 import analytics as analytics_module
 
 # Database
-from app.db import init_db, close_db
+from app.db import init_db, close_db, get_db
 
 # Scheduler
 from app.core.scheduler import get_scheduler
@@ -150,13 +152,21 @@ app.add_middleware(
 )
 
 # Registrar routers
-# v1 routes (current stable)
-app.include_router(leads_module.router)
-app.include_router(workflows_module.router)
-app.include_router(lead_sources_module.router)
-app.include_router(email_webhooks_module.router)
-app.include_router(progression_module.router)
-app.include_router(analytics_module.router)
+# v1 routes (current stable) — each wrapped so a single broken router
+# (missing dependency, bad import) can never take the whole app down.
+def _register(router_module, name: str) -> None:
+    try:
+        app.include_router(router_module.router)
+        logger.info(f"✅ {name} router registered")
+    except Exception as e:
+        logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
+
+_register(leads_module, "leads")
+_register(workflows_module, "workflows")
+_register(lead_sources_module, "lead_sources")
+_register(email_webhooks_module, "email_webhooks")
+_register(progression_module, "progression")
+_register(analytics_module, "analytics")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
