@@ -15,12 +15,31 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # DATABASE CONFIG
 # ============================================================
+def _normalize_async_url(url: str) -> str:
+    """Force an async-capable driver scheme for SQLAlchemy's async engine.
+
+    Render (and most hosts) hand out plain postgres://... / postgresql://...
+    URLs, which SQLAlchemy resolves to the sync psycopg2 driver. create_async_engine
+    then raises InvalidRequestError before the app can even start. Rewrite the
+    scheme so the async driver (asyncpg) is always used, regardless of what the
+    platform's connection string says.
+    """
+    if url.startswith("postgres://"):
+        return "postgresql+asyncpg://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + url[len("postgresql://"):]
+    if url.startswith("postgresql+psycopg2://"):
+        return "postgresql+asyncpg://" + url[len("postgresql+psycopg2://"):]
+    return url
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     # Default: use SQLite for local testing
     DATABASE_URL = "sqlite+aiosqlite:///./test.db"
     logger.warning(f"DATABASE_URL not set, using SQLite: {DATABASE_URL}")
+else:
+    DATABASE_URL = _normalize_async_url(DATABASE_URL)
 
 # ============================================================
 # ENGINE & SESSION
