@@ -40,7 +40,7 @@ from datetime import datetime, timedelta
 #from app.core.task_processor import init_processor, start_processor, stop_processor, get_processor_stats
 
 # Progression
-from app.services.progression_service import init_progression_service
+#from app.services.progression_service import init_progression_service
 
 scheduler = None
 processor = None
@@ -55,37 +55,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global scheduler, processor, progression_service
-    logger.info("🚀 SellIA Sellbot starting...")
-
-    await init_db()
-    logger.info("✅ Database initialized")
-
-    scheduler = await get_scheduler()
-    logger.info("✅ Redis scheduler connected")
-
-    processor = await init_processor(scheduler)
-    logger.info("✅ Task processor initialized")
-
-    progression_service = await init_progression_service(scheduler)
-    logger.info("✅ Progression service initialized")
-
-    # Start processor in background
-    try:
-        asyncio.create_task(start_processor())
-        logger.info("✅ Task processor started")
-    except Exception as e:
-        logger.warning(f"Processor background start warning: {e}")
-
+    logger.info("🚀 SellIA Sellbot starting (minimal mode)...")
     yield
-
-    # Shutdown
     logger.info("🛑 SellIA Sellbot shutting down...")
-    await stop_processor()
-    await close_db()
-    if scheduler:
-        await scheduler.close()
-    logger.info("✅ All services closed")
 
 app = FastAPI(
     title="SellIA Sellbot",
