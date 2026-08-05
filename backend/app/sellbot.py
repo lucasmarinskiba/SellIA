@@ -1,11 +1,528 @@
-from fastapi import FastAPI
+"""
+SellIA Sellbot - Email Delivery + PostgreSQL Persistence
+Endpoints:
+- POST /api/v1/webhooks/whatsapp (Meta webhook)
+- POST /api/v1/webhooks/sendgrid (Email tracking)
+- POST /api/v1/sequences/cold-email (Email generation)
+- POST /api/v1/knowledge/ingest (PDF knowledge)
+- GET /api/ping (Health check)
+- /api/v1/leads/* (Lead management + scoring)
+- /api/v1/workflows/* (Email automation)
+- /api/v1/lead-sources/* (Prospecting)
+"""
+import os
+import logging
+import json
+import asyncio
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
+import httpx
+from collections import defaultdict
+from datetime import datetime, timedelta
 
-app = FastAPI(title="SellIA Sellbot", version="1.0.0")
+# Import routers
+from app.api.v1 import leads as leads_module
+from app.api.v1 import workflows as workflows_module
+from app.api.v1 import lead_sources as lead_sources_module
+from app.api.v1 import email_webhooks as email_webhooks_module
+from app.api.v1 import progression as progression_module
+from app.api.v1 import analytics as analytics_module
 
-@app.get("/test")
-async def test():
-    return {"status": "ok", "message": "app is running"}
+# Database
+from app.db import init_db, close_db
 
-@app.get("/api/health")
-async def health():
-    return {"status": "ok", "database": "pending"}
+# Scheduler
+from app.core.scheduler import get_scheduler
+from app.core.task_processor import init_processor, start_processor, stop_processor, get_processor_stats
+
+# Progression
+from app.services.progression_service import init_progression_service
+
+scheduler = None
+processor = None
+progression_service = None
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ============================================================
+# STARTUP/SHUTDOWN
+# ============================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global scheduler, processor, progression_service
+    logger.info("🚀 SellIA Sellbot starting...")
+
+    await init_db()
+    logger.info("✅ Database initialized")
+
+    scheduler = await get_scheduler()
+    logger.info("✅ Redis scheduler connected")
+
+    processor = await init_processor(scheduler)
+    logger.info("✅ Task processor initialized")
+
+    progression_service = await init_progression_service(scheduler)
+    logger.info("✅ Progression service initialized")
+
+    # Start processor in background
+    try:
+        asyncio.create_task(start_processor())
+        logger.info("✅ Task processor started")
+    except Exception as e:
+        logger.warning(f"Processor background start warning: {e}")
+
+    yield
+
+    # Shutdown
+    logger.info("🛑 SellIA Sellbot shutting down...")
+    await stop_processor()
+    await close_db()
+    if scheduler:
+        await scheduler.close()
+    logger.info("✅ All services closed")
+
+app = FastAPI(
+    title="SellIA Sellbot",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app").split(",")]
+
+# Rate limiter (simple in-memory)
+class RateLimiter:
+    def __init__(self, requests_per_minute: int = 100):
+        self.rpm = requests_per_minute
+        self.requests = defaultdict(list)
+
+    def is_allowed(self, ip: str) -> bool:
+        now = datetime.now()
+        minute_ago = now - timedelta(minutes=1)
+        # Clean old requests
+        self.requests[ip] = [t for t in self.requests[ip] if t > minute_ago]
+        if len(self.requests[ip]) >= self.rpm:
+            return False
+        self.requests[ip].append(now)
+        return True
+
+rate_limiter = RateLimiter(requests_per_minute=100)
+
+# Logging middleware (structured)
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    import time
+    start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+
+    # Rate limit check
+    if not rate_limiter.is_allowed(client_ip):
+        logger.warning(f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}")
+        return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
+
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    # Structured log
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "method": request.method,
+        "path": request.url.path,
+        "status_code": response.status_code,
+        "client_ip": client_ip,
+        "process_time_ms": round(process_time * 1000, 2)
+    }
+    logger.info(f"API | {log_entry}")
+
+    return response
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
+# Registrar routers
+# v1 routes (current stable)
+app.include_router(leads_module.router)
+app.include_router(workflows_module.router)
+app.include_router(lead_sources_module.router)
+app.include_router(email_webhooks_module.router)
+app.include_router(progression_module.router)
+app.include_router(analytics_module.router)
+
+# Legacy redirect (v1 is default)
+@app.get("/api/version", tags=["system"])
+async def get_version():
+    return {
+        "version": "1.0.0",
+        "status": "stable",
+        "deprecation": None,
+        "next_version": "2.0.0 (planned Q3 2024)"
+    }
+
+# ============================================================
+# SALES SYSTEM PROMPT - 34 libros integrados
+# ============================================================
+SALES_SYSTEM_PROMPT = """Eres SellIA, un agente de ventas de IA con maestría en 34 libros de psicología de ventas, negocios y marketing.
+
+### MARCOS DE REFERENCIA INTEGRADOS:
+
+**PROSPECTING & COLD OUTREACH:**
+- Efti (Cold Email): subject lines con curiosidad, personalización profunda, valor primero, social proof, CTA simple
+- LinkedIn B2B (Konrath): decision makers, pain points, multi-threading, account-based selling
+
+**SALES METHODOLOGY:**
+- SPIN Selling (Rackham): Situation, Problem, Implication, Need-Payoff questions
+- 10X Mindset (Cardone): Audacia, volumen, presión positiva, cierre agresivo pero ético
+- Closing (Ziglar): 7 técnicas de cierre, manejar objeciones con empatía
+
+**PSYCHOLOGY & INFLUENCE:**
+- 7 Principios Cialdini: Reciprocidad, Compromiso, Prueba Social, Autoridad, Simpatía, Escasez, Urgencia
+- Pre-suasión (Cialdini): Framing antes de pitch
+- Irracionalidad (Ariely): Anclaje, relatividad, costo hundido
+- Empatía (Carnegie): Escuchar, validar, conexión humana
+
+**POSITIONING & DIFERENCIACIÓN:**
+- Purple Cow (Godin): Ser notable, diferente, memorable
+- Monopoly (Thiel): Crear categoría única, defensible
+- Expert Secrets (Brunson): Posicionarse como authority, storytelling
+
+**OFFER DESIGN & PRICING:**
+- Offer Design (Hormozi): Value equation, stack, bonuses, urgency real
+- Pricing Psychology (Poundstone): Anclajes, decoys, paquetes
+- Direct Response (Kennedy): ROI focus, 80/20 rule, metricas
+
+**FUNNELS & CONVERSION:**
+- Funnel Hacking (Brunson): Squeeze page, sales page, order form, thank you page
+- A/B Testing: Headlines, copy, calls to action
+- Conversion Optimization (Saleh): Scarcity, social proof, testimonials
+
+**RETENTION & EXPANSION:**
+- NPS & Retention (Reichheld): Proactive engagement, loyalty loops
+- Tiny Habits (Fogg): Behavior change, sticky features
+- Customer Success (Mehta): Health scores, proactive outreach, upsell sequences
+
+**NEGOTIATION:**
+- Getting to Yes (Fisher): Win-win, BATNA, options generation
+- Never Split the Difference (Voss): Mirroring, labels, tactical empathy
+
+### TU COMPORTAMIENTO:
+
+1. **Prospecting**: Busca pain points, propón soluciones claras, crea urgencia real
+2. **Sales**: SPIN questions → descubre need → presenta offer con ROI visible
+3. **Objeciones**: Reframe, social proof, alternative close, urgencia limitada
+4. **Retention**: Onboarding rápido, health score check-in, cross-sell/upsell
+5. **Analytics**: Pensa en métricas (conversion, CAC, LTV, churn), 80/20
+
+### TONO:
+- Audaz pero profesional
+- Directo sin ser grosero
+- ROI-focused
+- Data-driven cuando sea posible
+- Empatico pero orientado a resultados
+"""
+
+# ============================================================
+# MODELOS
+# ============================================================
+class LeadProfile(BaseModel):
+    name: str
+    email: str
+    company: str
+    title: str
+    pain_point: str
+    industry: str
+
+class EmailSequenceRequest(BaseModel):
+    lead: LeadProfile
+    offer: str
+    sender_name: str = "SellIA"
+    sender_email: str
+
+class KnowledgeIngestRequest(BaseModel):
+    content: str
+    source: str
+
+# ============================================================
+# FUNCIONES CORE
+# ============================================================
+async def call_anthropic_api(system_prompt: str, user_message: str, retries: int = 3) -> str:
+    """Llama a Claude API con retry logic."""
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not set")
+
+    last_error = None
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": "claude-haiku-4-5-20251001",
+                        "max_tokens": 2048,
+                        "system": system_prompt,
+                        "messages": [{"role": "user", "content": user_message}],
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                if not data.get("content") or not isinstance(data["content"], list) or len(data["content"]) == 0:
+                    raise ValueError(f"Invalid Anthropic response structure: {data}")
+                return data["content"][0]["text"]
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            last_error = e
+            if attempt < retries - 1:
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                continue
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code >= 500:  # Retry only 5xx errors
+                last_error = e
+                if attempt < retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+
+    raise HTTPException(status_code=503, detail=f"Anthropic API unavailable after {retries} attempts: {last_error}")
+
+async def send_whatsapp_message(to: str, text: str, phone_number_id: str, token: str) -> dict:
+    """Envía mensaje vía WhatsApp Graph API."""
+    url = f"https://graph.instagram.com/v18.0/{phone_number_id}/messages"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                url,
+                params={"access_token": token},
+                json={
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": to,
+                    "type": "text",
+                    "text": {"body": text},
+                },
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.TimeoutException:
+        logger.error(f"WhatsApp API timeout for {to}")
+        raise
+    except httpx.HTTPError as e:
+        logger.error(f"WhatsApp API error for {to}: {e}")
+        raise
+
+# ============================================================
+# ENDPOINTS
+# ============================================================
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/api/ping")
+
+@app.get("/api/ping")
+async def ping():
+    """Simple health check."""
+    return {"status": "ok", "service": "SellIA Sellbot", "timestamp": datetime.now().isoformat()}
+
+@app.get("/api/health", tags=["system"])
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """Detailed health check with dependency status."""
+    try:
+        # Check database
+        await db.execute(select(1))
+        db_status = "ok"
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        db_status = "failed"
+
+    # Check Redis
+    try:
+        if processor and processor.scheduler and processor.scheduler.redis:
+            await processor.scheduler.redis.ping()
+            redis_status = "ok"
+        else:
+            redis_status = "fallback"  # In-memory mode
+    except Exception as e:
+        logger.error(f"Redis health check failed: {e}")
+        redis_status = "failed"
+
+    # Check processor
+    try:
+        processor_running = processor and processor.running
+        processor_status = "ok" if processor_running else "stopped"
+    except Exception as e:
+        logger.error(f"Processor health check failed: {e}")
+        processor_status = "failed"
+
+    overall = "ok" if db_status == "ok" and processor_status == "ok" else "degraded"
+
+    return {
+        "status": overall,
+        "timestamp": datetime.now().isoformat(),
+        "components": {
+            "database": db_status,
+            "redis": redis_status,
+            "processor": processor_status,
+            "scheduler": "ok" if scheduler else "not_initialized"
+        },
+        "uptime_seconds": 0  # TODO: track from startup
+    }
+
+@app.get("/api/queue/dlq", tags=["monitoring"])
+async def get_dead_letter_queue():
+    """Get tasks that failed permanently (DLQ)."""
+    try:
+        if not scheduler or not scheduler.redis:
+            return {"status": "not_available", "dlq_size": 0}
+
+        dlq_size = await scheduler.redis.llen("sellia:dead-letter")
+        dlq_tasks = await scheduler.redis.lrange("sellia:dead-letter", 0, 10)  # Last 10
+
+        return {
+            "status": "ok",
+            "dlq_size": dlq_size,
+            "recent_tasks": [json.loads(t) if isinstance(t, str) else t for t in dlq_tasks],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"DLQ query failed: {e}")
+        return {"status": "error", "detail": str(e)}
+
+@app.get("/api/v1/queue/stats")
+async def queue_stats():
+    """Get email queue statistics."""
+    try:
+        stats = await get_processor_stats()
+        return {
+            "status": "ok",
+            "queue": stats
+        }
+    except Exception as e:
+        logger.error(f"Queue stats error: {e}")
+        return {"status": "error", "detail": str(e)}
+
+@app.get("/api/v1/queue/peek")
+async def queue_peek(count: int = 5):
+    """Peek at queue (non-destructive)."""
+    global scheduler
+    if not scheduler:
+        return {"status": "error", "detail": "Scheduler not initialized"}
+
+    try:
+        tasks = await scheduler.peek_queue(count)
+        return {
+            "status": "ok",
+            "tasks": tasks,
+            "count": len(tasks)
+        }
+    except Exception as e:
+        logger.error(f"Queue peek error: {e}")
+        return {"status": "error", "detail": str(e)}
+
+@app.post("/api/v1/webhooks/whatsapp")
+async def whatsapp_webhook(request: Request):
+    """Meta WhatsApp webhook - recibe y responde mensajes."""
+    try:
+        body = await request.json()
+
+        # Meta verifica webhook con GET
+        if request.method == "GET":
+            token = os.getenv("META_WEBHOOK_VERIFY_TOKEN", "")
+            verify_token = request.query_params.get("hub.verify_token", "")
+            if verify_token == token:
+                return int(request.query_params.get("hub.challenge", 0))
+            return JSONResponse({"error": "Invalid token"}, status_code=403)
+
+        # Procesa mensaje entrante
+        messages = body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
+        if not messages:
+            return JSONResponse({"status": "ok"})
+
+        message = messages[0]
+        from_number = message.get("from")
+        message_text = message.get("text", {}).get("body", "")
+
+        if not message_text:
+            return JSONResponse({"status": "ok"})
+
+        # Genera respuesta con IA
+        response_text = await call_anthropic_api(
+            system_prompt=SALES_SYSTEM_PROMPT,
+            user_message=f"Cliente: {message_text}\n\nResponde como agente de ventas SellIA.",
+        )
+
+        # Envía respuesta
+        phone_number_id = os.getenv("META_PHONE_NUMBER_ID", "")
+        token = os.getenv("META_WHATSAPP_TOKEN", "")
+        if phone_number_id and token:
+            await send_whatsapp_message(from_number, response_text, phone_number_id, token)
+
+        return JSONResponse({"status": "ok", "response_sent": True})
+    except Exception as e:
+        logger.error(f"WhatsApp webhook error: {e}")
+        return JSONResponse({"status": "error", "detail": str(e)}, status_code=500)
+
+@app.post("/api/v1/sequences/cold-email")
+async def generate_cold_email_sequence(req: EmailSequenceRequest):
+    """Genera secuencia de 5 emails (Efti + Kennedy frameworks)."""
+    try:
+        prompt = f"""Genera una secuencia de 5 emails de prospecting para:
+
+LEAD:
+- Nombre: {req.lead.name}
+- Email: {req.lead.email}
+- Empresa: {req.lead.company}
+- Título: {req.lead.title}
+- Pain point: {req.lead.pain_point}
+- Industria: {req.lead.industry}
+
+OFFER: {req.offer}
+
+Usa Efti (cold email) + Kennedy (80/20 ROI).
+Retorna JSON array: [{"day": 1, "subject": "...", "body": "..."}, ...]
+SOLO JSON, sin markdown."""
+
+        response_json = await call_anthropic_api(
+            system_prompt="Eres un copywriter experto. Devuelve SOLO JSON válido.",
+            user_message=prompt,
+        )
+
+        emails = json.loads(response_json)
+        return {
+            "sequence_id": f"seq_{req.lead.email}",
+            "lead": req.lead,
+            "emails": emails,
+            "status": "generated",
+        }
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Failed to parse email sequence JSON")
+    except Exception as e:
+        logger.error(f"Email sequence error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/knowledge/ingest")
+async def ingest_knowledge(req: KnowledgeIngestRequest):
+    """Ingesta PDFs/conocimientos para mejorar system prompt (v1: solo logging)."""
+    try:
+        # v1: Solo registra. v2: Mejorar system prompt dinámicamente
+        logger.info(f"Knowledge ingested from {req.source}: {len(req.content)} chars")
+        return {
+            "status": "ingested",
+            "source": req.source,
+            "size": len(req.content),
+            "message": "Knowledge received. System will be enhanced in v2.",
+        }
+    except Exception as e:
+        logger.error(f"Knowledge ingest error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
