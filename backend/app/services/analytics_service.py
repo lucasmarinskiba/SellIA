@@ -8,7 +8,7 @@ Analytics Service
 """
 import logging
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, cast, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Lead, WorkflowExecution, LeadSource, EmailLog
@@ -51,10 +51,10 @@ class AnalyticsService:
         """Email delivery performance."""
         stmt = select(
             func.count(EmailLog.id).label("total_sent"),
-            func.sum(func.cast(EmailLog.status == "delivered", func.Integer)).label("delivered"),
-            func.sum(func.cast(EmailLog.status == "opened", func.Integer)).label("opened"),
-            func.sum(func.cast(EmailLog.status == "clicked", func.Integer)).label("clicked"),
-            func.sum(func.cast(EmailLog.status == "bounced", func.Integer)).label("bounced"),
+            func.sum(cast(EmailLog.status == "delivered", Integer)).label("delivered"),
+            func.sum(cast(EmailLog.status == "opened", Integer)).label("opened"),
+            func.sum(cast(EmailLog.status == "clicked", Integer)).label("clicked"),
+            func.sum(cast(EmailLog.status == "bounced", Integer)).label("bounced"),
         )
 
         result = await session.execute(stmt)
@@ -87,9 +87,9 @@ class AnalyticsService:
             Lead.source,
             func.count(Lead.id).label("total_leads"),
             func.avg(Lead.score).label("avg_score"),
-            func.sum(func.cast(Lead.status == "engaged", func.Integer)).label("engaged_count"),
-            func.sum(func.cast(Lead.status == "qualified", func.Integer)).label("qualified_count"),
-            func.sum(func.cast(Lead.status == "won", func.Integer)).label("won_count"),
+            func.sum(cast(Lead.status == "engaged", Integer)).label("engaged_count"),
+            func.sum(cast(Lead.status == "qualified", Integer)).label("qualified_count"),
+            func.sum(cast(Lead.status == "won", Integer)).label("won_count"),
         ).group_by(Lead.source)
 
         result = await session.execute(stmt)
@@ -129,10 +129,10 @@ class AnalyticsService:
             WorkflowExecution.workflow_id,
             WorkflowExecution.step_number,
             func.count(WorkflowExecution.id).label("total"),
-            func.sum(func.cast(WorkflowExecution.email_status == "sent", func.Integer)).label("sent"),
-            func.sum(func.cast(WorkflowExecution.email_status == "opened", func.Integer)).label("opened"),
-            func.sum(func.cast(WorkflowExecution.email_status == "clicked", func.Integer)).label("clicked"),
-            func.sum(func.cast(WorkflowExecution.email_status == "bounced", func.Integer)).label("bounced"),
+            func.sum(cast(WorkflowExecution.email_status == "sent", Integer)).label("sent"),
+            func.sum(cast(WorkflowExecution.email_status == "opened", Integer)).label("opened"),
+            func.sum(cast(WorkflowExecution.email_status == "clicked", Integer)).label("clicked"),
+            func.sum(cast(WorkflowExecution.email_status == "bounced", Integer)).label("bounced"),
         ).group_by(WorkflowExecution.workflow_id, WorkflowExecution.step_number)
 
         result = await session.execute(stmt)
