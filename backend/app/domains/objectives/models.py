@@ -76,7 +76,7 @@ class BusinessObjective(Base):
     end_date = Column(DateTime(timezone=True), nullable=False)
 
     # Link to workflow/agent that drives this objective
-    linked_workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="SET NULL"), nullable=True)
+    linked_workflow_id = Column(UUID(as_uuid=True), ForeignKey("automation_workflows.id", ondelete="SET NULL"), nullable=True)
     linked_channel_platform = Column(String(50), nullable=True)  # "whatsapp", "facebook_ads"
 
     # Alert config

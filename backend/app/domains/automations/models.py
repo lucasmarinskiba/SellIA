@@ -78,7 +78,10 @@ class WorkflowStatus(str, enum.Enum):
 
 
 class Workflow(Base):
-    __tablename__ = "workflows"
+    # Named distinctly from sellbot's own simpler `workflows` table
+    # (app/db/models.py, integer-keyed, already in production use) —
+    # both models used the same table name before this fix.
+    __tablename__ = "automation_workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -97,10 +100,10 @@ class Workflow(Base):
 
 
 class WorkflowExecution(Base):
-    __tablename__ = "workflow_executions"
+    __tablename__ = "automation_workflow_executions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("automation_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
     variant_id = Column(UUID(as_uuid=True), ForeignKey("workflow_variants.id", ondelete="SET NULL"), nullable=True, index=True)
     conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
     trigger_data = Column(JSONB, default=dict, nullable=False)
@@ -115,7 +118,7 @@ class WorkflowVariant(Base):
     __tablename__ = "workflow_variants"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("automation_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     variant_name = Column(String(100), nullable=False)
@@ -266,7 +269,7 @@ class GeneratedContent(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     catalog_item_id = Column(UUID(as_uuid=True), ForeignKey("catalog_items.id", ondelete="SET NULL"), nullable=True, index=True)
-    workflow_execution_id = Column(UUID(as_uuid=True), ForeignKey("workflow_executions.id", ondelete="SET NULL"), nullable=True, index=True)
+    workflow_execution_id = Column(UUID(as_uuid=True), ForeignKey("automation_workflow_executions.id", ondelete="SET NULL"), nullable=True, index=True)
 
     content_type = Column(String(50), nullable=False)  # image, video, copy, carousel, thumbnail, email, ad
     agent_slug = Column(String(100), nullable=False)  # ai-image-architect, ai-video-director, etc.
@@ -355,7 +358,7 @@ class ContentCalendar(Base):
     revenue = Column(Integer, default=0)  # En centavos
 
     # Workflow
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="SET NULL"), nullable=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("automation_workflows.id", ondelete="SET NULL"), nullable=True)
     auto_publish = Column(Boolean, default=False, nullable=False)
     requires_approval = Column(Boolean, default=True, nullable=False)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

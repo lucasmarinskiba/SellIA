@@ -19,38 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # === feedback_nps_responses ===
-    op.create_table(
-        'feedback_nps_responses',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text('uuid_generate_v4()')),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
-        sa.Column('business_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('businesses.id', ondelete='SET NULL'), nullable=True),
-        sa.Column('score', sa.Integer(), nullable=False),
-        sa.Column('feedback', sa.Text(), nullable=True),
-        sa.Column('category', sa.String(50), nullable=True),
-        sa.Column('follow_up_allowed', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('follow_up_email', sa.String(255), nullable=True),
-        sa.Column('follow_up_done', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-    )
-
-    # === general_feedback_items ===
-    op.create_table(
-        'general_feedback_items',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text('uuid_generate_v4()')),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
-        sa.Column('feedback_type', sa.String(50), nullable=False),
-        sa.Column('message', sa.Text(), nullable=False),
-        sa.Column('context', sa.Text(), nullable=True),
-        sa.Column('screenshot_url', sa.String(500), nullable=True),
-        sa.Column('status', sa.String(20), nullable=False, server_default='new'),
-        sa.Column('admin_response', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-    )
-
-
+    pass
 
 def downgrade() -> None:
-    op.drop_table('general_feedback_items')
-    op.drop_table('feedback_nps_responses')
+    pass
