@@ -1,4 +1,3 @@
-import asyncio
 import sys
 import os
 
@@ -7,9 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from logging.config import fileConfig
 
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy import create_engine, pool
 
 from alembic import context
 
@@ -69,8 +66,13 @@ settings = get_settings()
 # this is the Alembic Config object
 config = context.config
 
-# Set the SQLAlchemy URL from app settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set the SQLAlchemy URL from app settings. Alembic runs as a one-shot
+# administrative script, so it uses a plain sync driver (psycopg2) instead
+# of the app's asyncpg URL — bridging async engines into Alembic's sync
+# migration context via run_sync deadlocks on Windows (ProactorEventLoop +
+# threaded executor), and there's no benefit to async here anyway.
+sync_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+config.set_main_option("sqlalchemy.url", sync_url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
@@ -78,6 +80,21 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
+
+# Tables owned by app.db.models.Base (the sellbot core app), a separate
+# declarative base from app.core.database.Base. Autogenerate only knows
+# about target_metadata above, so without this filter it would propose
+# DROP TABLE for every one of these on comparison.
+_SELLBOT_OWNED_TABLES = {
+    "leads", "workflows", "workflow_executions", "lead_sources",
+    "email_logs", "webhook_events", "audit_logs", "alembic_version",
+}
+
+
+def include_object(object_, name, type_, reflected, compare_to):
+    if type_ == "table" and reflected and name in _SELLBOT_OWNED_TABLES:
+        return False
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -94,32 +111,23 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_async_migrations() -> None:
-    """In this scenario we need to create an Engine
-    and associate a connection with the context.
-    """
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode using a plain sync engine."""
+    connectable = create_engine(
+        config.get_main_option("sqlalchemy.url"),
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
 
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-    asyncio.run(run_async_migrations())
+    connectable.dispose()
 
 
 if context.is_offline_mode():
