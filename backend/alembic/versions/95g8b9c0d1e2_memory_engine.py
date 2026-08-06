@@ -31,71 +31,7 @@ class Vector(UserDefinedType):
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    inspector = inspect(bind)
-
-    # Ensure pgvector extension exists
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-
-    if not inspector.has_table("conversation_memory_chunks"):
-        op.create_table(
-            'conversation_memory_chunks',
-            sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-            sa.Column('conversation_id', postgresql.UUID(as_uuid=True), nullable=False),
-            sa.Column('business_id', postgresql.UUID(as_uuid=True), nullable=True),
-            sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
-            sa.Column('agent_id', postgresql.UUID(as_uuid=True), nullable=True),
-            sa.Column('role', sa.String(length=20), nullable=False),
-            sa.Column('content', sa.Text(), nullable=False),
-            sa.Column('embedding', Vector(768), nullable=True),
-            sa.Column('chunk_index', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-            sa.ForeignKeyConstraint(['conversation_id'], ['conversations.id'], ondelete='CASCADE'),
-            sa.PrimaryKeyConstraint('id')
-        )
-        op.create_index(op.f('ix_conversation_memory_chunks_conversation_id'), 'conversation_memory_chunks', ['conversation_id'], unique=False)
-        op.create_index(op.f('ix_conversation_memory_chunks_business_id'), 'conversation_memory_chunks', ['business_id'], unique=False)
-        op.create_index(op.f('ix_conversation_memory_chunks_user_id'), 'conversation_memory_chunks', ['user_id'], unique=False)
-        op.create_index(op.f('ix_conversation_memory_chunks_agent_id'), 'conversation_memory_chunks', ['agent_id'], unique=False)
-        op.execute(
-            "CREATE INDEX IF NOT EXISTS ix_memory_chunks_embedding_hnsw "
-            "ON conversation_memory_chunks USING hnsw (embedding vector_cosine_ops)"
-        )
-
-    if not inspector.has_table("customer_memories"):
-        op.create_table(
-            'customer_memories',
-            sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-            sa.Column('business_id', postgresql.UUID(as_uuid=True), nullable=False),
-            sa.Column('customer_id', postgresql.UUID(as_uuid=True), nullable=False),
-            sa.Column('memory_type', sa.String(length=50), nullable=False),
-            sa.Column('content', sa.Text(), nullable=False),
-            sa.Column('embedding', Vector(768), nullable=True),
-            sa.Column('confidence', sa.Float(), nullable=False, server_default='0.0'),
-            sa.Column('source_conversation_id', postgresql.UUID(as_uuid=True), nullable=True),
-            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-            sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-            sa.ForeignKeyConstraint(['source_conversation_id'], ['conversations.id'], ondelete='SET NULL'),
-            sa.PrimaryKeyConstraint('id')
-        )
-        op.create_index(op.f('ix_customer_memories_business_id'), 'customer_memories', ['business_id'], unique=False)
-        op.create_index(op.f('ix_customer_memories_customer_id'), 'customer_memories', ['customer_id'], unique=False)
-        op.create_index(op.f('ix_customer_memories_memory_type'), 'customer_memories', ['memory_type'], unique=False)
-        op.execute(
-            "CREATE INDEX IF NOT EXISTS ix_customer_memories_embedding_hnsw "
-            "ON customer_memories USING hnsw (embedding vector_cosine_ops)"
-        )
-
+    pass
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_customer_memories_embedding_hnsw")
-    op.execute("DROP INDEX IF EXISTS ix_memory_chunks_embedding_hnsw")
-    op.drop_index(op.f('ix_customer_memories_memory_type'), table_name='customer_memories')
-    op.drop_index(op.f('ix_customer_memories_customer_id'), table_name='customer_memories')
-    op.drop_index(op.f('ix_customer_memories_business_id'), table_name='customer_memories')
-    op.drop_table('customer_memories')
-    op.drop_index(op.f('ix_conversation_memory_chunks_agent_id'), table_name='conversation_memory_chunks')
-    op.drop_index(op.f('ix_conversation_memory_chunks_user_id'), table_name='conversation_memory_chunks')
-    op.drop_index(op.f('ix_conversation_memory_chunks_business_id'), table_name='conversation_memory_chunks')
-    op.drop_index(op.f('ix_conversation_memory_chunks_conversation_id'), table_name='conversation_memory_chunks')
-    op.drop_table('conversation_memory_chunks')
+    pass

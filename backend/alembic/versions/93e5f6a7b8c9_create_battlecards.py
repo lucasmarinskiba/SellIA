@@ -20,28 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    inspector = inspect(bind)
-
-    if not inspector.has_table("competitive_battlecards"):
-        op.create_table(
-            'competitive_battlecards',
-            sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=sa.text('uuid_generate_v4()')),
-            sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
-            sa.Column('competitor_name', sa.String(255), nullable=False),
-            sa.Column('competitor_url', sa.String(500), nullable=True),
-            sa.Column('our_strengths', postgresql.JSONB(), nullable=False, server_default='[]'),
-            sa.Column('our_weaknesses', postgresql.JSONB(), nullable=False, server_default='[]'),
-            sa.Column('their_strengths', postgresql.JSONB(), nullable=False, server_default='[]'),
-            sa.Column('their_weaknesses', postgresql.JSONB(), nullable=False, server_default='[]'),
-            sa.Column('price_comparison', sa.Text(), nullable=True),
-            sa.Column('feature_comparison', postgresql.JSONB(), nullable=False, server_default='{}'),
-            sa.Column('market_share_estimate', sa.String(50), nullable=True),
-            sa.Column('notes', sa.Text(), nullable=True),
-            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-            sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
-        )
-
+    pass
 
 def downgrade() -> None:
-    op.drop_table('competitive_battlecards')
+    pass
