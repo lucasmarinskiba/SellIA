@@ -66,6 +66,16 @@ async def lifespan(app: FastAPI):
     scheduler = await get_scheduler()
     logger.info("✅ Redis scheduler connected")
 
+    if scheduler and scheduler.redis:
+        try:
+            from fastapi_limiter import FastAPILimiter
+            await FastAPILimiter.init(scheduler.redis)
+            logger.info("✅ FastAPILimiter initialized")
+        except Exception as e:
+            logger.warning(f"FastAPILimiter init skipped: {e}")
+    else:
+        logger.warning("⚠️ Redis unavailable — rate-limited endpoints (auth) will fail")
+
     processor = await init_processor(scheduler)
     logger.info("✅ Task processor initialized")
 
