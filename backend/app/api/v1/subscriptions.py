@@ -1,4 +1,5 @@
 import os
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -296,6 +297,12 @@ async def get_preapproval(
     """Get MercadoPago preapproval status."""
     try:
         status = await get_preapproval_status(preapproval_id)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Preapproval no encontrado")
+        from app.core.logger import get_logger
+        get_logger(__name__).exception("Error querying MercadoPago")
+        raise HTTPException(status_code=500, detail="Internal server error")
     except Exception as e:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error querying MercadoPago")
