@@ -1,13 +1,14 @@
 /**
- * Home `/` → Command Center.
+ * Home `/` → Landing pública.
  *
- * La página principal de SellIA es el cerebro (/sellia-brain): Command Center
- * enterprise con pipeline, audit log, procesamiento de IA y NeuralBrain.
- * La landing de marketing vive ahora en /landing.
+ * La raíz del dominio es lo que Google indexa y lo que reciben los
+ * backlinks: debe servir la landing de marketing (/landing), no el
+ * Command Center interno (/sellia-brain), que requiere sesión y no
+ * tiene contenido indexable para SEO.
  */
 
 import { redirect } from 'next/navigation'
 
 export default function HomePage(): never {
-  redirect('/sellia-brain')
+  redirect('/landing')
 }
