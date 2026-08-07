@@ -194,7 +194,7 @@ def check_usage_alerts():
 
             result = await db.execute(
                 select(Subscription, SubscriptionPlan, User)
-                .join(SubscriptionPlan)
+                .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
                 .join(User)
                 .where(Subscription.status == SubscriptionStatus.ACTIVE)
             )
@@ -257,7 +257,7 @@ def generate_recurring_invoices():
 
             result = await db.execute(
                 select(Subscription, SubscriptionPlan)
-                .join(SubscriptionPlan)
+                .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
                 .where(
                     Subscription.status == SubscriptionStatus.ACTIVE,
                     Subscription.auto_renew == True,

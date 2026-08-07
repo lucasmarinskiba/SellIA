@@ -84,7 +84,7 @@ async def get_my_subscription(
     # Eager load plan
     result = await db.execute(
         select(Subscription, SubscriptionPlan)
-        .join(SubscriptionPlan)
+        .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
         .where(Subscription.id == sub.id)
     )
     row = result.first()
@@ -1084,7 +1084,7 @@ async def get_admin_revenue(
     mrr_result = await db.execute(
         select(func.coalesce(func.sum(SubscriptionPlan.price_monthly_ars), 0))
         .select_from(Subscription)
-        .join(SubscriptionPlan)
+        .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
         .where(
             Subscription.status == SubscriptionStatus.ACTIVE,
             Subscription.auto_renew == True,

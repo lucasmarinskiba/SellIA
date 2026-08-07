@@ -129,7 +129,7 @@ async def check_subscription_limit(
 ) -> dict[str, Any]:
     result = await db.execute(
         select(Subscription, SubscriptionPlan)
-        .join(SubscriptionPlan)
+        .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
         .where(Subscription.user_id == user_id)
     )
     row = result.first()
