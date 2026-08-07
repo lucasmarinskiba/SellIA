@@ -28,6 +28,8 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
   },
+  // Build-freshness marker for verifying auto-deploy — safe to remove any time.
+  other: { 'x-build-check': 'autodeploy-verified-2026-08-07' },
 }
 
 const jsonLd = {
