@@ -72,6 +72,11 @@ class Settings(BaseSettings):
     # MercadoPago
     MERCADOPAGO_ACCESS_TOKEN: str | None = None
 
+    # WebAuthn / Passkeys
+    WEBAUTHN_RP_ID: str | None = None  # e.g. sellia-brain.vercel.app (no scheme/port)
+    WEBAUTHN_RP_NAME: str | None = None  # e.g. SellIA
+    WEBAUTHN_RP_ORIGIN: str | None = None  # e.g. https://sellia-brain.vercel.app
+
     # Payoneer (International USD payments)
     PAYONEER_PROGRAM_ID: str | None = None
     PAYONEER_CLIENT_ID: str | None = None
