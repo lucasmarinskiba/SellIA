@@ -129,8 +129,10 @@ rate_limiter = RateLimiter(requests_per_minute=100)
 @app.middleware("http")
 async def log_request(request: Request, call_next):
     import time
+    from app.middleware.threat_intel import get_client_ip
     start_time = time.time()
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
+    request.state.client_ip = client_ip
 
     # Rate limit check
     if not rate_limiter.is_allowed(client_ip):
