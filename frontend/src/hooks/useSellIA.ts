@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { analyticsAPI, leadsAPI, workflowsAPI, progressionAPI, queueAPI } from "@/lib/sellia-api";
+import { analyticsAPI, leadsAPI, workflowsAPI, progressionAPI, queueAPI } from "@/lib/sellia-api-legacy";
 
 // ============================================================
 // LEADS HOOKS
