@@ -1,3 +1,13 @@
+import type { Metadata } from 'next'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+
+export const metadata: Metadata = {
+  title: 'Eliminación de Datos',
+  description: 'Cómo solicitar la eliminación de tus datos personales en SellIA.',
+  alternates: { canonical: `${SITE_URL}/data-deletion` },
+}
+
 export default function DataDeletionPage() {
   return (
     <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 24px', fontFamily: 'sans-serif', lineHeight: 1.7 }}>

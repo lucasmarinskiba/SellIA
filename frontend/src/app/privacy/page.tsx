@@ -1,3 +1,13 @@
+import type { Metadata } from 'next'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidad',
+  description: 'Política de privacidad de SellIA: qué datos recolectamos, cómo los usamos y tus derechos.',
+  alternates: { canonical: `${SITE_URL}/privacy` },
+}
+
 export default function PrivacyPage() {
   return (
     <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 24px', fontFamily: 'sans-serif', lineHeight: 1.7 }}>
