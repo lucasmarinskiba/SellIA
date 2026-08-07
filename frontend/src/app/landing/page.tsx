@@ -28,23 +28,15 @@ import {
 
 
 const Theme = (): React.JSX.Element => (
-  <>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
-    />
-    <style>{`
-      html, body { font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; }
-      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
-      .display { font-weight: 800; letter-spacing: -0.025em; }
-      @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-      @keyframes pulse-dot { 0%,100%{opacity:.55} 50%{opacity:1} }
-      @keyframes shine { 0%{transform:translateX(-120%)} 100%{transform:translateX(220%)} }
-      @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-    `}</style>
-  </>
+  <style>{`
+    .landing-root { font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; }
+    .landing-root .mono { font-family: var(--font-jetbrains-mono), ui-monospace, monospace; }
+    .landing-root .display { font-weight: 800; letter-spacing: -0.025em; }
+    @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    @keyframes pulse-dot { 0%,100%{opacity:.55} 50%{opacity:1} }
+    @keyframes shine { 0%{transform:translateX(-120%)} 100%{transform:translateX(220%)} }
+    @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+  `}</style>
 )
 
 
