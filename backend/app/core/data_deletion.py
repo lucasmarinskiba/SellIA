@@ -38,7 +38,6 @@ async def export_user_data(db: AsyncSession, user_id: uuid.UUID) -> Dict[str, An
         "user_id": str(user.id),
         "email": user.email,
         "full_name": user.full_name,
-        "phone": user.phone,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         "export_generated_at": datetime.now(timezone.utc).isoformat(),
@@ -66,7 +65,6 @@ async def secure_delete_user(db: AsyncSession, user_id: uuid.UUID) -> bool:
     # Overwrite sensitive fields
     user.email = f"deleted_{user.id}@deleted.com"
     user.full_name = _random_overwrite(20)
-    user.phone = _random_overwrite(15)
     user.hashed_password = _random_overwrite(60)
     user.is_active = False
     user.totp_secret = None

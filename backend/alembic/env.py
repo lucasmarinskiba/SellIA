@@ -59,6 +59,7 @@ from app.domains.agents.brand_visual import models as brand_visual_models  # noq
 from app.domains.agents.viral_video import models as viral_video_models  # noqa: F401
 from app.domains.agents.app_builder import models as app_builder_models  # noqa: F401
 from app.domains.agents.crm_builder import models as crm_builder_models  # noqa: F401
+from app.domains.webhooks import models as webhooks_models  # noqa: F401
 from app.core.semantic_cache import SemanticCacheEmbedding  # noqa: F401
 
 settings = get_settings()
