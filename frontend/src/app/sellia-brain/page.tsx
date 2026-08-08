@@ -10,6 +10,7 @@
 import dynamic from 'next/dynamic'
 
 import { SettingsProvider } from '@/lib/settings'
+import { SoftwareApplicationSchema, FAQPageSchema } from '@/components/seo/JsonLdSchema'
 
 
 const EnterpriseCommandCenter = dynamic(
@@ -24,6 +25,8 @@ const EnterpriseCommandCenter = dynamic(
 export default function SelliaBrainPage(): React.JSX.Element {
   return (
     <SettingsProvider>
+      <SoftwareApplicationSchema />
+      <FAQPageSchema />
       <main role="main" className="w-full">
         <h1 className="sr-only">SellIA Brain - Command Center de Ventas Autónoma IA</h1>
         <EnterpriseCommandCenter />
