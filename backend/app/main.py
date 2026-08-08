@@ -39,6 +39,8 @@ _try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversa
 _try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])
 _try_include("app.api.v1.subscriptions.router", "/api/v1/subscriptions", ["subscriptions"])
 _try_include("app.api.v1.agents.router", "/api/v1/agents", ["agents"])
+_try_include("app.api.v1.metadata.router", "/api/v1", ["metadata"])
+_try_include("app.api.v1.embeddings.router", "/api/v1", ["embeddings"])
 
 
 @app.get("/health", tags=["system"])

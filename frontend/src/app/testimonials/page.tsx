@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ServerAggregateReviewSchema, ServerReviewSchema, ServerOrganizationExpandedSchema } from '@/components/seo/ServerJsonLd'
 import { TestimonialCard, SocialProofSection, CredentialsBadge } from '@/components/seo/AuthorityBuilder'
+import { RelatedContentSection, PersonalizedRecommendations, ContentCluster } from '@/components/seo/SemanticRecommendations'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
 
@@ -91,6 +92,25 @@ export default function TestimonialsPage() {
           <a href="/sellia-landing" style={{ display: 'inline-block', padding: '14px 32px', background: '#00D4FF', color: '#000', borderRadius: '8px', fontWeight: '600', textDecoration: 'none' }}>
             Start Free Trial
           </a>
+        </div>
+
+        {/* Phase 4: Semantic Recommendations */}
+        <div style={{ marginTop: '80px', paddingTop: '60px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '40px' }}>Discover More</h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '40px', alignItems: 'start' }}>
+            <div>
+              <RelatedContentSection contentId="testimonials" limit={4} />
+            </div>
+            <div>
+              <PersonalizedRecommendations userContext="converting" currentPage="testimonials" limit={3} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '60px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px' }}>Sales Automation Hub</h3>
+            <ContentCluster topic="sales-automation" />
+          </div>
         </div>
       </main>
     </>
