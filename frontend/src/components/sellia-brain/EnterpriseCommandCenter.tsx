@@ -24,7 +24,6 @@ import MissionControlBar, {
 import { useLeads, useAnalyticsSummary } from '@/hooks/useSellIA'
 import HandsFreeOverlay from './HandsFreeOverlay'
 import ComputerUseLauncher from './ComputerUseLauncher'
-import { BreadcrumbNav, type BreadcrumbItem } from '@/components/seo/BreadcrumbNav'
 import dynamic from 'next/dynamic'
 import { type LobeId } from './toolIndex'
 import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAccountFlows, buildToolPlan } from '@/lib/business-profile'
@@ -672,12 +671,6 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     </button>
   )
 
-  const breadcrumbs: BreadcrumbItem[] = [
-    { label: 'SellIA', url: '/' },
-    { label: 'Dashboard', url: '/sellia-brain' },
-    { label: 'Command Center', current: true },
-  ]
-
   return (
     <div data-sellia-shell="brain" style={{ minHeight: '100vh', background: T.bg, color: T.text, fontFamily: T.sans, paddingTop: 56, paddingLeft: 64 }}>
       <style>{`
@@ -691,12 +684,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:6px;}
       `}</style>
 
-      {/* ── BREADCRUMB NAVIGATION ── */}
-      <nav style={{ padding: '12px 28px', borderBottom: `1px solid ${T.border}`, background: 'rgba(15,23,34,0.5)' }}>
-        <BreadcrumbNav items={breadcrumbs} />
-      </nav>
-
-      {/* ── COMMAND BAR (search + voz + Computer Use) — portado del MisionControlBar ── */}
+      {/* ── COMMAND BAR (search + voz + Computer Use) — portado del MissionControlBar ── */}
       <MissionControlBar
         onJump={handleJump}
         handsFree={handsFree}
