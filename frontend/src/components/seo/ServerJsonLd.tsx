@@ -1,7 +1,44 @@
 /**
  * Server-side JSON-LD Schema Renderer
  * Must NOT have 'use client' directive to render in SSR
+ * Phase 1 & 2: Organization, SoftwareApplication, FAQPage, Person, BreadcrumbList
  */
+
+export function ServerOrganizationSchema() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'SellIA',
+    url: 'https://sellia-brain.vercel.app',
+    logo: 'https://sellia-brain.vercel.app/logo.png',
+    description: 'AI-powered autonomous sales agents for B2B businesses',
+    sameAs: [
+      'https://www.linkedin.com/company/sellia',
+      'https://twitter.com/sellia',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+1-800-SELLIA',
+      contactType: 'Customer Service',
+      email: 'support@sellia.ai',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'US',
+    },
+    founder: {
+      '@type': 'Person',
+      name: 'SellIA Team',
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
 
 export function ServerSoftwareApplicationSchema() {
   const schema = {
@@ -80,6 +117,69 @@ export function ServerFAQPageSchema() {
         },
       },
     ],
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+export function ServerBreadcrumbListSchema({ path = '/sellia-brain' }: { path?: string }) {
+  const parts = path.split('/').filter(Boolean)
+  const breadcrumbs = [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://sellia-brain.vercel.app',
+    },
+    ...parts.map((part, i) => ({
+      '@type': 'ListItem',
+      position: i + 2,
+      name: part.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      item: `https://sellia-brain.vercel.app/${parts.slice(0, i + 1).join('/')}`,
+    })),
+  ]
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs,
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+export function ServerPersonSchema({
+  name,
+  role,
+  image,
+  description,
+}: {
+  name: string
+  role: string
+  image?: string
+  description?: string
+}) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name,
+    jobTitle: role,
+    ...(image && { image }),
+    ...(description && { description }),
+    workLocation: {
+      '@type': 'Place',
+      name: 'Remote',
+    },
   }
 
   return (
