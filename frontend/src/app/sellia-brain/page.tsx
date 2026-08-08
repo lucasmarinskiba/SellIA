@@ -3,9 +3,8 @@
 /**
  * /sellia-brain
  *
- * Canonical entry point for the SellIA selling brain UX.
- * Wraps the funnel-organized shell with QueryProvider so any embedded
- * TanStack Query hooks have access to the shared client.
+ * SellIA Brain Command Center: Real-time AI sales agent dashboard.
+ * Autonomous B2B sales escuadrones, pipeline management, revenue operations.
  */
 
 import dynamic from 'next/dynamic'
@@ -15,14 +14,20 @@ import { SettingsProvider } from '@/lib/settings'
 
 const EnterpriseCommandCenter = dynamic(
   () => import('@/components/sellia-brain/EnterpriseCommandCenter'),
-  { ssr: false, loading: () => <BootSplash /> },
+  {
+    ssr: true,
+    loading: () => <BootSplash />,
+  },
 )
 
 
 export default function SelliaBrainPage(): React.JSX.Element {
   return (
     <SettingsProvider>
-      <EnterpriseCommandCenter />
+      <main role="main" className="w-full">
+        <h1 className="sr-only">SellIA Brain - Command Center de Ventas Autónoma IA</h1>
+        <EnterpriseCommandCenter />
+      </main>
     </SettingsProvider>
   )
 }

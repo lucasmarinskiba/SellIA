@@ -1,0 +1,56 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A0F1A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1f3a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Grid pattern background -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Accent circles -->
+  <circle cx="100" cy="100" r="150" fill="url(#accentGrad)" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="200" fill="url(#accentGrad)" opacity="0.08"/>
+
+  <!-- Main content -->
+  <g>
+    <!-- Logo/Icon -->
+    <rect x="50" y="50" width="80" height="80" rx="12" fill="url(#accentGrad)"/>
+    <text x="110" y="115" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#fff" text-anchor="middle">⚡</text>
+
+    <!-- Main title -->
+    <text x="180" y="75" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#fff">SellIA</text>
+    <text x="180" y="125" font-family="Arial, sans-serif" font-size="32" fill="#3b82f6">Brain</text>
+
+    <!-- Subtitle -->
+    <text x="180" y="175" font-family="Arial, sans-serif" font-size="24" fill="#cbd5e1">Command Center de Ventas IA</text>
+
+    <!-- Feature list -->
+    <g>
+      <text x="60" y="280" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">✓ Agentes autónomos vendiendo en vivo</text>
+      <text x="60" y="330" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">✓ Escuadrones B2B especializados</text>
+      <text x="60" y="380" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">✓ Analytics + Pipeline en tiempo real</text>
+      <text x="60" y="430" font-family="Arial, sans-serif" font-size="20" fill="#94a3b8">✓ Computer Use automation</text>
+    </g>
+
+    <!-- CTA -->
+    <rect x="60" y="500" width="400" height="60" rx="8" fill="url(#accentGrad)"/>
+    <text x="260" y="540" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">Automatiza tus ventas ahora</text>
+
+    <!-- URL -->
+    <text x="1150" y="610" font-family="Arial, sans-serif" font-size="14" fill="#64748b" text-anchor="end">sellia-brain.vercel.app</text>
+  </g>
+</svg>

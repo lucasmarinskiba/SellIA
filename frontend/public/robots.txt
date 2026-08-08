@@ -1,0 +1,24 @@
+# SellIA SEO Configuration
+# Robots.txt for sellia-brain.vercel.app
+
+User-agent: *
+Allow: /
+Allow: /sellia-brain
+Allow: /sellia-dashboard
+Allow: /sellia-landing
+Allow: /privacy
+Allow: /data-deletion
+Allow: /soporte
+
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /.git/
+Disallow: /node_modules/
+Disallow: /*.json$
+
+# Crawl delay (optional, in seconds)
+Crawl-delay: 1
+
+# Sitemaps
+Sitemap: https://sellia-brain.vercel.app/sitemap.xml

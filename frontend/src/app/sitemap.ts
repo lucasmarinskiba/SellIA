@@ -1,33 +1,44 @@
-import type { MetadataRoute } from 'next'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+
   return [
     {
-      url: `${SITE_URL}/landing`,
-      lastModified: now,
-      changeFrequency: 'weekly',
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: `${SITE_URL}/privacy`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
+      url: `${baseUrl}/sellia-brain`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.95,
     },
     {
-      url: `${SITE_URL}/data-deletion`,
-      lastModified: now,
-      changeFrequency: 'yearly',
-      priority: 0.3,
+      url: `${baseUrl}/sellia-landing`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
-      url: `${SITE_URL}/soporte`,
-      lastModified: now,
+      url: `${baseUrl}/privacy`,
+      lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/data-deletion`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/soporte`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
   ]
 }
