@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     'sales automation', 'AI sales agent', 'sales pipeline dashboard',
     'autonomous sales agent', 'revenue operations',
   ],
-  canonical: BRAIN_URL,
+  alternates: { canonical: BRAIN_URL },
   robots: { index: true, follow: true, nocache: false },
   openGraph: {
     type: 'website',
