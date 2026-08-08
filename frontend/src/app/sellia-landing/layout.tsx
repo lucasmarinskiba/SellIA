@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ServerOrganizationSchema, ServerBreadcrumbListSchema } from '@/components/seo/ServerJsonLd'
+import { ServerOrganizationSchema, ServerBreadcrumbListSchema, ServerAggregateReviewSchema, ServerOrganizationExpandedSchema } from '@/components/seo/ServerJsonLd'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
 const LANDING_URL = `${SITE_URL}/sellia-landing`
@@ -53,7 +53,9 @@ export default function SelliaNandingLayout({
   return (
     <>
       <ServerOrganizationSchema />
+      <ServerOrganizationExpandedSchema />
       <ServerBreadcrumbListSchema path="/sellia-landing" />
+      <ServerAggregateReviewSchema />
       {children}
     </>
   )

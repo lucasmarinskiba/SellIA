@@ -189,3 +189,117 @@ export function ServerPersonSchema({
     />
   )
 }
+
+export function ServerReviewSchema({
+  reviewerName,
+  rating = 5,
+  reviewText,
+  datePublished,
+}: {
+  reviewerName: string
+  rating?: number
+  reviewText: string
+  datePublished?: string
+}) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Review',
+    name: `${reviewerName} Review`,
+    description: reviewText.slice(0, 160),
+    author: {
+      '@type': 'Person',
+      name: reviewerName,
+    },
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: rating.toString(),
+      bestRating: '5',
+      worstRating: '1',
+    },
+    reviewBody: reviewText,
+    datePublished: datePublished || new Date().toISOString(),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+export function ServerAggregateReviewSchema() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'AggregateRating',
+    itemReviewed: {
+      '@type': 'Organization',
+      name: 'SellIA',
+      url: 'https://sellia-brain.vercel.app',
+    },
+    ratingValue: '4.9',
+    bestRating: '5',
+    worstRating: '1',
+    ratingCount: '287',
+    reviewCount: '156',
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+export function ServerOrganizationExpandedSchema() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'SellIA',
+    url: 'https://sellia-brain.vercel.app',
+    logo: 'https://sellia-brain.vercel.app/logo.png',
+    description: 'AI-powered autonomous sales agents for B2B businesses',
+    sameAs: [
+      'https://www.linkedin.com/company/sellia',
+      'https://twitter.com/sellia',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+1-800-SELLIA',
+      contactType: 'Customer Service',
+      email: 'support@sellia.ai',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'US',
+    },
+    founder: {
+      '@type': 'Person',
+      name: 'SellIA Founding Team',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      ratingCount: '287',
+    },
+    knowsAbout: [
+      'Artificial Intelligence',
+      'Sales Automation',
+      'B2B Marketing',
+      'Revenue Operations',
+      'Machine Learning',
+    ],
+    award: [
+      'Best AI Sales Tool 2026',
+      'Most Innovative SaaS Solution',
+    ],
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}

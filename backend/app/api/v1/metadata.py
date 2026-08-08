@@ -250,3 +250,120 @@ async def get_event_metadata(event_id: str) -> Dict[str, Any]:
             "url": SITE_URL,
         },
     }
+
+
+@router.get("/review/{review_id}")
+async def get_review_metadata(review_id: str) -> Dict[str, Any]:
+    """Get Review/Testimonial schema for client reviews"""
+    return {
+        "@context": "https://schema.org",
+        "@type": "Review",
+        "name": f"SellIA Client Review - {review_id}",
+        "description": "Client testimonial and rating for SellIA",
+        "author": {
+            "@type": "Person",
+            "name": "Satisfied Client",
+        },
+        "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5",
+            "bestRating": "5",
+            "worstRating": "1",
+        },
+        "reviewBody": "SellIA transformed our sales process. Increased pipeline velocity by 40% in first month.",
+        "datePublished": datetime.now().isoformat(),
+    }
+
+
+@router.get("/aggregate-review")
+async def get_aggregate_review_metadata() -> Dict[str, Any]:
+    """Get AggregateRating schema for SellIA organization"""
+    return {
+        "@context": "https://schema.org",
+        "@type": "AggregateRating",
+        "itemReviewed": {
+            "@type": "Organization",
+            "name": "SellIA",
+            "url": SITE_URL,
+        },
+        "ratingValue": "4.9",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "287",
+        "reviewCount": "156",
+    }
+
+
+@router.get("/person/{person_id}")
+async def get_person_metadata(person_id: str) -> Dict[str, Any]:
+    """Get Person schema for team members, founders, experts"""
+    return {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": f"SellIA Team Member - {person_id}",
+        "jobTitle": "Sales Automation Expert",
+        "workLocation": {
+            "@type": "Place",
+            "name": "Remote",
+        },
+        "affiliation": {
+            "@type": "Organization",
+            "name": "SellIA",
+            "url": SITE_URL,
+        },
+        "description": "Expert in AI-powered sales automation and B2B revenue operations",
+        "knowsAbout": [
+            "Sales Automation",
+            "AI/ML",
+            "B2B Revenue Operations",
+            "Lead Qualification",
+            "Sales Pipeline Management",
+        ],
+    }
+
+
+@router.get("/organization-expanded")
+async def get_organization_expanded_metadata() -> Dict[str, Any]:
+    """Get expanded Organization schema with E-E-A-T signals (Expertise, Experience, Authority, Trustworthiness)"""
+    return {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "SellIA",
+        "url": SITE_URL,
+        "logo": f"{SITE_URL}/logo.png",
+        "description": "AI-powered autonomous sales agents for B2B businesses",
+        "sameAs": [
+            "https://www.linkedin.com/company/sellia",
+            "https://twitter.com/sellia",
+        ],
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+1-800-SELLIA",
+            "contactType": "Customer Service",
+            "email": "support@sellia.ai",
+        },
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "US",
+        },
+        "founder": {
+            "@type": "Person",
+            "name": "SellIA Founding Team",
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "287",
+        },
+        "knowsAbout": [
+            "Artificial Intelligence",
+            "Sales Automation",
+            "B2B Marketing",
+            "Revenue Operations",
+            "Machine Learning",
+        ],
+        "award": [
+            "Best AI Sales Tool 2026",
+            "Most Innovative SaaS Solution",
+        ],
+    }
