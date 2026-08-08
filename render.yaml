@@ -31,7 +31,7 @@ services:
   - type: web
     name: sellia-api
     runtime: docker
-    repo: https://github.com/REEMPLAZAR/sellia.git   # ← tu repo
+    repo: https://github.com/lucasmarinskiba/SellIA.git
     branch: main
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -73,7 +73,7 @@ services:
   - type: worker
     name: sellia-celery-worker
     runtime: docker
-    repo: https://github.com/REEMPLAZAR/sellia.git
+    repo: https://github.com/lucasmarinskiba/SellIA.git
     branch: main
     rootDir: backend
     dockerfilePath: ./Dockerfile
@@ -109,7 +109,7 @@ services:
   - type: worker
     name: sellia-celery-beat
     runtime: docker
-    repo: https://github.com/REEMPLAZAR/sellia.git
+    repo: https://github.com/lucasmarinskiba/SellIA.git
     branch: main
     rootDir: backend
     dockerfilePath: ./Dockerfile
