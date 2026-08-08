@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider"
 import type { Metadata } from "next"
+import { PreconnectBackend, CoreWebVitalsOptimization } from "@/components/seo/PerformanceOptimization"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
 const TITLE = 'SellIA - Vende mientras duermes'
@@ -41,6 +42,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <PreconnectBackend />
+        <CoreWebVitalsOptimization />
+      </head>
       <body className="font-sans antialiased bg-background text-foreground">
         <ThemeProvider
           attribute="class"
