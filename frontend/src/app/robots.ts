@@ -1,33 +1,30 @@
-import type { MetadataRoute } from 'next'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
+
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/landing', '/privacy', '/data-deletion', '/soporte'],
-        disallow: [
-          '/api/',
-          '/dashboard',
+        allow: [
+          '/',
           '/sellia-brain',
           '/sellia-dashboard',
-          '/sellia-ext-auth',
-          '/sellia-onboarding',
-          '/sellia-login',
-          '/sellia-signup',
           '/sellia-landing',
-          '/onboarding',
-          '/login',
-          '/signup',
-          '/register',
-          '/pitch',
-          '/preview-hub',
-          '/preview-ui',
+          '/privacy',
+          '/data-deletion',
+          '/soporte',
         ],
+        disallow: [
+          '/api/',
+          '/admin/',
+          '/_next/',
+          '/node_modules/',
+        ],
+        crawlDelay: 1,
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
   }
 }
