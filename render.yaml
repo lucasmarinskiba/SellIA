@@ -37,10 +37,8 @@ services:
     dockerfilePath: ./Dockerfile
     plan: starter
     region: oregon
-    healthCheckPath: /health
     autoDeploy: true
-    # Migraciones antes de cada deploy (plan con preDeploy; si no, correr manual).
-    preDeployCommand: alembic upgrade head
+    # preDeployCommand: alembic upgrade head  # Commented out: causes timeouts on Starter plan
     envVars:
       - key: ENVIRONMENT
         value: production
