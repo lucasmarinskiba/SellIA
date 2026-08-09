@@ -21,7 +21,9 @@ if settings.ENVIRONMENT == "production" and settings.DB_SSL_MODE not in ("disabl
         ssl_context.verify_mode = ssl.CERT_NONE
     connect_args["ssl"] = ssl_context
 
-if settings.ENVIRONMENT == "testing":
+is_sqlite = "sqlite" in settings.DATABASE_URL.lower()
+
+if settings.ENVIRONMENT == "testing" or is_sqlite:
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
@@ -35,12 +37,12 @@ else:
         echo=False,
         future=True,
         connect_args=connect_args,
-        # Pool tuning for production load
+        # Pool tuning for production load (PostgreSQL only)
         pool_size=20,
         max_overflow=10,
         pool_timeout=30,
-        pool_recycle=1800,  # Recycle connections after 30 min
-        pool_pre_ping=True,  # Verify connection health before use
+        pool_recycle=1800,
+        pool_pre_ping=True,
     )
 
 AsyncSessionLocal = async_sessionmaker(
