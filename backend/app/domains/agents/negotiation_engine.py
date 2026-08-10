@@ -1,531 +1,418 @@
-"""Negotiation Engine
+"""Advanced Negotiation Engine - Dynamic pricing & contract optimization."""
 
-Handles price negotiation with customers using a structured concession strategy.
-"""
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
+from enum import Enum
+import asyncio
+from datetime import datetime, timedelta
+import logging
 
-import uuid
-import re
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+logger = logging.getLogger(__name__)
 
-from sqlalchemy import select, desc
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
-from app.domains.agents.models_negotiation import NegotiationState
-from app.domains.agents.schemas_intelligence import NegotiationResponse
+class CompanySize(str, Enum):
+    """Company size segments."""
+    STARTUP = "startup"  # <50 employees
+    SMB = "smb"  # 50-500
+    MID_MARKET = "mid_market"  # 500-5000
+    ENTERPRISE = "enterprise"  # 5000+
 
-logger = get_logger(__name__)
+
+class NegotiationStrategy(str, Enum):
+    """Negotiation strategy selection."""
+    AGGRESSIVE = "aggressive"  # Max discount authority, aggressive closing
+    BALANCED = "balanced"  # Standard playbook
+    CONSERVATIVE = "conservative"  # Preserve margin, long-term value
+    STRATEGIC = "strategic"  # Play for expansion potential
+
+
+@dataclass
+class PricingTier:
+    """Pricing option presented to prospect."""
+    name: str
+    annual_price: float
+    monthly_price: float
+    features: List[str]
+    discount_percent: float = 0.0
+    payment_terms: str = "net_30"
+    implementation_days: int = 30
+    support_level: str = "standard"
+
+
+@dataclass
+class ContractTerms:
+    """Contract negotiation parameters."""
+    annual_price: float
+    payment_schedule: str  # "monthly", "quarterly", "annual", "custom"
+    contract_duration_months: int
+    auto_renewal: bool
+    support_level: str  # "standard", "premium", "enterprise"
+    sla_uptime_percent: float  # 99.5, 99.9, etc
+    implementation_included: bool
+    training_hours_included: int
+    legal_review_needed: bool
+
+
+@dataclass
+class DiscountAuthority:
+    """Permission matrix for discounts by company size & deal stage."""
+    company_size: CompanySize
+    base_discount_max: float  # e.g., 0.20 = 20% max
+    volume_bonus_threshold: float  # spending threshold for volume discount
+    volume_bonus_max: float
+    expansion_potential_multiplier: float  # if high expansion potential, allow more discount
+    legal_review_threshold: float  # if discount > this, escalate to legal
 
 
 class NegotiationEngine:
-    """Handles price negotiation with customers.
-
-    Adapts negotiation strategy based on business type:
-    - Products: percentage discounts, bundles, free shipping
-    - Services: value-added services, packages, payment terms
-    - Software: annual discounts, upgrades, extended trials
-    - Food: combos, free delivery, loyalty rewards
+    """
+    AI-driven negotiation logic:
+    - Dynamic pricing based on intent, budget, company size
+    - Contract term optimization
+    - Discount authority enforcement
+    - Strategy selection (aggressive/balanced/conservative)
     """
 
-    def __init__(self, db: AsyncSession):
-        self.db = db
+    def __init__(self):
+        self.base_price = 75000  # Default annual price
+        self.discount_authority_matrix = self._build_authority_matrix()
 
-    async def _get_business_type(self, business_id: Optional[uuid.UUID]) -> Optional[str]:
-        """Load specific business type from BusinessContext."""
-        if not business_id:
-            return None
-        try:
-            from sqlalchemy import select
-            from app.domains.business_context.models import BusinessContext
-            result = await self.db.execute(
-                select(BusinessContext.business_type).where(
-                    BusinessContext.business_id == business_id,
-                    BusinessContext.is_active == True,
-                )
-            )
-            btype = result.scalar_one_or_none()
-            return btype.value if btype else None
-        except Exception as exc:
-            logger.debug(f"Could not load business_type for negotiation: {exc}")
-            return None
+    def _build_authority_matrix(self) -> Dict[CompanySize, DiscountAuthority]:
+        """Build discount authority rules by company size."""
+        return {
+            CompanySize.STARTUP: DiscountAuthority(
+                company_size=CompanySize.STARTUP,
+                base_discount_max=0.35,  # Up to 35% for startups
+                volume_bonus_threshold=50000,
+                volume_bonus_max=0.15,
+                expansion_potential_multiplier=1.5,  # More flexibility if high expansion
+                legal_review_threshold=0.30,
+            ),
+            CompanySize.SMB: DiscountAuthority(
+                company_size=CompanySize.SMB,
+                base_discount_max=0.20,
+                volume_bonus_threshold=200000,
+                volume_bonus_max=0.10,
+                expansion_potential_multiplier=1.2,
+                legal_review_threshold=0.25,
+            ),
+            CompanySize.MID_MARKET: DiscountAuthority(
+                company_size=CompanySize.MID_MARKET,
+                base_discount_max=0.15,
+                volume_bonus_threshold=500000,
+                volume_bonus_max=0.08,
+                expansion_potential_multiplier=1.1,
+                legal_review_threshold=0.15,
+            ),
+            CompanySize.ENTERPRISE: DiscountAuthority(
+                company_size=CompanySize.ENTERPRISE,
+                base_discount_max=0.10,
+                volume_bonus_threshold=1000000,
+                volume_bonus_max=0.05,
+                expansion_potential_multiplier=1.05,
+                legal_review_threshold=0.10,
+            ),
+        }
 
-    # ------------------------------------------------------------------
-    # Detection
-    # ------------------------------------------------------------------
-
-    async def detect_negotiation_intent(
-        self,
-        message: str,
-        business_id: Optional[uuid.UUID] = None,
-    ) -> bool:
-        """
-        Detect if the customer is trying to negotiate.
-        Uses keyword matching first, then LLM for ambiguous cases.
-        """
-        text = message.lower()
-        keywords = [
-            "descuento",
-            "más barato",
-            "oferta",
-            "negociar",
-            "precio",
-            "caro",
-            "presupuesto",
-            "rebaja",
-            "promo",
-            "cuesta mucho",
-            "me lo dejas",
-            "mejor precio",
-            "cuánto sale",
-            "barato",
-            "económico",
-            "barat",
-            "rebajar",
-            "ajustar",
-        ]
-        keyword_match = any(kw in text for kw in keywords)
-
-        # If strong keyword match, short-circuit
-        if keyword_match:
-            # Check if it's obviously not a negotiation
-            negation_phrases = [
-                "está bien",
-                "me parece bien",
-                "ok con el precio",
-                "perfecto",
-                "precio justo",
-            ]
-            if any(p in text for p in negation_phrases):
-                return False
-            return True
-
-        # Ambiguous case: use quick LLM check if we have business context
-        if business_id and self.db:
-            try:
-                from langchain_core.messages import SystemMessage, HumanMessage
-                from app.domains.agents.llm_provider import generate_with_fallback
-
-                prompt = (
-                    "¿Este mensaje expresa intención de negociar el precio "
-                    "o pedir descuento? Responde solo 'SI' o 'NO'.\n\n"
-                    f"Mensaje: {message}"
-                )
-                response = await generate_with_fallback(
-                    db=self.db,
-                    business_id=business_id,
-                    messages=[
-                        SystemMessage(
-                            content="Eres un clasificador de intenciones de venta."
-                        ),
-                        HumanMessage(content=prompt),
-                    ],
-                    model="gpt-4o-mini",
-                    temperature=0.1,
-                    max_tokens=10,
-                )
-                if response and "si" in response.content.lower():
-                    return True
-            except Exception as e:
-                logger.warning(f"LLM negotiation intent check failed: {e}")
-
-        return False
-
-    # ------------------------------------------------------------------
-    # State management
-    # ------------------------------------------------------------------
-
-    async def create_negotiation_state(
-        self,
-        conversation_id: uuid.UUID,
-        business_id: uuid.UUID,
-        customer_id: uuid.UUID,
-        product_id: Optional[uuid.UUID],
-        original_price: float,
-        max_discount_percent: Optional[float] = None,
-    ) -> NegotiationState:
-        """Initialize a new negotiation session with business rules."""
-        # Resolve max_discount from business config if not provided
-        if max_discount_percent is None:
-            from app.domains.businesses.models import Business
-
-            result = await self.db.execute(
-                select(Business).where(Business.id == business_id)
-            )
-            business = result.scalar_one_or_none()
-            if business and business.config:
-                max_discount_percent = float(
-                    business.config.get("max_discount_percent", 15.0)
-                )
+    async def estimate_company_size(
+        self, employee_count: Optional[int] = None, company_name: Optional[str] = None
+    ) -> CompanySize:
+        """Estimate company size from employee count or name."""
+        if employee_count:
+            if employee_count < 50:
+                return CompanySize.STARTUP
+            elif employee_count < 500:
+                return CompanySize.SMB
+            elif employee_count < 5000:
+                return CompanySize.MID_MARKET
             else:
-                max_discount_percent = 15.0
+                return CompanySize.ENTERPRISE
 
-        min_acceptable = original_price * (1 - max_discount_percent / 100)
+        # Default estimation (in production, call LinkedIn/Clearbit API)
+        return CompanySize.SMB
 
-        state = NegotiationState(
-            conversation_id=conversation_id,
-            business_id=business_id,
-            customer_id=customer_id,
-            product_id=product_id,
-            original_price=original_price,
-            current_offer=original_price,
-            minimum_acceptable=min_acceptable,
-            max_discount_percent=max_discount_percent,
-            round=0,
-            concessions_made=[],
-            status="active",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
-        )
-        self.db.add(state)
-        await self.db.commit()
-        await self.db.refresh(state)
-        return state
-
-    async def get_active_state(
+    async def calculate_dynamic_pricing(
         self,
-        conversation_id: uuid.UUID,
-    ) -> Optional[NegotiationState]:
-        """Get the active negotiation state for a conversation."""
-        result = await self.db.execute(
-            select(NegotiationState)
-            .where(
-                NegotiationState.conversation_id == conversation_id,
-                NegotiationState.status == "active",
-            )
-            .order_by(desc(NegotiationState.created_at))
-        )
-        return result.scalars().first()
-
-    # ------------------------------------------------------------------
-    # Strategy
-    # ------------------------------------------------------------------
-
-    def should_accept(
-        self,
-        customer_offer: float,
-        state: NegotiationState,
-    ) -> bool:
-        """Determine if the customer's offer should be accepted."""
-        if customer_offer >= float(state.minimum_acceptable):
-            return True
-        if state.round >= 4 and customer_offer >= float(state.minimum_acceptable) * 0.95:
-            return True
-        return False
-
-    async def process_offer(
-        self,
-        conversation_id: uuid.UUID,
-        customer_offer: float,
-    ) -> NegotiationResponse:
+        intent_score: float,
+        company_size: CompanySize,
+        prospect_budget: Optional[float] = None,
+        expansion_potential: float = 0.0,
+        competitor_price: Optional[float] = None,
+    ) -> Dict[str, Any]:
         """
-        Process a customer offer and return the next negotiation move.
+        Calculate optimal pricing based on:
+        - Intent score (0-1): higher intent = more flexibility
+        - Company size: affects discount authority
+        - Budget: respect prospect's budget range
+        - Expansion potential: long-term value consideration
+        - Competitor pricing: market positioning
         """
-        state = await self.get_active_state(conversation_id)
-        if not state:
-            return NegotiationResponse(
-                accepted=False,
-                counter_offer=None,
-                discount_percent=0.0,
-                round=0,
-                status="not_found",
-                message=(
-                    "No hay una negociación activa. "
-                    "¿Te gustaría que revisemos opciones de precio?"
-                ),
-            )
+        authority = self.discount_authority_matrix[company_size]
 
-        # Check expiration
-        if state.expires_at and state.expires_at < datetime.now(timezone.utc):
-            state.status = "expired"
-            await self.db.commit()
-            return NegotiationResponse(
-                accepted=False,
-                counter_offer=None,
-                discount_percent=0.0,
-                round=state.round,
-                status="expired",
-                message="La negociación ha expirado. ¿Te gustaría iniciar una nueva?",
-            )
+        # Base discount from intent score
+        intent_discount = 0.05 * intent_score  # 0-5% based on intent
 
-        # Update round
-        state.round += 1
-        current_round = state.round
+        # Expansion bonus
+        expansion_bonus = (
+            authority.expansion_potential_multiplier - 1.0
+        ) * expansion_potential  # up to 50% more flexibility
 
-        # Check acceptance
-        if self.should_accept(customer_offer, state):
-            state.status = "accepted"
-            state.current_offer = customer_offer
-            concessions = list(state.concessions_made or [])
-            concessions.append(
-                {
-                    "round": current_round,
-                    "type": "acceptance",
-                    "customer_offer": customer_offer,
-                }
-            )
-            state.concessions_made = concessions
-            await self.db.commit()
-            return NegotiationResponse(
-                accepted=True,
-                counter_offer=customer_offer,
-                discount_percent=self._calc_discount(state),
-                round=current_round,
-                status="accepted",
-                message="¡Oferta aceptada! Preparo los detalles de tu compra.",
-                urgency=False,
-            )
-
-        # Load business type for adaptive strategy
-        business_type = await self._get_business_type(state.business_id)
-
-        # Rejection / counter-offer strategy
-        counter, discount, urgency, concession_type = self._calculate_counter(
-            state, customer_offer, business_type
+        # Calculate max allowed discount
+        max_discount = min(
+            authority.base_discount_max,
+            (intent_discount + expansion_bonus),
         )
 
-        # Persist concession
-        concessions = list(state.concessions_made or [])
-        concessions.append(
-            {
-                "round": current_round,
-                "type": concession_type,
-                "customer_offer": customer_offer,
-                "counter_offer": counter,
-                "discount_percent": discount,
-            }
-        )
-        state.concessions_made = concessions
-        state.current_offer = counter
-        await self.db.commit()
-
-        return NegotiationResponse(
-            accepted=False,
-            counter_offer=counter,
-            discount_percent=discount,
-            round=current_round,
-            status="active",
-            message="",
-            urgency=urgency,
-        )
-
-    def _calc_discount(self, state: NegotiationState) -> float:
-        """Calculate current discount percentage."""
-        orig = float(state.original_price)
-        if orig == 0:
-            return 0.0
-        return round((1 - float(state.current_offer) / orig) * 100, 2)
-
-    def _calculate_counter(
-        self,
-        state: NegotiationState,
-        customer_offer: float,
-        business_type: Optional[str] = None,
-    ) -> tuple:
-        """
-        Return (counter_offer, discount_percent, urgency, concession_type)
-        based on round, strategy, and business type.
-        """
-        original = float(state.original_price)
-        max_discount = float(state.max_discount_percent)
-
-        # Business-type-specific strategies
-        if business_type in ("services", "consulting"):
-            return self._calculate_service_counter(state, original, max_discount)
-        if business_type == "software":
-            return self._calculate_software_counter(state, original, max_discount)
-        if business_type == "food_beverage":
-            return self._calculate_food_counter(state, original, max_discount)
-
-        # Default: product-based percentage discount
-        return self._calculate_product_counter(state, original, max_discount)
-
-    def _calculate_product_counter(
-        self, state: NegotiationState, original: float, max_discount: float
-    ) -> tuple:
-        """Standard product discount strategy."""
-        if state.round == 1:
-            discount = min(2.0, max_discount)
-            return original * (1 - discount / 100), discount, False, "minimal_concession"
-        if state.round == 2:
-            discount = min(max_discount * 0.25, 5.0)
-            return original * (1 - discount / 100), discount, False, "small_concession_bundle"
-        if state.round == 3:
-            discount = min(max_discount * 0.60, max_discount - 2.0)
-            return original * (1 - discount / 100), discount, True, "moderate_discount_free_shipping"
-        discount = max_discount
-        return original * (1 - discount / 100), discount, True, "max_discount_final_offer"
-
-    def _calculate_service_counter(
-        self, state: NegotiationState, original: float, max_discount: float
-    ) -> tuple:
-        """Service negotiation: value-adds, packages, payment terms."""
-        if state.round == 1:
-            discount = min(2.0, max_discount)
-            return original * (1 - discount / 100), discount, False, "minimal_concession"
-        if state.round == 2:
-            discount = min(max_discount * 0.20, 5.0)
-            return original * (1 - discount / 100), discount, False, "small_discount_extra_service"
-        if state.round == 3:
-            discount = min(max_discount * 0.50, max_discount - 3.0)
-            return original * (1 - discount / 100), discount, True, "moderate_discount_payment_plan"
-        discount = max_discount
-        return original * (1 - discount / 100), discount, True, "max_discount_guarantee"
-
-    def _calculate_software_counter(
-        self, state: NegotiationState, original: float, max_discount: float
-    ) -> tuple:
-        """Software/SaaS negotiation: annual plans, upgrades, trials."""
-        if state.round == 1:
-            discount = min(2.0, max_discount)
-            return original * (1 - discount / 100), discount, False, "minimal_concession"
-        if state.round == 2:
-            discount = min(max_discount * 0.30, 8.0)
-            return original * (1 - discount / 100), discount, False, "annual_discount_upgrade"
-        if state.round == 3:
-            discount = min(max_discount * 0.65, max_discount - 2.0)
-            return original * (1 - discount / 100), discount, True, "significant_discount_extended_trial"
-        discount = max_discount
-        return original * (1 - discount / 100), discount, True, "max_discount_annual_commitment"
-
-    def _calculate_food_counter(
-        self, state: NegotiationState, original: float, max_discount: float
-    ) -> tuple:
-        """Food & beverage negotiation: combos, free delivery, loyalty."""
-        if state.round == 1:
-            discount = min(2.0, max_discount)
-            return original * (1 - discount / 100), discount, False, "minimal_concession"
-        if state.round == 2:
-            discount = min(max_discount * 0.25, 5.0)
-            return original * (1 - discount / 100), discount, False, "combo_offer_free_drink"
-        if state.round == 3:
-            discount = min(max_discount * 0.55, max_discount - 3.0)
-            return original * (1 - discount / 100), discount, True, "moderate_discount_free_delivery"
-        discount = max_discount
-        return original * (1 - discount / 100), discount, True, "max_discount_loyalty_reward"
-
-    async def generate_negotiation_reply(
-        self,
-        business_id: uuid.UUID,
-        negotiation_response: NegotiationResponse,
-        state: NegotiationState,
-    ) -> str:
-        """Generate a natural-language negotiation reply using LLM."""
-        try:
-            # Late import to avoid circular dependency
-            from app.domains.agents.ai_reply import generate_raw_ai_response
-        except ImportError:
-            logger.error("Failed to import generate_raw_ai_response")
-            return negotiation_response.message or "Gracias por tu oferta."
-
-        # Load business type for adaptive messaging
-        business_type = await self._get_business_type(business_id)
-        type_hint = ""
-        if business_type == "services":
-            type_hint = " Estás negociando SERVICIOS profesionales. Ofrece valor agregado o flexibilidad de horarios."
-        elif business_type == "consulting":
-            type_hint = " Estás negociando CONSULTORÍA. Enfatiza resultados garantizados y milestones."
-        elif business_type == "software":
-            type_hint = " Estás negociando SOFTWARE/SaaS. Menciona onboarding, soporte o funcionalidades extra."
-        elif business_type == "food_beverage":
-            type_hint = " Estás negociando COMIDA/BEBIDA. Ofrece combos, delivery gratis o descuentos en próxima compra."
-        elif business_type in ("physical_products", "fashion_beauty", "home_decor", "handcraft"):
-            type_hint = " Estás negociando PRODUCTOS FÍSICOS. Menciona envío gratis, garantía o bundles."
-
-        if negotiation_response.status == "accepted":
-            system = (
-                "Eres un vendedor experto. El cliente ha aceptado la oferta final. "
-                "Confirma con entusiasmo y pasa al cierre de la venta."
-                f"{type_hint}"
-            )
-            user = (
-                f"Oferta aceptada: ${negotiation_response.counter_offer:.2f}. "
-                f"Descuento aplicado: {negotiation_response.discount_percent:.1f}%. "
-                "Genera un mensaje de confirmación breve y profesional."
-            )
-        elif negotiation_response.status in ("expired", "not_found"):
-            return negotiation_response.message
+        # Adjust for prospect budget
+        if prospect_budget and prospect_budget < self.base_price:
+            # Prospect has lower budget, calculate achievable price
+            max_price = prospect_budget
+            actual_discount = max(0, 1.0 - (max_price / self.base_price))
+            actual_discount = min(actual_discount, max_discount)
         else:
-            urgency_text = ""
-            if negotiation_response.urgency:
-                urgency_text = (
-                    "Añade urgencia realista: 'esta oferta es válida solo por hoy' o "
-                    "'quedan pocas unidades'."
-                )
-            system = (
-                "Eres un negociador experto en ventas. Responde al cliente de forma "
-                "natural, profesional y persuasiva. Nunca suenes desesperado. "
-                f"{urgency_text}{type_hint}"
-            )
-            user = (
-                f"Precio original: ${float(state.original_price):.2f}. "
-                f"Oferta del cliente: ${float(state.current_offer):.2f}. "
-                f"Nuestra contraoferta: ${negotiation_response.counter_offer:.2f} "
-                f"({negotiation_response.discount_percent:.1f}% descuento). "
-                f"Tipo de concesión: {negotiation_response.status}. "
-                f"Ronda {negotiation_response.round}/4. "
-                "Genera un mensaje corto y natural en español para presentar esta contraoferta."
-            )
+            actual_discount = max_discount
 
-        reply = await generate_raw_ai_response(
-            db=self.db,
-            business_id=business_id,
-            system_prompt=system,
-            user_prompt=user,
-            max_tokens=400,
-            temperature=0.6,
+        # Calculate final price
+        final_price = self.base_price * (1.0 - actual_discount)
+
+        # Determine if legal review needed
+        needs_legal = (
+            actual_discount >= authority.legal_review_threshold
         )
-        return reply or negotiation_response.message or "Gracias por tu oferta."
 
-    @staticmethod
-    def extract_offer_amount(message: str) -> Optional[float]:
-        """Extract a monetary offer from free-text message."""
-        text = message.lower()
+        return {
+            "base_price": self.base_price,
+            "discount_percent": actual_discount * 100,
+            "final_price": final_price,
+            "intent_discount_contribution": intent_discount * 100,
+            "expansion_bonus_contribution": expansion_bonus * 100,
+            "max_allowed_discount": max_discount * 100,
+            "needs_legal_review": needs_legal,
+            "competitor_advantage": (
+                f"{((competitor_price - final_price) / competitor_price * 100):.1f}%"
+                if competitor_price
+                else None
+            ),
+        }
 
-        # Common patterns: $500, 500 pesos, 500 usd, 500.00, 1.234,56
-        patterns = [
-            r"[\$€£]\s*([\d.,]+)",
-            r"([\d.,]+)\s*[\$€£]",
-            r"(?:ofrezco|oferta|presupuesto|máximo|hasta|por)\s*[\$€£]?\s*([\d.,]+)",
-            r"([\d.,]+)\s*(?:pesos|usd|dólares|euros)",
+    async def generate_pricing_tiers(
+        self,
+        final_price: float,
+        company_size: CompanySize,
+    ) -> List[PricingTier]:
+        """Generate 3-tier pricing options (standard, professional, enterprise)."""
+        discount = 1.0 - (final_price / self.base_price)
+
+        tiers = [
+            PricingTier(
+                name="Standard",
+                annual_price=final_price * 0.75,
+                monthly_price=final_price * 0.75 / 12,
+                features=["Core automation", "5 users", "Email support"],
+                discount_percent=discount,
+                payment_terms="monthly",
+                support_level="standard",
+                implementation_days=14,
+            ),
+            PricingTier(
+                name="Professional",
+                annual_price=final_price,
+                monthly_price=final_price / 12,
+                features=[
+                    "Full automation",
+                    "Unlimited users",
+                    "Priority support",
+                    "Custom workflows",
+                ],
+                discount_percent=discount,
+                payment_terms="net_30",
+                support_level="premium",
+                implementation_days=30,
+            ),
+            PricingTier(
+                name="Enterprise",
+                annual_price=final_price * 1.5,
+                monthly_price=final_price * 1.5 / 12,
+                features=[
+                    "Everything in Professional",
+                    "Dedicated account manager",
+                    "Custom integrations",
+                    "SLA guarantee",
+                    "Training included",
+                ],
+                discount_percent=discount * 0.8,  # Less discount for top tier
+                payment_terms="net_60",
+                support_level="enterprise",
+                implementation_days=60,
+            ),
         ]
-        for pat in patterns:
-            matches = re.findall(pat, text)
-            for m in matches:
-                val = NegotiationEngine._parse_number(m)
-                if val and val > 0:
-                    return val
 
-        # Fallback: any standalone number that looks like a price (> 10)
-        nums = re.findall(r"[\d.,]+", text)
-        for n in nums:
-            val = NegotiationEngine._parse_number(n)
-            if val and val > 10:
-                return val
+        return tiers
 
-        return None
+    async def optimize_contract_terms(
+        self,
+        prospect_industry: str,
+        company_size: CompanySize,
+        annual_price: float,
+        prospect_preferences: Optional[Dict[str, Any]] = None,
+    ) -> ContractTerms:
+        """
+        Optimize contract terms based on industry, size, and price point.
+        Returns recommended terms that maximize close probability + margin.
+        """
+        # Industry-based defaults
+        default_duration = {
+            "saas": 12,
+            "software": 12,
+            "enterprise": 36,
+            "finance": 24,
+            "healthcare": 24,
+        }.get(prospect_industry.lower(), 12)
 
-    @staticmethod
-    def _parse_number(num_str: str) -> Optional[float]:
-        """Parse a numeric string handling comma/dot formats."""
-        s = num_str.strip()
-        if not s:
-            return None
-        try:
-            # Handle both 1.234,56 and 1,234.56
-            if "," in s and "." in s:
-                if s.rfind(",") > s.rfind("."):
-                    # European: 1.234,56
-                    s = s.replace(".", "").replace(",", ".")
-                else:
-                    # US: 1,234.56
-                    s = s.replace(",", "")
-            elif "," in s:
-                # Could be decimal separator or thousands
-                parts = s.split(",")
-                if len(parts) == 2 and len(parts[1]) <= 2:
-                    s = s.replace(",", ".")
-                else:
-                    s = s.replace(",", "")
-            return float(s)
-        except ValueError:
-            return None
+        # Company size defaults
+        if company_size == CompanySize.ENTERPRISE:
+            default_duration = max(default_duration, 36)
+            support_level = "enterprise"
+            sla_uptime = 99.99
+            training_hours = 40
+        elif company_size == CompanySize.MID_MARKET:
+            support_level = "premium"
+            sla_uptime = 99.9
+            training_hours = 16
+        else:
+            support_level = "standard"
+            sla_uptime = 99.5
+            training_hours = 4
+
+        # Determine payment schedule (longer contract → annual payment incentive)
+        if default_duration >= 24:
+            payment_schedule = "annual"
+            price_adjustment = 1.0  # No discount for annual payment
+        else:
+            payment_schedule = "net_30"
+            price_adjustment = 1.0
+
+        # Override with prospect preferences if provided
+        if prospect_preferences:
+            default_duration = prospect_preferences.get(
+                "preferred_duration_months", default_duration
+            )
+            support_level = prospect_preferences.get("support_level", support_level)
+
+        return ContractTerms(
+            annual_price=annual_price * price_adjustment,
+            payment_schedule=payment_schedule,
+            contract_duration_months=default_duration,
+            auto_renewal=True,
+            support_level=support_level,
+            sla_uptime_percent=sla_uptime,
+            implementation_included=company_size
+            in [CompanySize.MID_MARKET, CompanySize.ENTERPRISE],
+            training_hours_included=training_hours,
+            legal_review_needed=company_size == CompanySize.ENTERPRISE,
+        )
+
+    async def select_negotiation_strategy(
+        self,
+        intent_score: float,
+        company_size: CompanySize,
+        expansion_potential: float,
+        previous_objections_count: int = 0,
+    ) -> NegotiationStrategy:
+        """
+        Select negotiation strategy based on deal characteristics:
+        - High intent + high expansion = STRATEGIC (play for long-term value)
+        - High intent + no expansion = AGGRESSIVE (close fast)
+        - Low intent = CONSERVATIVE (preserve margin, low-touch)
+        - Mid = BALANCED
+        """
+        # Scoring system
+        score = 0.0
+
+        # Intent contribution (0-3)
+        score += intent_score * 3.0
+
+        # Expansion contribution (0-3)
+        score += expansion_potential * 3.0
+
+        # Company size contribution (0-2)
+        if company_size == CompanySize.ENTERPRISE:
+            score += 2.0  # High priority
+        elif company_size == CompanySize.MID_MARKET:
+            score += 1.5
+        elif company_size == CompanySize.SMB:
+            score += 1.0
+
+        # Objection count (negatively impacts)
+        score -= previous_objections_count * 0.5
+
+        # Strategy selection based on score
+        if score >= 7.0 and expansion_potential > 0.7:
+            return NegotiationStrategy.STRATEGIC
+        elif score >= 6.0:
+            return NegotiationStrategy.AGGRESSIVE
+        elif score >= 4.0:
+            return NegotiationStrategy.BALANCED
+        else:
+            return NegotiationStrategy.CONSERVATIVE
+
+    async def get_strategy_playbook(
+        self, strategy: NegotiationStrategy
+    ) -> Dict[str, Any]:
+        """Get negotiation tactics for selected strategy."""
+        playbooks = {
+            NegotiationStrategy.AGGRESSIVE: {
+                "name": "Aggressive Close",
+                "goal": "Fast close, maximize short-term revenue",
+                "tactics": [
+                    "Limited-time offer (48hr deadline)",
+                    "Highlight competitors adopting solution",
+                    "Emphasize ROI payback in 6 months",
+                    "Fast implementation (2-week go-live)",
+                ],
+                "discount_authority": 0.20,
+                "follow_up_cadence_hours": 4,
+                "escalation_triggers": ["no response in 24h", "price objection"],
+            },
+            NegotiationStrategy.BALANCED: {
+                "name": "Balanced Approach",
+                "goal": "Fair deal structure, sustainable relationship",
+                "tactics": [
+                    "Multi-tier options (let prospect choose)",
+                    "Flexible payment terms (quarterly option)",
+                    "Standard 30-day implementation",
+                    "Reference customer calls",
+                ],
+                "discount_authority": 0.15,
+                "follow_up_cadence_hours": 24,
+                "escalation_triggers": ["no response in 3 days", "budget concern"],
+            },
+            NegotiationStrategy.STRATEGIC: {
+                "name": "Strategic Partnership",
+                "goal": "Long-term expansion, account penetration",
+                "tactics": [
+                    "Pilot program (lower initial commit)",
+                    "Expansion roadmap (multi-year value)",
+                    "Executive sponsor engagement",
+                    "Joint success metrics",
+                    "Annual reviews with growth targets",
+                ],
+                "discount_authority": 0.25,
+                "follow_up_cadence_hours": 48,
+                "escalation_triggers": ["no executive engagement", "scope creep"],
+            },
+            NegotiationStrategy.CONSERVATIVE: {
+                "name": "Margin Preservation",
+                "goal": "Maintain price integrity, filter for fit",
+                "tactics": [
+                    "Full-price emphasis (premium positioning)",
+                    "ROI calculator showing high payback",
+                    "Focus on risk of not implementing",
+                    "Peer benchmarking (other companies pay X)",
+                ],
+                "discount_authority": 0.08,
+                "follow_up_cadence_hours": 72,
+                "escalation_triggers": ["budget hard constraint", "competitor win"],
+            },
+        }
+        return playbooks.get(strategy, playbooks[NegotiationStrategy.BALANCED])
