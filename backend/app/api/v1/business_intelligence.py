@@ -104,6 +104,8 @@ async def find_prospects(
     """Generate prospects using multi-channel lead gen."""
 
     try:
+        from app.domains.business_intelligence.business_model_detector import BusinessModel
+
         leads = lead_generator.generate_leads(
             business_model, location, target_audience, limit
         )
@@ -115,6 +117,12 @@ async def find_prospects(
                 "count": 0,
             }
 
+        # Convert string to enum
+        try:
+            model_enum = BusinessModel(business_model)
+        except ValueError:
+            model_enum = BusinessModel.HYBRID
+
         enriched_leads = [
             lead_enricher.enrich_lead(
                 lead,
@@ -122,7 +130,7 @@ async def find_prospects(
                     business_id="temp",
                     name="Temp",
                     description="",
-                    model=business_model
+                    model=model_enum
                 )
             )
             for lead in leads[:limit]

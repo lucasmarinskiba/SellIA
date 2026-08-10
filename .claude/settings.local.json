@@ -620,7 +620,8 @@
       "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); [print\\(p\\) for p in sorted\\(data.get\\('paths', {}\\).keys\\(\\)\\) if 'business-intelligence' in p]\")",
       "Bash(pkill -9 -f uvicorn)",
       "Bash(xargs grep -l \"railway\\\\|deploy\")",
-      "Bash(git commit -m 'feat: Phases 14-17 - Advanced Analytics, Automation, and Retention *)"
+      "Bash(git commit -m 'feat: Phases 14-17 - Advanced Analytics, Automation, and Retention *)",
+      "Bash(xargs grep -l \"railway\\\\|vercel\\\\|https://\")"
     ]
   }
 }
