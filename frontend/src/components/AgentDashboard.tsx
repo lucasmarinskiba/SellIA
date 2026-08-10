@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import ActivityFeed from './ActivityFeed'
 import { TrendingUp, Users, Zap, Target, Brain } from 'lucide-react'
-import Card from './ui/Card'
+import { Card } from './ui/Card'
 import Button from './ui/Button'
 import Link from 'next/link'
 
