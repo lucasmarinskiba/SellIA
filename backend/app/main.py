@@ -50,6 +50,7 @@ _try_include("app.api.v1.ab_testing.router", "/api/v1", ["ab-testing"])
 _try_include("app.api.v1.integrations.router", "/api/v1", ["integrations"])
 _try_include("app.api.v1.business_intelligence.router", "/api/v1", ["business-intelligence"])
 _try_include("app.api.v1.advanced_automation.router", "/api/v1", ["advanced-automation"])
+_try_include("app.api.v1.lead_generation_agent.router", "/api/v1", ["lead-generation-agent"])
 
 
 @app.get("/health", tags=["system"])
