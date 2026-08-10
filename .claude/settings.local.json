@@ -583,7 +583,13 @@
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/orchestrate/route-lead?lead_id=lead_001&company=TechCorp&contact_name=John+Doe&intent_score=0.85&budget=50k-100k&timeline=Q4+2026\")",
       "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/orchestrate/route-lead?lead_id=lead_001&company=TechCorp&contact_name=John+Doe&intent_score=0.85&budget=50k-100k&timeline=Q4+2026&source=LinkedIn\")",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/orchestrate/workflow-example\")",
-      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/orchestrate/agent-performance\")"
+      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/orchestrate/agent-performance\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/crm/leads?min_lead_score=70\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/crm/lead/lead_003/route-with-negotiation\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/crm/lead/lead_004/route-with-negotiation\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.95&company_size=enterprise&expansion_potential=0.9\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.2&company_size=startup&expansion_potential=0.1\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.95&company_size=enterprise&expansion_potential=0.9\")"
     ]
   }
 }
