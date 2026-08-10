@@ -310,10 +310,34 @@ class CRMAdapterFactory:
                 cls._adapters[CRMType.CUSTOM] = MockCRMAdapter()
             return cls._adapters[CRMType.CUSTOM]
 
-        # Future: Add Salesforce, HubSpot, Pipedrive adapters
-        # For now, default to mock
-        logger.warning(f"CRM type {crm_type} not implemented, using mock adapter")
-        return await cls.create_adapter(CRMType.CUSTOM)
+        elif crm_type == CRMType.SALESFORCE:
+            if CRMType.SALESFORCE not in cls._adapters:
+                if not config:
+                    raise ValueError("Salesforce config required: instance_url, client_id, client_secret, username, password")
+                from app.domains.crm.salesforce_adapter import SalesforceAdapter
+                cls._adapters[CRMType.SALESFORCE] = SalesforceAdapter(
+                    instance_url=config["instance_url"],
+                    client_id=config["client_id"],
+                    client_secret=config["client_secret"],
+                    username=config["username"],
+                    password=config["password"],
+                )
+            return cls._adapters[CRMType.SALESFORCE]
+
+        elif crm_type == CRMType.HUBSPOT:
+            if CRMType.HUBSPOT not in cls._adapters:
+                if not config or "api_key" not in config:
+                    raise ValueError("HubSpot config required: api_key")
+                from app.domains.crm.hubspot_adapter import HubSpotAdapter
+                cls._adapters[CRMType.HUBSPOT] = HubSpotAdapter(
+                    api_key=config["api_key"]
+                )
+            return cls._adapters[CRMType.HUBSPOT]
+
+        else:
+            # Default to mock
+            logger.warning(f"CRM type {crm_type} not implemented, using mock adapter")
+            return await cls.create_adapter(CRMType.CUSTOM)
 
     @classmethod
     async def get_default_adapter(cls) -> CRMAdapter:
