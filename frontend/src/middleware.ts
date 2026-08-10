@@ -7,6 +7,9 @@ const PROTECTED_ROUTES = ['/dashboard', '/settings', '/profile', '/admin']
 // Rutas públicas (no redirigir si ya está autenticado)
 const PUBLIC_ONLY_ROUTES = ['/login', '/register']
 
+// Rutas públicas sin restricción
+const PUBLIC_ROUTES = ['/demo-agentes', '/landing', '/sellia-landing']
+
 // Root + reserved subdomains that should NOT be treated as tenant subdomains
 const RESERVED_HOSTS = new Set([
   'sellia.app', 'www.sellia.app', 'app.sellia.app', 'api.sellia.app',
@@ -62,6 +65,12 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value
   const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
   const isPublicOnly = PUBLIC_ONLY_ROUTES.some((route) => pathname === route)
+  const isPublic = PUBLIC_ROUTES.some((route) => pathname === route)
+
+  // Public routes: always allow without auth
+  if (isPublic) {
+    return response
+  }
 
   if (isProtected && !token) {
     const loginUrl = new URL('/login', request.url)
