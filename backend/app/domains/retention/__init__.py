@@ -1,2 +1,1 @@
-from app.domains.retention.models import LoyaltyProgram, ReferralProgram, ReferralCode, NpsCampaign, NpsResponse, CustomerSegment
-from app.domains.retention.services import RetentionService
+"""Customer retention and expansion: churn prevention, upsell automation."""
