@@ -48,6 +48,7 @@ _try_include("app.api.v1.negotiation.router", "/api/v1", ["negotiation"])
 _try_include("app.api.v1.revenue_intelligence.router", "/api/v1", ["revenue-intelligence"])
 _try_include("app.api.v1.ab_testing.router", "/api/v1", ["ab-testing"])
 _try_include("app.api.v1.integrations.router", "/api/v1", ["integrations"])
+_try_include("app.api.v1.business_intelligence.router", "/api/v1", ["business-intelligence"])
 
 
 @app.get("/health", tags=["system"])
