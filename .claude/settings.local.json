@@ -597,7 +597,28 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Close Prob: {d['forecast']['close_probability']}, Risk: {d['forecast']['risk_level']}, Recommendation: {d['forecast']['recommendation']}\\\\\"\\)\")",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/crm/leads?min_lead_score=80\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Leads fetched: {d['lead_count']} with min_lead_score=80\\\\\"\\)\")",
-      "Bash(git commit -m 'feat: Phases 10-13 - Business Intelligence, Lead Generation, Diagnostics, Marketing *)"
+      "Bash(git commit -m 'feat: Phases 10-13 - Business Intelligence, Lead Generation, Diagnostics, Marketing *)",
+      "Bash(python -m pytest backend/app/api/v1/business_intelligence.py -v --tb=short)",
+      "Bash(timeout 15 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000)",
+      "Bash(curl -X POST \"http://localhost:8000/api/v1/business-intelligence/analyze-business?business_description=Soy%20plomero%20en%20Madrid%20con%2010%20anos%20experiencia\")",
+      "Bash(python -c \"from app.api.v1 import business_intelligence; print\\('Import OK'\\)\")",
+      "Bash(curl -s -X POST \"https://selliademo.up.railway.app/api/v1/business-intelligence/analyze-business?business_description=Soy%20plomero%20en%20Madrid%20con%2010%20anos%20experiencia&location=Madrid\")",
+      "Bash(timeout 30 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000)",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/business-intelligence/analyze-business?business_description=Soy%20plomero%20con%2010%20anos%20experiencia&location=Madrid\")",
+      "Bash(curl -s http://localhost:8000/api/v1/orchestrate/agents)",
+      "Bash(timeout 60 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000)",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/business-intelligence/analyze-business?business_description=Soy%20plomero%20con%20experiencia&location=Madrid\")",
+      "Bash(curl -s http://localhost:8000/openapi.json)",
+      "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); paths = list\\(data.get\\('paths', {}\\).keys\\(\\)\\); print\\(f'Total paths: {len\\(paths\\)}'\\); [print\\(p\\) for p in sorted\\(paths\\) if 'business' in p.lower\\(\\) or 'intelligence' in p.lower\\(\\)]\")",
+      "Bash(curl -s -X GET \"http://localhost:8000/api/v1/intelligence/health-dashboard\")",
+      "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); paths = list\\(data.get\\('paths', {}\\).keys\\(\\)\\); [print\\(p\\) for p in sorted\\(paths\\) if 'analyze' in p.lower\\(\\)]\")",
+      "Bash(pkill -9 -f \"uvicorn\")",
+      "Bash(pkill -9 -f \"python\")",
+      "Bash(timeout 60 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload)",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/business-intelligence/analyze-business?business_description=Plomero&location=Madrid\")",
+      "Bash(curl -s http://localhost:8000/docs)",
+      "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); [print\\(p\\) for p in sorted\\(data.get\\('paths', {}\\).keys\\(\\)\\) if 'business-intelligence' in p]\")",
+      "Bash(pkill -9 -f uvicorn)"
     ]
   }
 }
