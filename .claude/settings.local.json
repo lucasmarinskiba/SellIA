@@ -621,7 +621,9 @@
       "Bash(pkill -9 -f uvicorn)",
       "Bash(xargs grep -l \"railway\\\\|deploy\")",
       "Bash(git commit -m 'feat: Phases 14-17 - Advanced Analytics, Automation, and Retention *)",
-      "Bash(xargs grep -l \"railway\\\\|vercel\\\\|https://\")"
+      "Bash(xargs grep -l \"railway\\\\|vercel\\\\|https://\")",
+      "Bash(git commit -m 'feat: Real-time notification system with agent activity feed *)",
+      "Bash(git commit -m 'feat: Add demo page for agent notification system *)"
     ]
   }
 }
