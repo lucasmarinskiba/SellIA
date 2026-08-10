@@ -44,13 +44,19 @@ else:
 # ============================================================
 # ENGINE & SESSION
 # ============================================================
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=os.getenv("SQL_ECHO", "false").lower() == "true",
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    poolclass=NullPool if DATABASE_URL.startswith("sqlite") else None
-)
+is_sqlite = DATABASE_URL.startswith("sqlite")
+engine_kwargs = {
+    "echo": os.getenv("SQL_ECHO", "false").lower() == "true",
+}
+if is_sqlite:
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+    })
+
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,

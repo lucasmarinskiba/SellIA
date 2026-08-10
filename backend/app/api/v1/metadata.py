@@ -3,7 +3,7 @@ Metadata API v1 — SEO-optimized structured data endpoints
 Generates dynamic JSON-LD schemas for each entity type.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
@@ -11,13 +11,12 @@ import json
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from app.core.database import get_async_session
+from app.core.database import get_db
 from app.domains.businesses.models import Business
-from app.domains.agents.models import Agent
 from app.domains.automations.models import Workflow as AutomationWorkflow
 from app.domains.users.models import User
 
-router = APIRouter(prefix="/api/v1/metadata", tags=["metadata"])
+router = APIRouter(tags=["metadata"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
@@ -90,7 +89,7 @@ async def get_software_application_metadata() -> Dict[str, Any]:
 @router.get("/business/{business_id}")
 async def get_business_metadata(
     business_id: str,
-    session: AsyncSession = next(get_async_session()),
+    session: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Get Business entity metadata as LocalBusiness schema"""
     try:

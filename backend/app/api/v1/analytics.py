@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import json
 
-router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
+router = APIRouter(tags=["analytics"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
