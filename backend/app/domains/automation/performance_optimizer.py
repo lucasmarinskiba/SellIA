@@ -149,9 +149,10 @@ class PerformanceOptimizer:
 
     def _generate_actions(self, strategy: OptimizationStrategy, allocations: List) -> List[str]:
         """Generate specific implementation steps"""
+        total_leads = sum(a.expected_leads for a in allocations)
         actions = [
-            f"1. Allocate ${alloc.recommended_budget:.0f} to {alloc.channel}",
-            f"2. Monitor daily leads: target {sum(a.expected_leads for a in allocations)} leads",
+            f"1. Allocate budget across {len(allocations)} top channels",
+            f"2. Monitor daily leads: target {total_leads} leads",
             f"3. Track conversion rate weekly",
             f"4. Adjust bids based on actual ROI",
             f"5. Review performance bi-weekly"
