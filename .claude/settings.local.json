@@ -618,7 +618,9 @@
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/business-intelligence/analyze-business?business_description=Plomero&location=Madrid\")",
       "Bash(curl -s http://localhost:8000/docs)",
       "Bash(python -c \"import sys, json; data = json.load\\(sys.stdin\\); [print\\(p\\) for p in sorted\\(data.get\\('paths', {}\\).keys\\(\\)\\) if 'business-intelligence' in p]\")",
-      "Bash(pkill -9 -f uvicorn)"
+      "Bash(pkill -9 -f uvicorn)",
+      "Bash(xargs grep -l \"railway\\\\|deploy\")",
+      "Bash(git commit -m 'feat: Phases 14-17 - Advanced Analytics, Automation, and Retention *)"
     ]
   }
 }
