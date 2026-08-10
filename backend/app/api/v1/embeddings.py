@@ -12,7 +12,7 @@ import json
 import hashlib
 from datetime import datetime
 
-router = APIRouter(prefix="/api/v1/embeddings", tags=["embeddings"])
+router = APIRouter(tags=["embeddings"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
@@ -46,7 +46,6 @@ async def embed_content(
     text: str,
     title: Optional[str] = None,
     url: Optional[str] = None,
-    session: AsyncSession = None,
 ) -> Dict[str, Any]:
     """
     Embed content and store in pgvector

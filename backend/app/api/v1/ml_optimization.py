@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
-router = APIRouter(prefix="/api/v1/ml-optimization", tags=["ml-optimization"])
+router = APIRouter(tags=["ml-optimization"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
