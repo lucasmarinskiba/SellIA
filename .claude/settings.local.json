@@ -596,7 +596,8 @@
       "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/intelligence/forecast-deal-close?deal_id=deal_enterprise&deal_size=150000&current_stage=closing&days_in_stage=2&intent_score=0.95&email_opens=12&calls=5&demo_attended=true&proposal_sent=true\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Close Prob: {d['forecast']['close_probability']}, Risk: {d['forecast']['risk_level']}, Recommendation: {d['forecast']['recommendation']}\\\\\"\\)\")",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/crm/leads?min_lead_score=80\")",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Leads fetched: {d['lead_count']} with min_lead_score=80\\\\\"\\)\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Leads fetched: {d['lead_count']} with min_lead_score=80\\\\\"\\)\")",
+      "Bash(git commit -m 'feat: Phases 10-13 - Business Intelligence, Lead Generation, Diagnostics, Marketing *)"
     ]
   }
 }
