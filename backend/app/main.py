@@ -43,6 +43,7 @@ _try_include("app.api.v1.metadata.router", "/api/v1/metadata", ["metadata"])
 _try_include("app.api.v1.embeddings.router", "/api/v1/embeddings", ["embeddings"])
 _try_include("app.api.v1.analytics.router", "/api/v1/analytics", ["analytics"])
 _try_include("app.api.v1.ml_optimization.router", "/api/v1/ml-optimization", ["ml-optimization"])
+_try_include("app.api.v1.agent_orchestration.router", "/api/v1", ["agent-orchestration"])
 
 
 @app.get("/health", tags=["system"])
