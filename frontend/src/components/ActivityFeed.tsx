@@ -2,7 +2,7 @@
 
 import { useNotifications } from '@/hooks/useNotifications'
 import { Clock, CheckCircle, AlertCircle, Loader } from 'lucide-react'
-import Card from './ui/Card'
+import { Card } from './ui/Card'
 
 export default function ActivityFeed() {
   const { activities, isLoading } = useNotifications()

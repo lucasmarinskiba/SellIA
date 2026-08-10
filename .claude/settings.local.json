@@ -623,7 +623,10 @@
       "Bash(git commit -m 'feat: Phases 14-17 - Advanced Analytics, Automation, and Retention *)",
       "Bash(xargs grep -l \"railway\\\\|vercel\\\\|https://\")",
       "Bash(git commit -m 'feat: Real-time notification system with agent activity feed *)",
-      "Bash(git commit -m 'feat: Add demo page for agent notification system *)"
+      "Bash(git commit -m 'feat: Add demo page for agent notification system *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://sellia-brain.vercel.app/demo-agentes)",
+      "Bash(curl -s https://sellia-brain.vercel.app/)",
+      "Bash(curl -s http://localhost:3000/demo-agentes)"
     ]
   }
 }
