@@ -45,6 +45,7 @@ _try_include("app.api.v1.analytics.router", "/api/v1/analytics", ["analytics"])
 _try_include("app.api.v1.ml_optimization.router", "/api/v1/ml-optimization", ["ml-optimization"])
 _try_include("app.api.v1.agent_orchestration.router", "/api/v1", ["agent-orchestration"])
 _try_include("app.api.v1.negotiation.router", "/api/v1", ["negotiation"])
+_try_include("app.api.v1.revenue_intelligence.router", "/api/v1", ["revenue-intelligence"])
 
 
 @app.get("/health", tags=["system"])
