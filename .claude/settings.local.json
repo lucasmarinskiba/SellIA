@@ -589,7 +589,10 @@
       "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/crm/lead/lead_004/route-with-negotiation\")",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.95&company_size=enterprise&expansion_potential=0.9\")",
       "Bash(curl -s \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.2&company_size=startup&expansion_potential=0.1\")",
-      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.95&company_size=enterprise&expansion_potential=0.9\")"
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/negotiate/dynamic-pricing?intent_score=0.95&company_size=enterprise&expansion_potential=0.9\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/intelligence/forecast-deal-close?deal_id=deal_001&deal_size=75000&current_stage=proposal&days_in_stage=10&intent_score=0.85&email_opens=5&calls=2&demo_attended=true\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/intelligence/predict-churn?customer_id=cust_001&subscription_months=6&email_opens_30d=2&logins_30d=3&support_tickets_30d=12&feature_adoption_percent=25&monthly_active_users=2&nps_score=28\")",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8000/api/v1/intelligence/score-expansion?customer_id=cust_001&current_tier=professional&monthly_active_users=45&feature_adoption_percent=78&annual_revenue_with_us=60000&industry_benchmark_spending=100000\")"
     ]
   }
 }
