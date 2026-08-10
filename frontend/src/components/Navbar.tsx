@@ -7,6 +7,7 @@ import { alertsApi } from '@/lib/alerts'
 import Link from 'next/link'
 import { ThemeToggle } from './theme-toggle'
 import { ZenModeToggle } from './gamification/ZenModeToggle'
+import NotificationCenter from './NotificationCenter'
 
 interface NavbarProps {
   onMenuClick?: () => void
@@ -49,17 +50,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       <div className="flex items-center gap-2 lg:gap-4">
         <ZenModeToggle />
         <ThemeToggle />
-        
-        <Link 
-          href="/dashboard/alertas" 
-          className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Alertas"
-        >
-          <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" aria-hidden="true" />
-          )}
-        </Link>
+
+        <NotificationCenter />
         
         <div className="h-6 w-px bg-border hidden sm:block" />
         

@@ -3,9 +3,10 @@
 import { useAuth } from '@/hooks/useAuth'
 import StatCard from '@/components/ui/StatCard'
 import Button from '@/components/ui/Button'
+import ActivityFeed from '@/components/ActivityFeed'
 import {
   TrendingUp, Users, ShoppingCart, DollarSign,
-  Store, Package, Plug, MessageSquare, ArrowRight, Sparkles
+  Store, Package, Plug, MessageSquare, ArrowRight, Sparkles, Zap
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -82,6 +83,22 @@ export default function DashboardPage() {
             )
           })}
         </div>
+      </div>
+
+      {/* Agent Activity */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-brand-night flex items-center gap-2">
+            <Zap className="w-5 h-5 text-blue-600" />
+            Tu equipo de agentes IA
+          </h2>
+          <Link href="/dashboard/agentes-central">
+            <Button size="sm" variant="secondary" rightIcon={<ArrowRight className="w-4 h-4" />}>
+              Ver centro de control
+            </Button>
+          </Link>
+        </div>
+        <ActivityFeed />
       </div>
 
       {/* Onboarding */}
