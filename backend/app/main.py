@@ -53,6 +53,7 @@ _try_include("app.api.v1.advanced_automation.router", "/api/v1", ["advanced-auto
 _try_include("app.api.v1.lead_generation_agent.router", "/api/v1", ["lead-generation-agent"])
 _try_include("app.api.v1.launch_scale.router", "/api/v1", ["launch-scale"])
 _try_include("app.api.v1.coaching_adaptive.router", "/api/v1", ["coaching-adaptive"])
+_try_include("app.api.v1.enterprise_analytics.router", "/api/v1", ["analytics-enterprise"])
 
 
 @app.get("/health", tags=["system"])

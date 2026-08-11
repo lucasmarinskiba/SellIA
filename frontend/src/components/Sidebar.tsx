@@ -36,6 +36,7 @@ const baseNavItems = [
   { href: '/dashboard/autonomo', label: 'Sistema Autónomo', icon: Activity },
   { href: '/dashboard/autopilot', label: 'Autopilot 24/7', icon: Brain },
   { href: '/dashboard/agentes-central', label: 'Centro de Agentes', icon: Bot },
+  { href: '/dashboard/enterprise/analytics', label: 'Analytics Empresarial', icon: BarChart3 },
   { href: '/dashboard/automatizaciones', label: 'Automatizaciones', icon: Zap },
   { href: '/dashboard/sequences', label: 'Secuencias', icon: Mail },
   { href: '/dashboard/conversaciones', label: 'Conversaciones', icon: MessageSquare },

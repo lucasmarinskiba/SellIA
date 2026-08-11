@@ -628,7 +628,32 @@
       "Bash(curl -s https://sellia-brain.vercel.app/)",
       "Bash(curl -s http://localhost:3000/demo-agentes)",
       "Bash(curl -s -I https://sellia-brain.vercel.app/demo-agentes)",
-      "Bash(git commit -m 'fix: Allow /demo-agentes public route without authentication *)"
+      "Bash(git commit -m 'fix: Allow /demo-agentes public route without authentication *)",
+      "Bash(git commit -m 'fix: Update Railway config to use main.py with Phase 23-24 *)",
+      "Bash(curl -s -X POST 'https://selliaii-backend.onrender.com/api/v1/coach/assess/test_user_1?days_in_business=0&leads_generated=0&deals_closed=0&revenue=0' -H 'Content-Type: application/json')",
+      "Bash(timeout 120 bash -c ' *)",
+      "Bash(timeout 60 bash -c ' *)",
+      "Bash(python -c \"from app.api.v1.coaching_adaptive import router; print\\('Router imports: OK'\\)\")",
+      "Bash(python -c \"from app.domains.coaching.entrepreneur_coach import EntrepreneurCoachAgent; print\\('Coach imports: OK'\\)\")",
+      "Bash(python -c \"from app.domains.personalization.adaptive_engine import AdaptiveEngine; print\\('Adaptive imports: OK'\\)\")",
+      "Bash(python -m py_compile app/main.py)",
+      "Bash(python -m py_compile app/api/v1/coaching_adaptive.py)",
+      "Bash(curl -s https://selliaai-backend.onrender.com/api/v1/coach/milestones/user1)",
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(curl -s -X POST \"http://localhost:3000/api/...\")",
+      "Bash(curl -s https://sellia-brain.vercel.app/demo-agentes)",
+      "Bash(curl -s https://selliaai-backend.onrender.com/api/health)",
+      "Bash(curl -s https://selliaai-backend.onrender.com/api/v1/coach/daily-coaching/demo)",
+      "Bash(vercel --version)",
+      "Bash(vercel deployments *)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/analytics/dashboard/user123?segment=active&time_range=month\")",
+      "Bash(curl -v \"http://localhost:8000/api/v1/analytics/dashboard/user123?segment=active&time_range=month\")",
+      "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/dashboard/user123?segment=active&time_range=month\")",
+      "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/dashboard/demo\")",
+      "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/kpis/demo\")",
+      "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/agents/demo\")",
+      "Bash(python -m py_compile backend/app/api/v1/enterprise_analytics.py)",
+      "Bash(git commit -m 'feat: Phase 25 - Performance Dashboard \\(Enterprise Analytics\\) *)"
     ]
   }
 }
