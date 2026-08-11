@@ -40,6 +40,7 @@ const baseNavItems = [
   { href: '/dashboard/enterprise/integrations', label: 'Integraciones', icon: Plug },
   { href: '/dashboard/enterprise/teams', label: 'Gestión de Equipo', icon: Users },
   { href: '/dashboard/enterprise/forecast', label: 'Forecast Ingresos', icon: TrendingUp },
+  { href: '/dashboard/enterprise/testing', label: 'A/B Testing', icon: Zap },
   { href: '/dashboard/automatizaciones', label: 'Automatizaciones', icon: Zap },
   { href: '/dashboard/sequences', label: 'Secuencias', icon: Mail },
   { href: '/dashboard/conversaciones', label: 'Conversaciones', icon: MessageSquare },

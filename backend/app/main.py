@@ -57,6 +57,9 @@ _try_include("app.api.v1.enterprise_analytics.router", "/api/v1", ["analytics-en
 _try_include("app.api.v1.enterprise_integrations.router", "/api/v1", ["integrations-enterprise"])
 _try_include("app.api.v1.enterprise_teams.router", "/api/v1", ["teams-enterprise"])
 _try_include("app.api.v1.enterprise_forecast.router", "/api/v1", ["forecast-enterprise"])
+_try_include("app.api.v1.enterprise_testing.router", "/api/v1", ["testing-enterprise"])
+_try_include("app.api.v1.enterprise_knowledge.router", "/api/v1", ["knowledge-enterprise"])
+_try_include("app.api.v1.enterprise_webhooks.router", "/api/v1", ["webhooks-enterprise"])
 
 
 @app.get("/health", tags=["system"])
