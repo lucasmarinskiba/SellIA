@@ -10,7 +10,7 @@ import {
   ShoppingCart, Wallet, Shield, FileSearch, Bell, Lightbulb, Mail, Headphones, Truck, Calendar,
   MessageCircle, Target, Heart, Brain, MonitorPlay, TrendingUp, Home,
   ShoppingBag, Camera as Instagram, Award, Activity, Users, Radar,
-  Gift, Ticket, Swords, Moon, Eye, Crosshair
+  Gift, Ticket, Swords, Moon, Eye, Crosshair, Phone
 } from 'lucide-react'
 import { CompanionWidget } from './gamification/CompanionWidget'
 import { GardenWidget } from './gamification/GardenWidget'
@@ -43,6 +43,7 @@ const baseNavItems = [
   { href: '/dashboard/enterprise/testing', label: 'A/B Testing', icon: Zap },
   { href: '/dashboard/enterprise/collaboration', label: 'Team Collaboration', icon: MessageCircle },
   { href: '/dashboard/enterprise/intelligence', label: 'Deal Intelligence', icon: Brain },
+  { href: '/dashboard/enterprise/voice', label: 'AI Voice Agent', icon: Phone },
   { href: '/dashboard/automatizaciones', label: 'Automatizaciones', icon: Zap },
   { href: '/dashboard/sequences', label: 'Secuencias', icon: Mail },
   { href: '/dashboard/conversaciones', label: 'Conversaciones', icon: MessageSquare },
