@@ -653,7 +653,8 @@
       "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/kpis/demo\")",
       "Bash(curl -s \"https://selliaai-backend.onrender.com/api/v1/analytics/agents/demo\")",
       "Bash(python -m py_compile backend/app/api/v1/enterprise_analytics.py)",
-      "Bash(git commit -m 'feat: Phase 25 - Performance Dashboard \\(Enterprise Analytics\\) *)"
+      "Bash(git commit -m 'feat: Phase 25 - Performance Dashboard \\(Enterprise Analytics\\) *)",
+      "Bash(git commit -m 'feat: Phase 25.2 - WhatsApp/Telegram Integration *)"
     ]
   }
 }
