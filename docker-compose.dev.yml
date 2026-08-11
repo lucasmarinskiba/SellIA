@@ -1,0 +1,139 @@
+version: '3.9'
+
+services:
+  # PostgreSQL (main database)
+  postgres:
+    image: postgres:15-alpine
+    container_name: sellia-postgres
+    environment:
+      POSTGRES_USER: sellia_user
+      POSTGRES_PASSWORD: sellia_pass
+      POSTGRES_DB: sellia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sellia_user -d sellia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (cache + Celery broker/backend)
+  redis:
+    image: redis:7-alpine
+    container_name: sellia-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Jaeger (distributed tracing)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: sellia-jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    ports:
+      - "6831:6831/udp"  # Jaeger agent (thrift)
+      - "16686:16686"    # Jaeger UI
+      - "14268:14268"    # Collector
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:14269"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Vault (secrets management)
+  vault:
+    image: vault:latest
+    container_name: sellia-vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: devtoken
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    cap_add:
+      - IPC_LOCK
+
+  # pgBouncer (connection pooling)
+  pgbouncer:
+    image: pgbouncer:latest
+    container_name: sellia-pgbouncer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./infrastructure/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./infrastructure/userlist.txt:/etc/pgbouncer/userlist.txt
+    ports:
+      - "6432:6432"
+    environment:
+      PGBOUNCER_DATABASES_SELLIA: "host=postgres port=5432 dbname=sellia"
+      PGBOUNCER_POOL_MODE: "transaction"
+      PGBOUNCER_DEFAULT_POOL_SIZE: "10"
+      PGBOUNCER_MIN_POOL_SIZE: "5"
+    command:
+      - pgbouncer
+      - -d
+      - /etc/pgbouncer/pgbouncer.ini
+    healthcheck:
+      test: ["CMD", "psql", "-U", "sellia_user", "-h", "localhost", "-p", "6432", "-d", "pgbouncer", "-c", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus (metrics collection)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sellia-prometheus
+    volumes:
+      - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Grafana (dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sellia-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: sellia-dev
