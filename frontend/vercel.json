@@ -1,6 +1,6 @@
 {
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://selliaal-backend.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://selliaai-backend.onrender.com"
   },
   "envPrefix": "NEXT_PUBLIC_",
   "buildCommand": "npm run build",
