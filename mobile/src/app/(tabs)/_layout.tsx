@@ -1,20 +1,24 @@
 import { Tabs } from 'expo-router'
+import { View } from 'react-native'
+import OfflineIndicator from '@/components/OfflineIndicator'
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#FF8C00',
-        tabBarInactiveTintColor: '#999',
-        headerShown: false,
-        tabBarStyle: {
-          paddingBottom: 8,
-          height: 60,
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
-        },
-      }}
-    >
+    <View style={{ flex: 1 }}>
+      <OfflineIndicator />
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: '#FF8C00',
+          tabBarInactiveTintColor: '#999',
+          headerShown: false,
+          tabBarStyle: {
+            paddingBottom: 8,
+            height: 60,
+            borderTopWidth: 1,
+            borderTopColor: '#e0e0e0',
+          },
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -51,5 +55,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   )
 }
