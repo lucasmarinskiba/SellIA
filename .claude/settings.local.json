@@ -655,7 +655,8 @@
       "Bash(python -m py_compile backend/app/api/v1/enterprise_analytics.py)",
       "Bash(git commit -m 'feat: Phase 25 - Performance Dashboard \\(Enterprise Analytics\\) *)",
       "Bash(git commit -m 'feat: Phase 25.2 - WhatsApp/Telegram Integration *)",
-      "Bash(git commit -m 'feat: Phase 25.4 - Team Management *)"
+      "Bash(git commit -m 'feat: Phase 25.4 - Team Management *)",
+      "Bash(git commit -m 'feat: Phase 25.5 - Revenue Forecasting *)"
     ]
   }
 }
