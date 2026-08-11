@@ -62,6 +62,7 @@ _try_include("app.api.v1.enterprise_knowledge.router", "/api/v1", ["knowledge-en
 _try_include("app.api.v1.enterprise_webhooks.router", "/api/v1", ["webhooks-enterprise"])
 _try_include("app.api.v1.enterprise_collaboration.router", "/api/v1", ["collaboration-enterprise"])
 _try_include("app.api.v1.enterprise_deal_intelligence.router", "/api/v1", ["intelligence-enterprise"])
+_try_include("app.api.v1.enterprise_voice_agent.router", "/api/v1", ["voice-agent-enterprise"])
 
 
 @app.get("/health", tags=["system"])
