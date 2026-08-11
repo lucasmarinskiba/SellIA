@@ -1,344 +1,252 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
+from datetime import datetime
 from typing import Optional
-import random
-import math
+from dataclasses import asdict
+from .deal_scorer import DealScorer, RevenueForecast, DealScore, RiskLevel
 
 
-class DealStage(str, Enum):
-    PROSPECTING = "prospecting"
-    QUALIFICATION = "qualification"
-    PROPOSAL = "proposal"
-    NEGOTIATION = "negotiation"
-    WON = "won"
-    LOST = "lost"
-
-
-class ProbabilityModel(str, Enum):
-    CONSERVATIVE = "conservative"  % 0.5x stage default %
-    STANDARD = "standard"  % 1x stage default %
-    OPTIMISTIC = "optimistic"  % 1.5x stage default %
-
-
-@dataclass
-class Opportunity:
-    id: str
-    title: str
-    amount: float
-    stage: DealStage
-    probability: float  % 0-100 %
-    days_in_stage: int
-    close_date_estimated: datetime
-    contact_name: str
-    source: str  % direct, referral, inbound, outreach %
-    metadata: dict = field(default_factory=dict)
-
-
-@dataclass
-class DealProbability:
-    stage: DealStage
-    base_probability: float  % 0-100 %
-    time_adjusted_probability: float  % accounting for days_in_stage %
-    source_adjusted_probability: float  % adjusted by source quality %
-    final_probability: float  % weighted combination %
-
-
-@dataclass
-class PipelineSnapshot:
-    timestamp: datetime
-    total_opportunities: int
-    total_pipeline_value: float
-    by_stage: dict[str, dict]  % stage -> {count, value, avg_probability} %
-    weighted_forecast: float  % expected value %
-    average_deal_size: float
-    average_days_in_pipeline: float
-
-
-@dataclass
-class RevenueProjection:
-    period: str  % 7d, 14d, 30d, 60d, 90d %
-    projected_revenue: float
-    confidence_level: float  % 0-100 %
-    best_case: float  % optimistic %
-    worst_case: float  % conservative %
-    most_likely: float  % expected value %
-    probability_of_target: float  % % chance to hit target %
-    key_drivers: dict  % stage breakdown, conversion assumptions %
-
-
-@dataclass
-class ForecastScenario:
-    name: str  % Best Case, Base Case, Worst Case %
-    assumptions: dict  % conversion_lift, deal_acceleration, churn_rate %
-    projected_revenue: float
-    probability: float  % 0-100 %
-
-
-class ForecastingEngine:
+class ForecastingManager:
     def __init__(self):
-        self.opportunities = {}
-        self.historical_conversions = self._load_historical_data()
-        self.pipeline_snapshots = []
+        self.scorer = DealScorer()
+        self.forecaster = RevenueForecast()
+        self.deal_scores: dict[str, DealScore] = {}
+        self.at_risk_deals: list[dict] = []
+        self.forecast_history: list[dict] = []
 
-    def _load_historical_data(self) -> dict:
-        % Simulated historical conversion rates %
-        return {
-            "prospecting": {"close_rate": 5, "avg_days": 15},
-            "qualification": {"close_rate": 15, "avg_days": 10},
-            "proposal": {"close_rate": 35, "avg_days": 12},
-            "negotiation": {"close_rate": 70, "avg_days": 8},
-            "won": {"close_rate": 100, "avg_days": 0},
-        }
-
-    def add_opportunity(self, user_id: str, opportunity: Opportunity) -> bool:
-        key = f"{user_id}:{opportunity.id}"
-        self.opportunities[key] = opportunity
-        return True
-
-    def calculate_deal_probability(
-        self,
-        stage: DealStage,
-        days_in_stage: int,
-        source: str,
-    ) -> DealProbability:
-        % Base probability from historical data %
-        base = self.historical_conversions[stage.value]["close_rate"]
-        base_prob = base
-
-        % Time adjustment - deals move faster = higher probability %
-        avg_days = self.historical_conversions[stage.value]["avg_days"]
-        time_factor = max(0.5, min(1.5, avg_days / max(days_in_stage, 1)))
-        time_adjusted = base_prob * time_factor
-
-        % Source quality adjustment %
-        source_multipliers = {
-            "referral": 1.3,
-            "direct": 1.2,
-            "inbound": 1.1,
-            "outreach": 0.9,
-        }
-        source_mult = source_multipliers.get(source, 1.0)
-        source_adjusted = min(100, time_adjusted * source_mult)
-
-        % Weighted final probability %
-        final = (base_prob * 0.3) + (time_adjusted * 0.4) + (source_adjusted * 0.3)
-        final = min(100, max(0, final))
-
-        return DealProbability(
-            stage=stage,
-            base_probability=base_prob,
-            time_adjusted_probability=time_adjusted,
-            source_adjusted_probability=source_adjusted,
-            final_probability=final,
-        )
-
-    def get_pipeline_forecast(
-        self, user_id: str, model: ProbabilityModel = ProbabilityModel.STANDARD
-    ) -> PipelineSnapshot:
-        user_opps = [
-            opp for k, opp in self.opportunities.items()
-            if k.startswith(f"{user_id}:")
-        ]
-
-        by_stage = {}
-        total_value = 0
-        total_probability_weighted = 0
-
-        for stage in DealStage:
-            stage_opps = [o for o in user_opps if o.stage == stage]
-            if stage_opps:
-                stage_values = [o.amount for o in stage_opps]
-                stage_probs = [
-                    self.calculate_deal_probability(
-                        o.stage, o.days_in_stage, o.source
-                    ).final_probability / 100
-                    for o in stage_opps
-                ]
-
-                stage_total = sum(stage_values)
-                weighted_total = sum(v * p for v, p in zip(stage_values, stage_probs))
-
-                % Apply model adjustment %
-                if model == ProbabilityModel.CONSERVATIVE:
-                    weighted_total *= 0.5
-                elif model == ProbabilityModel.OPTIMISTIC:
-                    weighted_total *= 1.5
-
-                by_stage[stage.value] = {
-                    "count": len(stage_opps),
-                    "value": stage_total,
-                    "weighted_value": weighted_total,
-                    "avg_probability": sum(stage_probs) / len(stage_probs) * 100,
-                }
-
-                total_value += stage_total
-                total_probability_weighted += weighted_total
-
-        avg_days = (
-            sum(o.days_in_stage for o in user_opps) / len(user_opps)
-            if user_opps
-            else 0
-        )
-        avg_deal_size = (
-            total_value / len(user_opps) if user_opps else 0
-        )
-
-        return PipelineSnapshot(
-            timestamp=datetime.now(),
-            total_opportunities=len(user_opps),
-            total_pipeline_value=total_value,
-            by_stage=by_stage,
-            weighted_forecast=total_probability_weighted,
-            average_deal_size=avg_deal_size,
-            average_days_in_pipeline=avg_days,
-        )
-
-    def project_revenue(
-        self,
-        user_id: str,
-        days_ahead: int = 30,
-        target_revenue: Optional[float] = None,
-    ) -> RevenueProjection:
-        pipeline = self.get_pipeline_forecast(user_id, ProbabilityModel.STANDARD)
-
-        % Base projection %
-        daily_rate = pipeline.weighted_forecast / max(pipeline.average_days_in_pipeline, 1)
-        projected = daily_rate * days_ahead
-
-        % Scenario projections %
-        best_pipeline = self.get_pipeline_forecast(user_id, ProbabilityModel.OPTIMISTIC)
-        worst_pipeline = self.get_pipeline_forecast(user_id, ProbabilityModel.CONSERVATIVE)
-
-        best_daily = best_pipeline.weighted_forecast / max(best_pipeline.average_days_in_pipeline, 1)
-        worst_daily = worst_pipeline.weighted_forecast / max(worst_pipeline.average_days_in_pipeline, 1)
-
-        best_case = best_daily * days_ahead
-        worst_case = worst_daily * days_ahead
-        most_likely = projected
-
-        % Confidence based on pipeline size and age %
-        confidence = min(
-            95,
-            50 + (pipeline.total_opportunities * 2) + (max(0, 30 - pipeline.average_days_in_pipeline))
-        )
-
-        % Probability of hitting target %
-        prob_target = 50
-        if target_revenue:
-            z_score = (most_likely - target_revenue) / max(std_dev := (best_case - worst_case) / 4, 1)
-            prob_target = min(99, max(1, 50 + (25 * z_score / 3)))
-
-        return RevenueProjection(
-            period=f"{days_ahead}d",
-            projected_revenue=projected,
-            confidence_level=confidence,
-            best_case=best_case,
-            worst_case=worst_case,
-            most_likely=most_likely,
-            probability_of_target=prob_target,
-            key_drivers={
-                "stage_breakdown": pipeline.by_stage,
-                "avg_deal_size": pipeline.average_deal_size,
-                "pipeline_velocity": daily_rate,
-            },
-        )
-
-    def generate_scenarios(
-        self, user_id: str, days_ahead: int = 30
-    ) -> list[ForecastScenario]:
-        base_projection = self.project_revenue(user_id, days_ahead)
-
-        scenarios = [
-            ForecastScenario(
-                name="Best Case",
-                assumptions={
-                    "conversion_lift": "+20%",
-                    "deal_acceleration": "+30%",
-                    "churn_rate": "2%",
-                },
-                projected_revenue=base_projection.best_case,
-                probability=25,
-            ),
-            ForecastScenario(
-                name="Base Case",
-                assumptions={
-                    "conversion_lift": "0%",
-                    "deal_acceleration": "0%",
-                    "churn_rate": "5%",
-                },
-                projected_revenue=base_projection.most_likely,
-                probability=50,
-            ),
-            ForecastScenario(
-                name="Worst Case",
-                assumptions={
-                    "conversion_lift": "-15%",
-                    "deal_acceleration": "-25%",
-                    "churn_rate": "10%",
-                },
-                projected_revenue=base_projection.worst_case,
-                probability=25,
-            ),
-        ]
-
-        return scenarios
-
-    def get_conversion_funnel(self, user_id: str) -> dict:
-        pipeline = self.get_pipeline_forecast(user_id)
-
-        total = pipeline.total_opportunities
-        funnel = {}
-        cumulative_value = 0
-
-        for stage in DealStage:
-            if stage.value in pipeline.by_stage:
-                stage_data = pipeline.by_stage[stage.value]
-                count = stage_data["count"]
-                value = stage_data["weighted_value"]
-                cumulative_value += value
-
-                funnel[stage.value] = {
-                    "count": count,
-                    "percentage": (count / total * 100) if total > 0 else 0,
-                    "value": value,
-                    "cumulative_value": cumulative_value,
-                }
-
-        return funnel
-
-    def identify_risk_opportunities(self, user_id: str) -> dict:
-        user_opps = [
-            opp for k, opp in self.opportunities.items()
-            if k.startswith(f"{user_id}:")
-        ]
-
+    def analyze_deals(self, user_id: str, deals: list[dict]) -> dict:
+        """Analyze all deals for user and return comprehensive report."""
+        scores = []
         at_risk = []
-        stalled = []
+        high_probability = []
 
-        for opp in user_opps:
-            if opp.stage in [DealStage.NEGOTIATION, DealStage.PROPOSAL]:
-                if opp.days_in_stage > 20:
-                    at_risk.append({
-                        "id": opp.id,
-                        "title": opp.title,
-                        "amount": opp.amount,
-                        "stage": opp.stage.value,
-                        "days_stalled": opp.days_in_stage,
-                    })
+        for deal in deals:
+            deal_id = deal.get("id")
+            score = self.scorer.score_deal(
+                {
+                    "deal_id": deal_id,
+                    "user_id": user_id,
+                    "stage": deal.get("stage", "discovery"),
+                    "days_in_stage": deal.get("days_in_stage", 0),
+                    "engagement_velocity": deal.get("engagement_velocity", 0),
+                    "proposal_status": deal.get("proposal_status", "not_sent"),
+                    "comment_count": deal.get("comment_count", 0),
+                    "last_activity_days": deal.get("last_activity_days", 0),
+                    "deal_value": deal.get("value", 0),
+                    "historical_close_rate": deal.get("close_rate", 0.5),
+                }
+            )
 
-            if opp.stage == DealStage.QUALIFICATION and opp.days_in_stage > 15:
-                stalled.append({
-                    "id": opp.id,
-                    "title": opp.title,
-                    "amount": opp.amount,
-                    "reason": "Long qualification cycle",
-                })
+            self.deal_scores[deal_id] = score
+            scores.append(asdict(score))
+
+            if score.risk_level in [RiskLevel.HIGH, RiskLevel.CRITICAL]:
+                at_risk.append(
+                    {
+                        "deal_id": deal_id,
+                        "deal_name": deal.get("name"),
+                        "win_probability": score.win_probability,
+                        "risk_level": score.risk_level,
+                        "risk_reason": self._get_risk_reason(deal, score),
+                        "suggested_action": self._get_suggested_action(deal, score),
+                    }
+                )
+                self.at_risk_deals.append(at_risk[-1])
+
+            if score.win_probability >= 0.7:
+                high_probability.append(
+                    {
+                        "deal_id": deal_id,
+                        "deal_name": deal.get("name"),
+                        "value": deal.get("value", 0),
+                        "win_probability": score.win_probability,
+                    }
+                )
 
         return {
+            "total_deals": len(deals),
+            "high_probability_count": len(high_probability),
             "at_risk_count": len(at_risk),
-            "stalled_count": len(stalled),
-            "at_risk": at_risk,
-            "stalled": stalled,
-            "risk_value": sum(o["amount"] for o in at_risk),
+            "scores": scores,
+            "at_risk_deals": at_risk,
+            "high_probability_deals": high_probability,
         }
+
+    def forecast_revenue(
+        self, user_id: str, deals: list[dict], periods: list[int] = None
+    ) -> dict:
+        """Generate revenue forecast for multiple periods."""
+        if periods is None:
+            periods = [30, 60, 90]
+
+        forecasts = {}
+        for period in periods:
+            forecasts[f"forecast_{period}d"] = self.forecaster.forecast_revenue(
+                deals, period
+            )
+
+        self.forecast_history.append(
+            {
+                "user_id": user_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "forecasts": forecasts,
+            }
+        )
+
+        return {
+            "user_id": user_id,
+            "generated_at": datetime.utcnow().isoformat(),
+            "forecasts": forecasts,
+        }
+
+    def get_at_risk_summary(self) -> dict:
+        """Get summary of all at-risk deals."""
+        if not self.at_risk_deals:
+            return {"total_at_risk": 0, "critical_count": 0, "deals": []}
+
+        critical_count = sum(
+            1 for d in self.at_risk_deals if d.get("risk_level") == "critical"
+        )
+
+        return {
+            "total_at_risk": len(self.at_risk_deals),
+            "critical_count": critical_count,
+            "total_value_at_risk": sum(
+                d.get("value", 0) for d in self.at_risk_deals
+            ),
+            "deals": self.at_risk_deals,
+        }
+
+    def _get_risk_reason(self, deal: dict, score: DealScore) -> str:
+        """Determine why deal is at risk."""
+        last_activity = deal.get("last_activity_days", 0)
+        if last_activity > 30:
+            return "No activity for 30+ days"
+        if deal.get("proposal_status") == "not_sent":
+            return "No proposal sent"
+        if deal.get("days_in_stage", 0) > 60:
+            return "Stuck in stage for 60+ days"
+        if score.win_probability < 0.3:
+            return "Low win probability"
+        return "Multiple risk factors"
+
+    def _get_suggested_action(self, deal: dict, score: DealScore) -> str:
+        """Get suggested action for at-risk deal."""
+        proposal_status = deal.get("proposal_status")
+        if proposal_status == "not_sent":
+            return "Send proposal immediately"
+        if proposal_status == "sent":
+            return "Follow up on proposal review"
+        if deal.get("last_activity_days", 0) > 14:
+            return "Schedule check-in call with customer"
+        if score.win_probability < 0.3:
+            return "Conduct deal review with manager"
+        return "Increase engagement frequency"
+
+    def clear_cache(self):
+        """Clear in-memory cache."""
+        self.deal_scores.clear()
+        self.at_risk_deals.clear()
+
+
+class DealOutcomeAnalyzer:
+    """Analyze win/loss patterns and forecast accuracy."""
+
+    def __init__(self):
+        self.outcomes: list[dict] = []
+
+    def record_outcome(
+        self,
+        deal_id: str,
+        user_id: str,
+        outcome: str,
+        final_value: Optional[float],
+        days_to_close: int,
+        forecasted_probability: float,
+        win_loss_reason: Optional[str] = None,
+    ) -> dict:
+        """Record a deal outcome (won/lost)."""
+        accuracy = abs(
+            forecasted_probability - (1.0 if outcome == "won" else 0.0)
+        )
+
+        record = {
+            "deal_id": deal_id,
+            "user_id": user_id,
+            "outcome": outcome,
+            "final_value": final_value,
+            "days_to_close": days_to_close,
+            "forecasted_probability": forecasted_probability,
+            "forecast_accuracy": 1.0 - accuracy,
+            "win_loss_reason": win_loss_reason,
+            "recorded_at": datetime.utcnow().isoformat(),
+        }
+
+        self.outcomes.append(record)
+        return record
+
+    def get_accuracy_metrics(self, user_id: str) -> dict:
+        """Get forecast accuracy metrics for user."""
+        user_outcomes = [o for o in self.outcomes if o.get("user_id") == user_id]
+
+        if not user_outcomes:
+            return {
+                "total_outcomes": 0,
+                "accuracy": 0,
+                "won_count": 0,
+                "lost_count": 0,
+            }
+
+        won_count = sum(1 for o in user_outcomes if o.get("outcome") == "won")
+        lost_count = len(user_outcomes) - won_count
+
+        avg_accuracy = (
+            sum(o.get("forecast_accuracy", 0) for o in user_outcomes)
+            / len(user_outcomes)
+        )
+
+        return {
+            "total_outcomes": len(user_outcomes),
+            "accuracy": avg_accuracy,
+            "won_count": won_count,
+            "lost_count": lost_count,
+            "win_rate": won_count / len(user_outcomes),
+            "avg_days_to_close": (
+                sum(o.get("days_to_close", 0) for o in user_outcomes)
+                / len(user_outcomes)
+            ),
+        }
+
+    def get_win_loss_summary(self, user_id: str) -> dict:
+        """Get summary of why deals were won/lost."""
+        user_outcomes = [o for o in self.outcomes if o.get("user_id") == user_id]
+
+        won_reasons = [
+            o.get("win_loss_reason")
+            for o in user_outcomes
+            if o.get("outcome") == "won" and o.get("win_loss_reason")
+        ]
+        lost_reasons = [
+            o.get("win_loss_reason")
+            for o in user_outcomes
+            if o.get("outcome") == "lost" and o.get("win_loss_reason")
+        ]
+
+        return {
+            "top_win_reasons": self._get_top_reasons(won_reasons),
+            "top_loss_reasons": self._get_top_reasons(lost_reasons),
+            "total_won": sum(1 for o in user_outcomes if o.get("outcome") == "won"),
+            "total_lost": sum(1 for o in user_outcomes if o.get("outcome") == "lost"),
+        }
+
+    def _get_top_reasons(self, reasons: list[str], top_n: int = 5) -> list[dict]:
+        """Get most common reasons."""
+        if not reasons:
+            return []
+
+        reason_counts = {}
+        for reason in reasons:
+            reason_counts[reason] = reason_counts.get(reason, 0) + 1
+
+        sorted_reasons = sorted(
+            reason_counts.items(), key=lambda x: x[1], reverse=True
+        )
+        return [{"reason": r, "count": c} for r, c in sorted_reasons[:top_n]]

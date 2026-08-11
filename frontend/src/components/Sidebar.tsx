@@ -42,6 +42,7 @@ const baseNavItems = [
   { href: '/dashboard/enterprise/forecast', label: 'Forecast Ingresos', icon: TrendingUp },
   { href: '/dashboard/enterprise/testing', label: 'A/B Testing', icon: Zap },
   { href: '/dashboard/enterprise/collaboration', label: 'Team Collaboration', icon: MessageCircle },
+  { href: '/dashboard/enterprise/intelligence', label: 'Deal Intelligence', icon: Brain },
   { href: '/dashboard/automatizaciones', label: 'Automatizaciones', icon: Zap },
   { href: '/dashboard/sequences', label: 'Secuencias', icon: Mail },
   { href: '/dashboard/conversaciones', label: 'Conversaciones', icon: MessageSquare },
