@@ -665,7 +665,10 @@
       "PowerShell(docker-compose --version)",
       "Bash(docker-compose up *)",
       "Bash(timeout 120 npx playwright test e2e/26a-collaboration.spec.ts)",
-      "Bash(timeout 180 npx playwright test e2e/26c-deal-intelligence.spec.ts --headed=false)"
+      "Bash(timeout 180 npx playwright test e2e/26c-deal-intelligence.spec.ts --headed=false)",
+      "Bash(docker --version)",
+      "Bash(docker-compose --version)",
+      "Bash(docker-compose -f docker-compose.dev.yml up -d)"
     ]
   }
 }
