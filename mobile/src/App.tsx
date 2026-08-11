@@ -3,25 +3,38 @@ import { Stack } from 'expo-router'
 import { useAuth } from '@/hooks/useAuth'
 import { offlineSync } from '@/services/offlineSync'
 import { pushNotifications } from '@/services/pushNotifications'
+import { pushNotificationHandler } from '@/services/pushNotificationHandler'
+import { useDeepLinking } from '@/services/deepLinking'
+import * as Device from 'expo-device'
 
 export default function App() {
-  const { isLoading, isSignedIn, restoreToken } = useAuth()
+  const { isLoading, isSignedIn, restoreToken, user } = useAuth()
+
+  useDeepLinking()
 
   useEffect(() => {
     const bootstrap = async () => {
       await offlineSync.init()
       await restoreToken()
 
-      const pushToken = await pushNotifications.initializePushNotifications()
-      if (pushToken) {
-        console.log('Push token:', pushToken)
+      if (Device.isDevice) {
+        const pushToken = await pushNotifications.initializePushNotifications()
+        if (pushToken && user) {
+          await pushNotificationHandler.registerDeviceToken({
+            user_id: user.id,
+            push_token: pushToken,
+            device_type: Device.osName === 'iOS' ? 'ios' : 'android',
+            device_id: Device.deviceId || 'unknown',
+          })
+        }
       }
 
       pushNotifications.setupNotificationHandlers()
+      pushNotificationHandler.setupHandlers()
     }
 
     bootstrap()
-  }, [restoreToken])
+  }, [restoreToken, user])
 
   if (isLoading) {
     return null
