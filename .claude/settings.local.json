@@ -657,7 +657,10 @@
       "Bash(git commit -m 'feat: Phase 25.2 - WhatsApp/Telegram Integration *)",
       "Bash(git commit -m 'feat: Phase 25.4 - Team Management *)",
       "Bash(git commit -m 'feat: Phase 25.5 - Revenue Forecasting *)",
-      "Bash(git commit -m 'feat: Phase 25.6-8 - A/B Testing, Knowledge Base, Webhooks/Zapier *)"
+      "Bash(git commit -m 'feat: Phase 25.6-8 - A/B Testing, Knowledge Base, Webhooks/Zapier *)",
+      "Bash(xargs grep -l \"entrepreneur_coach\\\\|adaptive_engine\\\\|performance_dashboard\\\\|integrations\\\\|team_management\\\\|forecasting\\\\|testing_framework\\\\|knowledge_base\")",
+      "Bash(git -C \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\" log --oneline)",
+      "Bash(xargs grep -l \"mobile\\\\|export\\\\|report\\\\|api\\\\|sms\\\\|whatsapp\\\\|instagram\\\\|linkedin\")"
     ]
   }
 }

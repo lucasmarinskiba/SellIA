@@ -60,6 +60,7 @@ _try_include("app.api.v1.enterprise_forecast.router", "/api/v1", ["forecast-ente
 _try_include("app.api.v1.enterprise_testing.router", "/api/v1", ["testing-enterprise"])
 _try_include("app.api.v1.enterprise_knowledge.router", "/api/v1", ["knowledge-enterprise"])
 _try_include("app.api.v1.enterprise_webhooks.router", "/api/v1", ["webhooks-enterprise"])
+_try_include("app.api.v1.enterprise_collaboration.router", "/api/v1", ["collaboration-enterprise"])
 
 
 @app.get("/health", tags=["system"])
