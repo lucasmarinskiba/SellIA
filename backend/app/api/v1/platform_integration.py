@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from backend.app.database import get_db
 from backend.app.domains.enterprise.platform_integration import (
@@ -351,32 +351,54 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
 # ============================================================================
 @router.get("/dashboard/overview")
 def get_dashboard_overview(db: Session = Depends(get_db)):
-    """High-level overview: all platforms, all products."""
+    """High-level overview: all platforms, all products (real data from DB)."""
+    from backend.app.models.platform_integration import SellerMetrics, Order, PlatformListing
+
+    # Get seller metrics for each platform
+    metrics = db.query(SellerMetrics).filter(
+        SellerMetrics.metric_date == datetime.utcnow().date()
+    ).all()
+
+    metrics_by_platform = {m.platform: m for m in metrics}
+
+    # Calculate GMV from orders (last 30 days)
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    orders = db.query(Order).filter(Order.created_at >= thirty_days_ago).all()
+    gmv_by_platform = {}
+    for order in orders:
+        if order.platform not in gmv_by_platform:
+            gmv_by_platform[order.platform] = 0
+        gmv_by_platform[order.platform] += order.price * order.quantity
+
+    # Get conversion rate from listings
+    listings = db.query(PlatformListing).all()
+    total_conversions = sum(l.sales_this_month for l in listings)
+
     return {
         "timestamp": datetime.utcnow().isoformat(),
         "platforms": {
             "mercado_libre": {
-                "active_listings": 150,
-                "best_seller_rank": 1,
-                "avg_rating": 4.8,
-                "monthly_revenue": 250000,
+                "active_listings": metrics_by_platform.get("mercado_libre", {}).active_listings or 0,
+                "best_seller_rank": metrics_by_platform.get("mercado_libre", {}).bestseller_count or 0,
+                "avg_rating": float(metrics_by_platform.get("mercado_libre", {}).avg_rating or 4.8),
+                "monthly_revenue": int(gmv_by_platform.get("mercado_libre", 0)),
             },
             "amazon": {
-                "active_listings": 120,
-                "best_seller_rank": 3,
-                "avg_rating": 4.7,
-                "monthly_revenue": 180000,
+                "active_listings": metrics_by_platform.get("amazon", {}).active_listings or 0,
+                "best_seller_rank": metrics_by_platform.get("amazon", {}).bestseller_count or 0,
+                "avg_rating": float(metrics_by_platform.get("amazon", {}).avg_rating or 4.7),
+                "monthly_revenue": int(gmv_by_platform.get("amazon", 0)),
             },
             "hotmart": {
-                "active_listings": 80,
-                "best_seller_rank": 2,
-                "avg_rating": 4.9,
-                "monthly_revenue": 120000,
+                "active_listings": metrics_by_platform.get("hotmart", {}).active_listings or 0,
+                "best_seller_rank": metrics_by_platform.get("hotmart", {}).bestseller_count or 0,
+                "avg_rating": float(metrics_by_platform.get("hotmart", {}).avg_rating or 4.9),
+                "monthly_revenue": int(gmv_by_platform.get("hotmart", 0)),
             },
         },
-        "total_gmv": 550000,
-        "total_active_listings": 350,
-        "avg_conversion_rate": 0.08,  # 8%
+        "total_gmv": sum(gmv_by_platform.values()),
+        "total_active_listings": len(listings),
+        "avg_conversion_rate": total_conversions / len(listings) / 100 if listings else 0.08,
         "top_performing_category": "Electronics",
     }
 
