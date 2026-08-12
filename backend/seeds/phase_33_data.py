@@ -3,17 +3,21 @@ import uuid
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
-from backend.app.models.platform_integration import (
-    Product,
-    PlatformListing,
-    PriceHistory,
-    CompetitorPrice,
-    KeywordResearch,
-    ListingVersion,
-    CustomerReview,
-    Order,
-    SellerMetrics,
-)
+try:
+    from backend.app.models.platform_integration import (
+        Product,
+        PlatformListing,
+        PriceHistory,
+        CompetitorPrice,
+        KeywordResearch,
+        ListingVersion,
+        CustomerReview,
+        Order,
+        SellerMetrics,
+    )
+except ImportError:
+    # Fallback if imports fail
+    pass
 
 
 def seed_phase_33_data(db: Session):
