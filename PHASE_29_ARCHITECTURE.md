@@ -1,926 +1,559 @@
-# Phase 29 - Scale: Voice Agent + Sales Playbooks Architecture
+# Phase 29 - Voice + Sales Playbooks
+## Architecture & Implementation Plan
 
-**Duration**: 10 weeks (Weeks 15-24)  
-**Team Size**: 2 backend engineers + 1 ML engineer + 1 frontend engineer  
+**Duration**: 8 weeks (Dec 1 - Dec 20, 2026)  
+**Team**: 1 backend + 1 frontend  
 **Expected Impact**: 5-10x outbound volume, +40% rep productivity  
-**Prerequisites**: Phase 27 (deal intelligence), Phase 28 (email engagement)
+**Launch Date**: Dec 21, 2026
 
 ---
 
-## STRATEGIC OVERVIEW
+## OVERVIEW
 
-Phase 29 implements 2 transformative systems:
-
-1. **AI Voice Agent** - Outbound calling at scale (5-10x volume vs manual)
-2. **Sales Playbook Engine** - Extract top-performer patterns, auto-recommend actions
-
-Both integrate with Phase 27 deal intelligence to coordinate multi-channel sequences.
-
----
-
-## 1. ARCHITECTURE OVERVIEW
+Phase 29 builds on Phase 27 intelligence to enable AI-powered voice outreach + automated playbook coaching:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                 FRONTEND (React 19)                     │
-│  Voice Call Builder | Playbook Library | Call Coaching  │
-│  Performance Analytics | Script Management              │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│              API LAYER (FastAPI)                        │
-│  /api/v1/voice/initiate-call                            │
-│  /api/v1/voice/call/{call_id}/transcript                │
-│  /api/v1/playbooks/list                                 │
-│  /api/v1/playbooks/recommend/{deal_id}                  │
-│  /api/v1/playbooks/execute/{playbook_id}                │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│          BUSINESS LOGIC (Python Services)               │
-│  VoiceCallManager (Twilio integration)                  │
-│  PlaybookExtractor (ML pattern recognition)             │
-│  PlaybookRecommender (contextual play selection)        │
-│  CoachingEngine (real-time guidance)                    │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│           DATA LAYER (PostgreSQL + Redis)               │
-│  voice_calls | call_transcripts | call_recordings       │
-│  sales_playbooks | playbook_steps | playbook_outcomes   │
-│  sales_rep_performance | play_recommendations           │
-└─────────────────────────────────────────────────────────┘
+Phase 27-28 Output (deal intelligence + email optimization)
+         ↓
+Phase 29 System
+├─ VoiceCallManager (Twilio: AI makes outbound calls at scale)
+├─ PlaybookExtractor (ML: extract top performer patterns)
+└─ PlaybookRecommender (Real-time: suggest plays per deal)
+         ↓
+Outputs
+├─ AI voice agent (500+ dials/week per rep)
+├─ Sales playbooks (extracted from top 20% reps)
+└─ Real-time coaching (suggested plays during calls)
 ```
 
 ---
 
-## 2. DATABASE SCHEMA
+## 1. VOICE CALL MANAGER
 
-### Voice System
+### Problem
+- Manual outbound calls: 20 dials/week per rep (limited by time)
+- Solution: AI agent dials prospects, qualifies them, books meetings
 
-```sql
-CREATE SCHEMA voice;
+### Features
+- **Input**: Prospect list (from deal intelligence)
+- **Output**: Call transcripts, sentiment analysis, meeting booked (yes/no)
+- **Scale**: 500+ dials/week per rep (5-10x volume)
 
--- ============================================================
--- VOICE CALLS
--- ============================================================
+### Workflow
 
-CREATE TABLE voice.voice_calls (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deal_id VARCHAR(255),
-  initiator_id VARCHAR(255),
-  recipient_phone VARCHAR(20),
-  recipient_name VARCHAR(255),
-  recipient_company VARCHAR(255),
-  
-  -- Call metadata
-  call_type VARCHAR(50),  -- outbound, inbound, ai_agent
-  call_purpose VARCHAR(100),  -- initial_outreach, followup, objection_handling
-  
-  -- Timing
-  initiated_at TIMESTAMP DEFAULT NOW(),
-  connected_at TIMESTAMP,
-  ended_at TIMESTAMP,
-  duration_seconds INT,
-  
-  -- Recording
-  recording_url VARCHAR(500),
-  transcription_url VARCHAR(500),
-  
-  -- AI agent flag
-  is_ai_agent BOOLEAN DEFAULT FALSE,
-  ai_model VARCHAR(50),  -- claude, openai, twilio
-  ai_script_template VARCHAR(50),
-  
-  -- Outcome
-  outcome VARCHAR(50),  -- connected, voicemail, no_answer, declined, follow_up_scheduled
-  next_steps VARCHAR(200),
-  sentiment_analysis VARCHAR(20),  -- positive, neutral, negative
-  
-  -- Coaching
-  rep_coaching_score FLOAT,  -- 0-100 (if human rep)
-  coaching_notes TEXT,
-  
-  CONSTRAINT fk_deal FOREIGN KEY (deal_id) 
-    REFERENCES public.deals(id) ON DELETE CASCADE,
-  CONSTRAINT fk_initiator FOREIGN KEY (initiator_id) 
-    REFERENCES public.users(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_voice_calls_deal ON voice.voice_calls(deal_id);
-CREATE INDEX idx_voice_calls_initiator ON voice.voice_calls(initiator_id);
-CREATE INDEX idx_voice_calls_initiated ON voice.voice_calls(initiated_at DESC);
-
--- Call transcripts
-CREATE TABLE voice.call_transcripts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  call_id UUID,
-  
-  -- Transcript
-  full_transcript TEXT,
-  transcript_segments JSONB,  -- [{speaker: "AI|REP|PROSPECT", text: "...", timestamp: 123}]
-  
-  -- Analysis
-  key_topics JSONB,  -- ["pain points", "budget", "timeline"]
-  objections_raised JSONB,  -- [{objection: "...", response: "..."}]
-  buying_signals JSONB,  -- ["budget confirmed", "timeline aligned"]
-  
-  -- Sentiment
-  overall_sentiment VARCHAR(20),  -- positive, neutral, negative
-  prospect_engagement_score FLOAT,  -- 0-100
-  
-  transcribed_at TIMESTAMP DEFAULT NOW(),
-  
-  CONSTRAINT fk_call FOREIGN KEY (call_id) 
-    REFERENCES voice.voice_calls(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_transcripts_call ON voice.call_transcripts(call_id);
-
--- ============================================================
--- SALES PLAYBOOKS
--- ============================================================
-
-CREATE TABLE voice.sales_playbooks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Metadata
-  name VARCHAR(255),
-  description TEXT,
-  category VARCHAR(50),  -- initial_outreach, followup, objection_handling, expansion
-  target_deal_stage VARCHAR(50),  -- prospect, qualified, negotiation
-  target_persona VARCHAR(100),  -- economic_buyer, user_buyer, champion
-  
-  -- Playbook structure
-  steps JSONB,  -- [{order: 1, step_type: "discovery", prompt: "...", duration: 180}]
-  success_criteria JSONB,  -- [{metric: "next_meeting_scheduled", target: true}]
-  
-  -- Performance
-  avg_conversion_rate FLOAT,
-  avg_deal_value_impact FLOAT,
-  usage_count INT DEFAULT 0,
-  win_rate FLOAT,
-  
-  -- Versioning
-  version VARCHAR(10),
-  created_by VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  
-  CONSTRAINT fk_creator FOREIGN KEY (created_by) 
-    REFERENCES public.users(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_playbooks_category ON voice.sales_playbooks(category);
-CREATE INDEX idx_playbooks_stage ON voice.sales_playbooks(target_deal_stage);
-CREATE INDEX idx_playbooks_conversion ON voice.sales_playbooks(avg_conversion_rate DESC);
-
--- Playbook execution
-CREATE TABLE voice.playbook_executions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  playbook_id UUID,
-  call_id UUID,
-  rep_id VARCHAR(255),
-  
-  -- Execution details
-  script_used TEXT,
-  adherence_score FLOAT,  -- 0-100 (how well rep followed playbook)
-  
-  -- Outcome
-  completed BOOLEAN DEFAULT FALSE,
-  completed_at TIMESTAMP,
-  steps_completed INT,
-  total_steps INT,
-  
-  -- Result
-  outcome_achieved BOOLEAN,
-  conversion BOOLEAN,
-  deal_value_impact FLOAT,
-  
-  CONSTRAINT fk_playbook FOREIGN KEY (playbook_id) 
-    REFERENCES voice.sales_playbooks(id) ON DELETE SET NULL,
-  CONSTRAINT fk_call FOREIGN KEY (call_id) 
-    REFERENCES voice.voice_calls(id) ON DELETE SET NULL,
-  CONSTRAINT fk_rep FOREIGN KEY (rep_id) 
-    REFERENCES public.users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_playbook_executions_playbook ON voice.playbook_executions(playbook_id);
-CREATE INDEX idx_playbook_executions_call ON voice.playbook_executions(call_id);
-
--- ============================================================
--- PERFORMANCE TRACKING
--- ============================================================
-
-CREATE TABLE voice.sales_rep_performance (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  rep_id VARCHAR(255) UNIQUE,
-  
-  -- Call volume
-  calls_made INT DEFAULT 0,
-  calls_connected INT DEFAULT 0,
-  connection_rate FLOAT,  -- 0-100
-  
-  -- Conversion
-  deals_closed INT DEFAULT 0,
-  close_rate FLOAT,  -- 0-100
-  avg_deal_value FLOAT,
-  
-  -- Coaching
-  top_playbooks JSONB,  -- [{playbook_id, usage_count, conversion_rate}]
-  coaching_score FLOAT,  -- 0-100
-  improvement_areas JSONB,  -- ["objection handling", "discovery questions"]
-  
-  -- Time tracking
-  avg_call_duration INT,  -- seconds
-  productivity_score FLOAT,  -- 0-100
-  
-  updated_at TIMESTAMP DEFAULT NOW(),
-  
-  CONSTRAINT fk_rep FOREIGN KEY (rep_id) 
-    REFERENCES public.users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_rep_perf_close_rate ON voice.sales_rep_performance(close_rate DESC);
-
--- ============================================================
--- AI CALL SCRIPTS
--- ============================================================
-
-CREATE TABLE voice.ai_call_scripts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Metadata
-  name VARCHAR(255),
-  purpose VARCHAR(100),  -- initial_outreach, followup, objection_handling
-  
-  -- Script structure
-  opening_statement TEXT,
-  discovery_questions JSONB,  -- ["What challenges are you facing?", "What's your timeline?"]
-  value_proposition TEXT,
-  objection_handlers JSONB,  -- [{objection: "too expensive", response: "..."}]
-  closing_statement TEXT,
-  
-  -- Configuration
-  ai_model VARCHAR(50),  -- claude, openai, twilio-virtual-agent
-  temperature FLOAT,  -- 0-1 (creativity level)
-  
-  -- Performance
-  avg_call_duration INT,
-  success_rate FLOAT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  
-  CONSTRAINT fk_playbook FOREIGN KEY (playbook_id) 
-    REFERENCES voice.sales_playbooks(id) ON DELETE SET NULL
-);
-
--- ============================================================
--- Grants
--- ============================================================
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA voice TO sellia_user;
+```
+1. Rep selects deal + stakeholder to call
+2. System generates voice script (from Phase 28)
+3. Twilio initiates call
+4. Claude API handles conversation in real-time:
+   - Greets prospect
+   - Qualifies opportunity
+   - Handles objections
+   - Books meeting if qualified
+5. Transcript captured + analyzed
+6. Rep notified: "Meeting booked with John Smith, Jan 15 at 2 PM"
+7. CRM updated with call details
 ```
 
----
-
-## 3. VOICE CALL SYSTEM
-
-### VoiceCallManager Service (350 lines)
-
-**File**: `backend/app/services/voice/voice_call_manager.py`
+### Claude Voice Integration
 
 ```python
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import twilio.rest
-from backend.app.database import get_db
-import logging
-
-logger = logging.getLogger(__name__)
-
-@dataclass
-class VoiceCall:
-    """Voice call record."""
-    call_id: str
-    deal_id: str
-    recipient_phone: str
-    duration_seconds: int
-    transcript: Optional[str]
-    outcome: str  # connected, voicemail, no_answer
-    sentiment: Optional[str]  # positive, neutral, negative
-    next_steps: Optional[str]
-
 class VoiceCallManager:
-    """Manage outbound AI voice calls at scale."""
+    def __init__(self, db, twilio_client, claude_client):
+        self.db = db
+        self.twilio = twilio_client
+        self.claude = claude_client
     
-    def __init__(self, twilio_sid: str, twilio_token: str):
-        self.twilio_client = twilio.rest.Client(twilio_sid, twilio_token)
-        self.db = SessionLocal()
-    
-    async def initiate_ai_call(
-        self,
-        deal_id: str,
-        prospect_phone: str,
-        prospect_name: str,
-        script_template: str,  # initial_outreach, followup, objection_handling
-        context: Dict[str, Any]  # {company, pain_points, deal_value, etc}
-    ) -> VoiceCall:
-        """Initiate AI voice call (Twilio + Claude)."""
+    def initiate_call(self, prospect_id: str, deal_id: str) -> VoiceCallResult:
+        """Initiate AI voice call with prospect."""
         
-        # 1. Build AI script from template
-        script = await self._build_ai_script(
-            script_template=script_template,
-            prospect_name=prospect_name,
-            context=context
-        )
+        # 1. Generate voice script from Phase 28
+        script = self._generate_voice_script(prospect_id, deal_id)
         
         # 2. Create Twilio call
-        call = self.twilio_client.calls.create(
-            to=prospect_phone,
-            from_=os.getenv("TWILIO_PHONE_NUMBER"),
-            url=f"https://api.production.com/webhooks/voice/ivr",
-            machine_detection="Enable",
-            async_amd=True,
-            record=True
+        call = self.twilio.calls.create(
+            to=prospect.phone,
+            from_=TWILIO_PHONE,
+            url=f"{API_BASE}/voice/handle-call",
+            record=True,  # Record call for training
         )
         
-        # 3. Log call in database
+        # 3. Start voice conversation
+        conversation = self._start_conversation(call.sid, script)
+        
+        # 4. Store call record
         voice_call = VoiceCall(
-            id=call.sid,
+            prospect_id=prospect_id,
             deal_id=deal_id,
-            initiator_id=None,  # AI agent (no human)
-            recipient_phone=prospect_phone,
-            recipient_name=prospect_name,
-            call_type="ai_agent",
-            ai_model="claude",
-            ai_script_template=script_template,
-            is_ai_agent=True
+            call_sid=call.sid,
+            script_used=script,
+            started_at=datetime.utcnow(),
         )
-        
         self.db.add(voice_call)
         self.db.commit()
         
-        logger.info(f"Initiated AI call {call.sid} to {prospect_phone}")
-        
-        return voice_call
+        return VoiceCallResult(call_id=call.sid, status="initiated")
     
-    async def _build_ai_script(
-        self,
-        script_template: str,
-        prospect_name: str,
-        context: Dict[str, Any]
-    ) -> str:
-        """Build personalized script using Claude."""
+    def handle_call_webhook(self, call_sid: str, input_text: str) -> str:
+        """Handle incoming voice input from Twilio."""
         
-        prompt = f"""Generate a professional outbound sales call script for:
-
-Prospect: {prospect_name}
-Company: {context.get('company', 'Unknown')}
-Pain Points: {context.get('pain_points', 'TBD')}
-Budget: ${context.get('deal_value', 0):,.0f}
-Timeline: {context.get('timeline', 'Unknown')}
-
-Script template: {script_template}
-
-Generate a natural, conversational script with:
-1. Warm opening (reference or connection)
-2. Discovery questions (2-3 probing questions)
-3. Value proposition (customized)
-4. Objection handler (1-2 common objections)
-5. Call-to-action (next meeting or followup)
-
-Make it sound human, not robotic. Keep to 3-5 minutes of speaking time."""
+        # 1. Get call context
+        call = self.db.query(VoiceCall).filter(VoiceCall.call_sid == call_sid).first()
         
-        response = anthropic.Anthropic().messages.create(
+        # 2. Build Claude prompt with conversation history
+        prompt = f"""
+        You are professional sales AI calling {call.prospect.name} at {call.prospect.company}.
+        
+        Goal: Qualify opportunity and book meeting
+        
+        Context:
+        - Deal value: ${call.deal.amount:,}
+        - Prospect role: {call.prospect.title}
+        - Previous conversations: {get_conversation_history(call.id)}
+        
+        Prospect just said: "{input_text}"
+        
+        Respond naturally:
+        1. If objection, handle it with benefit statement
+        2. If qualified, suggest meeting time
+        3. If unqualified, politely end call
+        4. Keep responses under 30 seconds
+        
+        Next response:
+        """
+        
+        # 3. Call Claude for response
+        response = self.claude.messages.create(
             model="claude-opus",
-            max_tokens=1500,
+            max_tokens=500,
             messages=[{"role": "user", "content": prompt}]
         )
         
-        return response.content[0].text
-    
-    async def process_call_transcript(
-        self,
-        call_id: str,
-        transcript_text: str
-    ) -> Dict[str, Any]:
-        """Process transcript, extract insights."""
+        ai_response = response.content[0].text
         
-        # 1. Get call record
-        call = self.db.query(VoiceCall).filter_by(id=call_id).first()
-        
-        # 2. Send to speech-to-text if needed
-        # (Twilio already transcribed)
-        
-        # 3. Analyze with Claude
-        prompt = f"""Analyze this sales call transcript:
-
-{transcript_text}
-
-Extract:
-1. Key topics discussed (list)
-2. Objections raised (list with responses)
-3. Buying signals (explicit commitments, budget confirmation, timeline)
-4. Overall sentiment (positive/neutral/negative)
-5. Next steps agreed
-6. Prospect engagement score (0-100)
-
-Return as JSON."""
-        
-        response = anthropic.Anthropic().messages.create(
-            model="claude-opus",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
+        # 4. Store conversation turn
+        turn = ConversationTurn(
+            call_id=call.id,
+            speaker="prospect",
+            text=input_text,
+            timestamp=datetime.utcnow(),
         )
+        self.db.add(turn)
         
-        analysis = json.loads(response.content[0].text)
-        
-        # 4. Store analysis
-        transcript = CallTranscript(
-            call_id=call_id,
-            full_transcript=transcript_text,
-            key_topics=analysis["key_topics"],
-            objections_raised=analysis["objections"],
-            buying_signals=analysis["buying_signals"],
-            overall_sentiment=analysis["sentiment"],
-            prospect_engagement_score=analysis["engagement_score"]
+        turn = ConversationTurn(
+            call_id=call.id,
+            speaker="ai",
+            text=ai_response,
+            timestamp=datetime.utcnow(),
         )
-        
-        self.db.add(transcript)
-        call.outcome = "connected"
-        call.sentiment_analysis = analysis["sentiment"]
-        call.next_steps = analysis["next_steps"]
+        self.db.add(turn)
         self.db.commit()
         
-        return analysis
+        # 5. Convert response to speech (TTS)
+        audio_url = self._text_to_speech(ai_response)
+        
+        return audio_url
     
-    async def get_call_insights(self, call_id: str) -> Dict[str, Any]:
-        """Get comprehensive call insights."""
+    def end_call(self, call_sid: str):
+        """End call, analyze, update CRM."""
         
-        call = self.db.query(VoiceCall).filter_by(id=call_id).first()
-        transcript = self.db.query(CallTranscript).filter_by(call_id=call_id).first()
+        call = self.db.query(VoiceCall).filter(VoiceCall.call_sid == call_sid).first()
         
-        return {
-            "call_id": call_id,
-            "deal_id": call.deal_id,
-            "duration": call.duration_seconds,
-            "outcome": call.outcome,
-            "sentiment": call.sentiment_analysis,
-            "transcript": transcript.full_transcript if transcript else None,
-            "key_topics": transcript.key_topics if transcript else [],
-            "buying_signals": transcript.buying_signals if transcript else [],
-            "next_steps": call.next_steps
-        }
+        # 1. Get full transcript
+        transcript = self._get_transcript(call_sid)
+        
+        # 2. Analyze outcome (sentiment, objections, decision)
+        outcome = self._analyze_call(transcript)
+        
+        # 3. Update call record
+        call.ended_at = datetime.utcnow()
+        call.transcript = transcript
+        call.outcome = outcome["decision"]  # "meeting_booked", "qualified", "unqualified"
+        call.sentiment = outcome["sentiment"]
+        call.objections_handled = outcome["objections"]
+        
+        if outcome["decision"] == "meeting_booked":
+            # Create meeting in CRM
+            meeting = Meeting(
+                prospect_id=call.prospect_id,
+                deal_id=call.deal_id,
+                scheduled_for=outcome["meeting_time"],
+                ai_booked=True,
+            )
+            self.db.add(meeting)
+        
+        self.db.commit()
+        
+        # 4. Notify rep
+        send_notification(call.deal.owner_id, f"Call completed with {call.prospect.name}")
+```
+
+### Database Schema
+
+```sql
+CREATE TABLE voice_calls (
+  id UUID PRIMARY KEY,
+  prospect_id VARCHAR(255) NOT NULL,
+  deal_id VARCHAR(255) NOT NULL,
+  
+  call_sid VARCHAR(255) UNIQUE,  -- Twilio call ID
+  script_used TEXT,
+  
+  started_at TIMESTAMP,
+  ended_at TIMESTAMP,
+  duration_seconds INT,
+  
+  outcome VARCHAR(50),  -- meeting_booked, qualified, unqualified
+  sentiment VARCHAR(50),  -- positive, neutral, negative
+  
+  FOREIGN KEY (prospect_id),
+  FOREIGN KEY (deal_id),
+  INDEX idx_prospect (prospect_id),
+  INDEX idx_deal (deal_id)
+);
+
+CREATE TABLE call_transcripts (
+  id UUID PRIMARY KEY,
+  call_id UUID NOT NULL,
+  
+  speaker VARCHAR(50),  -- prospect, ai
+  text TEXT,
+  timestamp TIMESTAMP,
+  
+  FOREIGN KEY (call_id) REFERENCES voice_calls(id)
+);
+
+CREATE TABLE voice_call_metrics (
+  id UUID PRIMARY KEY,
+  call_id UUID NOT NULL,
+  
+  objections_raised INT,
+  objections_handled INT,
+  questions_asked INT,
+  time_to_qualification SECONDS INT,
+  
+  FOREIGN KEY (call_id) REFERENCES voice_calls(id)
+);
 ```
 
 ---
 
-## 4. SALES PLAYBOOK SYSTEM
+## 2. PLAYBOOK EXTRACTOR
 
-### PlaybookExtractor Service (300 lines)
+### Problem
+- Top 20% of reps close 40% of deals
+- But their tactics aren't documented/shared
+- Solution: ML extracts playbooks from top performer patterns
 
-**File**: `backend/app/services/voice/playbook_extractor.py`
+### Implementation
 
 ```python
-from dataclasses import dataclass
-from typing import List, Dict, Any
-from sqlalchemy import func, select
-from backend.app.database import get_db
-import logging
-
-logger = logging.getLogger(__name__)
-
-@dataclass
-class SalesPlaybook:
-    """Extracted sales playbook from top performers."""
-    name: str
-    category: str
-    steps: List[Dict[str, Any]]
-    success_criteria: List[Dict[str, Any]]
-    avg_conversion_rate: float
-    win_rate: float
-
 class PlaybookExtractor:
-    """Extract playbooks from top-performer behavior."""
+    """Extract sales playbooks from top performer call transcripts."""
     
-    def __init__(self, db_session):
-        self.db = db_session
-    
-    async def extract_playbooks_from_top_performers(self) -> List[SalesPlaybook]:
-        """Identify top 20% reps, extract their playbooks."""
+    def extract_playbooks(self, top_performer_ids: List[str]) -> List[SalesPlaybook]:
+        """Extract playbooks from top 20% performers."""
         
-        # 1. Identify top performers
-        top_reps = await self._get_top_performers(percentile=80)
+        # 1. Get all calls from top performers
+        calls = self.db.query(VoiceCall).filter(
+            VoiceCall.rep_id.in_(top_performer_ids)
+        ).all()
         
-        # 2. Extract their call patterns
+        # 2. Extract patterns
         playbooks = []
-        
-        for rep in top_reps:
-            # Get all their calls
-            calls = self.db.query(VoiceCall).filter_by(
-                initiator_id=rep.id
-            ).order_by(VoiceCall.initiated_at).all()
-            
-            # Cluster by call type (initial_outreach, followup, objection_handling)
-            by_type = {}
-            for call in calls:
-                if call.call_type not in by_type:
-                    by_type[call.call_type] = []
-                by_type[call.call_type].append(call)
-            
-            # Extract playbook per type
-            for call_type, type_calls in by_type.items():
-                playbook = await self._extract_playbook_from_calls(
-                    calls=type_calls,
-                    rep_id=rep.id,
-                    call_type=call_type
-                )
+        for call in calls:
+            if call.outcome == "meeting_booked":
+                playbook = self._extract_from_call(call)
                 playbooks.append(playbook)
         
-        return playbooks
+        # 3. Cluster similar playbooks
+        clusters = self._cluster_playbooks(playbooks)
+        
+        # 4. Create consolidated playbooks
+        final_playbooks = []
+        for cluster in clusters:
+            consolidated = self._consolidate_cluster(cluster)
+            final_playbooks.append(consolidated)
+        
+        return final_playbooks
     
-    async def _get_top_performers(self, percentile: int = 80) -> List:
-        """Get top X% of reps by close rate."""
+    def _extract_from_call(self, call: VoiceCall) -> Dict[str, Any]:
+        """Extract playbook elements from single call."""
         
-        query = select(SalesRepPerformance).order_by(
-            SalesRepPerformance.close_rate.desc()
-        ).limit(int(self.db.query(func.count(SalesRepPerformance.id)).scalar() * (100 - percentile) / 100))
+        transcript = call.get_transcript()
         
-        return self.db.execute(query).scalars().all()
-    
-    async def _extract_playbook_from_calls(
-        self,
-        calls: List,
-        rep_id: str,
-        call_type: str
-    ) -> SalesPlaybook:
-        """Extract patterns from individual calls."""
+        # Use Claude to identify playbook elements
+        prompt = f"""
+        Analyze this sales call and extract playbook elements:
         
-        # Analyze successful calls (where conversion = True)
-        successful = [c for c in calls if c.outcome == "connected"]
+        Transcript: {transcript}
         
-        # Extract common patterns
-        common_topics = await self._find_common_topics(successful)
-        common_objections = await self._find_common_objections(successful)
-        common_next_steps = await self._find_common_next_steps(successful)
+        Identify:
+        1. Opening statement (how rep introduces themselves)
+        2. Discovery questions (questions asked to qualify)
+        3. Value proposition (how benefits are presented)
+        4. Objection handlers (responses to common objections)
+        5. Closing statement (how meeting is booked)
         
-        # Calculate metrics
-        conversion_rate = len([c for c in calls if c.outcome == "connected"]) / len(calls) if calls else 0
-        win_rate = len([c for c in calls if c.call_type == "ai_agent"]) / len(calls) if calls else 0
+        Format as JSON.
+        """
         
-        # Build playbook steps
-        steps = [
-            {
-                "order": 1,
-                "step_type": "discovery",
-                "prompt": f"Ask about: {', '.join(common_topics[:3])}",
-                "duration": 180
-            },
-            {
-                "order": 2,
-                "step_type": "objection_handling",
-                "prompt": f"Handle: {', '.join(common_objections[:2])}",
-                "duration": 60
-            },
-            {
-                "order": 3,
-                "step_type": "closing",
-                "prompt": f"Propose: {common_next_steps[0] if common_next_steps else 'Next meeting'}",
-                "duration": 60
-            }
-        ]
-        
-        return SalesPlaybook(
-            name=f"{rep_id} - {call_type} Playbook",
-            category=call_type,
-            steps=steps,
-            success_criteria=[
-                {"metric": "prospect_engagement", "target": 75},
-                {"metric": "next_step_scheduled", "target": True}
-            ],
-            avg_conversion_rate=conversion_rate,
-            win_rate=win_rate
+        response = self.claude.messages.create(
+            model="claude-opus",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
         )
+        
+        import json
+        return json.loads(response.content[0].text)
     
-    async def _find_common_topics(self, calls: List) -> List[str]:
-        """Find most common topics in successful calls."""
+    def _cluster_playbooks(self, playbooks: List[Dict]) -> List[List[Dict]]:
+        """Cluster similar playbooks together."""
         
-        topics = []
-        for call in calls[:10]:
-            transcript = self.db.query(CallTranscript).filter_by(
-                call_id=call.id
-            ).first()
-            
-            if transcript:
-                topics.extend(transcript.key_topics or [])
+        # Use similarity scoring to group related playbooks
+        # Simplified: group by industry/deal stage
         
-        # Return top 5 most common
-        from collections import Counter
-        return [t for t, _ in Counter(topics).most_common(5)]
+        clusters = {}
+        for pb in playbooks:
+            key = f"{pb['industry']}-{pb['deal_stage']}"
+            if key not in clusters:
+                clusters[key] = []
+            clusters[key].append(pb)
+        
+        return list(clusters.values())
     
-    async def _find_common_objections(self, calls: List) -> List[str]:
-        """Find most common objections + how they were handled."""
+    def _consolidate_cluster(self, cluster: List[Dict]) -> SalesPlaybook:
+        """Create single playbook from cluster."""
         
-        objections = []
-        for call in calls[:10]:
-            transcript = self.db.query(CallTranscript).filter_by(
-                call_id=call.id
-            ).first()
-            
-            if transcript:
-                objections.extend(transcript.objections_raised or [])
+        playbook = SalesPlaybook(
+            name=f"Playbook: {cluster[0]['industry']} - {cluster[0]['deal_stage']}",
+            industry=cluster[0]['industry'],
+            deal_stage=cluster[0]['deal_stage'],
+            win_rate=self._calculate_win_rate(cluster),
+            steps=[
+                {
+                    "step": 1,
+                    "name": "Opening",
+                    "script": self._consolidate_step(cluster, "opening"),
+                },
+                {
+                    "step": 2,
+                    "name": "Discovery",
+                    "script": self._consolidate_step(cluster, "discovery"),
+                },
+                # ... more steps
+            ],
+        )
         
-        return [o for o, _ in Counter(objections).most_common(5)]
-    
-    async def _find_common_next_steps(self, calls: List) -> List[str]:
-        """Find most common next steps proposed."""
-        
-        next_steps = []
-        for call in calls[:10]:
-            if call.next_steps:
-                next_steps.append(call.next_steps)
-        
-        return next_steps[:5]
+        return playbook
 ```
 
-### PlaybookRecommender Service (200 lines)
+### Database Schema
+
+```sql
+CREATE TABLE sales_playbooks (
+  id UUID PRIMARY KEY,
+  name VARCHAR(255),
+  industry VARCHAR(255),
+  deal_stage VARCHAR(50),
+  
+  win_rate FLOAT,  -- % of calls that book meeting
+  usage_count INT DEFAULT 0,
+  
+  steps JSONB,  -- [{step: 1, name: "Opening", script: "..."}]
+  extracted_from_calls INT,  -- How many calls analyzed
+  
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  
+  INDEX idx_industry_stage (industry, deal_stage)
+);
+
+CREATE TABLE playbook_executions (
+  id UUID PRIMARY KEY,
+  playbook_id UUID NOT NULL,
+  call_id UUID NOT NULL,
+  
+  step_number INT,
+  rep_deviation FLOAT,  -- How much rep deviated from script
+  
+  FOREIGN KEY (playbook_id),
+  FOREIGN KEY (call_id)
+);
+```
+
+---
+
+## 3. PLAYBOOK RECOMMENDER
+
+### Real-Time Coaching
 
 ```python
 class PlaybookRecommender:
-    """Recommend playbooks based on deal context."""
+    """Recommend playbooks in real-time during calls."""
     
-    def __init__(self, db_session):
-        self.db = db_session
-    
-    async def get_recommended_playbooks(
-        self,
-        deal_id: str,
-        rep_id: str
-    ) -> List[Dict[str, Any]]:
-        """Get personalized playbook recommendations."""
+    def recommend_playbook(self, deal_id: str, context: Dict) -> Optional[SalesPlaybook]:
+        """Recommend playbook for current deal."""
         
-        # Get deal details
-        deal = self.db.query(Deal).filter_by(id=deal_id).first()
+        deal = self.db.query(Deal).get(deal_id)
         
-        # Get rep performance
-        rep_perf = self.db.query(SalesRepPerformance).filter_by(
-            rep_id=rep_id
-        ).first()
+        # 1. Find matching playbooks
+        candidates = self.db.query(SalesPlaybook).filter(
+            (SalesPlaybook.industry == deal.company.industry) |
+            (SalesPlaybook.deal_stage == deal.stage)
+        ).all()
         
-        # Get playbooks for this deal stage + persona
-        query = select(SalesPlaybook).where(
-            (SalesPlaybook.target_deal_stage == deal.stage) |
-            (SalesPlaybook.category == "followup")
-        ).order_by(SalesPlaybook.avg_conversion_rate.desc()).limit(5)
+        if not candidates:
+            return None
         
-        playbooks = self.db.execute(query).scalars().all()
-        
-        # Score playbooks by rep's past performance
-        recommendations = []
-        for pb in playbooks:
-            # If rep used this playbook before, boost score
-            rep_uses = self.db.query(PlaybookExecution).filter_by(
-                playbook_id=pb.id,
-                rep_id=rep_id
-            ).count()
-            
-            score = pb.avg_conversion_rate * 100
-            if rep_uses > 0:
-                score *= 1.2  # Boost familiar playbooks
-            
-            recommendations.append({
-                "playbook_id": pb.id,
-                "name": pb.name,
-                "category": pb.category,
-                "conversion_rate": pb.avg_conversion_rate,
-                "match_score": score,
-                "reason": f"Based on {deal.stage} stage + rep's {rep_uses} prior uses"
-            })
-        
-        return recommendations
-```
-
----
-
-## 5. API ENDPOINTS
-
-```python
-@router.post("/voice/initiate-call")
-async def initiate_ai_call(
-    deal_id: str,
-    prospect_phone: str,
-    prospect_name: str,
-    script_template: str = "initial_outreach",
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
-):
-    """Initiate AI voice call."""
-    
-    manager = VoiceCallManager(
-        os.getenv("TWILIO_SID"),
-        os.getenv("TWILIO_TOKEN")
-    )
-    
-    call = await manager.initiate_ai_call(
-        deal_id=deal_id,
-        prospect_phone=prospect_phone,
-        prospect_name=prospect_name,
-        script_template=script_template
-    )
-    
-    return {"call_id": call.id, "status": "calling"}
-
-@router.get("/voice/call/{call_id}")
-async def get_call_insights(
-    call_id: str,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
-):
-    """Get call transcript + insights."""
-    
-    manager = VoiceCallManager(None, None)
-    manager.db = db
-    
-    insights = await manager.get_call_insights(call_id)
-    return insights
-
-@router.get("/playbooks/list")
-async def list_playbooks(
-    category: str = None,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
-):
-    """List all sales playbooks."""
-    
-    query = select(SalesPlaybook)
-    if category:
-        query = query.where(SalesPlaybook.category == category)
-    
-    playbooks = db.execute(query).scalars().all()
-    
-    return {
-        "playbooks": [
-            {
-                "id": pb.id,
-                "name": pb.name,
-                "category": pb.category,
-                "conversion_rate": pb.avg_conversion_rate,
-                "usage_count": pb.usage_count
-            }
-            for pb in playbooks
+        # 2. Score by win rate + relevance
+        scores = [
+            (pb, pb.win_rate * 0.7 + self._relevance_score(pb, deal) * 0.3)
+            for pb in candidates
         ]
-    }
+        
+        best = max(scores, key=lambda x: x[1])
+        return best[0]
+    
+    def get_next_step(self, playbook_id: str, call_id: str, current_step: int) -> Optional[str]:
+        """Get next playbook step based on call progress."""
+        
+        playbook = self.db.query(SalesPlaybook).get(playbook_id)
+        
+        if current_step >= len(playbook.steps):
+            return None
+        
+        next_step = playbook.steps[current_step]
+        return next_step["script"]
+```
 
-@router.get("/playbooks/recommend/{deal_id}")
-async def get_playbook_recommendations(
-    deal_id: str,
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_db)
-):
-    """Get recommended playbooks for deal + rep."""
-    
-    recommender = PlaybookRecommender(db)
-    recommendations = await recommender.get_recommended_playbooks(
-        deal_id=deal_id,
-        rep_id=current_user["id"]
-    )
-    
-    return {"recommendations": recommendations}
+### UI Integration
+
+Rep sees real-time suggestions:
+```
+┌─ Current Call: John Smith (Acme Corp) ─┐
+│ Playbook: "Enterprise Sales - Discovery" │
+│ Current Step: Discovery Questions       │
+│                                          │
+│ Suggested Next: "Ask about budget"     │
+│ Win Rate: 78%                           │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
-## 6. FRONTEND COMPONENTS
+## 4. DATABASE TABLES (8 total)
 
-### VoiceCallBuilder.tsx
+```
+voice_calls           - Call records
+call_transcripts      - Conversation turn-by-turn
+voice_call_metrics    - Call analytics
+sales_playbooks       - Extracted playbooks
+playbook_executions   - Playbook usage tracking
+sales_rep_performance - Rep statistics
+ai_call_scripts       - Generated voice scripts
+meeting_bookings      - AI-booked meetings
+```
+
+---
+
+## 5. API ENDPOINTS (5 total)
+
+```
+POST /api/v1/voice/initiate-call
+     Body: { prospect_id, deal_id }
+     → Start AI voice call
+
+GET  /api/v1/voice/call/{call_id}
+     → Get call transcript + outcome
+
+GET  /api/v1/playbooks
+     → List available playbooks
+
+POST /api/v1/playbooks/recommend
+     Body: { deal_id }
+     → Get recommended playbook for deal
+
+GET  /api/v1/voice/metrics
+     → Call volume, conversion, sentiment
+```
+
+---
+
+## 6. FRONTEND COMPONENTS (2 total)
+
+### Component 1: VoiceCallBuilder
 
 ```typescript
-export const VoiceCallBuilder: React.FC = () => {
-  const [dealId, setDealId] = useState('');
-  const [prospectPhone, setProspectPhone] = useState('');
-  const [prospectName, setProspectName] = useState('');
-  const [scriptTemplate, setScriptTemplate] = useState('initial_outreach');
-  const [calling, setCalling] = useState(false);
-
-  const handleInitiateCall = async () => {
-    setCalling(true);
-    const response = await fetch('/api/v1/voice/initiate-call', {
-      method: 'POST',
-      body: JSON.stringify({
-        deal_id: dealId,
-        prospect_phone: prospectPhone,
-        prospect_name: prospectName,
-        script_template: scriptTemplate
-      })
-    });
-    
-    const result = await response.json();
-    // Poll for call completion
-    pollCallStatus(result.call_id);
-  };
-
-  return (
-    <Card>
-      <h2>AI Voice Call Initiator</h2>
-      <TextInput placeholder="Deal ID" value={dealId} onChange={...} />
-      <TextInput placeholder="Phone" value={prospectPhone} onChange={...} />
-      <TextInput placeholder="Name" value={prospectName} onChange={...} />
-      <Select value={scriptTemplate} onChange={...}>
-        <option value="initial_outreach">Initial Outreach</option>
-        <option value="followup">Follow-up</option>
-        <option value="objection_handling">Objection Handling</option>
-      </Select>
-      <Button onClick={handleInitiateCall} disabled={calling}>
-        {calling ? 'Calling...' : 'Initiate Call'}
-      </Button>
-    </Card>
-  );
-};
+export default function VoiceCallBuilder({ dealId }) {
+  // 1. Select stakeholder to call
+  // 2. Choose voiceScript template
+  // 3. Start call button
+  // 4. Live transcript view
+  // 5. Real-time playbook recommendation
+  // 6. Call outcome tracking
+}
 ```
 
-### PlaybookLibrary.tsx
+### Component 2: PlaybookLibrary
 
 ```typescript
-export const PlaybookLibrary: React.FC = () => {
-  const [playbooks, setPlaybooks] = useState<any[]>([]);
-  const [category, setCategory] = useState('initial_outreach');
-
-  useEffect(() => {
-    fetch(`/api/v1/playbooks/list?category=${category}`)
-      .then(r => r.json())
-      .then(data => setPlaybooks(data.playbooks));
-  }, [category]);
-
-  return (
-    <div>
-      <h2>Sales Playbooks</h2>
-      <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-        <option value="initial_outreach">Initial Outreach</option>
-        <option value="followup">Follow-up</option>
-        <option value="objection_handling">Objection Handling</option>
-      </Select>
-      
-      <div className="playbooks-list">
-        {playbooks.map(pb => (
-          <Card key={pb.id}>
-            <h3>{pb.name}</h3>
-            <Badge>{(pb.conversion_rate * 100).toFixed(1)}% conversion</Badge>
-            <p>Used {pb.usage_count} times</p>
-            <Button>Use Playbook</Button>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
+export default function PlaybookLibrary() {
+  // 1. List all playbooks (by industry/stage)
+  // 2. Playbook details (steps, win rate, usage)
+  // 3. Search/filter
+  // 4. "Use This Playbook" for active calls
+  // 5. Performance metrics (win rate, call metrics)
+}
 ```
 
 ---
 
-## 7. IMPLEMENTATION TIMELINE
+## SUCCESS CRITERIA
 
-**Week 15-16**: Voice Infrastructure
-- [ ] Twilio integration setup
-- [ ] VoiceCallManager service
-- [ ] AI script generation (Claude)
-- [ ] Call transcript processing
+**Volume**:
+- ✅ 5-10x outbound calls (20 → 100-200 dials/week)
+- ✅ 500+ calls/week per AI agent
+- ✅ 99%+ call completion (no drops)
 
-**Week 17-18**: Playbook Extraction
-- [ ] PlaybookExtractor service
-- [ ] Top performer identification
-- [ ] Pattern extraction (topics, objections)
-- [ ] Playbook database population
+**Quality**:
+- ✅ Meeting booking rate: 40%+ (from AI calls)
+- ✅ Call duration: 4-6 minutes (natural length)
+- ✅ Sentiment accuracy: 90%+ (detecting prospect tone)
+- ✅ Transcript accuracy: 95%+ (real-time transcription)
 
-**Week 19-20**: Recommendations + Coaching
-- [ ] PlaybookRecommender service
-- [ ] Real-time play recommendations
-- [ ] Rep coaching module
-- [ ] Performance tracking
+**Playbooks**:
+- ✅ 10+ playbooks extracted
+- ✅ Win rate improvement: +15-20%
+- ✅ Rep usage: 70%+ of active reps
+- ✅ Rep satisfaction: 8+/10
 
-**Week 21-24**: Frontend + Integration
-- [ ] VoiceCallBuilder component
-- [ ] PlaybookLibrary component
-- [ ] Call analytics dashboard
-- [ ] E2E testing + UAT
+**Rep Productivity**:
+- ✅ Time freed up: 20+ hours/week (no manual dialing)
+- ✅ Coaching effectiveness: +40% faster ramp (new reps)
+- ✅ Adoption: 80%+ of team using by week 2
 
 ---
 
-## 8. SUCCESS CRITERIA
+## TIMELINE
 
-**Technical**:
-- [ ] 1000+ calls processed per day
-- [ ] Call transcript accuracy 95%+
-- [ ] Playbook recommendations < 500ms
-- [ ] 99.9% uptime (Twilio)
+**Week 1-2**: VoiceCallManager (Twilio integration)
+**Week 3-4**: PlaybookExtractor (ML pattern extraction)
+**Week 5-6**: PlaybookRecommender (real-time coaching)
+**Week 7-8**: Frontend components + integration testing
 
-**Product**:
-- [ ] 5-10x outbound volume increase
-- [ ] +40% rep productivity
-- [ ] Playbooks used in 50%+ of calls
-- [ ] Top playbooks 20%+ conversion
+**Launch**: Dec 21, 2026
 
 ---
 
-**Phase 29 Architecture Ready** ✅
+## DEPENDENCIES
 
+- Twilio API (voice calling)
+- Claude API (conversation handling)
+- Speech-to-text (transcription)
+- Text-to-speech (voice response)
+- Redis (call state management)
+
+---
+
+**Phase 29 Ready to Build**
