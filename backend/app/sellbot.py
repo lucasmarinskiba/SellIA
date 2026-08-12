@@ -63,6 +63,32 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("✅ Database initialized")
 
+    # Load Phase 33 seed data if needed (async-compatible)
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import os
+        from app.db.seed_phase_33 import seed_phase_33
+
+        # Get sync engine from DATABASE_URL
+        db_url = os.getenv("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://").replace("postgresql://", "postgresql+psycopg2://")
+        if db_url:
+            sync_engine = create_engine(db_url, connect_args={"connect_timeout": 5})
+            SessionLocal = sessionmaker(bind=sync_engine)
+            db = SessionLocal()
+            try:
+                result = seed_phase_33(db)
+                if result["status"] == "success":
+                    logger.info(f"✅ Phase 33 seed loaded: {result['products_created']} products, {result['listings_created']} listings, ${result['total_gmv_monthly']:,}/mo GMV")
+                elif result["status"] == "skipped":
+                    logger.debug(f"Phase 33 seed: {result['reason']}")
+                else:
+                    logger.warning(f"Phase 33 seed error: {result.get('error', 'unknown')}")
+            finally:
+                db.close()
+    except Exception as e:
+        logger.debug(f"Phase 33 seed unavailable: {e}")
+
     scheduler = await get_scheduler()
     logger.info("✅ Redis scheduler connected")
 
