@@ -739,9 +739,27 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
           width: 38, height: 38, borderRadius: 9, display: 'grid', placeItems: 'center',
           background: `linear-gradient(135deg, ${T.cobaltDk}, ${T.cobalt})`, color: '#fff',
         }}><Brain size={20} /></span>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>SellIA · Command Center</div>
-          <div style={{ fontSize: 11, color: T.text2, fontFamily: T.mono }}>Súper Agente de Ventas B2B</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>SellIA · Command Center</div>
+            <div style={{ fontSize: 11, color: T.text2, fontFamily: T.mono }}>Súper Agente de Ventas B2B</div>
+          </div>
+          <a href="/dashboard/phase33" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+            borderRadius: 8, border: `1px solid ${T.emerald}33`, background: `${T.emerald}14`,
+            fontSize: 12, fontWeight: 600, color: T.emerald, textDecoration: 'none',
+            transition: 'background .14s, border-color .14s',
+            cursor: 'pointer',
+          }} onMouseEnter={e => {
+            e.currentTarget.style.background = `${T.emerald}22`;
+            e.currentTarget.style.borderColor = `${T.emerald}55`;
+          }} onMouseLeave={e => {
+            e.currentTarget.style.background = `${T.emerald}14`;
+            e.currentTarget.style.borderColor = `${T.emerald}33`;
+          }}>
+            <Store size={14} />
+            Phase 33 · Vendedor Multi-Plataforma
+          </a>
         </div>
         <div style={{ flex: 1 }} />
         {brain && (
