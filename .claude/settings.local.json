@@ -668,7 +668,8 @@
       "Bash(timeout 180 npx playwright test e2e/26c-deal-intelligence.spec.ts --headed=false)",
       "Bash(docker --version)",
       "Bash(docker-compose --version)",
-      "Bash(docker-compose -f docker-compose.dev.yml up -d)"
+      "Bash(docker-compose -f docker-compose.dev.yml up -d)",
+      "Bash(cp /c/Users/Usuario/AppData/Local/Temp/claude/cf3ab154-e54c-4ee1-ae79-b11263b2b6e0/scratchpad/PHASE_27_*.md /c/Users/Usuario/Pictures/\"Somos paithon labs\"/\"Agente IA - Vendedor Automático\"/ && ls -lh /c/Users/Usuario/Pictures/\"Somos paithon labs\"/\"Agente IA - Vendedor Automático\"/PHASE_27_*.md)"
     ]
   }
 }
