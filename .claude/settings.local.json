@@ -687,7 +687,9 @@
       "Bash(git commit -m 'Phase 33 production prep - docs and demos *)",
       "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/commits/main\")",
       "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=3\")",
-      "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=1\")"
+      "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=1\")",
+      "Bash(vercel link *)",
+      "Bash(xargs grep -l \"@/components/ui/card\\\\|@/components/ui/button\\\\|@/components/ui/tabs\")"
     ]
   }
 }
