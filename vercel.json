@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
   "env": {
     "NEXT_PUBLIC_API_URL": {
       "description": "Backend API endpoint",
@@ -18,11 +21,6 @@
       "required": true
     }
   },
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "nodeVersion": "18.x",
   "rewrites": [
     {
       "source": "/api/:path*",
