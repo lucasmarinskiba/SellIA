@@ -741,7 +741,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         }}><Brain size={20} /></span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>SellIA · Command Center</div>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>SellIA · Command Center (LIVE)</div>
             <div style={{ fontSize: 11, color: T.text2, fontFamily: T.mono }}>Súper Agente de Ventas B2B</div>
           </div>
           <a href="/dashboard/phase33" style={{
