@@ -8,7 +8,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 type ApprovalStatus = "pending" | "approved" | "rejected" | "loading";

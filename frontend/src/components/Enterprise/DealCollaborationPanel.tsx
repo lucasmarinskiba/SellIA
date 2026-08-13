@@ -99,7 +99,7 @@ export default function DealCollaborationPanel({ userId, dealId }: { userId: str
         setMentions([])
         fetchComments()
 
-        % Broadcast via WebSocket %
+        // Broadcast via WebSocket
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(`comment:${newComment}`)
         }

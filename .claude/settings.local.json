@@ -677,7 +677,17 @@
       "Bash(git commit -m 'Session complete: Phase 27-28 implementation summary *)",
       "Bash(git commit -m 'Phase 29: Voice + Sales Playbooks architecture + backend *)",
       "Bash(git commit -m 'Phase 29: Complete implementation - API endpoints + Frontend + Testing *)",
-      "Bash(git commit -m 'Phase 31: Complete backend implementation - Psychology Sales System *)"
+      "Bash(git commit -m 'Phase 31: Complete backend implementation - Psychology Sales System *)",
+      "Bash(git commit -m 'Phase 30: Churn Prevention + ABM Intent Scoring - COMPLETE *)",
+      "Bash(git commit -m 'Advanced FOOM Monetization Engine - Senior Implementation *)",
+      "Bash(git commit -m 'Phase 32: Platform Monetization FOOM Deployment - Core Architecture *)",
+      "Bash(python -m pytest tests/test_phase_33_platform.py -v --tb=short)",
+      "Bash(docker compose *)",
+      "Bash(git commit -m 'Add Phase 33 button to SellIA Command Center header *)",
+      "Bash(git commit -m 'Phase 33 production prep - docs and demos *)",
+      "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/commits/main\")",
+      "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=3\")",
+      "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=1\")"
     ]
   }
 }
