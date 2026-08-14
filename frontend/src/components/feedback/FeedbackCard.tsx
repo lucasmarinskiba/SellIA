@@ -114,3 +114,4 @@ export default function FeedbackCard({ feedback, onVote }: FeedbackCardProps) {
     </div>
   );
 }
+

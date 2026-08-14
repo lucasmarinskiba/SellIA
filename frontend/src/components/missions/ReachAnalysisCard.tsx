@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { Globe, MapPin, TrendingUp, Truck, Package, AlertTriangle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import Badge from '@/components/ui/Badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Badge from '@/components/ui/badge'
 import { ReachAnalysis } from '@/lib/businessContext'
 
 interface ReachAnalysisCardProps {
@@ -83,3 +83,4 @@ export default function ReachAnalysisCard({ analysis }: ReachAnalysisCardProps) 
     </motion.div>
   )
 }
+

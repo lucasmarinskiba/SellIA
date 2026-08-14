@@ -326,3 +326,4 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
     </div>
   )
 }
+

@@ -140,3 +140,4 @@ export function MotivationalToast({ className }: MotivationalToastProps) {
     </div>
   )
 }
+

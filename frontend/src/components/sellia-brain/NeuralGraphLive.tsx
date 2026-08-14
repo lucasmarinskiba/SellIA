@@ -422,3 +422,4 @@ export default function NeuralGraphLive(): React.JSX.Element {
     </div>
   )
 }
+

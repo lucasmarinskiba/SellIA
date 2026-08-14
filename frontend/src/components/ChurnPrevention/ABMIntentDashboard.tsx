@@ -33,3 +33,4 @@ export const ABMIntentDashboard = ({ accountId }: { accountId: string }) => {
     </Card>
   );
 };
+

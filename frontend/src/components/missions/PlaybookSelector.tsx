@@ -16,9 +16,9 @@ import {
   X,
   Gauge,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
+import Badge from '@/components/ui/badge'
 import { Playbook, MissionCategory } from '@/lib/missions'
 
 const categoryIcons: Record<MissionCategory, React.ReactNode> = {
@@ -188,3 +188,4 @@ export default function PlaybookSelector({ playbooks, onSelect, onClose }: Playb
     </motion.div>
   )
 }
+

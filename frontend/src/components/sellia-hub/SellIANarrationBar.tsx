@@ -76,3 +76,4 @@ function TypewriterText({ text, enabled }: { text: string; enabled: boolean }) {
     </span>
   )
 }
+

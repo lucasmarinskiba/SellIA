@@ -122,3 +122,4 @@ export default function StakeholderMap({ stakeholders }: Props) {
     </Card>
   );
 }
+

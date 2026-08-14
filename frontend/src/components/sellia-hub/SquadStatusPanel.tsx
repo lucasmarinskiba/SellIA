@@ -303,3 +303,4 @@ export default function SquadStatusPanel(): React.JSX.Element {
 
 // ── Types export for API consumers ─────────────────────────────────────────────
 export type { Squad, SquadStatus, SquadMetric }
+

@@ -30,3 +30,4 @@ export const CardFooter = ({ children, className = '' }: CardProps) => (
 )
 
 export default Card
+

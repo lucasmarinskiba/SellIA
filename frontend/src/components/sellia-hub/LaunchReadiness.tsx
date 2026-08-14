@@ -303,3 +303,4 @@ const Stat = ({ label, value, color }: { label: string; value: number; color: st
     <p className="text-[8px] uppercase tracking-widest text-white/40 font-mono">{label}</p>
   </div>
 )
+

@@ -231,3 +231,4 @@ export function EventSchema({
   }
   return <JsonLdSchema type="event" data={data} />
 }
+

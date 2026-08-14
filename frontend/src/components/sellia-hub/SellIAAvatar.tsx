@@ -173,3 +173,4 @@ export default function SellIAAvatar({ state, size = 'lg', onClick }: SellIAAvat
     </motion.div>
   )
 }
+

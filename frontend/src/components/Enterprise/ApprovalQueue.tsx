@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface Approval {
   id: string
@@ -131,3 +131,4 @@ export default function ApprovalQueue({ userId }: { userId: string }) {
     </Card>
   )
 }
+

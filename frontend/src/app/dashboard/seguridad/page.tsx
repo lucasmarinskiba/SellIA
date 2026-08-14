@@ -926,3 +926,4 @@ function bufferToBase64url(buffer: ArrayBuffer): string {
   }
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
+

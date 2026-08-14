@@ -320,3 +320,4 @@ export function dispatchCelebration(
   const event = triggerCelebration(level, title, message, streakProtected)
   window.dispatchEvent(new CustomEvent("sellia-celebration", { detail: event }))
 }
+

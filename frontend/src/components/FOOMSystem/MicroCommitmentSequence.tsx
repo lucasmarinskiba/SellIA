@@ -262,3 +262,4 @@ export const MicroCommitmentSequence = ({ dealId }: MicroCommitmentSequenceProps
     </Card>
   );
 };
+

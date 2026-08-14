@@ -34,3 +34,4 @@ const BootSplash = (): React.JSX.Element => (
     </div>
   </div>
 )
+

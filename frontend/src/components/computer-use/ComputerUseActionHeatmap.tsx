@@ -60,3 +60,4 @@ export default function ComputerUseActionHeatmap({ actions, width, height, image
     </div>
   )
 }
+

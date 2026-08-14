@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Users, Plus, Trash2, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface TeamMember {
   id: string
@@ -401,3 +401,4 @@ export default function TeamManager({ userId }: { userId: string }) {
     </div>
   )
 }
+

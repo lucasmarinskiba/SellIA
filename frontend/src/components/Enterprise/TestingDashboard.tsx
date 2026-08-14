@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Zap, Play, Pause, CheckCircle, TrendingUp } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface Test {
   id: string
@@ -374,3 +374,4 @@ export default function TestingDashboard({ userId }: { userId: string }) {
     </div>
   )
 }
+

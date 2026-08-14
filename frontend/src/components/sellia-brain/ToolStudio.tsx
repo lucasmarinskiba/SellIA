@@ -204,3 +204,4 @@ const inputStyle: React.CSSProperties = {
   border: `1px solid ${SELLIA.border}`, color: SELLIA.text, fontSize: 13, outline: 'none',
   fontFamily: SELLIA.sans, boxSizing: 'border-box', resize: 'vertical',
 }
+

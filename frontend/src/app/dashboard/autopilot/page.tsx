@@ -391,3 +391,4 @@ function Star({ className }: { className?: string }) {
     </svg>
   )
 }
+

@@ -266,3 +266,4 @@ export default function HandoffLog({ events: extEvents, simulateLive = true }: H
 
 // ── Types export ──────────────────────────────────────────────────────────────
 export type { HandoffEvent, DeptId }
+

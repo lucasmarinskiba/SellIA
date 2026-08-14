@@ -20,3 +20,4 @@ export const Badge = ({ children, variant = 'default', className = '' }: BadgePr
 }
 
 export default Badge
+

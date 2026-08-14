@@ -383,3 +383,4 @@ const ThoughtStep = ({ label, text, color }: { label: string; text: string; colo
     <p className="text-[10px] text-white/80 leading-snug">{text}</p>
   </div>
 )
+

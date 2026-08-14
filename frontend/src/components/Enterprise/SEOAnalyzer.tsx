@@ -269,3 +269,4 @@ export const SEOAnalyzer: React.FC = () => {
     </div>
   );
 };
+

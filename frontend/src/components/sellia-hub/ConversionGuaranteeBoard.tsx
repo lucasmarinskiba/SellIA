@@ -400,3 +400,4 @@ const ScenarioCard = ({ label, value, probability, description, color, highlight
     </div>
   </div>
 )
+

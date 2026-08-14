@@ -64,3 +64,4 @@ export default function ComputerUseStatus({ status, step, totalSteps, task, url 
     </div>
   )
 }
+

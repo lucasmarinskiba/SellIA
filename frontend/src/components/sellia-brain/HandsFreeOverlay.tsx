@@ -242,3 +242,4 @@ const OrbVisualizer = ({ active }: { active: boolean }): React.JSX.Element => (
 
 
 export default HandsFreeOverlay
+

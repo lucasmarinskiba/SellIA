@@ -318,3 +318,4 @@ function RiskBadge({ level }: { level: 'critical' | 'high' | 'medium' }) {
     </span>
   )
 }
+

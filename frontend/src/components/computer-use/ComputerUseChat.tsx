@@ -98,3 +98,4 @@ export default function ComputerUseChat({ messages, onSendMessage, disabled }: C
     </div>
   )
 }
+

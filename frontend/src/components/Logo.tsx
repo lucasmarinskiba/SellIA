@@ -71,3 +71,4 @@ export default function Logo({ className = '', size = 40, showText = true, varia
     </div>
   )
 }
+

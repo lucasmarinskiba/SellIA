@@ -259,3 +259,4 @@ function KpiCard({ label, value, color, icon: Icon }: { label: string; value: st
     </motion.div>
   )
 }
+

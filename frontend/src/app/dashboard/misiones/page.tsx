@@ -15,8 +15,8 @@ import ChannelGapList from '@/components/missions/ChannelGapList'
 import ShippingAssistant from '@/components/missions/ShippingAssistant'
 import AdSpendAssistant from '@/components/missions/AdSpendAssistant'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import Badge from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Target, AlertCircle, Loader2, X, Plus, Stethoscope, Play,
   CheckCircle, XCircle, TrendingUp, Zap, ChevronLeft, Activity,
@@ -485,3 +485,4 @@ export default function MisionesPage() {
     </div>
   )
 }
+

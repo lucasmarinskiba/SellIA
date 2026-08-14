@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import { Bell, X, CheckCircle, AlertCircle, Zap, Star } from 'lucide-react'
 import Button from './ui/Button'
-import { Card } from './ui/Card'
+import { Card } from './ui/card'
 import Link from 'next/link'
 
 export default function NotificationCenter() {
@@ -204,3 +204,4 @@ export default function NotificationCenter() {
     </>
   )
 }
+

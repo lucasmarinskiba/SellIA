@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Badge } from "@/components/ui/Badge"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/Button"
 import { Monitor, Pause, Play, Square, Eye } from "lucide-react"
 
@@ -109,3 +109,4 @@ export default function ComputerUseActiveGrid({ onConnect }: Props) {
     </div>
   )
 }
+

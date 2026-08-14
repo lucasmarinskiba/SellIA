@@ -398,3 +398,4 @@ function DealModal({ deal, onClose, onActivate }: {
     </div>
   )
 }
+

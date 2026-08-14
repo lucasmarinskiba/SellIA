@@ -18,7 +18,7 @@ import {
   Search,
 } from 'lucide-react'
 import { MissionStep, StepStatus } from '@/lib/missions'
-import Badge from '@/components/ui/Badge'
+import Badge from '@/components/ui/badge'
 
 const platformIcons: Record<string, React.ReactNode> = {
   computer_use: <Monitor className="w-4 h-4" />,
@@ -139,3 +139,4 @@ export default function MissionStepTimeline({ steps }: MissionStepTimelineProps)
     </div>
   )
 }
+

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { TrendingUp, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface Pipeline {
   total_opportunities: number
@@ -353,3 +353,4 @@ export default function ForecastChart({ userId }: { userId: string }) {
     </div>
   )
 }
+

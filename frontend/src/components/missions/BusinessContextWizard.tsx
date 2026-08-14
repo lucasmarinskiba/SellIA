@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BusinessContext, WizardState, businessContextApi } from '@/lib/businessContext'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import Badge from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, ChevronRight, ChevronLeft, Building2, MapPin, Share2, Megaphone, Truck, Sparkles } from 'lucide-react'
 
 interface BusinessContextWizardProps {
@@ -423,3 +423,4 @@ export default function BusinessContextWizard({ contextId, onComplete }: Busines
     </motion.div>
   )
 }
+

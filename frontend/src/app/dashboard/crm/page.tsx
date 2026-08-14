@@ -302,3 +302,4 @@ function KPICard({ icon, label, value, color }: { icon: React.ReactNode; label: 
     </div>
   )
 }
+

@@ -452,3 +452,4 @@ const StatMini = ({ label, value, color }: { label: string; value: string | numb
     <p style={{ fontSize: 14, fontWeight: 900, color, margin: 0, textShadow: `0 0 20px ${color}88` }}>{value}</p>
   </div>
 )
+

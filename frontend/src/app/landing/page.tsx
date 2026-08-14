@@ -911,3 +911,4 @@ const SectionTitle = ({
     {sub && <p className="mt-4 text-[15.5px] text-slate-600 leading-relaxed">{sub}</p>}
   </div>
 )
+

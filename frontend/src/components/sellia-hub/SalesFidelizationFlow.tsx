@@ -280,3 +280,4 @@ const StageCard = ({ stage, isHovered, onHover, onClick }: StageCardProps) => {
     </button>
   )
 }
+

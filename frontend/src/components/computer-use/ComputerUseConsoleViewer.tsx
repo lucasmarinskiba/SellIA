@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Badge } from "@/components/ui/Badge"
+import { Badge } from "@/components/ui/badge"
 import { Terminal, Globe, AlertCircle } from "lucide-react"
 
 interface ConsoleLog {
@@ -96,3 +96,4 @@ export default function ComputerUseConsoleViewer({ consoleLogs, networkRequests 
     </div>
   )
 }
+

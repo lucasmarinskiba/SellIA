@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Badge } from "@/components/ui/Badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { ScrollText, Plus, Play, Search } from "lucide-react"
 
 interface Template {
@@ -94,3 +94,4 @@ export default function ComputerUseTemplatesPanel({ onSelectTemplate }: Props) {
     </Card>
   )
 }
+

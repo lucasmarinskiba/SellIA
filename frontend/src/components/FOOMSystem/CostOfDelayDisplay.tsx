@@ -135,3 +135,4 @@ export const CostOfDelayDisplay = ({ annualLoss }: CostOfDelayDisplayProps) => {
     </div>
   );
 };
+

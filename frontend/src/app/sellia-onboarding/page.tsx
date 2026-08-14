@@ -260,3 +260,4 @@ export default function OnboardingPage() {
     </QueryProvider>
   )
 }
+

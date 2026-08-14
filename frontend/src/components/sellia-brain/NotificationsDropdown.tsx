@@ -365,3 +365,4 @@ export default function NotificationsDropdown(): React.JSX.Element {
     </div>
   )
 }
+

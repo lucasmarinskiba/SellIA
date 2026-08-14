@@ -400,3 +400,4 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${c.color}`}>{c.label}</span>
   )
 }
+

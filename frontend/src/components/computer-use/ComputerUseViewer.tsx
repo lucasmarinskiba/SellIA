@@ -85,3 +85,4 @@ export default function ComputerUseViewer({ imageBase64, step, url, lastAction }
     </div>
   )
 }
+

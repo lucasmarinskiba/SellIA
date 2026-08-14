@@ -140,3 +140,4 @@ export default function AlertsPanel({ recommendations, riskIndicators }: Props) 
     </div>
   );
 }
+

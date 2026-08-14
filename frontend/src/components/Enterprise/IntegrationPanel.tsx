@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { MessageCircle, Send, AlertCircle, Check, Loader } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface PlatformStatus {
   whatsapp: { connected: boolean }
@@ -344,3 +344,4 @@ export default function IntegrationPanel({ userId }: { userId: string }) {
     </div>
   )
 }
+
