@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.core.database import get_db
 from app.core.oauth_connectors import (
     MercadoLibreOAuth,
     AmazonSPAPI,

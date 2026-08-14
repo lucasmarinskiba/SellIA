@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.collaboration import (
     CollaborationManager,
     DealComment,
