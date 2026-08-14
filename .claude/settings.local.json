@@ -706,7 +706,8 @@
       "Bash(python -c \"from app.core.database import get_db; print\\('OK'\\)\")",
       "Bash(python -c \"from app.models.user import User; print\\('User model OK'\\)\")",
       "Bash(python -c \"from app.api.v1.signup import router; print\\('Signup router OK'\\)\")",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(git commit -m 'Add Tabs UI component *)"
     ]
   }
 }
