@@ -291,6 +291,29 @@ class AdvertisingCampaign(Base):
     )
 
 
+class PlatformCredential(Base):
+    """OAuth/API credentials for platform connections."""
+    __tablename__ = "platform_credentials"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    seller_id = Column(String(255), nullable=False)
+    platform = Column(String(50), nullable=False)  # mercado_libre, amazon, hotmart
+    access_token = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=True)
+    token_expiry = Column(DateTime, nullable=True)
+    seller_username = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True)
+    last_sync_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_seller_platform', 'seller_id', 'platform'),
+        Index('idx_active_credentials', 'seller_id', 'is_active'),
+    )
+
+
 class InventorySyncLog(Base):
     """Audit trail: all inventory sync operations."""
     __tablename__ = "inventory_sync_log"
