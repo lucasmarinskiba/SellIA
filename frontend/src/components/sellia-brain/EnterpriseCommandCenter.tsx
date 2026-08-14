@@ -744,6 +744,22 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>SellIA · Command Center (LIVE)</div>
             <div style={{ fontSize: 11, color: T.text2, fontFamily: T.mono }}>Súper Agente de Ventas B2B</div>
           </div>
+          <a href="/dashboard/phase12" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+            borderRadius: 8, border: `1px solid ${T.cobalt}33`, background: `${T.cobalt}14`,
+            fontSize: 12, fontWeight: 600, color: T.cobalt, textDecoration: 'none',
+            transition: 'background .14s, border-color .14s',
+            cursor: 'pointer',
+          }} onMouseEnter={e => {
+            e.currentTarget.style.background = `${T.cobalt}22`;
+            e.currentTarget.style.borderColor = `${T.cobalt}55`;
+          }} onMouseLeave={e => {
+            e.currentTarget.style.background = `${T.cobalt}14`;
+            e.currentTarget.style.borderColor = `${T.cobalt}33`;
+          }}>
+            <TrendingUp size={14} />
+            Phase 1-2 · SEO Foundation
+          </a>
           <a href="/dashboard/phase33" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
             borderRadius: 8, border: `1px solid ${T.emerald}33`, background: `${T.emerald}14`,
