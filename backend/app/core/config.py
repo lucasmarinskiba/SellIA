@@ -72,6 +72,22 @@ class Settings(BaseSettings):
     # MercadoPago
     MERCADOPAGO_ACCESS_TOKEN: str | None = None
 
+    # OAuth - Mercado Libre
+    MERCADO_LIBRE_CLIENT_ID: str | None = None
+    MERCADO_LIBRE_CLIENT_SECRET: str | None = None
+    MERCADO_LIBRE_REDIRECT_URI: str | None = None
+
+    # OAuth - Amazon SP-API
+    AMAZON_CLIENT_ID: str | None = None
+    AMAZON_CLIENT_SECRET: str | None = None
+    AMAZON_REFRESH_TOKEN: str | None = None
+    AMAZON_REGION: str = "us-east-1"
+
+    # OAuth - Hotmart
+    HOTMART_CLIENT_ID: str | None = None
+    HOTMART_CLIENT_SECRET: str | None = None
+    HOTMART_REDIRECT_URI: str | None = None
+
     # WebAuthn / Passkeys
     WEBAUTHN_RP_ID: str | None = None  # e.g. sellia-brain.vercel.app (no scheme/port)
     WEBAUTHN_RP_NAME: str | None = None  # e.g. SellIA
