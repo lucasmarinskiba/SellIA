@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { missionsApi } from '@/lib/missions'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
-import { Card, CardContent } from '@/components/ui/Card'
+import Badge from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Truck, X, Package, Globe, ChevronRight, Loader2, DollarSign } from 'lucide-react'
 
 interface ShippingAssistantProps {
@@ -210,3 +210,4 @@ export default function ShippingAssistant({ onClose }: ShippingAssistantProps) {
     </motion.div>
   )
 }
+

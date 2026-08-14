@@ -415,3 +415,4 @@ function CreateSequenceModal({ businessId, onClose, onCreated }: {
     </motion.div>
   )
 }
+

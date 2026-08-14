@@ -178,3 +178,4 @@ function ConnectionBadge({ connected }: { connected: boolean }) {
     </div>
   )
 }
+

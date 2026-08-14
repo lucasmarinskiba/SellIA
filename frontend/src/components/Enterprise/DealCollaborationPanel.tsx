@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Send, MessageCircle, Users, Clock } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface Comment {
   id: string
@@ -237,3 +237,4 @@ export default function DealCollaborationPanel({ userId, dealId }: { userId: str
     </div>
   )
 }
+

@@ -289,3 +289,4 @@ export const CollaborationPanel: React.FC<{ dealId: string; userId: string }> = 
     </div>
   );
 };
+

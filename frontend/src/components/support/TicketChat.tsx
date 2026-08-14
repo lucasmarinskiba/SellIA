@@ -100,3 +100,4 @@ export default function TicketChat({ ticketId, messages, status, onMessageSent }
     </div>
   );
 }
+

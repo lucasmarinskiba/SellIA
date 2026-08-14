@@ -246,3 +246,4 @@ const SegmentPerformance: React.FC = () => {
 };
 
 export default SegmentPerformance;
+

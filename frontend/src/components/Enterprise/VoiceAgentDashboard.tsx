@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Phone, Mic, Volume2, Clock, Send } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface CallRecord {
   id: string
@@ -231,3 +231,4 @@ export default function VoiceAgentDashboard({ userId }: { userId: string }) {
     </div>
   )
 }
+

@@ -111,3 +111,4 @@ export default function ComputerUseAnnotationsOverlay({ sessionId, stepNumber, a
     </div>
   )
 }
+

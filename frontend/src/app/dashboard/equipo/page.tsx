@@ -579,3 +579,4 @@ function SellerCard({ seller, index, isTop, onClick }: {
     </motion.div>
   )
 }
+

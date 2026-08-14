@@ -31,3 +31,4 @@ export const ExpansionOpportunitiesPanel = ({ customerId }: { customerId: string
     </Card>
   );
 };
+

@@ -40,3 +40,4 @@ export default function StatCard({ label, value, icon, trend, color = 'orange' }
     </div>
   )
 }
+

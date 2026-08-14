@@ -16,3 +16,4 @@ export const TabsTrigger = ({ value, children, className }: { value: string; chi
 );
 
 export const TabsContent = ({ value, children }: { value: string; children: React.ReactNode }) => <div>{children}</div>;
+

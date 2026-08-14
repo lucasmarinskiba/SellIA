@@ -37,3 +37,4 @@ export const CustomerHealthScorecard = ({ customerId }: { customerId: string }) 
     </Card>
   );
 };
+

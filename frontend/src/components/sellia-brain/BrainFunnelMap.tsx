@@ -277,3 +277,4 @@ const NoiseLayer = (): React.JSX.Element => (
 
 
 export default BrainFunnelMap
+

@@ -77,3 +77,4 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
     </header>
   )
 }
+

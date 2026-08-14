@@ -4,8 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
-import { Badge } from "@/components/ui/Badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Loader2, Plus, Trash2, Play, List } from "lucide-react"
 
 interface BatchJob {
@@ -138,3 +138,4 @@ export default function ComputerUseBatchPanel() {
     </Card>
   )
 }
+

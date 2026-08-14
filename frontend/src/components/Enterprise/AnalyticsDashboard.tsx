@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, Target, Users, DollarSign, Zap } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface KPICard {
   label: string
@@ -342,3 +342,4 @@ export default function AnalyticsDashboard({ userId, segment = 'active' }: { use
     </div>
   )
 }
+

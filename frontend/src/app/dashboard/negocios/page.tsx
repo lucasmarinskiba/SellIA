@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { businessApi, Business } from '@/lib/business'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
+import Badge from '@/components/ui/badge'
 import EmptyState from '@/components/ui/EmptyState'
 import { Store, Plus, Pencil, Trash2, Package, Briefcase, FileText, Layers, ArrowRight } from 'lucide-react'
 
@@ -126,3 +126,4 @@ export default function NegociosPage() {
     </div>
   )
 }
+

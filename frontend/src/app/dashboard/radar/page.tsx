@@ -548,3 +548,4 @@ function formatTimeAgo(isoDate: string): string {
   if (diffDays < 7) return `Hace ${diffDays} días`
   return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
 }
+

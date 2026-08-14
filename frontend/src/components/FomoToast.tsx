@@ -160,3 +160,4 @@ export function FomoToast({ className }: { className?: string }) {
 }
 
 export default FomoToast
+

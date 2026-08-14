@@ -2,8 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle, Zap } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import Badge from '@/components/ui/Badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Badge from '@/components/ui/badge'
 import Button from '@/components/ui/Button'
 import { ChannelGap } from '@/lib/businessContext'
 
@@ -71,3 +71,4 @@ export default function ChannelGapList({ gaps, onCreateMission }: ChannelGapList
     </div>
   )
 }
+

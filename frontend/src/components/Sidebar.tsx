@@ -156,3 +156,4 @@ export default function Sidebar({ onClose }: SidebarProps) {
     </aside>
   )
 }
+

@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { missionsApi } from '@/lib/missions'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
-import { Card, CardContent } from '@/components/ui/Card'
+import Badge from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Megaphone, X, TrendingUp, Target, Loader2, Zap, BarChart3 } from 'lucide-react'
 
 interface AdSpendAssistantProps {
@@ -232,3 +232,4 @@ export default function AdSpendAssistant({ onClose }: AdSpendAssistantProps) {
     </motion.div>
   )
 }
+

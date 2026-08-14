@@ -395,3 +395,4 @@ const RouteCard = ({ emoji, level, desc, provider, cost, traffic, color }: {
     </div>
   </div>
 )
+

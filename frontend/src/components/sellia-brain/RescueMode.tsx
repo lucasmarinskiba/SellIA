@@ -161,3 +161,4 @@ export default function RescueMode({ profile, onEdit, onRescue }: Props): React.
     </div>
   )
 }
+

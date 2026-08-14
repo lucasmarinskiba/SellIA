@@ -245,3 +245,4 @@ export default function VoiceCommandPalette({ userName = 'Lucas' }: VoiceCommand
     </section>
   )
 }
+

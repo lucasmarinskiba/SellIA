@@ -706,3 +706,4 @@ function Magnet(props: any) {
     </svg>
   )
 }
+

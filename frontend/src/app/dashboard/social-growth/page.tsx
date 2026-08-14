@@ -38,7 +38,7 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog'
 import { Textarea } from '@/components/ui/Textarea'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/badge'
 
 interface CalendarSlot {
   id: string
@@ -559,3 +559,4 @@ export default function SocialGrowthPage() {
     </div>
   )
 }
+

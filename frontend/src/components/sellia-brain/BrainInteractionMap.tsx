@@ -293,3 +293,4 @@ export default function BrainInteractionMap(): React.JSX.Element {
     </ReactFlowProvider>
   )
 }
+

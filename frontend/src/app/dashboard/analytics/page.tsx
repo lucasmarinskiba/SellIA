@@ -419,3 +419,4 @@ function ChartCard({ title, icon: Icon, children }: {
     </motion.div>
   )
 }
+

@@ -142,3 +142,4 @@ export default function DealHealthScore({ health }: Props) {
     </Card>
   );
 }
+

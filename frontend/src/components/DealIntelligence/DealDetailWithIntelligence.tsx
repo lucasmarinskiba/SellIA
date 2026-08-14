@@ -194,3 +194,4 @@ export default function DealDetailWithIntelligence({ dealId }: Props) {
     </div>
   );
 }
+

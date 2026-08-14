@@ -675,3 +675,4 @@ export default function SelliaLanding(): React.JSX.Element {
     </div>
   )
 }
+

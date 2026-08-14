@@ -352,3 +352,4 @@ export const LANG_META: Record<Lang, { label: string; flag: string }> = {
   pt: { label: 'Português',  flag: '🇧🇷' },
   fr: { label: 'Français',   flag: '🇫🇷' },
 }
+

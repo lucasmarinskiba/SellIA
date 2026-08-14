@@ -51,3 +51,4 @@ export default function ComputerUseControls({ status, onPause, onResume, onStop 
     </div>
   )
 }
+

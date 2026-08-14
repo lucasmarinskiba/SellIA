@@ -676,3 +676,4 @@ function GardenMini({ garden }: { garden: any }) {
     </div>
   )
 }
+

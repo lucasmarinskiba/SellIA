@@ -118,3 +118,4 @@ export default function BusinessToolkit({ profile, onEdit, onPlan, onOpenTool, o
     </div>
   )
 }
+

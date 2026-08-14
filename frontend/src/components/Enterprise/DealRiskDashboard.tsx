@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AlertCircle, TrendingUp, CheckCircle, Clock } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@/components/ui/card'
 
 interface AtRiskDeal {
   deal_id: string
@@ -179,3 +179,4 @@ export default function DealRiskDashboard({ userId }: { userId: string }) {
     </div>
   )
 }
+

@@ -229,3 +229,4 @@ export const ARCAComplianceHub = (): React.JSX.Element => {
 }
 
 export default ARCAComplianceHub
+
