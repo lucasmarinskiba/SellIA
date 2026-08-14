@@ -702,7 +702,10 @@
       "Bash(python -c \"import app.main; print\\('Main loaded, checking routes'\\); print\\([r.path for r in app.main.app.routes if 'seo' in r.path]\\)\")",
       "Bash(git commit -m 'Phase 26c: Deal Intelligence & Forecasting *)",
       "Bash(git commit -m 'Phase 27-29: Revenue, Churn, Marketplace Expansion *)",
-      "Bash(git commit -m 'Add user signup/signin with authentication *)"
+      "Bash(git commit -m 'Add user signup/signin with authentication *)",
+      "Bash(python -c \"from app.core.database import get_db; print\\('OK'\\)\")",
+      "Bash(python -c \"from app.models.user import User; print\\('User model OK'\\)\")",
+      "Bash(python -c \"from app.api.v1.signup import router; print\\('Signup router OK'\\)\")"
     ]
   }
 }

@@ -1,6 +1,6 @@
 """User model for seller accounts."""
 
-from sqlalchemy import Column, String, DateTime, Boolean, Text
+from sqlalchemy import Column, String, DateTime, Boolean
 from datetime import datetime
 import uuid
 
