@@ -1,19 +1,74 @@
-'use client';
+import React, { ReactNode, useState } from 'react'
 
-import { useState } from 'react';
+interface TabsProps {
+  children: ReactNode
+  defaultValue?: string
+  className?: string
+}
 
-export const Tabs = ({ defaultValue, children, className }: { defaultValue?: string; children: React.ReactNode; className?: string }) => {
-  const [activeTab, setActiveTab] = useState(defaultValue || '');
-  return <div className={className}>{children}</div>;
-};
+interface TabsListProps {
+  children: ReactNode
+  className?: string
+}
 
-export const TabsList = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={`flex border-b ${className || ''}`}>{children}</div>
-);
+interface TabsTriggerProps {
+  value: string
+  children: ReactNode
+  className?: string
+}
 
-export const TabsTrigger = ({ value, children, className }: { value: string; children: React.ReactNode; className?: string }) => (
-  <button className={`px-4 py-2 ${className || ''}`}>{children}</button>
-);
+interface TabsContentProps {
+  value: string
+  children: ReactNode
+  className?: string
+}
 
-export const TabsContent = ({ value, children }: { value: string; children: React.ReactNode }) => <div>{children}</div>;
+const TabsContext = React.createContext<{
+  activeTab: string
+  setActiveTab: (value: string) => void
+} | null>(null)
 
+export const Tabs = ({ children, defaultValue = '', className = '' }: TabsProps) => {
+  const [activeTab, setActiveTab] = useState(defaultValue)
+
+  return (
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div className={className}>{children}</div>
+    </TabsContext.Provider>
+  )
+}
+
+export const TabsList = ({ children, className = '' }: TabsListProps) => (
+  <div className={`flex border-b border-gray-200 ${className}`}>{children}</div>
+)
+
+export const TabsTrigger = ({ value, children, className = '' }: TabsTriggerProps) => {
+  const context = React.useContext(TabsContext)
+  if (!context) throw new Error('TabsTrigger must be used within Tabs')
+
+  const isActive = context.activeTab === value
+
+  return (
+    <button
+      onClick={() => context.setActiveTab(value)}
+      className={`px-4 py-2 font-medium text-sm border-b-2 ${
+        isActive
+          ? 'border-blue-500 text-blue-600'
+          : 'border-transparent text-gray-600 hover:text-gray-900'
+      } ${className}`}
+    >
+      {children}
+    </button>
+  )
+}
+
+export const TabsContent = ({ value, children, className = '' }: TabsContentProps) => {
+  const context = React.useContext(TabsContext)
+  if (!context) throw new Error('TabsContent must be used within Tabs')
+
+  if (context.activeTab !== value) return null
+
+  return <div className={className}>{children}</div>
+}
+
+export default Tabs
