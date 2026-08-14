@@ -760,6 +760,22 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <TrendingUp size={14} />
             Phase 1-2 · SEO Foundation
           </a>
+          <a href="/dashboard/phase3" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+            borderRadius: 8, border: `1px solid rgba(168,85,247,0.33)`, background: `rgba(168,85,247,0.14)`,
+            fontSize: 12, fontWeight: 600, color: '#a855f7', textDecoration: 'none',
+            transition: 'background .14s, border-color .14s',
+            cursor: 'pointer',
+          }} onMouseEnter={e => {
+            e.currentTarget.style.background = `rgba(168,85,247,0.22)`;
+            e.currentTarget.style.borderColor = `rgba(168,85,247,0.55)`;
+          }} onMouseLeave={e => {
+            e.currentTarget.style.background = `rgba(168,85,247,0.14)`;
+            e.currentTarget.style.borderColor = `rgba(168,85,247,0.33)`;
+          }}>
+            <Users size={14} />
+            Phase 3 · Authority Building
+          </a>
           <a href="/dashboard/phase33" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
             borderRadius: 8, border: `1px solid ${T.emerald}33`, background: `${T.emerald}14`,
