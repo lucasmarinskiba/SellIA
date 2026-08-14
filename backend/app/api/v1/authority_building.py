@@ -6,8 +6,8 @@ from sqlalchemy import select
 from datetime import datetime, timedelta
 import random
 
-from backend.app.database import get_db
-from backend.app.models.authority_building import (
+from app.database import get_db
+from app.models.authority_building import (
     Testimonial, Award, Review, TrustScore, SellerBio
 )
 

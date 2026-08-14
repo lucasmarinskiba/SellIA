@@ -690,7 +690,13 @@
       "Bash(curl -s \"https://api.github.com/repos/lucasmarinskiba/SellIA/deployments?per_page=1\")",
       "Bash(vercel link *)",
       "Bash(xargs grep -l \"@/components/ui/card\\\\|@/components/ui/button\\\\|@/components/ui/tabs\")",
-      "Bash(git commit -m 'Fix hydration mismatch: client-only timestamp in audit log *)"
+      "Bash(git commit -m 'Fix hydration mismatch: client-only timestamp in audit log *)",
+      "Bash(curl -s http://localhost:8000/api/v1/seo/analyze)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/seo/analyze?url=example.com\")",
+      "Bash(python -c \"from app.api.v1.seo_analyzer import router; print\\('✅ seo_analyzer imports OK'\\)\")",
+      "Bash(python -c \"from app.api.v1.seo_analyzer import router; print\\('Import OK'\\)\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/seo/analyze?url=test.com\")",
+      "Bash(python -c \"from app.api.v1.authority_building import router; print\\('authority OK'\\)\")"
     ]
   }
 }
