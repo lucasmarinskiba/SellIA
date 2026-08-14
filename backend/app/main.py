@@ -65,6 +65,7 @@ _try_include("app.api.v1.enterprise_deal_intelligence.router", "/api/v1", ["inte
 _try_include("app.api.v1.enterprise_voice_agent.router", "/api/v1", ["voice-agent-enterprise"])
 _try_include("app.api.v1.oauth_platforms.router", "/api/v1", ["oauth-platforms"])
 _try_include("app.api.v1.seo_analyzer.router", "/api/v1", ["seo-analyzer"])
+_try_include("app.api.v1.authority_building.router", "/api/v1", ["authority-building"])
 
 
 @app.get("/health", tags=["system"])
