@@ -699,7 +699,8 @@
       "Bash(python -c \"from app.api.v1.authority_building import router; print\\('authority OK'\\)\")",
       "Bash(python -c \"from app.api.v1.seo_analyzer import router; print\\('✓ seo OK'\\)\")",
       "Bash(python -c \"from app.api.v1.seo_analyzer import router; print\\('seo imports OK'\\)\")",
-      "Bash(python -c \"import app.main; print\\('Main loaded, checking routes'\\); print\\([r.path for r in app.main.app.routes if 'seo' in r.path]\\)\")"
+      "Bash(python -c \"import app.main; print\\('Main loaded, checking routes'\\); print\\([r.path for r in app.main.app.routes if 'seo' in r.path]\\)\")",
+      "Bash(git commit -m 'Phase 26c: Deal Intelligence & Forecasting *)"
     ]
   }
 }
