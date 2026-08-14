@@ -471,6 +471,13 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
   // ── vista del cerebro: flujos (n8n) vs overview (grafo apagado) ──
   const [neuralView, setNeuralView] = useState<'flows' | 'overview'>('flows')
+  // ── Client-only timestamp (fixes hydration mismatch) ──
+  const [currentTime, setCurrentTime] = useState('')
+  useEffect(() => {
+    setCurrentTime(nowTs())
+    const interval = setInterval(() => setCurrentTime(nowTs()), 1000)
+    return () => clearInterval(interval)
+  }, [])
   // ── prompt de Computer Use (aparece al elegir Piloto Automático/Supervisado) ──
   const [cuaPrompt, setCuaPrompt] = useState('')
   const [cuaSending, setCuaSending] = useState(false)
@@ -1075,7 +1082,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
               )
             })}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: T.cobalt }}>
-              <span style={{ color: T.text3 }}>{nowTs()}</span>
+              <span style={{ color: T.text3 }}>{currentTime || '—'}</span>
               <span style={{ width: 7, height: 14, background: T.cobalt, display: 'inline-block', animation: 'ecc-pulse 1s steps(2) infinite' }} />
             </div>
           </div>
