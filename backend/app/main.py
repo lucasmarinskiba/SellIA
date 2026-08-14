@@ -68,6 +68,9 @@ _try_include("app.api.v1.seo_analyzer.router", "/api/v1", ["seo-analyzer"])
 _try_include("app.api.v1.authority_building.router", "/api/v1", ["authority-building"])
 _try_include("app.api.v1.team_collaboration.router", "/api/v1", ["team-collaboration"])
 _try_include("app.api.v1.deal_intelligence.router", "/api/v1", ["deal-intelligence"])
+_try_include("app.api.v1.revenue_orchestration.router", "/api/v1", ["revenue-orchestration"])
+_try_include("app.api.v1.churn_prevention.router", "/api/v1", ["churn-prevention"])
+_try_include("app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace-expansion"])
 
 
 @app.get("/health", tags=["system"])
