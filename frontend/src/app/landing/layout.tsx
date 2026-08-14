@@ -1,18 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800', '900'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains-mono',
-  display: 'swap',
-})
+const inter = { variable: '--font-inter' }
+const jetbrainsMono = { variable: '--font-jetbrains-mono' }
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://sellia-brain.vercel.app'
 const TITLE = 'SellIA - Vende mientras duermes | Agentes de IA para ventas'
