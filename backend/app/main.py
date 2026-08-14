@@ -71,6 +71,7 @@ _try_include("app.api.v1.deal_intelligence.router", "/api/v1", ["deal-intelligen
 _try_include("app.api.v1.revenue_orchestration.router", "/api/v1", ["revenue-orchestration"])
 _try_include("app.api.v1.churn_prevention.router", "/api/v1", ["churn-prevention"])
 _try_include("app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace-expansion"])
+_try_include("app.api.v1.signup.router", "/api/v1", ["auth"])
 
 
 @app.get("/health", tags=["system"])
