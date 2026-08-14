@@ -6,8 +6,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.platform_integration import PlatformCredential
-from backend.app.core.config import get_settings
+from app.models.platform_integration import PlatformCredential
+from app.core.config import get_settings
 
 settings = get_settings()
 

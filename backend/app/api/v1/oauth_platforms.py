@@ -3,15 +3,15 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.database import get_db
-from backend.app.core.oauth_connectors import (
+from app.database import get_db
+from app.core.oauth_connectors import (
     MercadoLibreOAuth,
     AmazonSPAPI,
     HotmartOAuth,
     store_platform_credential,
     get_platform_credential,
 )
-from backend.app.core.config import get_settings
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 settings = get_settings()
