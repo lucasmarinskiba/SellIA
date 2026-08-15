@@ -707,7 +707,9 @@
       "Bash(python -c \"from app.models.user import User; print\\('User model OK'\\)\")",
       "Bash(python -c \"from app.api.v1.signup import router; print\\('Signup router OK'\\)\")",
       "Bash(npx vercel *)",
-      "Bash(git commit -m 'Add Tabs UI component *)"
+      "Bash(git commit -m 'Add Tabs UI component *)",
+      "Bash(timeout 300 npx vercel deploy --prod)",
+      "Bash(git commit -m 'Fix Tabs import path to lowercase *)"
     ]
   }
 }
