@@ -74,6 +74,7 @@ _try_include("app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace
 _try_include("app.api.v1.signup.router", "/api/v1", ["auth"])
 _try_include("app.api.v1.dashboard.router", "/api/v1", ["dashboard"])
 _try_include("app.api.v1.platforms.router", "/api/v1", ["platforms"])
+_try_include("app.api.v1.order_detail.router", "/api/v1", ["orders"])
 
 
 @app.get("/health", tags=["system"])
