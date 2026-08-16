@@ -709,7 +709,10 @@
       "Bash(npx vercel *)",
       "Bash(git commit -m 'Add Tabs UI component *)",
       "Bash(timeout 300 npx vercel deploy --prod)",
-      "Bash(git commit -m 'Fix Tabs import path to lowercase *)"
+      "Bash(git commit -m 'Fix Tabs import path to lowercase *)",
+      "Bash(git commit -m 'Rename Tabs.tsx to tabs.tsx for case-sensitive imports *)",
+      "PowerShell(grep -i tabs)",
+      "Bash(git commit -m 'Configure Vercel for Next.js 15 *)"
     ]
   }
 }
