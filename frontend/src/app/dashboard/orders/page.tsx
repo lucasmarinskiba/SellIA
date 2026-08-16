@@ -2,6 +2,7 @@
 
 import { Search, Filter, Download } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
 
 export default function OrdersPage() {
   const [search, setSearch] = useState('')
@@ -68,7 +69,11 @@ export default function OrdersPage() {
             <tbody>
               {filteredOrders.map((order) => (
                 <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="py-3 px-4 font-mono text-slate-900 font-medium">{order.id}</td>
+                  <td className="py-3 px-4">
+                    <Link href={`/dashboard/orders/${order.id}`} className="font-mono text-slate-900 font-medium hover:text-blue-600">
+                      {order.id}
+                    </Link>
+                  </td>
                   <td className="py-3 px-4 text-slate-600">{order.date}</td>
                   <td className="py-3 px-4 text-slate-900 font-medium">{order.product}</td>
                   <td className="py-3 px-4 text-slate-600">{order.customer}</td>
