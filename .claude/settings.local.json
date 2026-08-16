@@ -712,7 +712,9 @@
       "Bash(git commit -m 'Fix Tabs import path to lowercase *)",
       "Bash(git commit -m 'Rename Tabs.tsx to tabs.tsx for case-sensitive imports *)",
       "PowerShell(grep -i tabs)",
-      "Bash(git commit -m 'Configure Vercel for Next.js 15 *)"
+      "Bash(git commit -m 'Configure Vercel for Next.js 15 *)",
+      "Bash(python -c \"from app.api.v1.dashboard import router; print\\('✅ Dashboard router OK'\\)\")",
+      "Bash(python -c \"from app.api.v1.dashboard import router; print\\('Dashboard router OK'\\)\")"
     ]
   }
 }
