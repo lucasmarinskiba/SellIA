@@ -1,147 +1,82 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
-import StatCard from '@/components/ui/StatCard'
-import Button from '@/components/ui/Button'
-import ActivityFeed from '@/components/ActivityFeed'
-import {
-  TrendingUp, Users, ShoppingCart, DollarSign,
-  Store, Package, Plug, MessageSquare, ArrowRight, Sparkles, Zap
-} from 'lucide-react'
-import Link from 'next/link'
+import { TrendingUp, DollarSign, ShoppingCart, Package } from 'lucide-react'
 
-const stats = [
-  { label: 'Ventas del mes', value: '$0', icon: DollarSign, color: 'orange' as const, trend: { value: '0%', isPositive: true } },
-  { label: 'Leads generados', value: '0', icon: Users, color: 'teal' as const, trend: { value: '0%', isPositive: true } },
-  { label: 'Conversaciones activas', value: '0', icon: ShoppingCart, color: 'violet' as const, trend: { value: '0 nuevas', isPositive: true } },
-  { label: 'Tasa de conversión', value: '0%', icon: TrendingUp, color: 'blue' as const, trend: { value: '0%', isPositive: true } },
-]
+export default function DashboardHome() {
+  const stats = [
+    { label: 'Ingresos (30d)', value: '$47,300', change: '+12%', icon: DollarSign },
+    { label: 'Órdenes', value: '234', change: '+8%', icon: ShoppingCart },
+    { label: 'Listings activos', value: '89', change: '+3%', icon: Package },
+    { label: 'Tasa de conversión', value: '4.2%', change: '+0.5%', icon: TrendingUp },
+  ]
 
-const quickActions = [
-  { icon: Store, label: 'Nuevo negocio', href: '/dashboard/negocios/nuevo', color: 'bg-brand-orange/10 text-brand-orange' },
-  { icon: Package, label: 'Agregar producto', href: '/dashboard/catalogo/nuevo', color: 'bg-brand-teal/10 text-brand-teal' },
-  { icon: Plug, label: 'Conectar canal', href: '/dashboard/canales', color: 'bg-brand-violet/10 text-brand-violet' },
-  { icon: MessageSquare, label: 'Ver conversaciones', href: '/dashboard/conversaciones', color: 'bg-blue-50 text-blue-600' },
-]
-
-export default function DashboardPage() {
-  const { user } = useAuth()
+  const recentOrders = [
+    { id: 'ORD-001', product: 'iPhone 15 Pro', platform: 'Mercado Libre', amount: '$999', status: 'Entregado' },
+    { id: 'ORD-002', product: 'AirPods Pro', platform: 'Amazon', amount: '$249', status: 'En tránsito' },
+    { id: 'ORD-003', product: 'MacBook Air M3', platform: 'Hotmart', amount: '$1,299', status: 'Pendiente' },
+  ]
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      {/* Welcome */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-night">
-            ¡Hola, {user?.full_name?.split(' ')[0] || 'Bienvenido'}! 👋
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Este es tu panel de control de <span className="font-semibold text-brand-orange">SellIA</span>.
-          </p>
-        </div>
-        <Link href="/dashboard/planes">
-          <Button variant="secondary" leftIcon={<Sparkles className="w-4 h-4 text-brand-orange" />}>
-            Ver planes
-          </Button>
-        </Link>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {stats.map((stat) => (
-          <StatCard
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            icon={<stat.icon className="w-6 h-6" />}
-            color={stat.color}
-            trend={stat.trend}
-          />
-        ))}
-      </div>
-
-      {/* Quick actions */}
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="text-lg font-bold text-brand-night mb-4">Acciones rápidas</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-            return (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="card p-5 hover:shadow-card-hover transition-all duration-300 group"
-              >
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${action.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-brand-night">{action.label}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-orange group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+        <h1 className="text-3xl font-black text-slate-900">Dashboard</h1>
+        <p className="text-slate-600 mt-2">Bienvenido de vuelta, Juan</p>
       </div>
 
-      {/* Agent Activity */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-brand-night flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-600" />
-            Tu equipo de agentes IA
-          </h2>
-          <Link href="/dashboard/agentes-central">
-            <Button size="sm" variant="secondary" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              Ver centro de control
-            </Button>
-          </Link>
-        </div>
-        <ActivityFeed />
-      </div>
-
-      {/* Onboarding */}
-      <div className="card p-8">
-        <h2 className="text-lg font-bold text-brand-night mb-6">Próximos pasos para empezar a vender</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              step: '1',
-              title: 'Configura tu negocio',
-              desc: 'Define si vendes servicios, bienes o digitales y configura las opciones de entrega.',
-              href: '/dashboard/negocios/nuevo',
-            },
-            {
-              step: '2',
-              title: 'Carga tu catálogo',
-              desc: 'Agrega los productos, servicios o archivos digitales que quieres vender.',
-              href: '/dashboard/catalogo',
-            },
-            {
-              step: '3',
-              title: 'Conecta tus canales',
-              desc: 'Vincula WhatsApp, MercadoLibre, Instagram y otros canales de venta.',
-              href: '/dashboard/canales',
-            },
-          ].map((item) => (
-            <Link key={item.step} href={item.href} className="group">
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 hover:bg-brand-orange/5 transition-colors duration-200">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-orange font-bold text-sm shadow-sm shrink-0">
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-brand-night group-hover:text-brand-orange transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">{item.desc}</p>
-                </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <div key={stat.label} className="bg-white rounded-lg border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Icon className="text-slate-400" size={24} />
+                <span className="text-sm text-green-600 font-medium">{stat.change}</span>
               </div>
-            </Link>
-          ))}
+              <p className="text-slate-600 text-sm mb-1">{stat.label}</p>
+              <p className="text-2xl font-black text-slate-900">{stat.value}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Recent Orders */}
+      <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Órdenes recientes</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="text-left py-2 px-2 text-slate-600 font-medium">ID</th>
+                <th className="text-left py-2 px-2 text-slate-600 font-medium">Producto</th>
+                <th className="text-left py-2 px-2 text-slate-600 font-medium">Plataforma</th>
+                <th className="text-left py-2 px-2 text-slate-600 font-medium">Monto</th>
+                <th className="text-left py-2 px-2 text-slate-600 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentOrders.map((order) => (
+                <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-3 px-2 font-mono text-slate-900">{order.id}</td>
+                  <td className="py-3 px-2 text-slate-900">{order.product}</td>
+                  <td className="py-3 px-2 text-slate-600">{order.platform}</td>
+                  <td className="py-3 px-2 font-semibold text-slate-900">{order.amount}</td>
+                  <td className="py-3 px-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      order.status === 'Entregado' ? 'bg-green-100 text-green-700' :
+                      order.status === 'En tránsito' ? 'bg-blue-100 text-blue-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   )
 }
-
