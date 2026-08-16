@@ -73,6 +73,7 @@ _try_include("app.api.v1.churn_prevention.router", "/api/v1", ["churn-prevention
 _try_include("app.api.v1.marketplace_expansion.router", "/api/v1", ["marketplace-expansion"])
 _try_include("app.api.v1.signup.router", "/api/v1", ["auth"])
 _try_include("app.api.v1.dashboard.router", "/api/v1", ["dashboard"])
+_try_include("app.api.v1.platforms.router", "/api/v1", ["platforms"])
 
 
 @app.get("/health", tags=["system"])

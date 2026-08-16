@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut } from 'lucide-react'
+import { Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -11,6 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/orders', label: 'Órdenes', icon: ShoppingCart },
     { href: '/dashboard/listings', label: 'Listings', icon: Package },
+    { href: '/dashboard/platforms', label: 'Plataformas', icon: Plug },
     { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
   ]
