@@ -1,6 +1,7 @@
 'use client'
 
 import { Plus, Eye, Edit2, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 
 export default function ListingsPage() {
   const listings = [
@@ -16,10 +17,10 @@ export default function ListingsPage() {
           <h1 className="text-3xl font-black text-slate-900">Listings</h1>
           <p className="text-slate-600 mt-2">Gestiona tus productos en todas las plataformas</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+        <Link href="/dashboard/listings/create" className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
           <Plus size={18} />
           Nuevo listing
-        </button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
