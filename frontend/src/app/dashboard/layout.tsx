@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug } from 'lucide-react'
+import { useNotification } from '@/app/providers'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { notify } = useNotification()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const navItems = [
@@ -46,7 +48,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Logout */}
         <div className="p-4 border-t border-slate-700">
-          <button className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors w-full text-left">
+          <button
+            onClick={() => notify('Sesión cerrada', 'info')}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors w-full text-left"
+          >
             <LogOut size={20} />
             {sidebarOpen && <span className="text-sm font-medium">Salir</span>}
           </button>
