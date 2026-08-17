@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider"
+import { NotificationProvider } from "@/app/providers"
 import type { Metadata } from "next"
 import { PreconnectBackend, CoreWebVitalsOptimization } from "@/components/seo/PerformanceOptimization"
 
@@ -53,7 +54,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>
