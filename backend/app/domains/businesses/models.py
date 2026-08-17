@@ -33,6 +33,7 @@ class Business(Base):
     catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
     channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
+    website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
 
 
 # Config por defecto según tipo de negocio
