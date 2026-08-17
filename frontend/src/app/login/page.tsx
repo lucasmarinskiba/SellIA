@@ -165,21 +165,9 @@ export default function LoginPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative flex items-center justify-center overflow-hidden">
-      {/* Ambient gradient orbs — SellIA 2026 */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-cyan-500/[0.08] blur-[180px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] rounded-full bg-indigo-500/[0.06] blur-[150px] pointer-events-none" />
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-cyan-400/[0.04] blur-[120px] pointer-events-none" />
-
-      {/* SVG noise texture */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '128px',
-        }}
-      />
+    <div className="min-h-screen bg-slate-950 text-white relative flex items-center justify-center overflow-hidden p-3" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* Minimal single accent bar */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
 
       {/* Back button */}
       <div
@@ -202,12 +190,12 @@ export default function LoginPage() {
         {stats.map((stat, i) => (
           <div
             key={stat.label}
-            className={`bg-white/[0.05] border border-white/[0.1] rounded-lg p-4 flex items-center gap-3 min-w-[200px] transition-all duration-700 ${
+            className={`bg-white/[0.05] border border-white/[0.1] rounded-md p-4 flex items-center gap-3 min-w-[200px] transition-all duration-700 ${
               mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
             }`}
             style={{ transitionDelay: `${150 + i * 120}ms` }}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
+            <div className={`w-10 h-10 rounded-md ${stat.bg} flex items-center justify-center`}>
               <stat.icon className={`w-5 h-5 ${stat.color}`} />
             </div>
             <div>
@@ -225,26 +213,20 @@ export default function LoginPage() {
         }`}
         style={{ transitionDelay: '100ms' }}
       >
-        <div className="rounded-2xl bg-slate-900/50 backdrop-blur-2xl border border-cyan-500/[0.2] p-8 sm:p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group hover:shadow-cyan-500/[0.15] transition-shadow duration-500">
-          {/* Glow edges */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-          {/* Inner glows */}
-          <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/[0.08] rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-indigo-500/[0.06] rounded-full blur-3xl pointer-events-none" />
+        <div className="rounded-md bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 p-6 sm:p-8 relative overflow-hidden group transition-all duration-300">
 
           {/* Header */}
-          <div className="flex flex-col items-center mb-8 relative z-10">
+          <div className="flex flex-col items-center mb-6 relative z-10">
             <div
-              className={`mb-4 p-3.5 rounded-2xl bg-gradient-to-br from-cyan-500/8 to-indigo-500/4 border border-cyan-500/15 transition-all duration-700 ${
+              className={`mb-3 p-2.5 rounded-md bg-cyan-500/5 border border-cyan-500/15 transition-all duration-700 ${
                 mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
               }`}
               style={{ transitionDelay: '200ms' }}
             >
-              <Logo size={44} showText={false} />
+              <Logo size={40} showText={false} />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight">¡Hola de nuevo!</h1>
-            <p className="text-xs text-white/45 mt-2.5 font-medium">Iniciá sesión para seguir vendiendo</p>
+            <h1 className="text-2xl font-black text-white tracking-tight">Hola de nuevo</h1>
+            <p className="text-[10px] text-white/40 mt-1.5 font-semibold uppercase tracking-wider">Iniciá sesión</p>
           </div>
 
           {/* Security badge */}
@@ -262,17 +244,17 @@ export default function LoginPage() {
           >
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] hover:shadow-md hover:shadow-cyan-500/10 focus:ring-1.5 focus:ring-cyan-400/40 transition-all duration-150 active:scale-[0.96] group"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.18] focus:ring-1 focus:ring-cyan-400/30 transition-all duration-150 active:scale-[0.96] group"
             >
-              <GoogleIcon className="w-4.5 h-4.5 group-hover:scale-105 transition-transform duration-200" />
-              <span className="text-xs text-white/70 font-semibold group-hover:text-white/90 transition-colors">Google</span>
+              <GoogleIcon className="w-4 h-4" />
+              <span className="text-[10px] text-white/65 font-bold uppercase tracking-wider">Google</span>
             </button>
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.2] hover:shadow-md hover:shadow-cyan-500/10 focus:ring-1.5 focus:ring-cyan-400/40 transition-all duration-150 active:scale-[0.96] group"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.18] focus:ring-1 focus:ring-cyan-400/30 transition-all duration-150 active:scale-[0.96] group"
             >
-              <AppleIcon className="w-4.5 h-4.5 text-white/75 group-hover:text-white/95 transition-colors duration-200" />
-              <span className="text-xs text-white/70 font-semibold group-hover:text-white/90 transition-colors">Apple</span>
+              <AppleIcon className="w-4 h-4 text-white/70" />
+              <span className="text-[10px] text-white/65 font-bold uppercase tracking-wider">Apple</span>
             </button>
           </div>
 
@@ -305,7 +287,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-3 p-4 rounded-md bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -326,14 +308,14 @@ export default function LoginPage() {
                   }
                 }}
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-orange-500/15 border border-orange-500/30 text-orange-300 text-sm font-medium hover:bg-orange-500/25 hover:border-orange-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 rounded-md bg-orange-500/15 border border-orange-500/30 text-orange-300 text-sm font-medium hover:bg-orange-500/25 hover:border-orange-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Enviando...' : 'Reenviar email de verificación'}
               </button>
             )}
 
             {isLocked && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-medium">
+              <div className="flex items-start gap-3 p-4 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
                   Demasiados intentos fallidos. Esperá {lockCountdown}s para volver a intentar.
@@ -353,7 +335,7 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="tu@email.com"
-                className="w-full px-4 py-2.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
+                className="w-full px-4 py-2.5 rounded-md bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
               />
             </div>
 
@@ -369,7 +351,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 pr-12 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
+                  className="w-full px-4 py-2.5 rounded-md bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 pr-12 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
                 />
                 <button
                   type="button"
@@ -384,7 +366,7 @@ export default function LoginPage() {
 
             {/* 2FA */}
             {requires2FA && (
-              <div className="space-y-3 p-4 rounded-lg bg-emerald-500/8 border border-emerald-500/20">
+              <div className="space-y-3 p-4 rounded-md bg-emerald-500/8 border border-emerald-500/20">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-white/85 flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-emerald-400" />
@@ -416,7 +398,7 @@ export default function LoginPage() {
                   placeholder={isBackupCode ? 'ABCDEF12' : '123456'}
                   maxLength={isBackupCode ? 8 : 6}
                   autoFocus
-                  className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-emerald-500/30 text-white placeholder-white/50 text-center tracking-[0.3em] font-mono hover:bg-white/[0.1] focus:bg-white/[0.12] focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-md bg-white/[0.08] border border-emerald-500/30 text-white placeholder-white/50 text-center tracking-[0.3em] font-mono hover:bg-white/[0.1] focus:bg-white/[0.12] focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none transition-all duration-200"
                 />
                 <p className="text-[11px] text-white/50">
                   {isBackupCode
@@ -470,7 +452,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || isLocked}
-              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-xs font-black rounded-lg hover:from-cyan-400 hover:to-cyan-500 hover:shadow-lg hover:shadow-cyan-500/30 focus:outline-none focus:ring-1.5 focus:ring-cyan-300/50 active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-500 text-white text-xs font-black rounded-md hover:bg-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-300/50 active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 uppercase tracking-wider"
             >
               {loading ? (
                 <div className="flex items-center gap-1.5">
