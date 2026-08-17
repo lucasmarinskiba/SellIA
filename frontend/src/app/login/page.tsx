@@ -189,10 +189,11 @@ export default function LoginPage() {
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.1] text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.08] transition-all duration-300"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.15] text-sm text-white/70 hover:text-white hover:bg-white/[0.12] hover:border-white/[0.25] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Volver al inicio
+          <span className="hidden sm:inline">Volver al inicio</span>
+          <span className="sm:hidden">Atrás</span>
         </Link>
       </div>
 
@@ -224,7 +225,7 @@ export default function LoginPage() {
         }`}
         style={{ transitionDelay: '100ms' }}
       >
-        <div className="rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-cyan-500/[0.15] p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group">
+        <div className="rounded-2xl bg-slate-900/50 backdrop-blur-2xl border border-cyan-500/[0.2] p-8 sm:p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group hover:shadow-cyan-500/[0.15] transition-shadow duration-500">
           {/* Glow edges */}
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -261,17 +262,17 @@ export default function LoginPage() {
           >
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-cyan-500/[0.08] hover:border-cyan-500/[0.2] transition-all duration-300 active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.06] border border-white/[0.15] hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] transition-all duration-300 active:scale-[0.96] group"
             >
-              <GoogleIcon className="w-5 h-5" />
-              <span className="text-sm text-white/75 font-medium">Google</span>
+              <GoogleIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              <span className="text-sm text-white/80 font-medium group-hover:text-white transition-colors">Google</span>
             </button>
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-cyan-500/[0.08] hover:border-cyan-500/[0.2] transition-all duration-300 active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.06] border border-white/[0.15] hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] transition-all duration-300 active:scale-[0.96] group"
             >
-              <AppleIcon className="w-5 h-5 text-white/80" />
-              <span className="text-sm text-white/75 font-medium">Apple</span>
+              <AppleIcon className="w-5 h-5 text-white/85 group-hover:scale-110 transition-transform duration-300" />
+              <span className="text-sm text-white/80 font-medium group-hover:text-white transition-colors">Apple</span>
             </button>
           </div>
 
@@ -304,7 +305,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -325,14 +326,14 @@ export default function LoginPage() {
                   }
                 }}
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-medium hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg bg-orange-500/15 border border-orange-500/30 text-orange-300 text-sm font-medium hover:bg-orange-500/25 hover:border-orange-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Enviando...' : 'Reenviar email de verificación'}
               </button>
             )}
 
             {isLocked && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-medium">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
                   Demasiados intentos fallidos. Esperá {lockCountdown}s para volver a intentar.
@@ -341,8 +342,8 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                <Mail className="w-3.5 h-3.5" />
+              <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                <Mail className="w-3.5 h-3.5 text-cyan-400" />
                 Email
               </label>
               <input
@@ -352,13 +353,13 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="tu@email.com"
-                className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                <Lock className="w-3.5 h-3.5" />
+              <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                <Lock className="w-3.5 h-3.5 text-cyan-400" />
                 Contraseña
               </label>
               <div className="relative group">
@@ -368,12 +369,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 pr-12 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 pr-12 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -383,10 +384,10 @@ export default function LoginPage() {
 
             {/* 2FA */}
             {requires2FA && (
-              <div className="space-y-3">
+              <div className="space-y-3 p-4 rounded-lg bg-emerald-500/8 border border-emerald-500/20">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-white/70 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5" />
+                  <label className="text-sm font-semibold text-white/85 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400" />
                     {isBackupCode ? 'Código de backup' : 'Código 2FA'}
                   </label>
                   <button
@@ -395,7 +396,7 @@ export default function LoginPage() {
                       setIsBackupCode(!isBackupCode)
                       setTfaCode('')
                     }}
-                    className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
                   >
                     {isBackupCode ? 'Usar código TOTP' : 'Usar código de backup'}
                   </button>
@@ -415,12 +416,12 @@ export default function LoginPage() {
                   placeholder={isBackupCode ? 'ABCDEF12' : '123456'}
                   maxLength={isBackupCode ? 8 : 6}
                   autoFocus
-                  className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 text-center tracking-[0.3em] font-mono focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-emerald-500/30 text-white placeholder-white/50 text-center tracking-[0.3em] font-mono hover:bg-white/[0.1] focus:bg-white/[0.12] focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none transition-all duration-200"
                 />
-                <p className="text-[11px] text-white/40">
+                <p className="text-[11px] text-white/50">
                   {isBackupCode
-                    ? 'Ingresá uno de tus códigos de backup de un solo uso'
-                    : 'Ingresá el código de tu app de autenticación'}
+                    ? '✓ Ingresá uno de tus códigos de backup de un solo uso'
+                    : '✓ Ingresá el código de tu app de autenticación'}
                 </p>
               </div>
             )}
@@ -441,7 +442,7 @@ export default function LoginPage() {
               <label className="flex items-center gap-2.5 cursor-pointer group">
                 <div className="relative">
                   <input type="checkbox" className="peer sr-only" />
-                  <div className="w-4.5 h-4.5 rounded border border-white/20 bg-white/5 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-all" />
+                  <div className="w-5 h-5 rounded-md border border-white/25 bg-white/5 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 group-hover:border-white/35 transition-all duration-200" />
                   <svg
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
                     viewBox="0 0 24 24"
@@ -454,13 +455,13 @@ export default function LoginPage() {
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <span className="text-sm text-white/40 group-hover:text-white/60 transition-colors">
+                <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors font-medium">
                   Recordarme
                 </span>
               </label>
               <Link
                 href="#"
-                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+                className="text-sm text-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 rounded px-1 transition-all font-medium"
               >
                 ¿Olvidaste?
               </Link>
@@ -469,7 +470,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || isLocked}
-              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-cyan-400 hover:to-cyan-500 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-cyan-500/25"
+              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-bold rounded-lg hover:from-cyan-400 hover:to-cyan-500 hover:shadow-xl hover:shadow-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 active:scale-[0.96] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? (
                 <div className="flex items-center gap-2.5">
@@ -479,19 +480,19 @@ export default function LoginPage() {
               ) : (
                 <>
                   Iniciar sesión
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
-            <p className="text-sm text-white/40">
+          <div className="mt-8 pt-6 border-t border-white/[0.08] text-center">
+            <p className="text-sm text-white/60">
               ¿No tenés cuenta?{' '}
               <Link
                 href="/register"
-                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                className="text-cyan-400 hover:text-cyan-300 font-bold focus:outline-none focus:underline transition-all"
               >
                 Creá una gratis
               </Link>
