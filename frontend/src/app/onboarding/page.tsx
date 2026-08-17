@@ -167,7 +167,7 @@ export default function OnboardingPage() {
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
       >
-        <div className="rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-cyan-500/[0.15] p-8 sm:p-10 shadow-2xl shadow-cyan-950/50">
+        <div className="rounded-2xl bg-slate-900/50 backdrop-blur-2xl border border-cyan-500/[0.2] p-8 sm:p-10 shadow-2xl shadow-cyan-950/50 hover:shadow-cyan-500/[0.15] transition-shadow duration-500">
           {/* Progress indicator */}
           <div className="mb-10">
             <div className="flex justify-between mb-4">
@@ -190,9 +190,9 @@ export default function OnboardingPage() {
             </div>
 
             {/* Progress bar */}
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-white/[0.1] rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-500 shadow-lg shadow-cyan-500/30"
                 style={{ width: `${(step / 5) * 100}%` }}
               />
             </div>
@@ -214,7 +214,7 @@ export default function OnboardingPage() {
                   onChange={(e) => updateData('business_name', e.target.value)}
                   placeholder="Ej: Mi Negocio Digital"
                   autoFocus
-                  className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                 />
               </div>
             )}
@@ -258,8 +258,8 @@ export default function OnboardingPage() {
                         onClick={() => updateData('website_template', t.id)}
                         className={`p-4 rounded-lg border-2 transition-all text-left ${
                           isSelected
-                            ? 'border-cyan-500 bg-cyan-500/10'
-                            : 'border-white/[0.1] bg-white/[0.05] hover:border-cyan-500/50'
+                            ? 'border-cyan-500 bg-cyan-500/15 shadow-lg shadow-cyan-500/20'
+                            : 'border-white/[0.15] bg-white/[0.06] hover:border-cyan-500/40 hover:bg-white/[0.08] hover:shadow-lg hover:shadow-white/[0.05]'
                         }`}
                       >
                         <Icon className="w-6 h-6 mb-2 text-cyan-400" />
@@ -309,24 +309,24 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="p-4 rounded-lg bg-white/[0.03] border border-cyan-500/[0.1]">
+                  <div className="p-4 rounded-lg bg-white/[0.06] border border-cyan-500/[0.2] hover:bg-white/[0.08] transition-all duration-200">
                     <p className="text-xs text-white/50 uppercase mb-1">Nombre del negocio</p>
                     <p className="text-lg font-semibold text-white">{data.business_name}</p>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white/[0.03] border border-cyan-500/[0.1]">
+                  <div className="p-4 rounded-lg bg-white/[0.06] border border-cyan-500/[0.2] hover:bg-white/[0.08] transition-all duration-200">
                     <p className="text-xs text-white/50 uppercase mb-1">Descripción</p>
                     <p className="text-sm text-white/80">{data.business_description}</p>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white/[0.03] border border-cyan-500/[0.1]">
+                  <div className="p-4 rounded-lg bg-white/[0.06] border border-cyan-500/[0.2] hover:bg-white/[0.08] transition-all duration-200">
                     <p className="text-xs text-white/50 uppercase mb-1">Template</p>
                     <p className="text-lg font-semibold text-white">
                       {TEMPLATES.find((t) => t.id === data.website_template)?.name}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white/[0.03] border border-cyan-500/[0.1]">
+                  <div className="p-4 rounded-lg bg-white/[0.06] border border-cyan-500/[0.2] hover:bg-white/[0.08] transition-all duration-200">
                     <p className="text-xs text-white/50 uppercase mb-1">Tu dominio</p>
                     <p className="text-lg font-semibold text-cyan-400">{data.subdomain}.sellia.app</p>
                   </div>
@@ -336,9 +336,9 @@ export default function OnboardingPage() {
 
             {/* Error */}
             {error && (
-              <div className="mt-6 flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-400">{error}</p>
+              <div className="mt-6 flex items-start gap-3 p-4 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>{error}</p>
               </div>
             )}
           </div>
@@ -348,26 +348,26 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep(Math.max(1, step - 1))}
               disabled={step === 1}
-              className="flex-1 px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white hover:bg-white/[0.08] transition-all disabled:opacity-50"
+              className="flex-1 px-4 py-3 rounded-lg bg-white/[0.06] border border-white/[0.15] text-white hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/30 active:scale-[0.96] disabled:opacity-50 transition-all duration-200 font-semibold group"
             >
-              <ArrowLeft className="w-4 h-4 inline mr-2" />
+              <ArrowLeft className="w-4 h-4 inline mr-2 group-hover:-translate-x-0.5 transition-transform" />
               Atrás
             </button>
 
             <button
               onClick={handleNext}
               disabled={loading}
-              className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-400 hover:to-cyan-500 transition-all active:scale-[0.98] disabled:opacity-50 font-semibold"
+              className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-600 text-white hover:from-cyan-400 hover:to-cyan-500 hover:shadow-xl hover:shadow-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 active:scale-[0.96] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 font-bold group"
             >
               {loading ? (
                 <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin inline-block" />
               ) : step === 5 ? (
                 <>
-                  Crear Website <ArrowRight className="w-4 h-4 inline ml-2" />
+                  Crear Website <ArrowRight className="w-4 h-4 inline ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </>
               ) : (
                 <>
-                  Siguiente <ArrowRight className="w-4 h-4 inline ml-2" />
+                  Siguiente <ArrowRight className="w-4 h-4 inline ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>
