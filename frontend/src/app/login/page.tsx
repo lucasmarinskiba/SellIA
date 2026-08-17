@@ -14,14 +14,15 @@ import {
   Zap,
   MessageCircle,
   TrendingUp,
-  Bot,
+  Sparkles,
   Mail,
   Lock,
   Shield,
 } from 'lucide-react'
 
 /* ============================================================
-   LOGIN — Premium Glassmorphism + Seguridad Anti-Hackeo
+   LOGIN — SellIA 2026 · Glassmorphism Minimalism
+   Design System: Dark-First, Cian Accents, Glass Effects
    ============================================================ */
 
 function GoogleIcon({ className = '' }: { className?: string }) {
@@ -44,10 +45,10 @@ function AppleIcon({ className = '' }: { className?: string }) {
 }
 
 const stats = [
-  { icon: Zap, label: 'Respuesta', value: '< 2 min', color: 'text-brand-orange', bg: 'bg-brand-orange/20' },
-  { icon: MessageCircle, label: 'Conversaciones', value: '24/7', color: 'text-brand-teal', bg: 'bg-brand-teal/20' },
-  { icon: TrendingUp, label: 'Conversión', value: '+300%', color: 'text-brand-violet', bg: 'bg-brand-violet/20' },
-  { icon: Bot, label: 'Automatización', value: '100%', color: 'text-brand-orange', bg: 'bg-brand-orange/20' },
+  { icon: Zap, label: 'Respuesta', value: '< 2 min', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { icon: MessageCircle, label: 'Conversaciones', value: '24/7', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+  { icon: TrendingUp, label: 'Conversión', value: '+300%', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { icon: Sparkles, label: 'IA Avanzada', value: '100%', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
 ]
 
 const MAX_LOGIN_ATTEMPTS = 3
@@ -62,12 +63,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // Rate limiting visual (client-side)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [isLocked, setIsLocked] = useState(false)
   const [lockCountdown, setLockCountdown] = useState(0)
 
-  // Honeypot anti-bot
   const [honeypot, setHoneypot] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
   const [requires2FA, setRequires2FA] = useState(false)
@@ -80,7 +79,6 @@ export default function LoginPage() {
     return () => clearTimeout(t)
   }, [])
 
-  // Cargar script de Cloudflare Turnstile
   useEffect(() => {
     if (document.getElementById('turnstile-script')) return
     const script = document.createElement('script')
@@ -90,13 +88,11 @@ export default function LoginPage() {
     script.defer = true
     document.body.appendChild(script)
 
-    // Callback global requerido por Turnstile
     ;(window as any).turnstileCallback = (token: string) => {
       setTurnstileToken(token)
     }
   }, [])
 
-  // Contador regresivo de bloqueo
   useEffect(() => {
     if (lockCountdown > 0) {
       const timer = setInterval(() => {
@@ -121,35 +117,30 @@ export default function LoginPage() {
       setError('')
       setLoading(true)
 
-      // Si el honeypot tiene contenido, es un bot — simular éxito para no dar pistas
       if (honeypot.trim() !== '') {
         setLoading(false)
         return
       }
 
       try {
-        await auth.login({ 
-          email, 
-          password, 
+        await auth.login({
+          email,
+          password,
           turnstileToken: turnstileToken || undefined,
           tfaCode: tfaCode || undefined,
         })
-        // Auth token se almacena en cookie httpOnly automáticamente
-        // No se guarda en localStorage por seguridad
         setFailedAttempts(0)
         setRequires2FA(false)
         router.push('/dashboard')
       } catch (err: any) {
         const detail = err.response?.data?.detail || ''
-        
-        // Si el servidor pide 2FA
+
         if (detail === '2FA_REQUIRED') {
           setRequires2FA(true)
           setLoading(false)
           return
         }
 
-        // Si el email no está verificado
         if (detail === 'EMAIL_NOT_VERIFIED') {
           setError('Tu cuenta no está verificada. Revisá tu email o solicitá uno nuevo.')
           setRequiresVerification(true)
@@ -174,16 +165,15 @@ export default function LoginPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[#060812] text-white relative flex items-center justify-center overflow-hidden">
-      {/* Ambient orbs */}
-      <div className="absolute inset-0 bg-mesh opacity-60" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-brand-orange/[0.04] blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full bg-brand-violet/[0.03] blur-[120px] pointer-events-none" />
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-brand-teal/[0.03] blur-[100px] pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative flex items-center justify-center overflow-hidden">
+      {/* Ambient gradient orbs — SellIA 2026 */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-cyan-500/[0.08] blur-[180px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] rounded-full bg-indigo-500/[0.06] blur-[150px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-cyan-400/[0.04] blur-[120px] pointer-events-none" />
 
-      {/* SVG noise */}
+      {/* SVG noise texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.025]"
+        className="absolute inset-0 pointer-events-none opacity-[0.02]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat',
@@ -191,7 +181,7 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Back to home */}
+      {/* Back button */}
       <div
         className={`absolute top-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-700 ${
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
@@ -199,7 +189,7 @@ export default function LoginPage() {
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-sm text-white/40 hover:text-white/70 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.1] text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.08] transition-all duration-300"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Volver al inicio
@@ -211,17 +201,17 @@ export default function LoginPage() {
         {stats.map((stat, i) => (
           <div
             key={stat.label}
-            className={`glass-card p-3.5 flex items-center gap-3 min-w-[180px] transition-all duration-700 ${
+            className={`bg-white/[0.05] border border-white/[0.1] rounded-lg p-4 flex items-center gap-3 min-w-[200px] transition-all duration-700 ${
               mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
             }`}
             style={{ transitionDelay: `${150 + i * 120}ms` }}
           >
-            <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center`}>
-              <stat.icon className={`w-4.5 h-4.5 ${stat.color}`} />
+            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
             </div>
             <div>
-              <p className="text-[10px] text-white/30 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-sm font-bold text-white/80">{stat.value}</p>
+              <p className="text-[11px] text-white/40 uppercase tracking-wider font-medium">{stat.label}</p>
+              <p className="text-sm font-semibold text-white">{stat.value}</p>
             </div>
           </div>
         ))}
@@ -229,34 +219,37 @@ export default function LoginPage() {
 
       {/* Main glass card */}
       <div
-        className={`relative z-10 w-full max-w-[460px] mx-6 transition-all duration-700 ${
+        className={`relative z-10 w-full max-w-[480px] mx-6 transition-all duration-700 ${
           mounted ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-[0.97]'
         }`}
         style={{ transitionDelay: '100ms' }}
       >
-        <div className="rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] p-10 sm:p-12 shadow-2xl shadow-black/50 relative overflow-hidden">
+        <div className="rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-cyan-500/[0.15] p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group">
+          {/* Glow edges */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
           {/* Inner glows */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-orange/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-brand-violet/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/[0.08] rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-indigo-500/[0.06] rounded-full blur-3xl pointer-events-none" />
 
           {/* Header */}
-          <div className="flex flex-col items-center mb-10 relative">
+          <div className="flex flex-col items-center mb-12 relative z-10">
             <div
-              className={`mb-6 p-3.5 rounded-2xl bg-white/5 border border-white/10 transition-all duration-700 ${
+              className={`mb-6 p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/5 border border-cyan-500/20 transition-all duration-700 ${
                 mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
               }`}
               style={{ transitionDelay: '200ms' }}
             >
               <Logo size={48} showText={false} />
             </div>
-            <h1 className="text-[26px] font-bold text-white tracking-tight">¡Hola de nuevo! 👋</h1>
-            <p className="text-sm text-white/40 mt-2">Iniciá sesión para seguir vendiendo</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight">¡Hola de nuevo!</h1>
+            <p className="text-sm text-white/50 mt-3">Iniciá sesión para seguir vendiendo</p>
           </div>
 
           {/* Security badge */}
-          <div className="flex items-center justify-center gap-2 mb-6 text-xs text-emerald-400/70 bg-emerald-500/5 border border-emerald-500/10 rounded-full px-4 py-1.5">
+          <div className="flex items-center justify-center gap-2 mb-8 text-xs text-emerald-300 bg-emerald-500/8 border border-emerald-500/20 rounded-full px-4 py-2">
             <Shield className="w-3.5 h-3.5" />
-            <span>Conexión protegida por ciberseguridad moderna</span>
+            <span>Conexión protegida con estándares 2026</span>
           </div>
 
           {/* Social login */}
@@ -268,17 +261,17 @@ export default function LoginPage() {
           >
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.14] transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-cyan-500/[0.08] hover:border-cyan-500/[0.2] transition-all duration-300 active:scale-[0.98]"
             >
               <GoogleIcon className="w-5 h-5" />
-              <span className="text-sm text-white/70 font-medium">Google</span>
+              <span className="text-sm text-white/75 font-medium">Google</span>
             </button>
             <button
               type="button"
-              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.14] transition-all active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] hover:bg-cyan-500/[0.08] hover:border-cyan-500/[0.2] transition-all duration-300 active:scale-[0.98]"
             >
               <AppleIcon className="w-5 h-5 text-white/80" />
-              <span className="text-sm text-white/70 font-medium">Apple</span>
+              <span className="text-sm text-white/75 font-medium">Apple</span>
             </button>
           </div>
 
@@ -290,13 +283,13 @@ export default function LoginPage() {
             style={{ transitionDelay: '300ms' }}
           >
             <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-xs text-white/25 font-medium">o con tu email</span>
+            <span className="text-xs text-white/30 font-medium">o con tu email</span>
             <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5 relative">
-            {/* Honeypot anti-bot: campo oculto */}
+            {/* Honeypot */}
             <div className="absolute opacity-0 top-0 left-0 h-0 w-0 overflow-hidden">
               <label htmlFor="website">Website</label>
               <input
@@ -311,7 +304,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/15 text-red-400 text-sm animate-shake">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -332,14 +325,14 @@ export default function LoginPage() {
                   }
                 }}
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-sm font-medium hover:bg-brand-orange/20 transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-medium hover:bg-orange-500/20 transition-colors disabled:opacity-50"
               >
                 {loading ? 'Enviando...' : 'Reenviar email de verificación'}
               </button>
             )}
 
             {isLocked && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/15 text-amber-400 text-sm">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
                   Demasiados intentos fallidos. Esperá {lockCountdown}s para volver a intentar.
@@ -348,8 +341,8 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="label flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-white/30" />
+              <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
+                <Mail className="w-3.5 h-3.5" />
                 Email
               </label>
               <input
@@ -359,13 +352,13 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="tu@email.com"
-                className="input-field focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/40 transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
               />
             </div>
 
             <div>
-              <label className="label flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-white/30" />
+              <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
+                <Lock className="w-3.5 h-3.5" />
                 Contraseña
               </label>
               <div className="relative group">
@@ -375,12 +368,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="input-field pr-12 focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/40 transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 pr-12 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/20 hover:text-white/60 hover:bg-white/5 transition-all"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -388,13 +381,13 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Campo 2FA cuando es requerido */}
+            {/* 2FA */}
             {requires2FA && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="label flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-white/30" />
-                    {isBackupCode ? 'Código de backup' : 'Código de verificación (2FA)'}
+                  <label className="text-sm font-medium text-white/70 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" />
+                    {isBackupCode ? 'Código de backup' : 'Código 2FA'}
                   </label>
                   <button
                     type="button"
@@ -402,7 +395,7 @@ export default function LoginPage() {
                       setIsBackupCode(!isBackupCode)
                       setTfaCode('')
                     }}
-                    className="text-[11px] text-brand-orange hover:underline"
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
                   >
                     {isBackupCode ? 'Usar código TOTP' : 'Usar código de backup'}
                   </button>
@@ -422,9 +415,9 @@ export default function LoginPage() {
                   placeholder={isBackupCode ? 'ABCDEF12' : '123456'}
                   maxLength={isBackupCode ? 8 : 6}
                   autoFocus
-                  className="input-field text-center tracking-[0.3em] font-mono focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange/40 transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 text-center tracking-[0.3em] font-mono focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
                 />
-                <p className="text-[11px] text-white/30">
+                <p className="text-[11px] text-white/40">
                   {isBackupCode
                     ? 'Ingresá uno de tus códigos de backup de un solo uso'
                     : 'Ingresá el código de tu app de autenticación'}
@@ -432,7 +425,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Cloudflare Turnstile */}
+            {/* Turnstile */}
             {!requires2FA && (
               <div className="flex justify-center">
                 <div
@@ -444,11 +437,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-2">
               <label className="flex items-center gap-2.5 cursor-pointer group">
                 <div className="relative">
                   <input type="checkbox" className="peer sr-only" />
-                  <div className="w-4.5 h-4.5 rounded border border-white/20 bg-white/5 peer-checked:bg-brand-orange peer-checked:border-brand-orange transition-all" />
+                  <div className="w-4.5 h-4.5 rounded border border-white/20 bg-white/5 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 transition-all" />
                   <svg
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
                     viewBox="0 0 24 24"
@@ -461,27 +454,27 @@ export default function LoginPage() {
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <span className="text-sm text-white/35 group-hover:text-white/55 transition-colors">
+                <span className="text-sm text-white/40 group-hover:text-white/60 transition-colors">
                   Recordarme
                 </span>
               </label>
               <Link
                 href="#"
-                className="text-sm text-brand-orange hover:text-brand-orange-light transition-colors font-medium"
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
               >
-                ¿Olvidaste? 🤔
+                ¿Olvidaste?
               </Link>
             </div>
 
             <button
               type="submit"
               disabled={loading || isLocked}
-              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-brand-orange text-white text-sm font-semibold rounded-xl hover:bg-brand-orange-dark transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-brand-orange/20"
+              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-cyan-400 hover:to-cyan-500 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 shadow-lg shadow-cyan-500/25"
             >
               {loading ? (
                 <div className="flex items-center gap-2.5">
                   <span className="w-5 h-5 border-[2.5px] border-white/25 border-t-white rounded-full animate-spin" />
-                  <span className="text-white/80">Ingresando...</span>
+                  <span>Ingresando...</span>
                 </div>
               ) : (
                 <>
@@ -494,13 +487,13 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
-            <p className="text-sm text-white/25">
+            <p className="text-sm text-white/40">
               ¿No tenés cuenta?{' '}
               <Link
                 href="/register"
-                className="text-brand-orange hover:text-brand-orange-light font-semibold transition-colors"
+                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
               >
-                Creá una gratis ✨
+                Creá una gratis
               </Link>
             </p>
           </div>
@@ -509,4 +502,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
