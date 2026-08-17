@@ -37,6 +37,7 @@ _try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])
 _try_include("app.api.v1.seo.router", "/api/v1/seo", ["seo"])
 _try_include("app.api.v1.analytics_tracking.router", "/api/v1", ["analytics"])
+_try_include("app.api.v1.products.router", "/api/v1", ["products"])
 _try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversations"])
 _try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])
