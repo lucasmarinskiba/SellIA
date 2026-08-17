@@ -1,13 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEOAnalyzer } from '@/components/Enterprise/SEOAnalyzer';
 import { TrendingUp, BookOpen, Zap } from 'lucide-react';
+import { t, subscribeLocale } from '@/lib/sellia-i18n';
 
 export default function Phase12Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
+  const [, setRefresh] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = subscribeLocale(() => setRefresh(r => r + 1));
+    return unsubscribe;
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -15,7 +22,7 @@ export default function Phase12Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            Phase 1-2: SEO Foundation
+            {t('phases.seo_foundation')}
           </h1>
           <p className="text-lg text-slate-600">
             Structured data, Core Web Vitals, keyword optimization

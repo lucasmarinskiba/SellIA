@@ -45,6 +45,7 @@ const es: Dict = {
   'deals.mark_won': 'Marcar ganado',
   'deals.reopen': 'Reabrir',
   'ws.status': 'WS · {status}',
+  'phases.seo_foundation': 'Fundamentos SEO',
 }
 
 const en: Dict = {
@@ -82,6 +83,7 @@ const en: Dict = {
   'deals.mark_won': 'Mark won',
   'deals.reopen': 'Reopen',
   'ws.status': 'WS · {status}',
+  'phases.seo_foundation': 'SEO Foundation',
 }
 
 const pt: Dict = {
@@ -96,6 +98,7 @@ const pt: Dict = {
   'common.cancel': 'Cancelar',
   'deals.title': 'Negócios',
   'deals.empty': 'Sem negócios',
+  'phases.seo_foundation': 'Fundamentos de SEO',
 }
 
 const fr: Dict = {
@@ -109,6 +112,7 @@ const fr: Dict = {
   'common.save': 'Enregistrer',
   'common.cancel': 'Annuler',
   'deals.title': 'Affaires',
+  'phases.seo_foundation': 'Fondations SEO',
 }
 
 const it: Dict = {
@@ -119,6 +123,7 @@ const it: Dict = {
   'login.submit': 'Entra',
   'common.loading': 'Caricamento…',
   'common.save': 'Salva',
+  'phases.seo_foundation': 'Fondamenti SEO',
 }
 
 const de: Dict = {
@@ -129,6 +134,7 @@ const de: Dict = {
   'login.submit': 'Anmelden',
   'common.loading': 'Lädt…',
   'common.save': 'Speichern',
+  'phases.seo_foundation': 'SEO-Grundlagen',
 }
 
 const ja: Dict = {
@@ -139,6 +145,7 @@ const ja: Dict = {
   'login.submit': 'ログイン',
   'common.loading': '読み込み中…',
   'common.save': '保存',
+  'phases.seo_foundation': 'SEO基礎',
 }
 
 const zh: Dict = {
@@ -149,6 +156,7 @@ const zh: Dict = {
   'login.submit': '登录',
   'common.loading': '加载中…',
   'common.save': '保存',
+  'phases.seo_foundation': 'SEO基础',
 }
 
 const ar: Dict = {
@@ -159,6 +167,7 @@ const ar: Dict = {
   'login.submit': 'دخول',
   'common.loading': 'جار التحميل…',
   'common.save': 'حفظ',
+  'phases.seo_foundation': 'أساسيات SEO',
 }
 
 const hi: Dict = {
@@ -168,6 +177,7 @@ const hi: Dict = {
   'login.password': 'पासवर्ड',
   'login.submit': 'प्रवेश',
   'common.loading': 'लोड हो रहा है…',
+  'phases.seo_foundation': 'SEO फाउंडेशन',
 }
 
 const ko: Dict = {
@@ -177,6 +187,7 @@ const ko: Dict = {
   'login.password': '비밀번호',
   'login.submit': '로그인',
   'common.loading': '로드 중…',
+  'phases.seo_foundation': 'SEO 기초',
 }
 
 const ru: Dict = {
@@ -186,6 +197,7 @@ const ru: Dict = {
   'login.password': 'Пароль',
   'login.submit': 'Войти',
   'common.loading': 'Загрузка…',
+  'phases.seo_foundation': 'Основы SEO',
 }
 
 export const MESSAGES: Record<Locale, Dict> = {
