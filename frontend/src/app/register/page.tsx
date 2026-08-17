@@ -136,10 +136,11 @@ export default function RegisterPage() {
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/[0.1] text-sm text-white/50 hover:text-white/80 hover:bg-white/[0.08] transition-all duration-300"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.15] text-sm text-white/70 hover:text-white hover:bg-white/[0.12] hover:border-white/[0.25] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
-          Volver al inicio
+          <span className="hidden sm:inline">Volver al inicio</span>
+          <span className="sm:hidden">Atrás</span>
         </Link>
       </div>
 
@@ -175,7 +176,7 @@ export default function RegisterPage() {
         }`}
         style={{ transitionDelay: '100ms' }}
       >
-        <div className="rounded-2xl bg-slate-900/40 backdrop-blur-xl border border-cyan-500/[0.15] p-10 sm:p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group">
+        <div className="rounded-2xl bg-slate-900/50 backdrop-blur-2xl border border-cyan-500/[0.2] p-8 sm:p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group hover:shadow-cyan-500/[0.15] transition-shadow duration-500">
           {/* Glow edges */}
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -261,7 +262,7 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -271,8 +272,8 @@ export default function RegisterPage() {
               {step === 1 && (
                 <div className="space-y-5">
                   <div>
-                    <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                      <User className="w-3.5 h-3.5" />
+                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                      <User className="w-3.5 h-3.5 text-cyan-400" />
                       Nombre completo
                     </label>
                     <input
@@ -282,12 +283,12 @@ export default function RegisterPage() {
                       required
                       autoFocus
                       placeholder="Juan Pérez"
-                      className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                      className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                      <Mail className="w-3.5 h-3.5" />
+                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                      <Mail className="w-3.5 h-3.5 text-cyan-400" />
                       Email
                     </label>
                     <input
@@ -296,15 +297,15 @@ export default function RegisterPage() {
                       onChange={e => update('email', e.target.value)}
                       required
                       placeholder="tu@email.com"
-                      className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                      className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="w-full flex items-center justify-center gap-2.5 px-6 py-3 bg-white/[0.05] border border-white/[0.1] text-white text-sm font-semibold rounded-lg hover:bg-white/[0.08] hover:border-white/[0.15] transition-all duration-300 active:scale-[0.98] mt-3"
+                    className="w-full flex items-center justify-center gap-2.5 px-6 py-3 bg-white/[0.06] border border-white/[0.15] text-white text-sm font-bold rounded-lg hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 active:scale-[0.96] mt-3 group"
                   >
-                    Continuar <ArrowRight className="w-4 h-4" />
+                    Continuar <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </div>
               )}
@@ -314,8 +315,8 @@ export default function RegisterPage() {
               {step === 2 && (
                 <div className="space-y-5">
                   <div>
-                    <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                      <Lock className="w-3.5 h-3.5" />
+                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
                       Contraseña
                     </label>
                     <div className="relative group">
@@ -325,26 +326,26 @@ export default function RegisterPage() {
                         onChange={e => update('password', e.target.value)}
                         required
                         placeholder="Mínimo 10 caracteres"
-                        className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 pr-12 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                        className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 pr-12 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                     {form.password.length > 0 && (
-                      <div className="mt-3 space-y-1.5">
+                      <div className="mt-3 space-y-2 p-3 rounded-lg bg-white/[0.04] border border-white/[0.08]">
                         <div className="flex items-center justify-between">
-                          <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor}`}>{strength}</p>
-                          <p className="text-[10px] text-white/30">{form.password.length}/10+</p>
+                          <p className={`text-xs font-bold transition-colors duration-300 ${strengthColor}`}>{strength}</p>
+                          <p className="text-[10px] text-white/40 font-medium">{form.password.length}/10+</p>
                         </div>
-                        <div className="h-1 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-white/[0.1] rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ease-out ${strengthBarColor}`}
+                            className={`h-full rounded-full transition-all duration-500 ease-out shadow-sm ${strengthBarColor}`}
                             style={{ width: `${strengthPercent}%` }}
                           />
                         </div>
@@ -353,8 +354,8 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white/70 flex items-center gap-1.5 mb-2">
-                      <Lock className="w-3.5 h-3.5" />
+                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
+                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
                       Confirmar contraseña
                     </label>
                     <div className="relative group">
@@ -364,29 +365,29 @@ export default function RegisterPage() {
                         onChange={e => update('confirm_password', e.target.value)}
                         required
                         placeholder="Repetí tu contraseña"
-                        className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/40 pr-12 focus:bg-white/[0.08] focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                        className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 pr-12 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-all"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
                         tabIndex={-1}
                       >
                         {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                     {form.confirm_password && form.password === form.confirm_password && (
-                      <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1.5 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Coinciden ✅
+                      <p className="text-xs text-emerald-300 mt-2 flex items-center gap-1.5 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Coinciden ✓
                       </p>
                     )}
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/15 border border-emerald-500/30">
                     <Store className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-white/80">¿Tenés un negocio?</p>
-                      <p className="text-xs text-white/40 mt-1">Después podés configurar tu catálogo y canales desde el dashboard.</p>
+                      <p className="text-sm font-semibold text-white/85">¿Tenés un negocio?</p>
+                      <p className="text-xs text-white/60 mt-1">Después podés configurar tu catálogo y canales desde el dashboard.</p>
                     </div>
                   </div>
 
@@ -394,19 +395,19 @@ export default function RegisterPage() {
                     <button
                       type="button"
                       onClick={() => { setStep(1); setError('') }}
-                      className="flex-1 px-5 py-3 bg-white/[0.05] border border-white/[0.1] text-white text-sm font-semibold rounded-lg hover:bg-white/[0.08] transition-all duration-300 active:scale-[0.98]"
+                      className="flex-1 px-5 py-3 bg-white/[0.06] border border-white/[0.15] text-white text-sm font-bold rounded-lg hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/30 active:scale-[0.96] transition-all duration-200"
                     >
                       Atrás
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-[2] flex items-center justify-center gap-2.5 px-6 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-cyan-400 hover:to-cyan-500 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-cyan-500/25"
+                      className="flex-[2] flex items-center justify-center gap-2.5 px-6 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-bold rounded-lg hover:from-cyan-400 hover:to-cyan-500 hover:shadow-xl hover:shadow-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 active:scale-[0.96] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
                     >
                       {loading ? (
                         <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
                       ) : (
-                        <>Crear cuenta gratis ✨ <ArrowRight className="w-4 h-4" /></>
+                        <>Crear cuenta gratis ✨ <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>
                       )}
                     </button>
                   </div>
@@ -416,12 +417,12 @@ export default function RegisterPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
-            <p className="text-sm text-white/40">
+          <div className="mt-8 pt-6 border-t border-white/[0.08] text-center">
+            <p className="text-sm text-white/60">
               ¿Ya tenés cuenta?{' '}
               <Link
                 href="/login"
-                className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                className="text-cyan-400 hover:text-cyan-300 font-bold focus:outline-none focus:underline transition-all"
               >
                 Iniciar sesión →
               </Link>
