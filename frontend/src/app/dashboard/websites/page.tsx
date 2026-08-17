@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Globe, Edit2, Eye, Share2, Zap, AlertCircle, CheckCircle2, Loader } from 'lucide-react'
+import { Globe, Edit2, Eye, Share2, Zap, AlertCircle, CheckCircle2, Loader, BarChart3 } from 'lucide-react'
 
 /* ============================================================
    WEBSITES DASHBOARD — Manage seller websites
@@ -137,6 +137,13 @@ export default function WebsitesDashboard() {
                   >
                     <Edit2 className="w-4 h-4" />
                     Editar
+                  </button>
+                  <button
+                    onClick={() => router.push(`/dashboard/websites/analytics?businessId=${website.business_id}`)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded hover:bg-slate-50 transition-all"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Analytics
                   </button>
                   {website.status === 'PUBLISHED' && (
                     <button
