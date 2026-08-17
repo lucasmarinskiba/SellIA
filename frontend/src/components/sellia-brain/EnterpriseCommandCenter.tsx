@@ -17,6 +17,7 @@ import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Brain, ChevronLeft, ChevronRight,
   Cpu, Filter, LifeBuoy, Search, Store, Target, TrendingUp, Users, Workflow,
 } from 'lucide-react'
+import { t } from '@/lib/sellia-i18n'
 
 import MissionControlBar, {
   type CuaMode, type UserProfile, loadUser, clearUser,
@@ -765,7 +766,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             e.currentTarget.style.borderColor = `${T.cobalt}33`;
           }}>
             <TrendingUp size={14} />
-            Phase 1-2 · SEO Foundation
+            {t('phases.seo_foundation')}
           </a>
           <a href="/dashboard/phase3" style={{
             display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
