@@ -97,15 +97,17 @@ export default function LoginPage() {
 
         {/* Content */}
         <div className="relative z-10">
-          <div className="mb-12">
-            <Sparkles className="w-12 h-12 text-white/80" />
+          <div className="mb-16">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl">
+              <Sparkles className="w-7 h-7 text-white" />
+            </div>
           </div>
 
           <div>
-            <h1 className="text-5xl font-black mb-4 leading-tight">
+            <h1 className="text-6xl font-black mb-6 leading-tight">
               {t.welcome}
             </h1>
-            <p className="text-lg text-white/90 leading-relaxed">
+            <p className="text-xl text-white/95 leading-relaxed max-w-lg">
               {t.description}
             </p>
           </div>
@@ -117,17 +119,17 @@ export default function LoginPage() {
       </div>
 
       {/* Right side - Login form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 sm:px-12 lg:px-16 bg-white">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-16 sm:px-12 lg:px-20 bg-white">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">SellIA</h2>
+          <div className="mb-12">
+            <h2 className="text-3xl font-black text-gray-900">SellIA</h2>
           </div>
 
           {/* Welcome message */}
-          <div className="mb-8">
-            <h3 className="text-3xl font-bold text-gray-900 mb-2">{t.loginTitle}</h3>
-            <p className="text-gray-500 text-sm">{lang === 'es' ? 'No tenés cuenta?' : "Don't have an account?"} <Link href="/register" className="text-blue-600 font-semibold hover:text-blue-700">{t.createAccount}</Link></p>
+          <div className="mb-10">
+            <h3 className="text-4xl font-black text-gray-900 mb-3">{t.loginTitle}</h3>
+            <p className="text-gray-600 text-sm">{lang === 'es' ? 'No tenés cuenta?' : "Don't have an account?"} <Link href="/register" className="text-blue-600 font-bold hover:text-blue-700 underline">{t.createAccount}</Link></p>
           </div>
 
           {/* Error message */}
@@ -139,10 +141,10 @@ export default function LoginPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
                 {t.email}
               </label>
               <input
@@ -152,17 +154,17 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="usuario@email.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 focus:ring-0 focus:outline-none transition-all shadow-sm hover:border-gray-300"
               />
             </div>
 
             {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-gray-700">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-900">
                   {t.password}
                 </label>
-                <Link href="#" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <Link href="#" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
                   {t.forgot}
                 </Link>
               </div>
@@ -173,14 +175,14 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 focus:ring-0 focus:outline-none transition-all shadow-sm hover:border-gray-300"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -189,16 +191,23 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-8 px-6 py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+              className="w-full mt-10 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-md hover:shadow-lg"
             >
               {loading ? t.loading : t.loginButton}
             </button>
           </form>
 
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-500 font-medium">O continúa con</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
           {/* Google login */}
           <button
             type="button"
-            className="w-full mt-3 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+            className="w-full px-6 py-3.5 border-2 border-gray-200 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 shadow-sm"
           >
             <GoogleIcon className="w-5 h-5" />
             {t.googleLogin}
