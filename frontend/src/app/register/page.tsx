@@ -4,70 +4,103 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2, User, Mail, Lock, Store, ChevronLeft, Sparkles, Users, MessageSquare, Shield, Clock, Zap } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
 
-/* ============================================================
-   REGISTER — SellIA 2026 · Glassmorphism Minimalism
-   Design System: Dark-First, Cyan Accents, Glass Effects
-   ============================================================ */
+const translations = {
+  es: {
+    welcome: '¡Hola SellIA!',
+    emoji: '👋',
+    description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
+    registerTitle: '¡Creá tu cuenta!',
+    subtext: '¿Ya tenés cuenta? Inicia sesión aquí. Toma menos de un minuto crear una.',
+    step1: 'Paso 1: Datos básicos',
+    step2: 'Paso 2: Contraseña segura',
+    fullName: 'Nombre completo',
+    fullNamePlaceholder: 'Juan Pérez',
+    email: 'Email',
+    emailPlaceholder: 'usuario@email.com',
+    password: 'Contraseña',
+    passwordPlaceholder: '••••••••',
+    confirmPassword: 'Confirmar contraseña',
+    businessName: 'Nombre de tu negocio',
+    businessNamePlaceholder: 'Mi Tienda Online',
+    nextButton: 'Siguiente',
+    registerButton: 'Crear cuenta',
+    haveAccount: '¿Ya tenés cuenta?',
+    loginHere: 'Inicia sesión aquí',
+    loading: 'Creando cuenta...',
+    copyright: '© 2026 SellIA. Todos los derechos reservados.',
+  },
+  en: {
+    welcome: 'Hello SellIA!',
+    emoji: '👋',
+    description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
+    registerTitle: 'Create Your Account!',
+    subtext: "Already have an account? Sign in here. It takes less than a minute to create one.",
+    step1: 'Step 1: Basic Info',
+    step2: 'Step 2: Secure Password',
+    fullName: 'Full Name',
+    fullNamePlaceholder: 'John Doe',
+    email: 'Email',
+    emailPlaceholder: 'usuario@email.com',
+    password: 'Password',
+    passwordPlaceholder: '••••••••',
+    confirmPassword: 'Confirm Password',
+    businessName: 'Business Name',
+    businessNamePlaceholder: 'My Online Store',
+    nextButton: 'Next',
+    registerButton: 'Create Account',
+    haveAccount: 'Already have an account?',
+    loginHere: 'Sign in here',
+    loading: 'Creating account...',
+    copyright: '© 2026 SellIA. All rights reserved.',
+  },
+}
 
-function FloatingCard({ icon, label, value, delay, position }: { icon: React.ReactNode; label: string; value: string; delay: number; position: string }) {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const t = setTimeout(() => setIsVisible(true), delay)
-    return () => clearTimeout(t)
-  }, [delay])
-
+function GoogleIcon({ className = '' }: { className?: string }) {
   return (
-    <div
-      className={`absolute hidden lg:flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-cyan-500/[0.15] shadow-lg shadow-cyan-950/30 transition-all duration-1000 ${position} ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}
-      style={{ animation: `float 6s ease-in-out infinite ${delay * 0.1}s` }}
-    >
-      <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm font-bold text-white/90 leading-tight">{value}</p>
-        <p className="text-[11px] text-white/40 leading-tight">{label}</p>
-      </div>
-    </div>
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
   )
 }
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm_password: '', business_name: '', honeypot: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm_password: '', honeypot: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [step, setStep] = useState(1)
+  const [lang, setLang] = useState<'es' | 'en'>('es')
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 50)
-    return () => clearTimeout(t)
+    setMounted(true)
+    const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en'
+    setLang(browserLang)
   }, [])
 
+  const t = translations[lang]
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
   const validateStep1 = () => {
-    if (!form.full_name.trim()) return 'Ingresá tu nombre completo'
-    if (!form.email.trim()) return 'Ingresá tu email'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Ingresá un email válido'
+    if (!form.full_name.trim()) return lang === 'es' ? 'Ingresá tu nombre completo' : 'Enter your full name'
+    if (!form.email.trim()) return lang === 'es' ? 'Ingresá tu email' : 'Enter your email'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return lang === 'es' ? 'Email inválido' : 'Invalid email'
     return ''
   }
 
   const validateStep2 = () => {
-    if (form.password.length < 10) return 'La contraseña debe tener al menos 10 caracteres'
-    if (!/[A-Z]/.test(form.password)) return 'La contraseña debe contener al menos una mayúscula'
-    if (!/[a-z]/.test(form.password)) return 'La contraseña debe contener al menos una minúscula'
-    if (!/[0-9]/.test(form.password)) return 'La contraseña debe contener al menos un número'
-    if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]/~`]/.test(form.password)) return 'La contraseña debe contener al menos un símbolo'
-    if (form.password !== form.confirm_password) return 'Las contraseñas no coinciden'
+    if (form.password.length < 10) return lang === 'es' ? 'Mínimo 10 caracteres' : 'Minimum 10 characters'
+    if (!/[A-Z]/.test(form.password)) return lang === 'es' ? 'Necesita mayúscula' : 'Needs uppercase'
+    if (!/[a-z]/.test(form.password)) return lang === 'es' ? 'Necesita minúscula' : 'Needs lowercase'
+    if (!/[0-9]/.test(form.password)) return lang === 'es' ? 'Necesita número' : 'Needs number'
+    if (form.password !== form.confirm_password) return lang === 'es' ? 'Las contraseñas no coinciden' : 'Passwords do not match'
     return ''
   }
 
@@ -89,362 +122,214 @@ export default function RegisterPage() {
       await auth.login({ email: form.email, password: form.password })
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al crear la cuenta')
+      setError(err.response?.data?.detail || (lang === 'es' ? 'Error al crear la cuenta' : 'Account creation failed'))
     } finally {
       setLoading(false)
     }
   }
 
-  const pwdScore = (() => {
-    let score = 0
-    if (form.password.length >= 10) score += 1
-    if (/[A-Z]/.test(form.password)) score += 1
-    if (/[a-z]/.test(form.password)) score += 1
-    if (/[0-9]/.test(form.password)) score += 1
-    if (/[!@#$%^&*(),.?":{}|<>\-_=+\[\]/~`]/.test(form.password)) score += 1
-    return score
-  })()
-  const strength = pwdScore >= 5 ? 'Fuerte 💪' : pwdScore >= 3 ? 'Media ⚡' : form.password.length > 0 ? 'Débil 😅' : ''
-  const strengthColor = pwdScore >= 5 ? 'text-emerald-400' : pwdScore >= 3 ? 'text-amber-400' : 'text-red-400'
-  const strengthPercent = pwdScore >= 5 ? 100 : pwdScore >= 3 ? 60 : form.password.length > 0 ? 25 : 0
-  const strengthBarColor = pwdScore >= 5 ? 'bg-emerald-500' : pwdScore >= 3 ? 'bg-amber-500' : form.password.length > 0 ? 'bg-red-500' : 'bg-white/5'
-
-  const progress = step === 1 ? 50 : 100
+  if (!mounted) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative flex items-center justify-center overflow-hidden">
-      {/* Ambient gradient orbs — SellIA 2026 */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] rounded-full bg-cyan-500/[0.08] blur-[180px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] rounded-full bg-indigo-500/[0.06] blur-[150px] pointer-events-none" />
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-cyan-400/[0.04] blur-[120px] pointer-events-none" />
+    <div className="min-h-screen flex overflow-hidden bg-white">
+      {/* Left side - Blue gradient with marketing */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden">
+        {/* Diagonal pattern background */}
+        <svg className="absolute inset-0 opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="diag" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="20" y2="20" stroke="white" strokeWidth="1" />
+              <line x1="20" y1="0" x2="0" y2="20" stroke="white" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#diag)" />
+        </svg>
 
-      {/* SVG noise texture */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '128px',
-        }}
-      />
+        {/* Decorative circles */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl -ml-36 -mb-36" />
 
-      {/* Back button */}
-      <div
-        className={`absolute top-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-700 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-        }`}
-      >
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.15] text-sm text-white/70 hover:text-white hover:bg-white/[0.12] hover:border-white/[0.25] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Volver al inicio</span>
-          <span className="sm:hidden">Atrás</span>
-        </Link>
-      </div>
-
-      {/* Floating benefit cards — left side */}
-      <div className="absolute top-1/3 -translate-y-1/2 left-6 hidden xl:flex flex-col gap-3 z-10">
-        <FloatingCard
-          icon={<Users className="w-4 h-4" />}
-          value="30 Agentes"
-          label="IA Especializados"
-          delay={200}
-          position=""
-        />
-        <FloatingCard
-          icon={<MessageSquare className="w-4 h-4" />}
-          value="7 Canales"
-          label="WhatsApp, IG, Web"
-          delay={400}
-          position=""
-        />
-        <FloatingCard
-          icon={<Clock className="w-4 h-4" />}
-          value="24/7 Activo"
-          label="Nunca duerme"
-          delay={600}
-          position=""
-        />
-      </div>
-
-      {/* Main glass card */}
-      <div
-        className={`relative z-10 w-full max-w-[480px] mx-6 transition-all duration-700 ${
-          mounted ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-[0.97]'
-        }`}
-        style={{ transitionDelay: '100ms' }}
-      >
-        <div className="rounded-2xl bg-slate-900/50 backdrop-blur-2xl border border-cyan-500/[0.2] p-8 sm:p-12 shadow-2xl shadow-cyan-950/50 relative overflow-hidden group hover:shadow-cyan-500/[0.15] transition-shadow duration-500">
-          {/* Glow edges */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-          {/* Inner glows */}
-          <div className="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/[0.08] rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-56 h-56 bg-indigo-500/[0.06] rounded-full blur-3xl pointer-events-none" />
-
-          {/* Progress bar */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/5">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Header */}
-          <div className="flex flex-col items-center mb-10 relative z-10">
-            <div
-              className={`mb-6 p-3 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/5 border border-cyan-500/20 transition-all duration-700 ${
-                mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-              }`}
-              style={{ transitionDelay: '200ms' }}
-            >
-              <Sparkles className="w-8 h-8 text-cyan-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">¡Creá tu cuenta! 🚀</h1>
-            <p className="text-sm text-white/50 mt-3">Trial 14 días · sin tarjeta de crédito</p>
-
-            {/* Step indicator */}
-            <div className="flex items-center gap-0 mt-8 w-full max-w-[240px]">
-              <div className="flex flex-col items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold transition-all duration-500 border-2 ${
-                  step >= 1
-                    ? step > 1
-                      ? 'bg-cyan-500 border-cyan-500 text-white'
-                      : 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_16px_rgba(6,200,255,0.25)]'
-                    : 'bg-white/[0.03] border-white/10 text-white/25'
-                }`}>
-                  {step > 1 ? <CheckCircle2 className="w-4 h-4" /> : '1'}
-                </div>
-                <span className={`text-[10px] font-semibold uppercase tracking-wider transition-colors duration-300 ${step >= 1 ? 'text-white/50' : 'text-white/20'}`}>
-                  Datos
-                </span>
-              </div>
-
-              {/* Connector */}
-              <div className="flex-1 h-[2px] mx-2 relative">
-                <div className="absolute inset-0 bg-white/[0.06] rounded-full" />
-                <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all duration-700"
-                  style={{ width: step >= 2 ? '100%' : '0%' }}
-                />
-              </div>
-
-              <div className="flex flex-col items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold transition-all duration-500 border-2 ${
-                  step >= 2
-                    ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_16px_rgba(6,200,255,0.25)]'
-                    : 'bg-white/[0.03] border-white/10 text-white/25'
-                }`}>
-                  2
-                </div>
-                <span className={`text-[10px] font-semibold uppercase tracking-wider transition-colors duration-300 ${step >= 2 ? 'text-white/50' : 'text-white/20'}`}>
-                  Contraseña
-                </span>
-              </div>
+        {/* Content */}
+        <div className="relative z-10">
+          <div className="mb-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/15 backdrop-blur-sm rounded-2xl">
+              <Sparkles className="w-8 h-8 text-white" />
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 relative">
-            {/* Honeypot */}
-            <div className="absolute opacity-0 top-0 left-0 h-0 w-0 overflow-hidden">
-              <label htmlFor="company">Company</label>
-              <input
-                id="company"
-                name="company"
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                value={form.honeypot}
-                onChange={e => update('honeypot', e.target.value)}
-              />
-            </div>
+          <div>
+            <h1 className="text-6xl font-black mb-2 leading-tight">
+              {t.welcome}
+            </h1>
+            <p className="text-5xl font-black mb-6 leading-tight">{t.emoji}</p>
+            <p className="text-xl text-white/95 leading-relaxed max-w-lg">
+              {t.description}
+            </p>
+          </div>
+        </div>
 
-            {error && (
-              <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
+        <div className="relative z-10">
+          <p className="text-white/50 text-sm">{t.copyright}</p>
+        </div>
+      </div>
 
-            <div className={`transition-all duration-500 ${step === 1 ? 'opacity-100 translate-x-0 relative' : 'opacity-0 translate-x-[-20px] absolute pointer-events-none'}`}>
-              {step === 1 && (
-                <div className="space-y-5">
-                  <div>
-                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
-                      <User className="w-3.5 h-3.5 text-cyan-400" />
-                      Nombre completo
-                    </label>
-                    <input
-                      type="text"
-                      value={form.full_name}
-                      onChange={e => update('full_name', e.target.value)}
-                      required
-                      autoFocus
-                      placeholder="Juan Pérez"
-                      className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
-                      <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={e => update('email', e.target.value)}
-                      required
-                      placeholder="tu@email.com"
-                      className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="w-full flex items-center justify-center gap-2.5 px-6 py-3 bg-white/[0.06] border border-white/[0.15] text-white text-sm font-bold rounded-lg hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 active:scale-[0.96] mt-3 group"
-                  >
-                    Continuar <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </div>
-              )}
-            </div>
+      {/* Right side - Register form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-16 sm:px-12 lg:px-20 bg-white">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-black text-gray-900">SellIA</h2>
+          </div>
 
-            <div className={`transition-all duration-500 ${step === 2 ? 'opacity-100 translate-x-0 relative' : 'opacity-0 translate-x-[20px] absolute pointer-events-none'}`}>
-              {step === 2 && (
-                <div className="space-y-5">
-                  <div>
-                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
-                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                      Contraseña
-                    </label>
-                    <div className="relative group">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={form.password}
-                        onChange={e => update('password', e.target.value)}
-                        required
-                        placeholder="Mínimo 10 caracteres"
-                        className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 pr-12 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    {form.password.length > 0 && (
-                      <div className="mt-3 space-y-2 p-3 rounded-lg bg-white/[0.04] border border-white/[0.08]">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-xs font-bold transition-colors duration-300 ${strengthColor}`}>{strength}</p>
-                          <p className="text-[10px] text-white/40 font-medium">{form.password.length}/10+</p>
-                        </div>
-                        <div className="h-1.5 w-full bg-white/[0.1] rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ease-out shadow-sm ${strengthBarColor}`}
-                            style={{ width: `${strengthPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-semibold text-white/80 flex items-center gap-1.5 mb-2.5">
-                      <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                      Confirmar contraseña
-                    </label>
-                    <div className="relative group">
-                      <input
-                        type={showConfirm ? 'text' : 'password'}
-                        value={form.confirm_password}
-                        onChange={e => update('confirm_password', e.target.value)}
-                        required
-                        placeholder="Repetí tu contraseña"
-                        className="w-full px-4 py-3 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white placeholder-white/50 pr-12 hover:bg-white/[0.1] hover:border-white/[0.2] focus:bg-white/[0.12] focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none transition-all duration-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                        tabIndex={-1}
-                      >
-                        {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    {form.confirm_password && form.password === form.confirm_password && (
-                      <p className="text-xs text-emerald-300 mt-2 flex items-center gap-1.5 font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Coinciden ✓
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-500/15 border border-emerald-500/30">
-                    <Store className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-white/85">¿Tenés un negocio?</p>
-                      <p className="text-xs text-white/60 mt-1">Después podés configurar tu catálogo y canales desde el dashboard.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => { setStep(1); setError('') }}
-                      className="flex-1 px-5 py-3 bg-white/[0.06] border border-white/[0.15] text-white text-sm font-bold rounded-lg hover:bg-white/[0.12] hover:border-white/[0.25] hover:shadow-lg hover:shadow-white/[0.05] focus:outline-none focus:ring-2 focus:ring-white/30 active:scale-[0.96] transition-all duration-200"
-                    >
-                      Atrás
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-[2] flex items-center justify-center gap-2.5 px-6 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-bold rounded-lg hover:from-cyan-400 hover:to-cyan-500 hover:shadow-xl hover:shadow-cyan-500/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 active:scale-[0.96] disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
-                    >
-                      {loading ? (
-                        <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <>Crear cuenta gratis ✨ <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-white/[0.08] text-center">
-            <p className="text-sm text-white/60">
-              ¿Ya tenés cuenta?{' '}
-              <Link
-                href="/login"
-                className="text-cyan-400 hover:text-cyan-300 font-bold focus:outline-none focus:underline transition-all"
-              >
-                Iniciar sesión →
+          {/* Welcome message */}
+          <div className="mb-10">
+            <h3 className="text-4xl font-black text-gray-900 mb-3">{t.registerTitle}</h3>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              {t.haveAccount}{' '}
+              <Link href="/login" className="text-blue-600 font-bold hover:text-blue-700 underline">
+                {t.loginHere}
               </Link>
             </p>
           </div>
 
-          {/* Social proof */}
-          <div className={`mt-7 flex items-center justify-center gap-3 transition-all duration-1000 delay-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="flex -space-x-2.5">
-              {[1,2,3,4].map(i => (
-                <div
-                  key={i}
-                  className="w-7 h-7 rounded-full border-2 border-slate-900 bg-gradient-to-br from-cyan-400 to-indigo-500"
-                  style={{ opacity: 1 - i * 0.15 }}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-white/30">
-              +2,500 emprendedores ya venden 🧡
-            </p>
+          {/* Step indicator */}
+          <div className="mb-10 flex gap-4">
+            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 1 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
           </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-8 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Step 1: Basic Info */}
+          {step === 1 && (
+            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-8">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  {t.fullName}
+                </label>
+                <input
+                  type="text"
+                  value={form.full_name}
+                  onChange={(e) => update('full_name', e.target.value)}
+                  placeholder={t.fullNamePlaceholder}
+                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  {t.email}
+                </label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  placeholder={t.emailPlaceholder}
+                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-12 px-6 py-3.5 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+              >
+                {t.nextButton}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </form>
+          )}
+
+          {/* Step 2: Password */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  {t.password}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={(e) => update('password', e.target.value)}
+                    placeholder={t.passwordPlaceholder}
+                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  {t.confirmPassword}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={form.confirm_password}
+                    onChange={(e) => update('confirm_password', e.target.value)}
+                    placeholder={t.passwordPlaceholder}
+                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="flex-1 px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  {lang === 'es' ? 'Atrás' : 'Back'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-6 py-3.5 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+                >
+                  {loading ? t.loading : t.registerButton}
+                  {!loading && <CheckCircle2 className="w-5 h-5" />}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Google signup */}
+          {step === 1 && (
+            <>
+              <button
+                type="button"
+                className="w-full mt-6 px-6 py-3.5 border-2 border-gray-300 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3 shadow-sm"
+              >
+                <GoogleIcon className="w-5 h-5" />
+                {lang === 'es' ? 'Registrarse con Google' : 'Sign up with Google'}
+              </button>
+            </>
+          )}
         </div>
+      </div>
+
+      {/* Mobile welcome message */}
+      <div className="lg:hidden absolute top-6 left-6 z-20">
+        <h2 className="text-xl font-bold text-gray-900">SellIA</h2>
       </div>
     </div>
   )
