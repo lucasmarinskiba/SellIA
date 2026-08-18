@@ -4,26 +4,23 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { Eye, EyeOff, AlertCircle, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 const translations = {
   es: {
-    welcome: '¡Hola SellIA!',
+    welcome: '¡Hola',
+    welcomeEnd: '!',
     emoji: '👋',
     description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
     registerTitle: '¡Creá tu cuenta!',
     subtext: '¿Ya tenés cuenta? Inicia sesión aquí. Toma menos de un minuto crear una.',
-    step1: 'Paso 1: Datos básicos',
-    step2: 'Paso 2: Contraseña segura',
     fullName: 'Nombre completo',
     fullNamePlaceholder: 'Juan Pérez',
     email: 'Email',
-    emailPlaceholder: 'usuario@email.com',
+    emailPlaceholder: 'usuario@gmail.com',
     password: 'Contraseña',
     passwordPlaceholder: '••••••••',
     confirmPassword: 'Confirmar contraseña',
-    businessName: 'Nombre de tu negocio',
-    businessNamePlaceholder: 'Mi Tienda Online',
     nextButton: 'Siguiente',
     registerButton: 'Crear cuenta',
     haveAccount: '¿Ya tenés cuenta?',
@@ -32,22 +29,19 @@ const translations = {
     copyright: '© 2026 SellIA. Todos los derechos reservados.',
   },
   en: {
-    welcome: 'Hello SellIA!',
+    welcome: 'Hello',
+    welcomeEnd: '!',
     emoji: '👋',
     description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
     registerTitle: 'Create Your Account!',
     subtext: "Already have an account? Sign in here. It takes less than a minute to create one.",
-    step1: 'Step 1: Basic Info',
-    step2: 'Step 2: Secure Password',
     fullName: 'Full Name',
     fullNamePlaceholder: 'John Doe',
     email: 'Email',
-    emailPlaceholder: 'usuario@email.com',
+    emailPlaceholder: 'usuario@gmail.com',
     password: 'Password',
     passwordPlaceholder: '••••••••',
     confirmPassword: 'Confirm Password',
-    businessName: 'Business Name',
-    businessNamePlaceholder: 'My Online Store',
     nextButton: 'Next',
     registerButton: 'Create Account',
     haveAccount: 'Already have an account?',
@@ -132,61 +126,63 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex overflow-hidden bg-white">
-      {/* Left side - Blue gradient with marketing */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden">
-        {/* Diagonal pattern background */}
-        <svg className="absolute inset-0 opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {/* Left side - Blue gradient with diagonal pattern */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white flex-col justify-between p-16 relative overflow-hidden">
+        {/* SVG Diagonal Lines Pattern - More Visible */}
+        <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none" viewBox="0 0 1000 1000">
           <defs>
-            <pattern id="diag" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="20" y2="20" stroke="white" strokeWidth="1" />
-              <line x1="20" y1="0" x2="0" y2="20" stroke="white" strokeWidth="1" />
+            <pattern id="diagonals" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="100" y2="100" stroke="white" strokeWidth="2" />
+              <line x1="100" y1="0" x2="0" y2="100" stroke="white" strokeWidth="2" />
             </pattern>
           </defs>
-          <rect width="100" height="100" fill="url(#diag)" />
+          <rect width="1000" height="1000" fill="url(#diagonals)" />
         </svg>
 
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl -ml-36 -mb-36" />
+        {/* Gradient Orbs */}
+        <div className="absolute top-20 right-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-60 h-60 bg-blue-300/20 rounded-full blur-3xl" />
 
         {/* Content */}
         <div className="relative z-10">
-          <div className="mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/15 backdrop-blur-sm rounded-2xl">
-              <Sparkles className="w-8 h-8 text-white" />
+          <div className="mb-20">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl border border-white/30">
+              <span className="text-4xl">✨</span>
             </div>
           </div>
 
           <div>
-            <h1 className="text-6xl font-black mb-2 leading-tight">
+            <h1 className="text-7xl font-black mb-4 leading-tight">
               {t.welcome}
+              <br />
+              SellIA{t.welcomeEnd}
+              <span className="text-6xl ml-3">{t.emoji}</span>
             </h1>
-            <p className="text-5xl font-black mb-6 leading-tight">{t.emoji}</p>
-            <p className="text-xl text-white/95 leading-relaxed max-w-lg">
+            <p className="text-xl text-white/90 leading-relaxed max-w-xl mt-8">
               {t.description}
             </p>
           </div>
         </div>
 
         <div className="relative z-10">
-          <p className="text-white/50 text-sm">{t.copyright}</p>
+          <p className="text-white/40 text-sm">{t.copyright}</p>
         </div>
       </div>
 
       {/* Right side - Register form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-16 sm:px-12 lg:px-20 bg-white">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-8 py-16 sm:px-12 lg:px-24 bg-white">
+        <div className="w-full max-w-sm">
           {/* Logo */}
-          <div className="mb-12">
-            <h2 className="text-3xl font-black text-gray-900">SellIA</h2>
+          <div className="mb-16">
+            <h2 className="text-4xl font-black text-gray-900">SellIA</h2>
           </div>
 
           {/* Welcome message */}
-          <div className="mb-10">
-            <h3 className="text-4xl font-black text-gray-900 mb-3">{t.registerTitle}</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+          <div className="mb-12">
+            <h3 className="text-4xl font-black text-gray-900 mb-4">{t.registerTitle}</h3>
+            <p className="text-gray-600 text-base leading-relaxed">
               {t.haveAccount}{' '}
-              <Link href="/login" className="text-blue-600 font-bold hover:text-blue-700 underline">
+              <Link href="/login" className="text-blue-600 font-bold hover:text-blue-700">
                 {t.loginHere}
               </Link>
             </p>
@@ -194,71 +190,70 @@ export default function RegisterPage() {
 
           {/* Step indicator */}
           <div className="mb-10 flex gap-4">
-            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 1 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+            <div className={`flex-1 h-1.5 rounded-full transition-colors ${step === 1 ? 'bg-black' : 'bg-gray-300'}`} />
+            <div className={`flex-1 h-1.5 rounded-full transition-colors ${step === 2 ? 'bg-black' : 'bg-gray-300'}`} />
           </div>
 
           {/* Error message */}
           {error && (
             <div className="mb-8 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
           {/* Step 1: Basic Info */}
           {step === 1 && (
-            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-8">
+            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-10">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  {t.fullName}
-                </label>
                 <input
                   type="text"
                   value={form.full_name}
                   onChange={(e) => update('full_name', e.target.value)}
                   placeholder={t.fullNamePlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  {t.email}
-                </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
                   placeholder={t.emailPlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-12 px-6 py-3.5 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+                className="w-full mt-12 px-6 py-3.5 bg-black text-white font-bold text-lg rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {t.nextButton}
                 <ArrowRight className="w-5 h-5" />
+              </button>
+
+              <button
+                type="button"
+                className="w-full px-6 py-3.5 border-2 border-gray-300 bg-white text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+              >
+                <GoogleIcon className="w-5 h-5" />
+                {lang === 'es' ? 'Registrarse con Google' : 'Sign up with Google'}
               </button>
             </form>
           )}
 
           {/* Step 2: Password */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-10">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  {t.password}
-                </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => update('password', e.target.value)}
                     placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
                   />
                   <button
                     type="button"
@@ -271,16 +266,13 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  {t.confirmPassword}
-                </label>
                 <div className="relative">
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     value={form.confirm_password}
                     onChange={(e) => update('confirm_password', e.target.value)}
                     placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
+                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
                   />
                   <button
                     type="button"
@@ -292,18 +284,18 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                  className="flex-1 px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all"
                 >
                   {lang === 'es' ? 'Atrás' : 'Back'}
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-6 py-3.5 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3.5 bg-black text-white font-bold text-lg rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   {loading ? t.loading : t.registerButton}
                   {!loading && <CheckCircle2 className="w-5 h-5" />}
@@ -311,25 +303,12 @@ export default function RegisterPage() {
               </div>
             </form>
           )}
-
-          {/* Google signup */}
-          {step === 1 && (
-            <>
-              <button
-                type="button"
-                className="w-full mt-6 px-6 py-3.5 border-2 border-gray-300 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3 shadow-sm"
-              >
-                <GoogleIcon className="w-5 h-5" />
-                {lang === 'es' ? 'Registrarse con Google' : 'Sign up with Google'}
-              </button>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Mobile welcome message */}
-      <div className="lg:hidden absolute top-6 left-6 z-20">
-        <h2 className="text-xl font-bold text-gray-900">SellIA</h2>
+      {/* Mobile logo */}
+      <div className="lg:hidden absolute top-8 left-8 z-20">
+        <h2 className="text-2xl font-black text-gray-900">SellIA</h2>
       </div>
     </div>
   )
