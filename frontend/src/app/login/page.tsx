@@ -1,29 +1,44 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import Logo from '@/components/Logo'
-import {
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ArrowLeft,
-  AlertCircle,
-  Zap,
-  MessageCircle,
-  TrendingUp,
-  Sparkles,
-  Mail,
-  Lock,
-  Shield,
-} from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react'
 
-/* ============================================================
-   LOGIN — SellIA 2026 · Glassmorphism Minimalism
-   Design System: Dark-First, Cian Accents, Glass Effects
-   ============================================================ */
+const translations = {
+  es: {
+    welcome: '¡Bienvenido a SellIA!',
+    subtitle: 'Tu asistente IA para vendedores',
+    description: 'Automatiza tareas repetitivas y vende mientras duermes. Obtén resultados extraordinarios con IA generativa.',
+    loginTitle: '¡Bienvenido de nuevo!',
+    email: 'Email',
+    password: 'Contraseña',
+    loginButton: 'Iniciar sesión',
+    googleLogin: 'Iniciar con Google',
+    forgot: '¿Olvidaste tu contraseña?',
+    noAccount: '¿No tenés cuenta?',
+    createAccount: 'Creá una gratis',
+    loading: 'Ingresando...',
+    copyright: '© 2026 SellIA. Todos los derechos reservados.',
+  },
+  en: {
+    welcome: 'Welcome to SellIA!',
+    subtitle: 'Your AI Assistant for Sales',
+    description: 'Automate repetitive tasks and sell while you sleep. Achieve extraordinary results with generative AI.',
+    loginTitle: 'Welcome Back!',
+    email: 'Email',
+    password: 'Password',
+    loginButton: 'Login Now',
+    googleLogin: 'Login with Google',
+    forgot: 'Forgot password?',
+    noAccount: "Don't have an account?",
+    createAccount: 'Create one for free',
+    loading: 'Logging in...',
+    copyright: '© 2026 SellIA. All rights reserved.',
+  },
+}
 
 function GoogleIcon({ className = '' }: { className?: string }) {
   return (
@@ -36,24 +51,6 @@ function GoogleIcon({ className = '' }: { className?: string }) {
   )
 }
 
-function AppleIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.22 7.13-.57 1.5-1.31 2.99-2.27 4.08zm-5.85-15.1c.07-2.04 1.76-3.79 3.78-3.94.29 2.32-1.93 4.48-3.78 3.94z" />
-    </svg>
-  )
-}
-
-const stats = [
-  { icon: Zap, label: 'Respuesta', value: '< 2 min', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-  { icon: MessageCircle, label: 'Conversaciones', value: '24/7', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-  { icon: TrendingUp, label: 'Conversión', value: '+300%', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  { icon: Sparkles, label: 'IA Avanzada', value: '100%', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-]
-
-const MAX_LOGIN_ATTEMPTS = 3
-const LOCKOUT_SECONDS = 60
-
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -62,271 +59,92 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
-
-  const [failedAttempts, setFailedAttempts] = useState(0)
-  const [isLocked, setIsLocked] = useState(false)
-  const [lockCountdown, setLockCountdown] = useState(0)
-
-  const [honeypot, setHoneypot] = useState('')
-  const [turnstileToken, setTurnstileToken] = useState('')
-  const [requires2FA, setRequires2FA] = useState(false)
-  const [requiresVerification, setRequiresVerification] = useState(false)
-  const [tfaCode, setTfaCode] = useState('')
-  const [isBackupCode, setIsBackupCode] = useState(false)
+  const [lang, setLang] = useState<'es' | 'en'>('es')
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 50)
-    return () => clearTimeout(t)
+    setMounted(true)
+    // Detect language from browser
+    const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en'
+    setLang(browserLang)
   }, [])
 
-  useEffect(() => {
-    if (document.getElementById('turnstile-script')) return
-    const script = document.createElement('script')
-    script.id = 'turnstile-script'
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-    script.async = true
-    script.defer = true
-    document.body.appendChild(script)
+  const t = translations[lang]
 
-    ;(window as any).turnstileCallback = (token: string) => {
-      setTurnstileToken(token)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      await auth.login(email, password)
+      router.push('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión')
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }
 
-  useEffect(() => {
-    if (lockCountdown > 0) {
-      const timer = setInterval(() => {
-        setLockCountdown((prev) => {
-          if (prev <= 1) {
-            setIsLocked(false)
-            clearInterval(timer)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      return () => clearInterval(timer)
-    }
-  }, [lockCountdown])
-
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      if (isLocked) return
-
-      setError('')
-      setLoading(true)
-
-      if (honeypot.trim() !== '') {
-        setLoading(false)
-        return
-      }
-
-      try {
-        await auth.login({
-          email,
-          password,
-          turnstileToken: turnstileToken || undefined,
-          tfaCode: tfaCode || undefined,
-        })
-        setFailedAttempts(0)
-        setRequires2FA(false)
-        router.push('/dashboard')
-      } catch (err: any) {
-        const detail = err.response?.data?.detail || ''
-
-        if (detail === '2FA_REQUIRED') {
-          setRequires2FA(true)
-          setLoading(false)
-          return
-        }
-
-        if (detail === 'EMAIL_NOT_VERIFIED') {
-          setError('Tu cuenta no está verificada. Revisá tu email o solicitá uno nuevo.')
-          setRequiresVerification(true)
-          setLoading(false)
-          return
-        }
-        setRequiresVerification(false)
-
-        const msg = detail || 'Email o contraseña incorrectos'
-        setError(msg)
-        const nextAttempts = failedAttempts + 1
-        setFailedAttempts(nextAttempts)
-        if (nextAttempts >= MAX_LOGIN_ATTEMPTS) {
-          setIsLocked(true)
-          setLockCountdown(LOCKOUT_SECONDS)
-        }
-      } finally {
-        setLoading(false)
-      }
-    },
-    [email, password, honeypot, isLocked, failedAttempts, router, turnstileToken, tfaCode]
-  )
+  if (!mounted) return null
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative flex items-center justify-center overflow-hidden p-3" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      {/* Minimal single accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
+    <div className="min-h-screen flex overflow-hidden bg-white">
+      {/* Left side - Blue gradient with marketing */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl -ml-36 -mb-36" />
 
-      {/* Back button */}
-      <div
-        className={`absolute top-6 left-1/2 -translate-x-1/2 z-20 transition-all duration-700 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-        }`}
-      >
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.08] border border-white/[0.15] text-sm text-white/70 hover:text-white hover:bg-white/[0.12] hover:border-white/[0.25] focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Volver al inicio</span>
-          <span className="sm:hidden">Atrás</span>
-        </Link>
+        {/* Content */}
+        <div className="relative z-10">
+          <div className="mb-12">
+            <Sparkles className="w-12 h-12 text-white/80" />
+          </div>
+
+          <div>
+            <h1 className="text-5xl font-black mb-4 leading-tight">
+              Hello<br />
+              SellIA!
+            </h1>
+            <p className="text-lg text-white/90 leading-relaxed">
+              {t.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <p className="text-white/50 text-sm">{t.copyright}</p>
+        </div>
       </div>
 
-      {/* Floating stat cards — left side */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-6 hidden xl:flex flex-col gap-3 z-10">
-        {stats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className={`bg-white/[0.05] border border-white/[0.1] rounded-md p-4 flex items-center gap-3 min-w-[200px] transition-all duration-700 ${
-              mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
-            }`}
-            style={{ transitionDelay: `${150 + i * 120}ms` }}
-          >
-            <div className={`w-10 h-10 rounded-md ${stat.bg} flex items-center justify-center`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+      {/* Right side - Login form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 sm:px-12 lg:px-16 bg-white">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900">SellIA</h2>
+          </div>
+
+          {/* Welcome message */}
+          <div className="mb-8">
+            <h3 className="text-3xl font-bold text-gray-900 mb-2">{t.loginTitle}</h3>
+            <p className="text-gray-500 text-sm">{lang === 'es' ? 'No tenés cuenta?' : "Don't have an account?"} <Link href="/register" className="text-blue-600 font-semibold hover:text-blue-700">{t.createAccount}</Link></p>
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
-            <div>
-              <p className="text-[11px] text-white/40 uppercase tracking-wider font-medium">{stat.label}</p>
-              <p className="text-sm font-semibold text-white">{stat.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main glass card */}
-      <div
-        className={`relative z-10 w-full max-w-[480px] mx-6 transition-all duration-700 ${
-          mounted ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-[0.97]'
-        }`}
-        style={{ transitionDelay: '100ms' }}
-      >
-        <div className="rounded-md bg-slate-900/60 backdrop-blur-xl border border-cyan-500/20 p-6 sm:p-8 relative overflow-hidden group transition-all duration-300">
-
-          {/* Header */}
-          <div className="flex flex-col items-center mb-6 relative z-10">
-            <div
-              className={`mb-3 p-2.5 rounded-md bg-cyan-500/5 border border-cyan-500/15 transition-all duration-700 ${
-                mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-              }`}
-              style={{ transitionDelay: '200ms' }}
-            >
-              <Logo size={40} showText={false} />
-            </div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Hola de nuevo</h1>
-            <p className="text-[10px] text-white/40 mt-1.5 font-semibold uppercase tracking-wider">Iniciá sesión</p>
-          </div>
-
-          {/* Security badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-5 text-[10px] text-emerald-300/90 bg-emerald-500/6 border border-emerald-500/15 rounded-full px-3.5 py-1.5 font-medium">
-            <Shield className="w-3 h-3" />
-            <span>Protegido 2026</span>
-          </div>
-
-          {/* Social login */}
-          <div
-            className={`flex gap-2.5 mb-5 transition-all duration-700 ${
-              mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ transitionDelay: '250ms' }}
-          >
-            <button
-              type="button"
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.18] focus:ring-1 focus:ring-cyan-400/30 transition-all duration-150 active:scale-[0.96] group"
-            >
-              <GoogleIcon className="w-4 h-4" />
-              <span className="text-[10px] text-white/65 font-bold uppercase tracking-wider">Google</span>
-            </button>
-            <button
-              type="button"
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.08] border border-white/[0.12] hover:bg-white/[0.12] hover:border-white/[0.18] focus:ring-1 focus:ring-cyan-400/30 transition-all duration-150 active:scale-[0.96] group"
-            >
-              <AppleIcon className="w-4 h-4 text-white/70" />
-              <span className="text-[10px] text-white/65 font-bold uppercase tracking-wider">Apple</span>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div
-            className={`flex items-center gap-3 mb-4 transition-all duration-700 ${
-              mounted ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{ transitionDelay: '300ms' }}
-          >
-            <div className="flex-1 h-px bg-white/[0.05]" />
-            <span className="text-[10px] text-white/25 font-semibold uppercase tracking-wider">o con email</span>
-            <div className="flex-1 h-px bg-white/[0.05]" />
-          </div>
+          )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3.5 relative">
-            {/* Honeypot */}
-            <div className="absolute opacity-0 top-0 left-0 h-0 w-0 overflow-hidden">
-              <label htmlFor="website">Website</label>
-              <input
-                id="website"
-                name="website"
-                type="text"
-                tabIndex={-1}
-                autoComplete="off"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-              />
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-3 p-4 rounded-md bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {requiresVerification && (
-              <button
-                type="button"
-                onClick={async () => {
-                  setLoading(true)
-                  try {
-                    await auth.resendVerification()
-                    setError('Email de verificación reenviado. Revisá tu bandeja de entrada.')
-                  } catch (e: any) {
-                    setError(e.response?.data?.detail || 'Error al reenviar email')
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                disabled={loading}
-                className="w-full py-2.5 rounded-md bg-orange-500/15 border border-orange-500/30 text-orange-300 text-sm font-medium hover:bg-orange-500/25 hover:border-orange-500/40 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Enviando...' : 'Reenviar email de verificación'}
-              </button>
-            )}
-
-            {isLocked && (
-              <div className="flex items-start gap-3 p-4 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-sm font-medium">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Demasiados intentos fallidos. Esperá {lockCountdown}s para volver a intentar.
-                </span>
-              </div>
-            )}
-
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div>
-              <label className="text-xs font-bold uppercase text-white/60 flex items-center gap-1.5 mb-2 tracking-wider">
-                <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                Email
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {t.email}
               </label>
               <input
                 type="email"
@@ -334,153 +152,64 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
-                placeholder="tu@email.com"
-                className="w-full px-4 py-2.5 rounded-md bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
+                placeholder="usuario@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
 
+            {/* Password */}
             <div>
-              <label className="text-xs font-bold uppercase text-white/60 flex items-center gap-1.5 mb-2 tracking-wider">
-                <Lock className="w-3.5 h-3.5 text-cyan-400" />
-                Contraseña
-              </label>
-              <div className="relative group">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  {t.password}
+                </label>
+                <Link href="#" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                  {t.forgot}
+                </Link>
+              </div>
+              <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-md bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 pr-12 hover:bg-white/[0.09] hover:border-white/[0.18] focus:bg-white/[0.11] focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/40 focus:outline-none transition-all duration-150"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-md text-white/35 hover:text-white/65 hover:bg-white/8 transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
-                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* 2FA */}
-            {requires2FA && (
-              <div className="space-y-3 p-4 rounded-md bg-emerald-500/8 border border-emerald-500/20">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-white/85 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                    {isBackupCode ? 'Código de backup' : 'Código 2FA'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsBackupCode(!isBackupCode)
-                      setTfaCode('')
-                    }}
-                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-                  >
-                    {isBackupCode ? 'Usar código TOTP' : 'Usar código de backup'}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={tfaCode}
-                  onChange={(e) => {
-                    const v = e.target.value.toUpperCase()
-                    if (isBackupCode) {
-                      setTfaCode(v.replace(/[^A-F0-9]/g, '').slice(0, 8))
-                    } else {
-                      setTfaCode(v.replace(/\D/g, '').slice(0, 6))
-                    }
-                  }}
-                  required={requires2FA}
-                  placeholder={isBackupCode ? 'ABCDEF12' : '123456'}
-                  maxLength={isBackupCode ? 8 : 6}
-                  autoFocus
-                  className="w-full px-4 py-3 rounded-md bg-white/[0.08] border border-emerald-500/30 text-white placeholder-white/50 text-center tracking-[0.3em] font-mono hover:bg-white/[0.1] focus:bg-white/[0.12] focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none transition-all duration-200"
-                />
-                <p className="text-[11px] text-white/50">
-                  {isBackupCode
-                    ? '✓ Ingresá uno de tus códigos de backup de un solo uso'
-                    : '✓ Ingresá el código de tu app de autenticación'}
-                </p>
-              </div>
-            )}
-
-            {/* Turnstile */}
-            {!requires2FA && (
-              <div className="flex justify-center">
-                <div
-                  className="cf-turnstile"
-                  data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
-                  data-callback="turnstileCallback"
-                  data-theme="dark"
-                />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <div className="relative">
-                  <input type="checkbox" className="peer sr-only" />
-                  <div className="w-5 h-5 rounded-md border border-white/25 bg-white/5 peer-checked:bg-cyan-500 peer-checked:border-cyan-500 group-hover:border-white/35 transition-all duration-200" />
-                  <svg
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </div>
-                <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors font-medium">
-                  Recordarme
-                </span>
-              </label>
-              <Link
-                href="#"
-                className="text-sm text-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 rounded px-1 transition-all font-medium"
-              >
-                ¿Olvidaste?
-              </Link>
-            </div>
-
+            {/* Login button */}
             <button
               type="submit"
-              disabled={loading || isLocked}
-              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-500 text-white text-xs font-black rounded-md hover:bg-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-300/50 active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 uppercase tracking-wider"
+              disabled={loading}
+              className="w-full mt-8 px-6 py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
             >
-              {loading ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  <span>Ingresando...</span>
-                </div>
-              ) : (
-                <>
-                  Iniciar sesión
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
+              {loading ? t.loading : t.loginButton}
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-white/[0.06] text-center">
-            <p className="text-xs text-white/50 font-medium">
-              ¿No tenés cuenta?{' '}
-              <Link
-                href="/register"
-                className="text-cyan-400 hover:text-cyan-300 font-bold focus:outline-none focus:underline transition-all"
-              >
-                Registrate
-              </Link>
-            </p>
-          </div>
+          {/* Google login */}
+          <button
+            type="button"
+            className="w-full mt-3 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+          >
+            <GoogleIcon className="w-5 h-5" />
+            {t.googleLogin}
+          </button>
         </div>
+      </div>
+
+      {/* Mobile welcome message */}
+      <div className="lg:hidden absolute top-6 left-6 z-20">
+        <h2 className="text-xl font-bold text-gray-900">SellIA</h2>
       </div>
     </div>
   )
