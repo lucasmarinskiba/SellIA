@@ -4,37 +4,38 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import Logo from '@/components/Logo'
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Sparkles } from 'lucide-react'
 
 const translations = {
   es: {
-    welcome: '¡Bienvenido a SellIA!',
-    subtitle: 'Tu asistente IA para vendedores',
-    description: 'Automatiza tareas repetitivas y vende mientras duermes. Obtén resultados extraordinarios con IA generativa.',
+    welcome: '¡Hola SellIA!',
+    emoji: '👋',
+    description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
     loginTitle: '¡Bienvenido de nuevo!',
+    subtext: '¿No tenés cuenta? Crea una nueva. ¡Es GRATIS! Toma menos de un minuto.',
     email: 'Email',
+    emailPlaceholder: 'usuario@email.com',
     password: 'Contraseña',
+    passwordPlaceholder: '••••••••',
     loginButton: 'Iniciar sesión',
     googleLogin: 'Iniciar con Google',
-    forgot: '¿Olvidaste tu contraseña?',
-    noAccount: '¿No tenés cuenta?',
-    createAccount: 'Creá una gratis',
+    forgot: '¿Olvidaste tu contraseña? Haz clic aquí',
     loading: 'Ingresando...',
     copyright: '© 2026 SellIA. Todos los derechos reservados.',
   },
   en: {
-    welcome: 'Welcome to SellIA!',
-    subtitle: 'Your AI Assistant for Sales',
-    description: 'Automate repetitive tasks and sell while you sleep. Achieve extraordinary results with generative AI.',
+    welcome: 'Hello SellIA!',
+    emoji: '👋',
+    description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
     loginTitle: 'Welcome Back!',
+    subtext: "Don't have an account? Create a new account now. It's FREE! Takes less than a minute.",
     email: 'Email',
+    emailPlaceholder: 'usuario@email.com',
     password: 'Password',
+    passwordPlaceholder: '••••••••',
     loginButton: 'Login Now',
     googleLogin: 'Login with Google',
-    forgot: 'Forgot password?',
-    noAccount: "Don't have an account?",
-    createAccount: 'Create one for free',
+    forgot: 'Forgot password? Click here',
     loading: 'Logging in...',
     copyright: '© 2026 SellIA. All rights reserved.',
   },
@@ -63,7 +64,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Detect language from browser
     const browserLang = navigator.language?.startsWith('es') ? 'es' : 'en'
     setLang(browserLang)
   }, [])
@@ -91,22 +91,34 @@ export default function LoginPage() {
     <div className="min-h-screen flex overflow-hidden bg-white">
       {/* Left side - Blue gradient with marketing */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden">
-        {/* Decorative elements */}
+        {/* Diagonal pattern background */}
+        <svg className="absolute inset-0 opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="diag" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="0" x2="20" y2="20" stroke="white" strokeWidth="1" />
+              <line x1="20" y1="0" x2="0" y2="20" stroke="white" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#diag)" />
+        </svg>
+
+        {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl -ml-36 -mb-36" />
 
         {/* Content */}
         <div className="relative z-10">
           <div className="mb-16">
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-white/15 backdrop-blur-sm rounded-2xl">
-              <Sparkles className="w-7 h-7 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/15 backdrop-blur-sm rounded-2xl">
+              <Sparkles className="w-8 h-8 text-white" />
             </div>
           </div>
 
           <div>
-            <h1 className="text-6xl font-black mb-6 leading-tight">
+            <h1 className="text-6xl font-black mb-2 leading-tight">
               {t.welcome}
             </h1>
+            <p className="text-5xl font-black mb-6 leading-tight">{t.emoji}</p>
             <p className="text-xl text-white/95 leading-relaxed max-w-lg">
               {t.description}
             </p>
@@ -129,22 +141,22 @@ export default function LoginPage() {
           {/* Welcome message */}
           <div className="mb-10">
             <h3 className="text-4xl font-black text-gray-900 mb-3">{t.loginTitle}</h3>
-            <p className="text-gray-600 text-sm">{lang === 'es' ? 'No tenés cuenta?' : "Don't have an account?"} <Link href="/register" className="text-blue-600 font-bold hover:text-blue-700 underline">{t.createAccount}</Link></p>
+            <p className="text-gray-600 text-sm leading-relaxed">{t.subtext}</p>
           </div>
 
           {/* Error message */}
           {error && (
-            <div className="mb-6 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+            <div className="mb-8 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
               <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
                 {t.email}
               </label>
               <input
@@ -153,34 +165,29 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
-                placeholder="usuario@email.com"
-                className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 focus:ring-0 focus:outline-none transition-all shadow-sm hover:border-gray-300"
+                placeholder={t.emailPlaceholder}
+                className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
               />
             </div>
 
             {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-semibold text-gray-900">
-                  {t.password}
-                </label>
-                <Link href="#" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
-                  {t.forgot}
-                </Link>
-              </div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                {t.password}
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 focus:ring-0 focus:outline-none transition-all shadow-sm hover:border-gray-300"
+                  placeholder={t.passwordPlaceholder}
+                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -191,27 +198,27 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-10 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-md hover:shadow-lg"
+              className="w-full mt-12 px-6 py-3.5 bg-black text-white font-bold rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-sm"
             >
               {loading ? t.loading : t.loginButton}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-500 font-medium">O continúa con</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
           {/* Google login */}
           <button
             type="button"
-            className="w-full px-6 py-3.5 border-2 border-gray-200 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 shadow-sm"
+            className="w-full mt-6 px-6 py-3.5 border-2 border-gray-300 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3 shadow-sm"
           >
             <GoogleIcon className="w-5 h-5" />
             {t.googleLogin}
           </button>
+
+          {/* Forgot password link */}
+          <div className="mt-8 text-center">
+            <Link href="#" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+              {t.forgot}
+            </Link>
+          </div>
         </div>
       </div>
 
