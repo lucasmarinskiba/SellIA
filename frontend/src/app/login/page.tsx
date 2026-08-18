@@ -102,9 +102,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <h1 className="text-5xl font-black mb-4 leading-tight">
-              Hello<br />
-              SellIA!
+            <h1 className="text-5xl font-black mb-4 leading-tight text-red-500">
+              ✓ VERCEL DEPLOYED<br />
+              2-COLUMN DESIGN!
             </h1>
             <p className="text-lg text-white/90 leading-relaxed">
               {t.description}
