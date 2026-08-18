@@ -88,9 +88,9 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-white VERCEL_FORCE_REDEPLOY_1">
+    <div className="min-h-screen flex overflow-hidden bg-white">
       {/* Left side - Blue gradient with marketing */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden VERCEL_TEST_CLASS">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 text-white flex-col justify-between p-12 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl -ml-36 -mb-36" />
