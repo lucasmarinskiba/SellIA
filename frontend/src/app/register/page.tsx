@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const translations = {
   es: {
     welcome: '¡Hola SellIA!',
     description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
     registerTitle: 'Creá tu cuenta',
-    subtext: '¿Ya tenés cuenta? Inicia sesión aquí. Toma menos de un minuto crear una.',
+    subtext: '¿Ya tenés cuenta? Inicia sesión aquí.',
     fullName: 'Nombre completo',
     fullNamePlaceholder: 'Juan Pérez',
     email: 'Email',
@@ -19,12 +19,8 @@ const translations = {
     password: 'Contraseña',
     passwordPlaceholder: '••••••••',
     confirmPassword: 'Confirmar contraseña',
-    nextButton: 'Siguiente',
     registerButton: 'Crear cuenta',
-    backButton: 'Atrás',
-    haveAccount: '¿Ya tenés cuenta?',
-    loginHere: 'Inicia sesión aquí',
-    loading: 'Creando cuenta...',
+    loading: 'Creando...',
     googleSignup: 'Registrarse con Google',
     copyright: '© 2026 SellIA. Todos los derechos reservados.',
   },
@@ -32,7 +28,7 @@ const translations = {
     welcome: 'Hello SellIA!',
     description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
     registerTitle: 'Create Your Account',
-    subtext: "Already have an account? Sign in here. It takes less than a minute to create one.",
+    subtext: "Already have an account? Sign in here.",
     fullName: 'Full Name',
     fullNamePlaceholder: 'John Doe',
     email: 'Email',
@@ -40,12 +36,8 @@ const translations = {
     password: 'Password',
     passwordPlaceholder: '••••••••',
     confirmPassword: 'Confirm Password',
-    nextButton: 'Next',
     registerButton: 'Create Account',
-    backButton: 'Back',
-    haveAccount: 'Already have an account?',
-    loginHere: 'Sign in here',
-    loading: 'Creating account...',
+    loading: 'Creating...',
     googleSignup: 'Sign up with Google',
     copyright: '© 2026 SellIA. All rights reserved.',
   },
@@ -70,7 +62,6 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [step, setStep] = useState(1)
   const [lang, setLang] = useState<'es' | 'en'>('es')
 
   useEffect(() => {
@@ -82,32 +73,21 @@ export default function RegisterPage() {
   const t = translations[lang]
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
-  const validateStep1 = () => {
-    if (!form.full_name.trim()) return lang === 'es' ? 'Ingresá tu nombre completo' : 'Enter your full name'
-    if (!form.email.trim()) return lang === 'es' ? 'Ingresá tu email' : 'Enter your email'
+  const validateForm = () => {
+    if (!form.full_name.trim()) return lang === 'es' ? 'Nombre requerido' : 'Name required'
+    if (!form.email.trim()) return lang === 'es' ? 'Email requerido' : 'Email required'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return lang === 'es' ? 'Email inválido' : 'Invalid email'
+    if (form.password.length < 10) return lang === 'es' ? 'Mínimo 10 caracteres' : 'Min 10 characters'
+    if (!/[A-Z]/.test(form.password)) return lang === 'es' ? 'Mayúscula requerida' : 'Uppercase required'
+    if (!/[a-z]/.test(form.password)) return lang === 'es' ? 'Minúscula requerida' : 'Lowercase required'
+    if (!/[0-9]/.test(form.password)) return lang === 'es' ? 'Número requerido' : 'Number required'
+    if (form.password !== form.confirm_password) return lang === 'es' ? 'Contraseñas no coinciden' : 'Passwords do not match'
     return ''
-  }
-
-  const validateStep2 = () => {
-    if (form.password.length < 10) return lang === 'es' ? 'Mínimo 10 caracteres' : 'Minimum 10 characters'
-    if (!/[A-Z]/.test(form.password)) return lang === 'es' ? 'Necesita mayúscula' : 'Needs uppercase'
-    if (!/[a-z]/.test(form.password)) return lang === 'es' ? 'Necesita minúscula' : 'Needs lowercase'
-    if (!/[0-9]/.test(form.password)) return lang === 'es' ? 'Necesita número' : 'Needs number'
-    if (form.password !== form.confirm_password) return lang === 'es' ? 'Las contraseñas no coinciden' : 'Passwords do not match'
-    return ''
-  }
-
-  const handleNext = () => {
-    const err = validateStep1()
-    if (err) { setError(err); return }
-    setError('')
-    setStep(2)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const err = validateStep2()
+    const err = validateForm()
     if (err) { setError(err); return }
     setError('')
     setLoading(true)
@@ -116,7 +96,7 @@ export default function RegisterPage() {
       await auth.login({ email: form.email, password: form.password })
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.detail || (lang === 'es' ? 'Error al crear la cuenta' : 'Account creation failed'))
+      setError(err.response?.data?.detail || (lang === 'es' ? 'Error al crear cuenta' : 'Creation failed'))
     } finally {
       setLoading(false)
     }
@@ -126,14 +106,12 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex overflow-hidden bg-white">
-      {/* Left side - Blue gradient */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex-col justify-between p-16 relative">
-        {/* Subtle radial gradient */}
+      {/* Left - Blue gradient hero */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex-col justify-between p-12 relative">
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48" />
 
-        {/* Content */}
         <div className="relative z-10">
-          <div className="mb-20">
+          <div className="mb-16">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
               <span className="text-3xl">✨</span>
             </div>
@@ -154,140 +132,107 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-20 sm:px-8 lg:px-16 bg-white">
+      {/* Right - Compact form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 sm:px-8 lg:px-16 bg-white">
         <div className="w-full max-w-sm">
           {/* Logo */}
-          <div className="mb-16">
+          <div className="mb-8">
             <h2 className="text-3xl font-black text-gray-900">SellIA</h2>
           </div>
 
           {/* Welcome */}
-          <div className="mb-12">
-            <h3 className="text-3xl font-black text-gray-900 mb-3">{t.registerTitle}</h3>
-            <p className="text-base text-gray-600 leading-relaxed">
-              {t.haveAccount}{' '}
+          <div className="mb-8">
+            <h3 className="text-2xl font-black text-gray-900 mb-2">{t.registerTitle}</h3>
+            <p className="text-sm text-gray-600">
+              {t.subtext}{' '}
               <Link href="/login" className="text-blue-600 font-semibold hover:text-blue-700">
-                {t.loginHere}
+                {lang === 'es' ? 'Ingresá aquí' : 'Sign in'}
               </Link>
             </p>
           </div>
 
-          {/* Step indicator */}
-          <div className="mb-10 flex gap-3">
-            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 1 ? 'bg-black' : 'bg-gray-300'}`} />
-            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 2 ? 'bg-black' : 'bg-gray-300'}`} />
-          </div>
-
           {/* Error */}
           {error && (
-            <div className="mb-8 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+            <div className="mb-6 flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
+              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Step 1 */}
-          {step === 1 && (
-            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-8">
-              <div>
-                <input
-                  type="text"
-                  value={form.full_name}
-                  onChange={(e) => update('full_name', e.target.value)}
-                  placeholder={t.fullNamePlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-                />
-              </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
+            <input
+              type="text"
+              value={form.full_name}
+              onChange={(e) => update('full_name', e.target.value)}
+              placeholder={t.fullNamePlaceholder}
+              className="w-full px-0 py-2 bg-transparent border-b border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+            />
 
-              <div>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => update('email', e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-                />
-              </div>
+            {/* Email */}
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => update('email', e.target.value)}
+              placeholder={t.emailPlaceholder}
+              className="w-full px-0 py-2 bg-transparent border-b border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+            />
 
-              <button
-                type="submit"
-                className="w-full mt-12 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                {t.nextButton}
-                <ArrowRight className="w-5 h-5" />
-              </button>
-
+            {/* Password */}
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={(e) => update('password', e.target.value)}
+                placeholder={t.passwordPlaceholder}
+                className="w-full px-0 py-2 bg-transparent border-b border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+              />
               <button
                 type="button"
-                className="w-full px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
-                <GoogleIcon className="w-5 h-5" />
-                {t.googleSignup}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </form>
-          )}
+            </div>
 
-          {/* Step 2 */}
-          {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={(e) => update('password', e.target.value)}
-                    placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+            {/* Confirm Password */}
+            <div className="relative">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                value={form.confirm_password}
+                onChange={(e) => update('confirm_password', e.target.value)}
+                placeholder={t.passwordPlaceholder}
+                className="w-full px-0 py-2 bg-transparent border-b border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
 
-              <div>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={form.confirm_password}
-                    onChange={(e) => update('confirm_password', e.target.value)}
-                    placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-6 px-6 py-2.5 bg-black text-white font-semibold text-sm rounded-lg hover:bg-gray-900 disabled:opacity-60 transition-all active:scale-[0.98]"
+            >
+              {loading ? t.loading : t.registerButton}
+            </button>
+          </form>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all"
-                >
-                  {t.backButton}
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                  {loading ? t.loading : t.registerButton}
-                  {!loading && <CheckCircle2 className="w-5 h-5" />}
-                </button>
-              </div>
-            </form>
-          )}
+          {/* Google */}
+          <button
+            type="button"
+            className="w-full mt-3 px-6 py-2.5 border border-gray-300 bg-white text-gray-700 font-semibold text-sm rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+          >
+            <GoogleIcon className="w-4 h-4" />
+            {t.googleSignup}
+          </button>
         </div>
       </div>
 
