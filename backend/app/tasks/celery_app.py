@@ -4,43 +4,62 @@ Configura Celery con Redis como broker y backend.
 """
 
 import os
+import importlib
+import traceback
+import sys as _sys
 from celery import Celery
 from app.core.config import get_settings
 
-# Import all models so SQLAlchemy mappers are configured in Celery workers
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.catalogs.models import CatalogItem
-from app.domains.channels.models import ChannelConnection, Conversation, Message
-from app.domains.subscriptions.models import SubscriptionPlan, Subscription, UserAPIKey, UsageTracking, PaymentTransaction, Invoice, UsageAlert
-from app.domains.agents.models import AgentPersonality, AgentConfig, AgentConversation, AgentMessage
-from app.domains.automations.models import Workflow, WorkflowExecution, EmailTemplate, EmailSequence, SequenceStep, ChatbotRule, SequenceSubscription, SequenceEmailLog, GeneratedContent, ContentCalendar
-from app.domains.crm.models import Pipeline, Deal, LeadScore, LeadActivity
-from app.domains.orders.models import Order, RevenueEvent, PaymentIntegration
-from app.domains.alerts.models import AlertRule, Alert, Recommendation
-from app.domains.objectives.models import Department, BusinessObjective, KPI, KeyResult
-from app.domains.retention.models import LoyaltyProgram, ReferralProgram, ReferralCode, ReferralUse, NpsCampaign, NpsResponse, CustomerSegment
-from app.domains.bi.models import FunnelMetrics, CohortMetrics, ChurnPrediction, LtvPrediction, InsightAlert
-from app.domains.finance.models import SalesInvoice, PaymentReminder, AccountsReceivableSnapshot, TaxConfig
-from app.domains.autopilot.models import AutopilotConfig, AutopilotActionLog, AutopilotDailyReport
-from app.domains.outreach.models import ContactFatigueScore, OutreachCadenceRule, OutreachLog
-from app.domains.proactive.models import OutreachOpportunity, OutreachRule
-from app.domains.retention.models import HealthScoreRecord, HealthScoreHistory
-from app.domains.intelligence.models import MessageAnalysis, ConversationIntelligence
-from app.domains.notifications.models import NotificationDelivery
-from app.domains.optimization.models import OptimizationExperiment, OptimizationResult
-from app.domains.provisioning.models import ResourceRequest, ResourceJob, ResourceEvent
-from app.domains.growth.models import GrowthCampaign, LeadMagnet, InboundLead, SocialProofItem, UgcRequest, ValueSequence, ValueSequenceEnrollment
-from app.domains.consumo.models import AICallLog, OnboardingProgress, ChurnRiskSignal, QualityGateConfig
-from app.domains.marketplace.models import MarketplaceItem, MarketplacePurchase
-from app.domains.fomo.models import FOMOCampaign, SocialProofEvent
-from app.domains.social_growth.models import SocialProfileAudit, ContentCalendarSlot, CompetitorTracking
-from app.domains.gamification.ambassador_models import CertificationProgram, UserCertification, PublicExpertProfile
-from app.domains.referrals.models import ReferralCode, ReferralTracking
-from app.domains.coupons.models import Coupon, CouponUsage
-from app.domains.nps.models import FeedbackNPSResponse, FeedbackItem
-from app.domains.product_tours.models import TourStep, UserTourProgress
-from app.domains.training.models import TrainingScenario, TrainingRun
+# Import all models so SQLAlchemy mappers are configured in Celery workers.
+#
+# Each import is isolated: a broken/incomplete domain module must never take
+# down the whole Celery process (worker + beat both boot via this module).
+# Failures are logged to stderr so they stay discoverable without blocking
+# every other task in the app — same pattern used in alembic/env.py for the
+# identical reason.
+def _try_import_domain_models(module_path: str) -> None:
+    try:
+        importlib.import_module(module_path)
+    except Exception:
+        print(f"[celery_app.py] WARNING: skipped model import {module_path!r} due to error:", file=_sys.stderr)
+        traceback.print_exc()
+
+
+for _model_module in [
+    "app.domains.users.models",
+    "app.domains.businesses.models",
+    "app.domains.catalogs.models",
+    "app.domains.channels.models",
+    "app.domains.subscriptions.models",
+    "app.domains.agents.models",
+    "app.domains.automations.models",
+    "app.domains.crm.models",
+    "app.domains.orders.models",
+    "app.domains.alerts.models",
+    "app.domains.objectives.models",
+    "app.domains.retention.models",
+    "app.domains.bi.models",
+    "app.domains.finance.models",
+    "app.domains.autopilot.models",
+    "app.domains.outreach.models",
+    "app.domains.proactive.models",
+    "app.domains.intelligence.models",
+    "app.domains.notifications.models",
+    "app.domains.optimization.models",
+    "app.domains.provisioning.models",
+    "app.domains.growth.models",
+    "app.domains.consumo.models",
+    "app.domains.marketplace.models",
+    "app.domains.fomo.models",
+    "app.domains.social_growth.models",
+    "app.domains.gamification.ambassador_models",
+    "app.domains.referrals.models",
+    "app.domains.coupons.models",
+    "app.domains.nps.models",
+    "app.domains.product_tours.models",
+    "app.domains.training.models",
+]:
+    _try_import_domain_models(_model_module)
 
 settings = get_settings()
 

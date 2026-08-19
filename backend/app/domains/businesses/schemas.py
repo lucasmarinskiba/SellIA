@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import Any
 
-from app.domains.businesses.models import BusinessType
+from app.domains.businesses.models import BusinessType, LocalizationModel
 
 
 class BusinessBase(BaseModel):
@@ -21,6 +21,7 @@ class BusinessUpdate(BaseModel):
     type: BusinessType | None = None
     description: str | None = None
     config: dict[str, Any] | None = None
+    localization_model: LocalizationModel | None = None
     is_active: bool | None = None
 
 
@@ -30,6 +31,7 @@ class BusinessResponse(BusinessBase):
     id: UUID
     user_id: UUID
     config: dict[str, Any]
+    localization_model: LocalizationModel
     is_active: bool
     created_at: datetime
     updated_at: datetime
