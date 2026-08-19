@@ -9,7 +9,7 @@ import {
   MessageSquare, Mail, Camera as Instagram, ShoppingCart, Briefcase as Linkedin, Link2,
   Plus, Trash2, CheckCircle2, AlertCircle, Clock, ExternalLink,
   Phone, Plug, Zap, X, Loader2, Copy, Check,
-  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap
+  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem, Facebook
 } from 'lucide-react'
 
 const platformConfig: Record<string, { label: string; icon: typeof MessageSquare; color: string; description: string }> = {
@@ -30,6 +30,9 @@ const platformConfig: Record<string, { label: string; icon: typeof MessageSquare
   tiktok_ads: { label: 'TikTok Ads', icon: Music, color: 'text-black', description: 'TikTok Ads' },
   tiktok: { label: 'TikTok', icon: Music, color: 'text-black', description: 'TikTok' },
   hotmart: { label: 'Hotmart', icon: GraduationCap, color: 'text-red-500', description: 'Cursos y productos digitales' },
+  woocommerce: { label: 'WooCommerce', icon: Store, color: 'text-purple-500', description: 'Tienda WordPress' },
+  etsy: { label: 'Etsy', icon: Gem, color: 'text-orange-500', description: 'Productos artesanales y de diseño' },
+  facebook_marketplace: { label: 'Facebook Marketplace', icon: Facebook, color: 'text-blue-500', description: 'Ventas en Marketplace' },
 }
 
 const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
@@ -188,6 +191,32 @@ export default function CanalesPage() {
             <Field label="Client ID" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
             <Field label="Client Secret" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
             <p className="text-xs text-white/30">Configurá este mismo Hottok en Hotmart → Herramientas → Webhook.</p>
+          </>
+        )
+      case 'woocommerce':
+        return (
+          <>
+            <Field label="URL del sitio" value={newChannel.credentials.site_url || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, site_url: v } })} placeholder="https://tutienda.com" />
+            <Field label="Consumer Key" value={newChannel.credentials.consumer_key || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, consumer_key: v } })} placeholder="ck_..." />
+            <Field label="Consumer Secret" type="password" value={newChannel.credentials.consumer_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, consumer_secret: v } })} placeholder="cs_..." />
+            <Field label="Webhook Secret" type="password" value={newChannel.credentials.webhook_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, webhook_secret: v } })} />
+          </>
+        )
+      case 'etsy':
+        return (
+          <>
+            <Field label="Shop ID" value={newChannel.credentials.shop_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_id: v } })} />
+            <Field label="API Keystring" value={newChannel.credentials.api_keystring || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_keystring: v } })} />
+            <Field label="Shared Secret" type="password" value={newChannel.credentials.shared_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shared_secret: v } })} />
+            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
+          </>
+        )
+      case 'facebook_marketplace':
+        return (
+          <>
+            <Field label="Page ID" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
+            <Field label="Page Access Token" type="password" value={newChannel.credentials.page_access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_access_token: v } })} />
+            <Field label="Catalog ID" value={newChannel.credentials.catalog_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, catalog_id: v } })} />
           </>
         )
       default:

@@ -16,6 +16,9 @@ export type ChannelPlatform =
   | 'beacons'
   | 'tiktok'
   | 'hotmart'
+  | 'woocommerce'
+  | 'etsy'
+  | 'facebook_marketplace'
 
 export type ChannelStatus = 'connected' | 'pending' | 'error' | 'disabled'
 

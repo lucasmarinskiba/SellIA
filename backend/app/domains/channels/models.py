@@ -30,6 +30,9 @@ class ChannelPlatform(str, enum.Enum):
     TWITTER = "twitter"
     THREADS = "threads"
     HOTMART = "hotmart"
+    WOOCOMMERCE = "woocommerce"
+    ETSY = "etsy"
+    FACEBOOK_MARKETPLACE = "facebook_marketplace"
 
 
 class ChannelStatus(str, enum.Enum):

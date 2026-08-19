@@ -44,6 +44,12 @@ class EcommerceWebhookProcessor:
             return await self._process_amazon(channel, conversation, extra)
         elif platform == "hotmart":
             return await self._process_hotmart(channel, conversation, extra)
+        elif platform == "woocommerce":
+            return await self._process_woocommerce(channel, conversation, extra)
+        elif platform == "etsy":
+            return await self._process_etsy(channel, conversation, extra)
+        elif platform == "facebook_marketplace":
+            return await self._process_facebook_marketplace(channel, conversation, extra)
 
         return None
 
@@ -200,6 +206,111 @@ class EcommerceWebhookProcessor:
         )
         return order
 
+    async def _process_woocommerce(
+        self,
+        channel: ChannelConnection,
+        conversation: Conversation,
+        extra: dict[str, Any],
+    ) -> Optional[Order]:
+        if not extra.get("_topic", "").startswith("order"):
+            return None
+
+        order_id = str(extra.get("id", ""))
+        if not order_id:
+            return None
+
+        billing = extra.get("billing", {})
+        line_items = extra.get("line_items", [])
+
+        order = await self._upsert_order(
+            business_id=channel.business_id,
+            conversation_id=conversation.id,
+            external_id=order_id,
+            external_platform="woocommerce",
+            order_number=extra.get("number", order_id),
+            total_amount=Decimal(str(extra.get("total", "0") or "0")),
+            currency=extra.get("currency", "USD"),
+            status=self._map_woocommerce_status(extra.get("status", "pending")),
+            payment_status=self._map_woocommerce_payment_status(extra.get("status", "pending")),
+            customer_name=f"{billing.get('first_name', '')} {billing.get('last_name', '')}".strip(),
+            customer_email=billing.get("email"),
+            customer_phone=billing.get("phone"),
+            items=[{"name": li.get("name", ""), "qty": li.get("quantity", 1), "price": str(li.get("total", "0")), "sku": li.get("sku", "")} for li in line_items],
+            source_channel="woocommerce",
+        )
+        return order
+
+    async def _process_etsy(
+        self,
+        channel: ChannelConnection,
+        conversation: Conversation,
+        extra: dict[str, Any],
+    ) -> Optional[Order]:
+        receipt_id = str(extra.get("receipt_id", ""))
+        if not receipt_id:
+            return None
+
+        grandtotal = extra.get("grandtotal") or {}
+        divisor = grandtotal.get("divisor", 100) or 100
+        total = Decimal(str(grandtotal.get("amount", 0))) / Decimal(str(divisor))
+        currency = grandtotal.get("currency_code", "USD")
+        status = "shipped" if extra.get("is_shipped") else ("paid" if extra.get("is_paid") else "unpaid")
+        transactions = extra.get("transactions", [])
+
+        order = await self._upsert_order(
+            business_id=channel.business_id,
+            conversation_id=conversation.id,
+            external_id=receipt_id,
+            external_platform="etsy",
+            order_number=receipt_id,
+            total_amount=total,
+            currency=currency,
+            status=self._map_etsy_status(status),
+            payment_status=PaymentStatus.COMPLETED if extra.get("is_paid") else PaymentStatus.PENDING,
+            customer_name=extra.get("name", ""),
+            customer_email=extra.get("buyer_email"),
+            items=[{"name": t.get("title", ""), "qty": t.get("quantity", 1), "price": str((t.get("price") or {}).get("amount", 0)), "sku": t.get("sku", "")} for t in transactions],
+            source_channel="etsy",
+        )
+        return order
+
+    async def _process_facebook_marketplace(
+        self,
+        channel: ChannelConnection,
+        conversation: Conversation,
+        extra: dict[str, Any],
+    ) -> Optional[Order]:
+        try:
+            entry = extra.get("entry", [{}])[0]
+            change = entry.get("changes", [{}])[0]
+            value = change.get("value", {})
+        except Exception:
+            return None
+
+        order_id = str(value.get("order_id", ""))
+        if not order_id:
+            return None
+
+        buyer = value.get("buyer_details", {}) or {}
+        order_total = value.get("order_total", {}) or {}
+
+        order = await self._upsert_order(
+            business_id=channel.business_id,
+            conversation_id=conversation.id,
+            external_id=order_id,
+            external_platform="facebook_marketplace",
+            order_number=order_id,
+            total_amount=Decimal(str(order_total.get("amount", "0") or "0")),
+            currency=order_total.get("currency", "USD"),
+            status=OrderStatus.PENDING,
+            payment_status=PaymentStatus.PENDING,
+            customer_name=buyer.get("name", ""),
+            customer_email=buyer.get("email"),
+            items=[],
+            source_channel="facebook_marketplace",
+        )
+        return order
+
     async def _upsert_order(
         self,
         business_id: uuid.UUID,
@@ -333,3 +444,38 @@ class EcommerceWebhookProcessor:
         if event in ("PURCHASE_CANCELED", "PURCHASE_CANCELLED", "PURCHASE_EXPIRED"):
             return PaymentStatus.FAILED
         return PaymentStatus.PENDING
+
+    @staticmethod
+    def _map_woocommerce_status(status: str) -> OrderStatus:
+        status_map = {
+            "processing": OrderStatus.PAID,
+            "completed": OrderStatus.DELIVERED,
+            "cancelled": OrderStatus.CANCELLED,
+            "refunded": OrderStatus.REFUNDED,
+            "failed": OrderStatus.CANCELLED,
+            "pending": OrderStatus.PENDING,
+            "on-hold": OrderStatus.PENDING,
+        }
+        return status_map.get(status, OrderStatus.PENDING)
+
+    @staticmethod
+    def _map_woocommerce_payment_status(status: str) -> PaymentStatus:
+        status_map = {
+            "processing": PaymentStatus.COMPLETED,
+            "completed": PaymentStatus.COMPLETED,
+            "refunded": PaymentStatus.REFUNDED,
+            "failed": PaymentStatus.FAILED,
+            "cancelled": PaymentStatus.FAILED,
+        }
+        return status_map.get(status, PaymentStatus.PENDING)
+
+    @staticmethod
+    def _map_etsy_status(status: str) -> OrderStatus:
+        status_map = {
+            "shipped": OrderStatus.SHIPPED,
+            "completed": OrderStatus.DELIVERED,
+            "paid": OrderStatus.PAID,
+            "canceled": OrderStatus.CANCELLED,
+            "unpaid": OrderStatus.PENDING,
+        }
+        return status_map.get(status, OrderStatus.PENDING)
