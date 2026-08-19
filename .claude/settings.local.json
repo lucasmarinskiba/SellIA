@@ -763,7 +763,9 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\(r'C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\tasks\\\\sales_funnel_tasks.py', encoding='utf-8'\\).read\\(\\)\\)\")",
       "Bash(python -m py_compile app/domains/businesses/location_models.py app/domains/businesses/localization.py app/domains/businesses/locations_router.py)",
       "Bash(python -m py_compile app/domains/proximity/proximity_engine.py app/domains/proximity/__init__.py app/domains/analytics/offline_models.py app/domains/analytics/offline_service.py app/domains/analytics/offline_schemas.py app/api/v1/offline_tracking.py)",
-      "Bash(python -m py_compile app/domains/channels/connectors/google_business_profile.py app/domains/channels/connectors/google_maps.py app/domains/channels/location_messaging.py app/domains/channels/location_orchestrator.py)"
+      "Bash(python -m py_compile app/domains/channels/connectors/google_business_profile.py app/domains/channels/connectors/google_maps.py app/domains/channels/location_messaging.py app/domains/channels/location_orchestrator.py)",
+      "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py)",
+      "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py app/main.py)"
     ]
   }
 }
