@@ -29,6 +29,7 @@ class ChannelPlatform(str, enum.Enum):
     TIKTOK_ADS = "tiktok_ads"
     TWITTER = "twitter"
     THREADS = "threads"
+    HOTMART = "hotmart"
 
 
 class ChannelStatus(str, enum.Enum):

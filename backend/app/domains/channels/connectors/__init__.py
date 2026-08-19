@@ -25,6 +25,7 @@ from app.domains.channels.connectors.amazon import AmazonSellerConnector
 from app.domains.channels.connectors.beacons import BeaconsConnector
 from app.domains.channels.connectors.twitter import XConnector
 from app.domains.channels.connectors.threads import ThreadsConnector
+from app.domains.channels.connectors.hotmart import HotmartConnector
 
 CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.WHATSAPP: WhatsAppConnector,
@@ -45,6 +46,7 @@ CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.BEACONS: BeaconsConnector,
     ChannelPlatform.TWITTER: XConnector,
     ChannelPlatform.THREADS: ThreadsConnector,
+    ChannelPlatform.HOTMART: HotmartConnector,
 }
 
 
