@@ -8,7 +8,7 @@ import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const translations = {
   es: {
-    welcome: '¡Hola SellIA!',
+    welcome: '¡Te damos la bienvenida a SellIA!',
     description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
     registerTitle: 'Creá tu cuenta',
     subtext: '¿Ya tenés cuenta? Inicia sesión aquí.',
@@ -25,7 +25,7 @@ const translations = {
     copyright: '© 2026 SellIA. Todos los derechos reservados.',
   },
   en: {
-    welcome: 'Hello SellIA!',
+    welcome: 'Welcome to SellIA!',
     description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
     registerTitle: 'Create Your Account',
     subtext: "Already have an account? Sign in here.",
@@ -222,7 +222,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <h1 className="text-6xl font-black mb-8 leading-tight">
+            <h1 className="text-5xl font-black mb-8 leading-tight">
               {t.welcome}
             </h1>
             <p className="text-lg text-white/90 leading-relaxed max-w-xl">
