@@ -1,4 +1,8 @@
-"""350 Expert Voices Prompts — Sales, Marketing, Persuasion, Negotiation, Innovation, Strategy"""
+"""Expert Voices Prompts — Sales, Marketing, Persuasion, Negotiation, Innovation, Strategy
+
+22 real-world sales/business voices, each distilled into named tactical frameworks
+(not excerpted or paraphrased book text — no copyrighted material is reproduced here).
+"""
 
 EXPERT_PROMPTS = {
     # DONALD TRUMP (18 prompts)
@@ -302,6 +306,26 @@ EXPERT_PROMPTS = {
     "benioff_003": {"expert": "Benioff", "voice": "Stakeholder Capitalism", "focus": "Multiple value", "principle": "Create value for all, stakeholders matter"},
     "benioff_004": {"expert": "Benioff", "voice": "Social Responsibility", "focus": "Greater good", "principle": "Do good with wealth, wealth creates responsibility"},
     "benioff_005": {"expert": "Benioff", "voice": "Innovation Culture", "focus": "Continuous learning", "principle": "Build innovation culture, culture drives future"},
+
+    # BRIAN TRACY (8 prompts)
+    "tracy_001": {"expert": "Tracy", "voice": "Emotional-Logical Bridge", "focus": "Decision justification", "principle": "Sell the feeling first, back it with numbers second"},
+    "tracy_002": {"expert": "Tracy", "voice": "Fear-of-Loss Diagnosis", "focus": "Stalled deals", "principle": "Silence is fear, not disinterest — name the fear to release it"},
+    "tracy_003": {"expert": "Tracy", "voice": "Self-Image Reinforcement", "focus": "Identity-based buying", "principle": "People buy the version of themselves the purchase represents"},
+    "tracy_004": {"expert": "Tracy", "voice": "Structured Selling Sequence", "focus": "Process discipline", "principle": "Qualify, build rapport, uncover needs, present, handle objections, close — in order"},
+    "tracy_005": {"expert": "Tracy", "voice": "Rejection Resilience", "focus": "Seller mindset", "principle": "A no is information about the deal, not a verdict on you"},
+    "tracy_006": {"expert": "Tracy", "voice": "Goal-Clarity Close", "focus": "Urgency from purpose", "principle": "Vague goals produce vague decisions — get specific and the close follows"},
+    "tracy_007": {"expert": "Tracy", "voice": "Confidence Calibration", "focus": "Delivery mastery", "principle": "Confidence is a rehearsed skill, not a trait — drop the hedge words"},
+    "tracy_008": {"expert": "Tracy", "voice": "Needs-Based Questioning", "focus": "Discovery discipline", "principle": "The seller who asks the best questions controls the sale"},
+
+    # NAPOLEON HILL (8 prompts)
+    "hill_001": {"expert": "Hill", "voice": "Definite Purpose Frame", "focus": "Strategic alignment", "principle": "Anchor the whole pitch to one clearly stated outcome"},
+    "hill_002": {"expert": "Hill", "voice": "Persistence Past the First No", "focus": "Follow-up discipline", "principle": "A single no is a snapshot in time, not a permanent verdict"},
+    "hill_003": {"expert": "Hill", "voice": "Certainty Before Pitch", "focus": "Seller conviction", "principle": "Belief transmits before words — resolve doubt before presenting"},
+    "hill_004": {"expert": "Hill", "voice": "Mastermind Framing", "focus": "Group decisions", "principle": "Bring in the input the prospect actually needs instead of closing them alone"},
+    "hill_005": {"expert": "Hill", "voice": "Specialized Knowledge Authority", "focus": "Differentiation", "principle": "Applied, specific knowledge earns trust more than generic claims"},
+    "hill_006": {"expert": "Hill", "voice": "Autosuggestion Prep", "focus": "Pre-call mindset", "principle": "Rehearse the outcome you want before the call, not during it"},
+    "hill_007": {"expert": "Hill", "voice": "Desire-Intensity Check", "focus": "Lead qualification", "principle": "Match follow-up intensity to real urgency, not assumed interest"},
+    "hill_008": {"expert": "Hill", "voice": "Faith-in-Outcome Close", "focus": "Final commitment", "principle": "Once every concern is addressed, what remains is deciding to trust the outcome"},
 }
 
 def load_expert_prompts() -> dict:

@@ -318,6 +318,18 @@ class ExpertSelector:
                 "AI integration opportunities",
                 "Social impact positioning",
                 "Future-focused vision building"
+            ],
+            ExpertType.TRACY: [
+                "Lower fear of rejection before pitching",
+                "Reframe features as emotional outcomes, then justify with logic",
+                "Reinforce prospect's self-image as a smart decision-maker",
+                "Ask questions that surface the real emotional buying motive"
+            ],
+            ExpertType.HILL: [
+                "Anchor the pitch to the prospect's own definite purpose",
+                "Build unwavering certainty in the offer before presenting it",
+                "Frame persistence as the differentiator, not talent",
+                "Invoke a mastermind/community frame — they're not deciding alone"
             ]
         }
 

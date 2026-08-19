@@ -29,6 +29,8 @@ class ExpertType(Enum):
     TALEB = "taleb"
     GRAHAM = "graham"
     BENIOFF = "benioff"
+    TRACY = "tracy"
+    HILL = "hill"
 
 
 class SalesContext(Enum):
@@ -464,6 +466,46 @@ EXPERT_METADATA = {
             SalesContext.VALUE_PROPOSITION,
             SalesContext.LONG_TERM_VALUE
         ]
+    ),
+    ExpertType.TRACY: ExpertMetadata(
+        name="Brian Tracy",
+        expertise="Emotional Selling, Self-Image Psychology, Fear Reduction, Goal Setting",
+        key_books=["The Psychology of Selling", "Eat That Frog!"],
+        famous_quotes=[
+            "People buy emotionally and justify logically.",
+            "Your outer world is a reflection of your inner world.",
+            "The fear of failure is the greatest single obstacle to success.",
+            "Confidence is a skill you build through repetition, not a trait you're born with."
+        ],
+        total_prompts=16,
+        primary_focus=["Emotional Selling", "Self-Image", "Fear Reduction", "Goal Setting", "Rejection Resilience"],
+        style="Warm, methodical, psychology-first, confidence-building",
+        best_for=[
+            SalesContext.OBJECTION_HANDLING,
+            SalesContext.RELATIONSHIP_BUILDING,
+            SalesContext.VALUE_PROPOSITION,
+            SalesContext.PSYCHOLOGICAL_LEVERAGE
+        ]
+    ),
+    ExpertType.HILL: ExpertMetadata(
+        name="Napoleon Hill",
+        expertise="Definiteness of Purpose, Persistence, Mastermind Principle, Belief-Driven Achievement",
+        key_books=["Think and Grow Rich", "The Law of Success"],
+        famous_quotes=[
+            "Whatever the mind can conceive and believe, it can achieve.",
+            "A quitter never wins and a winner never quits.",
+            "Effort only fully releases its reward after a person refuses to quit.",
+            "Strength and growth come only through continuous effort and struggle."
+        ],
+        total_prompts=15,
+        primary_focus=["Definiteness of Purpose", "Persistence", "Mastermind Alliances", "Belief", "Autosuggestion"],
+        style="Philosophical, principle-driven, conviction-based, timeless",
+        best_for=[
+            SalesContext.PSYCHOLOGICAL_LEVERAGE,
+            SalesContext.LONG_TERM_VALUE,
+            SalesContext.GROWTH_ACCELERATION,
+            SalesContext.TEAM_DYNAMICS
+        ]
     )
 }
 
@@ -489,10 +531,12 @@ PROMPT_INVENTORY = {
     ExpertType.RAVIKANT: 15,
     ExpertType.TALEB: 15,
     ExpertType.GRAHAM: 14,
-    ExpertType.BENIOFF: 14
+    ExpertType.BENIOFF: 14,
+    ExpertType.TRACY: 16,
+    ExpertType.HILL: 15
 }
 
-# Total: 335 prompts (350 target, will add more in extended versions)
+# Total: 366 prompts (350+ target; extended with Tracy/Hill sales-psychology voices)
 TOTAL_PROMPTS = sum(PROMPT_INVENTORY.values())
 
 
@@ -526,19 +570,19 @@ def get_prompt_distribution() -> Dict[str, int]:
 # Context to expert recommendations
 CONTEXT_RECOMMENDATIONS = {
     SalesContext.OPENING_NEGOTIATION: [ExpertType.TRUMP, ExpertType.BELFORT, ExpertType.ELLIOTT],
-    SalesContext.VALUE_PROPOSITION: [ExpertType.ELLIOTT, ExpertType.HORMOZI, ExpertType.KIYOSAKI],
-    SalesContext.OBJECTION_HANDLING: [ExpertType.BELFORT, ExpertType.MINER, ExpertType.ROBBINS],
+    SalesContext.VALUE_PROPOSITION: [ExpertType.ELLIOTT, ExpertType.HORMOZI, ExpertType.TRACY],
+    SalesContext.OBJECTION_HANDLING: [ExpertType.BELFORT, ExpertType.MINER, ExpertType.TRACY],
     SalesContext.CLOSING: [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.TRUMP],
     SalesContext.PRICING: [ExpertType.HORMOZI, ExpertType.LOIDI, ExpertType.TALEB],
-    SalesContext.RELATIONSHIP_BUILDING: [ExpertType.MINER, ExpertType.RIBAS, ExpertType.ROBBINS],
+    SalesContext.RELATIONSHIP_BUILDING: [ExpertType.MINER, ExpertType.RIBAS, ExpertType.TRACY],
     SalesContext.MARKET_EXPANSION: [ExpertType.GARYVEE, ExpertType.GALPERIN, ExpertType.GRAHAM],
     SalesContext.CRISIS_MANAGEMENT: [ExpertType.BELFORT, ExpertType.TALEB, ExpertType.GALUCCIO],
     SalesContext.STRATEGIC_POSITIONING: [ExpertType.TRUMP, ExpertType.DALIO, ExpertType.BENIOFF],
-    SalesContext.PSYCHOLOGICAL_LEVERAGE: [ExpertType.TRUMP, ExpertType.ROBBINS, ExpertType.BELFORT],
-    SalesContext.GROWTH_ACCELERATION: [ExpertType.CARDONE, ExpertType.LOIDI, ExpertType.GRAHAM],
+    SalesContext.PSYCHOLOGICAL_LEVERAGE: [ExpertType.TRUMP, ExpertType.ROBBINS, ExpertType.HILL],
+    SalesContext.GROWTH_ACCELERATION: [ExpertType.CARDONE, ExpertType.LOIDI, ExpertType.HILL],
     SalesContext.RISK_MANAGEMENT: [ExpertType.BUFFETT, ExpertType.TALEB, ExpertType.DALIO],
-    SalesContext.TEAM_DYNAMICS: [ExpertType.RIBAS, ExpertType.DALIO, ExpertType.ROBBINS],
-    SalesContext.LONG_TERM_VALUE: [ExpertType.BUFFETT, ExpertType.RAVIKANT, ExpertType.ROCCA],
+    SalesContext.TEAM_DYNAMICS: [ExpertType.RIBAS, ExpertType.DALIO, ExpertType.HILL],
+    SalesContext.LONG_TERM_VALUE: [ExpertType.BUFFETT, ExpertType.RAVIKANT, ExpertType.HILL],
     SalesContext.INNOVATION: [ExpertType.BENIOFF, ExpertType.GALUCCIO, ExpertType.GRAHAM]
 }
 
