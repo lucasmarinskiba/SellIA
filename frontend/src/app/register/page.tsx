@@ -105,7 +105,7 @@ export default function RegisterPage() {
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-white">
+    <div className="min-h-screen w-full flex overflow-hidden bg-white">
       {/* Left - Yellow form panel */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 sm:px-8 lg:px-16 bg-amber-50">
         <div className="w-full max-w-sm">
