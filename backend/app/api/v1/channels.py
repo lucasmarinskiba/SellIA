@@ -683,6 +683,71 @@ async def receive_webhook(
             )
             channel = result.scalar_one_or_none()
 
+    # Estrategia 14: Para WooCommerce, identificar por site_url header + verificar HMAC
+    elif platform == ChannelPlatform.WOOCOMMERCE:
+        source_url = request.headers.get("X-WC-Webhook-Source")
+        if source_url:
+            result = await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.platform == ChannelPlatform.WOOCOMMERCE,
+                    ChannelConnection.is_active == True,
+                    ChannelConnection.credentials.contains({"site_url": source_url}),
+                )
+            )
+            channel = result.scalar_one_or_none()
+
+        if channel:
+            signature = request.headers.get("X-WC-Webhook-Signature", "")
+            webhook_secret = channel.credentials.get("webhook_secret")
+            if webhook_secret and signature:
+                import base64
+                import hmac
+                import hashlib
+                digest = hmac.new(
+                    webhook_secret.encode("utf-8"),
+                    raw_body,
+                    hashlib.sha256,
+                ).digest()
+                expected = base64.b64encode(digest).decode("utf-8")
+                if not hmac.compare_digest(expected, signature):
+                    raise HTTPException(status_code=401, detail="Firma de webhook inválida")
+
+        topic = request.headers.get("X-WC-Webhook-Topic", "")
+        if raw_json:
+            raw_json["_topic"] = topic
+
+    # Estrategia 15: Para Etsy, identificar por shop_id en el payload
+    elif platform == ChannelPlatform.ETSY:
+        shop_id = raw_json.get("shop_id")
+        if shop_id:
+            result = await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.platform == ChannelPlatform.ETSY,
+                    ChannelConnection.is_active == True,
+                    ChannelConnection.credentials.contains({"shop_id": str(shop_id)}),
+                )
+            )
+            channel = result.scalar_one_or_none()
+
+    # Estrategia 16: Para Facebook Marketplace, identificar por page_id (mismo patrón que Facebook Ads)
+    elif platform == ChannelPlatform.FACEBOOK_MARKETPLACE:
+        page_id = None
+        try:
+            entry = raw_json.get("entry", [{}])[0]
+            page_id = entry.get("id")
+        except Exception:
+            pass
+
+        if page_id:
+            result = await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.platform == ChannelPlatform.FACEBOOK_MARKETPLACE,
+                    ChannelConnection.is_active == True,
+                    ChannelConnection.credentials.contains({"page_id": str(page_id)}),
+                )
+            )
+            channel = result.scalar_one_or_none()
+
     if not channel:
         raise HTTPException(status_code=404, detail="Canal no encontrado para este webhook")
 

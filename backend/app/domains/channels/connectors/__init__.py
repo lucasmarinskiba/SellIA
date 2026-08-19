@@ -26,6 +26,9 @@ from app.domains.channels.connectors.beacons import BeaconsConnector
 from app.domains.channels.connectors.twitter import XConnector
 from app.domains.channels.connectors.threads import ThreadsConnector
 from app.domains.channels.connectors.hotmart import HotmartConnector
+from app.domains.channels.connectors.woocommerce import WooCommerceConnector
+from app.domains.channels.connectors.etsy import EtsyConnector
+from app.domains.channels.connectors.facebook_marketplace import FacebookMarketplaceConnector
 
 CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.WHATSAPP: WhatsAppConnector,
@@ -47,6 +50,9 @@ CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.TWITTER: XConnector,
     ChannelPlatform.THREADS: ThreadsConnector,
     ChannelPlatform.HOTMART: HotmartConnector,
+    ChannelPlatform.WOOCOMMERCE: WooCommerceConnector,
+    ChannelPlatform.ETSY: EtsyConnector,
+    ChannelPlatform.FACEBOOK_MARKETPLACE: FacebookMarketplaceConnector,
 }
 
 
