@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 
 revision = '0027'
-down_revision = '0026'
+down_revision = '0026_collaboration'
 branch_labels = None
 depends_on = None
 
