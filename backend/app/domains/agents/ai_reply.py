@@ -71,6 +71,29 @@ async def generate_ai_response(
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Context builder error: {e}")
 
+    # --- Funnel Stage Detection ---
+    # Detect where this conversation sits in the customer journey (awareness
+    # through expansion) before picking a voice, so that — when the business
+    # hasn't explicitly configured one — the reply defaults to the expert
+    # voice best suited to this stage (e.g. Belfort/Cardone for CONVERSION,
+    # Dale Carnegie/Bezos for RETENTION) instead of a generic personality.
+    detected_stage = None
+    business_type = None
+    try:
+        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
+        from app.core.prompts.funnel_specialists import get_recommended_voice_slug
+
+        business_result = await db.execute(
+            select(Business.type).where(Business.id == business_id)
+        )
+        business_type = business_result.scalar_one_or_none()
+        if business_type:
+            detected_stage = await detect_funnel_stage(db, business_id, conversation)
+            if not voice_slug:
+                voice_slug = get_recommended_voice_slug(detected_stage) or None
+    except Exception as e:
+        get_logger(__name__).warning(f"Funnel stage detection failed: {e}")
+
     # Build system prompt with voice composition
     if voice_slug:
         system_prompt = compose_system_prompt(
@@ -122,24 +145,18 @@ async def generate_ai_response(
         get_logger(__name__).warning(f"Failed to load customer profile: {e}")
 
     # --- Funnel Stage Specialist ---
-    # Detect where this conversation sits in the customer journey (awareness
-    # through expansion) and layer that stage's tactics, adapted to the
-    # business's model (goods/services/digital/mixed), on top of the base
-    # personality + expert voice already composed above.
-    try:
-        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
-        from app.core.prompts.funnel_specialists import get_adapted_prompt
+    # Layer the detected stage's tactics, adapted to the business's model
+    # (goods/services/digital/mixed), on top of the base personality + expert
+    # voice already composed above (stage/business_type detected earlier so
+    # the voice selection above could also default to a stage-appropriate expert).
+    if detected_stage and business_type:
+        try:
+            from app.core.prompts.funnel_specialists import get_adapted_prompt
 
-        business_result = await db.execute(
-            select(Business.type).where(Business.id == business_id)
-        )
-        business_type = business_result.scalar_one_or_none()
-        if business_type:
-            stage = await detect_funnel_stage(db, business_id, conversation)
-            funnel_prompt = get_adapted_prompt(stage, business_type)
+            funnel_prompt = get_adapted_prompt(detected_stage, business_type)
             system_prompt += f"\n\n{funnel_prompt}"
-    except Exception as e:
-        get_logger(__name__).warning(f"Funnel stage layering failed: {e}")
+        except Exception as e:
+            get_logger(__name__).warning(f"Funnel stage layering failed: {e}")
 
     if custom_prompt:
         system_prompt += f"\n\nINSTRUCTION: {custom_prompt}"

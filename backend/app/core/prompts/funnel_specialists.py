@@ -244,6 +244,32 @@ FUNNEL_SPECIALISTS: Dict[FunnelStage, FunnelSpecialist] = {
 }
 
 
+# Recommended expert-voice slugs per funnel stage. These map to the slugs
+# defined in app/domains/agents/prompts/categories/*.py (AGENT_PROMPTS) —
+# the voice system actually wired into compose_system_prompt()/voice_slug in
+# the live ai_reply.py pipeline — not the standalone app/core/prompts/expert_voices/
+# package. First slug in each list is the primary/default recommendation.
+FUNNEL_STAGE_VOICE_SLUGS: Dict[FunnelStage, List[str]] = {
+    FunnelStage.AWARENESS: ["brian-tracy", "seth-godin", "simon-sinek"],
+    FunnelStage.URGENCY: ["jordan-belfort", "grant-cardone", "robert-cialdini"],
+    FunnelStage.ACQUISITION: ["russell-brunson", "dan-kennedy", "gary-vee"],
+    FunnelStage.CONVERSION: ["jordan-belfort", "grant-cardone", "chris-voss"],
+    FunnelStage.RETENTION: ["dale-carnegie", "jeff-bezos", "napoleon-hill"],
+    FunnelStage.EXPANSION: ["patrick-bet-david", "warren-buffett", "account-executive"],
+}
+
+
+def get_recommended_voice_slugs(stage: FunnelStage) -> List[str]:
+    """All recommended expert-voice slugs for a stage, primary first."""
+    return FUNNEL_STAGE_VOICE_SLUGS.get(stage, [])
+
+
+def get_recommended_voice_slug(stage: FunnelStage) -> str:
+    """The single best-fit expert-voice slug for a stage (first recommendation)."""
+    slugs = FUNNEL_STAGE_VOICE_SLUGS.get(stage, [])
+    return slugs[0] if slugs else ""
+
+
 def get_specialist(stage: FunnelStage) -> FunnelSpecialist:
     """Get the specialist for a given funnel stage."""
     return FUNNEL_SPECIALISTS[stage]
@@ -291,8 +317,11 @@ __all__ = [
     "FunnelSpecialist",
     "FUNNEL_SPECIALISTS",
     "FUNNEL_SPECIALIST_PROMPTS",
+    "FUNNEL_STAGE_VOICE_SLUGS",
     "get_specialist",
     "get_adapted_prompt",
     "get_funnel_order",
+    "get_recommended_voice_slug",
+    "get_recommended_voice_slugs",
     "load_funnel_specialist_prompts",
 ]
