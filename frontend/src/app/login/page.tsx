@@ -11,7 +11,8 @@ const translations = {
     welcome: '¡Hola SellIA!',
     description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
     loginTitle: 'Bienvenido de nuevo',
-    subtext: '¿No tenés cuenta? Crea una nueva. Es GRATIS y toma menos de un minuto.',
+    noAccount: '¿No tenés cuenta?',
+    registerHere: 'Registrate aquí',
     email: 'Email',
     emailPlaceholder: 'usuario@gmail.com',
     password: 'Contraseña',
@@ -26,7 +27,8 @@ const translations = {
     welcome: 'Hello SellIA!',
     description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
     loginTitle: 'Welcome Back',
-    subtext: "Don't have an account? Create a new one. It's FREE and takes less than a minute.",
+    noAccount: "Don't have an account?",
+    registerHere: 'Sign up here',
     email: 'Email',
     emailPlaceholder: 'usuario@gmail.com',
     password: 'Password',
@@ -126,7 +128,12 @@ export default function LoginPage() {
           {/* Welcome */}
           <div className="mb-12">
             <h3 className="text-3xl font-black text-gray-900 mb-3">{t.loginTitle}</h3>
-            <p className="text-base text-gray-600 leading-relaxed">{t.subtext}</p>
+            <p className="text-base text-gray-600 leading-relaxed">
+              {t.noAccount}{' '}
+              <Link href="/register" className="text-blue-600 font-semibold hover:text-blue-700">
+                {t.registerHere}
+              </Link>
+            </p>
           </div>
 
           {/* Error */}
