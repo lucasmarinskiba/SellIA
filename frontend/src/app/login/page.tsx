@@ -86,7 +86,7 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-white">
+    <div className="min-h-screen w-full flex overflow-hidden bg-white">
       {/* Left side - Blue gradient */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex-col justify-between p-16 relative">
         {/* Subtle radial gradient */}
