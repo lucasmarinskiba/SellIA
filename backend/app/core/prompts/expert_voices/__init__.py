@@ -21,6 +21,9 @@ from other_experts_prompts import (
     ROCCA_PROMPTS, GALUCCIO_PROMPTS, RAVIKANT_PROMPTS, TALEB_PROMPTS,
     GRAHAM_PROMPTS, BENIOFF_PROMPTS, ExpertPrompt
 )
+from tracy_hill_prompts import (
+    TRACY_PROMPTS, HILL_PROMPTS, ALL_TRACY_HILL_PROMPTS, TracyHillPrompt
+)
 
 # Import orchestration and selection systems
 from prompt_registry import (
@@ -62,6 +65,8 @@ ALL_EXPERT_PROMPTS = {
     "taleb": TALEB_PROMPTS,
     "graham": GRAHAM_PROMPTS,
     "benioff": BENIOFF_PROMPTS,
+    "tracy": TRACY_PROMPTS,
+    "hill": HILL_PROMPTS,
 }
 
 # Flattened prompt list for indexing
@@ -85,7 +90,9 @@ FLAT_PROMPT_LIST = (
     RAVIKANT_PROMPTS +
     TALEB_PROMPTS +
     GRAHAM_PROMPTS +
-    BENIOFF_PROMPTS
+    BENIOFF_PROMPTS +
+    TRACY_PROMPTS +
+    HILL_PROMPTS
 )
 
 # Metadata
@@ -158,10 +165,11 @@ __all__ = [
     "DALIO_PROMPTS", "MINER_PROMPTS", "ELLIOTT_PROMPTS", "LOIDI_PROMPTS",
     "RIBAS_PROMPTS", "GALPERIN_PROMPTS", "ROCCA_PROMPTS", "GALUCCIO_PROMPTS",
     "RAVIKANT_PROMPTS", "TALEB_PROMPTS", "GRAHAM_PROMPTS", "BENIOFF_PROMPTS",
+    "TRACY_PROMPTS", "HILL_PROMPTS",
 
     # Prompt data structures
     "TrumpPrompt", "BelfortPrompt", "BuffettPrompt", "KiyosakiPrompt",
-    "HormoziCardonePrompt", "ExpertPrompt",
+    "HormoziCardonePrompt", "ExpertPrompt", "TracyHillPrompt",
 
     # Registries and metadata
     "ExpertType", "SalesContext", "ExpertMetadata",

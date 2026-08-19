@@ -70,7 +70,7 @@ class PromptRegistry:
         self.prompts.update(comprehensive)
         logger.info(f"Loaded {len(comprehensive)} comprehensive sales prompts")
 
-        # Load expert voices prompts (350 — Trump/Belfort/Buffett/Kiyosaki/Hormozi/Cardone/Robbins/GaryVee/Dalio/Miner/Elliott/Loidi/Ribas/Galperin/Rocca/Galuccio/Naval/Taleb/Graham/Benioff)
+        # Load expert voices prompts (Trump/Belfort/Buffett/Kiyosaki/Hormozi/Cardone/Robbins/GaryVee/Dalio/Miner/Elliott/Loidi/Ribas/Galperin/Rocca/Galuccio/Naval/Taleb/Graham/Benioff/Tracy/Hill)
         expert = load_expert_prompts()
         self.prompts.update(expert)
         logger.info(f"Loaded {len(expert)} expert voices prompts")

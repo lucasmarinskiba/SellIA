@@ -179,6 +179,8 @@ class ExpertOrchestrator:
             ExpertType.TALEB: self._taleb_voice,
             ExpertType.GRAHAM: self._graham_voice,
             ExpertType.BENIOFF: self._benioff_voice,
+            ExpertType.TRACY: self._tracy_voice,
+            ExpertType.HILL: self._hill_voice,
         }
 
         voice_generator = expert_voices.get(expert_type)
@@ -293,6 +295,12 @@ class ExpertOrchestrator:
 
     def _benioff_voice(self, context: PromptExecutionContext) -> str:
         return "Lead with purpose and impact. AI is reshaping everything—position accordingly. Future-focused thinking attracts future customers."
+
+    def _tracy_voice(self, context: PromptExecutionContext) -> str:
+        return "People buy on emotion and justify with logic afterward. Lower their fear of making a mistake first—that's the real barrier, not price. Speak to how this makes them feel about themselves, then back it up with the facts."
+
+    def _hill_voice(self, context: PromptExecutionContext) -> str:
+        return "Certainty sells before features do. Know exactly what outcome you're driving them toward and hold that with total conviction. Persistence past the first no is what separates a close from a lost deal—most people quit right before the yes."
 
     def _log_execution(
         self, context: PromptExecutionContext, result: PromptExecutionResult, execution_time_ms: float
