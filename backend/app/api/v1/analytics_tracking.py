@@ -48,7 +48,7 @@ async def track_event(data: dict, request: Request, db: AsyncSession = Depends(g
             browser=data.get("browser"),
             duration_ms=data.get("duration_ms"),
             scroll_depth=data.get("scroll_depth"),
-            metadata=data.get("metadata", {}),
+            event_metadata=data.get("metadata", {}),
         )
         db.add(event)
         await db.commit()
@@ -71,7 +71,7 @@ async def track_conversion(data: dict, request: Request, db: AsyncSession = Depe
             session_id=session_id,
             user_id=data.get("user_id"),
             source_page=data.get("source_page"),
-            metadata=data.get("metadata", {}),
+            event_metadata=data.get("metadata", {}),
         )
         db.add(conversion)
         await db.commit()
