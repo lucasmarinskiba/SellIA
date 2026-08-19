@@ -26,6 +26,8 @@ class EcommerceWebhookProcessor:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    _CONVERTED_ORDER_STATUSES = (OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED)
+
     async def process_order_webhook(
         self,
         channel: ChannelConnection,
@@ -36,22 +38,30 @@ class EcommerceWebhookProcessor:
         platform = channel.platform.value
         extra = payload.extra_data or {}
 
+        order: Optional[Order] = None
         if platform == "shopify":
-            return await self._process_shopify(channel, conversation, extra)
+            order = await self._process_shopify(channel, conversation, extra)
         elif platform == "mercadolibre":
-            return await self._process_mercadolibre(channel, conversation, extra)
+            order = await self._process_mercadolibre(channel, conversation, extra)
         elif platform == "amazon":
-            return await self._process_amazon(channel, conversation, extra)
+            order = await self._process_amazon(channel, conversation, extra)
         elif platform == "hotmart":
-            return await self._process_hotmart(channel, conversation, extra)
+            order = await self._process_hotmart(channel, conversation, extra)
         elif platform == "woocommerce":
-            return await self._process_woocommerce(channel, conversation, extra)
+            order = await self._process_woocommerce(channel, conversation, extra)
         elif platform == "etsy":
-            return await self._process_etsy(channel, conversation, extra)
+            order = await self._process_etsy(channel, conversation, extra)
         elif platform == "facebook_marketplace":
-            return await self._process_facebook_marketplace(channel, conversation, extra)
+            order = await self._process_facebook_marketplace(channel, conversation, extra)
 
-        return None
+        if order and order.status in self._CONVERTED_ORDER_STATUSES:
+            try:
+                from app.domains.agents.funnel_ab_bridge import record_stage_conversion
+                await record_stage_conversion(self.db, conversation)
+            except Exception as e:
+                logger.warning(f"Failed to record funnel A/B conversion: {e}")
+
+        return order
 
     async def _process_shopify(
         self,

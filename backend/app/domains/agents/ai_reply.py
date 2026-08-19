@@ -81,7 +81,7 @@ async def generate_ai_response(
     business_type = None
     try:
         from app.domains.agents.funnel_stage_detector import detect_funnel_stage
-        from app.core.prompts.funnel_specialists import get_recommended_voice_slug
+        from app.domains.agents.funnel_ab_bridge import get_stage_voice_slug
 
         business_result = await db.execute(
             select(Business.type).where(Business.id == business_id)
@@ -90,7 +90,11 @@ async def generate_ai_response(
         if business_type:
             detected_stage = await detect_funnel_stage(db, business_id, conversation)
             if not voice_slug:
-                voice_slug = get_recommended_voice_slug(detected_stage) or None
+                # Picks the primary recommended voice for this stage, or A/B
+                # tests between the top 2 when the stage has multiple
+                # candidates (see funnel_ab_bridge.py).
+                ab_voice_slug, _, _ = await get_stage_voice_slug(db, detected_stage, conversation)
+                voice_slug = ab_voice_slug or None
     except Exception as e:
         get_logger(__name__).warning(f"Funnel stage detection failed: {e}")
 
