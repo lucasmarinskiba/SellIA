@@ -121,6 +121,26 @@ async def generate_ai_response(
     except Exception as e:
         get_logger(__name__).warning(f"Failed to load customer profile: {e}")
 
+    # --- Funnel Stage Specialist ---
+    # Detect where this conversation sits in the customer journey (awareness
+    # through expansion) and layer that stage's tactics, adapted to the
+    # business's model (goods/services/digital/mixed), on top of the base
+    # personality + expert voice already composed above.
+    try:
+        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
+        from app.core.prompts.funnel_specialists import get_adapted_prompt
+
+        business_result = await db.execute(
+            select(Business.type).where(Business.id == business_id)
+        )
+        business_type = business_result.scalar_one_or_none()
+        if business_type:
+            stage = await detect_funnel_stage(db, business_id, conversation)
+            funnel_prompt = get_adapted_prompt(stage, business_type)
+            system_prompt += f"\n\n{funnel_prompt}"
+    except Exception as e:
+        get_logger(__name__).warning(f"Funnel stage layering failed: {e}")
+
     if custom_prompt:
         system_prompt += f"\n\nINSTRUCTION: {custom_prompt}"
 
