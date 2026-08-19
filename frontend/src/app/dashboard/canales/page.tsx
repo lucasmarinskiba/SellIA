@@ -9,7 +9,7 @@ import {
   MessageSquare, Mail, Camera as Instagram, ShoppingCart, Briefcase as Linkedin, Link2,
   Plus, Trash2, CheckCircle2, AlertCircle, Clock, ExternalLink,
   Phone, Plug, Zap, X, Loader2, Copy, Check,
-  Megaphone, Globe, Search, ShoppingBag, Music
+  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap
 } from 'lucide-react'
 
 const platformConfig: Record<string, { label: string; icon: typeof MessageSquare; color: string; description: string }> = {
@@ -29,6 +29,7 @@ const platformConfig: Record<string, { label: string; icon: typeof MessageSquare
   shopify: { label: 'Shopify', icon: ShoppingBag, color: 'text-green-600', description: 'Shopify' },
   tiktok_ads: { label: 'TikTok Ads', icon: Music, color: 'text-black', description: 'TikTok Ads' },
   tiktok: { label: 'TikTok', icon: Music, color: 'text-black', description: 'TikTok' },
+  hotmart: { label: 'Hotmart', icon: GraduationCap, color: 'text-red-500', description: 'Cursos y productos digitales' },
 }
 
 const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
@@ -178,6 +179,15 @@ export default function CanalesPage() {
         return (
           <>
             <Field label="Site Domain" value={newChannel.credentials.site_domain || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, site_domain: v } })} placeholder="tudominio.com" />
+          </>
+        )
+      case 'hotmart':
+        return (
+          <>
+            <Field label="Hottok" type="password" value={newChannel.credentials.hottok || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, hottok: v } })} placeholder="Token de verificación del webhook" />
+            <Field label="Client ID" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
+            <Field label="Client Secret" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
+            <p className="text-xs text-white/30">Configurá este mismo Hottok en Hotmart → Herramientas → Webhook.</p>
           </>
         )
       default:

@@ -42,6 +42,8 @@ class EcommerceWebhookProcessor:
             return await self._process_mercadolibre(channel, conversation, extra)
         elif platform == "amazon":
             return await self._process_amazon(channel, conversation, extra)
+        elif platform == "hotmart":
+            return await self._process_hotmart(channel, conversation, extra)
 
         return None
 
@@ -159,6 +161,45 @@ class EcommerceWebhookProcessor:
         )
         return order
 
+    async def _process_hotmart(
+        self,
+        channel: ChannelConnection,
+        conversation: Conversation,
+        extra: dict[str, Any],
+    ) -> Optional[Order]:
+        event = extra.get("event", "")
+        data = extra.get("data", {})
+        purchase = data.get("purchase", {})
+        product = data.get("product", {})
+        buyer = data.get("buyer", {})
+
+        transaction = purchase.get("transaction", "")
+        order_id = transaction or str(product.get("id", ""))
+        if not order_id:
+            return None
+
+        price = purchase.get("price", {})
+        total = Decimal(str(price.get("value", "0") or "0"))
+        currency = price.get("currency_value", "BRL")
+
+        order = await self._upsert_order(
+            business_id=channel.business_id,
+            conversation_id=conversation.id,
+            external_id=order_id,
+            external_platform="hotmart",
+            order_number=transaction or order_id,
+            total_amount=total,
+            currency=currency,
+            status=self._map_hotmart_status(event, purchase.get("status", "")),
+            payment_status=self._map_hotmart_payment_status(event, purchase.get("status", "")),
+            customer_name=buyer.get("name", ""),
+            customer_email=buyer.get("email"),
+            customer_phone=buyer.get("checkout_phone"),
+            items=[{"name": product.get("name", ""), "qty": 1, "price": str(total), "sku": str(product.get("id", ""))}],
+            source_channel="hotmart",
+        )
+        return order
+
     async def _upsert_order(
         self,
         business_id: uuid.UUID,
@@ -264,3 +305,31 @@ class EcommerceWebhookProcessor:
             "Pending": OrderStatus.PENDING,
         }
         return status_map.get(status, OrderStatus.PENDING)
+
+    @staticmethod
+    def _map_hotmart_status(event: str, purchase_status: str) -> OrderStatus:
+        if event in ("PURCHASE_REFUNDED",):
+            return OrderStatus.REFUNDED
+        if event in ("PURCHASE_CANCELED", "PURCHASE_CANCELLED", "SUBSCRIPTION_CANCELLATION", "PURCHASE_EXPIRED"):
+            return OrderStatus.CANCELLED
+        if event in ("PURCHASE_APPROVED", "PURCHASE_COMPLETE", "PURCHASE_COMPLETED"):
+            return OrderStatus.PAID
+        if purchase_status in ("APPROVED", "COMPLETE", "COMPLETED"):
+            return OrderStatus.PAID
+        if purchase_status in ("CANCELLED", "CANCELED"):
+            return OrderStatus.CANCELLED
+        if purchase_status == "REFUNDED":
+            return OrderStatus.REFUNDED
+        return OrderStatus.PENDING
+
+    @staticmethod
+    def _map_hotmart_payment_status(event: str, purchase_status: str) -> PaymentStatus:
+        if event == "PURCHASE_REFUNDED" or purchase_status == "REFUNDED":
+            return PaymentStatus.REFUNDED
+        if event in ("PURCHASE_CHARGEBACK", "PURCHASE_PROTEST"):
+            return PaymentStatus.FAILED
+        if event in ("PURCHASE_APPROVED", "PURCHASE_COMPLETE", "PURCHASE_COMPLETED") or purchase_status in ("APPROVED", "COMPLETE", "COMPLETED"):
+            return PaymentStatus.COMPLETED
+        if event in ("PURCHASE_CANCELED", "PURCHASE_CANCELLED", "PURCHASE_EXPIRED"):
+            return PaymentStatus.FAILED
+        return PaymentStatus.PENDING

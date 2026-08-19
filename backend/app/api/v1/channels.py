@@ -212,7 +212,7 @@ async def get_oauth_url(
     await _get_business_for_user(business_id, current_user, db)
     
     base_callback = settings.FRONTEND_URL or "http://localhost:3000"
-    redirect_uri = f"{base_callback}/api/v1/channels/oauth/callback/{platform.value}"
+    redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
     
     if platform == ChannelPlatform.MERCADOLIBRE:
         # Find existing channel to get client_id
@@ -292,7 +292,7 @@ async def oauth_callback(
         raise HTTPException(status_code=404, detail="Canal no encontrado")
     
     base_callback = settings.FRONTEND_URL or "http://localhost:3000"
-    redirect_uri = f"{base_callback}/api/v1/channels/oauth/callback/{platform.value}"
+    redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
     
     if platform == ChannelPlatform.MERCADOLIBRE:
         client_id = channel.credentials.get("client_id")
@@ -666,6 +666,19 @@ async def receive_webhook(
                     ChannelConnection.platform == ChannelPlatform.TIKTOK_ADS,
                     ChannelConnection.is_active == True,
                     ChannelConnection.credentials.contains({"advertiser_id": str(advertiser_id)}),
+                )
+            )
+            channel = result.scalar_one_or_none()
+
+    # Estrategia 13: Para Hotmart, identificar por hottok (header o campo del body)
+    elif platform == ChannelPlatform.HOTMART:
+        hottok = request.headers.get("X-Hotmart-Hottok") or raw_json.get("hottok")
+        if hottok:
+            result = await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.platform == ChannelPlatform.HOTMART,
+                    ChannelConnection.is_active == True,
+                    ChannelConnection.credentials.contains({"hottok": hottok}),
                 )
             )
             channel = result.scalar_one_or_none()

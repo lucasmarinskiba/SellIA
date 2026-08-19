@@ -15,6 +15,7 @@ export type ChannelPlatform =
   | 'amazon'
   | 'beacons'
   | 'tiktok'
+  | 'hotmart'
 
 export type ChannelStatus = 'connected' | 'pending' | 'error' | 'disabled'
 
