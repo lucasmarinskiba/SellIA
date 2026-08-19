@@ -1,3 +1,4 @@
+import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NotificationProvider } from "@/app/providers"
 import type { Metadata } from "next"

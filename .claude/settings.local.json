@@ -730,7 +730,12 @@
       "Bash(vercel logs *)",
       "Bash(vercel list *)",
       "Bash(vercel inspect *)",
-      "Bash(vercel projects *)"
+      "Bash(vercel projects *)",
+      "Bash(curl -s \"https://sellia-brain-6nw8ffqht-lucasdmarin-7650s-projects.vercel.app/register\")",
+      "Bash(curl -sI \"https://sellia-brain-6nw8ffqht-lucasdmarin-7650s-projects.vercel.app/register\")",
+      "Bash(curl -s \"https://sellia-brain.vercel.app/register\")",
+      "Bash(curl -sI \"https://sellia-brain.vercel.app/register\")",
+      "Bash(npx --prefix frontend vercel --prod --force --cwd .)"
     ]
   }
 }
