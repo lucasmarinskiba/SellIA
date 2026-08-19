@@ -1,19 +1,29 @@
 """Celery Tasks — Background automation for sales funnel.
 
 Ejecuta fases en background con retry automático + scheduling.
+
+NOTE: every task body below is async internally (they call async services),
+but Celery's default worker calls tasks synchronously. Each task wraps its
+logic in an inner `async def _run(): ...` invoked via `asyncio.run(...)` —
+this file previously used bare `await` inside plain `def` task functions,
+which is a SyntaxError and silently prevented the entire module (and every
+task in it) from being registered at all.
 """
 
+import asyncio
 import logging
 from celery import shared_task
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 
-from app.domains.computer_use.services.lead_generator import get_lead_generator
-from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
-from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
-from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
-
 logger = logging.getLogger(__name__)
+
+# NOTE: app.domains.computer_use.services imports are deliberately deferred
+# to inside each task function (rather than at module level) because that
+# package pulls in optional integrations (e.g. Google Calendar) that aren't
+# always installed. A missing transitive dependency there must not prevent
+# this whole module — including send_follow_ups, which needs none of those
+# services — from being importable and registered with Celery.
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
@@ -23,7 +33,9 @@ def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str,
 
     Retries: 3 intentos con delay de 5 minutos.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.lead_generator import get_lead_generator
+
         lead_gen = get_lead_generator()
 
         imported = await lead_gen.import_leads(leads_data)
@@ -40,9 +52,10 @@ def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str,
             "cold": len([l for l in imported if l.quality.value == "cold"]),
         }
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error importing leads: {exc}")
-        # Retry con backoff exponencial
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
@@ -57,25 +70,25 @@ def send_outreach_batch(
 
     Retries: 3 intentos.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.lead_generator import get_lead_generator
+        from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
+
         lead_gen = get_lead_generator()
         outreach = get_outreach_orchestrator()
 
         imported = await lead_gen.import_leads(leads)
 
-        # Enrich + score
         for lead in imported:
             lead = await lead_gen.enrich_lead(lead)
             lead = await lead_gen.score_lead(lead)
 
-        # Crear campaign
         campaign = await outreach.create_campaign(
             name=f"Outreach {datetime.utcnow().strftime('%Y%m%d%H%M')}",
             target_quality="hot",
             channel=OutreachChannel(channel),
         )
 
-        # Enviar a HOT
         contacted = 0
         for lead in imported:
             if lead.quality.value == "hot":
@@ -96,6 +109,8 @@ def send_outreach_batch(
             "contacted": contacted,
         }
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in outreach: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -104,31 +119,121 @@ def send_outreach_batch(
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
 def send_follow_ups(self) -> Dict[str, Any]:
     """
-    Fase 11: Envía follow-ups automáticos.
+    Envía follow-ups automáticos, senior-salesperson style: proactive but
+    not spammy. Corre diariamente.
 
-    Corre cada 3 días para leads que no respondieron.
+    A conversation qualifies for a follow-up when:
+    - It's active, not archived/spam, not currently awaiting a human agent
+    - It's had at least one real (inbound) message — no cold empty threads
+    - Its last message (in either direction) is 24h+ old
+    - It hasn't already converted (handled separately by funnel_ab_bridge
+      when an order is paid — a converted conversation moves to RETENTION,
+      which this task also respects instead of nagging a happy customer)
+    - It has fewer than 3 prior automated follow-ups (tracked in
+      conversation.extra_data.follow_up_count, mirroring the "Max 3
+      intentos" cap already documented here before this rewrite)
+
+    The follow-up message itself is generated via generate_ai_response
+    using a custom_prompt that asks the model to write a natural,
+    non-repetitive nudge appropriate to the conversation's current funnel
+    stage — not a canned "just checking in" template.
     """
-    try:
-        # Mock: obtener leads sin respuesta hace 3 días
-        leads_to_followup = []  # En prod: consultar DB
+    async def _run():
+        from sqlalchemy import select, func
+        from app.core.database import AsyncSessionLocal
+        from app.domains.channels.models import Conversation, Message, ConversationStatus, MessageDirection
+        from app.domains.channels.services import send_outbound_message
+        from app.domains.agents.models import AgentConfig
+        from app.domains.agents.ai_reply import generate_ai_response
+        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
+        from app.core.prompts.funnel_specialists import FunnelStage
 
-        outreach = get_outreach_orchestrator()
+        sent = 0
+        skipped = 0
+        cutoff = datetime.now().astimezone() - timedelta(hours=24)
 
-        followup_count = 0
-        for lead in leads_to_followup:
-            if lead.contacted_count < 3:  # Max 3 intentos
-                success, msg_id = await outreach.send_follow_up(
-                    campaign=None,  # placeholder
-                    lead=lead,
-                    follow_up_number=lead.contacted_count + 1,
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Conversation).where(
+                    Conversation.status == ConversationStatus.ACTIVE,
+                    Conversation.is_active == True,
+                    Conversation.last_message_at != None,
+                    Conversation.last_message_at < cutoff,
                 )
-                if success:
-                    followup_count += 1
+            )
+            candidates = result.scalars().all()
 
-        logger.info(f"Sent {followup_count} follow-ups")
+            for conversation in candidates:
+                extra = conversation.extra_data or {}
+                if extra.get("awaiting_human"):
+                    skipped += 1
+                    continue
 
-        return {"status": "success", "followups_sent": followup_count}
+                follow_up_count = extra.get("follow_up_count", 0)
+                if follow_up_count >= 3:
+                    skipped += 1
+                    continue
 
+                inbound_result = await db.execute(
+                    select(func.count(Message.id)).where(
+                        Message.conversation_id == conversation.id,
+                        Message.direction == MessageDirection.INBOUND,
+                    )
+                )
+                if (inbound_result.scalar() or 0) == 0:
+                    skipped += 1
+                    continue
+
+                # Don't nag an already-converted/retention-stage customer —
+                # that's a different job (RETENTION/EXPANSION messaging).
+                stage = await detect_funnel_stage(db, conversation.business_id, conversation)
+                if stage in (FunnelStage.RETENTION, FunnelStage.EXPANSION):
+                    skipped += 1
+                    continue
+
+                config_result = await db.execute(
+                    select(AgentConfig).where(
+                        AgentConfig.business_id == conversation.business_id,
+                        AgentConfig.is_enabled == True,
+                        AgentConfig.ai_auto_reply_enabled == True,
+                    )
+                )
+                agent_config = config_result.scalar_one_or_none()
+                if not agent_config:
+                    skipped += 1
+                    continue
+
+                try:
+                    reply = await generate_ai_response(
+                        db=db,
+                        conversation=conversation,
+                        personality_slug="captador",
+                        business_id=conversation.business_id,
+                        custom_prompt=(
+                            "El cliente no respondió en más de 24 horas. Escribí un mensaje de "
+                            "seguimiento breve, natural y no repetitivo — no uses frases genéricas "
+                            "tipo 'solo quería hacer un seguimiento'. Retomá el hilo específico de "
+                            "la conversación anterior y dale una razón concreta para responder ahora."
+                        ),
+                    )
+                    if reply:
+                        await send_outbound_message(db, conversation.id, reply)
+                        extra["follow_up_count"] = follow_up_count + 1
+                        conversation.extra_data = extra
+                        db.add(conversation)
+                        await db.commit()
+                        sent += 1
+                    else:
+                        skipped += 1
+                except Exception as e:
+                    logger.warning(f"Follow-up failed for conversation {conversation.id}: {e}")
+                    skipped += 1
+
+        logger.info(f"Follow-ups: sent={sent} skipped={skipped}")
+        return {"status": "success", "followups_sent": sent, "skipped": skipped}
+
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in follow-ups: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -144,7 +249,9 @@ def send_welcome_sequences(
 
     Corre inmediatamente después de nueva compra.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+
         loyalty = get_customer_loyalty_engine()
 
         sent = 0
@@ -159,9 +266,10 @@ def send_welcome_sequences(
                 sent += 1
 
         logger.info(f"Welcome sequences sent to {sent} customers")
-
         return {"status": "success", "sent": sent}
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in welcome sequences: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -174,7 +282,9 @@ def send_upsell_campaigns(self) -> Dict[str, Any]:
 
     Corre cada 7 días para clientes activos.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+
         loyalty = get_customer_loyalty_engine()
 
         # Mock: obtener clientes elegibles para upsell
@@ -198,9 +308,10 @@ def send_upsell_campaigns(self) -> Dict[str, Any]:
                 sent += 1
 
         logger.info(f"Upsells sent to {sent} customers")
-
         return {"status": "success", "upsells_sent": sent}
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in upsells: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -213,7 +324,9 @@ def send_winback_campaigns(self) -> Dict[str, Any]:
 
     Corre cada 14 días.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+
         loyalty = get_customer_loyalty_engine()
 
         # Mock: obtener at-risk customers
@@ -222,9 +335,10 @@ def send_winback_campaigns(self) -> Dict[str, Any]:
         stats = await loyalty.send_win_back_campaign(at_risk)
 
         logger.info(f"Win-back campaign: {stats['sent']} sent")
-
         return {"status": "success", **stats}
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in win-back: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -237,7 +351,9 @@ def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
 
     Corre diariamente a las 6 AM UTC.
     """
-    try:
+    async def _run():
+        from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
+
         growth = get_growth_automation_engine()
 
         result = await growth.run_daily_growth_cycle(
@@ -247,9 +363,10 @@ def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         logger.info(f"Daily growth cycle completed: {result}")
-
         return result
 
+    try:
+        return asyncio.run(_run())
     except Exception as exc:
         logger.error(f"Error in growth cycle: {exc}")
         raise self.retry(exc=exc, countdown=3600)  # Retry en 1 hora
@@ -259,9 +376,9 @@ def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
 def setup_periodic_tasks(sender, **kwargs):
     """Configura tasks periódicas en Celery Beat."""
 
-    # Cada 3 días: envía follow-ups
+    # Diariamente 9 AM: follow-ups (senior-salesperson cadence, not just Mondays)
     sender.add_periodic_task(
-        crontab(hour=9, minute=0, day_of_week=1),  # Lunes 9 AM
+        crontab(hour=9, minute=0),
         send_follow_ups.s(),
         name="Send follow-ups",
     )

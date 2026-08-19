@@ -9,6 +9,14 @@ from app.core.database import Base
 import enum
 
 
+class LocalizationModel(str, enum.Enum):
+    """Business model classification for online/offline mix."""
+    ONLINE_ONLY = "online_only"
+    HYBRID_LIGHT = "hybrid_light"
+    HYBRID_HEAVY = "hybrid_heavy"
+    OFFLINE_FIRST = "offline_first"
+
+
 class BusinessType(str, enum.Enum):
     SERVICES = "services"
     GOODS = "goods"
@@ -25,6 +33,7 @@ class Business(Base):
     type = Column(Enum(BusinessType), nullable=False, default=BusinessType.SERVICES)
     description = Column(Text, nullable=True)
     config = Column(JSONB, default=dict, nullable=False)
+    localization_model = Column(Enum(LocalizationModel), default=LocalizationModel.ONLINE_ONLY, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -34,6 +43,7 @@ class Business(Base):
     channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
     website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
+    locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
 
 # Config por defecto según tipo de negocio
