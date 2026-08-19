@@ -44,6 +44,7 @@ class PromptRegistry:
         from .comprehensive_sales_prompts import load_comprehensive_prompts
         from .expert_voices_prompts import load_expert_prompts
         from .affiliate_prompts import load_affiliate_prompts
+        from .funnel_specialists import load_funnel_specialist_prompts
 
         # Load marketing prompts (50)
         marketing = MarketingPrompts.get_all_marketing_prompts()
@@ -80,9 +81,15 @@ class PromptRegistry:
         self.prompts.update(affiliate)
         logger.info(f"Loaded {len(affiliate)} affiliate prompts")
 
+        # Load funnel specialist prompts (6 — awareness/urgency/acquisition/conversion/retention/expansion,
+        # each adapted per BusinessType via app.core.prompts.funnel_specialists.get_adapted_prompt)
+        funnel = load_funnel_specialist_prompts()
+        self.prompts.update(funnel)
+        logger.info(f"Loaded {len(funnel)} funnel specialist prompts")
+
         # Build indices
         self._build_indices()
-        logger.info(f"Loaded {len(self.prompts)} total prompts (50+50+50+50+200+350+50)")
+        logger.info(f"Loaded {len(self.prompts)} total prompts")
 
     def _build_indices(self) -> None:
         """Build lookup indices for fast searching."""

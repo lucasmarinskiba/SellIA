@@ -47,11 +47,11 @@ AFFILIATE_PROMPTS = {
     "affiliate_channel_002": {"title": "Social Media Channel", "focus": "Influencer reach", "principle": "Instagram/TikTok influencers, paid promotion leverage"},
     "affiliate_channel_003": {"title": "Content Marketing Channel", "focus": "Blog + SEO", "principle": "Long-term traffic, recurring sales, builds authority"},
     "affiliate_channel_004": {"title": "Paid Advertising Channel", "focus": "Ad spend ROI", "principle": "Test small, scale winners, track ROAS religiously"},
-    "affiliate_channel_005": {"title": "Partnership Channel", "focus": "Joint ventures", "principle": "Access partners' audiences, revenue split"),
+    "affiliate_channel_005": {"title": "Partnership Channel", "focus": "Joint ventures", "principle": "Access partners' audiences, revenue split"},
     "affiliate_channel_006": {"title": "Community Channel", "focus": "Forum/Reddit", "principle": "Organic mentions, authentic recommendations resonate"},
     "affiliate_channel_007": {"title": "Video Channel", "focus": "YouTube reviews", "principle": "Long-form video builds trust, evergreen content"},
     "affiliate_channel_008": {"title": "Podcast Channel", "focus": "Audio audiences", "principle": "Intimate medium, loyal listeners, high conversion"},
-    "affiliate_channel_009": {"title": "Webinar Channel", "focus": "Live selling", "principle": "Real-time conversion, Q&A closes objections"),
+    "affiliate_channel_009": {"title": "Webinar Channel", "focus": "Live selling", "principle": "Real-time conversion, Q&A closes objections"},
     "affiliate_channel_010": {"title": "Direct Sales Channel", "focus": "Phone/zoom", "principle": "High-touch, high-value sales, personal relationships"},
 
     # OPTIMIZATION + SCALING (5 prompts)
