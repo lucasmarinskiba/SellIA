@@ -39,7 +39,7 @@ class AnalyticsEvent(Base):
     device_type = Column(String(50), nullable=True)
     browser = Column(String(100), nullable=True)
 
-    metadata = Column(JSONB, default=dict, nullable=False)
+    event_metadata = Column("metadata", JSONB, default=dict, nullable=False)
     duration_ms = Column(Integer, nullable=True)
     scroll_depth = Column(Float, nullable=True)
 
@@ -67,7 +67,7 @@ class Conversion(Base):
 
     source_page = Column(String(500), nullable=True)
 
-    metadata = Column(JSONB, default=dict, nullable=False)
+    event_metadata = Column("metadata", JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 

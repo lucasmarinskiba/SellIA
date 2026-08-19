@@ -16,51 +16,70 @@ from app.core.config import get_settings
 
 # Import ALL model modules so they register with Base.metadata.
 # This is critical for autogenerate to work.
-from app.domains.users import models as user_models  # noqa: F401
-from app.domains.businesses import models as business_models  # noqa: F401
-from app.domains.catalogs import models as catalog_models  # noqa: F401
-from app.domains.channels import models as channel_models  # noqa: F401
-from app.domains.orders import models as order_models  # noqa: F401
-from app.domains.subscriptions import models as subscription_models  # noqa: F401
-from app.domains.agents import models as agent_models  # noqa: F401
-from app.domains.agents.prompt_optimizer import ConversationOutcome  # noqa: F401
-from app.domains.agents.models_reflection import AgentReflection, ChainOfThoughtLog  # noqa: F401
-from app.domains.agents.models_causal import ObjectionPattern, CausalAnalysis  # noqa: F401
-from app.domains.automations import models as automation_models  # noqa: F401
-from app.domains.analytics import models as analytics_models  # noqa: F401
-from app.domains.notifications import models as notification_models  # noqa: F401
-from app.domains.security import models as security_models  # noqa: F401
-from app.domains.support import models as support_models  # noqa: F401
-from app.domains.shipments import models as shipment_models  # noqa: F401
-from app.domains.services import models as service_models  # noqa: F401
-from app.domains.crm import models as crm_models  # noqa: F401
-from app.domains.computer_use import models as computer_use_models  # noqa: F401
-from app.domains.computer_use import models_extended  # noqa: F401
-from app.domains.intelligence import models as intelligence_models  # noqa: F401
-from app.domains.retention import models as retention_models  # noqa: F401
-from app.domains.outreach import models as outreach_models  # noqa: F401
-from app.domains.autopilot import models as autopilot_models  # noqa: F401
-from app.domains.finance import models as finance_models  # noqa: F401
-from app.domains.bi import models as bi_models  # noqa: F401
-from app.domains.objectives import models as objectives_models  # noqa: F401
-from app.domains.feedback import models as feedback_models  # noqa: F401
-from app.domains.alerts import models as alerts_models  # noqa: F401
-from app.domains.optimization import models as optimization_models  # noqa: F401
-from app.domains.growth import models as growth_models  # noqa: F401
-from app.domains.gamification import models as gamification_models  # noqa: F401
-from app.domains.provisioning import models as provisioning_models  # noqa: F401
-from app.domains.social_sellers import models as social_sellers_models  # noqa: F401
-from app.domains.social_sellers import models as social_seller_models  # noqa: F401
-from app.domains.documents import models as documents_models  # noqa: F401
-from app.domains.memory import models as memory_models  # noqa: F401
-from app.domains.voice import models as voice_models  # noqa: F401
-from app.domains.agents.music_agent import models as music_agent_models  # noqa: F401
-from app.domains.agents.brand_visual import models as brand_visual_models  # noqa: F401
-from app.domains.agents.viral_video import models as viral_video_models  # noqa: F401
-from app.domains.agents.app_builder import models as app_builder_models  # noqa: F401
-from app.domains.agents.crm_builder import models as crm_builder_models  # noqa: F401
-from app.domains.webhooks import models as webhooks_models  # noqa: F401
-from app.core.semantic_cache import SemanticCacheEmbedding  # noqa: F401
+#
+# Each import is isolated: a broken/incomplete domain module must never
+# block `alembic upgrade` for every other domain. Failures are logged to
+# stderr (visible in Render job logs) so they stay discoverable without
+# taking down migrations for the rest of the app.
+import importlib
+import traceback
+
+
+def _try_import_models(module_path: str, *, names: list[str] | None = None) -> None:
+    try:
+        module = importlib.import_module(module_path)
+        if names:
+            for name in names:
+                getattr(module, name)
+    except Exception:
+        print(f"[alembic/env.py] WARNING: skipped model import {module_path!r} due to error:", file=sys.stderr)
+        traceback.print_exc()
+
+
+_try_import_models("app.domains.users.models")
+_try_import_models("app.domains.businesses.models")
+_try_import_models("app.domains.catalogs.models")
+_try_import_models("app.domains.channels.models")
+_try_import_models("app.domains.orders.models")
+_try_import_models("app.domains.subscriptions.models")
+_try_import_models("app.domains.agents.models")
+_try_import_models("app.domains.agents.prompt_optimizer", names=["ConversationOutcome"])
+_try_import_models("app.domains.agents.models_reflection", names=["AgentReflection", "ChainOfThoughtLog"])
+_try_import_models("app.domains.agents.models_causal", names=["ObjectionPattern", "CausalAnalysis"])
+_try_import_models("app.domains.automations.models")
+_try_import_models("app.domains.analytics.models")
+_try_import_models("app.domains.notifications.models")
+_try_import_models("app.domains.security.models")
+_try_import_models("app.domains.support.models")
+_try_import_models("app.domains.shipments.models")
+_try_import_models("app.domains.services.models")
+_try_import_models("app.domains.crm.models")
+_try_import_models("app.domains.computer_use.models")
+_try_import_models("app.domains.computer_use.models_extended")
+_try_import_models("app.domains.intelligence.models")
+_try_import_models("app.domains.retention.models")
+_try_import_models("app.domains.outreach.models")
+_try_import_models("app.domains.autopilot.models")
+_try_import_models("app.domains.finance.models")
+_try_import_models("app.domains.bi.models")
+_try_import_models("app.domains.objectives.models")
+_try_import_models("app.domains.feedback.models")
+_try_import_models("app.domains.alerts.models")
+_try_import_models("app.domains.optimization.models")
+_try_import_models("app.domains.growth.models")
+_try_import_models("app.domains.gamification.models")
+_try_import_models("app.domains.provisioning.models")
+_try_import_models("app.domains.social_sellers.models")
+_try_import_models("app.domains.documents.models")
+_try_import_models("app.domains.memory.models")
+_try_import_models("app.domains.voice.models")
+_try_import_models("app.domains.agents.music_agent.models")
+_try_import_models("app.domains.agents.brand_visual.models")
+_try_import_models("app.domains.agents.viral_video.models")
+_try_import_models("app.domains.agents.app_builder.models")
+_try_import_models("app.domains.agents.crm_builder.models")
+_try_import_models("app.domains.webhooks.models")
+_try_import_models("app.core.semantic_cache", names=["SemanticCacheEmbedding"])
 
 settings = get_settings()
 
