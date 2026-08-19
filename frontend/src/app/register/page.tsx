@@ -8,11 +8,9 @@ import { Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react
 
 const translations = {
   es: {
-    welcome: '¡Hola',
-    welcomeEnd: '!',
-    emoji: '👋',
+    welcome: '¡Hola SellIA!',
     description: 'Automatiza tareas repetitivas de ventas. Obtén resultados extraordinarios con IA y ahorra tiempo.',
-    registerTitle: '¡Creá tu cuenta!',
+    registerTitle: 'Creá tu cuenta',
     subtext: '¿Ya tenés cuenta? Inicia sesión aquí. Toma menos de un minuto crear una.',
     fullName: 'Nombre completo',
     fullNamePlaceholder: 'Juan Pérez',
@@ -23,17 +21,17 @@ const translations = {
     confirmPassword: 'Confirmar contraseña',
     nextButton: 'Siguiente',
     registerButton: 'Crear cuenta',
+    backButton: 'Atrás',
     haveAccount: '¿Ya tenés cuenta?',
     loginHere: 'Inicia sesión aquí',
     loading: 'Creando cuenta...',
+    googleSignup: 'Registrarse con Google',
     copyright: '© 2026 SellIA. Todos los derechos reservados.',
   },
   en: {
-    welcome: 'Hello',
-    welcomeEnd: '!',
-    emoji: '👋',
+    welcome: 'Hello SellIA!',
     description: 'Skip repetitive sales tasks. Get highly productive through automation and save tons of time!',
-    registerTitle: 'Create Your Account!',
+    registerTitle: 'Create Your Account',
     subtext: "Already have an account? Sign in here. It takes less than a minute to create one.",
     fullName: 'Full Name',
     fullNamePlaceholder: 'John Doe',
@@ -44,9 +42,11 @@ const translations = {
     confirmPassword: 'Confirm Password',
     nextButton: 'Next',
     registerButton: 'Create Account',
+    backButton: 'Back',
     haveAccount: 'Already have an account?',
     loginHere: 'Sign in here',
     loading: 'Creating account...',
+    googleSignup: 'Sign up with Google',
     copyright: '© 2026 SellIA. All rights reserved.',
   },
 }
@@ -126,39 +126,24 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex overflow-hidden bg-white">
-      {/* Left side - Blue gradient with diagonal pattern */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white flex-col justify-between p-16 relative overflow-hidden">
-        {/* SVG Diagonal Lines Pattern - More Visible */}
-        <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none" viewBox="0 0 1000 1000">
-          <defs>
-            <pattern id="diagonals" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <line x1="0" y1="0" x2="100" y2="100" stroke="white" strokeWidth="2" />
-              <line x1="100" y1="0" x2="0" y2="100" stroke="white" strokeWidth="2" />
-            </pattern>
-          </defs>
-          <rect width="1000" height="1000" fill="url(#diagonals)" />
-        </svg>
-
-        {/* Gradient Orbs */}
-        <div className="absolute top-20 right-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-60 h-60 bg-blue-300/20 rounded-full blur-3xl" />
+      {/* Left side - Blue gradient */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-700 text-white flex-col justify-between p-16 relative">
+        {/* Subtle radial gradient */}
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48" />
 
         {/* Content */}
         <div className="relative z-10">
           <div className="mb-20">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl border border-white/30">
-              <span className="text-4xl">✨</span>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+              <span className="text-3xl">✨</span>
             </div>
           </div>
 
           <div>
-            <h1 className="text-7xl font-black mb-4 leading-tight">
+            <h1 className="text-6xl font-black mb-8 leading-tight">
               {t.welcome}
-              <br />
-              SellIA{t.welcomeEnd}
-              <span className="text-6xl ml-3">{t.emoji}</span>
             </h1>
-            <p className="text-xl text-white/90 leading-relaxed max-w-xl mt-8">
+            <p className="text-lg text-white/90 leading-relaxed max-w-xl">
               {t.description}
             </p>
           </div>
@@ -169,32 +154,32 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right side - Register form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-8 py-16 sm:px-12 lg:px-24 bg-white">
+      {/* Right side - Form */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-20 sm:px-8 lg:px-16 bg-white">
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="mb-16">
-            <h2 className="text-4xl font-black text-gray-900">SellIA</h2>
+            <h2 className="text-3xl font-black text-gray-900">SellIA</h2>
           </div>
 
-          {/* Welcome message */}
+          {/* Welcome */}
           <div className="mb-12">
-            <h3 className="text-4xl font-black text-gray-900 mb-4">{t.registerTitle}</h3>
-            <p className="text-gray-600 text-base leading-relaxed">
+            <h3 className="text-3xl font-black text-gray-900 mb-3">{t.registerTitle}</h3>
+            <p className="text-base text-gray-600 leading-relaxed">
               {t.haveAccount}{' '}
-              <Link href="/login" className="text-blue-600 font-bold hover:text-blue-700">
+              <Link href="/login" className="text-blue-600 font-semibold hover:text-blue-700">
                 {t.loginHere}
               </Link>
             </p>
           </div>
 
           {/* Step indicator */}
-          <div className="mb-10 flex gap-4">
-            <div className={`flex-1 h-1.5 rounded-full transition-colors ${step === 1 ? 'bg-black' : 'bg-gray-300'}`} />
-            <div className={`flex-1 h-1.5 rounded-full transition-colors ${step === 2 ? 'bg-black' : 'bg-gray-300'}`} />
+          <div className="mb-10 flex gap-3">
+            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 1 ? 'bg-black' : 'bg-gray-300'}`} />
+            <div className={`flex-1 h-1 rounded-full transition-colors ${step === 2 ? 'bg-black' : 'bg-gray-300'}`} />
           </div>
 
-          {/* Error message */}
+          {/* Error */}
           {error && (
             <div className="mb-8 flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
@@ -202,16 +187,16 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Step 1: Basic Info */}
+          {/* Step 1 */}
           {step === 1 && (
-            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-10">
+            <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-8">
               <div>
                 <input
                   type="text"
                   value={form.full_name}
                   onChange={(e) => update('full_name', e.target.value)}
                   placeholder={t.fullNamePlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
+                  className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -221,13 +206,13 @@ export default function RegisterPage() {
                   value={form.email}
                   onChange={(e) => update('email', e.target.value)}
                   placeholder={t.emailPlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
+                  className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-12 px-6 py-3.5 bg-black text-white font-bold text-lg rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full mt-12 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {t.nextButton}
                 <ArrowRight className="w-5 h-5" />
@@ -235,17 +220,17 @@ export default function RegisterPage() {
 
               <button
                 type="button"
-                className="w-full px-6 py-3.5 border-2 border-gray-300 bg-white text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
+                className="w-full px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-3"
               >
                 <GoogleIcon className="w-5 h-5" />
-                {lang === 'es' ? 'Registrarse con Google' : 'Sign up with Google'}
+                {t.googleSignup}
               </button>
             </form>
           )}
 
-          {/* Step 2: Password */}
+          {/* Step 2 */}
           {step === 2 && (
-            <form onSubmit={handleSubmit} className="space-y-10">
+            <form onSubmit={handleSubmit} className="space-y-8">
               <div>
                 <div className="relative">
                   <input
@@ -253,7 +238,7 @@ export default function RegisterPage() {
                     value={form.password}
                     onChange={(e) => update('password', e.target.value)}
                     placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
                   />
                   <button
                     type="button"
@@ -272,7 +257,7 @@ export default function RegisterPage() {
                     value={form.confirm_password}
                     onChange={(e) => update('confirm_password', e.target.value)}
                     placeholder={t.passwordPlaceholder}
-                    className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base focus:border-gray-600 focus:outline-none transition-colors"
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
                   />
                   <button
                     type="button"
@@ -284,18 +269,18 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all"
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all"
                 >
-                  {lang === 'es' ? 'Atrás' : 'Back'}
+                  {t.backButton}
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-6 py-3.5 bg-black text-white font-bold text-lg rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   {loading ? t.loading : t.registerButton}
                   {!loading && <CheckCircle2 className="w-5 h-5" />}
