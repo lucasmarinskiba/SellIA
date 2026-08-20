@@ -33,6 +33,10 @@ from app.api.v1 import lead_sources as lead_sources_module
 from app.api.v1 import email_webhooks as email_webhooks_module
 from app.api.v1 import progression as progression_module
 from app.api.v1 import analytics as analytics_module
+from app.api.v1 import attribution as attribution_module
+from app.api.v1 import journeys as journeys_module
+from app.api.v1 import compliance as compliance_module
+from app.api.v1 import integrations as integrations_module
 
 # Database
 from app.db import init_db, close_db, get_db
@@ -205,6 +209,10 @@ _register(lead_sources_module, "lead_sources")
 _register(email_webhooks_module, "email_webhooks")
 _register(progression_module, "progression")
 _register(analytics_module, "analytics")
+_register(attribution_module, "attribution")
+_register(journeys_module, "journeys")
+_register(compliance_module, "compliance")
+_register(integrations_module, "integrations")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
