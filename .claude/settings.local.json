@@ -785,7 +785,8 @@
       "Bash(python -m pylint app/domains/notifications/notification_models.py app/domains/notifications/notification_service.py app/api/v1/notifications.py)",
       "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('✓ Imports OK'\\)\")",
       "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('OK'\\)\")",
-      "Bash(python -c \"from app.domains.timeline.timeline_service import TimelineService; from app.api.v1.timeline import router; print\\('OK'\\)\")"
+      "Bash(python -c \"from app.domains.timeline.timeline_service import TimelineService; from app.api.v1.timeline import router; print\\('OK'\\)\")",
+      "Bash(python -c \"from app.domains.customer_360.customer_360_service import Customer360Service; from app.api.v1.customer_360 import router; print\\('OK'\\)\")"
     ]
   }
 }
