@@ -58,7 +58,7 @@ class LocationCheckin(Base):
 
     # Metadata
     entry_source = Column(String(100), nullable=True)  # "door", "mobility_app", "web", etc
-    metadata = Column(JSONB, default=dict, nullable=False)
+    checkin_metadata = Column(JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
@@ -88,7 +88,7 @@ class StaffCheckin(Base):
     nps_feedback = Column(Integer, nullable=True)  # avg NPS this shift
 
     notes = Column(String(1000), nullable=True)
-    metadata = Column(JSONB, default=dict, nullable=False)
+    staff_metadata = Column(JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
