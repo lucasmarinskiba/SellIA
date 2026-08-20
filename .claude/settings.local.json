@@ -767,7 +767,24 @@
       "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py)",
       "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py app/main.py)",
       "Bash(python -m py_compile app/domains/locations/checkin_models.py app/domains/locations/checkin_service.py)",
-      "Bash(ls \"/c/Users/Usuario/Pictures/\" | grep -i somos)"
+      "Bash(ls \"/c/Users/Usuario/Pictures/\" | grep -i somos)",
+      "Bash(docker-compose -f docker-compose.dev.yml ps)",
+      "Bash(timeout 300 bash -c 'until docker-compose -f docker-compose.dev.yml ps | grep -q \"sellia-postgres\"; do echo \"Waiting for containers...\"; sleep 5; done')",
+      "Bash(docker start *)",
+      "Bash(docker-compose -f docker-compose.dev.yml down -v)",
+      "Bash(docker volume *)",
+      "Bash(docker exec *)",
+      "Bash(npm --version)",
+      "Bash(docker stop *)",
+      "Bash(docker-compose -f \"/c/Users/Usuario/Pictures/Somos paithon labs/Agente IA - Vendedor Automático/docker-compose.dev.yml\" up -d)",
+      "Bash(docker-compose -f \"/c/Users/Usuario/Pictures/Somos paithon labs/Agente IA - Vendedor Automático/docker-compose.dev.yml\" down)",
+      "Bash(awk '{print $1, $2, $NF, $\\(NF-2\\)}')",
+      "Bash(awk '{print $NF, $7}')",
+      "Bash(python -m uvicorn app.main:app --host 0.0.0.0 --port 8000)",
+      "Bash(npm start *)",
+      "Bash(python -m pylint app/domains/notifications/notification_models.py app/domains/notifications/notification_service.py app/api/v1/notifications.py)",
+      "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('✓ Imports OK'\\)\")",
+      "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('OK'\\)\")"
     ]
   }
 }
