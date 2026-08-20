@@ -54,6 +54,9 @@ from app.domains.proximity import router as proximity_router
 from app.domains.channel_integration import router as channel_integration_router
 from app.domains.offline_analytics import router as offline_analytics_router
 
+# Phase 51: AI Content Generation
+from app.domains.ai_content_generation import router as ai_content_generation_router
+
 # Database
 from app.db import init_db, close_db, get_db
 
@@ -252,6 +255,9 @@ _register_domain_router(locations_router, "locations")
 _register_domain_router(proximity_router, "proximity")
 _register_domain_router(channel_integration_router, "channel_integration")
 _register_domain_router(offline_analytics_router, "offline_analytics")
+
+# Phase 51: AI Content Generation
+_register_domain_router(ai_content_generation_router, "ai_content_generation")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
