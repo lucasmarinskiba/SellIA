@@ -1,16 +1,16 @@
-"""Phase 5A: Location Management Service."""
+"""Phase 5A: Location Management Service - Async."""
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, select
 from app.domains.locations.models import LocationProfile, BusinessModel, ProximityEvent, OfflineConversion, LocationVisit
 
 
 class LocationService:
     @staticmethod
-    def create_location(
-        db: Session,
+    async def create_location(
+        db: AsyncSession,
         business_id: UUID,
         location_name: str,
         address: str,
@@ -37,22 +37,26 @@ class LocationService:
             geofence_radius_km=geofence_radius_km,
         )
         db.add(loc)
-        db.commit()
-        db.refresh(loc)
+        await db.commit()
+        await db.refresh(loc)
         return loc
 
     @staticmethod
-    def list_locations(db: Session, business_id: UUID) -> List[LocationProfile]:
-        return db.query(LocationProfile).filter(LocationProfile.business_id == business_id).all()
+    async def list_locations(db: AsyncSession, business_id: UUID) -> List[LocationProfile]:
+        result = await db.execute(
+            select(LocationProfile).where(LocationProfile.business_id == business_id)
+        )
+        return result.scalars().all()
 
     @staticmethod
-    def detect_business_model(db: Session, business_id: UUID) -> BusinessModel:
-        locations = db.query(LocationProfile).filter(LocationProfile.business_id == business_id).all()
+    async def detect_business_model(db: AsyncSession, business_id: UUID) -> BusinessModel:
+        result = await db.execute(
+            select(LocationProfile).where(LocationProfile.business_id == business_id)
+        )
+        locations = result.scalars().all()
         locations_count = len(locations)
         has_physical_location = locations_count > 0
-
-        # Detect online presence (from existing online channels)
-        has_online_presence = True  # Assume all SellIA users have online presence
+        has_online_presence = True
 
         if locations_count == 0:
             model_class = "ONLINE_ONLY"
@@ -61,25 +65,25 @@ class LocationService:
             model_class = "OFFLINE_FIRST"
             confidence = 0.95
         elif has_online_presence and has_physical_location:
-            if locations_count == 1:
-                model_class = "HYBRID_LIGHT"
-                confidence = 0.8
-            else:
-                model_class = "HYBRID_HEAVY"
-                confidence = 0.85
+            model_class = "HYBRID_LIGHT" if locations_count == 1 else "HYBRID_HEAVY"
+            confidence = 0.8 if locations_count == 1 else 0.85
         else:
             model_class = "HYBRID_LIGHT"
             confidence = 0.7
 
-        existing = db.query(BusinessModel).filter(BusinessModel.business_id == business_id).first()
+        result = await db.execute(
+            select(BusinessModel).where(BusinessModel.business_id == business_id)
+        )
+        existing = result.scalar()
+
         if existing:
             existing.model_class = model_class
             existing.model_confidence = confidence
             existing.locations_count = locations_count
             existing.has_online_presence = has_online_presence
             existing.has_physical_location = has_physical_location
-            db.commit()
-            db.refresh(existing)
+            await db.commit()
+            await db.refresh(existing)
             return existing
 
         model = BusinessModel(
@@ -91,13 +95,13 @@ class LocationService:
             has_physical_location=has_physical_location,
         )
         db.add(model)
-        db.commit()
-        db.refresh(model)
+        await db.commit()
+        await db.refresh(model)
         return model
 
     @staticmethod
-    def log_offline_conversion(
-        db: Session,
+    async def log_offline_conversion(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         visit_type: str,
@@ -119,13 +123,13 @@ class LocationService:
             entry_time=datetime.now(timezone.utc),
         )
         db.add(conversion)
-        db.commit()
-        db.refresh(conversion)
+        await db.commit()
+        await db.refresh(conversion)
         return conversion
 
     @staticmethod
-    def log_location_visit(
-        db: Session,
+    async def log_location_visit(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         user_id: UUID,
@@ -139,25 +143,28 @@ class LocationService:
             entry_channel=entry_channel,
         )
         db.add(visit)
-        db.commit()
-        db.refresh(visit)
+        await db.commit()
+        await db.refresh(visit)
         return visit
 
     @staticmethod
-    def end_location_visit(db: Session, visit_id: UUID) -> LocationVisit:
-        visit = db.query(LocationVisit).filter(LocationVisit.id == visit_id).first()
+    async def end_location_visit(db: AsyncSession, visit_id: UUID) -> LocationVisit:
+        result = await db.execute(
+            select(LocationVisit).where(LocationVisit.id == visit_id)
+        )
+        visit = result.scalar()
         if visit:
             visit.exit_time = datetime.now(timezone.utc)
             if visit.entry_time:
                 delta = visit.exit_time - visit.entry_time
                 visit.dwell_minutes = int(delta.total_seconds() / 60)
-            db.commit()
-            db.refresh(visit)
+            await db.commit()
+            await db.refresh(visit)
         return visit
 
     @staticmethod
-    def log_proximity_event(
-        db: Session,
+    async def log_proximity_event(
+        db: AsyncSession,
         business_id: UUID,
         user_id: UUID,
         location_id: UUID,
@@ -170,22 +177,25 @@ class LocationService:
             distance_km=distance_km,
         )
         db.add(event)
-        db.commit()
-        db.refresh(event)
+        await db.commit()
+        await db.refresh(event)
         return event
 
     @staticmethod
-    def get_location_metrics(db: Session, business_id: UUID, location_id: UUID) -> dict:
-        visits = db.query(LocationVisit).filter(
-            and_(LocationVisit.business_id == business_id, LocationVisit.location_id == location_id)
-        ).all()
+    async def get_location_metrics(db: AsyncSession, business_id: UUID, location_id: UUID) -> dict:
+        result = await db.execute(
+            select(LocationVisit).where(
+                and_(LocationVisit.business_id == business_id, LocationVisit.location_id == location_id)
+            )
+        )
+        visits = result.scalars().all()
 
         total_visits = len(visits)
-        total_dwell_minutes = sum(v.dwell_minutes for v in visits)
+        total_dwell_minutes = sum(v.dwell_minutes for v in visits) if visits else 0
         avg_dwell = total_dwell_minutes / total_visits if total_visits > 0 else 0
-        purchase_visits = sum(1 for v in visits if v.purchase_made)
+        purchase_visits = sum(1 for v in visits if v.purchase_made) if visits else 0
         conversion_rate = (purchase_visits / total_visits * 100) if total_visits > 0 else 0
-        total_purchase_value = sum(v.purchase_value for v in visits)
+        total_purchase_value = sum(v.purchase_value for v in visits) if visits else 0
 
         return {
             "total_visits": total_visits,
