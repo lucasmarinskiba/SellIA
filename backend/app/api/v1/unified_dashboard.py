@@ -1,343 +1,148 @@
-"""
-Fase 3: Unified Dashboard API — agregados multi-plataforma, KPIs, alertas.
+"""Unified analytics dashboard API endpoints."""
 
-Endpoints: GET /dashboard (resumen), /inventory (sync status), /analytics (all platforms), /influencers (performance), /health (sentiment).
-"""
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from uuid import UUID
+from typing import Optional
+from datetime import timezone, timedelta, datetime
 
-from fastapi import APIRouter, Depends
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
-import logging
+from app.core.database import get_db
+from app.domains.analytics.unified_dashboard_service import UnifiedDashboardService
 
-logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/dashboard", tags=["unified_dashboard"])
+router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 
 
-@router.get("/overview")
-async def get_dashboard_overview(db=Depends()) -> Dict[str, Any]:
-    """
-    Dashboard overview: inventory, sales, analytics, influencers, sentiment.
+@router.post("/locations/{location_id}/metrics/aggregate")
+async def aggregate_location_metrics(
+    location_id: UUID,
+    date: str = Query(...),  # YYYY-MM-DD
+    db: Session = Depends(get_db),
+) -> dict:
+    """Aggregate all metrics for location on given date."""
+    try:
+        result = UnifiedDashboardService.aggregate_location_day(
+            location_id=location_id,
+            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            date=date,
+            db=db
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    Agregado de todas plataformas en un solo endpoint.
-    """
 
-    now = datetime.utcnow()
-    yesterday = now - timedelta(days=1)
-    last_week = now - timedelta(days=7)
+@router.post("/businesses/{business_id}/summary")
+async def generate_business_summary(
+    business_id: UUID,
+    date: Optional[str] = Query(None),  # YYYY-MM-DD, default today
+    db: Session = Depends(get_db),
+) -> dict:
+    """Generate high-level business summary."""
+    try:
+        result = UnifiedDashboardService.generate_business_summary(
+            business_id=business_id,
+            date=date,
+            db=db
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # Inventory summary
-    inventory = await db.query("""
-        SELECT
-            COUNT(*) as total_skus,
-            SUM(quantity) as total_stock,
-            COUNT(CASE WHEN quantity = 0 THEN 1 END) as out_of_stock_skus,
-            COUNT(CASE WHEN quantity < reorder_point THEN 1 END) as understock_skus
-        FROM inventory WHERE enabled = true
-    """)
 
-    # Sales summary
-    sales_24h = await db.query("""
-        SELECT
-            COUNT(*) as sales_count,
-            SUM(amount) as total_revenue,
-            AVG(amount) as avg_order_value
-        FROM orders WHERE created_at > %s
-    """, [yesterday])
+@router.post("/businesses/{business_id}/location-comparison")
+async def compare_locations(
+    business_id: UUID,
+    date: str = Query(...),  # YYYY-MM-DD
+    db: Session = Depends(get_db),
+) -> dict:
+    """Compare metrics across locations."""
+    try:
+        result = UnifiedDashboardService.compare_locations(
+            business_id=business_id,
+            date=date,
+            db=db
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    sales_7d = await db.query("""
-        SELECT
-            COUNT(*) as sales_count,
-            SUM(amount) as total_revenue
-        FROM orders WHERE created_at > %s
-    """, [last_week])
 
-    # Platform breakdown
-    platform_sales = await db.query("""
-        SELECT
-            platform,
-            COUNT(*) as sales,
-            SUM(amount) as revenue,
-            AVG(amount) as avg_order
-        FROM orders
-        WHERE created_at > %s
-        GROUP BY platform
-        ORDER BY revenue DESC
-    """, [yesterday])
+@router.get("/locations/{location_id}/unified-metrics")
+async def get_location_unified_metrics(
+    location_id: UUID,
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get unified metrics for location over time period."""
+    try:
+        from app.domains.analytics.unified_dashboard_models import UnifiedLocationMetric
 
-    # Influencer performance
-    influencer_data = await db.query("""
-        SELECT
-            inf.name,
-            COUNT(o.id) as sales,
-            SUM(o.amount) as revenue,
-            (inf.commission_rate * SUM(o.amount)) as commission_owed
-        FROM influencers inf
-        LEFT JOIN orders o ON o.promo_code = inf.promo_code AND o.created_at > %s
-        WHERE inf.active = true
-        GROUP BY inf.id, inf.name
-        ORDER BY revenue DESC
-    """, [last_week])
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_str = cutoff.strftime("%Y-%m-%d")
 
-    # Sentiment analysis (last 7 days)
-    sentiment = await db.query("""
-        SELECT
-            sentiment,
-            COUNT(*) as count
-        FROM reviews
-        WHERE created_at > %s
-        GROUP BY sentiment
-    """, [last_week])
+        metrics = db.query(UnifiedLocationMetric).filter(
+            UnifiedLocationMetric.location_id == location_id,
+            UnifiedLocationMetric.date >= cutoff_str
+        ).order_by(UnifiedLocationMetric.date.desc()).all()
 
-    sentiment_dict = {
-        "positive": next((s["count"] for s in sentiment if s["sentiment"] == "positive"), 0),
-        "neutral": next((s["count"] for s in sentiment if s["sentiment"] == "neutral"), 0),
-        "negative": next((s["count"] for s in sentiment if s["sentiment"] == "negative"), 0),
-    }
-
-    return {
-        "timestamp": now.isoformat(),
-        "inventory": {
-            "total_skus": inventory[0]["total_skus"] if inventory else 0,
-            "total_stock": inventory[0]["total_stock"] if inventory else 0,
-            "out_of_stock": inventory[0]["out_of_stock_skus"] if inventory else 0,
-            "understock": inventory[0]["understock_skus"] if inventory else 0,
-        },
-        "sales": {
-            "sales_24h": sales_24h[0]["sales_count"] if sales_24h else 0,
-            "revenue_24h": float(sales_24h[0]["total_revenue"] or 0) if sales_24h else 0,
-            "avg_order_24h": float(sales_24h[0]["avg_order_value"] or 0) if sales_24h else 0,
-            "sales_7d": sales_7d[0]["sales_count"] if sales_7d else 0,
-            "revenue_7d": float(sales_7d[0]["total_revenue"] or 0) if sales_7d else 0,
-        },
-        "platform_breakdown": [
+        metric_data = [
             {
-                "platform": p["platform"],
-                "sales": p["sales"],
-                "revenue": float(p["revenue"] or 0),
-                "avg_order": float(p["avg_order"] or 0),
+                "date": m.date,
+                "visitors": m.total_visitors,
+                "avg_dwell_min": m.avg_dwell_minutes,
+                "peak_hour": m.peak_hour,
+                "nps_avg": float(m.nps_avg),
+                "revenue": float(m.final_revenue),
+                "task_completion_rate": float(m.task_completion_rate),
+                "revenue_per_visitor": float(m.revenue_per_visitor),
             }
-            for p in platform_sales
-        ],
-        "top_influencers": [
-            {
-                "name": i["name"],
-                "sales": i["sales"],
-                "revenue": float(i["revenue"] or 0),
-                "commission_owed": float(i["commission_owed"] or 0),
-            }
-            for i in influencer_data[:5]
-        ],
-        "sentiment": sentiment_dict,
-        "health": calculate_health_score(
-            inventory[0] if inventory else None,
-            sales_24h[0] if sales_24h else None,
-            sentiment_dict,
-        ),
-    }
+            for m in metrics
+        ]
+
+        return {
+            "location_id": str(location_id),
+            "period_days": days,
+            "data_points": metric_data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/inventory-sync-status")
-async def get_inventory_sync_status(db=Depends()) -> Dict[str, Any]:
-    """
-    Estado de sincronización de inventario por plataforma.
-    """
+@router.get("/businesses/{business_id}/unified-dashboard")
+async def get_business_dashboard(
+    business_id: UUID,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get unified dashboard for entire business."""
+    try:
+        from app.domains.analytics.unified_dashboard_models import BusinessDashboardSummary
 
-    sync_status = await db.query("""
-        SELECT
-            platform,
-            COUNT(*) as total_listings,
-            COUNT(CASE WHEN last_sync > NOW() - INTERVAL 30 MINUTE THEN 1 END) as synced_last_30m,
-            MAX(last_sync) as last_sync_time
-        FROM listings
-        GROUP BY platform
-    """)
+        summary = db.query(BusinessDashboardSummary).filter(
+            BusinessDashboardSummary.business_id == business_id
+        ).first()
 
-    return {
-        "timestamp": datetime.utcnow().isoformat(),
-        "platforms": [
-            {
-                "platform": s["platform"],
-                "total_listings": s["total_listings"],
-                "synced_last_30m": s["synced_last_30m"],
-                "sync_percentage": (s["synced_last_30m"] / s["total_listings"] * 100) if s["total_listings"] > 0 else 0,
-                "last_sync": s["last_sync_time"].isoformat() if s["last_sync_time"] else None,
-                "status": "healthy" if (s["synced_last_30m"] / s["total_listings"] > 0.9) if s["total_listings"] > 0 else True else "warning",
-            }
-            for s in sync_status
-        ],
-    }
+        if not summary:
+            return {"dashboard_available": False}
 
-
-@router.get("/analytics")
-async def get_platform_analytics(
-    platform: Optional[str] = None,
-    days: int = 7,
-    db=Depends() = None,
-) -> Dict[str, Any]:
-    """
-    Analytics por plataforma (últimos N días).
-
-    platform: filtrar por una sola (opcional)
-    days: cuántos días atrás (default 7)
-    """
-
-    cutoff = datetime.utcnow() - timedelta(days=days)
-
-    query = """
-        SELECT
-            DATE(created_at) as date,
-            platform,
-            COUNT(*) as sales,
-            SUM(amount) as revenue,
-            COUNT(DISTINCT customer_id) as unique_customers
-        FROM orders
-        WHERE created_at > %s
-    """
-
-    params = [cutoff]
-
-    if platform:
-        query += " AND platform = %s"
-        params.append(platform)
-
-    query += " GROUP BY DATE(created_at), platform ORDER BY date DESC"
-
-    analytics = await db.query(query, params)
-
-    # Aggregate by platform
-    platform_totals = {}
-    for row in analytics:
-        plat = row["platform"]
-        if plat not in platform_totals:
-            platform_totals[plat] = {
-                "sales": 0,
-                "revenue": 0,
-                "customers": 0,
-                "daily": [],
-            }
-        platform_totals[plat]["sales"] += row["sales"]
-        platform_totals[plat]["revenue"] += row["revenue"]
-        platform_totals[plat]["customers"] += row["unique_customers"]
-        platform_totals[plat]["daily"].append({
-            "date": row["date"].isoformat(),
-            "sales": row["sales"],
-            "revenue": float(row["revenue"] or 0),
-        })
-
-    return {
-        "timestamp": datetime.utcnow().isoformat(),
-        "period_days": days,
-        "platforms": {
-            plat: {
-                "total_sales": data["sales"],
-                "total_revenue": float(data["revenue"] or 0),
-                "unique_customers": data["customers"],
-                "avg_order_value": float(data["revenue"] / data["sales"]) if data["sales"] > 0 else 0,
-                "daily_breakdown": data["daily"][:days],
-            }
-            for plat, data in platform_totals.items()
-        },
-    }
-
-
-@router.get("/alerts")
-async def get_active_alerts(db=Depends()) -> Dict[str, Any]:
-    """
-    Alertas activas: stockouts, understock, negative reviews, churn signals, sync issues.
-    """
-
-    # Stockout alerts
-    stockouts = await db.query("SELECT COUNT(*) as count FROM inventory WHERE quantity = 0 AND enabled = true")
-
-    # Understock alerts
-    understock = await db.query("SELECT COUNT(*) as count FROM inventory WHERE quantity < reorder_point AND quantity > 0")
-
-    # Negative reviews (últimas 24h)
-    negative_reviews = await db.query(
-        "SELECT COUNT(*) as count FROM reviews WHERE sentiment = 'negative' AND created_at > NOW() - INTERVAL 1 DAY"
-    )
-
-    # Churn signals
-    churn_signals = await db.query(
-        "SELECT COUNT(*) as count FROM reviews WHERE churn_signal = true AND created_at > NOW() - INTERVAL 7 DAY"
-    )
-
-    # Sync failures (últimas 24h)
-    sync_failures = await db.query(
-        "SELECT COUNT(*) as count FROM sync_logs WHERE status = 'failed' AND created_at > NOW() - INTERVAL 1 DAY"
-    )
-
-    return {
-        "timestamp": datetime.utcnow().isoformat(),
-        "alerts": [
-            {
-                "type": "STOCKOUT",
-                "severity": "CRITICAL",
-                "count": stockouts[0]["count"] if stockouts else 0,
-                "action": "Reorder immediately",
+        return {
+            "dashboard_available": True,
+            "business_id": str(business_id),
+            "locations": summary.active_locations,
+            "total_locations": summary.total_locations,
+            "metrics": {
+                "visitors_month": summary.total_visitors_month,
+                "unique_visitors": summary.unique_visitors_month,
+                "avg_visitors_per_location": float(summary.avg_visitors_per_location),
+                "revenue_month": float(summary.total_revenue_month),
+                "attributed_revenue": float(summary.attributed_revenue_month),
+                "attribution_rate": float(summary.attribution_rate),
+                "avg_nps": float(summary.avg_nps_by_location),
+                "avg_discount_rate": float(summary.avg_discount_rate),
+                "inventory_turnover": float(summary.avg_inventory_turnover),
+                "stock_outs": summary.total_stock_outs,
             },
-            {
-                "type": "UNDERSTOCK",
-                "severity": "WARNING",
-                "count": understock[0]["count"] if understock else 0,
-                "action": "Monitor inventory levels",
-            },
-            {
-                "type": "NEGATIVE_REVIEWS",
-                "severity": "MEDIUM",
-                "count": negative_reviews[0]["count"] if negative_reviews else 0,
-                "action": "Auto-respond to negative reviews",
-            },
-            {
-                "type": "CHURN_SIGNAL",
-                "severity": "MEDIUM",
-                "count": churn_signals[0]["count"] if churn_signals else 0,
-                "action": "Intervene with customers at risk",
-            },
-            {
-                "type": "SYNC_FAILURE",
-                "severity": "HIGH",
-                "count": sync_failures[0]["count"] if sync_failures else 0,
-                "action": "Check inventory sync configuration",
-            },
-        ],
-    }
-
-
-def calculate_health_score(
-    inventory: Optional[Dict],
-    sales: Optional[Dict],
-    sentiment: Dict[str, int],
-) -> Dict[str, Any]:
-    """
-    Calcula score de salud general (0-100).
-
-    Factores:
-    - Inventory: out of stock = -20
-    - Sales: revenue trend
-    - Sentiment: % positive reviews
-    """
-
-    score = 100
-
-    # Inventory factor
-    if inventory:
-        if inventory.get("out_of_stock_skus", 0) > 0:
-            score -= 20
-        if inventory.get("understock_skus", 0) > 5:
-            score -= 10
-
-    # Sentiment factor
-    total_reviews = sum(sentiment.values())
-    if total_reviews > 0:
-        negative_pct = sentiment.get("negative", 0) / total_reviews
-        if negative_pct > 0.3:  # >30% negative = red flag
-            score -= 20
-        elif negative_pct > 0.15:  # 15-30% = warning
-            score -= 10
-
-    return {
-        "score": max(0, score),
-        "status": "healthy" if score > 80 else ("warning" if score > 50 else "critical"),
-        "trends": ["inventory_healthy", "sales_positive", "sentiment_positive"][:min(score // 40, 3)],
-    }
+            "health_score": summary.overall_health_score,
+            "last_updated": summary.timestamp.isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
