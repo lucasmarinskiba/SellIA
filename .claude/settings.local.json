@@ -786,7 +786,22 @@
       "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('✓ Imports OK'\\)\")",
       "Bash(python -c \"from app.domains.notifications import NotificationService; from app.api.v1.notifications import router; print\\('OK'\\)\")",
       "Bash(python -c \"from app.domains.timeline.timeline_service import TimelineService; from app.api.v1.timeline import router; print\\('OK'\\)\")",
-      "Bash(python -c \"from app.domains.customer_360.customer_360_service import Customer360Service; from app.api.v1.customer_360 import router; print\\('OK'\\)\")"
+      "Bash(python -c \"from app.domains.customer_360.customer_360_service import Customer360Service; from app.api.v1.customer_360 import router; print\\('OK'\\)\")",
+      "Bash(python -c \"from backend.app.domains.workflows.workflow_models import Workflow, TriggerType, ActionType, ConditionOperator, WorkflowCondition, WorkflowAction, WorkflowExecution, WorkflowMetrics; from backend.app.domains.workflows.workflow_engine import WorkflowEngine; print\\('✓ Phase 27 imports OK'\\)\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from app.domains.workflows.workflow_models import Workflow, TriggerType, ActionType, ConditionOperator; from app.domains.workflows.workflow_engine import WorkflowEngine; print\\('✓ Phase 27 imports OK'\\)\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from app.domains.workflows.workflow_models import Workflow, TriggerType, ActionType, ConditionOperator; from app.domains.workflows.workflow_engine import WorkflowEngine; print\\('OK: Phase 27 imports success'\\)\")",
+      "Bash(curl -s http://localhost:8000/api/v1/businesses/test-business-id/workflows -H \"Content-Type: application/json\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from app.domains.payments.payment_models import Transaction, Refund, Settlement; from app.domains.payments.payment_service import PaymentService; print\\('OK: Phase 28 imports success'\\)\")",
+      "Bash(touch \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\domains\\\\predictive\\\\__init__.py\")",
+      "Bash(touch \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\domains\\\\attribution\\\\__init__.py\")",
+      "Bash(touch \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\domains\\\\journeys\\\\__init__.py\")",
+      "Bash(touch \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\domains\\\\compliance\\\\__init__.py\")",
+      "Bash(touch \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático\\\\backend\\\\app\\\\domains\\\\integrations\\\\__init__.py\")",
+      "Bash(python -c \"from app.api.v1 import attribution, journeys, compliance, integrations; print\\('✓ Phase 30-33 OK'\\)\")",
+      "Bash(python -c \"from app.api.v1 import attribution, journeys, compliance, integrations; print\\('OK: Phase 30-33 loaded successfully'\\)\")",
+      "Bash(git commit -m 'Fix Phase 43 path param: user_id in {user_id} route needs Path, not Query *)",
+      "Bash(git commit -m 'Fix Phase 34-43 router prefixes: add /api/v1/ to all routes *)",
+      "Bash(python3 test_endpoints.py)"
     ]
   }
 }
