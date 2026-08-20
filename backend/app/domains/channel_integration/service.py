@@ -2,7 +2,7 @@
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_
 from app.domains.channel_integration.models import (
     GoogleBusinessProfileConnection,
