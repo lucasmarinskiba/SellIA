@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/neural-networks", tags=["neural-networks"])
+router = APIRouter(prefix="/api/v1/neural-networks", tags=["neural-networks"])
 
 @router.post("/lead-score/deep-learning")
 async def score_lead_dl(business_id: UUID, lead_id: UUID, db: Session = Depends(get_db)):

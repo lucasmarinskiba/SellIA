@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/sales-funnel", tags=["sales-funnel"])
+router = APIRouter(prefix="/api/v1/sales-funnel", tags=["sales-funnel"])
 
 @router.post("/lead-score")
 async def score_lead_funnel(business_id: UUID = Query(...), lead_id: UUID = Query(...), db: Session = Depends(get_db)):

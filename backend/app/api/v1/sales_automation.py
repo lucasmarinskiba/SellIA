@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/sales-automation", tags=["sales-automation"])
+router = APIRouter(prefix="/api/v1/sales-automation", tags=["sales-automation"])
 
 @router.post("/email-sequence")
 async def create_email_sequence(business_id: UUID, name: str, db: Session = Depends(get_db)):

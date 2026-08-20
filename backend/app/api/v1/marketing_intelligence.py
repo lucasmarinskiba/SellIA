@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/marketing-intelligence", tags=["marketing-intelligence"])
+router = APIRouter(prefix="/api/v1/marketing-intelligence", tags=["marketing-intelligence"])
 
 @router.post("/segment")
 async def create_segment(business_id: UUID = Query(...), name: str = Query(...), db: Session = Depends(get_db)):

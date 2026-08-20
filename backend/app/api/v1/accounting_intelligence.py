@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/accounting-intelligence", tags=["accounting-intelligence"])
+router = APIRouter(prefix="/api/v1/accounting-intelligence", tags=["accounting-intelligence"])
 
 @router.post("/transaction")
 async def record_transaction(business_id: UUID = Query(...), amount: float = Query(...), trans_type: str = Query(...), db: Session = Depends(get_db)):
