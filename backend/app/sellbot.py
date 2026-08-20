@@ -60,6 +60,9 @@ from app.domains.ai_content_generation import router as ai_content_generation_ro
 # Phase 2: ML Pipelines
 from app.domains.ml_pipelines import router as ml_pipelines_router
 
+# Phase 3: Channel Routing
+from app.domains.channel_routing import router as channel_routing_router
+
 # Database
 from app.db import init_db, close_db, get_db
 
@@ -264,6 +267,9 @@ _register_domain_router(ai_content_generation_router, "ai_content_generation")
 
 # Phase 2: ML Pipelines
 _register_domain_router(ml_pipelines_router, "ml_pipelines")
+
+# Phase 3: Channel Routing
+_register_domain_router(channel_routing_router, "channel_routing")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
