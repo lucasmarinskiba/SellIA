@@ -1,131 +1,173 @@
-"""Marketing attribution models — channel ROI + attribution tracking."""
+"""Multi-touch attribution models."""
 
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Enum as SQLEnum, Index
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Float, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
 
 class AttributionModel(str, Enum):
-    """Attribution model."""
+    """Attribution models."""
     FIRST_TOUCH = "first_touch"
     LAST_TOUCH = "last_touch"
     LINEAR = "linear"
     TIME_DECAY = "time_decay"
+    POSITION_BASED = "position_based"
 
 
-class ChannelAttributionMetric(Base):
-    """Track channel performance for attribution."""
-    __tablename__ = "channel_attribution_metrics"
+class Touchpoint(Base):
+    """Customer journey touchpoint."""
+    __tablename__ = "touchpoints"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Touchpoint details
+    channel = Column(String(50), nullable=False)  # email, sms, web, social, ads, direct
+    source = Column(String(100), nullable=True)  # google, facebook, newsletter, organic
+    medium = Column(String(50), nullable=True)  # cpc, organic, email, social
+    campaign = Column(String(255), nullable=True)  # campaign name/id
+
+    # Interaction
+    interaction_type = Column(String(50), nullable=False)  # click, view, form_submit, chat, call
+    interaction_data = Column(JSONB, nullable=True)  # {utm_params, referrer, device}
+
+    # Timing
+    touched_at = Column(DateTime(timezone.utc), nullable=False)
+    order_id = Column(UUID(as_uuid=True), nullable=True)  # If converts to order
+
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_customer_touchpoint", "customer_id", "touched_at"),
+        Index("idx_channel_source", "channel", "source"),
+    )
+
+
+class CustomerJourney(Base):
+    """Complete customer journey from first to conversion."""
+    __tablename__ = "customer_journeys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Journey timeline
+    first_touch_at = Column(DateTime(timezone.utc), nullable=False)
+    last_touch_at = Column(DateTime(timezone.utc), nullable=False)
+    converted_at = Column(DateTime(timezone.utc), nullable=True)
+
+    # Conversion
+    order_id = Column(UUID(as_uuid=True), nullable=True)
+    conversion_value = Column(Float, default=0)
+    is_converted = Column(Boolean, default=False)
+
+    # Journey composition
+    touchpoint_count = Column(Integer, default=0)
+    channels_involved = Column(JSONB, nullable=True)  # [email, web, social]
+    journey_duration_days = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_journey_customer", "customer_id", "converted_at"),
+        Index("idx_converted", "is_converted"),
+    )
+
+
+class AttributionCredit(Base):
+    """Revenue attribution to touchpoint."""
+    __tablename__ = "attribution_credits"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Channel
-    channel = Column(String(50), nullable=False)  # organic_search, paid_search, etc
-    campaign = Column(String(255), nullable=True)
-    source = Column(String(255), nullable=True)
-
-    # Date
-    date = Column(String(10), nullable=False)  # YYYY-MM-DD
-
-    # Touchpoint metrics
-    impressions = Column(Integer, default=0)
-    clicks = Column(Integer, default=0)
-    ctr = Column(Decimal(5, 2), default=0)  # Click-through rate %
-    cost = Column(Decimal(10, 2), default=0)  # Ad spend
-    cpc = Column(Decimal(8, 2), default=0)  # Cost per click
-
-    # Journey metrics
-    journeys_initiated = Column(Integer, default=0)
-    journeys_with_visit = Column(Integer, default=0)
-    visit_rate = Column(Decimal(5, 2), default=0)  # % of journeys that visit
-
-    # Revenue attribution
-    revenue_attributed = Column(Decimal(12, 2), default=0)  # Total revenue from channel
-    orders_attributed = Column(Integer, default=0)  # Orders from channel
-    aov = Column(Decimal(10, 2), default=0)  # Average order value
-    roas = Column(Decimal(8, 2), default=0)  # Return on ad spend
-
-    # Efficiency
-    cost_per_visit = Column(Decimal(8, 2), default=0)
-    cost_per_order = Column(Decimal(8, 2), default=0)
-
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        Index("idx_business_channel_date", "business_id", "channel", "date"),
-    )
-
-
-class LocationChannelAttribution(Base):
-    """Attribute visits + revenue per location-channel combination."""
-    __tablename__ = "location_channel_attribution"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
+    # Transaction & Touchpoint
+    order_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    touchpoint_id = Column(UUID(as_uuid=True), ForeignKey("touchpoints.id", ondelete="CASCADE"), nullable=False)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Attribution
+    attribution_model = Column(String(50), nullable=False)  # AttributionModel value
+    credit_percentage = Column(Float, default=0)  # 0-100
+    credited_amount = Column(Float, default=0)  # $ amount
+
+    # Touchpoint context
     channel = Column(String(50), nullable=False)
-    attribution_model = Column(SQLEnum(AttributionModel), default=AttributionModel.FIRST_TOUCH)
-
-    # Date range
-    date_start = Column(String(10), nullable=False)
-    date_end = Column(String(10), nullable=False)
-
-    # Metrics
-    visits_attributed = Column(Integer, default=0)
-    revenue_attributed = Column(Decimal(12, 2), default=0)
-    orders_from_visits = Column(Integer, default=0)
-    conversion_rate = Column(Decimal(5, 2), default=0)  # visits -> orders
-
-    # Efficiency
-    cost_per_visit = Column(Decimal(8, 2), nullable=True)
-    revenue_per_visit = Column(Decimal(8, 2), default=0)
+    source = Column(String(100), nullable=True)
+    position_in_journey = Column(Integer, nullable=True)  # 1, 2, 3...
 
     created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
 
-    location = relationship("Location", foreign_keys=[location_id])
-
     __table_args__ = (
-        Index("idx_location_channel", "location_id", "channel"),
+        Index("idx_order_touchpoint", "order_id", "touchpoint_id"),
+        Index("idx_channel_credit", "channel", "credited_amount"),
     )
 
 
-class ChannelROIReport(Base):
-    """Aggregated ROI per channel (daily snapshot)."""
-    __tablename__ = "channel_roi_reports"
+class ChannelPerformance(Base):
+    """Channel-level attribution metrics."""
+    __tablename__ = "channel_performance"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Period
-    date = Column(String(10), nullable=False)  # YYYY-MM-DD
+    period_start = Column(DateTime(timezone.utc), nullable=False)
+    period_end = Column(DateTime(timezone.utc), nullable=False)
 
-    # Rankings
-    channel_rank_by_visits = Column(String(50), nullable=True)  # Best channel by visits
-    channel_rank_by_revenue = Column(String(50), nullable=True)  # Best channel by revenue
-    channel_rank_by_roas = Column(String(50), nullable=True)  # Best channel by ROAS
+    # Channel
+    channel = Column(String(50), nullable=False)
+    source = Column(String(100), nullable=True)
 
-    # Totals
-    total_cost = Column(Decimal(12, 2), default=0)
-    total_revenue = Column(Decimal(12, 2), default=0)
-    total_visits = Column(Integer, default=0)
-    blended_roas = Column(Decimal(8, 2), default=0)
-    blended_cpv = Column(Decimal(8, 2), default=0)
+    # Metrics
+    touchpoint_count = Column(Integer, default=0)
+    conversion_count = Column(Integer, default=0)
+    total_revenue = Column(Float, default=0)
+    avg_attributed_value = Column(Float, default=0)
+    conversion_rate = Column(Float, default=0)  # % of touchpoints leading to conversion
 
-    # Attribution model used
-    attribution_model = Column(SQLEnum(AttributionModel), default=AttributionModel.FIRST_TOUCH)
+    # ROI (if cost data available)
+    spend = Column(Float, nullable=True)  # Cost spent on channel
+    roi = Column(Float, nullable=True)  # (revenue - spend) / spend
 
     created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        Index("idx_business_date", "business_id", "date"),
+        Index("idx_channel_period", "business_id", "channel", "period_start"),
+    )
+
+
+class AttributionMetrics(Base):
+    """Aggregated attribution metrics."""
+    __tablename__ = "attribution_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
+
+    # Overall metrics
+    total_journeys = Column(Integer, default=0)
+    conversion_journeys = Column(Integer, default=0)
+    avg_journey_length = Column(Float, default=0)
+    avg_touchpoint_count = Column(Float, default=0)
+
+    # Revenue
+    total_attributed_revenue = Column(Float, default=0)
+    avg_order_value = Column(Float, default=0)
+
+    # Channel breakdown
+    top_first_touch_channel = Column(String(50), nullable=True)
+    top_last_touch_channel = Column(String(50), nullable=True)
+    top_linear_channel = Column(String(50), nullable=True)
+
+    # Timeline
+    last_calculated_at = Column(DateTime(timezone.utc), nullable=True)
+
+    __table_args__ = (
+        Index("idx_business_metrics", "business_id"),
     )
