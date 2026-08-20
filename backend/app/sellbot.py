@@ -48,6 +48,12 @@ from app.api.v1 import marketing_intelligence as marketing_intelligence_module
 from app.api.v1 import accounting_intelligence as accounting_intelligence_module
 from app.api.v1 import sales_operations as sales_operations_module
 
+# Phase 5: Local-First Funnel
+from app.domains.locations import router as locations_router
+from app.domains.proximity import router as proximity_router
+from app.domains.channel_integration import router as channel_integration_router
+from app.domains.offline_analytics import router as offline_analytics_router
+
 # Database
 from app.db import init_db, close_db, get_db
 
@@ -233,6 +239,19 @@ _register(sales_funnel_orchestration_module, "sales_funnel_orchestration")
 _register(marketing_intelligence_module, "marketing_intelligence")
 _register(accounting_intelligence_module, "accounting_intelligence")
 _register(sales_operations_module, "sales_operations")
+
+# Phase 5: Local-First Funnel
+def _register_domain_router(router_obj, name: str) -> None:
+    try:
+        app.include_router(router_obj.router)
+        logger.info(f"✅ {name} router registered")
+    except Exception as e:
+        logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
+
+_register_domain_router(locations_router, "locations")
+_register_domain_router(proximity_router, "proximity")
+_register_domain_router(channel_integration_router, "channel_integration")
+_register_domain_router(offline_analytics_router, "offline_analytics")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
