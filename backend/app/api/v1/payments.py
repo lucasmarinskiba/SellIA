@@ -1,191 +1,179 @@
-"""
-Payment processing — Stripe, PayPal, transferencias bancarias.
+"""Payment API endpoints."""
 
-Webhooks para confirmación de pagos.
-"""
+from uuid import UUID
+from typing import Optional
+from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from datetime import datetime
-import logging
-import json
+from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
-logger = logging.getLogger(__name__)
+from app.core.database import get_db
+from app.domains.payments.payment_service import PaymentService
 
-# Mock payment state (TODO: real Stripe integration)
-_PAYMENT_INTENTS_DB: Dict[str, Any] = {}
+router = APIRouter(prefix="/api/v1", tags=["payments"])
 
 
-class PaymentIntent(BaseModel):
-    """Intención de pago."""
-    id: str
-    order_id: str
-    amount_usd: float
-    currency: str = "usd"
-    payment_method: str  # stripe, paypal, bank
-    status: str  # pending, processing, succeeded, failed
-    stripe_session_id: Optional[str] = None
+class CreateTransactionRequest(BaseModel):
+    amount: Decimal
+    currency: str = "USD"
+    method: str
+    customer_id: Optional[UUID] = None
+    order_id: Optional[UUID] = None
+    location_id: Optional[UUID] = None
+    description: Optional[str] = None
+    reference_id: Optional[str] = None
 
 
-class PaymentConfirmation(BaseModel):
-    """Confirmación de pago desde webhook."""
-    payment_intent_id: str
-    status: str
-    amount_received: float
-    timestamp: datetime
+class CreateCheckoutRequest(BaseModel):
+    customer_email: str
+    customer_name: str
+    items: list
+    amount: Decimal
+    currency: str = "USD"
+    order_id: Optional[UUID] = None
 
 
-@router.post("/stripe/create-checkout", tags=["stripe"])
-async def create_stripe_checkout(order_id: str, amount_usd: float):
-    """
-    Crea Stripe Checkout Session.
-
-    En producción: llamar stripe.checkout.Session.create()
-    """
-    try:
-        logger.info(f"Creando Stripe checkout para orden {order_id}, monto ${amount_usd}")
-
-        # TODO: real Stripe API
-        # stripe_session = stripe.checkout.Session.create(
-        #     payment_method_types=['card'],
-        #     line_items=[{
-        #         'price_data': {
-        #             'currency': 'usd',
-        #             'unit_amount': int(amount_usd * 100),  # cents
-        #             'product_data': {'name': f'Order {order_id}'},
-        #         },
-        #         'quantity': 1,
-        #     }],
-        #     mode='payment',
-        #     success_url='https://example.com/success?session_id={CHECKOUT_SESSION_ID}',
-        #     cancel_url='https://example.com/cancel',
-        #     metadata={'order_id': order_id},
-        # )
-
-        # Mock response
-        payment_id = f"pi_{order_id}"
-        _PAYMENT_INTENTS_DB[payment_id] = {
-            "id": payment_id,
-            "order_id": order_id,
-            "amount_usd": amount_usd,
-            "status": "pending",
-            "created_at": datetime.utcnow().isoformat(),
-        }
-
-        return {
-            "status": "session_created",
-            "payment_id": payment_id,
-            "amount": amount_usd,
-            "checkout_url": f"https://checkout.stripe.com/pay/session-{payment_id}",  # TODO: real URL
-            "order_id": order_id
-        }
-
-    except Exception as e:
-        logger.error(f"Error creando Stripe session: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+class ProcessWebhookRequest(BaseModel):
+    type: str
+    data: dict
 
 
-@router.post("/stripe/webhook", tags=["webhooks"])
-async def stripe_webhook(request: Request, x_stripe_signature: Optional[str] = None):
-    """
-    Webhook de Stripe para confirmar pagos.
-
-    Eventos: payment_intent.succeeded, payment_intent.payment_failed
-    """
-
-    try:
-        body = await request.body()
-        payload = json.loads(body)
-
-        # TODO: Verificar signature real con Stripe secret
-        # event = stripe.Webhook.construct_event(
-        #     body, x_stripe_signature, endpoint_secret
-        # )
-
-        event_type = payload.get("type")
-
-        if event_type == "payment_intent.succeeded":
-            payment_intent_id = payload["data"]["object"]["id"]
-            order_id = payload["data"]["object"]["metadata"].get("order_id")
-            amount_received = payload["data"]["object"]["amount_received"] / 100  # Convert from cents
-
-            logger.info(f"Stripe pago confirmado: {payment_intent_id} para orden {order_id}, monto ${amount_received}")
-
-            # TODO: Actualizar orden status a 'paid'
-            # order = get_order(order_id)
-            # order.payment_status = 'confirmed'
-            # order.save()
-
-            # Marcar en mock DB
-            if payment_intent_id in _PAYMENT_INTENTS_DB:
-                _PAYMENT_INTENTS_DB[payment_intent_id]["status"] = "succeeded"
-
-            return {"status": "processed", "payment_id": payment_intent_id}
-
-        elif event_type == "payment_intent.payment_failed":
-            payment_intent_id = payload["data"]["object"]["id"]
-            order_id = payload["data"]["object"]["metadata"].get("order_id")
-
-            logger.error(f"Stripe pago falló: {payment_intent_id} para orden {order_id}")
-
-            # TODO: Enviar email a usuario "Pago rechazado, intenta de nuevo"
-            # send_email_payment_failed(order_id)
-
-            if payment_intent_id in _PAYMENT_INTENTS_DB:
-                _PAYMENT_INTENTS_DB[payment_intent_id]["status"] = "failed"
-
-            return {"status": "processed", "payment_id": payment_intent_id}
-
-        # Ignorar otros eventos
-        return {"status": "received"}
-
-    except Exception as e:
-        logger.error(f"Error procesando Stripe webhook: {str(e)}")
-        return {"status": "error", "detail": str(e)}
+class CreateRefundRequest(BaseModel):
+    transaction_id: UUID
+    amount: Decimal
+    reason: str
 
 
-@router.post("/bank-transfer/confirm", tags=["bank"])
-async def confirm_bank_transfer(order_id: str, amount_usd: float, tx_hash: Optional[str] = None):
-    """
-    Confirmación manual de transferencia bancaria.
-
-    Admin verifica en banco, ejecuta este endpoint.
-    """
-
-    try:
-        logger.info(f"Confirmando transferencia bancaria para orden {order_id}, monto ${amount_usd}")
-
-        # TODO: Actualizar orden status
-        # order = get_order(order_id)
-        # order.payment_status = 'confirmed'
-        # order.payment_method_tx = tx_hash
-        # order.save()
-
-        # Mock
-        payment_id = f"bank_{order_id}"
-        _PAYMENT_INTENTS_DB[payment_id] = {
-            "id": payment_id,
-            "order_id": order_id,
-            "amount_usd": amount_usd,
-            "status": "succeeded",
-            "tx_hash": tx_hash,
-            "confirmed_at": datetime.utcnow().isoformat(),
-        }
-
-        return {"status": "confirmed", "order_id": order_id, "amount": amount_usd}
-
-    except Exception as e:
-        logger.error(f"Error confirmando transferencia: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+class ReconcileTransactionRequest(BaseModel):
+    order_id: UUID
+    transaction_id: Optional[UUID] = None
 
 
-@router.get("/payment/{payment_id}", tags=["status"])
-async def get_payment_status(payment_id: str):
-    """Estado del pago."""
+@router.post("/businesses/{business_id}/transactions")
+def create_transaction(
+    business_id: UUID,
+    request: CreateTransactionRequest,
+    db: Session = Depends(get_db)
+):
+    """Create payment transaction."""
+    return PaymentService.create_transaction(
+        business_id=business_id,
+        amount=request.amount,
+        currency=request.currency,
+        method=request.method,
+        customer_id=request.customer_id,
+        order_id=request.order_id,
+        location_id=request.location_id,
+        description=request.description,
+        reference_id=request.reference_id,
+        db=db
+    )
 
-    if payment_id not in _PAYMENT_INTENTS_DB:
-        raise HTTPException(status_code=404, detail="Payment not found")
 
-    return _PAYMENT_INTENTS_DB[payment_id]
+@router.post("/businesses/{business_id}/checkout/mercadopago")
+def create_mercadopago_checkout(
+    business_id: UUID,
+    request: CreateCheckoutRequest,
+    db: Session = Depends(get_db)
+):
+    """Create MercadoPago checkout."""
+    return PaymentService.create_mercadopago_checkout(
+        business_id=business_id,
+        customer_email=request.customer_email,
+        customer_name=request.customer_name,
+        items=request.items,
+        amount=request.amount,
+        currency=request.currency,
+        order_id=request.order_id,
+        db=db
+    )
+
+
+@router.post("/businesses/{business_id}/webhooks/mercadopago")
+def handle_mercadopago_webhook(
+    business_id: UUID,
+    request: ProcessWebhookRequest,
+    db: Session = Depends(get_db)
+):
+    """Handle MercadoPago webhook notification."""
+    return PaymentService.process_mercadopago_webhook(
+        business_id=business_id,
+        event_data=request.dict(),
+        db=db
+    )
+
+
+@router.post("/businesses/{business_id}/refunds")
+def create_refund(
+    business_id: UUID,
+    request: CreateRefundRequest,
+    db: Session = Depends(get_db)
+):
+    """Create refund request."""
+    return PaymentService.create_refund(
+        transaction_id=request.transaction_id,
+        business_id=business_id,
+        amount=request.amount,
+        reason=request.reason,
+        db=db
+    )
+
+
+@router.post("/businesses/{business_id}/reconcile")
+def reconcile_transaction(
+    business_id: UUID,
+    request: ReconcileTransactionRequest,
+    db: Session = Depends(get_db)
+):
+    """Reconcile order with payment transaction."""
+    return PaymentService.reconcile_transaction(
+        order_id=request.order_id,
+        transaction_id=request.transaction_id,
+        business_id=business_id,
+        db=db
+    )
+
+
+@router.get("/businesses/{business_id}/transactions")
+def get_transactions(
+    business_id: UUID,
+    status: Optional[str] = Query(None),
+    location_id: Optional[UUID] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db)
+):
+    """Get transactions."""
+    return PaymentService.get_transactions(
+        business_id=business_id,
+        status=status,
+        location_id=location_id,
+        limit=limit,
+        db=db
+    )
+
+
+@router.get("/businesses/{business_id}/settlements/metrics")
+def get_settlement_metrics(
+    business_id: UUID,
+    period_days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db)
+):
+    """Get settlement metrics."""
+    return PaymentService.get_settlement_metrics(
+        business_id=business_id,
+        period_days=period_days,
+        db=db
+    )
+
+
+@router.get("/businesses/{business_id}/payments/metrics")
+def get_payment_metrics(
+    business_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get payment metrics."""
+    return PaymentService.get_payment_metrics(
+        business_id=business_id,
+        db=db
+    )
