@@ -37,6 +37,12 @@ from app.api.v1 import attribution as attribution_module
 from app.api.v1 import journeys as journeys_module
 from app.api.v1 import compliance as compliance_module
 from app.api.v1 import integrations as integrations_module
+from app.api.v1 import sales_agents as sales_agents_module
+from app.api.v1 import neural_networks as neural_networks_module
+from app.api.v1 import sales_automation as sales_automation_module
+from app.api.v1 import deal_intelligence as deal_intelligence_module
+from app.api.v1 import sales_coaching as sales_coaching_module
+from app.api.v1 import crm_collaboration as crm_collaboration_module
 
 # Database
 from app.db import init_db, close_db, get_db
@@ -213,6 +219,12 @@ _register(attribution_module, "attribution")
 _register(journeys_module, "journeys")
 _register(compliance_module, "compliance")
 _register(integrations_module, "integrations")
+_register(sales_agents_module, "sales_agents")
+_register(neural_networks_module, "neural_networks")
+_register(sales_automation_module, "sales_automation")
+_register(deal_intelligence_module, "deal_intelligence")
+_register(sales_coaching_module, "sales_coaching")
+_register(crm_collaboration_module, "crm_collaboration")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
