@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/sales-coaching", tags=["sales-coaching"])
+router = APIRouter(prefix="/api/v1/sales-coaching", tags=["sales-coaching"])
 
 @router.post("/analyze-call")
 async def analyze_call(business_id: UUID, user_id: UUID, call_id: UUID, transcript: str, db: Session = Depends(get_db)):

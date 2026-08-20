@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/sales-agents", tags=["sales-agents"])
+router = APIRouter(prefix="/api/v1/sales-agents", tags=["sales-agents"])
 
 @router.post("/prospecting")
 async def create_prospecting_agent(business_id: UUID, db: Session = Depends(get_db)):

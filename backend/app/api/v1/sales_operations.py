@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/sales-operations", tags=["sales-operations"])
+router = APIRouter(prefix="/api/v1/sales-operations", tags=["sales-operations"])
 
 @router.get("/rep-performance/{user_id}")
 async def get_rep_performance(business_id: UUID = Query(...), user_id: UUID = Path(...), db: Session = Depends(get_db)):

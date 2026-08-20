@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 
-router = APIRouter(prefix="/crm-collaboration", tags=["crm-collaboration"])
+router = APIRouter(prefix="/api/v1/crm-collaboration", tags=["crm-collaboration"])
 
 @router.post("/workspace")
 async def create_workspace(business_id: UUID, team_id: UUID, name: str, db: Session = Depends(get_db)):
