@@ -766,7 +766,8 @@
       "Bash(python -m py_compile app/domains/channels/connectors/google_business_profile.py app/domains/channels/connectors/google_maps.py app/domains/channels/location_messaging.py app/domains/channels/location_orchestrator.py)",
       "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py)",
       "Bash(python -m py_compile app/domains/sequences/offline_triggered.py app/domains/bi/offline_dashboards_schemas.py app/api/v1/offline_bi.py app/main.py)",
-      "Bash(python -m py_compile app/domains/locations/checkin_models.py app/domains/locations/checkin_service.py)"
+      "Bash(python -m py_compile app/domains/locations/checkin_models.py app/domains/locations/checkin_service.py)",
+      "Bash(ls \"/c/Users/Usuario/Pictures/\" | grep -i somos)"
     ]
   }
 }
