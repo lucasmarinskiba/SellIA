@@ -59,12 +59,12 @@ class BusinessModelResponse(BaseModel):
 
 
 @router.post("/create")
-def create_location(
+async def create_location(
     business_id: UUID,
     req: LocationCreateRequest,
     db: Session = Depends(get_db),
 ) -> LocationResponse:
-    loc = LocationService.create_location(
+    loc = await LocationService.create_location(
         db=db,
         business_id=business_id,
         location_name=req.location_name,
@@ -82,27 +82,27 @@ def create_location(
 
 
 @router.get("/list")
-def list_locations(business_id: UUID, db: Session = Depends(get_db)) -> List[LocationResponse]:
-    locs = LocationService.list_locations(db, business_id)
+async def list_locations(business_id: UUID, db: Session = Depends(get_db)) -> List[LocationResponse]:
+    locs = await LocationService.list_locations(db, business_id)
     return [LocationResponse.from_orm(loc) for loc in locs]
 
 
 @router.get("/metrics")
-def location_metrics(
+async def location_metrics(
     business_id: UUID,
     location_id: UUID,
     db: Session = Depends(get_db),
 ) -> dict:
-    metrics = LocationService.get_location_metrics(db, business_id, location_id)
+    metrics = await LocationService.get_location_metrics(db, business_id, location_id)
     return metrics
 
 
 @router.post("/detect-model")
-def detect_business_model(
+async def detect_business_model(
     business_id: UUID,
     db: Session = Depends(get_db),
 ) -> BusinessModelResponse:
-    model = LocationService.detect_business_model(db, business_id)
+    model = await LocationService.detect_business_model(db, business_id)
     return BusinessModelResponse.from_orm(model)
 
 
