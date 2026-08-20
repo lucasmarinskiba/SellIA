@@ -57,6 +57,9 @@ from app.domains.offline_analytics import router as offline_analytics_router
 # Phase 51: AI Content Generation
 from app.domains.ai_content_generation import router as ai_content_generation_router
 
+# Phase 2: ML Pipelines
+from app.domains.ml_pipelines import router as ml_pipelines_router
+
 # Database
 from app.db import init_db, close_db, get_db
 
@@ -258,6 +261,9 @@ _register_domain_router(offline_analytics_router, "offline_analytics")
 
 # Phase 51: AI Content Generation
 _register_domain_router(ai_content_generation_router, "ai_content_generation")
+
+# Phase 2: ML Pipelines
+_register_domain_router(ml_pipelines_router, "ml_pipelines")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
