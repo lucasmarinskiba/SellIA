@@ -43,6 +43,10 @@ from app.api.v1 import sales_automation as sales_automation_module
 from app.api.v1 import deal_intelligence as deal_intelligence_module
 from app.api.v1 import sales_coaching as sales_coaching_module
 from app.api.v1 import crm_collaboration as crm_collaboration_module
+from app.api.v1 import sales_funnel_orchestration as sales_funnel_orchestration_module
+from app.api.v1 import marketing_intelligence as marketing_intelligence_module
+from app.api.v1 import accounting_intelligence as accounting_intelligence_module
+from app.api.v1 import sales_operations as sales_operations_module
 
 # Database
 from app.db import init_db, close_db, get_db
@@ -225,6 +229,10 @@ _register(sales_automation_module, "sales_automation")
 _register(deal_intelligence_module, "deal_intelligence")
 _register(sales_coaching_module, "sales_coaching")
 _register(crm_collaboration_module, "crm_collaboration")
+_register(sales_funnel_orchestration_module, "sales_funnel_orchestration")
+_register(marketing_intelligence_module, "marketing_intelligence")
+_register(accounting_intelligence_module, "accounting_intelligence")
+_register(sales_operations_module, "sales_operations")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
