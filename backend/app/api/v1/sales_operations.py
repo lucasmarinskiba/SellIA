@@ -1,5 +1,5 @@
 """Phase 43: Sales Operations Intelligence API."""
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -7,7 +7,7 @@ from app.core.database import get_db
 router = APIRouter(prefix="/sales-operations", tags=["sales-operations"])
 
 @router.get("/rep-performance/{user_id}")
-async def get_rep_performance(business_id: UUID = Query(...), user_id: UUID = Query(...), db: Session = Depends(get_db)):
+async def get_rep_performance(business_id: UUID = Query(...), user_id: UUID = Path(...), db: Session = Depends(get_db)):
     return {"user_id": str(user_id), "quota": 100000, "actual": 85000, "attainment": 0.85, "win_rate": 0.32}
 
 @router.get("/pipeline-health")
