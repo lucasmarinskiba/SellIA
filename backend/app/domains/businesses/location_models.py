@@ -85,7 +85,7 @@ class Location(Base):
     service_radius_km = Column(Float, nullable=True)  # delivery/service radius
 
     # Metadata
-    metadata = Column(JSON, default=dict, nullable=False)
+    location_metadata = Column(JSON, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
