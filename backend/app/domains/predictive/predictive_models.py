@@ -1,196 +1,207 @@
-"""Predictive analytics models — demand + churn + revenue forecasting."""
+"""Predictive modeling domain — ML scoring, segmentation, lookalike audiences."""
 
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from decimal import Decimal
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Float, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
 
-class PredictionHorizon(str, Enum):
-    """Prediction time horizon."""
-    NEXT_7_DAYS = "next_7_days"
-    NEXT_30_DAYS = "next_30_days"
-    NEXT_90_DAYS = "next_90_days"
-    NEXT_365_DAYS = "next_365_days"
+class ScoreType(str, Enum):
+    """Predictive score types."""
+    LEAD_SCORE = "lead_score"
+    CHURN_RISK = "churn_risk"
+    CLV_FORECAST = "clv_forecast"
+    PROPENSITY_BUY = "propensity_buy"
 
 
-class ChurnPrediction(Base):
-    """Customer churn prediction."""
-    __tablename__ = "churn_predictions"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
-
-    # Prediction
-    churn_probability_7d = Column(Decimal(5, 2), default=0)  # % in next 7 days
-    churn_probability_30d = Column(Decimal(5, 2), default=0)  # % in next 30 days
-    churn_probability_90d = Column(Decimal(5, 2), default=0)  # % in next 90 days
-
-    # Drivers (top churn signals)
-    primary_churn_driver = Column(String(255), nullable=True)  # e.g., "no_purchase_60d", "low_engagement"
-    churn_driver_score = Column(Decimal(5, 2), nullable=True)  # Contribution to churn risk
-
-    # Intervention
-    recommended_action = Column(String(255), nullable=True)  # e.g., "send_reactivation_email", "discount_offer"
-    intervention_success_rate = Column(Decimal(5, 2), nullable=True)  # Historical % of intervention working
-
-    # Confidence
-    model_confidence = Column(Decimal(3, 1), default=Decimal("0.8"))  # 0-1 (0.8 = 80% confident)
-    last_prediction_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-
-    customer = relationship("Customer", foreign_keys=[customer_id])
-
-    __table_args__ = (
-        Index("idx_business_churn_7d", "business_id", "churn_probability_7d"),
-        Index("idx_customer_date", "customer_id", "last_prediction_date"),
-    )
+class SegmentationType(str, Enum):
+    """Segmentation types."""
+    RULE_BASED = "rule_based"
+    BEHAVIORAL = "behavioral"
+    PREDICTIVE = "predictive"
+    LOOKALIKE = "lookalike"
 
 
-class PurchaseTimingPrediction(Base):
-    """Predict next purchase timing for customer."""
-    __tablename__ = "purchase_timing_predictions"
+class CustomerScore(Base):
+    """Predictive customer scores."""
+    __tablename__ = "customer_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
-    # Timing prediction
-    days_until_next_purchase = Column(Integer, nullable=True)  # Predicted days
-    predicted_purchase_date = Column(String(10), nullable=True)  # YYYY-MM-DD
-    purchase_probability_7d = Column(Decimal(5, 2), default=0)  # % chance of purchase in 7d
-    purchase_probability_30d = Column(Decimal(5, 2), default=0)  # % chance in 30d
+    lead_score = Column(Float, default=0)
+    lead_score_reason = Column(String(255), nullable=True)
+    lead_score_components = Column(JSONB, nullable=True)
 
-    # Expected value
-    predicted_order_value = Column(Decimal(10, 2), nullable=True)  # Expected $
-    predicted_product_category = Column(String(100), nullable=True)  # Most likely category
+    churn_risk = Column(Float, default=0)
+    churn_risk_factors = Column(JSONB, nullable=True)
+    days_until_churn = Column(Integer, nullable=True)
 
-    # Confidence
-    model_confidence = Column(Decimal(3, 1), default=Decimal("0.7"))
-    last_prediction_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    clv_forecast = Column(Float, default=0)
+    clv_confidence = Column(Float, default=0)
+    clv_components = Column(JSONB, nullable=True)
 
-    customer = relationship("Customer", foreign_keys=[customer_id])
+    propensity_30d = Column(Float, default=0)
+    propensity_next_action = Column(String(255), nullable=True)
+
+    model_version = Column(String(50), default="v1")
+    prediction_confidence = Column(Float, default=0)
+    data_quality_score = Column(Float, default=0)
+
+    last_calculated_at = Column(DateTime(timezone.utc), nullable=True)
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        Index("idx_business_prob_7d", "business_id", "purchase_probability_7d"),
-        Index("idx_predicted_date", "business_id", "predicted_purchase_date"),
+        Index("idx_business_scores", "business_id"),
+        Index("idx_lead_score", "business_id", "lead_score"),
+        Index("idx_churn_risk", "business_id", "churn_risk"),
     )
 
 
-class DemandForecast(Base):
-    """Product/category demand forecast."""
-    __tablename__ = "demand_forecasts"
+class DynamicSegment(Base):
+    """Dynamic customer segments."""
+    __tablename__ = "dynamic_segments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Forecast period
-    product_category = Column(String(100), nullable=False)
-    forecast_start_date = Column(String(10), nullable=False)  # YYYY-MM-DD
-    forecast_end_date = Column(String(10), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(String(500), nullable=True)
+    segmentation_type = Column(String(50), nullable=False)
 
-    # Demand prediction
-    forecasted_units = Column(Integer, default=0)
-    forecasted_revenue = Column(Decimal(12, 2), default=0)
-    confidence_interval_low = Column(Decimal(12, 2), nullable=True)  # 80% CI lower bound
-    confidence_interval_high = Column(Decimal(12, 2), nullable=True)  # 80% CI upper bound
+    rules = Column(JSONB, nullable=False)
+    rule_logic = Column(String(10), default="AND")
 
-    # Comparison
-    previous_period_units = Column(Integer, nullable=True)
-    yoy_growth_rate = Column(Decimal(5, 2), nullable=True)  # % YoY growth
-    mom_growth_rate = Column(Decimal(5, 2), nullable=True)  # % MoM growth
+    reference_segment_id = Column(UUID(as_uuid=True), nullable=True)
+    similarity_threshold = Column(Float, default=0.7)
 
-    # Seasonality
-    is_seasonal_peak = Column(Boolean, default=False)
-    seasonality_index = Column(Decimal(5, 2), nullable=True)  # 1.0 = baseline
+    is_active = Column(Boolean, default=True)
+    member_count = Column(Integer, default=0)
+    last_refreshed_at = Column(DateTime(timezone.utc), nullable=True)
+    refresh_frequency_hours = Column(Integer, default=24)
 
-    # Model info
-    model_confidence = Column(Decimal(3, 1), default=Decimal("0.75"))
-    prediction_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    segment_metadata = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        Index("idx_business_category_date", "business_id", "product_category", "forecast_start_date"),
+        Index("idx_business_segment", "business_id", "is_active"),
+        Index("idx_segment_type", "segmentation_type"),
     )
 
 
-class RevenueForecast(Base):
-    """Business revenue forecast."""
-    __tablename__ = "revenue_forecasts"
+class SegmentMembership(Base):
+    """Customer segment membership."""
+    __tablename__ = "segment_memberships"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True)
-
-    # Forecast period
-    forecast_start_date = Column(String(10), nullable=False)  # YYYY-MM-DD
-    forecast_end_date = Column(String(10), nullable=False)
-    forecast_horizon = Column(SQLEnum(PredictionHorizon), default=PredictionHorizon.NEXT_30_DAYS)
-
-    # Revenue prediction
-    forecasted_revenue = Column(Decimal(12, 2), default=0)  # Total predicted revenue
-    forecasted_orders = Column(Integer, default=0)  # Expected order count
-    forecasted_aov = Column(Decimal(10, 2), default=0)  # Predicted average order value
-
-    # Confidence intervals (80%)
-    confidence_interval_low = Column(Decimal(12, 2), nullable=True)
-    confidence_interval_high = Column(Decimal(12, 2), nullable=True)
-
-    # Components
-    new_customer_revenue = Column(Decimal(12, 2), default=0)  # From new customers
-    repeat_customer_revenue = Column(Decimal(12, 2), default=0)  # From repeats
-
-    # Comparison
-    previous_period_revenue = Column(Decimal(12, 2), nullable=True)
-    previous_period_orders = Column(Integer, nullable=True)
-    growth_rate = Column(Decimal(5, 2), nullable=True)  # % growth vs last period
-
-    # Factors
-    trending_factors = Column(JSONB, default=list)  # ["summer_seasonality", "promo_campaign"]
-    risk_factors = Column(JSONB, default=list)  # ["high_churn_rate", "new_competitor"]
-
-    # Model
-    model_confidence = Column(Decimal(3, 1), default=Decimal("0.8"))
-    prediction_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-
-    business = relationship("Business", foreign_keys=[business_id])
-
-    __table_args__ = (
-        Index("idx_business_date", "business_id", "forecast_start_date"),
-    )
-
-
-class PredictionAccuracy(Base):
-    """Track prediction model accuracy over time."""
-    __tablename__ = "prediction_accuracy"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    segment_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_segments.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Prediction type
-    prediction_type = Column(String(50), nullable=False)  # churn, purchase_timing, demand, revenue
+    joined_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    left_at = Column(DateTime(timezone.utc), nullable=True)
+    is_active = Column(Boolean, default=True)
 
-    # Evaluation period
-    evaluation_date = Column(String(10), nullable=False)  # YYYY-MM-DD
-    sample_size = Column(Integer, default=0)  # # predictions evaluated
-
-    # Accuracy metrics
-    mae = Column(Decimal(8, 2), nullable=True)  # Mean absolute error
-    rmse = Column(Decimal(8, 2), nullable=True)  # Root mean squared error
-    r_squared = Column(Decimal(3, 2), nullable=True)  # 0-1 (1 = perfect)
-    accuracy_rate = Column(Decimal(5, 2), nullable=True)  # % correct predictions
-
-    # Thresholds
-    precision = Column(Decimal(3, 2), nullable=True)  # True positives / predicted positives
-    recall = Column(Decimal(3, 2), nullable=True)  # True positives / actual positives
-    f1_score = Column(Decimal(3, 2), nullable=True)  # Harmonic mean of precision/recall
+    match_score = Column(Float, default=1.0)
+    rank_in_segment = Column(Integer, nullable=True)
 
     created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        Index("idx_business_type_date", "business_id", "prediction_type", "evaluation_date"),
+        Index("idx_segment_customer", "segment_id", "customer_id"),
+        Index("idx_active_members", "segment_id", "is_active"),
+    )
+
+
+class LookalikeAudience(Base):
+    """Lookalike audiences from high-value customers."""
+    __tablename__ = "lookalike_audiences"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    name = Column(String(255), nullable=False)
+    description = Column(String(500), nullable=True)
+    source_segment_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_segments.id", ondelete="CASCADE"), nullable=True)
+    source_customer_ids = Column(JSONB, nullable=True)
+
+    similarity_threshold = Column(Float, default=0.75)
+    target_size = Column(Integer, default=1000)
+    features_to_match = Column(JSONB, nullable=True)
+
+    audience_size = Column(Integer, default=0)
+    accuracy_score = Column(Float, default=0)
+    last_generated_at = Column(DateTime(timezone.utc), nullable=True)
+
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_business_lookalike", "business_id"),
+        Index("idx_active_audiences", "is_active"),
+    )
+
+
+class PredictionLog(Base):
+    """Audit log of predictions."""
+    __tablename__ = "prediction_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+
+    prediction_type = Column(String(50), nullable=False)
+    input_data = Column(JSONB, nullable=True)
+    predicted_value = Column(Float, nullable=False)
+    confidence = Column(Float, default=0)
+
+    model_version = Column(String(50), default="v1")
+    execution_time_ms = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_business_prediction", "business_id", "prediction_type"),
+    )
+
+
+class PredictiveMetrics(Base):
+    """Aggregated predictive metrics."""
+    __tablename__ = "predictive_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+
+    avg_lead_score = Column(Float, default=0)
+    high_potential_count = Column(Integer, default=0)
+
+    avg_churn_risk = Column(Float, default=0)
+    at_risk_count = Column(Integer, default=0)
+
+    avg_clv_forecast = Column(Float, default=0)
+    total_clv_forecast = Column(Float, default=0)
+
+    total_segments = Column(Integer, default=0)
+    total_segment_members = Column(Integer, default=0)
+    avg_segment_size = Column(Float, default=0)
+
+    total_lookalike_audiences = Column(Integer, default=0)
+    total_lookalike_candidates = Column(Integer, default=0)
+
+    model_accuracy = Column(Float, default=0)
+    last_model_training_at = Column(DateTime(timezone.utc), nullable=True)
+
+    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_business_metrics", "business_id"),
     )
