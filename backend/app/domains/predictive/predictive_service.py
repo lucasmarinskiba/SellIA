@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
 from app.domains.predictive.predictive_models import (
-    CustomerScore, DynamicSegment, SegmentMembership, LookalikeAudience,
+    DynamicSegment, SegmentMembership, LookalikeAudience,
     PredictionLog, PredictiveMetrics
 )
 

@@ -26,42 +26,8 @@ class SegmentationType(str, Enum):
     LOOKALIKE = "lookalike"
 
 
-class CustomerScore(Base):
-    """Predictive customer scores."""
-    __tablename__ = "customer_scores"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
-
-    lead_score = Column(Float, default=0)
-    lead_score_reason = Column(String(255), nullable=True)
-    lead_score_components = Column(JSONB, nullable=True)
-
-    churn_risk = Column(Float, default=0)
-    churn_risk_factors = Column(JSONB, nullable=True)
-    days_until_churn = Column(Integer, nullable=True)
-
-    clv_forecast = Column(Float, default=0)
-    clv_confidence = Column(Float, default=0)
-    clv_components = Column(JSONB, nullable=True)
-
-    propensity_30d = Column(Float, default=0)
-    propensity_next_action = Column(String(255), nullable=True)
-
-    model_version = Column(String(50), default="v1")
-    prediction_confidence = Column(Float, default=0)
-    data_quality_score = Column(Float, default=0)
-
-    last_calculated_at = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        Index("idx_business_scores", "business_id"),
-        Index("idx_lead_score", "business_id", "lead_score"),
-        Index("idx_churn_risk", "business_id", "churn_risk"),
-    )
+# Note: CustomerScore model is defined in customer_360_models.py as CustomerScores
+# Reusing that model for Phase 29 predictive scoring
 
 
 class DynamicSegment(Base):
