@@ -66,6 +66,9 @@ from app.domains.channel_routing import router as channel_routing_router
 # Phase 4: Competitive Intelligence
 from app.domains.competitive_intelligence import router as competitive_intelligence_router
 
+# Phase 5: Performance Optimization
+from app.domains.performance_optimization import router as performance_optimization_router
+
 # Database
 from app.db import init_db, close_db, get_db
 
@@ -276,6 +279,9 @@ _register_domain_router(channel_routing_router, "channel_routing")
 
 # Phase 4: Competitive Intelligence
 _register_domain_router(competitive_intelligence_router, "competitive_intelligence")
+
+# Phase 5: Performance Optimization
+_register_domain_router(performance_optimization_router, "performance_optimization")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
