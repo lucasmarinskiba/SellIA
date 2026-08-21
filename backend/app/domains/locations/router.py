@@ -82,7 +82,7 @@ async def create_location(
 
 
 @router.get("/list")
-async def list_locations(business_id: UUID, db: Session = Depends(get_db)) -> List[LocationResponse]:
+async def list_locations(business_id: UUID, db: AsyncSession = Depends(get_db)) -> List[LocationResponse]:
     locs = await LocationService.list_locations(db, business_id)
     return [LocationResponse.from_orm(loc) for loc in locs]
 
