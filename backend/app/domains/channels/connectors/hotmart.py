@@ -9,15 +9,29 @@ Auth: Hotmart webhooks carry a "Hottok" token, either as a top-level
 `X-Hotmart-Hottok` header (v2 payloads). The seller configures this token
 in Hotmart's webhook settings and it must match `credentials["hottok"]`.
 
+Pull methods (list_sales/list_subscribers) use Hotmart's separate OAuth2
+Payments API (client_credentials grant, client_id/client_secret). Hotmart's
+public API has no product-creation endpoint for third-party sellers —
+products are managed only via Hotmart's own producer dashboard — so unlike
+Shopify/Amazon there is no push_catalog_item here; adding a fake one would
+claim a capability the platform doesn't expose.
+
 Docs: https://developers.hotmart.com/docs/en/webhooks/
+      https://developers.hotmart.com/docs/en/api-docs/sales/sales-api/
 """
 
 import hmac
+import time
 from typing import Any
+
+import httpx
 
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+
+_TOKEN_URL = "https://api-sec-vlc.hotmart.com/security/oauth/token"
+_SALES_API = "https://developers.hotmart.com/payments/api/v1"
 
 # Purchase/subscription statuses that represent a completed sale.
 _PAID_STATUSES = {"APPROVED", "COMPLETE", "COMPLETED"}
@@ -54,10 +68,69 @@ class HotmartConnector(BaseChannelConnector):
         self.client_id = credentials.get("client_id")
         self.client_secret = credentials.get("client_secret")
         self.basic_token = credentials.get("basic_token")
+        self._access_token: str | None = None
+        self._token_expires_at: float = 0.0
 
     async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
         """Hotmart doesn't have a native messaging channel."""
         return {"status": "logged", "note": "Hotmart no soporta mensajería directa"}
+
+    async def _get_access_token(self) -> str:
+        """OAuth2 client_credentials grant para la Payments API de Hotmart."""
+        if not self.client_id or not self.client_secret or not self.basic_token:
+            raise ValueError("Faltan client_id/client_secret/basic_token de Hotmart")
+
+        if self._access_token and time.time() < self._token_expires_at:
+            return self._access_token
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                _TOKEN_URL,
+                params={"grant_type": "client_credentials"},
+                headers={"Authorization": f"Basic {self.basic_token}"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+            self._access_token = data["access_token"]
+            self._token_expires_at = time.time() + data.get("expires_in", 3600) - 60
+            return self._access_token
+
+    async def list_sales(self, start_date: str | None = None, end_date: str | None = None) -> list[dict[str, Any]]:
+        """Pull real de historial de ventas (Hotmart Payments API)."""
+        token = await self._get_access_token()
+        params: dict[str, Any] = {}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{_SALES_API}/sales/history",
+                headers={"Authorization": f"Bearer {token}"},
+                params=params,
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json().get("items", [])
+
+    async def list_subscribers(self, subscriber_status: str | None = None) -> list[dict[str, Any]]:
+        """Pull real de suscriptores activos (Hotmart Payments API)."""
+        token = await self._get_access_token()
+        params: dict[str, Any] = {}
+        if subscriber_status:
+            params["status"] = subscriber_status
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{_SALES_API}/subscriptions",
+                headers={"Authorization": f"Bearer {token}"},
+                params=params,
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json().get("items", [])
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse a Hotmart webhook payload (v2.0.0 event format)."""

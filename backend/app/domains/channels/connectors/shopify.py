@@ -1,6 +1,7 @@
 """Shopify Connector.
 
-Handles webhooks for orders, customers, and abandoned checkouts.
+Handles webhooks for orders, customers, and abandoned checkouts, plus real
+outbound catalog sync (push/pull) and order notes via the Admin REST API.
 Docs: https://shopify.dev/docs/api/admin-rest
 """
 
@@ -8,13 +9,18 @@ import hmac
 import hashlib
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
 
+_API_VERSION = "2024-01"
+
 
 class ShopifyConnector(BaseChannelConnector):
-    """Conector para Shopify webhooks (pedidos, clientes, carritos abandonados)."""
+    """Conector para Shopify: webhooks (pedidos, clientes, carritos abandonados)
+    + catalog push/pull real vía Admin REST API."""
     platform = "shopify"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -25,11 +31,74 @@ class ShopifyConnector(BaseChannelConnector):
         self.admin_api_token = credentials.get("admin_api_token")
         self.webhook_secret = credentials.get("webhook_secret")
 
+    def _admin_headers(self) -> dict[str, str]:
+        if not self.admin_api_token:
+            raise ValueError("Falta admin_api_token de Shopify")
+        return {"X-Shopify-Access-Token": self.admin_api_token, "Content-Type": "application/json"}
+
+    def _admin_url(self, path: str) -> str:
+        if not self.shop_domain:
+            raise ValueError("Falta shop_domain de Shopify")
+        return f"https://{self.shop_domain}/admin/api/{_API_VERSION}/{path}"
+
     async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
-        """Shopify doesn't have a native messaging channel, but we can log it."""
-        # In a real implementation, this might send an email via Shopify Email
-        # or create a draft order note
-        return {"status": "logged", "note": "Shopify no soporta mensajería directa"}
+        """Shopify no tiene canal de mensajería directa al comprador vía Admin API.
+        Lo más cercano real es agregar una nota interna a la orden (visible para
+        el seller, no para el cliente) - eso sí lo hacemos de verdad."""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.put(
+                    self._admin_url(f"orders/{recipient_id}.json"),
+                    headers=self._admin_headers(),
+                    json={"order": {"id": recipient_id, "note": content}},
+                    timeout=30,
+                )
+                response.raise_for_status()
+                return {"status": "logged", "note": "Nota agregada a la orden (Shopify no soporta mensajería directa al comprador)"}
+        except Exception as e:
+            return {"status": "failed", "error": str(e)}
+
+    async def push_catalog_item(self, item: Any) -> dict[str, Any]:
+        """Crea o actualiza un producto en Shopify vía Admin REST API."""
+        payload = {
+            "product": {
+                "title": item.name,
+                "body_html": item.description or "",
+                "vendor": item.brand or "",
+                "variants": [{"price": str(item.price)}] if getattr(item, "price", None) is not None else [],
+            }
+        }
+        existing_id = getattr(item, "extra_data", {}).get("shopify_product_id") if getattr(item, "extra_data", None) else None
+
+        async with httpx.AsyncClient() as client:
+            if existing_id:
+                response = await client.put(
+                    self._admin_url(f"products/{existing_id}.json"),
+                    headers=self._admin_headers(),
+                    json=payload,
+                    timeout=30,
+                )
+            else:
+                response = await client.post(
+                    self._admin_url("products.json"),
+                    headers=self._admin_headers(),
+                    json=payload,
+                    timeout=30,
+                )
+            response.raise_for_status()
+            return response.json().get("product", {})
+
+    async def pull_catalog_items(self) -> list[dict[str, Any]]:
+        """Trae el catálogo de productos desde Shopify vía Admin REST API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                self._admin_url("products.json"),
+                headers=self._admin_headers(),
+                params={"limit": 250},
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json().get("products", [])
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse Shopify webhook payload.
