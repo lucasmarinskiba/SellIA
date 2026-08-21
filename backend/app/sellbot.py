@@ -75,6 +75,9 @@ from app.domains.fomo_dynamics import router as fomo_dynamics_router
 # Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
 from app.domains.perception_engineering import router as perception_engineering_router
 
+# Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
+from app.domains.auto_marketing import router as auto_marketing_router
+
 # Import Phase 2-5 models only (skip problematic Phase 5A relationships)
 from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
 from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
@@ -303,6 +306,9 @@ _register_domain_router(fomo_dynamics_router, "fomo_dynamics")
 
 # Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
 _register_domain_router(perception_engineering_router, "perception_engineering")
+
+# Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
+_register_domain_router(auto_marketing_router, "auto_marketing")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
