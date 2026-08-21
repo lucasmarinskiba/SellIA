@@ -30,6 +30,7 @@ def _try_include(router_path: str, prefix: str, tags: list[str]) -> None:
 # from app.db.models) — their tables are provisioned via Alembic, not the
 # sellbot lifespan's create_all.
 _try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
+_try_include("app.api.v1.resend_webhook.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 _try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 _try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
