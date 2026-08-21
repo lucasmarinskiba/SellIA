@@ -78,6 +78,9 @@ from app.domains.instagram_automation import router as instagram_automation_rout
 # Feedback Loop (Conversion data → X9 improvements)
 from app.domains.feedback_loop import router as feedback_loop_router
 
+# FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
+from app.domains.fomo_intelligence import router as fomo_intelligence_router
+
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -305,6 +308,9 @@ _register_domain_router(instagram_automation_router, "instagram_automation")
 
 # Feedback Loop (Conversion data → X9 improvements)
 _register_domain_router(feedback_loop_router, "feedback_loop")
+
+# FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
+_register_domain_router(fomo_intelligence_router, "fomo_intelligence")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
