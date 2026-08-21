@@ -81,6 +81,9 @@ from app.domains.feedback_loop import router as feedback_loop_router
 # FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
 from app.domains.fomo_intelligence import router as fomo_intelligence_router
 
+# ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
+from app.domains.arca_compliance import router as arca_compliance_router
+
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -311,6 +314,9 @@ _register_domain_router(feedback_loop_router, "feedback_loop")
 
 # FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
 _register_domain_router(fomo_intelligence_router, "fomo_intelligence")
+
+# ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
+_register_domain_router(arca_compliance_router, "arca_compliance")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
