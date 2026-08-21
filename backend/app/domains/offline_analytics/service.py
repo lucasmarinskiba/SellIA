@@ -75,9 +75,12 @@ class OfflineAnalyticsService:
         total_revenue = sum(v.purchase_value for v in visits)
 
         # Attribution conversions
-        attributions = db.query(OfflineToOnlineAttribution).filter(
-            OfflineToOnlineAttribution.business_id == business_id
-        ).all()
+        result = await db.execute(
+            select(OfflineToOnlineAttribution).where(
+                OfflineToOnlineAttribution.business_id == business_id
+            )
+        )
+        attributions = result.scalars().all()
         online_to_offline = len([a for a in attributions if a.conversion_type == "online_to_offline"])
         offline_to_online = len([a for a in attributions if a.conversion_type == "offline_to_online"])
         full_loop = len([a for a in attributions if a.conversion_type == "full_loop"])
@@ -97,9 +100,12 @@ class OfflineAnalyticsService:
         repeat_rate = (repeat_visitors / unique_visitors * 100) if unique_visitors > 0 else 0
 
         # Get or create metrics
-        existing = db.query(OfflineAnalyticsMetrics).filter(
-            OfflineAnalyticsMetrics.business_id == business_id
-        ).first()
+        result = await db.execute(
+            select(OfflineAnalyticsMetrics).where(
+                OfflineAnalyticsMetrics.business_id == business_id
+            )
+        )
+        existing = result.scalar()
 
         if existing:
             existing.total_foot_traffic = total_foot_traffic
@@ -113,8 +119,8 @@ class OfflineAnalyticsService:
             existing.full_loop_conversions = full_loop
             existing.peak_traffic_hour = peak_hour
             existing.repeat_visitor_rate = repeat_rate
-            db.commit()
-            db.refresh(existing)
+            await db.commit()
+            await db.refresh(existing)
             return existing
 
         metrics = OfflineAnalyticsMetrics(
@@ -132,8 +138,8 @@ class OfflineAnalyticsService:
             repeat_visitor_rate=repeat_rate,
         )
         db.add(metrics)
-        db.commit()
-        db.refresh(metrics)
+        await db.commit()
+        await db.refresh(metrics)
         return metrics
 
     @staticmethod
@@ -156,8 +162,8 @@ class OfflineAnalyticsService:
         return seq
 
     @staticmethod
-    def execute_post_visit_sequence(
-        db: Session,
+    async def execute_post_visit_sequence(
+        db: AsyncSession,
         business_id: UUID,
         sequence_id: UUID,
         user_id: UUID,
@@ -170,23 +176,26 @@ class OfflineAnalyticsService:
             offline_conversion_id=offline_conversion_id,
         )
         db.add(execution)
-        db.commit()
-        db.refresh(execution)
+        await db.commit()
+        await db.refresh(execution)
         return execution
 
     @staticmethod
-    def get_attribution_report(
-        db: Session,
+    async def get_attribution_report(
+        db: AsyncSession,
         business_id: UUID,
         days: int = 30,
     ) -> dict:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-        attributions = db.query(OfflineToOnlineAttribution).filter(
-            and_(
-                OfflineToOnlineAttribution.business_id == business_id,
-                OfflineToOnlineAttribution.created_at >= cutoff_date,
+        result = await db.execute(
+            select(OfflineToOnlineAttribution).where(
+                and_(
+                    OfflineToOnlineAttribution.business_id == business_id,
+                    OfflineToOnlineAttribution.created_at >= cutoff_date,
+                )
             )
-        ).all()
+        )
+        attributions = result.scalars().all()
 
         online_to_offline = [a for a in attributions if a.conversion_type == "online_to_offline"]
         offline_to_online = [a for a in attributions if a.conversion_type == "offline_to_online"]

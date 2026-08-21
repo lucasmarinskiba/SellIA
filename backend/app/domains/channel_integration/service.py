@@ -15,8 +15,8 @@ from app.domains.channel_integration.models import (
 
 class ChannelIntegrationService:
     @staticmethod
-    def connect_google_business_profile(
-        db: Session,
+    async def connect_google_business_profile(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         google_business_id: str,
@@ -31,13 +31,13 @@ class ChannelIntegrationService:
             access_token=access_token,
         )
         db.add(conn)
-        db.commit()
-        db.refresh(conn)
+        await db.commit()
+        await db.refresh(conn)
         return conn
 
     @staticmethod
-    def create_location_message(
-        db: Session,
+    async defcreate_location_message(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         channel: str,
@@ -52,13 +52,13 @@ class ChannelIntegrationService:
             template=template,
         )
         db.add(msg)
-        db.commit()
-        db.refresh(msg)
+        await db.commit()
+        await db.refresh(msg)
         return msg
 
     @staticmethod
-    def send_location_message(
-        db: Session,
+    async defsend_location_message(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         message_id: UUID,
@@ -83,13 +83,13 @@ class ChannelIntegrationService:
             status="sent",
         )
         db.add(execution)
-        db.commit()
-        db.refresh(execution)
+        await db.commit()
+        await db.refresh(execution)
         return execution
 
     @staticmethod
-    def get_location_reviews(
-        db: Session,
+    async defget_location_reviews(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
     ) -> List[LocationReview]:
@@ -102,8 +102,8 @@ class ChannelIntegrationService:
         return reviews
 
     @staticmethod
-    def sync_google_maps_location(
-        db: Session,
+    async defsync_google_maps_location(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         place_id: str,
@@ -140,13 +140,13 @@ class ChannelIntegrationService:
             website=website,
         )
         db.add(maps_loc)
-        db.commit()
-        db.refresh(maps_loc)
+        await db.commit()
+        await db.refresh(maps_loc)
         return maps_loc
 
     @staticmethod
-    def add_location_review(
-        db: Session,
+    async defadd_location_review(
+        db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
         reviewer_name: str,
@@ -165,6 +165,6 @@ class ChannelIntegrationService:
             review_date=review_date or datetime.now(timezone.utc),
         )
         db.add(review)
-        db.commit()
-        db.refresh(review)
+        await db.commit()
+        await db.refresh(review)
         return review
