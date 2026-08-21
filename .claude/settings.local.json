@@ -853,7 +853,10 @@
       "Bash(curl -s \"http://localhost:8000/api/ping\")",
       "Bash(curl -I \"http://localhost:8000/api/ping\")",
       "Bash(curl -v \"http://localhost:8000/api/v1/auto-marketing/viral-formula\")",
-      "Bash(git commit -m 'Fix: Phase X6/X7/X8 DB schema for SQLite compatibility *)"
+      "Bash(git commit -m 'Fix: Phase X6/X7/X8 DB schema for SQLite compatibility *)",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/perception/analyze-gap?current_perception=5&target_perception=9&dimension=quality\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/perception-engineering/analyze-gap?current_perception=5&target_perception=9&dimension=quality\")",
+      "Bash(git commit -m 'Fix: Convert Phase X UUID params to string for SQLite *)"
     ]
   }
 }

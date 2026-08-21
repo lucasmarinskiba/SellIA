@@ -13,8 +13,8 @@ router = APIRouter(prefix="/api/v1/perception-engineering", tags=["perception-en
 
 @router.post("/analyze-gap")
 async def analyze_perception_gap(
-    business_id: UUID,
-    product_id: UUID,
+    business_id: str,
+    product_id: str,
     current_perception: Dict[str, float],
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -46,8 +46,8 @@ async def analyze_perception_gap(
 
 @router.post("/generate-shift-campaign")
 async def generate_shift_campaign(
-    business_id: UUID,
-    product_id: UUID,
+    business_id: str,
+    product_id: str,
     target_dimension: PerceptionDimension,
     current_score: float,
     target_score: float,
@@ -75,8 +75,8 @@ async def generate_shift_campaign(
 
 @router.post("/optimize-value")
 async def optimize_value_perception(
-    business_id: UUID,
-    product_id: UUID,
+    business_id: str,
+    product_id: str,
     base_price: float,
     current_perceived_value: float,
     competitor_prices: List[float],
@@ -102,8 +102,8 @@ async def optimize_value_perception(
 
 @router.post("/generate-narrative")
 async def generate_narrative(
-    business_id: UUID,
-    product_id: UUID,
+    business_id: str,
+    product_id: str,
     product_name: str,
     customer_transformation: str,
     db: AsyncSession = Depends(get_db),

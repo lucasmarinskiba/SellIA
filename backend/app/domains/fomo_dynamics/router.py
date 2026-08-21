@@ -14,8 +14,8 @@ router = APIRouter(prefix="/api/v1/fomo-dynamics", tags=["fomo-dynamics"])
 
 @router.post("/offers/create")
 async def create_fomo_offer(
-    business_id: UUID,
-    product_id: UUID,
+    business_id: str,
+    product_id: str,
     strategy: FOMOStrategy,
     base_price: float,
     total_stock: Optional[int] = None,
@@ -38,7 +38,7 @@ async def create_fomo_offer(
 
 @router.post("/prices/update-dynamic")
 async def update_dynamic_price(
-    offer_id: UUID,
+    offer_id: str,
     purchases_count: int,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -53,7 +53,7 @@ async def update_dynamic_price(
 
 @router.get("/badges/urgency/{offer_id}")
 async def get_urgency_badge(
-    offer_id: UUID,
+    offer_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get psychological urgency badge for product."""
@@ -73,7 +73,7 @@ async def get_urgency_badge(
 
 @router.post("/social-proof/update")
 async def update_social_proof(
-    offer_id: UUID,
+    offer_id: str,
     new_purchase: bool = False,
     viewer_increment: int = 1,
     db: AsyncSession = Depends(get_db),
@@ -92,7 +92,7 @@ async def update_social_proof(
 @router.get("/personalized/{user_id}/{product_id}")
 async def get_personalized_fomo(
     business_id: UUID,
-    user_id: UUID,
+    user_id: str,
     product_id: UUID,
     browse_count: int = 1,
     db: AsyncSession = Depends(get_db),
@@ -112,9 +112,9 @@ async def get_personalized_fomo(
 
 @router.get("/conversion-probability")
 async def get_conversion_probability(
-    user_id: UUID,
-    product_id: UUID,
-    offer_id: UUID,
+    user_id: str,
+    product_id: str,
+    offer_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Calculate purchase probability based on FOMO signals."""
