@@ -831,7 +831,11 @@
       "Bash(git commit -m 'Add: Database initialization scripts \\(PostgreSQL ready\\) *)",
       "Bash(PYTHONPATH=\".\" DATABASE_URL=\"sqlite+aiosqlite:///./test.db\" python app/seed_phase2_5.py)",
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/ml-pipelines/score-lead?business_id=123e4567-e89b-12d3-a456-426614174000&customer_id=223e4567-e89b-12d3-a456-426614174000&engagement_score=0.75\")",
-      "Bash(git commit -m 'Add: Test seed script for Phase 2-5 endpoints *)"
+      "Bash(git commit -m 'Add: Test seed script for Phase 2-5 endpoints *)",
+      "Bash(vercel --prod --confirm)",
+      "Bash(vercel login *)",
+      "Bash(git commit -m 'Add: Vercel deployment target reference *)",
+      "Bash(cd \"C:\\\\Users\\\\Usuario\" && find . -path \"*memory/deployment_target.md\" 2>/dev/null)"
     ]
   }
 }
