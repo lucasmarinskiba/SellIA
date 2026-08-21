@@ -48,14 +48,14 @@ from app.api.v1 import marketing_intelligence as marketing_intelligence_module
 from app.api.v1 import accounting_intelligence as accounting_intelligence_module
 from app.api.v1 import sales_operations as sales_operations_module
 
-# Phase 5: Local-First Funnel (DISABLED - async refactor pending)
-# from app.domains.locations import router as locations_router
-# from app.domains.proximity import router as proximity_router
-# from app.domains.channel_integration import router as channel_integration_router
-# from app.domains.offline_analytics import router as offline_analytics_router
+# Phase 5: Local-First Funnel
+from app.domains.locations import router as locations_router
+from app.domains.proximity import router as proximity_router
+from app.domains.channel_integration import router as channel_integration_router
+from app.domains.offline_analytics import router as offline_analytics_router
 
-# Phase 51: AI Content Generation (DISABLED - async refactor pending)
-# from app.domains.ai_content_generation import router as ai_content_generation_router
+# Phase 51: AI Content Generation
+from app.domains.ai_content_generation import router as ai_content_generation_router
 
 # Phase 2: ML Pipelines
 from app.domains.ml_pipelines import router as ml_pipelines_router
@@ -263,15 +263,14 @@ def _register_domain_router(router_obj, name: str) -> None:
     except Exception as e:
         logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
 
-# Phase 5: Local-First Funnel (DISABLED - needs async refactor)
-# TODO: Fix Phase 5A/5B/5C/5D - convert to async
-# _register_domain_router(locations_router, "locations")
-# _register_domain_router(proximity_router, "proximity")
-# _register_domain_router(channel_integration_router, "channel_integration")
-# _register_domain_router(offline_analytics_router, "offline_analytics")
+# Phase 5: Local-First Funnel
+_register_domain_router(locations_router, "locations")
+_register_domain_router(proximity_router, "proximity")
+_register_domain_router(channel_integration_router, "channel_integration")
+_register_domain_router(offline_analytics_router, "offline_analytics")
 
-# Phase 51: AI Content Generation (DISABLED - needs async refactor)
-# _register_domain_router(ai_content_generation_router, "ai_content_generation")
+# Phase 51: AI Content Generation
+_register_domain_router(ai_content_generation_router, "ai_content_generation")
 
 # Phase 2: ML Pipelines
 _register_domain_router(ml_pipelines_router, "ml_pipelines")
