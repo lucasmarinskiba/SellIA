@@ -1,15 +1,8 @@
 {
   "version": 2,
-  "env": {
-    "POSTGRES_URL": "@postgres_url",
-    "REDIS_URL": "@redis_url",
-    "SENDGRID_API_KEY": "@sendgrid_key",
-    "OPENAI_API_KEY": "@openai_key",
-    "CLAUDE_API_KEY": "@claude_key"
-  },
   "functions": {
     "backend/app/**/*.py": {
-      "memory": 3008,
+      "memory": 2048,
       "maxDuration": 60,
       "runtime": "python3.12"
     }
@@ -33,5 +26,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/build",
   "public": true,
-  "installCommand": "pip install -r backend/requirements.txt && npm install"
+  "installCommand": "npm install"
 }
