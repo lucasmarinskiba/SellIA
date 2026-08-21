@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -7,6 +8,13 @@ from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 import enum
+
+if TYPE_CHECKING:
+    from app.domains.users.models import User
+    from app.domains.catalogs.models import CatalogItem
+    from app.domains.channels.models import ChannelConnection
+    from app.domains.websites.models import Website
+    from app.domains.crm.models import Conversation
 
 
 class LocalizationModel(str, enum.Enum):
@@ -38,12 +46,11 @@ class Business(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    user = relationship("User", back_populates="businesses")
-    catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
-    channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
-    conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
-    website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
-    locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
+    # Relationships commented out to avoid import/FK resolution issues
+    # user = relationship("User", back_populates="businesses")
+    # catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
+    # channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
+    # website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
 
 
 # Config por defecto según tipo de negocio

@@ -69,6 +69,14 @@ from app.domains.competitive_intelligence import router as competitive_intellige
 # Phase 5: Performance Optimization
 from app.domains.performance_optimization import router as performance_optimization_router
 
+# Import Phase 2-5 models only (skip problematic Phase 5A relationships)
+from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
+from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
+from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis, CompetitiveIntelligenceFeed
+from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
+from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
+from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
+
 # Database
 from app.db import init_db, close_db, get_db
 
