@@ -69,6 +69,15 @@ from app.domains.loyalty_engine import router as loyalty_engine_router
 # Phase X12: Conversion & Attraction (Multi-touch Closing)
 from app.domains.conversion_engine import router as conversion_engine_router
 
+# Acquisition Orchestrator (X9→X10→X12→X11 Integration)
+from app.domains.acquisition_orchestrator import router as acquisition_orchestrator_router
+
+# Instagram Automation (@sell_.ia + FeedIA synergy)
+from app.domains.instagram_automation import router as instagram_automation_router
+
+# Feedback Loop (Conversion data → X9 improvements)
+from app.domains.feedback_loop import router as feedback_loop_router
+
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -287,6 +296,15 @@ _register_domain_router(loyalty_engine_router, "loyalty_engine")
 
 # Phase X12: Conversion & Attraction (Multi-touch Closing)
 _register_domain_router(conversion_engine_router, "conversion_engine")
+
+# Acquisition Orchestrator (X9→X10→X12→X11 Integration)
+_register_domain_router(acquisition_orchestrator_router, "acquisition_orchestrator")
+
+# Instagram Automation (@sell_.ia + FeedIA synergy)
+_register_domain_router(instagram_automation_router, "instagram_automation")
+
+# Feedback Loop (Conversion data → X9 improvements)
+_register_domain_router(feedback_loop_router, "feedback_loop")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
