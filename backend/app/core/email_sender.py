@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class EmailProvider(str, Enum):
     SMTP = "smtp"
     SENDGRID = "sendgrid"
+    RESEND = "resend"
     MOCK = "mock"  # For testing
 
 # ============================================================
@@ -35,6 +36,12 @@ class EmailSender:
             self.api_key = os.getenv("SENDGRID_API_KEY")
             if not self.api_key:
                 logger.warning("SENDGRID_API_KEY not set, falling back to MOCK")
+                self.provider = EmailProvider.MOCK
+
+        elif provider == EmailProvider.RESEND:
+            self.api_key = os.getenv("RESEND_API_KEY")
+            if not self.api_key:
+                logger.warning("RESEND_API_KEY not set, falling back to MOCK")
                 self.provider = EmailProvider.MOCK
 
         elif provider == EmailProvider.SMTP:
@@ -57,6 +64,17 @@ class EmailSender:
 
         if self.provider == EmailProvider.SENDGRID:
             return await self._send_sendgrid(
+                to=to,
+                subject=subject,
+                body=body,
+                from_email=from_email,
+                from_name=from_name,
+                reply_to=reply_to,
+                tracking_id=tracking_id
+            )
+
+        elif self.provider == EmailProvider.RESEND:
+            return await self._send_resend(
                 to=to,
                 subject=subject,
                 body=body,
@@ -162,6 +180,68 @@ class EmailSender:
             return {
                 "status": "failed",
                 "provider": "sendgrid",
+                "error": str(e)
+            }
+
+    async def _send_resend(
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        from_email: str,
+        from_name: str,
+        reply_to: Optional[str],
+        tracking_id: Optional[str]
+    ) -> dict:
+        """Send via Resend API (https://resend.com/docs/api-reference/emails/send-email)."""
+        try:
+            email_data = {
+                "from": f"{from_name} <{from_email}>",
+                "to": [to],
+                "subject": subject,
+                "html": body,
+            }
+
+            if reply_to:
+                email_data["reply_to"] = reply_to
+
+            if tracking_id:
+                email_data["tags"] = [{"name": "tracking_id", "value": tracking_id}]
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=email_data,
+                    timeout=30
+                )
+
+                if response.status_code in [200, 201]:
+                    result = response.json()
+                    logger.info(f"Email sent via Resend to {to} (id={result.get('id')})")
+                    return {
+                        "status": "sent",
+                        "provider": "resend",
+                        "provider_message_id": result.get("id"),
+                        "timestamp": datetime.now().isoformat(),
+                        "tracking_id": tracking_id
+                    }
+                else:
+                    logger.error(f"Resend error: {response.text}")
+                    return {
+                        "status": "failed",
+                        "provider": "resend",
+                        "error": response.text
+                    }
+
+        except Exception as e:
+            logger.error(f"Resend send failed: {e}")
+            return {
+                "status": "failed",
+                "provider": "resend",
                 "error": str(e)
             }
 
@@ -336,17 +416,32 @@ class EmailScheduler:
 # ============================================================
 # FACTORY
 # ============================================================
-def get_email_sender(provider: str = "sendgrid") -> EmailSender:
-    """Factory to get configured email sender."""
+def get_email_sender(provider: Optional[str] = None) -> EmailSender:
+    """Factory to get configured email sender.
 
-    if provider == "sendgrid":
+    Sin provider explícito, resuelve por env vars disponibles en este orden:
+    RESEND_API_KEY -> SENDGRID_API_KEY -> MOCK. Antes el default hardcodeado
+    era "sendgrid" incluso sin SENDGRID_API_KEY seteada, silenciosamente cayendo
+    a MOCK - ahora se resuelve al primer provider realmente configurado.
+    """
+    if provider is None:
+        if os.getenv("RESEND_API_KEY"):
+            provider = "resend"
+        elif os.getenv("SENDGRID_API_KEY"):
+            provider = "sendgrid"
+        else:
+            provider = "mock"
+
+    if provider == "resend":
+        return EmailSender(EmailProvider.RESEND)
+    elif provider == "sendgrid":
         return EmailSender(EmailProvider.SENDGRID)
     elif provider == "smtp":
         return EmailSender(EmailProvider.SMTP)
     else:
         return EmailSender(EmailProvider.MOCK)
 
-def get_email_scheduler(provider: str = "sendgrid") -> EmailScheduler:
+def get_email_scheduler(provider: Optional[str] = None) -> EmailScheduler:
     """Factory to get configured email scheduler."""
     sender = get_email_sender(provider)
     return EmailScheduler(sender)
