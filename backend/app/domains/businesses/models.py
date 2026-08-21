@@ -46,15 +46,20 @@ class Business(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    # Relationships commented out to avoid import/FK resolution issues
-    # user = relationship("User", back_populates="businesses")
-    # catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
-    # website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
+    # locations sigue comentado: Location (businesses/location_models.py) no
+    # está importado en ningún punto reachable de sellbot.py/main.py todavía
+    # (locations_router falla por un bug separado - get_current_user no
+    # existe en app.core.security - no relacionado a este fix). Habilitarlo
+    # sin resolver eso primero reintroduciría el mismo error de nombre.
+    # locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
-    # channels/conversations habilitados: Business ahora se importa explícito en
-    # sellbot.py (ver comentario ahí), así que el registro de SQLAlchemy puede
-    # resolver estos nombres. No confundir con las líneas comentadas arriba —
-    # esas siguen sin sus clases target garantizadas en el registry.
+    # user/catalog_items/website/channels/conversations habilitados: las 5
+    # clases target (User, CatalogItem, Website, ChannelConnection,
+    # Conversation) ya están confirmadas en el registry de SQLAlchemy
+    # (verificado con Base.registry._class_registry tras importar app.main).
+    user = relationship("User", back_populates="businesses")
+    catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
+    website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
     channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
 

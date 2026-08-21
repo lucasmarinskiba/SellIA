@@ -51,3 +51,8 @@ anthropic==0.40.0
 pytest==7.4.3
 pytest-asyncio==0.23.1
 pytest-cov==4.1.0
+
+# Email connector (channels/connectors/email.py) - missing dependency caused
+# a production crash-loop on 2026-08-21 when this became an eager (module-level)
+# import via platforms_integration.py -> channels.connectors -> email.py
+aiosmtplib==3.0.1

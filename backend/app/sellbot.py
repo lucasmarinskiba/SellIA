@@ -89,10 +89,8 @@ from app.domains.arca_compliance import router as arca_compliance_router
 # en el registry antes de configurar mappers, y ningún import previo la traía.
 from app.domains.businesses.models import Business
 
-# Channels (multi-tenant connector CRUD: WhatsApp, Instagram, Amazon, Mercado
-# Libre, Shopify, TikTok Shop, etc. - conectores reales pero router nunca
-# estuvo montado, por eso nadie podía crear una ChannelConnection)
-from app.api.v1.channels import router as channels_router
+# Nota: api.v1.channels ya se registra en app.main (_try_include, prefix
+# /api/v1/businesses) — no duplicar acá.
 
 # Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
 from app.api.v1.platforms_integration import router as platforms_integration_router
@@ -330,13 +328,6 @@ _register_domain_router(fomo_intelligence_router, "fomo_intelligence")
 
 # ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
 _register_domain_router(arca_compliance_router, "arca_compliance")
-
-# Channels (multi-tenant connector CRUD - WhatsApp, Amazon, TikTok Shop, etc)
-try:
-    app.include_router(channels_router, prefix="/api/v1/businesses", tags=["channels"])
-    logger.info("✅ channels router registered")
-except Exception as e:
-    logger.error(f"❌ Failed to register channels router: {e}", exc_info=True)
 
 # Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
 _register_domain_router(platforms_integration_router, "platforms_integration")

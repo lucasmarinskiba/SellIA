@@ -32,7 +32,12 @@ import json
 
 from app.core.database import get_db
 from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
-from app.domains.channels.connectors import get_connector
+# get_connector se importa perezoso dentro de cada handler (no a nivel de
+# módulo): app.domains.channels.connectors.__init__ importa TODOS los
+# conectores al cargarse, incluido email.py -> aiosmtplib. Un import a nivel
+# de módulo acá tumbó el deploy entero cuando esa dependencia faltaba -
+# channels.py (api/v1/channels.py) ya usaba este mismo patrón perezoso por
+# esta razón.
 
 logger = logging.getLogger(__name__)
 
@@ -405,6 +410,7 @@ async def tiktok_shop_sync_orders(
     start_time = time.time()
 
     connection = await _get_tiktok_shop_connection(account_id, db)
+    from app.domains.channels.connectors import get_connector
     connector = get_connector(ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings)
 
     try:
