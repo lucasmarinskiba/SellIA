@@ -275,7 +275,7 @@ _register(sales_operations_module, "sales_operations")
 # Domain routers (Phase 2-5: Backend Intelligence)
 def _register_domain_router(router_obj, name: str) -> None:
     try:
-        app.include_router(router_obj.router)
+        app.include_router(router_obj)
         logger.info(f"✅ {name} router registered")
     except Exception as e:
         logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
