@@ -1,1 +1,2 @@
-"""Phase X10: FOMO Generation Agent."""
+from app.domains.fomo_generation.router import router
+__all__ = ["router"]

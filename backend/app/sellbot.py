@@ -57,6 +57,18 @@ from app.domains.perception_engineering import router as perception_engineering_
 # Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
 from app.domains.auto_marketing import router as auto_marketing_router
 
+# Phase X9: AI User Intelligence (Deep Profiling)
+from app.domains.user_intelligence import router as user_intelligence_router
+
+# Phase X10: FOMO Generation (Personalized Scarcity)
+from app.domains.fomo_generation import router as fomo_generation_router
+
+# Phase X11: Loyalty & Retention (VIP Program)
+from app.domains.loyalty_engine import router as loyalty_engine_router
+
+# Phase X12: Conversion & Attraction (Multi-touch Closing)
+from app.domains.conversion_engine import router as conversion_engine_router
+
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -263,6 +275,18 @@ _register_domain_router(perception_engineering_router, "perception_engineering")
 
 # Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
 _register_domain_router(auto_marketing_router, "auto_marketing")
+
+# Phase X9: AI User Intelligence (Deep Profiling)
+_register_domain_router(user_intelligence_router, "user_intelligence")
+
+# Phase X10: FOMO Generation (Personalized Scarcity)
+_register_domain_router(fomo_generation_router, "fomo_generation")
+
+# Phase X11: Loyalty & Retention (VIP Program)
+_register_domain_router(loyalty_engine_router, "loyalty_engine")
+
+# Phase X12: Conversion & Attraction (Multi-touch Closing)
+_register_domain_router(conversion_engine_router, "conversion_engine")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])

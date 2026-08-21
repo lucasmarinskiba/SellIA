@@ -1,1 +1,2 @@
-"""Phase X11: Loyalty & Retention Engine."""
+from app.domains.loyalty_engine.router import router
+__all__ = ["router"]

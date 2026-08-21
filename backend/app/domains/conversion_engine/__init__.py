@@ -1,1 +1,2 @@
-"""Phase X12: Conversion & Attraction Agent."""
+from app.domains.conversion_engine.router import router
+__all__ = ["router"]

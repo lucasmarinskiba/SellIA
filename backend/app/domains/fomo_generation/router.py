@@ -1,5 +1,5 @@
 """Phase X10: FOMO Generation Agent API."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.fomo_generation.service import FOMOGenerationAgent
@@ -10,11 +10,11 @@ router = APIRouter(prefix="/api/v1/fomo-generation", tags=["fomo-generation"])
 
 @router.post("/generate-scarcity")
 async def generate_scarcity_fomo(
-    user_id: str,
-    email: str,
-    personality_type: str,
-    available_slots: int = 3,
-    product_name: str = "SellIA Pro",
+    user_id: str = Body(...),
+    email: str = Body(...),
+    personality_type: str = Body(...),
+    available_slots: int = Body(3),
+    product_name: str = Body("SellIA Pro"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate scarcity-based FOMO campaign personalized by personality."""
@@ -33,11 +33,11 @@ async def generate_scarcity_fomo(
 
 @router.post("/generate-social-proof")
 async def generate_social_proof_fomo(
-    user_id: str,
-    email: str,
-    personality_type: str,
-    total_customers: int = 150,
-    product_name: str = "SellIA",
+    user_id: str = Body(...),
+    email: str = Body(...),
+    personality_type: str = Body(...),
+    total_customers: int = Body(150),
+    product_name: str = Body("SellIA"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate social-proof FOMO based on company adoption."""
@@ -55,11 +55,11 @@ async def generate_social_proof_fomo(
 
 @router.post("/generate-price-increase")
 async def generate_price_increase_fomo(
-    user_id: str,
-    email: str,
-    current_price: float = 99,
-    future_price: float = 299,
-    days_until_increase: int = 2,
+    user_id: str = Body(...),
+    email: str = Body(...),
+    current_price: float = Body(99),
+    future_price: float = Body(299),
+    days_until_increase: int = Body(2),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate loss-aversion FOMO from upcoming price increase."""
@@ -80,9 +80,9 @@ async def generate_price_increase_fomo(
 
 @router.post("/create-countdown-sequence")
 async def create_countdown_sequence(
-    user_id: str,
-    trigger_event: str,  # "Founding price expires in 48 hours"
-    deadline_hours: int = 48,
+    user_id: str = Body(...),
+    trigger_event: str = Body(...),
+    deadline_hours: int = Body(48),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create multi-touch countdown sequence (24h, 6h, 1h reminders)."""

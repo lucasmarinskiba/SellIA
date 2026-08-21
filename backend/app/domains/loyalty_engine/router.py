@@ -1,5 +1,5 @@
 """Phase X11: Loyalty & Retention Engine API."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/v1/loyalty-engine", tags=["loyalty-engine"])
 @router.post("/enroll-loyalty/{user_id}")
 async def enroll_loyalty_program(
     user_id: str,
-    email: str,
+    email: str = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Enroll customer in loyalty program."""
@@ -32,7 +32,7 @@ async def enroll_loyalty_program(
 @router.post("/trigger-retention-sequence/{user_id}/{sequence_type}")
 async def trigger_retention_sequence(
     user_id: str,
-    sequence_type: str,  # win_back, expansion, vip_nurture, churn_prevention
+    sequence_type: str,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Trigger automated retention sequence."""
