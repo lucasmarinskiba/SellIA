@@ -72,6 +72,9 @@ from app.domains.performance_optimization import router as performance_optimizat
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 from app.domains.fomo_dynamics import router as fomo_dynamics_router
 
+# Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
+from app.domains.perception_engineering import router as perception_engineering_router
+
 # Import Phase 2-5 models only (skip problematic Phase 5A relationships)
 from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
 from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
@@ -297,6 +300,9 @@ _register_domain_router(performance_optimization_router, "performance_optimizati
 
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 _register_domain_router(fomo_dynamics_router, "fomo_dynamics")
+
+# Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
+_register_domain_router(perception_engineering_router, "perception_engineering")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
