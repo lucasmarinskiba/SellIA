@@ -230,7 +230,7 @@ const Hero = (): React.JSX.Element => {
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }}
           className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-slate-500"
         >
-          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> SOC2-ready</span>
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Multi-tenant aislado</span>
           <span className="inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-emerald-500" /> Datos cifrados</span>
           <span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-emerald-500" /> Setup en 5 min</span>
           <span className="inline-flex items-center gap-1.5"><Globe2 className="w-3.5 h-3.5 text-emerald-500" /> 12 idiomas</span>
@@ -445,12 +445,12 @@ const BENEFITS = [
   },
   {
     title: 'Cerrá deals que se enfriaban',
-    body: 'El recovery lab persigue cada lead, recupera carritos abandonados y suma 18% al revenue mensual avg.',
+    body: 'El recovery lab persigue cada lead y recupera carritos abandonados automáticamente, sin que levantes un dedo.',
     icon: Zap,
   },
   {
-    title: 'Tranquilidad fiscal real',
-    body: 'Factura A/B/C/E ARCA · SAT · DIAN · OSS automático. Compliance multi-país sin estudio contable extra.',
+    title: 'Compliance fiscal Argentina',
+    body: 'Validación de CUIT, sugerencia de categoría Monotributo, INCOTERMS y NCM automático. Facturación electrónica (WSFE) en camino.',
     icon: ShieldCheck,
   },
 ]
@@ -694,7 +694,7 @@ const SecurityBanner = (): React.JSX.Element => (
       <div className="relative flex-1">
         <h3 className="text-[24px] font-extrabold tracking-tight">Tus datos están blindados.</h3>
         <p className="mt-1.5 text-[14px] text-slate-300 leading-relaxed">
-          Multi-tenant aislado con Postgres Row-Level Security · JWT bcrypt · Fernet encryption · audit logs inmutables · SOC2-ready · GDPR-aligned.
+          Multi-tenant aislado a nivel de aplicación · JWT + bcrypt · Fernet encryption para credenciales · Postgres.
         </p>
       </div>
       <a href="#signup" className="relative inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-bold shadow-lg shadow-emerald-500/40 hover:scale-105 transition active:scale-100">
@@ -778,7 +778,7 @@ const QUESTIONS = [
   { q: '¿Necesito saber programar?',
     a: 'No. Tenemos presets por industria + onboarding asistido en 5 min. Si querés extender, hay API REST.' },
   { q: '¿Qué pasa con mis datos?',
-    a: 'Multi-tenant aislado con Postgres Row-Level Security. JWT bcrypt cost 12, secrets cifrados con Fernet, audit logs inmutables. SOC2-ready, GDPR-aligned.' },
+    a: 'Multi-tenant aislado a nivel de aplicación sobre Postgres. JWT con bcrypt cost 12, credenciales cifradas con Fernet.' },
   { q: '¿En cuánto tiempo veo resultados?',
     a: 'Primer mensaje atendido por SellIA en menos de 1 hora. Conversiones medibles en 7–14 días. Recovery lab activo desde el día 1.' },
   { q: '¿Puede operar mi navegador?',
@@ -786,9 +786,9 @@ const QUESTIONS = [
   { q: '¿Cómo cancelo?',
     a: 'Un click desde tu panel. Exportás todo tu historial. Cero lock-in. Sin preguntas, sin retención forzada.' },
   { q: '¿Funciona con mis herramientas?',
-    a: 'WhatsApp Cloud, Instagram, TikTok, LinkedIn, Email, Stripe, Mercado Pago, Shopify, Mercado Libre, Amazon, Hotmart, AFIP/ARCA, SAT, DIAN y más.' },
+    a: 'WhatsApp Cloud, Instagram, TikTok, LinkedIn, Email, Stripe, Mercado Pago, Shopify, Mercado Libre, Amazon, Hotmart y más.' },
   { q: '¿Cobra facturación AFIP automáticamente?',
-    a: 'Sí. ARCA: Factura A/B/C/E, padrón, monotributo, libro IVA, COVE, DJVE, certificado de origen MERCOSUR/ALADI/SGP/CAN.' },
+    a: 'Todavía no la emisión de facturas — eso requiere certificado digital AFIP y está en desarrollo. Hoy ya podés validar CUIT, calcular tu categoría Monotributo, y usar INCOTERMS/NCM para exportación, todo automático.' },
   { q: '¿Hay soporte humano?',
     a: 'Sí. Email en Free. Prioritario (1h) en Pro. Onboarding dedicado en Enterprise.' },
 ]
