@@ -15,7 +15,7 @@ from app.domains.ai_content_generation.models import (
 
 class ContentGenerationService:
     @staticmethod
-    async defcreate_template(
+    async def create_template(
         db: AsyncSession,
         business_id: UUID,
         template_name: str,
@@ -36,7 +36,7 @@ class ContentGenerationService:
         return template
 
     @staticmethod
-    async defsave_generated_content(
+    async def save_generated_content(
         db: AsyncSession,
         business_id: UUID,
         content_type: str,
@@ -64,7 +64,7 @@ class ContentGenerationService:
         return content
 
     @staticmethod
-    async defcreate_content_variants(
+    async def create_content_variants(
         db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
@@ -83,7 +83,7 @@ class ContentGenerationService:
             )
             db.add(cv)
             created.append(cv)
-        db.commit()
+        await db.commit()
         return created
 
     @staticmethod
@@ -101,7 +101,7 @@ class ContentGenerationService:
         return content
 
     @staticmethod
-    async defcreate_bulk_generation_job(
+    async def create_bulk_generation_job(
         db: AsyncSession,
         business_id: UUID,
         batch_name: str,
@@ -123,7 +123,7 @@ class ContentGenerationService:
         return job
 
     @staticmethod
-    async defupdate_bulk_job_status(
+    async def update_bulk_job_status(
         db: AsyncSession,
         job_id: UUID,
         status: str,
@@ -150,7 +150,7 @@ class ContentGenerationService:
         return job
 
     @staticmethod
-    async deftrack_content_performance(
+    async def track_content_performance(
         db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
@@ -189,16 +189,13 @@ class ContentGenerationService:
         platform: Optional[str] = None,
         is_published: bool = True,
     ) -> List[GeneratedContent]:
-        result = await db.execute(
-            select(GeneratedContent).where(
-                and_(
-                    GeneratedContent.business_id == business_id,
-                    GeneratedContent.content_type == content_type,
-                    GeneratedContent.is_published == is_published,
-                )
-            )
+        where_clause = and_(
+            GeneratedContent.business_id == business_id,
+            GeneratedContent.content_type == content_type,
+            GeneratedContent.is_published == is_published,
         )
-        contents = result.scalars().all()
         if platform:
-            query = query.filter(GeneratedContent.platform == platform)
-        return query.all()
+            where_clause = and_(where_clause, GeneratedContent.platform == platform)
+
+        result = await db.execute(select(GeneratedContent).where(where_clause))
+        return result.scalars().all()
