@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "env": {
+    "POSTGRES_URL": "@postgres_url",
+    "REDIS_URL": "@redis_url",
+    "SENDGRID_API_KEY": "@sendgrid_key",
+    "OPENAI_API_KEY": "@openai_key",
+    "CLAUDE_API_KEY": "@claude_key"
+  },
+  "functions": {
+    "backend/app/**/*.py": {
+      "memory": 3008,
+      "maxDuration": 60,
+      "runtime": "python3.12"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/v1/(.*)",
+      "dest": "backend/app/sellbot.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/build/$1",
+      "status": 200
+    },
+    {
+      "src": "/.*",
+      "dest": "frontend/build/index.html"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/build",
+  "public": true,
+  "installCommand": "pip install -r backend/requirements.txt && npm install"
+}
