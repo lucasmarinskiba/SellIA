@@ -16,6 +16,13 @@ class InstagramPost(Base):
     posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     scheduled_for = Column(DateTime, nullable=True)
 
+    # Publish status real (no simulado)
+    publish_status = Column(String(30), default="draft")  # draft, pending_credentials, published, failed
+    fomo_application_id = Column(String(36), nullable=True)  # FK a fomo_strategy_applications
+    ig_media_id = Column(String(100), nullable=True)  # ID real devuelto por Graph API
+    ig_permalink = Column(String(500), nullable=True)  # URL real del post publicado
+    publish_error = Column(Text, nullable=True)  # Error crudo de Graph API si falló
+
     # Performance
     likes = Column(Integer, default=0)
     comments = Column(Integer, default=0)

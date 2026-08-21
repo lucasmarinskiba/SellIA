@@ -1,30 +1,67 @@
-"""Instagram automation API: @sell_.ia + FeedIA synergy."""
-from fastapi import APIRouter, Depends, Body
+"""Instagram automation API: @sell_.ia + FOMO Intelligence + FeedIA synergy."""
+from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.instagram_automation.service import InstagramAutomationAgent
+from app.domains.instagram_automation.graph_publisher import InstagramGraphPublisher
 
 
 router = APIRouter(prefix="/api/v1/instagram-automation", tags=["instagram-automation"])
 
 
+@router.get("/publisher-status")
+async def get_publisher_status() -> dict:
+    """Chequea si hay credenciales de Meta Graph API configuradas para publicar en vivo."""
+    publisher = InstagramGraphPublisher()
+    return {
+        "configured": publisher.is_configured(),
+        "note": (
+            "Publicación en vivo habilitada." if publisher.is_configured() else
+            "Faltan INSTAGRAM_BUSINESS_ACCOUNT_ID / INSTAGRAM_ACCESS_TOKEN. "
+            "Los posts se registran en la base pero quedan en pending_credentials "
+            "hasta configurar el token de @sell_.ia en Meta Business Suite."
+        ),
+    }
+
+
 @router.post("/create-feedia-post")
 async def create_feedia_powered_post(
+    business_id: str = Body(...),
     campaign_id: str = Body(...),
-    content_type: str = Body(...),  # reel, carousel, story, static
-    theme: str = Body(...),  # founder_story, feature_highlight, social_proof, case_study
-    target_personality: str = Body(...),  # pragmatist, impulse_buyer, skeptic, analyst
+    content_type: str = Body(..., description="reel | carousel | story | static"),
+    strategy_type: str = Body(..., description="escasez_real | prueba_social | exclusividad | transparencia"),
+    real_data_source: str = Body(..., description="De dónde sale el dato real del post"),
+    data_snapshot: dict = Body(..., description="El dato real requerido por la estrategia elegida"),
+    media_url: str = Body(...),
+    target_personality: str = Body("pragmatist"),
+    publish_live: bool = Body(False, description="Si true, publica de verdad en @sell_.ia (requiere credenciales)"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Generate Instagram content powered by FeedIA + SellIA."""
-    post = await InstagramAutomationAgent.create_feedia_powered_post(
-        db, campaign_id, content_type, theme, target_personality
-    )
+    """Registra la estrategia FOMO con dato real y arma/publica el post en @sell_.ia.
+
+    El caption NO se genera con copy inventado: sale de la aplicación registrada
+    en fomo_intelligence (rechaza data_snapshot incompleto con 422).
+    publish_live=false (default) solo guarda el borrador; true intenta publicar
+    de verdad vía Graph API y devuelve el permalink real o el error real.
+    """
+    try:
+        post = await InstagramAutomationAgent.create_feedia_powered_post(
+            db, campaign_id, content_type, business_id, strategy_type,
+            real_data_source, data_snapshot, media_url, target_personality, publish_live,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
     return {
         "post_id": post.id,
         "caption": post.caption,
         "content_type": post.content_type,
         "hashtags": post.hashtags,
+        "fomo_application_id": post.fomo_application_id,
+        "publish_status": post.publish_status,
+        "ig_media_id": post.ig_media_id,
+        "ig_permalink": post.ig_permalink,
+        "publish_error": post.publish_error,
         "cta_link": post.cta_link,
         "utm_params": post.utm_params,
     }
