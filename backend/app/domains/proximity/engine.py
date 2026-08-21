@@ -3,8 +3,8 @@ from typing import List, Optional, Tuple
 from uuid import UUID
 from datetime import datetime, timezone
 from math import radians, cos, sin, asin, sqrt
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, select
 from app.domains.locations.models import LocationProfile, ProximityEvent
 from app.domains.locations.service import LocationService
 
@@ -25,12 +25,11 @@ class ProximityEngine:
 
     @staticmethod
     async def check_proximity_to_locations(
-        db,
+        db: AsyncSession,
         business_id: UUID,
         user_lat: float,
         user_lon: float,
     ) -> List[Tuple[LocationProfile, float]]:
-        from sqlalchemy import select
         result = await db.execute(
             select(LocationProfile).where(
                 and_(

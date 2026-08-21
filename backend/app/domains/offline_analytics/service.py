@@ -2,8 +2,8 @@
 from typing import List, Optional, Dict
 from uuid import UUID
 from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, func, select
 from app.domains.offline_analytics.models import (
     OfflineToOnlineAttribution,
     OfflineAnalyticsMetrics,
@@ -16,8 +16,8 @@ from app.domains.locations.models import LocationVisit, OfflineConversion
 
 class OfflineAnalyticsService:
     @staticmethod
-    def create_attribution(
-        db: Session,
+    async def create_attribution(
+        db: AsyncSession,
         business_id: UUID,
         user_id: UUID,
         first_online_channel: Optional[str] = None,
@@ -46,21 +46,25 @@ class OfflineAnalyticsService:
             conversion_type=conversion_type,
         )
         db.add(attribution)
-        db.commit()
-        db.refresh(attribution)
+        await db.commit()
+        await db.refresh(attribution)
         return attribution
 
     @staticmethod
-    def calculate_offline_metrics(db: Session, business_id: UUID) -> OfflineAnalyticsMetrics:
+    async def calculate_offline_metrics(db: AsyncSession, business_id: UUID) -> OfflineAnalyticsMetrics:
         # Get all location visits
-        visits = db.query(LocationVisit).filter(LocationVisit.business_id == business_id).all()
+        result = await db.execute(
+            select(LocationVisit).where(LocationVisit.business_id == business_id)
+        )
+        visits = result.scalars().all()
         total_foot_traffic = len(visits)
         unique_visitors = len(set(v.user_id for v in visits))
 
         # Offline conversions
-        offline_conversions = db.query(OfflineConversion).filter(
-            OfflineConversion.business_id == business_id
-        ).all()
+        result = await db.execute(
+            select(OfflineConversion).where(OfflineConversion.business_id == business_id)
+        )
+        offline_conversions = result.scalars().all()
         total_conversions = len([oc for oc in offline_conversions if oc.purchase_made])
         conversion_rate = (total_conversions / total_foot_traffic * 100) if total_foot_traffic > 0 else 0
 
@@ -133,8 +137,8 @@ class OfflineAnalyticsService:
         return metrics
 
     @staticmethod
-    def create_post_visit_sequence(
-        db: Session,
+    async def create_post_visit_sequence(
+        db: AsyncSession,
         business_id: UUID,
         sequence_name: str,
         trigger_type: str,
@@ -147,8 +151,8 @@ class OfflineAnalyticsService:
             location_id=location_id,
         )
         db.add(seq)
-        db.commit()
-        db.refresh(seq)
+        await db.commit()
+        await db.refresh(seq)
         return seq
 
     @staticmethod
