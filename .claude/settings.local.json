@@ -837,7 +837,12 @@
       "Bash(git commit -m 'Add: Vercel deployment target reference *)",
       "Bash(cd \"C:\\\\Users\\\\Usuario\" && find . -path \"*memory/deployment_target.md\" 2>/dev/null)",
       "Bash(git commit -m 'Add: Phase X7 Perception Engineering Agent - Psychology-Driven Sales AI *)",
-      "Bash(git commit -m 'Add: Phase X8 Auto-Marketing & Growth Agent - SellIA Self-Promotion *)"
+      "Bash(git commit -m 'Add: Phase X8 Auto-Marketing & Growth Agent - SellIA Self-Promotion *)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/auto-marketing/viral-formula\")",
+      "Bash(curl -v \"http://localhost:8000/api/ping\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/auto-marketing/content-calendar?days=7\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/auto-marketing/micro-influencers?niche=SaaS\")",
+      "Bash(git commit -m 'Fix: Auto-marketing router registration *)"
     ]
   }
 }
