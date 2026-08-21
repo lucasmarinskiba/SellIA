@@ -2,8 +2,8 @@
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, select
 from app.domains.ai_content_generation.models import (
     ContentTemplate,
     GeneratedContent,
@@ -15,8 +15,8 @@ from app.domains.ai_content_generation.models import (
 
 class ContentGenerationService:
     @staticmethod
-    def create_template(
-        db: Session,
+    async defcreate_template(
+        db: AsyncSession,
         business_id: UUID,
         template_name: str,
         template_type: str,
@@ -31,13 +31,13 @@ class ContentGenerationService:
             platform=platform,
         )
         db.add(template)
-        db.commit()
-        db.refresh(template)
+        await db.commit()
+        await db.refresh(template)
         return template
 
     @staticmethod
-    def save_generated_content(
-        db: Session,
+    async defsave_generated_content(
+        db: AsyncSession,
         business_id: UUID,
         content_type: str,
         generated_content: str,
@@ -59,13 +59,13 @@ class ContentGenerationService:
             engagement_score=engagement_score,
         )
         db.add(content)
-        db.commit()
-        db.refresh(content)
+        await db.commit()
+        await db.refresh(content)
         return content
 
     @staticmethod
-    def create_content_variants(
-        db: Session,
+    async defcreate_content_variants(
+        db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
         variants: List[dict],  # [{"text": "...", "style": "formal"}, ...]
@@ -87,19 +87,22 @@ class ContentGenerationService:
         return created
 
     @staticmethod
-    def publish_content(db: Session, content_id: UUID) -> GeneratedContent:
-        content = db.query(GeneratedContent).filter(GeneratedContent.id == content_id).first()
+    async def publish_content(db: AsyncSession, content_id: UUID) -> GeneratedContent:
+        result = await db.execute(
+            select(GeneratedContent).where(GeneratedContent.id == content_id)
+        )
+        content = result.scalar()
         if content:
             content.is_approved = True
             content.is_published = True
             content.published_at = datetime.now(timezone.utc)
-            db.commit()
-            db.refresh(content)
+            await db.commit()
+            await db.refresh(content)
         return content
 
     @staticmethod
-    def create_bulk_generation_job(
-        db: Session,
+    async defcreate_bulk_generation_job(
+        db: AsyncSession,
         business_id: UUID,
         batch_name: str,
         content_type: str,
@@ -115,13 +118,13 @@ class ContentGenerationService:
             total_items=len(product_ids),
         )
         db.add(job)
-        db.commit()
-        db.refresh(job)
+        await db.commit()
+        await db.refresh(job)
         return job
 
     @staticmethod
-    def update_bulk_job_status(
-        db: Session,
+    async defupdate_bulk_job_status(
+        db: AsyncSession,
         job_id: UUID,
         status: str,
         generated_count: int = 0,
@@ -129,7 +132,10 @@ class ContentGenerationService:
         published_count: int = 0,
         error_message: Optional[str] = None,
     ) -> BulkContentGeneration:
-        job = db.query(BulkContentGeneration).filter(BulkContentGeneration.id == job_id).first()
+        result = await db.execute(
+            select(BulkContentGeneration).where(BulkContentGeneration.id == job_id)
+        )
+        job = result.scalar()
         if job:
             job.status = status
             job.generated_count = generated_count
@@ -144,8 +150,8 @@ class ContentGenerationService:
         return job
 
     @staticmethod
-    def track_content_performance(
-        db: Session,
+    async deftrack_content_performance(
+        db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
         product_id: Optional[UUID],
@@ -171,25 +177,28 @@ class ContentGenerationService:
             perf.engagement_rate = ((clicks + conversions) / views * 100) if (clicks + conversions) > 0 else 0
 
         db.add(perf)
-        db.commit()
-        db.refresh(perf)
+        await db.commit()
+        await db.refresh(perf)
         return perf
 
     @staticmethod
-    def get_content_by_type(
-        db: Session,
+    async def get_content_by_type(
+        db: AsyncSession,
         business_id: UUID,
         content_type: str,
         platform: Optional[str] = None,
         is_published: bool = True,
     ) -> List[GeneratedContent]:
-        query = db.query(GeneratedContent).filter(
-            and_(
-                GeneratedContent.business_id == business_id,
-                GeneratedContent.content_type == content_type,
-                GeneratedContent.is_published == is_published,
+        result = await db.execute(
+            select(GeneratedContent).where(
+                and_(
+                    GeneratedContent.business_id == business_id,
+                    GeneratedContent.content_type == content_type,
+                    GeneratedContent.is_published == is_published,
+                )
             )
         )
+        contents = result.scalars().all()
         if platform:
             query = query.filter(GeneratedContent.platform == platform)
         return query.all()
