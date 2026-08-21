@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 from app.domains.channel_integration.models import (
     GoogleBusinessProfileConnection,
     GoogleMapsLocation,
@@ -36,7 +36,7 @@ class ChannelIntegrationService:
         return conn
 
     @staticmethod
-    async defcreate_location_message(
+    async def create_location_message(
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
@@ -57,7 +57,7 @@ class ChannelIntegrationService:
         return msg
 
     @staticmethod
-    async defsend_location_message(
+    async def send_location_message(
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
@@ -67,7 +67,8 @@ class ChannelIntegrationService:
         email: Optional[str] = None,
         content: Optional[str] = None,
     ) -> LocationMessageExecution:
-        msg = db.query(LocationMessage).filter(LocationMessage.id == message_id).first()
+        result = await db.execute(select(LocationMessage).where(LocationMessage.id == message_id))
+        msg = result.scalar()
         if not msg:
             return None
 
@@ -88,21 +89,23 @@ class ChannelIntegrationService:
         return execution
 
     @staticmethod
-    async defget_location_reviews(
+    async def get_location_reviews(
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
     ) -> List[LocationReview]:
-        reviews = db.query(LocationReview).filter(
-            and_(
-                LocationReview.business_id == business_id,
-                LocationReview.location_id == location_id,
-            )
-        ).order_by(LocationReview.review_date.desc()).all()
-        return reviews
+        result = await db.execute(
+            select(LocationReview).where(
+                and_(
+                    LocationReview.business_id == business_id,
+                    LocationReview.location_id == location_id,
+                )
+            ).order_by(LocationReview.review_date.desc())
+        )
+        return result.scalars().all()
 
     @staticmethod
-    async defsync_google_maps_location(
+    async def sync_google_maps_location(
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
@@ -112,12 +115,15 @@ class ChannelIntegrationService:
         phone: Optional[str] = None,
         website: Optional[str] = None,
     ) -> GoogleMapsLocation:
-        existing = db.query(GoogleMapsLocation).filter(
-            and_(
-                GoogleMapsLocation.location_id == location_id,
-                GoogleMapsLocation.business_id == business_id,
+        result = await db.execute(
+            select(GoogleMapsLocation).where(
+                and_(
+                    GoogleMapsLocation.location_id == location_id,
+                    GoogleMapsLocation.business_id == business_id,
+                )
             )
-        ).first()
+        )
+        existing = result.scalar()
 
         if existing:
             existing.place_id = place_id
@@ -126,8 +132,8 @@ class ChannelIntegrationService:
             existing.phone = phone
             existing.website = website
             existing.last_updated = datetime.now(timezone.utc)
-            db.commit()
-            db.refresh(existing)
+            await db.commit()
+            await db.refresh(existing)
             return existing
 
         maps_loc = GoogleMapsLocation(
@@ -145,7 +151,7 @@ class ChannelIntegrationService:
         return maps_loc
 
     @staticmethod
-    async defadd_location_review(
+    async def add_location_review(
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
