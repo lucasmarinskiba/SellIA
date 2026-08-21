@@ -1,81 +1,107 @@
-"""Instagram automation service: @sell_.ia brand + FeedIA synergy."""
+"""Instagram automation service: @sell_.ia brand + FOMO Intelligence + FeedIA synergy.
+
+create_feedia_powered_post() ya NO inventa copy ("Only 47 seats left", "Backed by
+Y Combinator") — ese texto era FOMO fabricada, exactamente lo que el framework de
+fomo_intelligence existe para prohibir. Ahora cada post se arma a partir de una
+FOMOStrategyApplication real (escasez_real / prueba_social / exclusividad /
+transparencia), registrada con su dato real, y el caption sale de esa
+`generated_message` validada — no de un diccionario hardcodeado.
+"""
+import uuid
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.instagram_automation.models import (
     InstagramPost, InstagramCampaign, InstagramAudience, InstagramConversionPath
 )
+from app.domains.instagram_automation.graph_publisher import (
+    InstagramGraphPublisher, InstagramNotConfiguredError, InstagramPublishError,
+)
+from app.domains.fomo_intelligence.service import FOMOIntelligenceService
+
+
+CTA_BY_PERSONALITY = {
+    "pragmatist": "Calculá tu ROI →",
+    "impulse_buyer": "Sumate ahora →",
+    "skeptic": "Mirá el caso real →",
+    "analyst": "Ver el detalle →",
+    "social_proof_seeker": "Sumate a la comunidad →",
+    "status_conscious": "Pedí tu acceso →",
+    "early_adopter": "Entrá primero →",
+    "value_maximizer": "Compará el valor →",
+}
+
+HASHTAGS = "#sell_.ia #AISales #SalesAutomation #SalesTech #Startup #AI"
 
 
 class InstagramAutomationAgent:
-    """Automates @sell_.ia Instagram promotion + FeedIA content generation."""
+    """Automates @sell_.ia Instagram promotion, respaldado en FOMO Intelligence real."""
 
     @staticmethod
     async def create_feedia_powered_post(
         db: AsyncSession,
         campaign_id: str,
         content_type: str,  # reel, carousel, story, static
-        theme: str,  # founder_story, feature_highlight, social_proof, case_study
-        target_personality: str,  # pragmatist, impulse_buyer, skeptic, analyst
+        business_id: str,
+        strategy_type: str,  # escasez_real | prueba_social | exclusividad | transparencia
+        real_data_source: str,
+        data_snapshot: dict,
+        media_url: str,
+        target_personality: str = "pragmatist",
+        publish_live: bool = False,
     ) -> InstagramPost:
-        """Generate Instagram content via FeedIA AI + SellIA positioning."""
+        """Registra una aplicación real de FOMO Intelligence y arma el post a partir de ella.
 
-        # FeedIA generates creative content
-        content_prompts = {
-            "founder_story": {
-                "reel": "30sec video: Lucas building SellIA from frustration → solution",
-                "carousel": "5-slide story arc: Problem → Discovery → Launch → Growth",
-                "story": "Behind-the-scenes: Building AI sales agents",
-            },
-            "feature_highlight": {
-                "reel": "Show X9 personality profiling in action (visual demo)",
-                "carousel": "Feature comparison: SellIA vs competitors (5 screens)",
-                "story": "Feature tip of the day: @mention for tricks",
-            },
-            "social_proof": {
-                "reel": "Customer testimonial: 'SellIA closed $XXX in 30 days'",
-                "carousel": "Case study: Early customer ROI metrics",
-                "story": "Milestone: 'Xth customer closed via SellIA'",
-            },
-            "case_study": {
-                "reel": "Before/after: Sales team metrics transformation",
-                "carousel": "Deep dive: How [Company] scaled with SellIA",
-                "story": "Quick stat: 'Avg deal cycle: 28 → 14 days'",
-            }
-        }
+        Si publish_live=True e INSTAGRAM_BUSINESS_ACCOUNT_ID/INSTAGRAM_ACCESS_TOKEN
+        están configurados, publica de verdad en @sell_.ia y guarda media_id/permalink
+        reales. Si no, guarda el post en estado pending_credentials — nunca simula
+        un post exitoso.
+        """
+        # 1. Registrar la estrategia FOMO con su dato real (valida + rechaza fake data)
+        fomo_application = await FOMOIntelligenceService.register_strategy_application(
+            db=db,
+            business_id=business_id,
+            strategy_type=strategy_type,
+            target_type="instagram_post",
+            target_id=campaign_id,
+            real_data_source=real_data_source,
+            data_snapshot=data_snapshot,
+            channel="instagram",
+            personality_target=target_personality,
+        )
 
-        prompt = content_prompts.get(theme, {}).get(content_type, "Create viral sales content")
-
-        # Personality-specific messaging
-        personality_hooks = {
-            "pragmatist": "ROI-first: 'Close 2.3x more deals with AI'",
-            "impulse_buyer": "FOMO: 'Only 47 seats left in beta'",
-            "skeptic": "Proof: 'Backed by Y Combinator + Stripe'",
-            "analyst": "Deep: 'ML algorithms that learn from every deal'",
-        }
-
-        hook = personality_hooks.get(target_personality, "AI sales agents that close deals")
-
-        # CTA tailored to personality
-        cta_links = {
-            "pragmatist": "Calculate your ROI →",
-            "impulse_buyer": "Get early access (48h)",
-            "skeptic": "See proof: [case study]",
-            "analyst": "Deep dive: [whitepaper]",
-        }
-
-        cta = cta_links.get(target_personality, "Learn more →")
-
-        hashtags = "#sell_.ia #AISales #SalesAutomation #SalesTech #Startup #AI #FeedIA"
+        cta = CTA_BY_PERSONALITY.get(target_personality, "Ver más →")
+        caption = f"{fomo_application.generated_message}\n\n{cta}\n\n{HASHTAGS}"
 
         post = InstagramPost(
-            id="ig_" + __import__('uuid').uuid4().hex[:8],
-            caption=f"{hook}\n\n{cta}\n\n{hashtags}",
-            hashtags=hashtags,
+            id="ig_" + uuid.uuid4().hex[:8],
+            caption=caption,
+            hashtags=HASHTAGS,
             content_type=content_type,
-            media_url="https://cdn.sell-ia.app/instagram/auto-generated.jpg",  # FeedIA generates
+            media_url=media_url,
             cta_link="https://sellia-brain.vercel.app/instagram-campaign",
             utm_params=f"utm_source=instagram&utm_medium={content_type}&utm_campaign={campaign_id}",
+            fomo_application_id=fomo_application.id,
+            publish_status="draft",
         )
+
+        if publish_live:
+            publisher = InstagramGraphPublisher()
+            try:
+                if content_type == "reel":
+                    result = await publisher.publish_reel(video_url=media_url, caption=caption)
+                else:
+                    result = await publisher.publish_image(image_url=media_url, caption=caption)
+                post.ig_media_id = result["media_id"]
+                post.ig_permalink = result["permalink"]
+                post.publish_status = "published"
+                post.posted_at = datetime.now(timezone.utc)
+            except InstagramNotConfiguredError as e:
+                post.publish_status = "pending_credentials"
+                post.publish_error = str(e)
+            except InstagramPublishError as e:
+                post.publish_status = "failed"
+                post.publish_error = str(e)
+
         db.add(post)
         await db.commit()
         await db.refresh(post)
