@@ -1,9 +1,8 @@
 """Phase X8: Auto-Marketing & Growth Agent - SellIA Self-Promotion System."""
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
-from app.core.database import Base
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
+from app.db.models import Base
 import enum
 
 
@@ -46,7 +45,7 @@ class ContentPillar(str, enum.Enum):
 
 class AutoMarketingContent(Base):
     __tablename__ = "auto_marketing_content"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
 
     # Content basics
     title = Column(String(200), nullable=False)
@@ -57,12 +56,12 @@ class AutoMarketingContent(Base):
 
     # Channel targeting
     primary_channel = Column(Enum(MarketingChannel), nullable=False)
-    secondary_channels = Column(JSONB, default=list)  # [linkedin, email, blog]
+    secondary_channels = Column(JSON, default=list)  # [linkedin, email, blog]
 
     # Messaging
     hook = Column(String(300), nullable=False)  # Opening line to grab attention
     cta = Column(String(200), nullable=False)  # Call-to-action
-    hashtags = Column(JSONB, default=list)  # [#SellIA, #Sales, #AI]
+    hashtags = Column(JSON, default=list)  # [#SellIA, #Sales, #AI]
     emoji_strategy = Column(String(100))  # Which emojis for engagement
 
     # Psychology
@@ -87,7 +86,7 @@ class AutoMarketingContent(Base):
 
 class CustomerSuccessStory(Base):
     __tablename__ = "customer_success_stories"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
 
     # Customer info (anonymized or with permission)
     customer_name = Column(String(200))
@@ -98,7 +97,7 @@ class CustomerSuccessStory(Base):
     # Results (before/after)
     problem_statement = Column(Text)  # What problem did they have?
     solution_applied = Column(Text)  # How SellIA helped
-    result_metrics = Column(JSONB)  # {sales_increase: "150%", time_saved: "20 hours/week"}
+    result_metrics = Column(JSON)  # {sales_increase: "150%", time_saved: "20 hours/week"}
     result_summary = Column(String(300))  # Punchy summary
 
     # Content variants
@@ -117,7 +116,7 @@ class CustomerSuccessStory(Base):
 
 class GrowthHackingExperiment(Base):
     __tablename__ = "growth_hacking_experiments"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
 
     # Experiment definition
     hypothesis = Column(Text)  # "If we post testimonials, engagement will increase 40%"
@@ -147,7 +146,7 @@ class GrowthHackingExperiment(Base):
 
 class InfluencerCollaboration(Base):
     __tablename__ = "influencer_collaborations"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
 
     # Influencer info
     influencer_name = Column(String(200))
@@ -160,7 +159,7 @@ class InfluencerCollaboration(Base):
     # Collaboration details
     content_type = Column(Enum(ContentType))
     key_message = Column(Text)
-    deliverables = Column(JSONB)  # [post, story, reel, etc]
+    deliverables = Column(JSON)  # [post, story, reel, etc]
     compensation = Column(String(100))  # "Free plan", "$1000", "Revenue share"
 
     # Performance
@@ -174,7 +173,7 @@ class InfluencerCollaboration(Base):
 
 class GrowthMetrics(Base):
     __tablename__ = "growth_metrics"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
 
     # Channel performance
     channel = Column(Enum(MarketingChannel))

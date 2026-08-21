@@ -1,9 +1,8 @@
 """Phase X7: Perception Engineering Agent - Psychology-Driven Perception Shift."""
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
-from app.core.database import Base
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
+from app.db.models import Base
 import enum
 
 
@@ -32,9 +31,9 @@ class PerceptionShiftTechnique(str, enum.Enum):
 
 class ProductPerception(Base):
     __tablename__ = "product_perceptions"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Current perception (0-10 scale)
     quality_score = Column(Float, default=5.0)  # How premium/high-quality perceived
@@ -55,7 +54,7 @@ class ProductPerception(Base):
     # Actual product facts
     actual_quality = Column(Text, nullable=True)  # Real specs
     actual_value = Column(Text, nullable=True)  # Real ROI/benefit
-    actual_unique_features = Column(JSONB, default=list)  # Real differentiators
+    actual_unique_features = Column(JSON, default=list)  # Real differentiators
 
     # Customer segment perception
     target_segment = Column(String(100), nullable=True)  # "luxury_buyers", "budget", "professionals"
@@ -67,9 +66,9 @@ class ProductPerception(Base):
 
 class PerceptionShiftCampaign(Base):
     __tablename__ = "perception_shift_campaigns"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Campaign strategy
     target_dimension = Column(Enum(PerceptionDimension), nullable=False)
@@ -105,9 +104,9 @@ class PerceptionShiftCampaign(Base):
 
 class ValuePerceptionOptimizer(Base):
     __tablename__ = "value_perception_optimizers"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Current state
     base_price = Column(Float, nullable=False)
@@ -117,7 +116,7 @@ class ValuePerceptionOptimizer(Base):
     # Optimization tactics
     anchoring_high_price = Column(Float, nullable=True)  # "Compare to $500 alternative"
     bundled_value_add = Column(Text, nullable=True)  # Free things adding to perceived value
-    comparison_competitors = Column(JSONB, default=list)  # [{"competitor": "X", "price": 1000}]
+    comparison_competitors = Column(JSON, default=list)  # [{"competitor": "X", "price": 1000}]
 
     # Reframing options
     reframe_as_investment = Column(Text, nullable=True)  # Not cost, but investment
@@ -134,20 +133,20 @@ class ValuePerceptionOptimizer(Base):
 
 class PerceptionNarrative(Base):
     __tablename__ = "perception_narratives"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Narrative elements
     hero = Column(String(200))  # Who is the hero? (product or customer)
     villain = Column(String(200))  # What problem/competitor?
     transformation = Column(Text)  # Before/after customer story
-    proof_points = Column(JSONB, default=list)  # Evidence: [testimonials, metrics, awards]
+    proof_points = Column(JSON, default=list)  # Evidence: [testimonials, metrics, awards]
     emotional_appeal = Column(String(100))  # Pride, belonging, fear, joy, etc
     call_to_identity = Column(String(200))  # "Be someone who..." (identity-based)
 
     # Variant narratives
-    narrative_variants = Column(JSONB, default=list)  # [{"segment": "luxury", "narrative": "..."}]
+    narrative_variants = Column(JSON, default=list)  # [{"segment": "luxury", "narrative": "..."}]
     primary_narrative = Column(Text)
     backup_narrative = Column(Text, nullable=True)
 
