@@ -49,8 +49,14 @@ class Business(Base):
     # Relationships commented out to avoid import/FK resolution issues
     # user = relationship("User", back_populates="businesses")
     # catalog_items = relationship("CatalogItem", back_populates="business", cascade="all, delete-orphan")
-    # channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
     # website = relationship("Website", back_populates="business", uselist=False, cascade="all, delete-orphan")
+
+    # channels/conversations habilitados: Business ahora se importa explícito en
+    # sellbot.py (ver comentario ahí), así que el registro de SQLAlchemy puede
+    # resolver estos nombres. No confundir con las líneas comentadas arriba —
+    # esas siguen sin sus clases target garantizadas en el registry.
+    channels = relationship("ChannelConnection", back_populates="business", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="business", cascade="all, delete-orphan")
 
 
 # Config por defecto según tipo de negocio

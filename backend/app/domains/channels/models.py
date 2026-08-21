@@ -27,6 +27,7 @@ class ChannelPlatform(str, enum.Enum):
     SHOPIFY = "shopify"
     TIKTOK = "tiktok"
     TIKTOK_ADS = "tiktok_ads"
+    TIKTOK_SHOP = "tiktok_shop"
     TWITTER = "twitter"
     THREADS = "threads"
     HOTMART = "hotmart"

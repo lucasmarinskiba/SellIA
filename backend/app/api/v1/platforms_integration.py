@@ -23,10 +23,16 @@ Error Handling: Standardized error responses with correlation IDs
 import logging
 import uuid
 from typing import Optional, Dict, List, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Header, Request, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 import json
+
+from app.core.database import get_db
+from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+from app.domains.channels.connectors import get_connector
 
 logger = logging.getLogger(__name__)
 
@@ -365,31 +371,63 @@ async def tiktok_shop_config(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+async def _get_tiktok_shop_connection(account_id: str, db: AsyncSession) -> ChannelConnection:
+    try:
+        business_uuid = uuid.UUID(account_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="account_id debe ser un UUID de business válido")
+
+    result = await db.execute(
+        select(ChannelConnection).where(
+            ChannelConnection.business_id == business_uuid,
+            ChannelConnection.platform == ChannelPlatform.TIKTOK_SHOP,
+            ChannelConnection.is_active == True,
+        )
+    )
+    connection = result.scalar_one_or_none()
+    if not connection:
+        raise HTTPException(
+            status_code=404,
+            detail="No hay conexión de TikTok Shop configurada para este business_id. "
+                   "Crear una vía POST /api/v1/businesses/{business_id}/channels con platform=tiktok_shop.",
+        )
+    return connection
+
+
 @router.post("/tiktok-shop/sync/orders")
 async def tiktok_shop_sync_orders(
     request: OrderSyncRequest,
     account_id: str = Header(...),
+    db: AsyncSession = Depends(get_db),
 ) -> SyncResponse:
-    """Sync orders from TikTok Shop."""
+    """Sync orders reales desde TikTok Shop Seller API."""
     import time
     start_time = time.time()
 
+    connection = await _get_tiktok_shop_connection(account_id, db)
+    connector = get_connector(ChannelPlatform.TIKTOK_SHOP, connection.credentials, connection.settings)
+
     try:
-        logger.info(f"Syncing TikTok orders for {account_id}")
-
-        # TODO: Fetch TikTok credentials
-        # TODO: Call TikTokShopAutomation.list_orders()
-        # TODO: Store in DB
-
+        orders = await connector.list_orders(page=request.page, page_size=request.limit)
         duration = time.time() - start_time
 
-        return SyncResponse(
-            status="success",
-            synced_count=0,
-            duration_seconds=duration,
-        )
+        if orders is None:
+            connection.status = ChannelStatus.ERROR
+            connection.status_message = "list_orders devolvió error - ver logs de TikTok API"
+            await db.commit()
+            return SyncResponse(status="error", synced_count=0, duration_seconds=duration,
+                                 errors=["TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"])
+
+        connection.status = ChannelStatus.CONNECTED
+        connection.last_sync_at = datetime.now(timezone.utc)
+        await db.commit()
+
+        return SyncResponse(status="success", synced_count=len(orders), duration_seconds=duration)
 
     except Exception as e:
+        connection.status = ChannelStatus.ERROR
+        connection.status_message = str(e)[:255]
+        await db.commit()
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -648,23 +686,50 @@ async def platforms_health() -> Dict[str, Any]:
 
 
 @router.get("/status")
-async def platforms_status(account_id: str = Header(...)) -> Dict[str, Any]:
-    """Get platform integration status for account."""
+async def platforms_status(
+    account_id: str = Header(...),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Get platform integration status for account.
+
+    tiktok_shop consulta la conexión real en channel_connections. Las otras 5
+    plataformas de este archivo (facebook_shop, instagram_shop, calendly,
+    slack, telegram) siguen sin implementar (TODO histórico, fuera del scope
+    actual) — se listan como no-conectadas explícitamente, no simuladas.
+    """
     try:
         logger.info(f"Fetching platform status for {account_id}")
 
-        # TODO: Query DB for each platform
-        # TODO: Check last sync time, error status, etc
+        tiktok_status: dict[str, Any] = {"connected": False, "last_sync": None}
+        try:
+            business_uuid = uuid.UUID(account_id)
+            result = await db.execute(
+                select(ChannelConnection).where(
+                    ChannelConnection.business_id == business_uuid,
+                    ChannelConnection.platform == ChannelPlatform.TIKTOK_SHOP,
+                    ChannelConnection.is_active == True,
+                )
+            )
+            connection = result.scalar_one_or_none()
+            if connection:
+                tiktok_status = {
+                    "connected": connection.status == ChannelStatus.CONNECTED,
+                    "status": connection.status.value,
+                    "status_message": connection.status_message,
+                    "last_sync": connection.last_sync_at.isoformat() if connection.last_sync_at else None,
+                }
+        except ValueError:
+            pass  # account_id no es UUID válido - se reporta como no conectado
 
         return {
             "account_id": account_id,
             "platforms": {
-                "facebook_shop": {"connected": False, "last_sync": None},
-                "instagram_shop": {"connected": False, "last_sync": None},
-                "tiktok_shop": {"connected": False, "last_sync": None},
-                "calendly": {"connected": False, "last_sync": None},
-                "slack": {"connected": False, "last_sync": None},
-                "telegram": {"connected": False, "last_sync": None},
+                "facebook_shop": {"connected": False, "last_sync": None, "implemented": False},
+                "instagram_shop": {"connected": False, "last_sync": None, "implemented": False},
+                "tiktok_shop": {**tiktok_status, "implemented": True},
+                "calendly": {"connected": False, "last_sync": None, "implemented": False},
+                "slack": {"connected": False, "last_sync": None, "implemented": False},
+                "telegram": {"connected": False, "last_sync": None, "implemented": False},
             },
         }
 

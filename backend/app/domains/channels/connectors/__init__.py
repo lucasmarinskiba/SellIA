@@ -21,6 +21,7 @@ from app.domains.channels.connectors.google_ads import GoogleAdsConnector
 from app.domains.channels.connectors.shopify import ShopifyConnector
 from app.domains.channels.connectors.tiktok_ads import TikTokAdsConnector
 from app.domains.channels.connectors.tiktok import TikTokConnector
+from app.domains.channels.connectors.tiktok_shop import TikTokShopConnector
 from app.domains.channels.connectors.amazon import AmazonSellerConnector
 from app.domains.channels.connectors.beacons import BeaconsConnector
 from app.domains.channels.connectors.twitter import XConnector
@@ -45,6 +46,7 @@ CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.SHOPIFY: ShopifyConnector,
     ChannelPlatform.TIKTOK_ADS: TikTokAdsConnector,
     ChannelPlatform.TIKTOK: TikTokConnector,
+    ChannelPlatform.TIKTOK_SHOP: TikTokShopConnector,
     ChannelPlatform.AMAZON: AmazonSellerConnector,
     ChannelPlatform.BEACONS: BeaconsConnector,
     ChannelPlatform.TWITTER: XConnector,

@@ -84,6 +84,19 @@ from app.domains.fomo_intelligence import router as fomo_intelligence_router
 # ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
 from app.domains.arca_compliance import router as arca_compliance_router
 
+# Business model: se importa explícito porque ChannelConnection.business usa
+# relationship("Business") (string) - SQLAlchemy necesita la clase ya cargada
+# en el registry antes de configurar mappers, y ningún import previo la traía.
+from app.domains.businesses.models import Business
+
+# Channels (multi-tenant connector CRUD: WhatsApp, Instagram, Amazon, Mercado
+# Libre, Shopify, TikTok Shop, etc. - conectores reales pero router nunca
+# estuvo montado, por eso nadie podía crear una ChannelConnection)
+from app.api.v1.channels import router as channels_router
+
+# Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
+from app.api.v1.platforms_integration import router as platforms_integration_router
+
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -317,6 +330,16 @@ _register_domain_router(fomo_intelligence_router, "fomo_intelligence")
 
 # ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
 _register_domain_router(arca_compliance_router, "arca_compliance")
+
+# Channels (multi-tenant connector CRUD - WhatsApp, Amazon, TikTok Shop, etc)
+try:
+    app.include_router(channels_router, prefix="/api/v1/businesses", tags=["channels"])
+    logger.info("✅ channels router registered")
+except Exception as e:
+    logger.error(f"❌ Failed to register channels router: {e}", exc_info=True)
+
+# Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
+_register_domain_router(platforms_integration_router, "platforms_integration")
 
 # Legacy redirect (v1 is default)
 @app.get("/api/version", tags=["system"])
