@@ -12,8 +12,13 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   async rewrites() {
     // Configurable: BACKEND_ORIGIN permite apuntar a localhost en dev o a la
-    // API pública en cloud. Default = hostname Docker (compose).
-    const backend = process.env.BACKEND_ORIGIN || 'http://backend:8000'
+    // API pública en cloud. BACKEND_URL es el nombre usado en Vercel.
+    // Sin ninguno de los dos seteados (ej. build local sin backend externo),
+    // no reescribe /api/* y deja pasar la request (evita DNS_HOSTNAME_NOT_FOUND).
+    const backend = process.env.BACKEND_ORIGIN || process.env.BACKEND_URL
+    if (!backend) {
+      return []
+    }
     return [
       {
         source: '/api/:path*',
