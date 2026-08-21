@@ -1,6 +1,6 @@
 """Phase 5A: Location Endpoints."""
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from pydantic import BaseModel
 from typing import List, Optional
@@ -62,7 +62,7 @@ class BusinessModelResponse(BaseModel):
 async def create_location(
     business_id: UUID,
     req: LocationCreateRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     loc = await LocationService.create_location(
         db=db,
@@ -91,7 +91,7 @@ async def list_locations(business_id: UUID, db: Session = Depends(get_db)) -> Li
 async def location_metrics(
     business_id: UUID,
     location_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     metrics = await LocationService.get_location_metrics(db, business_id, location_id)
     return metrics
@@ -100,7 +100,7 @@ async def location_metrics(
 @router.post("/detect-model")
 async def detect_business_model(
     business_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> BusinessModelResponse:
     model = await LocationService.detect_business_model(db, business_id)
     return BusinessModelResponse.from_orm(model)
@@ -116,7 +116,7 @@ def log_offline_conversion(
     phone: Optional[str] = None,
     email: Optional[str] = None,
     notes: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     conversion = LocationService.log_offline_conversion(
         db=db,
@@ -138,7 +138,7 @@ def log_visit(
     location_id: UUID,
     user_id: UUID,
     entry_channel: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     visit = LocationService.log_location_visit(
         db=db,
@@ -153,7 +153,7 @@ def log_visit(
 @router.post("/visit-end")
 def end_visit(
     visit_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     visit = LocationService.end_location_visit(db, visit_id)
     if not visit:
