@@ -842,7 +842,18 @@
       "Bash(curl -v \"http://localhost:8000/api/ping\")",
       "Bash(curl -s \"http://localhost:8000/api/v1/auto-marketing/content-calendar?days=7\")",
       "Bash(curl -s \"http://localhost:8000/api/v1/auto-marketing/micro-influencers?niche=SaaS\")",
-      "Bash(git commit -m 'Fix: Auto-marketing router registration *)"
+      "Bash(git commit -m 'Fix: Auto-marketing router registration *)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/fomo-dynamics/conversion-probability?user_id=test-123&product_id=prod-456\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/perception/analyze-gap?current_perception=5&target_perception=9&dimension=quality\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/fomo-dynamics/conversion-probability?user_id=550e8400-e29b-41d4-a716-446655440000&product_id=550e8400-e29b-41d4-a716-446655440001\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/fomo-dynamics/conversion-probability?user_id=550e8400-e29b-41d4-a716-446655440000&product_id=550e8400-e29b-41d4-a716-446655440001&offer_id=550e8400-e29b-41d4-a716-446655440002\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/fomo-dynamics/viral-formula\")",
+      "Bash(rm -f \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático/test.db\")",
+      "Bash(rm -f \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático/backend/test.db\")",
+      "Bash(curl -s \"http://localhost:8000/api/ping\")",
+      "Bash(curl -I \"http://localhost:8000/api/ping\")",
+      "Bash(curl -v \"http://localhost:8000/api/v1/auto-marketing/viral-formula\")",
+      "Bash(git commit -m 'Fix: Phase X6/X7/X8 DB schema for SQLite compatibility *)"
     ]
   }
 }

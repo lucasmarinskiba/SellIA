@@ -63,7 +63,7 @@ class AutoMarketingAgent:
             if pillar == ContentPillar.RESULTS:
                 return ContentType.CAROUSEL
             elif pillar == ContentPillar.TRANSFORMATION:
-                return ContentType.BEFORE_AFTER  # hypothetical
+                return ContentType.REEL
             else:
                 return ContentType.REEL
 

@@ -1,9 +1,8 @@
 """Phase X6: FOMO Dynamics - Ultra-Potent FOMO Engine."""
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, JSON, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
-from app.core.database import Base
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
+from app.db.models import Base
 import enum
 
 
@@ -20,9 +19,9 @@ class FOMOStrategy(str, enum.Enum):
 
 class DynamicOffer(Base):
     __tablename__ = "dynamic_offers"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Core offer data
     strategy = Column(Enum(FOMOStrategy), nullable=False)
@@ -67,9 +66,9 @@ class DynamicOffer(Base):
 
 class PriceElasticity(Base):
     __tablename__ = "price_elasticity"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Elasticity data
     elasticity_coefficient = Column(Float, default=-1.2)  # < -1 = elastic, > -1 = inelastic
@@ -84,8 +83,8 @@ class PriceElasticity(Base):
 
 class FOMOBadge(Base):
     __tablename__ = "fomo_badges"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    offer_id = Column(UUID(as_uuid=True), ForeignKey("dynamic_offers.id", ondelete="CASCADE"), nullable=False)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    offer_id = Column(String(36), nullable=False)
 
     # Badge data
     badge_type = Column(String(50), nullable=False)  # "stock_alert", "time_alert", "price_increase", "best_seller"
@@ -101,19 +100,19 @@ class FOMOBadge(Base):
 
 class SocialProofReal(Base):
     __tablename__ = "social_proof_real"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # Real activity
-    recent_buyers = Column(JSONB, default=list)  # [{name, time_ago, profile_pic}]
+    recent_buyers = Column(JSON, default=list)  # [{name, time_ago, profile_pic}]
     recent_views = Column(Integer, default=0)  # Views in last hour
     today_sales = Column(Integer, default=0)
     week_sales = Column(Integer, default=0)
     repeat_purchase_rate = Column(Float, default=0)  # % of repeat customers
 
     # Testimonials
-    top_reviews = Column(JSONB, default=list)  # [{star_rating, text, buyer_name}]
+    top_reviews = Column(JSON, default=list)  # [{star_rating, text, buyer_name}]
     avg_rating = Column(Float, default=0)
 
     # Trust signals
@@ -125,10 +124,10 @@ class SocialProofReal(Base):
 
 class PersonalizedFOMO(Base):
     __tablename__ = "personalized_fomo"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
-    product_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    business_id = Column(String(36), nullable=False, index=True)
+    user_id = Column(String(36), nullable=False)
+    product_id = Column(String(36), nullable=False, index=True)
 
     # User behavior
     browse_count = Column(Integer, default=0)  # Times viewed product

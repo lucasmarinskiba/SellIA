@@ -48,27 +48,6 @@ from app.api.v1 import marketing_intelligence as marketing_intelligence_module
 from app.api.v1 import accounting_intelligence as accounting_intelligence_module
 from app.api.v1 import sales_operations as sales_operations_module
 
-# Phase 5: Local-First Funnel
-from app.domains.locations import router as locations_router
-from app.domains.proximity import router as proximity_router
-from app.domains.channel_integration import router as channel_integration_router
-from app.domains.offline_analytics import router as offline_analytics_router
-
-# Phase 51: AI Content Generation
-from app.domains.ai_content_generation import router as ai_content_generation_router
-
-# Phase 2: ML Pipelines
-from app.domains.ml_pipelines import router as ml_pipelines_router
-
-# Phase 3: Channel Routing
-from app.domains.channel_routing import router as channel_routing_router
-
-# Phase 4: Competitive Intelligence
-from app.domains.competitive_intelligence import router as competitive_intelligence_router
-
-# Phase 5: Performance Optimization
-from app.domains.performance_optimization import router as performance_optimization_router
-
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 from app.domains.fomo_dynamics import router as fomo_dynamics_router
 
@@ -78,10 +57,6 @@ from app.domains.perception_engineering import router as perception_engineering_
 # Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
 from app.domains.auto_marketing import router as auto_marketing_router
 
-# Import Phase 2-5 models only (skip problematic Phase 5A relationships)
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
-from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis, CompetitiveIntelligenceFeed
 from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
 from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
 from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
@@ -279,27 +254,6 @@ def _register_domain_router(router_obj, name: str) -> None:
         logger.info(f"✅ {name} router registered")
     except Exception as e:
         logger.error(f"❌ Failed to register {name} router: {e}", exc_info=True)
-
-# Phase 5: Local-First Funnel
-_register_domain_router(locations_router, "locations")
-_register_domain_router(proximity_router, "proximity")
-_register_domain_router(channel_integration_router, "channel_integration")
-_register_domain_router(offline_analytics_router, "offline_analytics")
-
-# Phase 51: AI Content Generation
-_register_domain_router(ai_content_generation_router, "ai_content_generation")
-
-# Phase 2: ML Pipelines
-_register_domain_router(ml_pipelines_router, "ml_pipelines")
-
-# Phase 3: Channel Routing
-_register_domain_router(channel_routing_router, "channel_routing")
-
-# Phase 4: Competitive Intelligence
-_register_domain_router(competitive_intelligence_router, "competitive_intelligence")
-
-# Phase 5: Performance Optimization
-_register_domain_router(performance_optimization_router, "performance_optimization")
 
 # Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
 _register_domain_router(fomo_dynamics_router, "fomo_dynamics")
