@@ -835,7 +835,8 @@
       "Bash(vercel --prod --confirm)",
       "Bash(vercel login *)",
       "Bash(git commit -m 'Add: Vercel deployment target reference *)",
-      "Bash(cd \"C:\\\\Users\\\\Usuario\" && find . -path \"*memory/deployment_target.md\" 2>/dev/null)"
+      "Bash(cd \"C:\\\\Users\\\\Usuario\" && find . -path \"*memory/deployment_target.md\" 2>/dev/null)",
+      "Bash(git commit -m 'Add: Phase X7 Perception Engineering Agent - Psychology-Driven Sales AI *)"
     ]
   }
 }
