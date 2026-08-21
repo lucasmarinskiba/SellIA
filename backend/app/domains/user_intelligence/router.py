@@ -1,5 +1,5 @@
 """Phase X9: AI User Intelligence Agent API."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.user_intelligence.service import UserIntelligenceAgent
@@ -11,11 +11,11 @@ router = APIRouter(prefix="/api/v1/user-intelligence", tags=["user-intelligence"
 
 @router.post("/profile-user")
 async def profile_user(
-    user_id: str,
-    email: str,
-    company_name: str,
-    engagement_data: dict,  # {email_opens, clicks, case_study_views, demo_requests}
-    company_data: dict,  # {industry, company_size, role, budget_approved}
+    user_id: str = Body(...),
+    email: str = Body(...),
+    company_name: str = Body(...),
+    engagement_data: dict = Body(...),
+    company_data: dict = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create comprehensive AI user profile."""

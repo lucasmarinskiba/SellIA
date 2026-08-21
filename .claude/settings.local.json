@@ -862,7 +862,21 @@
       "Bash(mkdir -p backend/app/domains/loyalty_engine)",
       "Bash(mkdir -p backend/app/domains/conversion_engine)",
       "Bash(mkdir -p backend/app/domains/acquisition_orchestrator)",
-      "Bash(git commit -m 'Add: X9-X12 Complete Router Layer + Orchestrator *)"
+      "Bash(git commit -m 'Add: X9-X12 Complete Router Layer + Orchestrator *)",
+      "Bash(timeout 10 python -m uvicorn backend.app.sellbot:app --host 0.0.0.0 --port 8000)",
+      "Bash(timeout 10 python -m uvicorn app.sellbot:app --host 0.0.0.0 --port 8000)",
+      "Bash(timeout 10 python -m uvicorn app.sellbot:app --host 0.0.0.0 --port 8008)",
+      "Bash(curl -s -X POST http://localhost:8008/api/v1/user-intelligence/profile-user -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"email\":\"test@example.com\",\"company_name\":\"Acme Corp\",\"engagement_data\":{\"email_opens\":10,\"clicks\":5,\"case_study_views\":2,\"demo_requests\":1},\"company_data\":{\"industry\":\"SaaS\",\"company_size\":500,\"role\":\"CTO\",\"budget_approved\":true}}')",
+      "Bash(curl -s http://localhost:8008/docs)",
+      "Bash(python -m uvicorn app.sellbot:app --host 0.0.0.0 --port 8008)",
+      "Bash(pkill -f \"uvicorn app.sellbot\")",
+      "Bash(timeout 5 python -m uvicorn app.sellbot:app --host 127.0.0.1 --port 9000)",
+      "Bash(curl -X POST http://127.0.0.1:9000/api/v1/user-intelligence/profile-user -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"email\":\"test@example.com\",\"company_name\":\"Acme\",\"engagement_data\":{\"email_opens\":10,\"emails_sent\":15,\"clicks\":5,\"case_study_views\":2,\"demo_requests\":1},\"company_data\":{\"industry\":\"SaaS\",\"company_size\":\"500\",\"role\":\"CTO\",\"budget_approved\":true}}')",
+      "Bash(wait)",
+      "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/fomo-generation/generate-scarcity -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"email\":\"test@example.com\",\"personality_type\":\"pragmatist\"}')",
+      "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/loyalty-engine/enroll-loyalty/user123 -H 'Content-Type: application/json' -d '\"test@example.com\"')",
+      "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/conversion-engine/add-attraction-magnet -H 'Content-Type: application/json' -d '{\"magnet_type\":\"calculator\",\"magnet_title\":\"ROI Calculator\",\"magnet_promise\":\"Calculate your savings\",\"ideal_customer_profile\":\"SaaS CTOs\",\"cta_copy\":\"Calculate Now\"}')",
+      "Bash(curl -s -X GET http://127.0.0.1:9000/api/v1/user-intelligence/get-personalized-messaging/user123 -H 'Content-Type: application/json')"
     ]
   }
 }

@@ -1,5 +1,5 @@
 """Phase X12: Conversion & Attraction Agent API."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 
@@ -10,8 +10,8 @@ router = APIRouter(prefix="/api/v1/conversion-engine", tags=["conversion-engine"
 @router.post("/start-closing-sequence/{user_id}")
 async def start_closing_sequence(
     user_id: str,
-    email: str,
-    personality_type: str,  # early_adopter, pragmatist, skeptic, impulse_buyer
+    email: str = Body(...),
+    personality_type: str = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Start 4-touch multi-channel closing sequence."""
@@ -109,11 +109,11 @@ async def start_closing_sequence(
 
 @router.post("/add-attraction-magnet")
 async def create_attraction_magnet(
-    magnet_type: str,  # ebook, calculator, template, webinar, audit
-    magnet_title: str,
-    magnet_promise: str,
-    ideal_customer_profile: str,
-    cta_copy: str,
+    magnet_type: str = Body(...),
+    magnet_title: str = Body(...),
+    magnet_promise: str = Body(...),
+    ideal_customer_profile: str = Body(...),
+    cta_copy: str = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create lead magnet optimized for conversion."""
@@ -190,9 +190,9 @@ async def get_closing_effectiveness(
 @router.post("/win-deal/{user_id}")
 async def record_deal_won(
     user_id: str,
-    deal_value: float,
-    contract_term_months: int,
-    which_touch_converted: int,  # 1, 2, 3, 4
+    deal_value: float = Body(...),
+    contract_term_months: int = Body(...),
+    which_touch_converted: int = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Record won deal and attribution."""
