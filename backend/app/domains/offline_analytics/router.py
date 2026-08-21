@@ -1,6 +1,6 @@
 """Phase 5D: Offline Analytics & Re-engagement Endpoints."""
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import Optional
 from datetime import datetime
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/v1/offline-analytics", tags=["offline-analytics"
 
 
 @router.post("/create-attribution")
-def create_attribution(
+async def create_attribution(
     business_id: UUID,
     user_id: UUID,
     first_online_channel: Optional[str] = None,
@@ -22,7 +22,7 @@ def create_attribution(
     post_visit_order_date: Optional[datetime] = None,
     post_visit_order_value: float = 0,
     conversion_type: str = "online_to_offline",
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create online-offline attribution record."""
     attribution = OfflineAnalyticsService.create_attribution(
@@ -46,7 +46,7 @@ def create_attribution(
 
 
 @router.get("/metrics")
-def get_offline_metrics(business_id: UUID, db: Session = Depends(get_db)) -> dict:
+async def get_offline_metrics(business_id: UUID, db: AsyncSession = Depends(get_db)) -> dict:
     """Get offline analytics metrics."""
     metrics = OfflineAnalyticsService.calculate_offline_metrics(db, business_id)
     return {
@@ -66,10 +66,10 @@ def get_offline_metrics(business_id: UUID, db: Session = Depends(get_db)) -> dic
 
 
 @router.get("/attribution-report")
-def get_attribution_report(
+async def get_attribution_report(
     business_id: UUID,
     days: int = 30,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get online-to-offline-to-online attribution report."""
     report = OfflineAnalyticsService.get_attribution_report(db, business_id, days)
@@ -77,12 +77,12 @@ def get_attribution_report(
 
 
 @router.post("/post-visit-sequence/create")
-def create_post_visit_sequence(
+async def create_post_visit_sequence(
     business_id: UUID,
     sequence_name: str,
     trigger_type: str,
     location_id: Optional[UUID] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create post-visit re-engagement sequence."""
     seq = OfflineAnalyticsService.create_post_visit_sequence(
@@ -101,12 +101,12 @@ def create_post_visit_sequence(
 
 
 @router.post("/post-visit-sequence/execute")
-def execute_post_visit_sequence(
+async def execute_post_visit_sequence(
     business_id: UUID,
     sequence_id: UUID,
     user_id: UUID,
     offline_conversion_id: Optional[UUID] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Execute post-visit sequence for user."""
     execution = OfflineAnalyticsService.execute_post_visit_sequence(

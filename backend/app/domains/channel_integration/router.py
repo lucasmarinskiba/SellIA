@@ -1,6 +1,6 @@
 """Phase 5C: Channel Integration Endpoints."""
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List, Optional
 from pydantic import BaseModel
@@ -41,13 +41,13 @@ class LocationReviewResponse(BaseModel):
 
 
 @router.post("/google-business-connect")
-def connect_google_business(
+async def connect_google_business(
     business_id: UUID,
     location_id: UUID,
     google_business_id: str,
     account_name: str,
     access_token: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Connect Google Business Profile to location."""
     conn = ChannelIntegrationService.connect_google_business_profile(
@@ -67,11 +67,11 @@ def connect_google_business(
 
 
 @router.post("/location-message/create")
-def create_location_message(
+async def create_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageCreateRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create location-triggered message template."""
     msg = ChannelIntegrationService.create_location_message(
@@ -91,11 +91,11 @@ def create_location_message(
 
 
 @router.post("/location-message/send")
-def send_location_message(
+async def send_location_message(
     business_id: UUID,
     location_id: UUID,
     req: LocationMessageExecuteRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Execute location message send."""
     execution = ChannelIntegrationService.send_location_message(
@@ -120,10 +120,10 @@ def send_location_message(
 
 
 @router.get("/location-reviews")
-def get_location_reviews(
+async def get_location_reviews(
     business_id: UUID,
     location_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get all reviews for location."""
     reviews = ChannelIntegrationService.get_location_reviews(db, business_id, location_id)
@@ -137,7 +137,7 @@ def get_location_reviews(
 
 
 @router.post("/google-maps-sync")
-def sync_google_maps(
+async def sync_google_maps(
     business_id: UUID,
     location_id: UUID,
     place_id: str,
@@ -145,7 +145,7 @@ def sync_google_maps(
     review_count: int = 0,
     phone: Optional[str] = None,
     website: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Sync Google Maps location data."""
     maps_loc = ChannelIntegrationService.sync_google_maps_location(
@@ -168,14 +168,14 @@ def sync_google_maps(
 
 
 @router.post("/add-review")
-def add_review(
+async def add_review(
     business_id: UUID,
     location_id: UUID,
     reviewer_name: str,
     rating: float,
     review_text: Optional[str] = None,
     platform: str = "google",
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Add location review."""
     review = ChannelIntegrationService.add_location_review(

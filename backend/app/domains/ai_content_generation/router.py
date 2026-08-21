@@ -1,6 +1,6 @@
 """Phase 51: AI Content Generation Endpoints."""
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List, Optional
 from pydantic import BaseModel
@@ -33,10 +33,10 @@ class BulkGenerationRequest(BaseModel):
 
 
 @router.post("/generate")
-def generate_content(
+async def generate_content(
     business_id: UUID,
     req: ContentGenerationRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate AI content (title, description, social post, email)."""
     # In real system, calls Claude API via anthropic
@@ -65,11 +65,11 @@ def generate_content(
 
 
 @router.post("/variants")
-def create_variants(
+async def create_variants(
     business_id: UUID,
     generated_content_id: UUID,
     variants: List[ContentVariantRequest],
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create content variants (different tones/styles)."""
     created = ContentGenerationService.create_content_variants(
@@ -86,10 +86,10 @@ def create_variants(
 
 
 @router.post("/publish")
-def publish_content(
+async def publish_content(
     business_id: UUID,
     content_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Publish generated content to platform."""
     content = ContentGenerationService.publish_content(db, content_id)
@@ -104,10 +104,10 @@ def publish_content(
 
 
 @router.post("/bulk-generate")
-def bulk_generate_content(
+async def bulk_generate_content(
     business_id: UUID,
     req: BulkGenerationRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate content for multiple products."""
     job = ContentGenerationService.create_bulk_generation_job(
@@ -128,14 +128,14 @@ def bulk_generate_content(
 
 
 @router.post("/bulk-status")
-def update_bulk_status(
+async def update_bulk_status(
     business_id: UUID,
     job_id: UUID,
     status: str,
     generated_count: int = 0,
     approved_count: int = 0,
     published_count: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update bulk generation job status."""
     job = ContentGenerationService.update_bulk_job_status(
@@ -159,7 +159,7 @@ def update_bulk_status(
 
 
 @router.post("/track-performance")
-def track_content_performance(
+async def track_content_performance(
     business_id: UUID,
     generated_content_id: UUID,
     product_id: Optional[UUID],
@@ -168,7 +168,7 @@ def track_content_performance(
     clicks: int = 0,
     conversions: int = 0,
     revenue: float = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Track content performance metrics."""
     perf = ContentGenerationService.track_content_performance(
@@ -194,11 +194,11 @@ def track_content_performance(
 
 
 @router.get("/content-by-type")
-def get_content_by_type(
+async def get_content_by_type(
     business_id: UUID,
     content_type: str,
     platform: Optional[str] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get all published content by type."""
     contents = ContentGenerationService.get_content_by_type(
