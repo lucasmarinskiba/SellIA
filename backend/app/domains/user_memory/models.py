@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Boolean, Float, JSON
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Boolean, Float, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB, TSVECTOR
 from sqlalchemy.orm import relationship
 
@@ -96,6 +96,5 @@ class UserPreference(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        # unique constraint: user_id + preference_key
-        ("user_id", "preference_key"),
+        UniqueConstraint('user_id', 'preference_key', name='uq_user_preferences_user_id_preference_key'),
     )
