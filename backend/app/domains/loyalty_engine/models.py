@@ -5,7 +5,16 @@ from app.db.models import Base
 
 
 class LoyaltyProgram(Base):
-    __tablename__ = "loyalty_programs"
+    # x11_loyalty_status, no "loyalty_programs": ese nombre ya lo usan dos
+    # modelos preexistentes (app.domains.loyalty.loyalty_models y
+    # app.domains.retention.models), ambos modelando la CONFIGURACIÓN de un
+    # programa de loyalty por negocio (points_per_dollar, thresholds) - algo
+    # completamente distinto al estado de loyalty POR USUARIO que trackea
+    # esta clase. Confirmado en producción: la tabla real "loyalty_programs"
+    # ya existía con esa otra columna (business_id, points_per_dollar, etc),
+    # sin "user_id" - toda query de este modelo fallaba con
+    # UndefinedColumnError contra el schema equivocado.
+    __tablename__ = "x11_loyalty_status"
     id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
 
     user_id = Column(String(36), nullable=False, index=True)
