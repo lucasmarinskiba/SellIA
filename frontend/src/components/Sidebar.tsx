@@ -10,7 +10,7 @@ import {
   ShoppingCart, Wallet, Shield, FileSearch, Bell, Lightbulb, Mail, Headphones, Truck, Calendar,
   MessageCircle, Target, Heart, Brain, MonitorPlay, TrendingUp, Home,
   ShoppingBag, Camera as Instagram, Award, Activity, Users, Radar,
-  Gift, Ticket, Swords, Moon, Eye, Crosshair, Phone
+  Gift, Ticket, Swords, Moon, Eye, Crosshair, Phone, Sparkles, Flame
 } from 'lucide-react'
 import { CompanionWidget } from './gamification/CompanionWidget'
 import { GardenWidget } from './gamification/GardenWidget'
@@ -55,6 +55,8 @@ const baseNavItems = [
   { href: '/dashboard/clientes-fieles', label: 'Clientes Fieles', icon: Heart },
   { href: '/dashboard/inteligencia', label: 'Inteligencia', icon: Brain },
   { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp },
+  { href: '/dashboard/acquisition-engine', label: 'Motor de Adquisición', icon: Sparkles },
+  { href: '/dashboard/fomo-intelligence', label: 'FOMO Intelligence', icon: Flame },
   { href: '/dashboard/marketplace', label: 'Marketplace', icon: ShoppingBag },
   { href: '/dashboard/social-growth', label: 'Social Growth', icon: Instagram },
   { href: '/dashboard/ambassador', label: 'Ambassador', icon: Award },
