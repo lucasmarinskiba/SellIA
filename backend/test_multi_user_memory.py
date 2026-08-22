@@ -35,6 +35,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
 from app.domains.users.models import User
+from app.domains.businesses.models import Business  # Import to resolve relationships
+from app.domains.subscriptions.models import Subscription  # Import to resolve relationships
 from app.domains.user_memory.models import UserMemory, UserMemoryEvent
 from app.domains.user_memory.service import UserMemoryService
 from app.domains.user_memory.schemas import UserMemoryUpdate, UserMemoryEventCreate
