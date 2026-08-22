@@ -13,8 +13,8 @@ class InstagramPost(Base):
     hashtags = Column(String(500))  # Hashtags: #sell_.ia #AI #SalesTech
     content_type = Column(String(50))  # carousel, reel, story, static
     media_url = Column(String(500))  # Image/video URL
-    posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    scheduled_for = Column(DateTime, nullable=True)
+    posted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    scheduled_for = Column(DateTime(timezone=True), nullable=True)
 
     # Publish status real (no simulado)
     publish_status = Column(String(30), default="draft")  # draft, pending_credentials, published, failed
@@ -35,7 +35,7 @@ class InstagramPost(Base):
     utm_params = Column(String(200))  # utm_source=instagram utm_medium=post
     conversions_attributed = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class InstagramCampaign(Base):
@@ -64,9 +64,9 @@ class InstagramCampaign(Base):
     sellbox_link = Column(String(500))  # Direct link to SellIA
 
     status = Column(String(50), default="draft")  # draft, scheduled, active, completed
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    launched_at = Column(DateTime, nullable=True)
-    ended_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    launched_at = Column(DateTime(timezone=True), nullable=True)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class InstagramAudience(Base):
@@ -94,9 +94,9 @@ class InstagramAudience(Base):
     is_trial_user = Column(Boolean, default=False)
     is_customer = Column(Boolean, default=False)
 
-    first_interaction_at = Column(DateTime, nullable=True)
-    last_interaction_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    first_interaction_at = Column(DateTime(timezone=True), nullable=True)
+    last_interaction_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class InstagramConversionPath(Base):
@@ -107,22 +107,22 @@ class InstagramConversionPath(Base):
     user_id = Column(String(36))
 
     # Path stages
-    instagram_interaction_at = Column(DateTime)  # Like/comment/share/click
+    instagram_interaction_at = Column(DateTime(timezone=True))  # Like/comment/share/click
     instagram_post_id = Column(String(36))
     campaign_id = Column(String(36))
 
-    landing_page_visit_at = Column(DateTime, nullable=True)
+    landing_page_visit_at = Column(DateTime(timezone=True), nullable=True)
     utm_source = Column(String(100), default="instagram")
     utm_medium = Column(String(100))  # story, reel, carousel, comment
     utm_campaign = Column(String(100))
 
-    lead_created_at = Column(DateTime, nullable=True)
+    lead_created_at = Column(DateTime(timezone=True), nullable=True)
     lead_magnet_downloaded = Column(String(50), nullable=True)  # ebook, calculator, etc
 
-    trial_started_at = Column(DateTime, nullable=True)
-    demo_scheduled_at = Column(DateTime, nullable=True)
+    trial_started_at = Column(DateTime(timezone=True), nullable=True)
+    demo_scheduled_at = Column(DateTime(timezone=True), nullable=True)
 
-    deal_closed_at = Column(DateTime, nullable=True)
+    deal_closed_at = Column(DateTime(timezone=True), nullable=True)
     deal_value = Column(Float, nullable=True)
 
     # Metrics
@@ -130,4 +130,4 @@ class InstagramConversionPath(Base):
     touches_before_conversion = Column(Integer, default=0)
     instagram_attribution_credit = Column(Float, default=0.0)  # 0-1.0
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
