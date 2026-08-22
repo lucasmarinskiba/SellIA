@@ -48,7 +48,7 @@ class FOMOStrategyApplication(Base):
     # Mensaje generado a partir del dato real
     generated_message = Column(Text, nullable=True)
 
-    applied_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    applied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class FOMOStrategyOutcome(Base):
@@ -66,7 +66,7 @@ class FOMOStrategyOutcome(Base):
     # Señal de confianza: si el usuario reporta la FOMO como genuina o forzada
     perceived_as_genuine = Column(Boolean, nullable=True)
 
-    measured_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class FOMOStrategyIntelligence(Base):
@@ -85,4 +85,4 @@ class FOMOStrategyIntelligence(Base):
     confidence_level = Column(String(20), default="low")  # low, medium, high (según sample_size)
 
     recommendation = Column(Text, nullable=True)
-    last_updated = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
