@@ -72,6 +72,16 @@ AsyncSessionLocal = async_sessionmaker(
 async def init_db():
     """Create all tables on startup."""
     try:
+        # Import all domain models to register them with CoreBase
+        try:
+            from app.domains.users import models as _  # noqa
+            from app.domains.businesses import models as _  # noqa
+            from app.domains.orders import models as _  # noqa
+            from app.domains.channels import models as _  # noqa
+            from app.domains.analytics import models as _  # noqa
+        except Exception as e:
+            logger.warning(f"Some domain models failed to import (non-critical): {e}")
+
         async with engine.begin() as conn:
             # Create tables for app.db.models Base
             await conn.run_sync(Base.metadata.create_all)
