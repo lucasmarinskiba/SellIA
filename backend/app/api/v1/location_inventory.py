@@ -8,7 +8,7 @@ from typing import Optional, List
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.auth.models import User
+from app.domains.users.models import User
 from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
 from app.domains.inventory.inventory_models import LocationInventory
 

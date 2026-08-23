@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.auth.models import User
+from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.bi.offline_dashboards_schemas import (
     FootTrafficMetrics, OfflineConversionMetrics, OnlineOfflineAttributionMetrics,

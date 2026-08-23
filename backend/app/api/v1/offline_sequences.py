@@ -9,7 +9,7 @@ from enum import Enum
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.auth.models import User
+from app.domains.users.models import User
 from app.domains.businesses.models import Business
 
 router = APIRouter(prefix="/api/v1", tags=["offline-sequences"])

@@ -882,7 +882,9 @@
       "Bash(curl -s -X POST __TRACKED_VAR__/api/v1/acquisition-orchestrator/run-full-sequence -H 'Content-Type: application/json' -d '{ *)",
       "Bash(curl -s -X POST __TRACKED_VAR__/api/v1/acquisition-orchestrator/run-full-sequence -H 'Content-Type: application/json' -d '{\"user_data\":{\"user_id\":\"user999\"},\"engagement_data\":{\"email_opens\":8},\"company_data\":{\"industry\":\"SaaS\"}}')",
       "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/instagram-automation/create-feedia-post -H 'Content-Type: application/json' -d '{\"campaign_id\":\"camp_123\",\"content_type\":\"reel\",\"theme\":\"founder_story\",\"target_personality\":\"pragmatist\"}')",
-      "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/feedback-loop/update-profile-from-conversion -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"deal_closed\":true,\"deal_value\":3999,\"which_touch_converted\":2,\"conversion_attributed_to\":\"personality_targeting\"}')"
+      "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/feedback-loop/update-profile-from-conversion -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"deal_closed\":true,\"deal_value\":3999,\"which_touch_converted\":2,\"conversion_attributed_to\":\"personality_targeting\"}')",
+      "Bash(xargs grep -l \"class User\")",
+      "Bash(timeout 10 python -c \"from app.api.v1.offline_sequences import router; print\\('OK'\\)\")"
     ]
   }
 }
