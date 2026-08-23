@@ -4,19 +4,11 @@ set -e
 echo "🚀 SellIA Backend Entrypoint"
 echo "================================"
 
-# Run migrations if DATABASE_URL is set
-if [ -n "$DATABASE_URL" ]; then
-    echo "📦 Running database migrations..."
-    python run_migrations.py
-    MIGRATIONS_EXIT=$?
-    if [ $MIGRATIONS_EXIT -ne 0 ]; then
-        echo "⚠️  Migrations failed with exit code $MIGRATIONS_EXIT (continuing startup)"
-    else
-        echo "✅ Migrations completed"
-    fi
-else
-    echo "⚠️  DATABASE_URL not set, skipping migrations"
-fi
+# Migrations disabled due to migration state issues
+# TODO: Fix migration chain and re-enable
+# ORM will create tables via Base.metadata.create_all() in sellbot.py startup
+echo "⚠️  Alembic migrations temporarily disabled (using ORM fallback)"
+echo "    Run 'python run_migrations.py' manually once DB is clean"
 
 echo "================================"
 echo "🎯 Starting FastAPI application..."
