@@ -1,14 +1,14 @@
 """API endpoints for location check-in/checkout + feedback."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.users.models import User
+from app.core.deps import get_current_user
+from app.domains.auth.models import User
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.locations.checkin_models import CheckinType
 
@@ -54,7 +54,7 @@ class StaffCheckoutRequest(BaseModel):
 @router.post("/locations/checkin")
 async def visitor_checkin(
     request: VisitorCheckinRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Visitor check-in (walk-in, QR, geofence, appointment)."""
     try:
@@ -80,7 +80,7 @@ async def visitor_checkin(
 @router.post("/locations/checkout")
 async def visitor_checkout(
     request: VisitorCheckoutRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Visitor check-out, record dwell time."""
     try:
@@ -101,7 +101,7 @@ async def visitor_checkout(
 @router.post("/locations/feedback")
 async def submit_feedback(
     request: FeedbackRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Submit visitor feedback (NPS, sentiment, topics)."""
     try:
@@ -128,7 +128,7 @@ async def submit_feedback(
 async def staff_checkin(
     request: StaffCheckinRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Staff shift start."""
     try:
@@ -153,7 +153,7 @@ async def staff_checkin(
 async def staff_checkout(
     request: StaffCheckoutRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Staff shift end, record performance."""
     try:
@@ -180,7 +180,7 @@ async def staff_checkout(
 async def get_checkin_summary(
     location_id: UUID,
     hours: int = Query(24, ge=1, le=168),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get real-time check-in activity for location."""
     try:
@@ -200,7 +200,7 @@ async def get_staff_performance(
     location_id: UUID = Query(...),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get staff member's performance metrics."""
     try:
