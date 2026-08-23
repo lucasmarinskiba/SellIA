@@ -19,11 +19,10 @@ def hash_password(password: str) -> str:
 async def signup(
     email: str = Body(...),
     password: str = Body(...),
-    seller_name: str = Body(...),
-    business_name: str = Body(None),
+    full_name: str = Body(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """Register new seller account."""
+    """Register new user account."""
     # Check if email exists
     stmt = select(User).where(User.email == email)
     result = await db.execute(stmt)
@@ -33,18 +32,23 @@ async def signup(
     # Create user
     user = User(
         email=email,
-        password_hash=hash_password(password),
-        seller_name=seller_name,
-        business_name=business_name or seller_name,
+        hashed_password=hash_password(password),
+        full_name=full_name,
+        is_active=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
+    # Generate access token
+    from app.core.security import create_access_token
+    access_token = create_access_token(user_id=str(user.id))
+
     return {
-        "user_id": user.id,
+        "user_id": str(user.id),
         "email": user.email,
-        "seller_name": user.seller_name,
+        "full_name": user.full_name,
+        "access_token": access_token,
         "message": "Account created successfully",
     }
 
