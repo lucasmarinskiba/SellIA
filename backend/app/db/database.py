@@ -73,7 +73,13 @@ async def init_db():
     """Create all tables on startup."""
     try:
         async with engine.begin() as conn:
+            # Create tables for app.db.models Base
             await conn.run_sync(Base.metadata.create_all)
+
+            # Create tables for app.core.database Base (domains models)
+            from app.core.database import Base as CoreBase
+            await conn.run_sync(CoreBase.metadata.create_all)
+
             logger.info("✅ Database tables created/verified")
     except Exception as e:
         logger.error(f"❌ Database init failed: {e}")
