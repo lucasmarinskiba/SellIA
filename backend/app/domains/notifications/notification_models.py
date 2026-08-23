@@ -77,44 +77,6 @@ class NotificationPreference(Base):
     )
 
 
-class AlertRule(Base):
-    """Alert rule configuration."""
-    __tablename__ = "alert_rules"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-
-    # Rule definition
-    name = Column(String(255), nullable=False)
-    description = Column(String(500), nullable=True)
-    alert_type = Column(String(50), nullable=False)  # AlertType value
-    priority = Column(String(20), default=AlertPriority.MEDIUM.value)
-
-    # Trigger conditions
-    condition_json = Column(JSONB, nullable=False)  # e.g., {"threshold": 5000, "operator": ">="}
-    enabled = Column(Boolean, default=True)
-
-    # Notification channels
-    channels = Column(JSONB, default=list)  # List of NotificationChannel values
-
-    # Escalation
-    escalate_after_minutes = Column(Integer, nullable=True)  # Escalate if not resolved
-    escalation_to_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-
-    # Frequency limits
-    max_alerts_per_day = Column(Integer, default=10)
-    last_triggered_at = Column(DateTime(timezone.utc), nullable=True)
-    triggered_count_today = Column(Integer, default=0)
-
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        Index("idx_business_enabled", "business_id", "enabled"),
-        Index("idx_alert_type", "alert_type"),
-    )
-
-
 class NotificationLog(Base):
     """Notification delivery log."""
     __tablename__ = "notification_logs"

@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.domains.notifications.notification_models import (
-    NotificationPreference, AlertRule, NotificationLog, AlertTemplate, NotificationMetrics,
+    NotificationPreference, NotificationLog, AlertTemplate, NotificationMetrics,
     AlertType, NotificationChannel, AlertPriority
 )
+from app.domains.alerts.models import AlertRule
 
 logger = logging.getLogger(__name__)
 
