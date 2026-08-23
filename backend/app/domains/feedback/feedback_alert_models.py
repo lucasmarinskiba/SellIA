@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Float
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -85,7 +85,7 @@ class NPSTrendMetric(Base):
     hour = Column(Integer, nullable=True)  # 0-23 for hourly, NULL for daily
 
     # Metrics
-    nps_avg = Column(Decimal(5, 2), nullable=False)  # Average NPS 0-10
+    nps_avg = Column(Numeric(5, 2), nullable=False)  # Average NPS 0-10
     promoters_count = Column(Integer, default=0)  # 9-10
     passives_count = Column(Integer, default=0)  # 7-8
     detractors_count = Column(Integer, default=0)  # 0-6
@@ -120,13 +120,13 @@ class SentimentTrend(Base):
     date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
 
     # Sentiment % breakdown
-    positive_pct = Column(Decimal(5, 2), default=0)  # 0-100
-    neutral_pct = Column(Decimal(5, 2), default=0)
-    negative_pct = Column(Decimal(5, 2), default=0)
+    positive_pct = Column(Numeric(5, 2), default=0)  # 0-100
+    neutral_pct = Column(Numeric(5, 2), default=0)
+    negative_pct = Column(Numeric(5, 2), default=0)
 
     # Trend direction
     direction = Column(String(20), default="stable")  # improving, stable, declining
-    day_over_day_change = Column(Decimal(5, 2), nullable=True)  # % change from previous day
+    day_over_day_change = Column(Numeric(5, 2), nullable=True)  # % change from previous day
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

@@ -906,7 +906,8 @@
       "Bash(curl -s \"https://sellia-production.up.railway.app/\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/docs\")",
       "Bash(grep -n \"health\\\\|/\\\\|@app\" backend/app/sellbot.py)",
-      "Bash(curl -s \"https://sellia-production.up.railway.app/api/ping\")"
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/ping\")",
+      "Bash(railway run *)"
     ]
   }
 }

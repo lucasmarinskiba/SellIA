@@ -2,7 +2,6 @@
 
 from app.domains.notifications.notification_models import (
     NotificationPreference,
-    AlertRule,
     NotificationLog,
     AlertTemplate,
     NotificationMetrics,
@@ -10,6 +9,7 @@ from app.domains.notifications.notification_models import (
     AlertType,
     AlertPriority,
 )
+from app.domains.alerts.models import AlertRule
 from app.domains.notifications.notification_service import NotificationService
 
 __all__ = [
