@@ -23,7 +23,7 @@ def upgrade() -> None:
         name='eventtype',
         create_type=True
     )
-    event_type_enum.create(op.get_bind())
+    event_type_enum.create(op.get_bind(), checkfirst=True)
 
     # analytics_events table
     op.create_table(
