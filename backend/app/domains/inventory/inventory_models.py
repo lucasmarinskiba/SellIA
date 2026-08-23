@@ -60,7 +60,7 @@ class LocationInventory(Base):
 
     # Metadata
     notes = Column(String(1000), nullable=True)
-    metadata = Column(JSONB, default=dict, nullable=False)
+    inventory_metadata = Column(JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

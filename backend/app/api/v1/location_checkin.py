@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.auth.models import User
+from app.domains.users.models import User
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.locations.checkin_models import CheckinType
 
