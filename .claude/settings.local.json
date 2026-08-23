@@ -884,7 +884,23 @@
       "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/instagram-automation/create-feedia-post -H 'Content-Type: application/json' -d '{\"campaign_id\":\"camp_123\",\"content_type\":\"reel\",\"theme\":\"founder_story\",\"target_personality\":\"pragmatist\"}')",
       "Bash(curl -s -X POST http://127.0.0.1:9000/api/v1/feedback-loop/update-profile-from-conversion -H 'Content-Type: application/json' -d '{\"user_id\":\"user123\",\"deal_closed\":true,\"deal_value\":3999,\"which_touch_converted\":2,\"conversion_attributed_to\":\"personality_targeting\"}')",
       "Bash(xargs grep -l \"class User\")",
-      "Bash(timeout 10 python -c \"from app.api.v1.offline_sequences import router; print\\('OK'\\)\")"
+      "Bash(timeout 10 python -c \"from app.api.v1.offline_sequences import router; print\\('OK'\\)\")",
+      "Bash(gh deployment *)",
+      "Bash(xargs grep -l \"railway\\\\|RAILWAY\\\\|railway.app\")",
+      "Bash(curl -s -w \"\\\\nHTTP: %{http_code}\\\\n\" https://sellia-production.up.railway.app/health)",
+      "Bash(npm list *)",
+      "Bash(railway project *)",
+      "Bash(railway open *)",
+      "Bash(curl -s -w \"HTTP:%{http_code}\\\\n\" https://sellia-production.up.railway.app/api/v1/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@test.com\",\"password\":\"test\"}')",
+      "Bash(railway down *)",
+      "Bash(curl -s -w \"HTTP:%{http_code}\\\\n\" https://sellia-production.up.railway.app/health)",
+      "Bash(timeout 30 python -m uvicorn app.main:app --host 127.0.0.1 --port 8888)",
+      "Bash(curl -s http://127.0.0.1:8888/health)",
+      "Bash(pkill -f \"uvicorn.*8888\")",
+      "Bash(python -m uvicorn app.main:app --host 127.0.0.1 --port 9999)",
+      "Bash(curl -s http://127.0.0.1:9999/health)",
+      "Bash(curl -s http://127.0.0.1:9999/api/v1/offline-sequences/templates)",
+      "Bash(pkill -f \"uvicorn.*9999\")"
     ]
   }
 }
