@@ -35,6 +35,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # Create pgvector extension if not exists
+    try:
+        op.execute('CREATE EXTENSION IF NOT EXISTS vector;')
+    except:
+        pass  # Extension might already exist or user lacks permission
+
     op.create_table('achievements',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('slug', sa.String(length=100), nullable=False),
