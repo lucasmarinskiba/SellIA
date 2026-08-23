@@ -1,14 +1,14 @@
 """Location inventory API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional, List
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.users.models import User
+from app.core.deps import get_current_user
+from app.domains.auth.models import User
 from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
 from app.domains.inventory.inventory_models import LocationInventory
 
@@ -57,7 +57,7 @@ class OrderReservationRequest(BaseModel):
 @router.get("/locations/{location_id}/inventory")
 async def get_location_inventory(
     location_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get all inventory at location."""
     try:
@@ -94,7 +94,7 @@ async def get_location_inventory(
 async def get_product_stock(
     location_id: UUID,
     product_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get stock level for specific product."""
     try:
@@ -124,7 +124,7 @@ async def get_product_stock(
 async def update_stock(
     request: StockUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update stock level (restock, manual adjustment, demo usage)."""
     try:
@@ -146,7 +146,7 @@ async def update_stock(
 async def check_demo_stock(
     location_id: UUID,
     request: DemoCheckRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Check if product available for demo during visitor checkin."""
     try:
@@ -166,7 +166,7 @@ async def get_stock_history(
     location_id: UUID,
     product_id: Optional[str] = Query(None),
     days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get stock movement audit trail."""
     try:
@@ -206,7 +206,7 @@ async def get_stock_history(
 async def get_low_stock_alerts(
     location_id: UUID,
     acknowledged: Optional[bool] = Query(None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get low-stock alerts for location."""
     try:
@@ -247,7 +247,7 @@ async def get_low_stock_alerts(
 async def acknowledge_alert(
     alert_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Mark low-stock alert as acknowledged."""
     try:
@@ -264,7 +264,7 @@ async def acknowledge_alert(
 @router.post("/fulfillment/find-location")
 async def find_fulfillment_location(
     request: FulfillmentRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Find best location to fulfill online order."""
     try:
@@ -290,7 +290,7 @@ async def find_fulfillment_location(
 async def reserve_inventory(
     request: OrderReservationRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reserve inventory for online order."""
     try:
@@ -312,7 +312,7 @@ async def mark_order_shipped(
     location_id: UUID,
     product_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Mark order as shipped from location."""
     try:

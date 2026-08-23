@@ -73,7 +73,7 @@ class OfflineConversion(Base):
 
     # Notes + metadata
     staff_notes = Column(Text, nullable=True)
-    metadata = Column(JSONB, default=dict, nullable=False)
+    visit_metadata = Column(JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

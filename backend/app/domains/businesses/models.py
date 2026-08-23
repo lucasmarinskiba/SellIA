@@ -46,12 +46,7 @@ class Business(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    # locations sigue comentado: Location (businesses/location_models.py) no
-    # está importado en ningún punto reachable de sellbot.py/main.py todavía
-    # (locations_router falla por un bug separado - get_current_user no
-    # existe en app.core.security - no relacionado a este fix). Habilitarlo
-    # sin resolver eso primero reintroduciría el mismo error de nombre.
-    # locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
+    locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
     # user/catalog_items/website/channels/conversations habilitados: las 5
     # clases target (User, CatalogItem, Website, ChannelConnection,

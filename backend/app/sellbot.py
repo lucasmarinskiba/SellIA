@@ -89,6 +89,9 @@ from app.domains.arca_compliance import router as arca_compliance_router
 # en el registry antes de configurar mappers, y ningún import previo la traía.
 from app.domains.businesses.models import Business
 
+# Location model: Phase 5A location profiles — must be imported before SQLAlchemy mapper config
+from app.domains.businesses.location_models import Location
+
 # Nota: api.v1.channels ya se registra en app.main (_try_include, prefix
 # /api/v1/businesses) — no duplicar acá.
 

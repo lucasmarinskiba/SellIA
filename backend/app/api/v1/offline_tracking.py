@@ -1,12 +1,12 @@
 """API endpoints for offline conversion tracking and analytics."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.users.models import User
+from app.core.deps import get_current_user
+from app.domains.auth.models import User
 from app.domains.businesses.models import Business
 from app.domains.analytics.offline_service import OfflineAnalyticsService
 from app.domains.analytics.offline_schemas import (
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/v1", tags=["offline-tracking"])
 async def log_offline_visit(
     conversion_data: OfflineConversionCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> OfflineConversionResponse:
     """Log a visitor to physical location."""
 
@@ -74,7 +74,7 @@ async def end_offline_visit(
     purchased: bool = Query(False),
     purchase_amount: float = Query(None),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> OfflineConversionResponse:
     """Mark end of visit or update purchase info."""
 
@@ -116,7 +116,7 @@ async def end_offline_visit(
 async def log_proximity_event(
     event_data: ProximityEventCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ProximityEventResponse:
     """Log proximity trigger event."""
 
@@ -164,7 +164,7 @@ async def get_foot_traffic_heatmap(
     location_id: UUID,
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> FootTrafficHeatmapResponse:
     """Get hourly foot traffic heatmap for location."""
 
@@ -202,7 +202,7 @@ async def get_conversion_funnel(
     business_id: UUID,
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ConversionFunnelResponse:
     """Get online→offline→purchase funnel for business."""
 
@@ -227,11 +227,11 @@ async def get_conversion_funnel(
     response_model=ProximityEffectivenessResponse
 )
 async def get_trigger_effectiveness(
+    trigger_name: str = Path(...),
     business_id: UUID = Query(...),
-    trigger_name: str = Query(...),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ProximityEffectivenessResponse:
     """Get effectiveness of proximity trigger."""
 

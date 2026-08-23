@@ -1,13 +1,13 @@
 """BI API endpoints for offline analytics dashboards."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from datetime import datetime, timedelta
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.users.models import User
+from app.core.deps import get_current_user
+from app.domains.auth.models import User
 from app.domains.businesses.models import Business
 from app.domains.bi.offline_dashboards_schemas import (
     FootTrafficMetrics, OfflineConversionMetrics, OnlineOfflineAttributionMetrics,
@@ -25,7 +25,7 @@ async def get_foot_traffic_dashboard(
     period: str = Query("daily", regex="^(daily|weekly|monthly)$"),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> FootTrafficMetrics:
     """Get foot traffic dashboard for location."""
 
@@ -75,7 +75,7 @@ async def get_conversion_dashboard(
     location_id: UUID,
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> OfflineConversionMetrics:
     """Get offline conversion metrics for location."""
 
@@ -136,7 +136,7 @@ async def get_dashboard_summary(
     business_id: UUID,
     period: str = Query("last_30_days"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> DashboardSummary:
     """Get high-level summary for main offline BI dashboard."""
 

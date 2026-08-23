@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -45,8 +45,8 @@ class LocationInventory(Base):
     reorder_point = Column(Integer, default=5)  # Alert when quantity_available <= this
 
     # Pricing (can override central catalog)
-    unit_price = Column(Decimal(10, 2), nullable=False)
-    location_price_override = Column(Decimal(10, 2), nullable=True)  # If location has custom pricing
+    unit_price = Column(Numeric(10, 2), nullable=False)
+    location_price_override = Column(Numeric(10, 2), nullable=True)  # If location has custom pricing
 
     # Fulfillment config
     fulfillment_method = Column(SQLEnum(FulfillmentMethod), default=FulfillmentMethod.SHIP_FROM_LOCATION)
