@@ -98,18 +98,17 @@ try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.signup.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
-# Memory router (simplified)
+# Memory router (ultra-minimal test)
 try:
-    logger.info("Attempting to import memory_simple router...")
-    from app.api.v1.memory_simple import router as memory_router
-    logger.info("✅ memory_simple imported successfully")
+    logger.info("Attempting to import memory_test router...")
+    from app.api.v1.memory_test import router as memory_router
+    logger.info("✅ memory_test imported successfully")
     app.include_router(memory_router, prefix="/api/v1/memory", tags=["memory"])
-    logger.info("✅ Loaded: /api/v1/memory")
+    logger.info("✅ Loaded: /api/v1/memory (test version)")
 except ImportError as ie:
-    logger.error(f"❌ ImportError loading memory_simple: {ie}")
-    logger.error(f"   Module path: app.api.v1.memory_simple")
+    logger.error(f"❌ ImportError loading memory_test: {ie}")
 except Exception as e:
-    logger.error(f"❌ Error loading memory_simple: {type(e).__name__}: {e}")
+    logger.error(f"❌ Error loading memory_test: {type(e).__name__}: {e}")
     import traceback
     logger.error(f"   Traceback: {traceback.format_exc()}")
 try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"])
