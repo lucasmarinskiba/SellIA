@@ -907,7 +907,12 @@
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/docs\")",
       "Bash(grep -n \"health\\\\|/\\\\|@app\" backend/app/sellbot.py)",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/ping\")",
-      "Bash(railway run *)"
+      "Bash(railway run *)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/auth/signup\" -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@test.com\",\"password\":\"test\",\"full_name\":\"Test\"}')",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/auth/signup\" -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@example.com\",\"password\":\"test123\",\"full_name\":\"Test User\"}')",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/offline-conversions\" -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer invalid\" -d '{}')",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/locations/test/qr-codes\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/auth/signup\" -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"verify2@test.com\",\"password\":\"test123\",\"full_name\":\"Verify User\"}')"
     ]
   }
 }

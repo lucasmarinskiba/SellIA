@@ -76,6 +76,7 @@ async def init_db():
         try:
             from app.domains.users import models as _  # noqa
             from app.domains.businesses import models as _  # noqa
+            from app.domains.locations import models as _  # noqa
             from app.domains.orders import models as _  # noqa
             from app.domains.channels import models as _  # noqa
             from app.domains.analytics import models as _  # noqa
