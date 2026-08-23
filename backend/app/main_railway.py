@@ -98,9 +98,9 @@ try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.signup.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
-# Direct import for user_memory router
+# Memory router (simplified)
 try:
-    from app.api.v1.user_memory import router as memory_router
+    from app.api.v1.memory_simple import router as memory_router
     app.include_router(memory_router, prefix="/api/v1/memory", tags=["memory"])
     logger.info("✅ Loaded: /api/v1/memory")
 except Exception as e:
