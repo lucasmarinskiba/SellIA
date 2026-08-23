@@ -68,7 +68,7 @@ def run_migrations():
 
     try:
         logger.info("Running Alembic migrations...")
-        command.upgrade(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "heads")
         logger.info("✓ Migrations completed successfully")
         return True
     except Exception as e:
