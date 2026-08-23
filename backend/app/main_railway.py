@@ -81,6 +81,26 @@ async def health():
     return JSONResponse(content=checks, status_code=status_code)
 
 
+# Memory endpoints (inline for Phase 29)
+from fastapi import Header, Depends
+from app.core.security import decode_access_token
+
+async def get_user_id(authorization: str = Header(None)) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Missing token")
+    token = authorization[7:]
+    payload = decode_access_token(token)
+    if not payload or "sub" not in payload:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload["sub"]
+
+@app.get("/api/v1/memory/me")
+async def get_memory(user_id: str = Depends(get_user_id)):
+    return {"user_id": user_id, "status": "ok", "engagement_score": 0.5}
+
+
 # Load routers that work — skip any that fail
 def try_include(router_path: str, prefix: str, tags: list):
     try:
