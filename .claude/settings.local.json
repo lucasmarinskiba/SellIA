@@ -901,7 +901,12 @@
       "Bash(curl -s http://127.0.0.1:9999/health)",
       "Bash(curl -s http://127.0.0.1:9999/api/v1/offline-sequences/templates)",
       "Bash(pkill -f \"uvicorn.*9999\")",
-      "Bash(railway restart *)"
+      "Bash(railway restart *)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/health\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/docs\")",
+      "Bash(grep -n \"health\\\\|/\\\\|@app\" backend/app/sellbot.py)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/ping\")"
     ]
   }
 }
