@@ -40,9 +40,10 @@ async def signup(
     await db.commit()
     await db.refresh(user)
 
-    # Generate access token
-    from app.core.security import create_access_token
-    access_token = create_access_token(user_id=str(user.id))
+    # Generate simple token (base64 encoded user_id:email)
+    import base64
+    token_data = f"{user.id}:{user.email}"
+    access_token = base64.b64encode(token_data.encode()).decode()
 
     return {
         "user_id": str(user.id),
