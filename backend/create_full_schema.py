@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS leads (
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-    lead_id UUID REFERENCES leads(id),
+    lead_id VARCHAR(255),
     customer_email VARCHAR(255),
     total NUMERIC(12,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
