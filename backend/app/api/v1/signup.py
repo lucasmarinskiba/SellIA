@@ -52,9 +52,9 @@ async def signup(
         )
         await db.commit()
 
-        # Generate token
-        token_data = f"{user_id}:{req.email}"
-        access_token = base64.b64encode(token_data.encode()).decode()
+        # Generate JWT token
+        from app.core.security import create_access_token
+        access_token = create_access_token({"sub": user_id})
 
         return {
             "user_id": user_id,
