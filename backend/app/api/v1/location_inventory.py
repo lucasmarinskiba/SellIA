@@ -12,7 +12,7 @@ from app.domains.users.models import User
 from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
 from app.domains.inventory.inventory_models import LocationInventory
 
-router = APIRouter(prefix="/api/v1", tags=["inventory"])
+router = APIRouter(prefix="", tags=["inventory"])
 
 
 class InventoryItem(BaseModel):

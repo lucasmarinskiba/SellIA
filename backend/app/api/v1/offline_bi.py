@@ -16,7 +16,7 @@ from app.domains.bi.offline_dashboards_schemas import (
 )
 from app.domains.analytics.offline_service import OfflineAnalyticsService
 
-router = APIRouter(prefix="/api/v1/bi", tags=["offline-bi"])
+router = APIRouter(prefix="", tags=["offline-bi"])
 
 
 @router.get("/offline/foot-traffic/{location_id}", response_model=FootTrafficMetrics)

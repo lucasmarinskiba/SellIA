@@ -16,7 +16,7 @@ from app.domains.analytics.offline_schemas import (
 )
 from app.domains.analytics.offline_models import VisitType, DemographicSource
 
-router = APIRouter(prefix="/api/v1", tags=["offline-tracking"])
+router = APIRouter(prefix="", tags=["offline-tracking"])
 
 
 @router.post("/offline-conversions", response_model=OfflineConversionResponse, status_code=status.HTTP_201_CREATED)

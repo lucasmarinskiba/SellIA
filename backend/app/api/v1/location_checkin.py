@@ -12,7 +12,7 @@ from app.domains.users.models import User
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.locations.checkin_models import CheckinType
 
-router = APIRouter(prefix="/api/v1", tags=["location-checkin"])
+router = APIRouter(prefix="", tags=["location-checkin"])
 
 
 class VisitorCheckinRequest(BaseModel):

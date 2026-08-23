@@ -5,7 +5,7 @@ from uuid import UUID
 
 from app.domains.locations.qr_generator import LocationQRGenerator
 
-router = APIRouter(prefix="/api/v1", tags=["location-qr"])
+router = APIRouter(prefix="", tags=["location-qr"])
 
 
 @router.get("/locations/{location_id}/qr-codes")
