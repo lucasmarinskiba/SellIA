@@ -171,19 +171,19 @@ CREATE INDEX IF NOT EXISTS ix_seo_business ON seo_data(business_id);
 """
 
 async def main():
-    try:
-        async with engine.begin() as conn:
-            count = 0
-            for stmt in SQL.split(';'):
-                stmt = stmt.strip()
-                if stmt:
+    async with engine.begin() as conn:
+        count = 0
+        errors = 0
+        for stmt in SQL.split(';'):
+            stmt = stmt.strip()
+            if stmt:
+                try:
                     await conn.execute(text(stmt))
                     count += 1
-        print(f"Schema created: {count} statements")
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+                except Exception as e:
+                    errors += 1
+                    print(f"Skipped (error): {stmt[:50]}... - {str(e)[:80]}")
+    print(f"Schema: {count} succeeded, {errors} skipped")
 
 if __name__ == "__main__":
     asyncio.run(main())
