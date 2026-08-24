@@ -63,6 +63,9 @@ async def signup(
             "access_token": access_token,
             "message": "Account created successfully",
         }
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
@@ -106,13 +109,13 @@ async def signin(
 async def get_current_user(user_id: str, db: AsyncSession = Depends(get_db)):
     """Get current user profile."""
     result = await db.execute(text("SELECT id, email, full_name FROM users WHERE id = :id"), {"id": user_id})
+    user_row = result.first()
 
-    if not user:
+    if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
 
     return {
-        "user_id": user.id,
-        "email": user.email,
-        "seller_name": user.seller_name,
-        "business_name": user.business_name,
+        "user_id": user_row[0],
+        "email": user_row[1],
+        "full_name": user_row[2],
     }
