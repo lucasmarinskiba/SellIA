@@ -81,6 +81,12 @@ async def health():
     return JSONResponse(content=checks, status_code=status_code)
 
 
+@app.get("/api/v1/memory/test")
+async def memory_test():
+    """Test endpoint to verify memory routes are loaded"""
+    return {"status": "ok", "message": "memory router working"}
+
+
 # Load routers that work — skip any that fail
 def try_include(router_path: str, prefix: str, tags: list):
     try:
@@ -95,12 +101,6 @@ def try_include(router_path: str, prefix: str, tags: list):
 
 # Memory router - Phase 29
 try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
-
-# Inline test endpoint
-@app.get("/api/v1/memory/test")
-async def memory_test():
-    return {"status": "ok", "message": "memory endpoint test"}
-
 
 try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
 try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
