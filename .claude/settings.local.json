@@ -936,7 +936,8 @@
       "Bash(pytest tests/test_e2e_sales_funnel.py -v --tb=short)",
       "Bash(npx playwright *)",
       "Bash(pytest tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails -v --tb=short)",
-      "Bash(pytest tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails -v --no-cov)"
+      "Bash(pytest tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails -v --no-cov)",
+      "Bash(pytest tests/test_e2e_sales_funnel.py -v --no-cov)"
     ]
   }
 }
