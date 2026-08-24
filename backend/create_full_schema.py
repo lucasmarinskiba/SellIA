@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     email_verified BOOLEAN DEFAULT false,
+    is_2fa_enabled BOOLEAN DEFAULT false,
+    totp_secret VARCHAR(32),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
