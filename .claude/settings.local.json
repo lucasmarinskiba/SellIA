@@ -926,7 +926,17 @@
       "Bash(dig +short MX sellia.io)",
       "Bash(dig +short TXT sellia.io)",
       "Bash(dig +short CNAME sellia.io)",
-      "Bash(git commit -m 'Phase 29: Fix memory router — reorder try_include, simplify memory.py to use direct SQL *)"
+      "Bash(git commit -m 'Phase 29: Fix memory router — reorder try_include, simplify memory.py to use direct SQL *)",
+      "Bash(xargs grep -l \"APIRouter\")",
+      "Bash(git commit -m 'Fix: Defer imports in memory.py to avoid load-time failures *)",
+      "Bash(git commit -m 'Fix memory router loading: remove conflicting memory_test, add test endpoint *)",
+      "Bash(git commit -m 'Move inline memory/test endpoint earlier in app initialization *)",
+      "Bash(python -m py_compile backend/app/main_railway.py)",
+      "Bash(git commit -m 'Add timestamp to memory test endpoint \\(force rebuild\\) *)",
+      "Bash(pytest tests/test_e2e_sales_funnel.py -v --tb=short)",
+      "Bash(npx playwright *)",
+      "Bash(pytest tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails -v --tb=short)",
+      "Bash(pytest tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails -v --no-cov)"
     ]
   }
 }
