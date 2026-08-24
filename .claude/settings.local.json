@@ -919,7 +919,14 @@
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/catalog/products\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/metadata\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/analytics/events\")",
-      "Bash(python -c \"from app.api.v1.user_memory import router; print\\('✅ Router imported'\\)\")"
+      "Bash(python -c \"from app.api.v1.user_memory import router; print\\('✅ Router imported'\\)\")",
+      "Bash(curl -s \"https://sellia-brain.vercel.app\" -o /dev/null -w \"Status: %{http_code}\\\\n\")",
+      "Bash(command -v dig)",
+      "Bash(dig +short A sellia.io)",
+      "Bash(dig +short MX sellia.io)",
+      "Bash(dig +short TXT sellia.io)",
+      "Bash(dig +short CNAME sellia.io)",
+      "Bash(git commit -m 'Phase 29: Fix memory router — reorder try_include, simplify memory.py to use direct SQL *)"
     ]
   }
 }

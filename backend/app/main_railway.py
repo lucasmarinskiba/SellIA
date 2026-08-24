@@ -81,10 +81,6 @@ async def health():
     return JSONResponse(content=checks, status_code=status_code)
 
 
-# Memory router - Phase 29
-try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
-
-
 # Load routers that work — skip any that fail
 def try_include(router_path: str, prefix: str, tags: list):
     try:
@@ -95,6 +91,10 @@ def try_include(router_path: str, prefix: str, tags: list):
         logger.info(f"Loaded: {prefix}")
     except Exception as e:
         logger.warning(f"Skipped {prefix}: {e}")
+
+
+# Memory router - Phase 29
+try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
 
 
 try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
