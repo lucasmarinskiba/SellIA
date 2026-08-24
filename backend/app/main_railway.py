@@ -96,13 +96,17 @@ def try_include(router_path: str, prefix: str, tags: list):
 # Memory router - Phase 29
 try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
 
+# Inline test endpoint
+@app.get("/api/v1/memory/test")
+async def memory_test():
+    return {"status": "ok", "message": "memory endpoint test"}
+
 
 try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
 try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.signup.router", "/api/v1/auth", ["auth"])
 try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
-try_include("app.api.v1.memory_test.router", "/api/v1/memory", ["memory"])
 try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"])
 try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
 try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversations"])
