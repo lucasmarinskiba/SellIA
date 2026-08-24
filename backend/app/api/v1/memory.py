@@ -1,12 +1,8 @@
-"""Memory endpoints - Phase 29 - Standalone"""
+"""Memory endpoints - Phase 29 - Deferred imports"""
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 from datetime import datetime
 import json
-from app.core.database import get_db
-from app.core.security import decode_access_token
 
 router = APIRouter()
 
@@ -16,16 +12,26 @@ async def get_user_id(authorization: str = Header(None)) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing token")
     token = authorization[7:]
+
+    from app.core.security import decode_access_token
     payload = decode_access_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload["sub"]
 
 
+async def get_db():
+    """Get database session"""
+    from app.core.database import get_db as _get_db
+    async for session in _get_db():
+        yield session
+
+
 @router.get("/me")
-async def get_memory(user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Get user memory"""
     try:
+        from sqlalchemy import text
         result = await db.execute(
             text("SELECT * FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
@@ -79,9 +85,10 @@ async def get_memory(user_id: str = Depends(get_user_id), db: AsyncSession = Dep
 
 
 @router.patch("/me")
-async def update_memory(data: dict, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Update user memory"""
     try:
+        from sqlalchemy import text
         set_clause = []
         params = {"uid": user_id}
         for i, (key, value) in enumerate(data.items()):
@@ -104,9 +111,10 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db: Asy
 
 
 @router.post("/events")
-async def log_event(data: dict, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Log event"""
     try:
+        from sqlalchemy import text
         event_type = data.get("event_type", "action")
         event_data = data.get("data", {})
 
@@ -137,9 +145,10 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db: AsyncSe
 
 
 @router.post("/interests/{interest}")
-async def add_interest(interest: str, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Add interest"""
     try:
+        from sqlalchemy import text
         result = await db.execute(
             text("SELECT key_interests FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
@@ -162,9 +171,10 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db: A
 
 
 @router.post("/challenges/{challenge}")
-async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Add challenge"""
     try:
+        from sqlalchemy import text
         result = await db.execute(
             text("SELECT key_challenges FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
@@ -187,9 +197,10 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db:
 
 
 @router.post("/preferences")
-async def set_preference(data: dict, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Set preference"""
     try:
+        from sqlalchemy import text
         key = data.get("key")
         value = data.get("value")
 
@@ -214,9 +225,10 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db: As
 
 
 @router.get("/preferences/{key}")
-async def get_preference(key: str, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Get preference"""
     try:
+        from sqlalchemy import text
         result = await db.execute(
             text("SELECT preference_value FROM user_preferences WHERE user_id = :uid AND preference_key = :key"),
             {"uid": user_id, "key": key}
@@ -229,9 +241,10 @@ async def get_preference(key: str, user_id: str = Depends(get_user_id), db: Asyn
 
 
 @router.get("/events")
-async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db: AsyncSession = Depends(get_db)):
+async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Get recent events"""
     try:
+        from sqlalchemy import text
         result = await db.execute(
             text("""SELECT id, event_type, event_data, created_at FROM user_memory_events
             WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""),
