@@ -84,45 +84,54 @@ async def signup(
         raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
 
 
+class SigninRequest(BaseModel):
+    email: str
+    password: str
+    totp_code: str = None
+
+
 @router.post("/signin")
 async def signin(
-    email: str = Body(...),
-    password: str = Body(...),
-    totp_code: str = Body(None),
+    req: SigninRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Sign in with password + optional 2FA."""
-    result = await db.execute(
-        text("SELECT id, email, full_name, hashed_password, is_2fa_enabled, totp_secret FROM users WHERE email = :email"),
-        {"email": email}
-    )
-    user_row = result.first()
+    try:
+        result = await db.execute(
+            text("SELECT id, email, full_name, hashed_password, is_2fa_enabled, totp_secret FROM users WHERE email = :email"),
+            {"email": req.email}
+        )
+        user_row = result.first()
 
-    if not user_row:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        if not user_row:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    user_id, user_email, full_name, hashed_password, is_2fa_enabled, totp_secret = user_row
+        user_id, user_email, full_name, hashed_password, is_2fa_enabled, totp_secret = user_row
 
-    if not bcrypt.checkpw(password.encode(), hashed_password.encode()):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        if not bcrypt.checkpw(req.password.encode(), hashed_password.encode()):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    if is_2fa_enabled:
-        if not totp_code:
-            return {"requires_2fa": True, "user_id": str(user_id), "message": "2FA code required"}
+        if is_2fa_enabled:
+            if not req.totp_code:
+                return {"requires_2fa": True, "user_id": str(user_id), "message": "2FA code required"}
 
-        totp = pyotp.TOTP(totp_secret)
-        if not totp.verify(totp_code, valid_window=1):
-            raise HTTPException(status_code=401, detail="Invalid 2FA code")
+            totp = pyotp.TOTP(totp_secret)
+            if not totp.verify(req.totp_code, valid_window=1):
+                raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
-    from app.core.security import create_access_token
-    access_token = create_access_token({"sub": str(user_id)})
+        from app.core.security import create_access_token
+        access_token = create_access_token({"sub": str(user_id)})
 
-    return {
-        "user_id": str(user_id),
-        "email": user_email,
-        "full_name": full_name,
-        "access_token": access_token,
-    }
+        return {
+            "user_id": str(user_id),
+            "email": user_email,
+            "full_name": full_name,
+            "access_token": access_token,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
 
 
 @router.post("/2fa/enable")
