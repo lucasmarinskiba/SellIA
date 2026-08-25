@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 interface PasswordRequirement {
   label: string;
@@ -50,10 +50,14 @@ export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps>
   }, [requirements]);
 
   const strengthScore = useMemo(() => {
-    const score = Math.min(5, metRequirements);
-    if (onStrengthChange) onStrengthChange(score);
-    return score;
-  }, [metRequirements, onStrengthChange]);
+    return Math.min(5, metRequirements);
+  }, [metRequirements]);
+
+  useEffect(() => {
+    if (onStrengthChange) {
+      onStrengthChange(strengthScore);
+    }
+  }, [strengthScore, onStrengthChange]);
 
   const strengthLabel = useMemo(() => {
     if (strengthScore === 0) return 'Muy débil';
