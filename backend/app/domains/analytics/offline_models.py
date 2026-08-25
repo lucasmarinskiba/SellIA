@@ -79,9 +79,13 @@ class OfflineConversion(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
+    # NOTE: no ORM relationship for order_id — several unrelated modules each
+    # declare their own "Order"/"orders" model under this same registry, so a
+    # string-based relationship("Order", ...) resolves ambiguously/fails and
+    # breaks mapper configuration (and every query) for the whole app. The FK
+    # column above still enforces referential integrity; just query by id.
     location = relationship("Location", foreign_keys=[location_id])
     conversation = relationship("Conversation", foreign_keys=[conversation_id])
-    order = relationship("Order", foreign_keys=[order_id])
 
     __table_args__ = (
         Index('idx_offline_conversions_business_date', 'business_id', 'created_at'),

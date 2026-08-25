@@ -25,7 +25,7 @@ class ComputerUseAuditLog(Base):
     __tablename__ = "computer_use_audit_logs"
 
     id = Column(String(36), primary_key=True, index=True)
-    user_id = Column(String(36), ForeignKey("user.id"), index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), index=True)
     session_id = Column(String(36), ForeignKey("computer_use_sessions.id"), nullable=True, index=True)
 
     # Tiempo
@@ -53,12 +53,12 @@ class ComputerUseAuditLog(Base):
     # Resultado
     status = Column(String(50), index=True)  # success, pending_approval, failed, escalated
     error_message = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)  # Datos adicionales: customer_id, order_id, etc
+    extra_data = Column("metadata", JSONB, nullable=True)  # Datos adicionales: customer_id, order_id, etc
 
     # Auditoría
     user_approved = Column(Boolean, nullable=True)  # True: user approved, False: user rejected, None: pending
     approval_at = Column(DateTime, nullable=True)
-    approved_by_user_id = Column(String(36), ForeignKey("user.id"), nullable=True)
+    approved_by_user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
 
     def __repr__(self):
         return (

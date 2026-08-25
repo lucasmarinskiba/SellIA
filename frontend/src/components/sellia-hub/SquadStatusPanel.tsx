@@ -58,89 +58,49 @@ interface Squad {
   lastAction: string
 }
 
-// ── Seed data (replace with API later) ─────────────────────────────────────────
-const SEED_SQUADS: Squad[] = [
-  {
-    id:    'sdr',
-    name:  'SDR',
-    role:  'Prospección & ventas',
-    icon:  Mail,
-    color: T.cyan,
-    status: 'executing',
-    statusMsg: 'Enviando secuencia outbound',
-    lastAction: 'Mensaje 3/5 → LinkedIn · hace 12s',
-    metrics: [
-      { label: 'Emails 24h',  value: '1,247', trend: 'up',   delta: '+18%' },
-      { label: 'Respuestas',  value: '83',    trend: 'up',   delta: '+9%'  },
-      { label: 'Reply rate',  value: '6.6%',  trend: 'flat', delta: '±0.2%' },
-      { label: 'Demos book',  value: '7',     trend: 'up',   delta: '+2'   },
-    ],
-  },
-  {
-    id:    'ads',
-    name:  'Growth & Ads',
-    role:  'Pauta paga · scaling',
-    icon:  Megaphone,
-    color: T.amber,
-    status: 'executing',
-    statusMsg: 'Optimizando 3 campañas',
-    lastAction: 'Pause keyword "free trial" · hace 1m',
-    metrics: [
-      { label: 'ROAS',         value: '4.3×',   trend: 'up',   delta: '+0.4' },
-      { label: 'Spend hoy',    value: '$284',   trend: 'up',   delta: '64% bud' },
-      { label: 'CPC promedio', value: '$0.18',  trend: 'down', delta: '-12%' },
-      { label: 'Conversiones', value: '38',     trend: 'up',   delta: '+11'  },
-    ],
-  },
-  {
-    id:    'pr',
-    name:  'PR & Reputación',
-    role:  'Social listening · brand',
-    icon:  Radio,
-    color: T.violet,
-    status: 'executing',
-    statusMsg: 'Monitoreando 45 menciones LinkedIn',
-    lastAction: 'Sentimiento +0.7 en hilo competidor · hace 3m',
-    metrics: [
-      { label: 'Menciones 7d', value: '312', trend: 'up',   delta: '+27' },
-      { label: 'Sentimiento',  value: '+0.62', trend: 'up', delta: 'positivo' },
-      { label: 'Reach total',  value: '184k', trend: 'up',  delta: '+12%' },
-      { label: 'Respondidas',  value: '47',  trend: 'up',   delta: '+8'   },
-    ],
-  },
-  {
-    id:    'cs',
-    name:  'Customer Success',
-    role:  'Retención · soporte',
-    icon:  Headphones,
-    color: T.emerald,
-    status: 'idle',
-    statusMsg: 'En reposo · sin tickets nuevos',
-    lastAction: 'Ticket #4821 cerrado · hace 8m',
-    metrics: [
-      { label: 'Tickets open', value: '4',    trend: 'down', delta: '-3'  },
-      { label: 'TTR avg',      value: '8min', trend: 'down', delta: '-2m' },
-      { label: 'NPS rolling',  value: '72',   trend: 'up',   delta: '+4'  },
-      { label: 'CSAT 7d',      value: '94%',  trend: 'flat', delta: '±1%' },
-    ],
-  },
-  {
-    id:    'cua',
-    name:  'Computer Use',
-    role:  'Operaciones · navegador',
-    icon:  MonitorCheck,
-    color: T.rose,
-    status: 'attention',
-    statusMsg: 'Esperando aprobación humana',
-    lastAction: 'Pausa en checkout proveedor · hace 24s',
-    metrics: [
-      { label: 'Tareas hoy',   value: '67',   trend: 'up',   delta: '+14'   },
-      { label: 'Éxito rate',   value: '89%',  trend: 'flat', delta: '±1%'   },
-      { label: 'Pending HIL',  value: '2',    trend: 'up',   delta: 'crítico' },
-      { label: 'Tiempo ahorr', value: '4.2h', trend: 'up',   delta: '+0.6h' },
-    ],
-  },
-]
+// ── Real data from backend (GET /api/v1/brain/squads) ──────────────────────────
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app'
+
+const SQUAD_ICON: Record<string, React.ElementType> = {
+  sdr: Mail, ads: Megaphone, pr: Radio, cs: Headphones, cua: MonitorCheck,
+}
+const SQUAD_ROLE: Record<string, string> = {
+  sdr: 'Prospección & ventas',
+  ads: 'Adquisición · leads inbound',
+  pr: 'Social listening · brand',
+  cs: 'Retención · soporte',
+  cua: 'Operaciones · navegador',
+}
+
+interface RawSquad {
+  id: string
+  name: string
+  color: string
+  leads: number
+  won: number
+  avg_score: number
+  pipeline_value: number
+  conversion_rate: number
+}
+
+const mapRawSquad = (r: RawSquad): Squad => ({
+  id: r.id,
+  name: r.name,
+  role: SQUAD_ROLE[r.id] || 'Operaciones',
+  icon: SQUAD_ICON[r.id] || Activity,
+  color: r.color,
+  status: r.leads > 0 ? 'executing' : 'idle',
+  statusMsg: r.leads > 0
+    ? `${r.leads} leads en pipeline · ${r.won} ganados`
+    : 'Sin actividad registrada aún',
+  lastAction: r.leads > 0 ? `Score promedio ${r.avg_score.toFixed(1)}` : '—',
+  metrics: [
+    { label: 'Leads',        value: String(r.leads) },
+    { label: 'Ganados',      value: String(r.won) },
+    { label: 'Conversión',   value: `${r.conversion_rate}%` },
+    { label: 'Pipeline $',   value: `$${r.pipeline_value.toLocaleString()}` },
+  ],
+})
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<SquadStatus, { label: string; color: string; pulse: boolean }> = {
@@ -158,26 +118,25 @@ const trendIcon = (t?: 'up' | 'down' | 'flat'): React.JSX.Element | null => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function SquadStatusPanel(): React.JSX.Element {
-  const [squads, setSquads] = useState<Squad[]>(SEED_SQUADS)
+  const [squads, setSquads] = useState<Squad[]>([])
 
-  // Soft live tick — small drift on metrics every 6s
+  // Poll real squad data from backend every 20s
   useEffect(() => {
-    const id = setInterval(() => {
-      setSquads(prev => prev.map(s => {
-        // 25% chance to update first metric numerically (cosmetic)
-        if (Math.random() > 0.75) {
-          const m0 = s.metrics[0]
-          const num = parseInt(m0.value.replace(/[^0-9]/g, ''), 10)
-          if (!isNaN(num)) {
-            const next = num + Math.floor(Math.random() * 3) + 1
-            const newVal = m0.value.replace(/[0-9,]+/, next.toLocaleString())
-            return { ...s, metrics: [{ ...m0, value: newVal }, ...s.metrics.slice(1)] }
-          }
-        }
-        return s
-      }))
-    }, 6000)
-    return () => clearInterval(id)
+    let alive = true
+    const fetchSquads = async (): Promise<void> => {
+      try {
+        const r = await fetch(`${BACKEND_URL}/api/v1/brain/squads`, { cache: 'no-store' })
+        if (!r.ok) throw new Error(String(r.status))
+        const data = (await r.json()) as { squads: RawSquad[] }
+        if (!alive) return
+        setSquads(data.squads.map(mapRawSquad))
+      } catch {
+        // Backend unreachable — leave squads empty rather than fabricate data
+      }
+    }
+    void fetchSquads()
+    const id = window.setInterval(() => { void fetchSquads() }, 20000)
+    return () => { alive = false; window.clearInterval(id) }
   }, [])
 
   return (

@@ -115,7 +115,7 @@ class AuditLogEntry:
             output_data=self.output_data,
             status=self.status,
             error_message=self.error_message,
-            metadata=self.metadata,
+            extra_data=self.metadata,
             requires_approval=(self.status == "pending_approval"),
         )
 
