@@ -1054,3 +1054,93 @@ async def delete_my_account(
     if not success:
         raise HTTPException(status_code=500, detail="Error al eliminar la cuenta")
     return {"message": "Cuenta eliminada correctamente"}
+
+
+# 2FA endpoints
+from pydantic import BaseModel
+import pyotp
+import qrcode as qr_lib
+from io import BytesIO
+
+class Enable2FARequest(BaseModel):
+    user_id: str
+
+class Verify2FARequest(BaseModel):
+    user_id: str
+    secret: str
+    totp_code: str
+
+class Disable2FARequest(BaseModel):
+    user_id: str
+    password: str
+
+@router.post("/2fa/enable")
+async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
+    """Generate 2FA secret and QR code."""
+    if not pyotp:
+        raise HTTPException(status_code=501, detail="2FA not available")
+    
+    secret = pyotp.random_base32()
+    totp = pyotp.TOTP(secret)
+    provisioning_uri = totp.provisioning_uri(name=req.user_id, issuer_name="SellIA")
+
+    qr = qr_lib.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(provisioning_uri)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    img_io = BytesIO()
+    img.save(img_io, format="PNG")
+    img_base64 = base64.b64encode(img_io.getvalue()).decode()
+
+    return {
+        "secret": secret,
+        "qr_code": f"data:image/png;base64,{img_base64}",
+        "message": "Scan QR code with authenticator app",
+    }
+
+@router.post("/2fa/verify")
+async def verify_2fa(request: Verify2FARequest, db: AsyncSession = Depends(get_db)):
+    """Verify 2FA code and enable 2FA for user."""
+    if not pyotp:
+        raise HTTPException(status_code=501, detail="2FA not available")
+    
+    try:
+        totp = pyotp.TOTP(request.secret)
+        if not totp.verify(request.totp_code, valid_window=1):
+            raise HTTPException(status_code=400, detail="Invalid 2FA code")
+
+        await db.execute(
+            select(User).where(User.id == request.user_id)
+        )
+        result = await db.execute(
+            select(User).where(User.id == request.user_id)
+        )
+        user = result.scalars().first()
+        if user:
+            user.totp_secret = request.secret
+            user.is_2fa_enabled = True
+            await db.commit()
+
+        return {"message": "2FA enabled successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
+
+@router.post("/2fa/disable")
+async def disable_2fa(request: Disable2FARequest, db: AsyncSession = Depends(get_db)):
+    """Disable 2FA (requires password confirmation)."""
+    result = await db.execute(
+        select(User).where(User.id == request.user_id)
+    )
+    user = result.scalars().first()
+    
+    if not user or not verify_password(request.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    user.is_2fa_enabled = False
+    user.totp_secret = None
+    await db.commit()
+
+    return {"message": "2FA disabled"}

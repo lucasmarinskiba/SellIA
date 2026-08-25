@@ -14,7 +14,7 @@ import pyotp
 import qrcode
 from io import BytesIO
 
-router = APIRouter(prefix="", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class SignupRequest(BaseModel):
