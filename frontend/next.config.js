@@ -32,6 +32,10 @@ const nextConfig = {
         source: '/:path*',
         headers: [
           {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; connect-src 'self' https://sellia-production.up.railway.app https://selliaai-backend.onrender.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
+          },
+          {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
