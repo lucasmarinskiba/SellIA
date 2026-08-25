@@ -20,11 +20,11 @@ class KnowledgeEntry:
     title: str
     content: str
     learning_type: LearningType
-    agent_id: str  % which agent discovered this %
-    confidence_score: float  % 0-100 %
-    applicable_segments: list[str]  % user segments %
+    agent_id: str  #which agent discovered this %
+    confidence_score: float  #0-100 %
+    applicable_segments: list[str]  #user segments %
     created_at: datetime
-    impact_count: int = 0  % how many times used successfully %
+    impact_count: int = 0  #how many times used successfully %
     tags: list[str] = field(default_factory=list)
     related_entries: list[str] = field(default_factory=list)
 
@@ -34,7 +34,7 @@ class AgentLearning:
     agent_id: str
     agent_name: str
     total_learnings: int
-    confidence_score: float  % average %
+    confidence_score: float  #average %
     most_impactful_learning: Optional[str]
     success_rate: float
     segments_covered: int
@@ -45,7 +45,7 @@ class AgentLearning:
 class KnowledgeRecommendation:
     learning_id: str
     title: str
-    reason: str  % why this learning applies %
+    reason: str  #why this learning applies %
     confidence: float
     applicable_segment: str
     estimated_impact: str
@@ -143,7 +143,7 @@ class KnowledgeBase:
     ) -> list[KnowledgeRecommendation]:
         segment_learnings = self.get_learnings_by_segment(user_id, segment)
 
-        % Sort by confidence and impact %
+        #Sort by confidence and impact %
         sorted_learnings = sorted(
             segment_learnings,
             key=lambda x: (x.confidence_score, x.impact_count),
@@ -171,13 +171,13 @@ class KnowledgeBase:
         if key in self.entries:
             if success:
                 self.entries[key].impact_count += 1
-                % Increase confidence on success %
+                #Increase confidence on success %
                 self.entries[key].confidence_score = min(
                     99.9,
                     self.entries[key].confidence_score + 1
                 )
             else:
-                % Decrease confidence on failure %
+                #Decrease confidence on failure %
                 self.entries[key].confidence_score = max(
                     10, self.entries[key].confidence_score - 2
                 )

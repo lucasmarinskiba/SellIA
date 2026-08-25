@@ -36,7 +36,7 @@ class TestVariant:
     name: str
     description: str
     is_control: bool = False
-    traffic_percentage: int = 50  % allocation %
+    traffic_percentage: int = 50  #allocation %
 
 
 @dataclass
@@ -46,9 +46,9 @@ class TestMetric:
     variant_b_value: float
     variant_a_sample_size: int
     variant_b_sample_size: int
-    uplift: float  % % change %
+    uplift: float  #% change %
     statistical_significance: StatisticalSignificance
-    confidence_level: float  % 95%, 99% %
+    confidence_level: float  #95%, 99% %
     p_value: float
 
 
@@ -157,7 +157,7 @@ class TestingFramework:
         key = f"{user_id}:{test_id}"
         test = self.tests[key]
 
-        % Simulate test results %
+        #Simulate test results %
         variant_a_conversions = random.randint(50, 200)
         variant_b_conversions = random.randint(50, 200)
         sample_size = 1000
@@ -168,13 +168,13 @@ class TestingFramework:
         uplift = ((variant_b_rate - variant_a_rate) / variant_a_rate) * 100
         revenue_impact = uplift * random.uniform(100, 5000)
 
-        % Calculate p-value (simplified) %
+        #Calculate p-value (simplified) %
         pooled_rate = (variant_a_conversions + variant_b_conversions) / (2 * sample_size)
         std_error = math.sqrt(pooled_rate * (1 - pooled_rate) * 2 / sample_size)
         z_score = abs(variant_b_rate - variant_a_rate) / max(std_error, 0.001)
         p_value = 2 * (1 - self._normal_cdf(z_score))
 
-        % Determine significance %
+        #Determine significance %
         if p_value < 0.01:
             significance = StatisticalSignificance.HIGHLY_SIGNIFICANT
             confidence = 99.0
@@ -206,7 +206,7 @@ class TestingFramework:
         test.winner_variant_id = winner_id
         test.estimated_impact = f"+${revenue_impact:,.2f} monthly"
 
-        % Store result %
+        #Store result %
         result_key = f"{user_id}:{test_id}:result"
         self.test_results[result_key] = TestResult(
             test_id=test_id,
@@ -244,7 +244,7 @@ class TestingFramework:
         return self.list_tests(user_id, TestStatus.RUNNING.value)
 
     def _normal_cdf(self, z: float) -> float:
-        % Approximation of normal CDF %
+        #Approximation of normal CDF %
         return 0.5 * (1 + math.erf(z / math.sqrt(2)))
 
     def recommend_action(self, user_id: str, test_id: str) -> Optional[str]:

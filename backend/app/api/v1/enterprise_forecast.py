@@ -1,14 +1,9 @@
 from fastapi import APIRouter, Query
 from datetime import datetime, timedelta
-from app.domains.enterprise.forecasting import (
-    ForecastingEngine,
-    Opportunity,
-    DealStage,
-    ProbabilityModel,
-)
+from app.domains.enterprise.forecasting import ForecastingManager
 
 router = APIRouter(tags=["forecasting"])
-forecasting_engine = ForecastingEngine()
+forecasting_engine = ForecastingManager()
 
 
 @router.post("/forecast/opportunities/add")

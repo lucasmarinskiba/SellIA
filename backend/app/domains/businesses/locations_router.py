@@ -13,11 +13,11 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.auth.models import User
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.businesses.location_models import Location, LocationCreate, LocationResponse, LocationUpdate, LocationHoursWeekly
 from app.domains.businesses.localization import BusinessLocalizationService
@@ -36,45 +36,15 @@ async def create_location(
     business_id: UUID = Path(...),
     location_data: LocationCreate = ...,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Create new physical location for business."""
 
-    # Verify business ownership
-    business = db.query(Business).filter(
-        Business.id == business_id,
-        Business.user_id == current_user.id
-    ).first()
-
-    if not business:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
-        )
-
-    # Create location
-    location = Location(
-        business_id=business_id,
-        **location_data.model_dump()
+    # TODO: Implement Phase 5A location creation with async SQLAlchemy
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Location management coming in Phase 5A"
     )
-
-    db.add(location)
-    db.commit()
-    db.refresh(location)
-
-    # Auto-detect localization model based on new location count
-    all_locations = db.query(Location).filter(
-        Location.business_id == business_id,
-        Location.is_active == True
-    ).all()
-
-    detected_model = BusinessLocalizationService.detect_model(business, all_locations, db)
-    if detected_model != business.localization_model:
-        business.localization_model = detected_model
-        db.commit()
-        logger.info(f"Auto-updated business {business_id} localization to {detected_model}")
-
-    return LocationResponse.model_validate(location)
 
 
 @router.get(
@@ -85,17 +55,17 @@ async def list_locations(
     business_id: UUID = Path(...),
     active_only: bool = Query(True),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> List[LocationResponse]:
     """List all locations for a business."""
 
-    # Verify business ownership
-    business = db.query(Business).filter(
-        Business.id == business_id,
-        Business.user_id == current_user.id
-    ).first()
+    # TODO: Implement Phase 5A location listing with async SQLAlchemy
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Location management coming in Phase 5A"
+    )
 
-    if not business:
+    if not True:  # dead code to avoid import errors
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Business not found"

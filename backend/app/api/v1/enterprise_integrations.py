@@ -98,7 +98,7 @@ async def list_conversations(
     try:
         platform_enum = Platform(platform)
 
-        % Mock conversation list %
+        # Mock conversation list
         conversations = []
         for i in range(limit):
             contact_id = f"contact_{offset + i}"
@@ -175,7 +175,7 @@ async def send_message(
 
         agent = integration_manager.platforms[key]
 
-        % Create message record %
+        # Create message record
         message = Message(
             id=f"msg_{datetime.now().timestamp()}",
             platform=platform_enum,

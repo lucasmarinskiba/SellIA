@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Integer, Numeric, Boolean, DateTime, ForeignKey, Index, Table, JSONB
+from sqlalchemy import Column, String, Text, Integer, Numeric, Boolean, DateTime, ForeignKey, Index, Table, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
@@ -32,8 +32,8 @@ class Product(Base):
     inventory_count = Column(Integer(), default=0)
     track_inventory = Column(Boolean(), default=True)
     featured_image_url = Column(String(2048), nullable=True)
-    images = Column(JSONB(), default=list)  # Array of image URLs
-    metadata = Column(JSONB(), default=dict)  # Custom fields, seo data, etc.
+    images = Column(JSON(), default=list)  # Array of image URLs
+    metadata = Column(JSON(), default=dict)  # Custom fields, seo data, etc.
     status = Column(String(50), default='DRAFT')  # DRAFT, PUBLISHED, ARCHIVED
     is_active = Column(Boolean(), default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -61,7 +61,7 @@ class ProductVariant(Base):
     sku = Column(String(100), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)  # Override product price if set
     inventory_count = Column(Integer(), default=0)
-    attributes = Column(JSONB(), default=dict)  # {color: "red", size: "XL"}
+    attributes = Column(JSON(), default=dict)  # {color: "red", size: "XL"}
     is_available = Column(Boolean(), default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
@@ -113,7 +113,7 @@ class ShoppingCart(Base):
     coupon_code = Column(String(100), nullable=True)
     customer_email = Column(String(255), nullable=True)
     customer_phone = Column(String(20), nullable=True)
-    metadata = Column(JSONB(), default=dict)
+    metadata = Column(JSON(), default=dict)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     abandoned_at = Column(DateTime(timezone=True), nullable=True)
@@ -170,10 +170,10 @@ class Order(Base):
     total = Column(Numeric(10, 2), nullable=False)
     customer_email = Column(String(255), nullable=False)
     customer_phone = Column(String(20), nullable=True)
-    shipping_address = Column(JSONB(), nullable=True)  # {street, city, state, zip, country}
-    billing_address = Column(JSONB(), nullable=True)
+    shipping_address = Column(JSON(), nullable=True)  # {street, city, state, zip, country}
+    billing_address = Column(JSON(), nullable=True)
     notes = Column(Text(), nullable=True)
-    metadata = Column(JSONB(), default=dict)
+    metadata = Column(JSON(), default=dict)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     paid_at = Column(DateTime(timezone=True), nullable=True)

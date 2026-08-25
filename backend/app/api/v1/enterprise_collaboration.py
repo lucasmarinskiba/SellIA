@@ -160,13 +160,13 @@ async def websocket_deal(websocket: WebSocket, deal_id: str):
     """WebSocket for real-time deal updates (comments, approvals, shares)."""
     await websocket.accept()
 
-    % Simulate real-time events %
+    #Simulate real-time events %
     try:
         while True:
             data = await websocket.receive_text()
 
             if data.startswith("comment:"):
-                % Broadcast comment to all clients on this deal %
+                #Broadcast comment to all clients on this deal %
                 comment_content = data.replace("comment:", "")
                 await websocket.send_json({
                     "type": "comment_added",
@@ -176,7 +176,7 @@ async def websocket_deal(websocket: WebSocket, deal_id: str):
                 })
 
             elif data.startswith("approval:"):
-                % Broadcast approval update %
+                #Broadcast approval update %
                 decision = data.replace("approval:", "")
                 await websocket.send_json({
                     "type": "approval_updated",

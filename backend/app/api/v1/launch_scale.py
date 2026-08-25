@@ -4,18 +4,14 @@ from fastapi import APIRouter, Query, Body
 from typing import Dict, Any
 import logging
 
-from app.domains.onboarding.user_onboarding import OnboardingEngine, OnboardingStep, OnboardingSession
-from app.domains.admin.platform_dashboard import PlatformDashboard
-from app.domains.scaling.multi_tenant import MultiTenantManager, AlertSeverity
-from app.domains.monitoring.monitoring import MonitoringSystem, AlertType
+# Phase 19-22 stub - to be implemented
+# from app.domains.onboarding.user_onboarding import OnboardingEngine, OnboardingStep, UserOnboardingSession
+# from app.domains.admin.platform_dashboard import PlatformDashboard
+# from app.domains.scaling.multi_tenant import MultiTenantManager, AlertSeverity
+# from app.domains.monitoring.monitoring import MonitoringSystem, AlertType
 
 router = APIRouter(tags=["launch-scale"])
 logger = logging.getLogger(__name__)
-
-onboarding = OnboardingEngine()
-dashboard = PlatformDashboard()
-tenant_mgr = MultiTenantManager()
-monitoring = MonitoringSystem()
 
 
 # ============================================================

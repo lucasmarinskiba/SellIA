@@ -953,7 +953,8 @@
       "Bash(curl -s https://sellia-production.up.railway.app/api/v1/brain/audit-log)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://sellia-brain.vercel.app/sellia-brain)",
       "Bash(curl -sI https://sellia-brain.vercel.app/sellia-brain)",
-      "Bash(curl -sI https://sellia-brain.vercel.app/signup)"
+      "Bash(curl -sI https://sellia-brain.vercel.app/signup)",
+      "Bash(timeout 30 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000)"
     ]
   }
 }

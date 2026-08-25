@@ -30,7 +30,7 @@ class MetricValue:
     timestamp: datetime
     value: float
     unit: str
-    trend: Optional[float] = None  % change %
+    trend: Optional[float] = None  # change %
 
 
 @dataclass
@@ -40,8 +40,8 @@ class KPICard:
     current_value: float
     unit: str
     target: Optional[float] = None
-    trend: float = 0.0  % percentage %
-    trend_direction: str = "neutral"  % up, down, neutral %
+    trend: float = 0.0  # percentage
+    trend_direction: str = "neutral"  # up, down, neutral
     last_updated: datetime = field(default_factory=datetime.now)
     sparkline_data: list[float] = field(default_factory=list)
 
@@ -50,14 +50,14 @@ class KPICard:
 class AgentPerformance:
     agent_id: str
     agent_name: str
-    status: str  % active, idle, offline %
+    status: str  #active, idle, offline %
     tasks_completed: int
-    success_rate: float  % 0-100 %
-    avg_response_time: float  % seconds %
+    success_rate: float  #0-100 %
+    avg_response_time: float  #seconds %
     leads_generated: int
     conversions: int
     revenue_attributed: float
-    efficiency_score: float  % 0-100 %
+    efficiency_score: float  #0-100 %
 
 
 @dataclass
@@ -75,10 +75,10 @@ class SegmentMetrics:
 @dataclass
 class PipelineMetrics:
     total_pipeline_value: float
-    opportunities_in_stage: dict[str, int]  % stage -> count %
+    opportunities_in_stage: dict[str, int]  #stage -> count %
     avg_deal_size: float
     days_in_pipeline: float
-    forecast_confidence: float  % 0-100 %
+    forecast_confidence: float  #0-100 %
 
 
 @dataclass
