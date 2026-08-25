@@ -71,7 +71,7 @@ export default function PricingPage() {
 
     setIsLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app';
       const response = await fetch(`${backendUrl}/api/v1/checkout/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
