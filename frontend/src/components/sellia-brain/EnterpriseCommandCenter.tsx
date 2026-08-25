@@ -311,7 +311,7 @@ interface PipelineStage {
   accent: string
 }
 
-const STAGE_META: Record<string, { label: string; detail: string; accent: string }> = {
+const PIPELINE_STAGE_META: Record<string, { label: string; detail: string; accent: string }> = {
   new:       { label: 'Ingesta de señales', detail: 'Leads nuevos sin contactar aún', accent: T.cobalt },
   contacted: { label: 'Calificación',        detail: 'Primer contacto realizado',      accent: T.cobalt },
   engaged:   { label: 'Razonamiento',        detail: 'Lead respondió · en conversación', accent: T.amber },
@@ -335,7 +335,7 @@ const AIProcessingPanel = (): React.JSX.Element => {
         const total = d.by_status.reduce((sum, s) => sum + s.count, 0) || 1
         setStages(STAGE_ORDER.map(key => {
           const count = byStatus.get(key) || 0
-          const meta = STAGE_META[key]
+          const meta = PIPELINE_STAGE_META[key]
           return {
             key, label: meta.label, detail: meta.detail,
             active: count, throughput: Math.round((count / total) * 100), accent: meta.accent,
