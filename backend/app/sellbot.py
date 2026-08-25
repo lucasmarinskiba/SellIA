@@ -131,6 +131,18 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("✅ Database initialized")
 
+    # Migrate schema for 2FA columns
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"))
+            await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"))
+            await db.commit()
+        logger.info("✅ 2FA schema migrated")
+    except Exception as e:
+        logger.warning(f"2FA schema migration: {str(e)[:80]}")
+
     # Load Phase 33 seed data if needed (async-compatible)
     try:
         from sqlalchemy import create_engine
