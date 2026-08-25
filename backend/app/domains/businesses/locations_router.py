@@ -13,13 +13,16 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.businesses.location_models import Location, LocationCreate, LocationResponse, LocationUpdate, LocationHoursWeekly
+from app.domains.businesses.location_models import (
+    Location, LocationCreate, LocationResponse, LocationUpdate, LocationProfileResponse
+)
 from app.domains.businesses.localization import BusinessLocalizationService
 
 logger = logging.getLogger(__name__)
@@ -40,11 +43,48 @@ async def create_location(
 ) -> LocationResponse:
     """Create new physical location for business."""
 
-    # TODO: Implement Phase 5A location creation with async SQLAlchemy
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Location management coming in Phase 5A"
+    # Verify business ownership
+    result = await db.execute(
+        select(Business).where(
+            Business.id == business_id,
+            Business.user_id == current_user.id
+        )
     )
+    business = result.scalar_one_or_none()
+
+    if not business:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Business not found"
+        )
+
+    # Create location
+    location = Location(
+        business_id=business_id,
+        **location_data.model_dump()
+    )
+
+    db.add(location)
+    await db.flush()
+
+    # Auto-detect localization model based on new location count
+    all_locs_result = await db.execute(
+        select(Location).where(
+            Location.business_id == business_id,
+            Location.is_active == True
+        )
+    )
+    all_locations = all_locs_result.scalars().all()
+
+    detected_model = BusinessLocalizationService.detect_model(business, list(all_locations))
+    if detected_model != business.localization_model:
+        business.localization_model = detected_model
+        logger.info(f"Auto-updated business {business_id} localization to {detected_model}")
+
+    await db.commit()
+    await db.refresh(location)
+
+    return LocationResponse.model_validate(location)
 
 
 @router.get(
@@ -59,40 +99,45 @@ async def list_locations(
 ) -> List[LocationResponse]:
     """List all locations for a business."""
 
-    # TODO: Implement Phase 5A location listing with async SQLAlchemy
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Location management coming in Phase 5A"
+    # Verify business ownership
+    result = await db.execute(
+        select(Business).where(
+            Business.id == business_id,
+            Business.user_id == current_user.id
+        )
     )
+    business = result.scalar_one_or_none()
 
-    if not True:  # dead code to avoid import errors
+    if not business:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Business not found"
         )
 
-    query = db.query(Location).filter(Location.business_id == business_id)
-
+    # Query locations
+    query = select(Location).where(Location.business_id == business_id)
     if active_only:
-        query = query.filter(Location.is_active == True)
+        query = query.where(Location.is_active == True)
 
-    locations = query.order_by(Location.created_at.desc()).all()
+    locs_result = await db.execute(query)
+    locations = locs_result.scalars().all()
 
     return [LocationResponse.model_validate(loc) for loc in locations]
 
 
 @router.get(
     "/locations/{location_id}",
-    response_model=LocationResponse,
+    response_model=LocationProfileResponse,
 )
 async def get_location(
     location_id: UUID = Path(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> LocationResponse:
-    """Get location details."""
+    db: AsyncSession = Depends(get_db),
+) -> LocationProfileResponse:
+    """Get location with traffic metrics."""
 
-    location = db.query(Location).filter(Location.id == location_id).first()
+    result = await db.execute(select(Location).where(Location.id == location_id))
+    location = result.scalar_one_or_none()
 
     if not location:
         raise HTTPException(
@@ -100,19 +145,20 @@ async def get_location(
             detail="Location not found"
         )
 
-    # Verify user owns the business
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
+    # Verify user owns this location's business
+    biz_result = await db.execute(
+        select(Business).where(Business.id == location.business_id)
+    )
+    business = biz_result.scalar_one_or_none()
 
-    if not business:
+    if not business or business.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this location"
+            detail="Access denied"
         )
 
-    return LocationResponse.model_validate(location)
+    location_resp = LocationResponse.model_validate(location)
+    return LocationProfileResponse(location=location_resp)
 
 
 @router.patch(
@@ -123,11 +169,12 @@ async def update_location(
     location_id: UUID = Path(...),
     location_data: LocationUpdate = ...,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> LocationResponse:
     """Update location details."""
 
-    location = db.query(Location).filter(Location.id == location_id).first()
+    result = await db.execute(select(Location).where(Location.id == location_id))
+    location = result.scalar_one_or_none()
 
     if not location:
         raise HTTPException(
@@ -135,25 +182,25 @@ async def update_location(
             detail="Location not found"
         )
 
-    # Verify user owns the business
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
+    # Verify ownership
+    biz_result = await db.execute(
+        select(Business).where(Business.id == location.business_id)
+    )
+    business = biz_result.scalar_one_or_none()
 
-    if not business:
+    if not business or business.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this location"
+            detail="Access denied"
         )
 
     # Update fields
     update_data = location_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(location, key, value)
+    for field, value in update_data.items():
+        setattr(location, field, value)
 
-    db.commit()
-    db.refresh(location)
+    await db.commit()
+    await db.refresh(location)
 
     return LocationResponse.model_validate(location)
 
@@ -165,11 +212,12 @@ async def update_location(
 async def delete_location(
     location_id: UUID = Path(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> None:
-    """Soft-delete location (sets is_active=False)."""
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete location (mark inactive)."""
 
-    location = db.query(Location).filter(Location.id == location_id).first()
+    result = await db.execute(select(Location).where(Location.id == location_id))
+    location = result.scalar_one_or_none()
 
     if not location:
         raise HTTPException(
@@ -177,30 +225,17 @@ async def delete_location(
             detail="Location not found"
         )
 
-    # Verify user owns the business
-    business = db.query(Business).filter(
-        Business.id == location.business_id,
-        Business.user_id == current_user.id
-    ).first()
+    # Verify ownership
+    biz_result = await db.execute(
+        select(Business).where(Business.id == location.business_id)
+    )
+    business = biz_result.scalar_one_or_none()
 
-    if not business:
+    if not business or business.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to delete this location"
+            detail="Access denied"
         )
 
-    # Soft delete
     location.is_active = False
-    db.commit()
-
-    # Re-detect localization model
-    active_locations = db.query(Location).filter(
-        Location.business_id == business.id,
-        Location.is_active == True
-    ).all()
-
-    detected_model = BusinessLocalizationService.detect_model(business, active_locations, db)
-    if detected_model != business.localization_model:
-        business.localization_model = detected_model
-        db.commit()
-        logger.info(f"Auto-updated business {business.id} localization to {detected_model} after location deletion")
+    await db.commit()

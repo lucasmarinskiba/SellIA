@@ -1,5 +1,4 @@
-"""Proximity marketing domain — detect nearby users and trigger automations."""
+"""Phase 5B: Proximity & Offline Tracking."""
+from .proximity_engine import ProximityEngine, ProximityEvent, UserLocation, Location
 
-from .proximity_engine import ProximityEngine, GeoPoint, ProximityMatch, ProximityTriggerConfig
-
-__all__ = ["ProximityEngine", "GeoPoint", "ProximityMatch", "ProximityTriggerConfig"]
+__all__ = ["ProximityEngine", "ProximityEvent", "UserLocation", "Location"]
