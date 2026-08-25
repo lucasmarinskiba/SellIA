@@ -97,10 +97,25 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest): voi
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
   response.headers.set('X-XSS-Protection', '1; mode=block')
 
+  // Always allow both known backends regardless of which one NEXT_PUBLIC_API_URL
+  // / NEXT_PUBLIC_BACKEND_URL happens to point at in this environment's config —
+  // components have historically hardcoded fallbacks to either host, and a CSP
+  // that only allows the env-configured one silently blocks the other and can
+  // hang client-side data fetching (a fetch() rejected by CSP still resolves
+  // its promise via the catch handler, but every subsequent effect depending
+  // on that data never gets real values).
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app'
+  const connectSrc = Array.from(new Set([
+    "'self'",
+    apiUrl,
+    backendUrl,
+    'https://sellia-production.up.railway.app',
+    'https://selliaai-backend.onrender.com',
+  ])).join(' ')
   response.headers.set(
     'Content-Security-Policy',
-    `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ${apiUrl}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`
+    `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src ${connectSrc}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`
   )
 }
 
