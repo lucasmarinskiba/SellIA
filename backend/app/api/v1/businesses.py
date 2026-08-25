@@ -26,14 +26,24 @@ async def create_business(
     )
     business_count = len(existing_count.scalars().all())
 
-    limit_check = await check_subscription_limit(db, current_user.id, "multi_business", quantity=1)
-    # multi_business is a boolean limit: if False, only 1 business allowed
-    # We treat it as: allowed if business_count < 1 OR limit == -1 (unlimited)
-    if limit_check["limit"] != -1 and business_count >= 1 and not limit_check["allowed"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu plan no permite múltiples negocios. Actualizá a Pro o Enterprise."
-        )
+    try:
+        limit_check = await check_subscription_limit(db, current_user.id, "multi_business", quantity=1)
+        # multi_business is a boolean limit: if False, only 1 business allowed
+        # We treat it as: allowed if business_count < 1 OR limit == -1 (unlimited)
+        if limit_check["limit"] != -1 and business_count >= 1 and not limit_check["allowed"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu plan no permite múltiples negocios. Actualizá a Pro o Enterprise."
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # If subscription check fails, allow creation (free tier default: 1 business)
+        if business_count >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only 1 business allowed on free plan. Upgrade to create more."
+            )
 
     config = business_in.config or {}
     default_config = DEFAULT_CONFIGS.get(business_in.type, {})
@@ -50,7 +60,12 @@ async def create_business(
     await db.commit()
     await db.refresh(business)
 
-    await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+    try:
+        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+    except Exception:
+        # If usage tracking fails, business is still created (non-critical operation)
+        pass
+
     return business
 
 
