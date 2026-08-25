@@ -71,7 +71,8 @@ export default function PricingPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/checkout', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/v1/checkout/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
