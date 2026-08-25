@@ -16,7 +16,7 @@ from app.domains.users.models import User
 from app.domains.proximity import ProximityEngine, UserLocation, Location
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/proximity", tags=["proximity"])
+router = APIRouter(prefix="/proximity", tags=["proximity"])
 
 
 class OfflineConversionLog(BaseModel):

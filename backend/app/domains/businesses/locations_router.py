@@ -27,7 +27,7 @@ from app.domains.businesses.localization import BusinessLocalizationService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1", tags=["locations"])
+router = APIRouter(tags=["locations"])
 
 
 @router.post(
