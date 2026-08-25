@@ -20,55 +20,50 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Check multi-business limit
+    existing_count = await db.execute(
+        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+    )
+    business_count = len(existing_count.scalars().all())
+
     try:
-        # Check multi-business limit
-        existing_count = await db.execute(
-            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
-        )
-        business_count = len(existing_count.scalars().all())
-
-        try:
-            limit_check = await check_subscription_limit(db, current_user.id, "multi_business", quantity=1)
-            if limit_check["limit"] != -1 and business_count >= 1 and not limit_check["allowed"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Tu plan no permite múltiples negocios. Actualizá a Pro o Enterprise."
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            # If subscription check fails, allow creation
-            if business_count >= 1:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Only 1 business allowed on free plan."
-                )
-
-        config = business_in.config or {}
-        default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-        merged_config = {**default_config, **config}
-
-        business = Business(
-            user_id=current_user.id,
-            name=business_in.name,
-            type=business_in.type,
-            description=business_in.description,
-            config=merged_config,
-        )
-        db.add(business)
-        await db.commit()
-        await db.refresh(business)
-
-        try:
-            await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
-        except Exception:
-            pass
-
-        return business
+        limit_check = await check_subscription_limit(db, current_user.id, "multi_business", quantity=1)
+        if limit_check["limit"] != -1 and business_count >= 1 and not limit_check["allowed"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tu plan no permite múltiples negocios. Actualizá a Pro o Enterprise."
+            )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Business creation failed: {str(e)}")
+    except Exception:
+        # If subscription check fails, allow creation (free tier: 1 business)
+        if business_count >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only 1 business allowed on free plan."
+            )
+
+    config = business_in.config or {}
+    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+    merged_config = {**default_config, **config}
+
+    business = Business(
+        user_id=current_user.id,
+        name=business_in.name,
+        type=business_in.type,
+        description=business_in.description,
+        config=merged_config,
+    )
+    db.add(business)
+    await db.commit()
+    await db.refresh(business)
+
+    try:
+        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+    except Exception:
+        pass
+
+    return business
 
 
 @router.get("/", response_model=list[BusinessResponse])
