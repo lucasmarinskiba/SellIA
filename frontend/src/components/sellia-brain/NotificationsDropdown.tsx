@@ -14,7 +14,8 @@ import {
   Zap, Inbox, AlertTriangle, Sparkles,
 } from 'lucide-react'
 
-const NOTIFY_BASE = '/api/v1/notifications'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app'
+const NOTIFY_BASE = `${BACKEND_URL}/api/v1/brain/notifications`
 const POLL_MS     = 15000
 const LS_KEY      = 'sellia_notifications_seen_v1'
 

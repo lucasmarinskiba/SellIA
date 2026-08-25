@@ -79,6 +79,35 @@ async def list_audit_logs(
     )
 
 
+@router.get("/audit-logs/pending", response_model=list[AuditLogResponse])
+async def get_pending_approvals(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Acciones pendientes de aprobación del usuario."""
+    audit_service = get_audit_log_service(db)
+    logs = await audit_service.get_pending_approvals(str(current_user.id))
+
+    return [AuditLogResponse.from_orm(log) for log in logs]
+
+
+@router.get("/audit-logs/summary", response_model=AuditLogSummaryResponse)
+async def get_audit_log_summary(
+    days: int = Query(default=7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Resumen estadístico de actividades.
+
+    Muestra total acciones, por platform, por action_type, por status.
+    """
+    audit_service = get_audit_log_service(db)
+    summary = await audit_service.get_summary(str(current_user.id), days=days)
+
+    return AuditLogSummaryResponse(**summary)
+
+
 @router.get("/audit-logs/{log_id}", response_model=AuditLogResponse)
 async def get_audit_log(
     log_id: str,
@@ -96,18 +125,6 @@ async def get_audit_log(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     return AuditLogResponse.from_orm(log)
-
-
-@router.get("/audit-logs/pending", response_model=list[AuditLogResponse])
-async def get_pending_approvals(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """Acciones pendientes de aprobación del usuario."""
-    audit_service = get_audit_log_service(db)
-    logs = await audit_service.get_pending_approvals(str(current_user.id))
-
-    return [AuditLogResponse.from_orm(log) for log in logs]
 
 
 @router.post("/audit-logs/{log_id}/approve", response_model=AuditLogResponse)
@@ -165,20 +182,3 @@ async def reject_audit_log(
     logger.info(f"User {current_user.id} rejected audit log {log_id}")
 
     return AuditLogResponse.from_orm(updated_log)
-
-
-@router.get("/audit-logs/summary", response_model=AuditLogSummaryResponse)
-async def get_audit_log_summary(
-    days: int = Query(default=7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-):
-    """
-    Resumen estadístico de actividades.
-
-    Muestra total acciones, por platform, por action_type, por status.
-    """
-    audit_service = get_audit_log_service(db)
-    summary = await audit_service.get_summary(str(current_user.id), days=days)
-
-    return AuditLogSummaryResponse(**summary)

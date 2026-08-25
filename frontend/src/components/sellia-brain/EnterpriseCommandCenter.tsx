@@ -22,7 +22,7 @@ import { t } from '@/lib/sellia-i18n'
 import MissionControlBar, {
   type CuaMode, type UserProfile, loadUser, clearUser,
 } from './MissionControlBar'
-import { useLeads, useAnalyticsSummary } from '@/hooks/useSellIA'
+import { useLeads } from '@/hooks/useSellIA'
 import HandsFreeOverlay from './HandsFreeOverlay'
 import ComputerUseLauncher from './ComputerUseLauncher'
 import dynamic from 'next/dynamic'
@@ -43,8 +43,50 @@ const BusinessToolkit = dynamic(() => import('./BusinessToolkit'), { ssr: false 
 const RescueMode = dynamic(() => import('./RescueMode'), { ssr: false })
 const ToolStudio = dynamic(() => import('./ToolStudio'), { ssr: false })
 import SquadStatusPanel from '../sellia-hub/SquadStatusPanel'
-import HandoffLog from '../sellia-hub/HandoffLog'
-import ApprovalsCenter from '../sellia-hub/ApprovalsCenter'
+import HandoffLog, { type HandoffEvent, type DeptId } from '../sellia-hub/HandoffLog'
+import ApprovalsCenter, { type ApprovalRequest } from '../sellia-hub/ApprovalsCenter'
+
+const BRAIN_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app'
+
+interface RawAuditLog {
+  id: string
+  created_at: string | null
+  platform: string | null
+  action_type: string | null
+  agent_name: string | null
+  strategy_name: string | null
+  confidence_score: number
+  status: string
+  input_data: string | null
+  output_data: string | null
+  error_message: string | null
+}
+
+const PLATFORM_TO_DEPT: Record<string, DeptId> = {
+  whatsapp: 'sdr', instagram: 'sdr', tiktok: 'ads', facebook: 'ads',
+  mercadolibre: 'cua', amazon: 'cua', hotmart: 'cs', website: 'cs',
+  slack: 'core', email: 'sdr',
+}
+
+const mapToApprovalRequest = (l: RawAuditLog): ApprovalRequest => ({
+  id: l.id,
+  createdAt: l.created_at || new Date().toISOString(),
+  dept: (PLATFORM_TO_DEPT[l.platform || ''] as ApprovalRequest['dept']) || 'cua',
+  kind: 'autonomous_purchase',
+  title: `${l.action_type || 'Acción'} · ${l.platform || 'plataforma desconocida'}`,
+  description: l.input_data || 'Acción de agente pendiente de aprobación humana.',
+  rationale: l.strategy_name ? `Estrategia: ${l.strategy_name}` : 'Generado por agente autónomo.',
+  severity: l.confidence_score < 0.5 ? 'high' : l.confidence_score < 0.75 ? 'medium' : 'low',
+  context: { confianza: `${Math.round((l.confidence_score || 0) * 100)}%`, agente: l.agent_name || 'n/a' },
+})
+
+const mapToHandoffEvent = (l: RawAuditLog): HandoffEvent => ({
+  id: l.id,
+  ts: l.created_at || new Date().toISOString(),
+  from: PLATFORM_TO_DEPT[l.platform || ''] || 'core',
+  tag: l.status === 'failed' ? 'ALERT' : l.status === 'success' ? 'WIN' : 'STATUS',
+  text: l.output_data || l.input_data || `${l.action_type || 'actividad'} vía ${l.platform || 'n/a'}`,
+})
 
 /* ─────────────────────────────────────────────
    DESIGN TOKENS — Enterprise SaaS Dark Mode
@@ -160,23 +202,6 @@ const LEVEL_META: Record<LogLevel, { color: string; tag: string }> = {
   win:    { color: T.emerald, tag: 'RESULT' },
 }
 
-const REASONING_POOL: Array<[LogLevel, string]> = [
-  ['think',  'Analizando objeciones del cliente en último hilo de email…'],
-  ['data',   'Consultando base de datos B2B · enriqueciendo firmographics'],
-  ['think',  'Evaluando intent signals · scoring actualizado a 87/100'],
-  ['action', 'Orquestando outreach en LinkedIn para 3 decisores'],
-  ['action', 'Generando email hiper-personalizado con contexto de cuenta'],
-  ['think',  'Estrategia de cierre seleccionada: anclaje de valor + urgencia'],
-  ['data',   'Cruzando histórico de deals similares · win-rate 41%'],
-  ['action', 'Agendando demo · propuesta de 3 slots al calendario'],
-  ['think',  'Detectando deal estancado · activando secuencia de reactivación'],
-  ['win',    'Lead Banco Galicia movido a Negociación · prob. +14%'],
-  ['data',   'Verificando presupuesto vía señales de contratación'],
-  ['action', 'Enviando propuesta firmada digitalmente a Globant'],
-  ['think',  'Priorizando pipeline · 4 leads calientes requieren acción hoy'],
-  ['win',    'Demo confirmada con Mercado Libre para mañana 15:00'],
-]
-
 const nowTs = (): string => {
   const d = new Date()
   const p = (n: number): string => n.toString().padStart(2, '0')
@@ -198,14 +223,14 @@ interface KpiTile {
 }
 const ACCENT_MAP: Record<KpiAccent, string> = { emerald: T.emerald, cobalt: T.cobalt, amber: T.amber }
 const KPI_ICONS: Record<string, React.ReactNode> = {
-  roi: <TrendingUp size={18} />, leads: <Users size={18} />,
+  active: <TrendingUp size={18} />, leads: <Users size={18} />,
   conversion: <Target size={18} />, pipeline: <Activity size={18} />,
 }
 const FALLBACK_KPIS: KpiTile[] = [
-  { key: 'roi', label: 'ROI Global', value: '412%', delta: { value: 6.4, up: true }, accent: 'emerald' },
-  { key: 'leads', label: 'Leads Procesados', value: '18.4K', delta: { value: 11.2, up: true }, accent: 'cobalt' },
-  { key: 'conversion', label: 'Tasa de Conversión', value: '34.8%', delta: { value: 2.1, up: true }, accent: 'cobalt' },
-  { key: 'pipeline', label: 'Pipeline Activo', value: '$2.7M', delta: { value: 0.9, up: false }, accent: 'amber' },
+  { key: 'active', label: 'Leads Activos', value: '—', delta: { value: 0, up: true }, accent: 'emerald' },
+  { key: 'leads', label: 'Leads Totales', value: '—', delta: { value: 0, up: true }, accent: 'cobalt' },
+  { key: 'conversion', label: 'Tasa de Conversión', value: '—', delta: { value: 0, up: true }, accent: 'cobalt' },
+  { key: 'pipeline', label: 'Pipeline Activo', value: '—', delta: { value: 0, up: false }, accent: 'amber' },
 ]
 
 const TRACE_LEVEL_MAP: Record<string, LogLevel> = {
@@ -286,23 +311,44 @@ interface PipelineStage {
   accent: string
 }
 
-const PROCESSING_STAGES: PipelineStage[] = [
-  { key: 'ingest',   label: 'Ingesta de señales', detail: '14 canales · WhatsApp, IG, Email, ML', active: 47, throughput: 72, accent: T.cobalt },
-  { key: 'qualify',  label: 'Calificación',        detail: 'Lead scoring · intent + firmographics', active: 23, throughput: 58, accent: T.cobalt },
-  { key: 'reason',   label: 'Razonamiento',        detail: 'Estrategia · objeciones · próxima acción', active: 12, throughput: 64, accent: T.amber },
-  { key: 'act',      label: 'Ejecución',           detail: 'Outreach · propuestas · agenda', active: 9,  throughput: 41, accent: T.amber },
-  { key: 'close',    label: 'Cierre & fidelización', detail: 'Negociación · postventa · recompra', active: 6,  throughput: 33, accent: T.emerald },
-]
+const STAGE_META: Record<string, { label: string; detail: string; accent: string }> = {
+  new:       { label: 'Ingesta de señales', detail: 'Leads nuevos sin contactar aún', accent: T.cobalt },
+  contacted: { label: 'Calificación',        detail: 'Primer contacto realizado',      accent: T.cobalt },
+  engaged:   { label: 'Razonamiento',        detail: 'Lead respondió · en conversación', accent: T.amber },
+  qualified: { label: 'Ejecución',           detail: 'Calificado · propuesta en curso', accent: T.amber },
+  won:       { label: 'Cierre & fidelización', detail: 'Deal ganado',                  accent: T.emerald },
+}
+const STAGE_ORDER = ['new', 'contacted', 'engaged', 'qualified', 'won']
 
 const AIProcessingPanel = (): React.JSX.Element => {
-  const [tick, setTick] = useState(0)
+  const [stages, setStages] = useState<PipelineStage[]>([])
+
   useEffect(() => {
-    const iv = window.setInterval(() => setTick(t => t + 1), 2000)
-    return () => window.clearInterval(iv)
+    let alive = true
+    const fetchPipeline = async (): Promise<void> => {
+      try {
+        const r = await fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/pipeline-summary`, { cache: 'no-store' })
+        if (!r.ok) throw new Error(String(r.status))
+        const d = await r.json() as { by_status: Array<{ status: string; count: number; value: number }> }
+        if (!alive) return
+        const byStatus = new Map(d.by_status.map(s => [s.status, s.count]))
+        const total = d.by_status.reduce((sum, s) => sum + s.count, 0) || 1
+        setStages(STAGE_ORDER.map(key => {
+          const count = byStatus.get(key) || 0
+          const meta = STAGE_META[key]
+          return {
+            key, label: meta.label, detail: meta.detail,
+            active: count, throughput: Math.round((count / total) * 100), accent: meta.accent,
+          }
+        }))
+      } catch {
+        // backend unreachable — leave stages empty rather than fabricate load %
+      }
+    }
+    void fetchPipeline()
+    const id = window.setInterval(() => { void fetchPipeline() }, 20000)
+    return () => { alive = false; window.clearInterval(id) }
   }, [])
-  // jitter sutil determinista para sensación "en vivo" sin parecer videojuego
-  const jitter = (base: number, i: number): number =>
-    Math.max(4, Math.min(100, base + Math.round(8 * Math.sin((tick + i) * 1.3))))
 
   return (
     <div style={cardStyle}>
@@ -327,13 +373,16 @@ const AIProcessingPanel = (): React.JSX.Element => {
         </span>
       </div>
 
+      {stages.length === 0 ? (
+        <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12, color: T.text3, fontFamily: T.mono }}>
+          Sin actividad de pipeline registrada aún
+        </div>
+      ) : (
       <div style={{
-        display: 'grid', gridTemplateColumns: `repeat(${PROCESSING_STAGES.length}, 1fr)`,
+        display: 'grid', gridTemplateColumns: `repeat(${stages.length}, 1fr)`,
         gap: 12, marginTop: 18, alignItems: 'stretch',
       }}>
-        {PROCESSING_STAGES.map((s, i) => {
-          const load = jitter(s.throughput, i)
-          return (
+        {stages.map((s, i) => (
             <div key={s.key} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <div style={{
                 background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10,
@@ -348,23 +397,23 @@ const AIProcessingPanel = (): React.JSX.Element => {
                 <p style={{ margin: 0, fontSize: 11, color: T.text3, lineHeight: 1.5, minHeight: 32 }}>{s.detail}</p>
                 <div>
                   <div style={{ height: 5, borderRadius: 5, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-                    <div style={{ width: `${load}%`, height: '100%', borderRadius: 5, background: s.accent, transition: 'width 1.4s ease' }} />
+                    <div style={{ width: `${s.throughput}%`, height: '100%', borderRadius: 5, background: s.accent, transition: 'width 1.4s ease' }} />
                   </div>
                   <div style={{ marginTop: 5, fontSize: 10, color: T.text3, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    carga {load}%
+                    {s.throughput}% del pipeline
                   </div>
                 </div>
               </div>
-              {i < PROCESSING_STAGES.length - 1 && (
+              {i < stages.length - 1 && (
                 <ArrowRight
                   size={14}
                   style={{ position: 'absolute', right: -13, top: '50%', transform: 'translateY(-50%)', color: T.text3, zIndex: 1 }}
                 />
               )}
             </div>
-          )
-        })}
+        ))}
       </div>
+      )}
     </div>
   )
 }
@@ -435,8 +484,47 @@ type SortKey = 'score' | 'probability' | 'value'
 
 export const EnterpriseCommandCenter = (): React.JSX.Element => {
   // Fetch real data from backend
-  const { data: leads = [], loading: leadsLoading } = useLeads()
-  const { data: summary } = useAnalyticsSummary()
+  const { leads = [], loading: leadsLoading } = useLeads()
+
+  // Real audit log — powers Approvals Center, Handoff Log, Agent Audit Log sidebar
+  const [auditLogs, setAuditLogs] = useState<RawAuditLog[]>([])
+  const [pendingApprovals, setPendingApprovals] = useState<RawAuditLog[]>([])
+  useEffect(() => {
+    let alive = true
+    const fetchAudit = async (): Promise<void> => {
+      try {
+        const [logsRes, pendingRes] = await Promise.all([
+          fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/handoff-log?limit=30`, { cache: 'no-store' }),
+          fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/audit-log/pending`, { cache: 'no-store' }),
+        ])
+        if (!alive) return
+        if (logsRes.ok) setAuditLogs((await logsRes.json()).logs ?? [])
+        if (pendingRes.ok) setPendingApprovals((await pendingRes.json()).logs ?? [])
+      } catch {
+        // backend unreachable — keep empty, do not fabricate
+      }
+    }
+    void fetchAudit()
+    const id = window.setInterval(() => { void fetchAudit() }, 20000)
+    return () => { alive = false; window.clearInterval(id) }
+  }, [])
+
+  const handoffEvents = useMemo(() => auditLogs.map(mapToHandoffEvent), [auditLogs])
+  const approvalRequests = useMemo(() => pendingApprovals.map(mapToApprovalRequest), [pendingApprovals])
+
+  const handleApproveAction = useCallback(async (id: string): Promise<void> => {
+    await fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/audit-log/${id}/approve`, { method: 'POST' })
+    setPendingApprovals(p => p.filter(l => l.id !== id))
+  }, [])
+
+  const handleRejectAction = useCallback(async (id: string, reason?: string): Promise<void> => {
+    await fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/audit-log/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    })
+    setPendingApprovals(p => p.filter(l => l.id !== id))
+  }, [])
 
   // Convert leads to prospects for table display
   const prospects: Prospect[] = useMemo(() =>
@@ -576,67 +664,70 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     return `No reconocí la orden: "${text}". Probá: mostrá el pipeline, abrí Computer Use, o mostrá el cerebro neuronal.`
   }, [])
 
-  // ── audit log stream ──
-  const [logs, setLogs] = useState<LogLine[]>(() =>
-    REASONING_POOL.slice(0, 6).map(([level, msg], i) => ({ id: i, ts: nowTs(), level, msg })),
-  )
-  const logCounter = useRef(REASONING_POOL.length)
+  // ── audit log stream (real — derived from computer-use audit log) ──
+  const [logs, setLogs] = useState<LogLine[]>([])
   const logBody = useRef<HTMLDivElement>(null)
 
-  // ── live brain metadata (from analytics summary) ──
+  // ── live brain metadata + KPIs (real, computed from the leads table) ──
   const [brain, setBrain] = useState<BrainOverview | null>(null)
   const [kpis, setKpis] = useState<KpiTile[]>(FALLBACK_KPIS)
+  const prevKpiRaw = useRef<{ active: number; leads: number; conversion: number; pipeline: number } | null>(null)
 
   useEffect(() => {
-    if (summary) {
-      const funnel = summary.funnel || {}
-      const emailMetrics = summary.email_metrics || {}
-      const newKpis: KpiTile[] = [
-        {
-          key: 'roi',
-          label: 'ROI Global',
-          value: `${Math.round((emailMetrics.roi_estimate || 412))}%`,
-          delta: { value: 6.4, up: true },
-          accent: 'emerald',
-        },
-        {
-          key: 'leads',
-          label: 'Leads Procesados',
-          value: `${((funnel.new || 0) + (funnel.contacted || 0) + (funnel.engaged || 0)).toLocaleString()}`,
-          delta: { value: 11.2, up: true },
-          accent: 'cobalt',
-        },
-        {
-          key: 'conversion',
-          label: 'Tasa de Conversión',
-          value: `${(emailMetrics.click_rate || 34.8).toFixed(1)}%`,
-          delta: { value: 2.1, up: true },
-          accent: 'cobalt',
-        },
-        {
-          key: 'pipeline',
-          label: 'Pipeline Activo',
-          value: `$${((funnel.qualified || 0) * 50000 / 1000000).toFixed(1)}M`,
-          delta: { value: 0.9, up: false },
-          accent: 'amber',
-        },
-      ]
-      setKpis(newKpis)
-      setBrain({
-        counts: { agents: 5, skills: 12, automations: 8, total: 25 },
-        health: 0.92,
-      })
+    let alive = true
+    const fetchKpis = async (): Promise<void> => {
+      try {
+        const r = await fetch(`${BRAIN_BACKEND_URL}/api/v1/brain/kpis`, { cache: 'no-store' })
+        if (!r.ok) throw new Error(String(r.status))
+        const d = await r.json() as {
+          total_leads: number; won_leads: number; active_leads: number
+          conversion_rate: number; pipeline_value: number
+        }
+        if (!alive) return
+
+        const raw = {
+          active: d.active_leads, leads: d.total_leads,
+          conversion: d.conversion_rate, pipeline: d.pipeline_value,
+        }
+        const prev = prevKpiRaw.current
+        const pct = (now: number, before: number | undefined): { value: number; up: boolean } => {
+          if (before === undefined || before === 0) return { value: 0, up: true }
+          const change = ((now - before) / before) * 100
+          return { value: Math.abs(Math.round(change * 10) / 10), up: change >= 0 }
+        }
+
+        setKpis([
+          { key: 'active', label: 'Leads Activos', value: raw.active.toLocaleString(), delta: pct(raw.active, prev?.active), accent: 'emerald' },
+          { key: 'leads', label: 'Leads Totales', value: raw.leads.toLocaleString(), delta: pct(raw.leads, prev?.leads), accent: 'cobalt' },
+          { key: 'conversion', label: 'Tasa de Conversión', value: `${raw.conversion.toFixed(1)}%`, delta: pct(raw.conversion, prev?.conversion), accent: 'cobalt' },
+          { key: 'pipeline', label: 'Pipeline Activo', value: `$${(raw.pipeline / 1000).toFixed(1)}K`, delta: pct(raw.pipeline, prev?.pipeline), accent: 'amber' },
+        ])
+        prevKpiRaw.current = raw
+        setBrain({
+          counts: { agents: 5, skills: 12, automations: 8, total: 25 },
+          health: d.total_leads > 0 ? Math.min(0.99, 0.6 + d.conversion_rate / 200) : 0,
+        })
+      } catch {
+        // backend unreachable — keep last known KPIs rather than fabricate
+      }
     }
-  }, [summary])
-
-  useEffect(() => {
-    const iv = window.setInterval(() => {
-      const [level, msg] = REASONING_POOL[Math.floor(Math.random() * REASONING_POOL.length)]
-      logCounter.current += 1
-      setLogs(prev => [...prev.slice(-40), { id: logCounter.current, ts: nowTs(), level, msg }])
-    }, 2200)
-    return () => window.clearInterval(iv)
+    void fetchKpis()
+    const id = window.setInterval(() => { void fetchKpis() }, 20000)
+    return () => { alive = false; window.clearInterval(id) }
   }, [])
+
+  // Map real audit log entries (already polled every 20s above) into log lines
+  useEffect(() => {
+    const toLevel = (l: RawAuditLog): LogLevel =>
+      l.status === 'success' ? 'win' : l.status === 'failed' ? 'action' : l.strategy_name ? 'think' : 'data'
+    const mapped: LogLine[] = auditLogs.slice(0, 40).map((l, i) => ({
+      id: i,
+      ts: l.created_at ? new Date(l.created_at).toLocaleTimeString('es-AR', { hour12: false }) : nowTs(),
+      level: toLevel(l),
+      msg: l.output_data || l.input_data || `${l.action_type || 'actividad'} · ${l.agent_name || l.platform || 'agente'}`,
+    }))
+    setLogs(mapped)
+  }, [auditLogs])
 
   useEffect(() => {
     if (logBody.current) logBody.current.scrollTop = logBody.current.scrollHeight
@@ -1101,8 +1192,15 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
                           : '1fr 1fr',
         gap: 16, alignItems: 'start',
       }}>
-        {showHandoff   && <HandoffLog />}
-        {showApprovals && <ApprovalsCenter />}
+        {showHandoff   && <HandoffLog events={handoffEvents} simulateLive={false} />}
+        {showApprovals && (
+          <ApprovalsCenter
+            requests={approvalRequests}
+            demoMode={false}
+            onApprove={handleApproveAction}
+            onReject={handleRejectAction}
+          />
+        )}
       </section>
       )}
 

@@ -134,14 +134,96 @@ async def lifespan(app: FastAPI):
     # Migrate schema for 2FA columns
     try:
         from sqlalchemy import text
-        from app.core.database import AsyncSessionLocal
+        from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
-            await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"))
-            await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"))
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(users)"))
+                cols = {row[1] for row in existing.all()}
+                if "totp_secret" not in cols:
+                    await db.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))
+                if "is_2fa_enabled" not in cols:
+                    await db.execute(text("ALTER TABLE users ADD COLUMN is_2fa_enabled BOOLEAN DEFAULT 0"))
+            else:
+                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"))
+                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"))
             await db.commit()
         logger.info("✅ 2FA schema migrated")
     except Exception as e:
         logger.warning(f"2FA schema migration: {str(e)[:80]}")
+
+    # Create computer_use_audit_logs table (real agent activity trail used by
+    # the Brain dashboard's Agent Audit Log / Approvals Center / Handoff Log).
+    # Its ORM model's FK previously pointed at a nonexistent "user" (singular)
+    # table so this never got created by the disabled auto-create_all path.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS computer_use_audit_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        user_id VARCHAR(36),
+                        session_id VARCHAR(36),
+                        created_at DATETIME,
+                        executed_at DATETIME,
+                        duration_ms INTEGER DEFAULT 0,
+                        platform VARCHAR(50),
+                        action_type VARCHAR(50),
+                        agent_name VARCHAR(100),
+                        strategy_name VARCHAR(100),
+                        tactics TEXT,
+                        confidence_score FLOAT DEFAULT 0.0,
+                        requires_approval BOOLEAN DEFAULT 0,
+                        input_data TEXT,
+                        output_data TEXT,
+                        status VARCHAR(50),
+                        error_message TEXT,
+                        metadata TEXT,
+                        user_approved BOOLEAN,
+                        approval_at DATETIME,
+                        approved_by_user_id VARCHAR(36)
+                    )
+                """))
+            else:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS computer_use_audit_logs (
+                        id VARCHAR(36) PRIMARY KEY,
+                        user_id VARCHAR(36) REFERENCES users(id),
+                        session_id VARCHAR(36),
+                        created_at TIMESTAMP,
+                        executed_at TIMESTAMP,
+                        duration_ms INTEGER DEFAULT 0,
+                        platform VARCHAR(50),
+                        action_type VARCHAR(50),
+                        agent_name VARCHAR(100),
+                        strategy_name VARCHAR(100),
+                        tactics JSONB,
+                        confidence_score FLOAT DEFAULT 0.0,
+                        requires_approval BOOLEAN DEFAULT false,
+                        input_data TEXT,
+                        output_data TEXT,
+                        status VARCHAR(50),
+                        error_message TEXT,
+                        metadata JSONB,
+                        user_approved BOOLEAN,
+                        approval_at TIMESTAMP,
+                        approved_by_user_id VARCHAR(36) REFERENCES users(id)
+                    )
+                """))
+                await db.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_created_at ON computer_use_audit_logs (created_at)"
+                ))
+                await db.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_platform ON computer_use_audit_logs (platform)"
+                ))
+                await db.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_cu_audit_status ON computer_use_audit_logs (status)"
+                ))
+            await db.commit()
+        logger.info("✅ computer_use_audit_logs table ensured")
+    except Exception as e:
+        logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}")
 
     # Load Phase 33 seed data if needed (async-compatible)
     try:

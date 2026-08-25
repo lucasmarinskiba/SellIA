@@ -33,7 +33,7 @@ class AuditLogResponse(BaseModel):
     user_approved: Optional[bool] = None
     approval_at: Optional[datetime] = None
 
-    metadata: Optional[Dict[str, Any]] = None
+    extra_data: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
