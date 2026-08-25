@@ -13,7 +13,6 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from app.domains.proximity import ProximityEngine, UserLocation, Location
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/proximity", tags=["proximity"])
