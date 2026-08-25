@@ -949,7 +949,11 @@
       "Bash(curl -s https://sellia-production.up.railway.app/api/v1/auth/signup -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"deploy-test@test.local\",\"password\":\"SecurePass123@\",\"full_name\":\"Deploy\"}')",
       "Bash(curl -s https://sellia-brain.vercel.app/signup)",
       "Bash(xargs grep -l \"analyticsAPI\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://sellia-production.up.railway.app/api/v1/brain/kpis)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://sellia-production.up.railway.app/api/v1/brain/kpis)",
+      "Bash(curl -s https://sellia-production.up.railway.app/api/v1/brain/audit-log)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://sellia-brain.vercel.app/sellia-brain)",
+      "Bash(curl -sI https://sellia-brain.vercel.app/sellia-brain)",
+      "Bash(curl -sI https://sellia-brain.vercel.app/signup)"
     ]
   }
 }
