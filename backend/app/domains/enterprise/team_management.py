@@ -25,7 +25,7 @@ class TeamMember:
     name: str
     email: str
     role: TeamRole
-    status: str  % active, inactive, suspended %
+    status: str  #active, inactive, suspended %
     joined_at: datetime
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
@@ -38,7 +38,7 @@ class AgentAssignment:
     team_member_id: str
     assigned_at: datetime
     assigned_by: str
-    workload_percentage: int  % 0-100 %
+    workload_percentage: int  #0-100 %
     is_primary: bool = True
     notes: Optional[str] = None
 
@@ -49,13 +49,13 @@ class MemberPerformance:
     member_name: str
     assigned_agents: list[AgentType]
     tasks_completed: int
-    success_rate: float  % 0-100 %
-    avg_response_time: float  % seconds %
+    success_rate: float  #0-100 %
+    avg_response_time: float  #seconds %
     revenue_generated: float
     lead_conversions: int
-    customer_satisfaction: float  % 0-5 %
-    workload_score: float  % 0-100 %
-    efficiency_score: float  % 0-100 %
+    customer_satisfaction: float  #0-5 %
+    workload_score: float  #0-100 %
+    efficiency_score: float  #0-100 %
 
 
 @dataclass
@@ -65,7 +65,7 @@ class DelegationRequest:
     to_member_id: str
     agent_types: list[AgentType]
     reason: str
-    status: str  % pending, approved, rejected, completed %
+    status: str  #pending, approved, rejected, completed %
     created_at: datetime
     expires_at: Optional[datetime] = None
     metadata: dict = field(default_factory=dict)
@@ -267,7 +267,7 @@ class TeamManager:
             if k.startswith(f"{user_id}:")
         ]
 
-        % Simple round-robin rebalance %
+        #Simple round-robin rebalance %
         for i, assignment in enumerate(assignments):
             member_idx = i % len(members)
             assignment.team_member_id = members[member_idx].id

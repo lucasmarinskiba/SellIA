@@ -103,7 +103,7 @@ async def setup_zapier(
 ):
     """Setup Zapier integration."""
     try:
-        % Validate events %
+        # Validate events
         for event in events:
             WebhookEvent(event)
 

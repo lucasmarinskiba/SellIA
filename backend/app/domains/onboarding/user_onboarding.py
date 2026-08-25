@@ -62,10 +62,10 @@ class OnboardingAnswers:
 class OnboardingEngine:
     """Guide new users through setup"""
 
-    def create_session(self, user_id: str) -> OnboardingSession:
+    def create_session(self, user_id: str) -> UserOnboardingSession:
         """Create onboarding session"""
         session_id = f"onb_{user_id}_{datetime.utcnow().timestamp()}"
-        return OnboardingSession(user_id=user_id, session_id=session_id)
+        return UserOnboardingSession(user_id=user_id, session_id=session_id)
 
     def get_step_content(self, step: OnboardingStep) -> Dict[str, Any]:
         """Get questions/content for step"""
