@@ -59,7 +59,7 @@ async def signup(
                     failed_login_attempts, is_superuser, is_2fa_enabled, country_code, preferred_currency,
                     timezone, billing_address, payment_methods, created_at, updated_at)
                 VALUES (:id, :email, :hash, :full_name, true, false, 0, false, false, 'AR', 'ARS',
-                    'America/Argentina/Buenos_Aires', '{}', '[]', NOW(), NOW())
+                    'America/Argentina/Buenos_Aires', '{}', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """),
             {"id": user_id, "email": req.email, "hash": password_hash, "full_name": req.full_name}
         )
@@ -134,12 +134,16 @@ async def signin(
         raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
 
 
+class Enable2FARequest(BaseModel):
+    user_id: str
+
+
 @router.post("/2fa/enable")
-async def enable_2fa(user_id: str = Body(...), db: AsyncSession = Depends(get_db)):
+async def enable_2fa(req: Enable2FARequest, db: AsyncSession = Depends(get_db)):
     """Generate 2FA secret and QR code."""
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=user_id, issuer_name="SellIA")
+    provisioning_uri = totp.provisioning_uri(name=req.user_id, issuer_name="SellIA")
 
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(provisioning_uri)
@@ -157,46 +161,59 @@ async def enable_2fa(user_id: str = Body(...), db: AsyncSession = Depends(get_db
     }
 
 
+class Verify2FARequest(BaseModel):
+    user_id: str
+    secret: str
+    totp_code: str
+
+
 @router.post("/2fa/verify")
 async def verify_2fa(
-    user_id: str = Body(...),
-    secret: str = Body(...),
-    totp_code: str = Body(...),
+    request: Verify2FARequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Verify 2FA code and enable 2FA for user."""
-    totp = pyotp.TOTP(secret)
-    if not totp.verify(totp_code, valid_window=1):
-        raise HTTPException(status_code=400, detail="Invalid 2FA code")
+    try:
+        totp = pyotp.TOTP(request.secret)
+        if not totp.verify(request.totp_code, valid_window=1):
+            raise HTTPException(status_code=400, detail="Invalid 2FA code")
 
-    await db.execute(
-        text("UPDATE users SET is_2fa_enabled = true, totp_secret = :secret WHERE id = :id"),
-        {"id": user_id, "secret": secret}
-    )
-    await db.commit()
+        await db.execute(
+            text("UPDATE users SET is_2fa_enabled = true, totp_secret = :secret WHERE id = :id"),
+            {"id": request.user_id, "secret": request.secret}
+        )
+        await db.commit()
 
-    return {"message": "2FA enabled successfully"}
+        return {"message": "2FA enabled successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
+
+
+class Disable2FARequest(BaseModel):
+    user_id: str
+    password: str
 
 
 @router.post("/2fa/disable")
 async def disable_2fa(
-    user_id: str = Body(...),
-    password: str = Body(...),
+    req: Disable2FARequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Disable 2FA (requires password confirmation)."""
     result = await db.execute(
         text("SELECT hashed_password FROM users WHERE id = :id"),
-        {"id": user_id}
+        {"id": req.user_id}
     )
     user_row = result.first()
 
-    if not user_row or not bcrypt.checkpw(password.encode(), user_row[0].encode()):
+    if not user_row or not bcrypt.checkpw(req.password.encode(), user_row[0].encode()):
         raise HTTPException(status_code=401, detail="Invalid password")
 
     await db.execute(
         text("UPDATE users SET is_2fa_enabled = false, totp_secret = NULL WHERE id = :id"),
-        {"id": user_id}
+        {"id": req.user_id}
     )
     await db.commit()
 
