@@ -186,10 +186,15 @@ async def lifespan(app: FastAPI):
                     )
                 """))
             else:
+                # No FK constraints on user_id/approved_by_user_id here: the
+                # users table's id column type has varied across migration
+                # attempts in this codebase's history, and a type mismatch
+                # would abort this CREATE TABLE and leave the whole audit
+                # trail feature broken. Values are still real UUID strings.
                 await db.execute(text("""
                     CREATE TABLE IF NOT EXISTS computer_use_audit_logs (
                         id VARCHAR(36) PRIMARY KEY,
-                        user_id VARCHAR(36) REFERENCES users(id),
+                        user_id VARCHAR(36),
                         session_id VARCHAR(36),
                         created_at TIMESTAMP,
                         executed_at TIMESTAMP,
@@ -208,7 +213,7 @@ async def lifespan(app: FastAPI):
                         metadata JSONB,
                         user_approved BOOLEAN,
                         approval_at TIMESTAMP,
-                        approved_by_user_id VARCHAR(36) REFERENCES users(id)
+                        approved_by_user_id VARCHAR(36)
                     )
                 """))
                 await db.execute(text(
