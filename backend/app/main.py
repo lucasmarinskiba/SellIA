@@ -32,7 +32,7 @@ def _try_include(router_path: str, prefix: str, tags: list[str]) -> None:
 _try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.resend_webhook.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
-_try_include("app.api.v1.signup.router", "/api/v1/auth", ["auth"])
+_try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
 _try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
 _try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"])
 _try_include("app.domains.businesses.locations_router.router", "/api/v1", ["locations"])
