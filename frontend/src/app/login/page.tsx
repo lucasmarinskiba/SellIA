@@ -70,19 +70,47 @@ export default function LoginPage() {
 
   const t = translations[lang]
 
+  const [step, setStep] = useState<'credentials' | 'totp'>('credentials')
+  const [totpCode, setTotpCode] = useState('')
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
     try {
-      await auth.login(email, password)
-      router.push('/dashboard')
+      const response = await fetch('/api/v1/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          totp_code: step === 'totp' ? totpCode : undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.requires_2fa && step === 'credentials') {
+        setStep('totp')
+      } else if (response.ok && data.access_token) {
+        localStorage.setItem('access_token', data.access_token)
+        localStorage.setItem('user_id', data.user_id)
+        router.push('/dashboard')
+      } else {
+        setError(data.detail || 'Error al iniciar sesión')
+      }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleBackToCredentials = () => {
+    setStep('credentials')
+    setTotpCode('')
+    setError('')
   }
 
   if (!mounted) return null
@@ -146,48 +174,94 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Email */}
-            <div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                placeholder={t.emailPlaceholder}
-                className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-              />
-            </div>
+            {step === 'credentials' ? (
+              <>
+                {/* Email */}
+                <div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                    placeholder={t.emailPlaceholder}
+                    className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                  />
+                </div>
 
-            {/* Password */}
-            <div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder={t.passwordPlaceholder}
-                  className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
-                />
+                {/* Password */}
+                <div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder={t.passwordPlaceholder}
+                      className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-base text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-12 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                >
+                  {loading ? t.loading : t.loginButton}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* 2FA Code */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Código de autenticación
+                  </label>
+                  <p className="text-xs text-gray-600 mb-4">
+                    Ingresa el código de 6 dígitos de tu app autenticadora
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={totpCode}
+                    onChange={(e) => {
+                      setTotpCode(e.target.value.replace(/\D/g, ''))
+                      setError('')
+                    }}
+                    placeholder="000000"
+                    className="w-full text-center text-2xl font-mono tracking-widest px-0 py-3 bg-transparent border-b border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Submit 2FA */}
+                <button
+                  type="submit"
+                  disabled={loading || totpCode.length !== 6}
+                  className="w-full mt-12 px-6 py-3 bg-green-600 text-white font-semibold text-base rounded-lg hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                >
+                  {loading ? 'Verificando...' : 'Verificar código'}
+                </button>
+
+                {/* Back Button */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  onClick={handleBackToCredentials}
+                  className="w-full px-6 py-3 border border-gray-300 bg-white text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-50 transition-all"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  Volver
                 </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-12 px-6 py-3 bg-black text-white font-semibold text-base rounded-lg hover:bg-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-            >
-              {loading ? t.loading : t.loginButton}
-            </button>
+              </>
+            )}
           </form>
 
           {/* Google */}
