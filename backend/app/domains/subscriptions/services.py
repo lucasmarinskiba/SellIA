@@ -133,6 +133,10 @@ async def check_subscription_limit(
         # Fail open: a broken/missing subscription schema must never block
         # the primary action (e.g. connecting a channel). Same defensive
         # idiom used elsewhere in this codebase for non-critical checks.
+        # Must rollback: a failed statement leaves the session's Postgres
+        # transaction aborted, which would otherwise poison every later
+        # query on this same `db` for the rest of the request.
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"check_subscription_limit failed, allowing by default: {e}")
         return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
