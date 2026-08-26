@@ -30,63 +30,34 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/")
 async def create_business(
     business_in: BusinessCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create business."""
-    try:
-        result = await db.execute(
-            select(Business).where(Business.user_id == current_user.id)
-        )
-        existing = result.scalars().all()
-        if len(existing) >= 1:
-            raise HTTPException(status_code=403, detail="Only 1 business per user")
-
-        business = Business(
-            user_id=current_user.id,
-            name=business_in.name,
-            description=business_in.description,
-        )
-        db.add(business)
-        await db.commit()
-        await db.refresh(business)
-
-        try:
-            await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
-        except:
-            pass
-
-        return {
-            "id": str(business.id),
-            "user_id": str(business.user_id),
-            "name": business.name,
-            "description": business.description,
-            "type": business_in.type,
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception("Business create error")
-        return {"error": f"Failed: {str(e)[:100]}"}
+    """Create business - minimal."""
+    business = Business(
+        user_id=current_user.id,
+        name=business_in.name,
+        description=business_in.description,
+    )
+    db.add(business)
+    await db.commit()
+    return {"id": str(business.id), "name": business.name}
 
 
-@router.get("/", response_model=list[BusinessResponse])
+@router.get("/")
 async def list_businesses(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """List user's businesses."""
-    try:
-        result = await db.execute(
-            select(Business).where(Business.user_id == current_user.id, Business.id.isnot(None))
-        )
-        return result.scalars().all()
-    except Exception as e:
-        logger.exception("Business list error")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    result = await db.execute(
+        select(Business).where(Business.user_id == current_user.id)
+    )
+    businesses = result.scalars().all()
+    return [{"id": str(b.id), "name": b.name} for b in businesses]
 
 
 @router.get("/{business_id}", response_model=BusinessResponse)
