@@ -62,26 +62,39 @@ async def debug_conversation_state(
 
 
 @router.post("/debug/llm-test", tags=["debug"])
-async def debug_llm_test(db: AsyncSession = Depends(get_db)):
-    """Temporary: test if generate_raw_ai_response works/hangs, with a hard timeout."""
-    import asyncio
-    from app.domains.agents.ai_reply import generate_raw_ai_response
+async def debug_llm_test():
+    """Temporary: isolate whether the crash is in imports, LLM call, or DB."""
+    steps = []
     try:
-        result = await asyncio.wait_for(
-            generate_raw_ai_response(
-                db=db,
-                business_id=UUID(int=0),
-                system_prompt="Responde solo con: OK",
-                user_prompt="test",
-                max_tokens=10,
-            ),
-            timeout=15.0,
-        )
-        return {"status": "ok", "result": result}
+        steps.append("start")
+        import asyncio
+        steps.append("import asyncio ok")
+        from app.domains.agents.ai_reply import generate_raw_ai_response
+        steps.append("import generate_raw_ai_response ok")
+        from app.domains.agents.llm_provider import generate_with_fallback
+        steps.append("import generate_with_fallback ok")
+        from langchain_core.messages import SystemMessage, HumanMessage
+        steps.append("import langchain_core ok")
+        from app.core.database import AsyncSessionLocal
+        steps.append("import AsyncSessionLocal ok")
+        async with AsyncSessionLocal() as db:
+            steps.append("db session opened")
+            result = await asyncio.wait_for(
+                generate_with_fallback(
+                    db=db,
+                    business_id=UUID(int=0),
+                    messages=[SystemMessage(content="Responde solo: OK"), HumanMessage(content="test")],
+                    model="gpt-4o-mini",
+                    max_tokens=10,
+                ),
+                timeout=15.0,
+            )
+            steps.append(f"llm call returned: {result.content if result else None}")
+        return {"status": "ok", "steps": steps}
     except asyncio.TimeoutError:
-        return {"status": "timeout"}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "timeout", "steps": steps}
+    except BaseException as e:
+        return {"status": "error", "type": type(e).__name__, "error": str(e)[:500], "steps": steps}
 
 
 @router.post("/debug/qualify/{conversation_id}", tags=["debug"])
