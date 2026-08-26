@@ -38,13 +38,9 @@ class Business(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
-    type = Column(Enum(BusinessType), nullable=False, default=BusinessType.SERVICES)
     description = Column(Text, nullable=True)
     config = Column(JSONB, default=dict, nullable=False)
-    localization_model = Column(Enum(LocalizationModel), default=LocalizationModel.ONLINE_ONLY, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 

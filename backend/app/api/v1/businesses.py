@@ -47,12 +47,11 @@ async def create_business(
 
         config = business_in.config or {}
         default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-        merged_config = {**default_config, **config}
+        merged_config = {**default_config, **config, "type": business_in.type}
 
         business = Business(
             user_id=current_user.id,
             name=business_in.name,
-            type=business_in.type,
             description=business_in.description,
             config=merged_config,
         )
