@@ -113,6 +113,16 @@ async def debug_qualify(
         return {"status": "error", "error": str(e), "trace": traceback.format_exc()[-1500:]}
 
 
+@router.get("/debug/enum-values/{type_name}", tags=["debug"])
+async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db)):
+    """Temporary: list actual pg enum labels for a given type name."""
+    from sqlalchemy import text
+    result = await db.execute(text(
+        "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = :t ORDER BY enumsortorder"
+    ), {"t": type_name})
+    return {"type": type_name, "values": [r[0] for r in result.all()]}
+
+
 @router.post("/debug/add-type-column", tags=["debug"])
 async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
     """Temporary: force-apply the businesses.type schema patch immediately."""
