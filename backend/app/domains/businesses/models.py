@@ -40,7 +40,11 @@ class Business(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    type = Column(Enum(BusinessType), default=BusinessType.SERVICES, nullable=False)
+    # Explicit name: app.domains.business_context.models also defines a
+    # BusinessType enum, and SQLAlchemy names Postgres enum types after the
+    # Python class name by default — colliding with that unrelated type
+    # (which already exists in prod with a completely different value set).
+    type = Column(Enum(BusinessType, name="business_kind"), default=BusinessType.SERVICES, nullable=False)
 
     locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 

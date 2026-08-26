@@ -265,14 +265,18 @@ async def lifespan(app: FastAPI):
                 if "type" not in cols:
                     await db.execute(text("ALTER TABLE businesses ADD COLUMN type VARCHAR(20) DEFAULT 'services'"))
             else:
+                # "business_kind", not "businesstype": that name collides
+                # with app.domains.business_context.models.BusinessType,
+                # which already owns a Postgres enum called "businesstype"
+                # with a completely different (uppercase) value set.
                 await db.execute(text("""
                     DO $$ BEGIN
-                        CREATE TYPE businesstype AS ENUM ('services', 'goods', 'digital', 'mixed');
+                        CREATE TYPE business_kind AS ENUM ('services', 'goods', 'digital', 'mixed');
                     EXCEPTION WHEN duplicate_object THEN null;
                     END $$;
                 """))
                 await db.execute(text(
-                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type businesstype NOT NULL DEFAULT 'services'"
+                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'services'"
                 ))
             await db.commit()
         logger.info("✅ businesses.type restored")

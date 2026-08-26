@@ -130,12 +130,12 @@ async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
     try:
         await db.execute(text("""
             DO $$ BEGIN
-                CREATE TYPE businesstype AS ENUM ('services', 'goods', 'digital', 'mixed');
+                CREATE TYPE business_kind AS ENUM ('services', 'goods', 'digital', 'mixed');
             EXCEPTION WHEN duplicate_object THEN null;
             END $$;
         """))
         await db.execute(text(
-            "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type businesstype NOT NULL DEFAULT 'services'"
+            "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'services'"
         ))
         await db.commit()
         return {"status": "ok"}
