@@ -793,5 +793,11 @@ async def receive_webhook(
         raise HTTPException(status_code=400, detail="Payload inválido")
 
     from app.domains.channels.services import process_incoming_message
-    await process_incoming_message(db, channel, payload)
+    try:
+        await process_incoming_message(db, channel, payload)
+    except Exception as e:
+        await db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("process_incoming_message failed")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
     return {"status": "accepted"}
