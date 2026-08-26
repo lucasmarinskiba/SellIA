@@ -9,7 +9,7 @@ from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.businesses.models import Business, DEFAULT_CONFIGS
 from app.domains.businesses.schemas import BusinessCreate, BusinessUpdate, BusinessResponse
-from app.domains.subscriptions.services import check_subscription_limit, track_usage, get_or_create_subscription
+from app.domains.subscriptions.services import track_usage
 
 router = APIRouter()
 
@@ -20,31 +20,18 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Ensure user has subscription (create if missing)
-    await get_or_create_subscription(db, current_user.id, "free")
-
-    # Check multi-business limit
+    # Check multi-business limit (skip subscription check for now to isolate issue)
     existing_count = await db.execute(
         select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
     )
     business_count = len(existing_count.scalars().all())
 
-    try:
-        limit_check = await check_subscription_limit(db, current_user.id, "multi_business", quantity=1)
-        if limit_check["limit"] != -1 and business_count >= 1 and not limit_check["allowed"]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Tu plan no permite múltiples negocios. Actualizá a Pro o Enterprise."
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        # If subscription check fails, allow creation (free tier: 1 business)
-        if business_count >= 1:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only 1 business allowed on free plan."
-            )
+    # Free tier: allow only 1 business
+    if business_count >= 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only 1 business allowed on free plan."
+        )
 
     config = business_in.config or {}
     default_config = DEFAULT_CONFIGS.get(business_in.type, {})
