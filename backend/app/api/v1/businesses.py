@@ -22,6 +22,14 @@ async def health():
     return {"status": "ok", "service": "businesses"}
 
 
+@router.get("/me", tags=["debug"])
+async def get_current_business(
+    current_user: User = Depends(get_current_user),
+):
+    """Get current user - minimal auth test."""
+    return {"user_id": str(current_user.id), "email": current_user.email}
+
+
 @router.post("/test", tags=["debug"])
 async def test_endpoint():
     """Minimal test - no dependencies."""
