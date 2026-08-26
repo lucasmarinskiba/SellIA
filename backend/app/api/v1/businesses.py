@@ -22,6 +22,12 @@ async def health():
     return {"status": "ok", "service": "businesses"}
 
 
+@router.post("/test", tags=["debug"])
+async def test_endpoint():
+    """Minimal test - no dependencies."""
+    return {"status": "ok", "endpoint": "business_create_test"}
+
+
 @router.post("/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_business(
     business_in: BusinessCreate,
