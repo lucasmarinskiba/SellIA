@@ -113,6 +113,27 @@ async def debug_qualify(
         return {"status": "error", "error": str(e), "trace": traceback.format_exc()[-1500:]}
 
 
+@router.post("/debug/add-type-column", tags=["debug"])
+async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
+    """Temporary: force-apply the businesses.type schema patch immediately."""
+    from sqlalchemy import text
+    try:
+        await db.execute(text("""
+            DO $$ BEGIN
+                CREATE TYPE businesstype AS ENUM ('services', 'goods', 'digital', 'mixed');
+            EXCEPTION WHEN duplicate_object THEN null;
+            END $$;
+        """))
+        await db.execute(text(
+            "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type businesstype NOT NULL DEFAULT 'services'"
+        ))
+        await db.commit()
+        return {"status": "ok"}
+    except Exception as e:
+        await db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
 async def debug_create_table(table_name: str):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
