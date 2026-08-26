@@ -30,7 +30,7 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
-@router.post("/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_business(
     business_in: BusinessCreate,
     db: AsyncSession = Depends(get_db),
@@ -39,7 +39,7 @@ async def create_business(
     """Create business."""
     try:
         result = await db.execute(
-            select(Business).where(Business.user_id == current_user.id, Business.id.isnot(None))
+            select(Business).where(Business.user_id == current_user.id)
         )
         existing = result.scalars().all()
         if len(existing) >= 1:
@@ -59,12 +59,18 @@ async def create_business(
         except:
             pass
 
-        return business
+        return {
+            "id": str(business.id),
+            "user_id": str(business.user_id),
+            "name": business.name,
+            "description": business.description,
+            "type": business_in.type,
+        }
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("Business create error")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        return {"error": f"Failed: {str(e)[:100]}"}
 
 
 @router.get("/", response_model=list[BusinessResponse])
