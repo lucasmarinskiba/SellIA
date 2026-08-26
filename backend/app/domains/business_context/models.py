@@ -99,6 +99,13 @@ class BusinessContext(Base):
     ai_priority_actions = Column(JSONB, default=list)
     ai_brand_voice = Column(Text, nullable=True)
 
+    # Winning offer + communication angles (list of {angle, hook, pain_point, cta})
+    communication_angles = Column(JSONB, default=list)
+    winning_offer_summary = Column(Text, nullable=True)
+
+    # Booking link used for qualified-lead invites (Calendly, cal.com, etc.)
+    scheduling_link = Column(String(512), nullable=True)
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -483,6 +483,64 @@ async def process_incoming_message(
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Lead scoring error: {e}")
 
+    # === Auto-BANT Qualification + ManyChat-style lead filtering ===
+    # Runs once per conversation (skips if already qualified). Once a lead is
+    # qualified, tags the subscriber (if the connector supports it, e.g.
+    # ManyChat) so the business's own chat flow can branch on it, and sends a
+    # niche-aware pitch pulled from BusinessContext.communication_angles plus
+    # a booking-link invite if the business configured one.
+    try:
+        from sqlalchemy import func
+        from app.domains.agents.lead_qualifier import service as lq_service
+
+        inbound_count_result = await db.execute(
+            select(func.count(Message.id)).where(
+                Message.conversation_id == conversation.id,
+                Message.direction == MessageDirection.INBOUND,
+            )
+        )
+        inbound_count = inbound_count_result.scalar() or 0
+
+        if inbound_count >= 2:
+            existing_qual = await lq_service.get_latest_qualification_for_conversation(db, conversation.id)
+            if existing_qual is None:
+                qual_result = await lq_service.qualify_lead(
+                    db=db,
+                    conversation_id=conversation.id,
+                    business_id=channel.business_id,
+                )
+                lead_status = qual_result.get("status")
+
+                connector = get_connector(channel.platform, channel.credentials, channel.settings)
+
+                if lead_status == "qualified":
+                    if hasattr(connector, "tag_subscriber"):
+                        await connector.tag_subscriber(payload.external_id, "sellia_qualified")
+
+                    pitch = qual_result.get("summary") or "¡Gracias por tu interés! Un asesor te va a contactar enseguida."
+                    try:
+                        from app.domains.business_context.models import BusinessContext
+                        ctx_result = await db.execute(
+                            select(BusinessContext).where(BusinessContext.business_id == channel.business_id)
+                        )
+                        ctx = ctx_result.scalar_one_or_none()
+                        if ctx and ctx.communication_angles:
+                            top_angle = ctx.communication_angles[0]
+                            pitch = f"{top_angle.get('hook', pitch)}"
+                        if ctx and ctx.scheduling_link:
+                            pitch = f"{pitch}\n\nAgendá acá: {ctx.scheduling_link}"
+                    except Exception as e:
+                        from app.core.logger import get_logger
+                        get_logger(__name__).error(f"Angle/scheduling lookup error: {e}")
+
+                    await send_outbound_message(db, conversation.id, pitch)
+
+                elif lead_status == "disqualified" and hasattr(connector, "tag_subscriber"):
+                    await connector.tag_subscriber(payload.external_id, "sellia_disqualified")
+    except Exception as e:
+        from app.core.logger import get_logger
+        get_logger(__name__).error(f"Auto-qualification error: {e}")
+
     # === Competitor Mention Detection ===
     try:
         await _detect_competitor_mentions(db, conversation, payload.content, channel.business_id)

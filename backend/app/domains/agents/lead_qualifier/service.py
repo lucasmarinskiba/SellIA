@@ -198,6 +198,20 @@ async def _generate_qualification_summary(
     return summary or "Lead calificado."
 
 
+async def get_latest_qualification_for_conversation(
+    db: AsyncSession,
+    conversation_id: uuid.UUID,
+) -> Optional[LeadQualification]:
+    """Returns the most recent BANT qualification for a conversation, if any."""
+    result = await db.execute(
+        select(LeadQualification)
+        .where(LeadQualification.conversation_id == conversation_id)
+        .order_by(desc(LeadQualification.created_at))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def ask_qualifying_question(
     db: AsyncSession,
     conversation_id: uuid.UUID,

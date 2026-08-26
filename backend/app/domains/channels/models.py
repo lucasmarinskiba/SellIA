@@ -34,6 +34,7 @@ class ChannelPlatform(str, enum.Enum):
     WOOCOMMERCE = "woocommerce"
     ETSY = "etsy"
     FACEBOOK_MARKETPLACE = "facebook_marketplace"
+    MANYCHAT = "manychat"
 
 
 class ChannelStatus(str, enum.Enum):
@@ -130,3 +131,28 @@ class Message(Base):
     )
 
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class BookingEvent(Base):
+    """A real booking (meeting/demo) recorded from an external scheduling tool
+    (Calendly, cal.com, etc.) via a token-secured inbound webhook.
+
+    Powers the real "tasa de agenda" (booking-rate) metric: bookings / qualified
+    leads that received a booking invite.
+    """
+    __tablename__ = "booking_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
+    source = Column(String(50), default="calendly", nullable=False)
+    external_booking_id = Column(String(255), nullable=True)
+    invitee_email = Column(String(255), nullable=True)
+    invitee_phone = Column(String(50), nullable=True)
+    scheduled_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(20), default="scheduled", nullable=False)  # scheduled, cancelled
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index('ix_booking_events_business_created', 'business_id', 'created_at'),
+    )

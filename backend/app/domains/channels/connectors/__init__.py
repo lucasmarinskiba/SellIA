@@ -30,6 +30,7 @@ from app.domains.channels.connectors.hotmart import HotmartConnector
 from app.domains.channels.connectors.woocommerce import WooCommerceConnector
 from app.domains.channels.connectors.etsy import EtsyConnector
 from app.domains.channels.connectors.facebook_marketplace import FacebookMarketplaceConnector
+from app.domains.channels.connectors.manychat import ManyChatConnector
 
 CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.WHATSAPP: WhatsAppConnector,
@@ -55,6 +56,7 @@ CONNECTOR_REGISTRY: dict[ChannelPlatform, Type[BaseChannelConnector]] = {
     ChannelPlatform.WOOCOMMERCE: WooCommerceConnector,
     ChannelPlatform.ETSY: EtsyConnector,
     ChannelPlatform.FACEBOOK_MARKETPLACE: FacebookMarketplaceConnector,
+    ChannelPlatform.MANYCHAT: ManyChatConnector,
 }
 
 
