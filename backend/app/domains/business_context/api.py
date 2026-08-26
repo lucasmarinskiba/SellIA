@@ -3,6 +3,7 @@
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -10,6 +11,8 @@ from app.core.deps import get_current_user
 from app.domains.users.models import User
 from .service import BusinessContextService
 from .schemas import BusinessContextCreate, BusinessContextUpdate, BusinessContextRead
+from .models import BusinessContext
+from .angles_service import generate_communication_angles
 
 router = APIRouter(prefix="/business-context", tags=["Business Context"])
 
@@ -77,6 +80,26 @@ async def recommended_playbooks(
     service: BusinessContextService = Depends(get_service),
 ):
     return await service.generate_recommended_playbooks(user.id, context_id)
+
+
+@router.post("/{context_id}/generate-angles", response_model=BusinessContextRead)
+async def generate_angles(
+    context_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    service: BusinessContextService = Depends(get_service),
+):
+    """Generate winning communication angles + offer summary from Nicho/Oferta."""
+    result = await db.execute(
+        select(BusinessContext).where(
+            BusinessContext.id == context_id, BusinessContext.user_id == user.id
+        )
+    )
+    ctx = result.scalar_one_or_none()
+    if not ctx:
+        raise HTTPException(status_code=404, detail="Contexto no encontrado")
+    await generate_communication_angles(db, ctx)
+    return BusinessContextRead.model_validate(ctx)
 
 
 @router.get("/wizard")

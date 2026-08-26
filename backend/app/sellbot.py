@@ -230,6 +230,52 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}")
 
+    # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
+    # create_all() never alters existing tables, so business_contexts' new
+    # columns need this same idempotent-patch idiom used above for 2FA.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(business_contexts)"))
+                cols = {row[1] for row in existing.all()}
+                if "communication_angles" not in cols:
+                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN communication_angles TEXT"))
+                if "winning_offer_summary" not in cols:
+                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN winning_offer_summary TEXT"))
+                if "scheduling_link" not in cols:
+                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN scheduling_link VARCHAR(512)"))
+            else:
+                await db.execute(text(
+                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS communication_angles JSONB DEFAULT '[]'::jsonb"
+                ))
+                await db.execute(text(
+                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS winning_offer_summary TEXT"
+                ))
+                await db.execute(text(
+                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS scheduling_link VARCHAR(512)"
+                ))
+            await db.commit()
+        logger.info("✅ business_contexts angles/scheduling schema migrated")
+    except Exception as e:
+        logger.warning(f"business_contexts schema migration: {str(e)[:120]}")
+
+    # ManyChat enum value — must commit alone, isolated from any statement
+    # that might use the new value in the same transaction (Postgres rule).
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        if not is_sqlite:
+            async with AsyncSessionLocal() as db:
+                await db.execute(text(
+                    "ALTER TYPE channelplatform ADD VALUE IF NOT EXISTS 'manychat'"
+                ))
+                await db.commit()
+            logger.info("✅ channelplatform enum: manychat ensured")
+    except Exception as e:
+        logger.warning(f"channelplatform enum migration: {str(e)[:120]}")
+
     # Load Phase 33 seed data if needed (async-compatible)
     try:
         from sqlalchemy import create_engine

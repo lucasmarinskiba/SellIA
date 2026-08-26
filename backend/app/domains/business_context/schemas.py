@@ -37,6 +37,7 @@ class BusinessContextBase(BaseModel):
     monthly_revenue_goal: Optional[int] = None
     monthly_leads_goal: Optional[int] = None
     target_countries: List[str] = Field(default_factory=list)
+    scheduling_link: Optional[str] = None
 
 
 class BusinessContextCreate(BusinessContextBase):
@@ -72,6 +73,14 @@ class BusinessContextUpdate(BaseModel):
     monthly_revenue_goal: Optional[int] = None
     monthly_leads_goal: Optional[int] = None
     target_countries: Optional[List[str]] = None
+    scheduling_link: Optional[str] = None
+
+
+class CommunicationAngle(BaseModel):
+    angle: str
+    hook: str
+    pain_point: str
+    cta: str
 
 
 class BusinessContextRead(BusinessContextBase):
@@ -81,6 +90,8 @@ class BusinessContextRead(BusinessContextBase):
     ai_recommended_playbooks: List[str] = Field(default_factory=list)
     ai_priority_actions: List[Dict[str, Any]] = Field(default_factory=list)
     ai_brand_voice: Optional[str] = None
+    communication_angles: List[CommunicationAngle] = Field(default_factory=list)
+    winning_offer_summary: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
