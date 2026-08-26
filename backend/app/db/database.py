@@ -90,14 +90,21 @@ async def init_db():
             except Exception as e:
                 logger.warning(f"Failed to create app.db tables: {e}")
 
-            # Create tables for app.core.database Base (domains models)
-            # NOTE: Disabled due to complex FK relationships
-            # TODO: Use Alembic migrations instead
-            # try:
-            #     from app.core.database import Base as CoreBase
-            #     await conn.run_sync(CoreBase.metadata.create_all)
-            # except Exception as e:
-            #     logger.warning(f"Failed to create domain tables: {e}")
+            # Create tables for app.core.database Base (domains models).
+            # Re-enabled: create_all() only CREATES missing tables, it never
+            # touches ones that already exist, so this is safe to run even
+            # though most of these tables were originally created by hand and
+            # have since drifted from their ORM definitions (see the
+            # business_contexts/2FA/audit-log patch blocks above/below for
+            # that separate, ongoing problem). Without this, brand-new tables
+            # introduced by any domain model (e.g. booking_events) would
+            # never get created at all in production.
+            try:
+                from app.core.database import Base as CoreBase
+                await conn.run_sync(CoreBase.metadata.create_all)
+                logger.info("✅ CoreBase domain tables ensured")
+            except Exception as e:
+                logger.warning(f"Failed to create domain tables: {e}")
 
             logger.info("✅ Database initialization checked (migrations recommended)")
     except Exception as e:

@@ -89,13 +89,18 @@ async def list_channels(
     current_user: User = Depends(get_current_user),
 ):
     await _get_business_for_user(business_id, current_user, db)
-    result = await db.execute(
-        select(ChannelConnection).where(
-            ChannelConnection.business_id == business_id,
-            ChannelConnection.is_active == True,
+    try:
+        result = await db.execute(
+            select(ChannelConnection).where(
+                ChannelConnection.business_id == business_id,
+                ChannelConnection.is_active == True,
+            )
         )
-    )
-    return result.scalars().all()
+        return result.scalars().all()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("list_channels failed")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
 
 
 @router.get("/{business_id}/channels/{channel_id}", response_model=ChannelConnectionResponse)
