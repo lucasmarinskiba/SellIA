@@ -37,34 +37,40 @@ async def create_business(
     current_user: User = Depends(get_current_user),
 ):
     """Create business."""
-    result = await db.execute(
-        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
-    )
-    existing = result.scalars().all()
-    if len(existing) >= 1:
-        raise HTTPException(status_code=403, detail="Only 1 business per user")
-
-    config = business_in.config or {}
-    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-    merged_config = {**default_config, **config}
-
-    business = Business(
-        user_id=current_user.id,
-        name=business_in.name,
-        type=business_in.type,
-        description=business_in.description,
-        config=merged_config,
-    )
-    db.add(business)
-    await db.commit()
-    await db.refresh(business)
-
     try:
-        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
-    except:
-        pass
+        result = await db.execute(
+            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+        )
+        existing = result.scalars().all()
+        if len(existing) >= 1:
+            raise HTTPException(status_code=403, detail="Only 1 business per user")
 
-    return business
+        config = business_in.config or {}
+        default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+        merged_config = {**default_config, **config}
+
+        business = Business(
+            user_id=current_user.id,
+            name=business_in.name,
+            type=business_in.type,
+            description=business_in.description,
+            config=merged_config,
+        )
+        db.add(business)
+        await db.commit()
+        await db.refresh(business)
+
+        try:
+            await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+        except:
+            pass
+
+        return business
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Business create error")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 @router.get("/", response_model=list[BusinessResponse])
@@ -73,10 +79,14 @@ async def list_businesses(
     current_user: User = Depends(get_current_user),
 ):
     """List user's businesses."""
-    result = await db.execute(
-        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
-    )
-    return result.scalars().all()
+    try:
+        result = await db.execute(
+            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+        )
+        return result.scalars().all()
+    except Exception as e:
+        logger.exception("Business list error")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 @router.get("/{business_id}", response_model=BusinessResponse)
