@@ -22,6 +22,14 @@ async def health():
     return {"status": "ok", "service": "businesses"}
 
 
+@router.get("/debug/auth-test")
+async def auth_test(
+    current_user: User = Depends(get_current_user),
+):
+    """Debug auth - just echo back user info."""
+    return {"user_id": str(current_user.id), "email": current_user.email}
+
+
 
 
 @router.post("/test", tags=["debug"])
