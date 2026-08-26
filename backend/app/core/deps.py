@@ -50,6 +50,7 @@ async def get_token_from_request(request: Request) -> str | None:
 
 async def get_current_user(
     request: Request,
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,7 +58,6 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # Get token only (no DB queries for testing)
     token = await get_token_from_request(request)
     if token is None:
         raise credentials_exception
@@ -70,8 +70,18 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    # Return mock user to test if dependency itself works
-    return type("User", (), {"id": user_id, "email": "test@test.com", "is_active": True})()  # type: ignore
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user is None or not user.is_active:
+            raise credentials_exception
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        from app.core.logger import get_logger
+        get_logger(__name__).exception("User query failed")
+        raise credentials_exception
 
 
 async def get_current_active_user(
