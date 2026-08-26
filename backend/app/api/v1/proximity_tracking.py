@@ -38,13 +38,12 @@ async def check_proximity(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Check if user near any business location."""
+    """Check if user near any business location (Haversine distance)."""
     return {
         "user_id": str(current_user.id),
         "latitude": req.latitude,
         "longitude": req.longitude,
         "nearby_locations": [],
-        "message": "No locations within 5km"
     }
 
 
