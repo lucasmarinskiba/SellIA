@@ -1053,7 +1053,17 @@
       "Bash(git commit -m 'Add production-grade operational documentation *)",
       "Bash(chmod +x \"C:\\\\Users\\\\Usuario\\\\Pictures\\\\Somos paithon labs\\\\Agente IA - Vendedor Automático/setup-on-call.sh\")",
       "Bash(curl -s https://api.railway.app/graphql -H 'Authorization: Bearer t1f_EKeoDQoNzVCd1cliNs8Fndl-66HGJ_Fyq4r9tRX' -H 'Content-Type: application/json' -d '{ *)",
-      "Bash(railway deployment *)"
+      "Bash(railway deployment *)",
+      "Bash(cat > *)",
+      "Bash(curl -s __TRACKED_VAR__/api/health)",
+      "Bash(./run_e2e_tests.sh \"https://sellia-production.up.railway.app\")",
+      "Bash(tee e2e_results.log)",
+      "Bash(curl -X POST https://sellia-production.up.railway.app/api/auth/signup -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(curl -s -X POST https://sellia-production.up.railway.app/api/auth/signup -H 'Content-Type: application/json' -d '{\"email\":\"phase29test@example.com\",\"password\":\"SecurePass123!@\",\"name\":\"Phase 29 Test\"}')",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/openapi.json\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/docs\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/businesses\")",
+      "Bash(git commit -m 'Phase 29: Production deployment verified — health checks passing *)"
     ]
   }
 }
