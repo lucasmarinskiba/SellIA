@@ -30,6 +30,37 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
+@router.get("/debug/conversation-state/{business_id}", tags=["debug"])
+async def debug_conversation_state(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Temporary: raw dump of conversations/messages/qualifications for a business."""
+    from sqlalchemy import select as sa_select
+    from app.domains.channels.models import Conversation, Message
+    from app.domains.agents.lead_qualifier.models import LeadQualification
+
+    out = {}
+    try:
+        conv_res = await db.execute(sa_select(Conversation).where(Conversation.business_id == business_id))
+        convs = conv_res.scalars().all()
+        out["conversations"] = [{"id": str(c.id), "external_id": c.external_id, "lead_email": c.lead_email} for c in convs]
+
+        msg_out = []
+        for c in convs:
+            msg_res = await db.execute(sa_select(Message).where(Message.conversation_id == c.id))
+            msgs = msg_res.scalars().all()
+            msg_out.append({"conversation_id": str(c.id), "count": len(msgs), "contents": [m.content for m in msgs]})
+        out["messages"] = msg_out
+
+        qual_res = await db.execute(sa_select(LeadQualification).where(LeadQualification.business_id == business_id))
+        quals = qual_res.scalars().all()
+        out["qualifications"] = [{"id": str(q.id), "status": q.status, "score": float(q.qualification_score), "bant": q.bant_score} for q in quals]
+    except Exception as e:
+        out["error"] = str(e)
+    return out
+
+
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
 async def debug_create_table(table_name: str):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
