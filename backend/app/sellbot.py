@@ -230,6 +230,28 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}")
 
+    # Restore businesses.is_active (referenced by 15+ call sites across the
+    # codebase for soft-delete filtering; a prior session's schema-drift fix
+    # dropped it from the ORM model instead of restoring the column, which
+    # broke every one of those call sites with AttributeError).
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(businesses)"))
+                cols = {row[1] for row in existing.all()}
+                if "is_active" not in cols:
+                    await db.execute(text("ALTER TABLE businesses ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+            else:
+                await db.execute(text(
+                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL"
+                ))
+            await db.commit()
+        logger.info("✅ businesses.is_active restored")
+    except Exception as e:
+        logger.warning(f"businesses.is_active migration: {str(e)[:120]}")
+
     # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
     # create_all() never alters existing tables, so business_contexts' new
     # columns need this same idempotent-patch idiom used above for 2FA.
