@@ -45,15 +45,10 @@ async def create_business(
         if len(existing) >= 1:
             raise HTTPException(status_code=403, detail="Only 1 business per user")
 
-        config = business_in.config or {}
-        default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-        merged_config = {**default_config, **config, "type": business_in.type}
-
         business = Business(
             user_id=current_user.id,
             name=business_in.name,
             description=business_in.description,
-            config=merged_config,
         )
         db.add(business)
         await db.commit()
