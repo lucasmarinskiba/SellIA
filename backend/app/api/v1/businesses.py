@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+from fastapi import APIRouter, Depends, HTTPException, status, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 from typing import Any
+import traceback
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -11,6 +13,7 @@ from app.domains.businesses.models import Business, DEFAULT_CONFIGS
 from app.domains.businesses.schemas import BusinessCreate, BusinessUpdate, BusinessResponse
 from app.domains.subscriptions.services import track_usage
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -20,40 +23,54 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Check multi-business limit (skip subscription check for now to isolate issue)
-    existing_count = await db.execute(
-        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
-    )
-    business_count = len(existing_count.scalars().all())
-
-    # Free tier: allow only 1 business
-    if business_count >= 1:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only 1 business allowed on free plan."
-        )
-
-    config = business_in.config or {}
-    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-    merged_config = {**default_config, **config}
-
-    business = Business(
-        user_id=current_user.id,
-        name=business_in.name,
-        type=business_in.type,
-        description=business_in.description,
-        config=merged_config,
-    )
-    db.add(business)
-    await db.commit()
-    await db.refresh(business)
-
     try:
-        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
-    except Exception:
-        pass
+        # Check multi-business limit
+        existing_count = await db.execute(
+            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+        )
+        business_count = len(existing_count.scalars().all())
 
-    return business
+        # Free tier: allow only 1 business
+        if business_count >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only 1 business allowed on free plan."
+            )
+
+        config = business_in.config or {}
+        default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+        merged_config = {**default_config, **config}
+
+        business = Business(
+            user_id=current_user.id,
+            name=business_in.name,
+            type=business_in.type,
+            description=business_in.description,
+            config=merged_config,
+        )
+        db.add(business)
+        await db.commit()
+        await db.refresh(business)
+
+        try:
+            await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+        except Exception:
+            pass
+
+        return business
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Business creation error: {str(e)}\n{traceback.format_exc()}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Business creation failed",
+                "message": str(e),
+                "type": type(e).__name__,
+                "traceback": traceback.format_exc()
+            }
+        )
 
 
 @router.get("/", response_model=list[BusinessResponse])
