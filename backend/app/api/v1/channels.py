@@ -57,19 +57,29 @@ async def create_channel(
             detail=f"Límite de canales alcanzado. Usados: {limit_check['used']}/{limit_check['limit']}"
         )
 
-    channel = ChannelConnection(
-        business_id=business_id,
-        platform=channel_in.platform,
-        name=channel_in.name,
-        credentials=channel_in.credentials or {},
-        settings=channel_in.settings or {},
-    )
-    db.add(channel)
-    await db.commit()
-    await db.refresh(channel)
+    try:
+        channel = ChannelConnection(
+            business_id=business_id,
+            platform=channel_in.platform,
+            name=channel_in.name,
+            credentials=channel_in.credentials or {},
+            settings=channel_in.settings or {},
+        )
+        db.add(channel)
+        await db.commit()
+        await db.refresh(channel)
 
-    await track_usage(db, current_user.id, "channels", quantity=1, business_id=business_id)
-    return channel
+        try:
+            await track_usage(db, current_user.id, "channels", quantity=1, business_id=business_id)
+        except Exception:
+            pass
+
+        return channel
+    except Exception as e:
+        await db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("create_channel failed")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)[:300]}")
 
 
 @router.get("/{business_id}/channels", response_model=list[ChannelConnectionResponse])
