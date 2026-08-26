@@ -61,6 +61,22 @@ async def debug_conversation_state(
     return out
 
 
+@router.post("/debug/qualify/{conversation_id}", tags=["debug"])
+async def debug_qualify(
+    conversation_id: UUID,
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Temporary: directly call qualify_lead and return the result or raw error."""
+    from app.domains.agents.lead_qualifier import service as lq_service
+    try:
+        result = await lq_service.qualify_lead(db=db, conversation_id=conversation_id, business_id=business_id)
+        return {"status": "ok", "result": {k: str(v) for k, v in result.items()}}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "trace": traceback.format_exc()[-1500:]}
+
+
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
 async def debug_create_table(table_name: str):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
