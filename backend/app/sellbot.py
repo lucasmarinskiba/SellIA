@@ -252,6 +252,33 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"businesses.is_active migration: {str(e)[:120]}")
 
+    # Restore businesses.type (Business.type is read by context_builder.py,
+    # ai_reply.py, crm/scoring.py, and 5 other files for AI prompt context —
+    # same class of drift-caused AttributeError as is_active above).
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(businesses)"))
+                cols = {row[1] for row in existing.all()}
+                if "type" not in cols:
+                    await db.execute(text("ALTER TABLE businesses ADD COLUMN type VARCHAR(20) DEFAULT 'services'"))
+            else:
+                await db.execute(text("""
+                    DO $$ BEGIN
+                        CREATE TYPE businesstype AS ENUM ('services', 'goods', 'digital', 'mixed');
+                    EXCEPTION WHEN duplicate_object THEN null;
+                    END $$;
+                """))
+                await db.execute(text(
+                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type businesstype NOT NULL DEFAULT 'services'"
+                ))
+            await db.commit()
+        logger.info("✅ businesses.type restored")
+    except Exception as e:
+        logger.warning(f"businesses.type migration: {str(e)[:120]}")
+
     # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
     # create_all() never alters existing tables, so business_contexts' new
     # columns need this same idempotent-patch idiom used above for 2FA.
