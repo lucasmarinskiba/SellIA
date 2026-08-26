@@ -1,10 +1,9 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
 from typing import Any
-import traceback
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -61,15 +60,10 @@ async def create_business(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Business creation error: {str(e)}\n{traceback.format_exc()}")
-        return JSONResponse(
+        logger.error(f"Business creation error: {str(e)}")
+        raise HTTPException(
             status_code=500,
-            content={
-                "error": "Business creation failed",
-                "message": str(e),
-                "type": type(e).__name__,
-                "traceback": traceback.format_exc()
-            }
+            detail=f"Business creation failed: {str(e)}"
         )
 
 
