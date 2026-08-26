@@ -143,6 +143,21 @@ async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
         return {"status": "error", "error": str(e)}
 
 
+@router.post("/debug/add-config-column", tags=["debug"])
+async def debug_add_config_column(db: AsyncSession = Depends(get_db)):
+    """Temporary: force-apply the businesses.config schema patch immediately."""
+    from sqlalchemy import text
+    try:
+        await db.execute(text(
+            "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb NOT NULL"
+        ))
+        await db.commit()
+        return {"status": "ok"}
+    except Exception as e:
+        await db.rollback()
+        return {"status": "error", "error": str(e)}
+
+
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
 async def debug_create_table(table_name: str):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
@@ -164,12 +179,17 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create business - minimal."""
+    """Create business."""
+    config = business_in.config or {}
+    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+    merged_config = {**default_config, **config}
+
     business = Business(
         user_id=current_user.id,
         name=business_in.name,
         description=business_in.description,
         type=business_in.type,
+        config=merged_config,
     )
     db.add(business)
     await db.commit()
