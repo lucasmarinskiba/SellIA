@@ -139,6 +139,7 @@ async def create_business(
         user_id=current_user.id,
         name=business_in.name,
         description=business_in.description,
+        type=business_in.type,
     )
     db.add(business)
     await db.commit()

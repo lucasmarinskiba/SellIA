@@ -40,6 +40,7 @@ class Business(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    type = Column(Enum(BusinessType), default=BusinessType.SERVICES, nullable=False)
 
     locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
