@@ -46,6 +46,10 @@ fastapi-limiter==0.1.6                          # Redis client (for rate limitin
 
 # AI providers
 anthropic==0.40.0
+langchain-core==0.3.29                # Message schema (SystemMessage/HumanMessage) used by
+                                       # ai_reply.py / llm_provider.py. Missing from prod caused
+                                       # a silent ModuleNotFoundError crash-loop on any code path
+                                       # importing ai_reply.py (BANT lead qualification, AI auto-reply).
 
 # Testing
 pytest==7.4.3
