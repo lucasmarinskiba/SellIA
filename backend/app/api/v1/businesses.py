@@ -61,6 +61,29 @@ async def debug_conversation_state(
     return out
 
 
+@router.post("/debug/llm-test", tags=["debug"])
+async def debug_llm_test(db: AsyncSession = Depends(get_db)):
+    """Temporary: test if generate_raw_ai_response works/hangs, with a hard timeout."""
+    import asyncio
+    from app.domains.agents.ai_reply import generate_raw_ai_response
+    try:
+        result = await asyncio.wait_for(
+            generate_raw_ai_response(
+                db=db,
+                business_id=UUID(int=0),
+                system_prompt="Responde solo con: OK",
+                user_prompt="test",
+                max_tokens=10,
+            ),
+            timeout=15.0,
+        )
+        return {"status": "ok", "result": result}
+    except asyncio.TimeoutError:
+        return {"status": "timeout"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
 @router.post("/debug/qualify/{conversation_id}", tags=["debug"])
 async def debug_qualify(
     conversation_id: UUID,
