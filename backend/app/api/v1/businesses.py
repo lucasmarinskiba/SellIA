@@ -30,6 +30,21 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
+@router.post("/debug/create-table/{table_name}", tags=["debug"])
+async def debug_create_table(table_name: str):
+    """Temporary: attempt to create one CoreBase table and return the raw error."""
+    from app.core.database import Base as CoreBase, engine
+    table = CoreBase.metadata.tables.get(table_name)
+    if table is None:
+        return {"error": f"No table named {table_name} in CoreBase.metadata", "available": list(CoreBase.metadata.tables.keys())[:20]}
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(lambda sync_conn: table.create(sync_conn, checkfirst=True))
+        return {"status": "ok", "table": table_name}
+    except Exception as e:
+        return {"status": "error", "table": table_name, "error": str(e)}
+
+
 @router.post("/")
 async def create_business(
     business_in: BusinessCreate,
