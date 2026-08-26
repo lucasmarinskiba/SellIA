@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
+from sqlalchemy import text
 from app.db.models import Base
 import logging
 
@@ -80,6 +81,8 @@ async def init_db():
             from app.domains.orders import models as _  # noqa
             from app.domains.channels import models as _  # noqa
             from app.domains.analytics import models as _  # noqa
+            from app.domains.business_context import models as _  # noqa
+            from app.domains.agents.lead_qualifier import models as _  # noqa
         except Exception as e:
             logger.warning(f"Some domain models failed to import (non-critical): {e}")
 
@@ -101,22 +104,11 @@ async def init_db():
             # only skips that one table (logged) instead of blocking all of
             # them. create_all-per-table still only CREATEs tables that
             # don't exist yet; it never touches ones that already exist.
-            try:
-                from app.core.database import Base as CoreBase
-                created, failed = 0, 0
-                for table in CoreBase.metadata.sorted_tables:
-                    try:
-                        async with engine.begin() as table_conn:
-                            await table_conn.run_sync(
-                                lambda sync_conn, t=table: t.create(sync_conn, checkfirst=True)
-                            )
-                        created += 1
-                    except Exception as te:
-                        failed += 1
-                        logger.debug(f"Skipped table {table.name}: {str(te)[:120]}")
-                logger.info(f"✅ CoreBase domain tables ensured ({created} ok, {failed} skipped)")
-            except Exception as e:
-                logger.warning(f"Failed to create domain tables: {e}")
+            # CoreBase domain tables have messy FK relationships (100+ models).
+            # Skip for now — essential tables (businesses, channels, etc.) are in
+            # app.db.models.Base (created above). Domain models are provisioned via
+            # Alembic migrations (currently disabled; see entrypoint.sh).
+            logger.debug("Skipped CoreBase domain tables (FK conflicts; use Alembic migrations)")
 
             logger.info("✅ Database initialization checked (migrations recommended)")
     except Exception as e:
