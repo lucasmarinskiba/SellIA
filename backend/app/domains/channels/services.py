@@ -437,6 +437,7 @@ async def process_incoming_message(
     try:
         await _process_appointment_confirmation(db, conversation, payload.content)
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Appointment confirmation error: {e}")
 
@@ -452,21 +453,22 @@ async def process_incoming_message(
             is_new_conversation=is_new_conversation,
         )
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Event emit error: {e}")
 
     # === Evaluar Chatbot Rules primero ===
-    matched_rule = await _evaluate_chatbot_rules(
-        db, channel.business_id, channel.platform, payload.content
-    )
-    if matched_rule:
-        await _apply_chatbot_rule(db, matched_rule, conversation, channel.platform)
-        # Si la regla responde automáticamente y NO requiere humano,
-        # igual permitimos que workflows se disparen para tagging/scoring
-        # pero NO para AI reply (la regla ya respondió)
-        if not matched_rule.requires_human:
-            # Solo triggers de scoring/tagging, no AI reply
-            pass
+    matched_rule = None
+    try:
+        matched_rule = await _evaluate_chatbot_rules(
+            db, channel.business_id, channel.platform, payload.content
+        )
+        if matched_rule:
+            await _apply_chatbot_rule(db, matched_rule, conversation, channel.platform)
+    except Exception as e:
+        await db.rollback()
+        from app.core.logger import get_logger
+        get_logger(__name__).error(f"Chatbot rule evaluation error: {e}")
 
     # === Recalcular Lead Score ===
     try:
@@ -480,6 +482,7 @@ async def process_incoming_message(
             description=f"Mensaje recibido por {channel.platform.value}",
         )
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Lead scoring error: {e}")
 
@@ -538,6 +541,7 @@ async def process_incoming_message(
                 elif lead_status == "disqualified" and hasattr(connector, "tag_subscriber"):
                     await connector.tag_subscriber(payload.external_id, "sellia_disqualified")
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Auto-qualification error: {e}")
 
@@ -545,6 +549,7 @@ async def process_incoming_message(
     try:
         await _detect_competitor_mentions(db, conversation, payload.content, channel.business_id)
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Competitor detection error: {e}")
 
@@ -566,6 +571,7 @@ async def process_incoming_message(
                 },
             )
         except Exception as e:
+            await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"NEW_LEAD trigger error: {e}")
 
@@ -576,6 +582,7 @@ async def process_incoming_message(
             processor = EcommerceWebhookProcessor(db)
             await processor.process_order_webhook(channel, conversation, payload)
         except Exception as e:
+            await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Ecommerce webhook processing error: {e}")
 
@@ -603,6 +610,7 @@ async def process_incoming_message(
                 conversation_id=str(conversation.id),
             )
         except Exception as e:
+            await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"ORDER_CREATED trigger error: {e}")
 
@@ -621,6 +629,7 @@ async def process_incoming_message(
                 },
             )
         except Exception as e:
+            await db.rollback()
             from app.core.logger import get_logger
             get_logger(__name__).error(f"CART_ABANDONED trigger error: {e}")
 
@@ -642,6 +651,7 @@ async def process_incoming_message(
             },
         )
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Workflow trigger error: {e}")
 
@@ -649,6 +659,7 @@ async def process_incoming_message(
     try:
         await _maybe_ai_auto_reply(db, channel, conversation, payload)
     except Exception as e:
+        await db.rollback()
         from app.core.logger import get_logger
         get_logger(__name__).error(f"AI auto-reply error: {e}")
 
