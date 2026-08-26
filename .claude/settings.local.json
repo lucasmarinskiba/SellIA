@@ -1020,7 +1020,8 @@
       "Bash(git commit -m 'Restore get_db to get_current_user with simplified logic *)",
       "Bash(curl -s https://sellia-production.up.railway.app/api/v1/businesses/ -H \"Authorization: Bearer test\" -d '{}' -X POST)",
       "Bash(git commit -m 'Add error handling to create_business *)",
-      "Bash(git commit -m 'Fix auth dependency chain: remove UserSession check, simplify get_current_user *)"
+      "Bash(git commit -m 'Fix auth dependency chain: remove UserSession check, simplify get_current_user *)",
+      "Bash(git commit -m 'Fix database initialization: add domain model imports, disable FK during create_all, create business_contexts table explicitly *)"
     ]
   }
 }

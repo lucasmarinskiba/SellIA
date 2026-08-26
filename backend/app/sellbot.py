@@ -306,6 +306,55 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"businesses.config migration: {str(e)[:120]}")
 
+    # Create business_contexts table if missing (was skipped when CoreBase FK
+    # validation blocked auto table creation in init_db). Minimal schema with
+    # just the essential columns — full model definition in
+    # app.domains.business_context.models.BusinessContext.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS business_contexts (
+                        id VARCHAR(36) PRIMARY KEY,
+                        business_id VARCHAR(36) NOT NULL,
+                        industry VARCHAR(255),
+                        target_audience TEXT,
+                        value_proposition TEXT,
+                        price_range VARCHAR(100),
+                        average_ticket VARCHAR(100),
+                        sales_model VARCHAR(50),
+                        communication_angles TEXT,
+                        winning_offer_summary TEXT,
+                        scheduling_link VARCHAR(512),
+                        created_at DATETIME,
+                        updated_at DATETIME
+                    )
+                """))
+            else:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS business_contexts (
+                        id UUID PRIMARY KEY,
+                        business_id UUID NOT NULL,
+                        industry VARCHAR(255),
+                        target_audience TEXT,
+                        value_proposition TEXT,
+                        price_range VARCHAR(100),
+                        average_ticket VARCHAR(100),
+                        sales_model VARCHAR(50),
+                        communication_angles JSONB DEFAULT '[]'::jsonb,
+                        winning_offer_summary TEXT,
+                        scheduling_link VARCHAR(512),
+                        created_at TIMESTAMP,
+                        updated_at TIMESTAMP
+                    )
+                """))
+            await db.commit()
+        logger.info("✅ business_contexts table ensured")
+    except Exception as e:
+        logger.warning(f"business_contexts table creation: {str(e)[:120]}")
+
     # Migrate schema for ManyChat + Nicho/Oferta/Ángulos + Booking-rate feature.
     # create_all() never alters existing tables, so business_contexts' new
     # columns need this same idempotent-patch idiom used above for 2FA.
