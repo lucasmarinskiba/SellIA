@@ -269,14 +269,17 @@ async def lifespan(app: FastAPI):
                 # with app.domains.business_context.models.BusinessType,
                 # which already owns a Postgres enum called "businesstype"
                 # with a completely different (uppercase) value set.
+                # SQLAlchemy's Enum type stores the Python member NAME by
+                # default (SERVICES), not .value ("services") — matching how
+                # business_context's BusinessType enum is already stored.
                 await db.execute(text("""
                     DO $$ BEGIN
-                        CREATE TYPE business_kind AS ENUM ('services', 'goods', 'digital', 'mixed');
+                        CREATE TYPE business_kind AS ENUM ('SERVICES', 'GOODS', 'DIGITAL', 'MIXED');
                     EXCEPTION WHEN duplicate_object THEN null;
                     END $$;
                 """))
                 await db.execute(text(
-                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'services'"
+                    "ALTER TABLE businesses ADD COLUMN IF NOT EXISTS type business_kind NOT NULL DEFAULT 'SERVICES'"
                 ))
             await db.commit()
         logger.info("✅ businesses.type restored")
