@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/health")
+async def health():
+    """Health check - no dependencies."""
+    return {"status": "ok", "service": "businesses"}
+
+
 @router.post("/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_business(
     business_in: BusinessCreate,
