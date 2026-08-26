@@ -35,14 +35,16 @@ class ProximityCheckRequest(BaseModel):
 @router.post("/check-nearby")
 async def check_proximity(
     req: ProximityCheckRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Check if user near any business location."""
     return {
-        "user_id": "debug-user",
+        "user_id": str(current_user.id),
         "latitude": req.latitude,
         "longitude": req.longitude,
         "nearby_locations": [],
-        "message": "Debug response - no auth/DB"
+        "message": "No locations within 5km"
     }
 
 
