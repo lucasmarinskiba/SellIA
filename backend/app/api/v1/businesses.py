@@ -39,7 +39,7 @@ async def create_business(
     """Create business."""
     try:
         result = await db.execute(
-            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+            select(Business).where(Business.user_id == current_user.id, Business.id.isnot(None))
         )
         existing = result.scalars().all()
         if len(existing) >= 1:
@@ -75,7 +75,7 @@ async def list_businesses(
     """List user's businesses."""
     try:
         result = await db.execute(
-            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+            select(Business).where(Business.user_id == current_user.id, Business.id.isnot(None))
         )
         return result.scalars().all()
     except Exception as e:

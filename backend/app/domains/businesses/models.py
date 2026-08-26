@@ -39,7 +39,6 @@ class Business(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
 
     locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
