@@ -91,18 +91,30 @@ async def init_db():
                 logger.warning(f"Failed to create app.db tables: {e}")
 
             # Create tables for app.core.database Base (domains models).
-            # Re-enabled: create_all() only CREATES missing tables, it never
-            # touches ones that already exist, so this is safe to run even
-            # though most of these tables were originally created by hand and
-            # have since drifted from their ORM definitions (see the
-            # business_contexts/2FA/audit-log patch blocks above/below for
-            # that separate, ongoing problem). Without this, brand-new tables
-            # introduced by any domain model (e.g. booking_events) would
-            # never get created at all in production.
+            # NOT a single create_all() call: with ~100 domain models and
+            # known-messy FK relationships (the original reason this was
+            # disabled), one bad table anywhere in that graph raises inside
+            # run_sync() and poisons the whole surrounding Postgres
+            # transaction — silently rolling back every table this call
+            # would otherwise have created. Creating each table in its own
+            # short-lived connection/transaction means a single failure
+            # only skips that one table (logged) instead of blocking all of
+            # them. create_all-per-table still only CREATEs tables that
+            # don't exist yet; it never touches ones that already exist.
             try:
                 from app.core.database import Base as CoreBase
-                await conn.run_sync(CoreBase.metadata.create_all)
-                logger.info("✅ CoreBase domain tables ensured")
+                created, failed = 0, 0
+                for table in CoreBase.metadata.sorted_tables:
+                    try:
+                        async with engine.begin() as table_conn:
+                            await table_conn.run_sync(
+                                lambda sync_conn, t=table: t.create(sync_conn, checkfirst=True)
+                            )
+                        created += 1
+                    except Exception as te:
+                        failed += 1
+                        logger.debug(f"Skipped table {table.name}: {str(te)[:120]}")
+                logger.info(f"✅ CoreBase domain tables ensured ({created} ok, {failed} skipped)")
             except Exception as e:
                 logger.warning(f"Failed to create domain tables: {e}")
 
