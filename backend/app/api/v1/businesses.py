@@ -28,29 +28,54 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_business(
     business_in: BusinessCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Create business - no auth or DB for now to debug dependency issue."""
-    return {
-        "id": "test-id",
-        "user_id": "test-user",
-        "name": business_in.name,
-        "type": business_in.type,
-        "description": business_in.description,
-        "config": business_in.config or {},
-        "localization_model": "online_only",
-        "is_active": True,
-        "created_at": "2026-08-25T23:00:00Z",
-        "updated_at": "2026-08-25T23:00:00Z"
-    }
+    """Create business with full functionality."""
+    # Check multi-business limit
+    result = await db.execute(
+        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+    )
+    existing = result.scalars().all()
+    if len(existing) >= 1:
+        raise HTTPException(status_code=403, detail="Only 1 business per user")
+
+    config = business_in.config or {}
+    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+    merged_config = {**default_config, **config}
+
+    business = Business(
+        user_id=current_user.id,
+        name=business_in.name,
+        type=business_in.type,
+        description=business_in.description,
+        config=merged_config,
+    )
+    db.add(business)
+    await db.commit()
+    await db.refresh(business)
+
+    try:
+        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+    except:
+        pass
+
+    return business
 
 
-@router.get("/")
-async def list_businesses():
-    """List businesses - no auth/DB for debugging."""
-    return []
+@router.get("/", response_model=list[BusinessResponse])
+async def list_businesses(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List user's businesses."""
+    result = await db.execute(
+        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+    )
+    return result.scalars().all()
 
 
 @router.get("/{business_id}", response_model=BusinessResponse)
