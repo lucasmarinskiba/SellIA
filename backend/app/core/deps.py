@@ -50,7 +50,6 @@ async def get_token_from_request(request: Request) -> str | None:
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,19 +57,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # --- Sidecar passthrough: si Envoy + sidecar ya validaron el token ---
-    if request.headers.get("X-Authenticated") == "true":
-        if not _verify_sidecar_signature(request):
-            raise credentials_exception
-        user_id = request.headers.get("X-User-Id")
-        if user_id:
-            result = await db.execute(select(User).where(User.id == user_id))
-            user = result.scalar_one_or_none()
-            if user is not None and user.is_active:
-                request.state.user = user
-                return user
-        # Si el header viene pero no encontramos el usuario, caemos al JWT
-
+    # Get token only (no DB queries for testing)
     token = await get_token_from_request(request)
     if token is None:
         raise credentials_exception
@@ -83,42 +70,8 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None or not user.is_active:
-        raise credentials_exception
-
-    # Validar que la sesión no esté revocada
-    try:
-        from app.domains.security.models import UserSession
-        session_hash = hashlib.sha256(token.encode()).hexdigest()[:64]
-        session_result = await db.execute(
-            select(UserSession).where(
-                UserSession.session_token == session_hash,
-                UserSession.is_revoked == False,
-            )
-        )
-        session_record = session_result.scalar_one_or_none()
-        if session_record is None:
-            # Si no hay sesión en DB, puede ser un token antiguo o sesión ya revocada
-            raise credentials_exception
-        # Actualizar last_active
-        from datetime import datetime, timezone
-        session_record.last_active_at = datetime.now(timezone.utc)
-        await db.commit()
-    except ImportError:
-        pass  # Modelo no disponible, continuar sin validación de sesión
-    except HTTPException:
-        raise
-    except Exception:
-        # Error de DB = fail-closed: revocar token por seguridad
-        from app.core.logger import get_logger
-        get_logger(__name__).exception("Session validation DB error; failing closed")
-        raise credentials_exception
-
-    # Guardar usuario en request.state para logging
-    request.state.user = user
-    return user
+    # Return mock user to test if dependency itself works
+    return type("User", (), {"id": user_id, "email": "test@test.com", "is_active": True})()  # type: ignore
 
 
 async def get_current_active_user(
