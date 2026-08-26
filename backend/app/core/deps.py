@@ -58,6 +58,22 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # --- Sidecar passthrough: si Envoy + sidecar ya validaron el token ---
+    if request.headers.get("X-Authenticated") == "true":
+        if not _verify_sidecar_signature(request):
+            raise credentials_exception
+        user_id = request.headers.get("X-User-Id")
+        if user_id:
+            try:
+                result = await db.execute(select(User).where(User.id == user_id))
+                user = result.scalar_one_or_none()
+                if user is not None and user.is_active:
+                    request.state.user = user
+                    return user
+            except Exception:
+                pass
+        # Si el header viene pero no encontramos el usuario, caemos al JWT
+
     token = await get_token_from_request(request)
     if token is None:
         raise credentials_exception
@@ -75,13 +91,14 @@ async def get_current_user(
         user = result.scalar_one_or_none()
         if user is None or not user.is_active:
             raise credentials_exception
-        return user
     except HTTPException:
         raise
-    except Exception as e:
-        from app.core.logger import get_logger
-        get_logger(__name__).exception("User query failed")
+    except Exception:
         raise credentials_exception
+
+    # Guardar usuario en request.state para logging
+    request.state.user = user
+    return user
 
 
 async def get_current_active_user(
