@@ -45,6 +45,7 @@ class Business(Base):
     # Python class name by default — colliding with that unrelated type
     # (which already exists in prod with a completely different value set).
     type = Column(Enum(BusinessType, name="business_kind"), default=BusinessType.SERVICES, nullable=False)
+    config = Column(JSONB, default=dict, nullable=False)
 
     locations = relationship("Location", back_populates="business", cascade="all, delete-orphan")
 
