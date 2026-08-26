@@ -127,6 +127,23 @@ async def check_subscription_limit(
     metric_type: str,
     quantity: int = 1,
 ) -> dict[str, Any]:
+    try:
+        return await _check_subscription_limit_inner(db, user_id, metric_type, quantity)
+    except Exception as e:
+        # Fail open: a broken/missing subscription schema must never block
+        # the primary action (e.g. connecting a channel). Same defensive
+        # idiom used elsewhere in this codebase for non-critical checks.
+        from app.core.logger import get_logger
+        get_logger(__name__).error(f"check_subscription_limit failed, allowing by default: {e}")
+        return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
+
+
+async def _check_subscription_limit_inner(
+    db: AsyncSession,
+    user_id: Any,
+    metric_type: str,
+    quantity: int = 1,
+) -> dict[str, Any]:
     result = await db.execute(
         select(Subscription, SubscriptionPlan)
         .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
