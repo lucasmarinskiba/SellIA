@@ -42,36 +42,41 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create business with full functionality."""
-    # Check multi-business limit
-    result = await db.execute(
-        select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
-    )
-    existing = result.scalars().all()
-    if len(existing) >= 1:
-        raise HTTPException(status_code=403, detail="Only 1 business per user")
-
-    config = business_in.config or {}
-    default_config = DEFAULT_CONFIGS.get(business_in.type, {})
-    merged_config = {**default_config, **config}
-
-    business = Business(
-        user_id=current_user.id,
-        name=business_in.name,
-        type=business_in.type,
-        description=business_in.description,
-        config=merged_config,
-    )
-    db.add(business)
-    await db.commit()
-    await db.refresh(business)
-
+    """Create business."""
     try:
-        await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
-    except:
-        pass
+        result = await db.execute(
+            select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
+        )
+        existing = result.scalars().all()
+        if len(existing) >= 1:
+            raise HTTPException(status_code=403, detail="Only 1 business per user")
 
-    return business
+        config = business_in.config or {}
+        default_config = DEFAULT_CONFIGS.get(business_in.type, {})
+        merged_config = {**default_config, **config}
+
+        business = Business(
+            user_id=current_user.id,
+            name=business_in.name,
+            type=business_in.type,
+            description=business_in.description,
+            config=merged_config,
+        )
+        db.add(business)
+        await db.commit()
+        await db.refresh(business)
+
+        try:
+            await track_usage(db, current_user.id, "multi_business", quantity=1, business_id=business.id)
+        except:
+            pass
+
+        return business
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Business create failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/", response_model=list[BusinessResponse])
