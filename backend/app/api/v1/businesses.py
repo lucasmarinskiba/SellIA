@@ -30,6 +30,23 @@ async def auth_test(
     return {"user_id": str(current_user.id), "email": current_user.email}
 
 
+@router.get("/debug/check-user/{user_id}")
+async def check_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Debug - check if user exists in DB."""
+    try:
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            return {"found": True, "email": user.email, "is_active": user.is_active}
+        else:
+            return {"found": False, "message": "User not found"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 
 
 @router.post("/test", tags=["debug"])
