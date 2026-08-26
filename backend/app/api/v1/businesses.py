@@ -9,7 +9,7 @@ from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.businesses.models import Business, DEFAULT_CONFIGS
 from app.domains.businesses.schemas import BusinessCreate, BusinessUpdate, BusinessResponse
-from app.domains.subscriptions.services import check_subscription_limit, track_usage
+from app.domains.subscriptions.services import check_subscription_limit, track_usage, get_or_create_subscription
 
 router = APIRouter()
 
@@ -20,6 +20,9 @@ async def create_business(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Ensure user has subscription (create if missing)
+    await get_or_create_subscription(db, current_user.id, "free")
+
     # Check multi-business limit
     existing_count = await db.execute(
         select(Business).where(Business.user_id == current_user.id, Business.is_active == True)
