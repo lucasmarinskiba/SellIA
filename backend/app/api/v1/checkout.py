@@ -9,8 +9,8 @@ import httpx
 
 router = APIRouter(prefix="/checkout", tags=["payments"])
 
-MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN")
-MERCADOPAGO_USER_ID = os.getenv("MERCADOPAGO_USER_ID")
+MERCADOPAGO_ACCESS_TOKEN = (os.getenv("MERCADOPAGO_ACCESS_TOKEN") or "").strip() or None
+MERCADOPAGO_USER_ID = (os.getenv("MERCADOPAGO_USER_ID") or "").strip() or None
 SUCCESS_URL = os.getenv("CHECKOUT_SUCCESS_URL", "https://sellia-brain.vercel.app/dashboard")
 FAILURE_URL = os.getenv("CHECKOUT_FAILURE_URL", "https://sellia-brain.vercel.app/pricing")
 

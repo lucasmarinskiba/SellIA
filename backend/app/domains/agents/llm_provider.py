@@ -326,7 +326,10 @@ async def resolve_api_keys(
     )
     business = result.scalar_one_or_none()
     from app.core.config import get_settings
-    env_groq = get_settings().GROQ_API_KEY
+    # .strip(): a trailing \r/\n on a platform-pasted env var breaks the
+    # "Authorization: Bearer <token>" header outright (same class of bug
+    # found and fixed in MERCADOPAGO_ACCESS_TOKEN — see mercadopago_processor.py)
+    env_groq = (get_settings().GROQ_API_KEY or "").strip() or None
     if not business:
         return {"kimi": None, "openai": None, "anthropic": None, "groq": env_groq, "ollama": False}
 
@@ -347,7 +350,7 @@ async def resolve_api_keys(
         key_record = result.scalar_one_or_none()
         if key_record and key_record.api_key_fernet:
             try:
-                keys[provider] = decrypt_value(key_record.api_key_fernet)
+                keys[provider] = decrypt_value(key_record.api_key_fernet).strip()
             except Exception as e:
                 logger.error(f"Failed to decrypt {provider} key: {e}")
 
