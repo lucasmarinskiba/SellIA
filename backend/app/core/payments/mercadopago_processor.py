@@ -142,8 +142,12 @@ class MercadoPagoProcessor:
                 "Content-Type": "application/json",
             }
 
+            # NOT under /v1 — MercadoPago's Checkout Pro preferences endpoint
+            # lives at the API root (confirmed against the other, working
+            # implementation in api/v1/checkout.py, and against the live
+            # 404 this produced when it incorrectly used MERCADOPAGO_API_BASE).
             response = requests.post(
-                f"{MERCADOPAGO_API_BASE}/checkout/preferences",
+                "https://api.mercadopago.com/checkout/preferences",
                 json=preference,
                 headers=headers,
                 timeout=30,
