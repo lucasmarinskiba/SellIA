@@ -29,13 +29,18 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 # MercadoPago API
-MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "TEST_TOKEN")
-MERCADOPAGO_PUBLIC_KEY = os.getenv("MERCADOPAGO_PUBLIC_KEY", "TEST_KEY")
-MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET")
+# .strip() defensively: platform env-var UIs (Railway included) can end up
+# storing a trailing \r or \n if the value was pasted from a Windows-edited
+# file — an untrimmed token breaks the "Authorization: Bearer <token>" header
+# (httpx/requests reject '\r' in header values) and every API call 500s with
+# a confusing "Invalid leading whitespace... in header value" error.
+MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "TEST_TOKEN").strip()
+MERCADOPAGO_PUBLIC_KEY = os.getenv("MERCADOPAGO_PUBLIC_KEY", "TEST_KEY").strip()
+MERCADOPAGO_WEBHOOK_SECRET = os.getenv("MERCADOPAGO_WEBHOOK_SECRET", "TEST_SECRET").strip()
 MERCADOPAGO_NOTIFICATION_URL = os.getenv(
     "MERCADOPAGO_NOTIFICATION_URL",
     "https://api.example.com/webhooks/mercadopago"
-)
+).strip()
 
 MERCADOPAGO_API_BASE = "https://api.mercadopago.com/v1"
 MERCADOPAGO_CHECKOUT_BASE = "https://www.mercadopago.com.ar/checkout/pay"
