@@ -138,3 +138,29 @@ class TikTokAdsConnector(BaseChannelConnector):
                 return response.status_code == 200
         except Exception:
             return False
+
+    async def update_campaign_budget(self, campaign_id: str, new_budget_aed: float) -> None:
+        """Update campaign daily budget via TikTok Ads API.
+
+        Args:
+            campaign_id: TikTok campaign ID (e.g., '1234567890')
+            new_budget_aed: New daily budget in AED (or local currency)
+
+        Raises:
+            Exception if API call fails
+        """
+        import httpx
+        import json
+
+        url = f"{self.BASE_URL}/campaign/update/"
+        headers = {"Access-Token": self.access_token}
+        payload = {
+            "advertiser_id": self.advertiser_id,
+            "campaign_id": campaign_id,
+            "daily_budget": int(new_budget_aed * 100),  # TikTok uses cents
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=payload)
+            if response.status_code != 200:
+                raise Exception(f"TikTok Ads API error: {response.status_code} {response.text}")

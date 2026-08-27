@@ -139,3 +139,40 @@ class GoogleAdsConnector(BaseChannelConnector):
                 return response.status_code == 200
         except Exception:
             return False
+
+    async def update_campaign_budget(self, campaign_id: str, new_budget_aed: float) -> None:
+        """Update campaign daily budget via Google Ads API v14.
+
+        Args:
+            campaign_id: Google Ads campaign resource ID (e.g., '1234567890')
+            new_budget_aed: New daily budget in AED (or local currency)
+
+        Raises:
+            Exception if API call fails
+        """
+        import httpx
+        from google.protobuf.json_format import MessageToDict
+        from google.ads.googleads.client import GoogleAdsClient
+
+        client = GoogleAdsClient.load_from_storage(
+            version="v14",
+            common_params={"developer_token": self.developer_token}
+        )
+        if self.access_token:
+            client._transport._credentials.refresh_token = self.refresh_token
+            client._transport._credentials.access_token = self.access_token
+
+        campaign_service = client.get_service("CampaignService")
+        campaign_resource_name = campaign_service.campaign_path(self.customer_id, campaign_id)
+
+        campaign = client.get_type("Campaign")
+        campaign.resource_name = campaign_resource_name
+        campaign.daily_budget_micros = int(new_budget_aed * 1_000_000)
+
+        operation = client.get_type("CampaignOperation")
+        operation.update.CopyFrom(campaign)
+        operation.update_mask.paths.append("daily_budget_micros")
+
+        response = campaign_service.mutate_campaigns(customer_id=self.customer_id, operations=[operation])
+        if not response.results:
+            raise Exception("Google Ads API: no results returned")
