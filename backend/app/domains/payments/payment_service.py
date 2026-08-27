@@ -221,12 +221,119 @@ class PaymentService:
 
         logger.info(f"Transaction {transaction.id} updated to status: {transaction.status}")
 
+        # Keep the payments dashboard (PaymentMetrics) truthful — nothing
+        # else writes to that table, so it stays at zero forever otherwise.
+        try:
+            await PaymentService._update_payment_metrics(transaction.business_id, db)
+        except Exception as e:
+            logger.error(f"PaymentMetrics update failed for transaction {transaction.id}: {e}")
+
+        # Sale confirmed on a bot-originated conversation → close the loop:
+        # tag the subscriber (so the business's own chat flow can branch on
+        # it, mirrors sellia_qualified/sellia_disqualified) and thank the
+        # customer. Best-effort — a notification failure must never make the
+        # webhook itself fail (MercadoPago retries on non-2xx).
+        if transaction.status == TransactionStatus.APPROVED and transaction.conversation_id:
+            try:
+                await PaymentService._notify_purchase_confirmed(transaction, db)
+            except Exception as e:
+                logger.error(f"Post-purchase notification failed for transaction {transaction.id}: {e}")
+
         return {
             "status": "processed",
             "transaction_id": str(transaction.id),
             "conversation_id": str(transaction.conversation_id) if transaction.conversation_id else None,
             "payment_status": status,
         }
+
+    @staticmethod
+    async def _notify_purchase_confirmed(transaction: Transaction, db: AsyncSession) -> None:
+        """Tag the subscriber as a buyer + send a thank-you message."""
+        from app.domains.channels.services import send_outbound_message
+        from app.domains.channels.connectors import get_connector
+        from app.domains.channels.models import Conversation, ChannelConnection
+
+        conv_result = await db.execute(
+            select(Conversation).where(Conversation.id == transaction.conversation_id)
+        )
+        conversation = conv_result.scalar_one_or_none()
+        if not conversation or not conversation.channel_connection_id:
+            return
+
+        channel_result = await db.execute(
+            select(ChannelConnection).where(ChannelConnection.id == conversation.channel_connection_id)
+        )
+        channel = channel_result.scalar_one_or_none()
+        if not channel:
+            return
+
+        connector = get_connector(channel.platform, channel.credentials, channel.settings)
+        if hasattr(connector, "tag_subscriber"):
+            await connector.tag_subscriber(conversation.external_id, "sellia_purchased")
+
+        thank_you = (
+            f"¡Gracias por tu compra! Confirmamos tu pago de "
+            f"{transaction.amount} {transaction.currency}. 🎉"
+        )
+        await send_outbound_message(db, transaction.conversation_id, thank_you)
+
+    @staticmethod
+    async def _update_payment_metrics(business_id: UUID, db: AsyncSession) -> None:
+        """Recompute PaymentMetrics for a business from the Transaction/Refund
+        tables (source of truth). Nothing wrote to PaymentMetrics before this —
+        get_payment_metrics() would always return "No metrics found". Full
+        recompute rather than incremental counters: simpler, self-healing,
+        and transaction volume per business doesn't justify the complexity
+        of maintaining running counters correctly under concurrent webhooks.
+        """
+        txns_result = await db.execute(
+            select(Transaction).where(Transaction.business_id == business_id)
+        )
+        all_txns = txns_result.scalars().all()
+
+        approved = [t for t in all_txns if t.status == TransactionStatus.APPROVED]
+        failed = [t for t in all_txns if t.status in (TransactionStatus.REJECTED, TransactionStatus.FAILED)]
+
+        total_revenue = sum((t.amount for t in approved), Decimal("0"))
+        avg_value = (total_revenue / len(approved)) if approved else Decimal("0")
+        success_rate = int(round((len(approved) / len(all_txns)) * 100)) if all_txns else 0
+
+        method_breakdown: Dict[str, float] = {}
+        for t in approved:
+            method_breakdown[t.method] = method_breakdown.get(t.method, 0.0) + float(t.amount)
+
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        txns_7d = [t for t in approved if t.created_at and t.created_at >= week_ago]
+        revenue_7d = sum((t.amount for t in txns_7d), Decimal("0"))
+
+        refunds_result = await db.execute(
+            select(Refund).where(
+                Refund.business_id == business_id,
+                Refund.status == RefundStatus.APPROVED,
+            )
+        )
+        refunds = refunds_result.scalars().all()
+        refund_rate = int(round((len(refunds) / len(approved)) * 100)) if approved else 0
+
+        metrics_result = await db.execute(
+            select(PaymentMetrics).where(PaymentMetrics.business_id == business_id)
+        )
+        metrics = metrics_result.scalar_one_or_none()
+        if not metrics:
+            metrics = PaymentMetrics(business_id=business_id)
+            db.add(metrics)
+
+        metrics.total_transactions = len(all_txns)
+        metrics.total_revenue = total_revenue
+        metrics.avg_transaction_value = avg_value
+        metrics.success_rate = success_rate
+        metrics.failed_transactions = len(failed)
+        metrics.refund_rate = refund_rate
+        metrics.method_breakdown = method_breakdown
+        metrics.transactions_7d = len(txns_7d)
+        metrics.revenue_7d = revenue_7d
+
+        await db.commit()
 
     @staticmethod
     async def _handle_merchant_order_webhook(business_id: UUID, data: Dict, db: AsyncSession) -> dict:

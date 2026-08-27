@@ -106,6 +106,15 @@ class BusinessContext(Base):
     # Booking link used for qualified-lead invites (Calendly, cal.com, etc.)
     scheduling_link = Column(String(512), nullable=True)
 
+    # Daily LLM call cap (Task 6) — guards against a runaway conversation
+    # loop or bad actor generating an unbounded bill on a business's own
+    # OpenAI/Anthropic key. NULL = unlimited (default, preserves existing
+    # behavior for every business that hasn't set one). Counts calls, not
+    # dollars: most providers wired up in llm_provider.py don't report
+    # token usage, so a real cost cap isn't reliably computable — a call
+    # cap is the honest, enforceable version of "stop the bleeding".
+    llm_daily_call_limit = Column(Integer, nullable=True)
+
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
