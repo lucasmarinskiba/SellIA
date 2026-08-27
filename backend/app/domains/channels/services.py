@@ -545,6 +545,32 @@ async def process_incoming_message(
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Auto-qualification error: {e}")
 
+    # === Purchase Intent → Checkout Link ===
+    # If the customer signals they want to buy ("quiero comprar", "cómo pago",
+    # etc.) and the catalog item can be resolved unambiguously, generate a
+    # MercadoPago checkout link tied to this conversation and send it back
+    # through the same channel. Closes the loop from "el bot califica" to
+    # "el bot cobra" without a human touching it.
+    try:
+        from app.domains.payments.sales_service import maybe_trigger_checkout
+
+        checkout = await maybe_trigger_checkout(
+            db=db,
+            business_id=channel.business_id,
+            conversation=conversation,
+            message_text=payload.content,
+        )
+        if checkout:
+            checkout_msg = (
+                f"¡Genial! Acá tenés el link para pagar {checkout['item_name']} "
+                f"({checkout['amount']} {checkout['currency']}):\n{checkout['checkout_url']}"
+            )
+            await send_outbound_message(db, conversation.id, checkout_msg)
+    except Exception as e:
+        await db.rollback()
+        from app.core.logger import get_logger
+        get_logger(__name__).error(f"Checkout trigger error: {e}")
+
     # === Competitor Mention Detection ===
     try:
         await _detect_competitor_mentions(db, conversation, payload.content, channel.business_id)

@@ -1,13 +1,22 @@
-"""Payment service layer."""
+"""Payment service layer.
 
+NOTE: rewritten to async — `app.core.database.get_db` yields an AsyncSession,
+not a sync `Session`. The previous version called `db.query(...)` and
+`db.commit()` without `await`, which raises `AttributeError` /
+silently drops commits against an AsyncSession. Every DB call here now
+goes through `select()` + `await db.execute()` / `await db.commit()`.
+"""
+
+import asyncio
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
 from typing import Optional, Dict, List, Any
 from decimal import Decimal
 
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import select, func, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.payments.payment_models import (
     Transaction, Refund, Settlement, PaymentReconciliation, PaymentMetrics,
@@ -17,12 +26,17 @@ from app.core.payments.mercadopago_processor import MercadoPagoProcessor
 
 logger = logging.getLogger(__name__)
 
+# Backend's own public URL, used so MercadoPago calls back the
+# business-scoped webhook (/api/v1/businesses/{business_id}/webhooks/mercadopago)
+# instead of the generic global one.
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "https://sellia-production.up.railway.app")
+
 
 class PaymentService:
     """Payment operations."""
 
     @staticmethod
-    def create_transaction(
+    async def create_transaction(
         business_id: UUID,
         amount: Decimal,
         currency: str,
@@ -30,10 +44,11 @@ class PaymentService:
         customer_id: Optional[UUID] = None,
         order_id: Optional[UUID] = None,
         location_id: Optional[UUID] = None,
+        conversation_id: Optional[UUID] = None,
         description: Optional[str] = None,
         reference_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Create payment transaction."""
         if not db:
@@ -47,6 +62,7 @@ class PaymentService:
             customer_id=customer_id,
             order_id=order_id,
             location_id=location_id,
+            conversation_id=conversation_id,
             description=description,
             reference_id=reference_id,
             transaction_metadata=metadata or {},
@@ -54,8 +70,8 @@ class PaymentService:
         )
 
         db.add(transaction)
-        db.commit()
-        db.refresh(transaction)
+        await db.commit()
+        await db.refresh(transaction)
 
         logger.info(f"Transaction created: {transaction.id} | Amount: {amount} {currency}")
 
@@ -67,7 +83,7 @@ class PaymentService:
         }
 
     @staticmethod
-    def create_mercadopago_checkout(
+    async def create_mercadopago_checkout(
         business_id: UUID,
         customer_email: str,
         customer_name: str,
@@ -75,9 +91,14 @@ class PaymentService:
         amount: Decimal,
         currency: str = "USD",
         order_id: Optional[UUID] = None,
-        db: Session = None
+        conversation_id: Optional[UUID] = None,
+        db: AsyncSession = None
     ) -> dict:
-        """Create MercadoPago checkout preference."""
+        """Create MercadoPago checkout preference.
+
+        `items` is a list of {name, quantity, unit_price} — used both for the
+        MercadoPago preference and stored as transaction_metadata for audit.
+        """
         if not db:
             raise ValueError("Database session required")
 
@@ -88,31 +109,40 @@ class PaymentService:
             currency=currency,
             method=PaymentMethod.MERCADOPAGO,
             order_id=order_id,
+            conversation_id=conversation_id,
             status=TransactionStatus.PROCESSING,
-            metadata={"items": items}
+            transaction_metadata={"items": items},
         )
 
         db.add(transaction)
-        db.commit()
-        db.refresh(transaction)
+        await db.commit()
+        await db.refresh(transaction)
 
-        # Create MercadoPago preference
-        mp_result = MercadoPagoProcessor.create_checkout_preference(
+        # Create MercadoPago preference — notification_url points at the
+        # business-scoped webhook so the payment status flows back to the
+        # right conversation/business instead of a generic global endpoint.
+        notification_url = f"{BACKEND_PUBLIC_URL}/api/v1/businesses/{business_id}/webhooks/mercadopago"
+        # MercadoPagoProcessor uses the blocking `requests` lib — push it off
+        # the event loop so one checkout call doesn't stall every other
+        # request the server is handling concurrently.
+        mp_result = await asyncio.to_thread(
+            MercadoPagoProcessor.create_checkout_preference,
             external_reference=str(transaction.id),
             customer_email=customer_email,
             customer_name=customer_name,
             items=items,
-            currency_code=currency
+            currency_code=currency,
+            notification_url=notification_url,
         )
 
         if mp_result.get("status") == "error":
             transaction.status = TransactionStatus.FAILED
-            db.commit()
+            await db.commit()
             return {"status": "error", "error": mp_result.get("error")}
 
         # Update transaction with MercadoPago data
         transaction.mercadopago_preference_id = mp_result.get("preference_id")
-        db.commit()
+        await db.commit()
 
         logger.info(f"MercadoPago checkout created: {mp_result.get('preference_id')}")
 
@@ -124,10 +154,10 @@ class PaymentService:
         }
 
     @staticmethod
-    def process_mercadopago_webhook(
+    async def process_mercadopago_webhook(
         business_id: UUID,
         event_data: Dict,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Process MercadoPago webhook notification."""
         if not db:
@@ -140,24 +170,33 @@ class PaymentService:
         logger.info(f"Processing MercadoPago webhook: {event_type} | Payment: {payment_id}")
 
         if event_type == "payment":
-            return PaymentService._handle_payment_webhook(business_id, data, db)
+            return await PaymentService._handle_payment_webhook(business_id, data, db)
         elif event_type == "merchant_order":
-            return PaymentService._handle_merchant_order_webhook(business_id, data, db)
+            return await PaymentService._handle_merchant_order_webhook(business_id, data, db)
 
         return {"status": "acknowledged"}
 
     @staticmethod
-    def _handle_payment_webhook(business_id: UUID, data: Dict, db: Session) -> dict:
+    async def _handle_payment_webhook(business_id: UUID, data: Dict, db: AsyncSession) -> dict:
         """Handle payment webhook."""
         payment_id = data.get("id")
         status = data.get("status")
-        amount = data.get("transaction_amount", 0)
         external_reference = data.get("external_reference")
 
-        # Find transaction by external reference
-        transaction = db.query(Transaction).filter(
-            Transaction.id == UUID(external_reference) if external_reference else None
-        ).first()
+        if not external_reference:
+            logger.warning(f"Payment webhook missing external_reference (payment {payment_id})")
+            return {"status": "error", "error": "Missing external_reference"}
+
+        try:
+            transaction_uuid = UUID(external_reference)
+        except (ValueError, TypeError):
+            logger.warning(f"Payment webhook external_reference is not a UUID: {external_reference}")
+            return {"status": "error", "error": "Invalid external_reference"}
+
+        result = await db.execute(
+            select(Transaction).where(Transaction.id == transaction_uuid)
+        )
+        transaction = result.scalar_one_or_none()
 
         if not transaction:
             logger.warning(f"Transaction not found for payment {payment_id}")
@@ -178,18 +217,19 @@ class PaymentService:
         elif status == "pending":
             transaction.status = TransactionStatus.PENDING
 
-        db.commit()
+        await db.commit()
 
         logger.info(f"Transaction {transaction.id} updated to status: {transaction.status}")
 
         return {
             "status": "processed",
             "transaction_id": str(transaction.id),
+            "conversation_id": str(transaction.conversation_id) if transaction.conversation_id else None,
             "payment_status": status,
         }
 
     @staticmethod
-    def _handle_merchant_order_webhook(business_id: UUID, data: Dict, db: Session) -> dict:
+    async def _handle_merchant_order_webhook(business_id: UUID, data: Dict, db: AsyncSession) -> dict:
         """Handle merchant order webhook."""
         order_id = data.get("id")
         external_reference = data.get("external_reference")
@@ -199,21 +239,24 @@ class PaymentService:
         return {"status": "processed", "order_id": order_id}
 
     @staticmethod
-    def create_refund(
+    async def create_refund(
         transaction_id: UUID,
         business_id: UUID,
         amount: Decimal,
         reason: str,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Create refund request."""
         if not db:
             raise ValueError("Database session required")
 
-        transaction = db.query(Transaction).filter(
-            Transaction.id == transaction_id,
-            Transaction.business_id == business_id
-        ).first()
+        result = await db.execute(
+            select(Transaction).where(
+                Transaction.id == transaction_id,
+                Transaction.business_id == business_id,
+            )
+        )
+        transaction = result.scalar_one_or_none()
 
         if not transaction:
             return {"status": "error", "error": "Transaction not found"}
@@ -234,9 +277,10 @@ class PaymentService:
 
         # Process refund via MercadoPago if available
         if transaction.mercadopago_payment_id:
-            mp_result = MercadoPagoProcessor.refund_payment(
+            mp_result = await asyncio.to_thread(
+                MercadoPagoProcessor.refund_payment,
                 transaction.mercadopago_payment_id,
-                float(amount)
+                float(amount),
             )
 
             if mp_result.get("status") == "refunded":
@@ -250,7 +294,8 @@ class PaymentService:
                 else:
                     transaction.status = TransactionStatus.PARTIAL_REFUND
 
-        db.commit()
+        await db.commit()
+        await db.refresh(refund)
 
         logger.info(f"Refund created: {refund.id} | Transaction: {transaction_id}")
 
@@ -261,11 +306,11 @@ class PaymentService:
         }
 
     @staticmethod
-    def reconcile_transaction(
+    async def reconcile_transaction(
         order_id: UUID,
         transaction_id: Optional[UUID],
         business_id: UUID,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Reconcile order with payment transaction."""
         if not db:
@@ -273,12 +318,14 @@ class PaymentService:
 
         # Find matching transaction if not provided
         if not transaction_id:
-            # Try to match by order_id
-            transaction = db.query(Transaction).filter(
-                Transaction.order_id == order_id,
-                Transaction.business_id == business_id,
-                Transaction.status == TransactionStatus.APPROVED
-            ).first()
+            result = await db.execute(
+                select(Transaction).where(
+                    Transaction.order_id == order_id,
+                    Transaction.business_id == business_id,
+                    Transaction.status == TransactionStatus.APPROVED,
+                )
+            )
+            transaction = result.scalar_one_or_none()
 
             if not transaction:
                 return {"status": "error", "error": "No matching transaction found"}
@@ -297,7 +344,8 @@ class PaymentService:
         )
 
         db.add(reconciliation)
-        db.commit()
+        await db.commit()
+        await db.refresh(reconciliation)
 
         logger.info(f"Order {order_id} reconciled with transaction {transaction_id}")
 
@@ -309,28 +357,29 @@ class PaymentService:
         }
 
     @staticmethod
-    def get_transactions(
+    async def get_transactions(
         business_id: UUID,
         status: Optional[str] = None,
         location_id: Optional[UUID] = None,
         limit: int = 50,
-        db: Session = None
+        db: AsyncSession = None
     ) -> List[dict]:
         """Get transactions."""
         if not db:
             raise ValueError("Database session required")
 
-        query = db.query(Transaction).filter(
-            Transaction.business_id == business_id
-        )
+        stmt = select(Transaction).where(Transaction.business_id == business_id)
 
         if status:
-            query = query.filter(Transaction.status == status)
+            stmt = stmt.where(Transaction.status == status)
 
         if location_id:
-            query = query.filter(Transaction.location_id == location_id)
+            stmt = stmt.where(Transaction.location_id == location_id)
 
-        transactions = query.order_by(desc(Transaction.created_at)).limit(limit).all()
+        stmt = stmt.order_by(desc(Transaction.created_at)).limit(limit)
+
+        result = await db.execute(stmt)
+        transactions = result.scalars().all()
 
         return [
             {
@@ -340,6 +389,7 @@ class PaymentService:
                 "method": t.method,
                 "status": t.status,
                 "order_id": str(t.order_id) if t.order_id else None,
+                "conversation_id": str(t.conversation_id) if t.conversation_id else None,
                 "created_at": t.created_at.isoformat() if t.created_at else None,
                 "approved_at": t.approved_at.isoformat() if t.approved_at else None,
             }
@@ -347,10 +397,10 @@ class PaymentService:
         ]
 
     @staticmethod
-    def get_settlement_metrics(
+    async def get_settlement_metrics(
         business_id: UUID,
         period_days: int = 30,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Get settlement metrics for period."""
         if not db:
@@ -358,21 +408,27 @@ class PaymentService:
 
         start_date = datetime.now(timezone.utc) - timedelta(days=period_days)
 
-        transactions = db.query(Transaction).filter(
-            Transaction.business_id == business_id,
-            Transaction.status == TransactionStatus.APPROVED,
-            Transaction.created_at >= start_date
-        ).all()
+        result = await db.execute(
+            select(Transaction).where(
+                Transaction.business_id == business_id,
+                Transaction.status == TransactionStatus.APPROVED,
+                Transaction.created_at >= start_date,
+            )
+        )
+        transactions = result.scalars().all()
 
         total_amount = sum(t.amount for t in transactions)
         total_fees = sum(t.gateway_fee or 0 for t in transactions)
         net_amount = total_amount - total_fees
 
-        refunds = db.query(Refund).filter(
-            Refund.business_id == business_id,
-            Refund.status == RefundStatus.COMPLETED,
-            Refund.created_at >= start_date
-        ).all()
+        refunds_result = await db.execute(
+            select(Refund).where(
+                Refund.business_id == business_id,
+                Refund.status == RefundStatus.COMPLETED,
+                Refund.created_at >= start_date,
+            )
+        )
+        refunds = refunds_result.scalars().all()
 
         total_refunded = sum(r.amount for r in refunds)
         net_after_refunds = net_amount - total_refunded
@@ -389,17 +445,18 @@ class PaymentService:
         }
 
     @staticmethod
-    def get_payment_metrics(
+    async def get_payment_metrics(
         business_id: UUID,
-        db: Session = None
+        db: AsyncSession = None
     ) -> dict:
         """Get payment metrics."""
         if not db:
             raise ValueError("Database session required")
 
-        metrics = db.query(PaymentMetrics).filter(
-            PaymentMetrics.business_id == business_id
-        ).first()
+        result = await db.execute(
+            select(PaymentMetrics).where(PaymentMetrics.business_id == business_id)
+        )
+        metrics = result.scalar_one_or_none()
 
         if not metrics:
             return {"message": "No metrics found"}

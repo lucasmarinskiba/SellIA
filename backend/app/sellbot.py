@@ -401,6 +401,123 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"channelplatform enum migration: {str(e)[:120]}")
 
+    # Create transactions/refunds tables if missing. These live on
+    # app.core.database.Base (CoreBase) which init_db() explicitly skips
+    # (see app/db/database.py:111 — FK conflicts across ~100 domain models),
+    # so — same as business_contexts above — they need an explicit
+    # CREATE TABLE IF NOT EXISTS here or PaymentService's queries 500 with
+    # "relation does not exist". Minimal schema; full definition lives in
+    # app.domains.payments.payment_models.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS transactions (
+                        id VARCHAR(36) PRIMARY KEY,
+                        business_id VARCHAR(36) NOT NULL,
+                        customer_id VARCHAR(36),
+                        order_id VARCHAR(36),
+                        location_id VARCHAR(36),
+                        conversation_id VARCHAR(36),
+                        amount NUMERIC(12,2) NOT NULL,
+                        currency VARCHAR(3) DEFAULT 'USD',
+                        method VARCHAR(50) NOT NULL,
+                        status VARCHAR(20) DEFAULT 'pending',
+                        mercadopago_payment_id VARCHAR(255) UNIQUE,
+                        mercadopago_preference_id VARCHAR(255),
+                        mercadopago_merchant_order_id VARCHAR(255),
+                        mercadopago_status VARCHAR(50),
+                        installments INTEGER DEFAULT 1,
+                        installment_amount NUMERIC(12,2),
+                        description VARCHAR(500),
+                        reference_id VARCHAR(255),
+                        transaction_metadata TEXT,
+                        gateway_fee NUMERIC(12,2) DEFAULT 0,
+                        net_amount NUMERIC(12,2),
+                        settlement_date DATETIME,
+                        settled BOOLEAN DEFAULT 0,
+                        webhook_notification_received BOOLEAN DEFAULT 0,
+                        webhook_notification_date DATETIME,
+                        created_at DATETIME,
+                        approved_at DATETIME,
+                        updated_at DATETIME
+                    )
+                """))
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS refunds (
+                        id VARCHAR(36) PRIMARY KEY,
+                        transaction_id VARCHAR(36) NOT NULL,
+                        business_id VARCHAR(36) NOT NULL,
+                        amount NUMERIC(12,2) NOT NULL,
+                        status VARCHAR(20) DEFAULT 'requested',
+                        reason VARCHAR(500),
+                        mercadopago_refund_id VARCHAR(255) UNIQUE,
+                        requested_by VARCHAR(36),
+                        approved_by VARCHAR(36),
+                        processed_at DATETIME,
+                        created_at DATETIME,
+                        updated_at DATETIME
+                    )
+                """))
+            else:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS transactions (
+                        id UUID PRIMARY KEY,
+                        business_id UUID NOT NULL,
+                        customer_id UUID,
+                        order_id UUID,
+                        location_id UUID,
+                        conversation_id UUID,
+                        amount NUMERIC(12,2) NOT NULL,
+                        currency VARCHAR(3) DEFAULT 'USD',
+                        method VARCHAR(50) NOT NULL,
+                        status VARCHAR(20) DEFAULT 'pending',
+                        mercadopago_payment_id VARCHAR(255) UNIQUE,
+                        mercadopago_preference_id VARCHAR(255),
+                        mercadopago_merchant_order_id VARCHAR(255),
+                        mercadopago_status VARCHAR(50),
+                        installments INTEGER DEFAULT 1,
+                        installment_amount NUMERIC(12,2),
+                        description VARCHAR(500),
+                        reference_id VARCHAR(255),
+                        transaction_metadata JSONB,
+                        gateway_fee NUMERIC(12,2) DEFAULT 0,
+                        net_amount NUMERIC(12,2),
+                        settlement_date TIMESTAMP,
+                        settled BOOLEAN DEFAULT FALSE,
+                        webhook_notification_received BOOLEAN DEFAULT FALSE,
+                        webhook_notification_date TIMESTAMP,
+                        created_at TIMESTAMP,
+                        approved_at TIMESTAMP,
+                        updated_at TIMESTAMP
+                    )
+                """))
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS refunds (
+                        id UUID PRIMARY KEY,
+                        transaction_id UUID NOT NULL,
+                        business_id UUID NOT NULL,
+                        amount NUMERIC(12,2) NOT NULL,
+                        status VARCHAR(20) DEFAULT 'requested',
+                        reason VARCHAR(500),
+                        mercadopago_refund_id VARCHAR(255) UNIQUE,
+                        requested_by UUID,
+                        approved_by UUID,
+                        processed_at TIMESTAMP,
+                        created_at TIMESTAMP,
+                        updated_at TIMESTAMP
+                    )
+                """))
+                await db.execute(text(
+                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS conversation_id UUID"
+                ))
+            await db.commit()
+        logger.info("✅ transactions/refunds tables ensured")
+    except Exception as e:
+        logger.warning(f"transactions/refunds table creation: {str(e)[:120]}")
+
     # Load Phase 33 seed data if needed (async-compatible)
     try:
         from sqlalchemy import create_engine
