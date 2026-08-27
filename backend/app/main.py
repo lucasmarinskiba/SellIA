@@ -102,6 +102,7 @@ _try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"
 _try_include("app.domains.ad_budget.router.router", "/api/v1/businesses", ["ad-budget"])
 _try_include("app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"])
 _try_include("app.domains.cashflow.router.router", "/api/v1/businesses", ["cashflow"])
+_try_include("app.domains.orchestrator.router.router", "/api/v1/businesses", ["orchestrator"])
 
 
 @app.get("/health", tags=["system"])
