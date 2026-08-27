@@ -1084,7 +1084,8 @@
       "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/webhooks/mercadopago -H 'Content-Type: application/json' -d '{\"type\":\"payment\",\"data\":{\"id\":\"99988877\",\"status\":\"approved\",\"external_reference\":\"7be5e020-20f6-4ca1-9c44-0f7bf2ef9a5e\"}}')",
       "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\\\\n\" \"https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/payments/metrics\")",
       "Bash(rm -f test_import_check5.db)",
-      "Bash(railway variable *)"
+      "Bash(railway variable *)",
+      "Bash(git commit -m 'Gaps #7-9: HR, Legal, Procurement domain scaffolding *)"
     ]
   }
 }
