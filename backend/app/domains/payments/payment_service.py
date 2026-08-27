@@ -32,6 +32,23 @@ logger = logging.getLogger(__name__)
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "https://sellia-production.up.railway.app")
 
 
+def _as_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Normalize a possibly-naive datetime to timezone-aware UTC.
+
+    transactions.created_at (and its sibling timestamp columns) were
+    provisioned via a raw CREATE TABLE patch in sellbot.py as plain
+    TIMESTAMP (not TIMESTAMPTZ) — asyncpg round-trips those as naive
+    datetimes. Comparing one directly against datetime.now(timezone.utc)
+    raises "can't compare offset-naive and offset-aware datetimes" — found
+    live via Railway logs while smoke-testing Task 4's webhook flow.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 class PaymentService:
     """Payment operations."""
 
@@ -303,7 +320,7 @@ class PaymentService:
             method_breakdown[t.method] = method_breakdown.get(t.method, 0.0) + float(t.amount)
 
         week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-        txns_7d = [t for t in approved if t.created_at and t.created_at >= week_ago]
+        txns_7d = [t for t in approved if t.created_at and _as_aware_utc(t.created_at) >= week_ago]
         revenue_7d = sum((t.amount for t in txns_7d), Decimal("0"))
 
         refunds_result = await db.execute(
