@@ -112,6 +112,9 @@ from app.core.task_processor import init_processor, start_processor, stop_proces
 # Progression
 from app.services.progression_service import init_progression_service
 
+# Cold-lead follow-up loop (Task 5)
+from app.core.followup_scheduler import run_followup_loop, stop_followup_loop
+
 scheduler = None
 processor = None
 progression_service = None
@@ -518,6 +521,129 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"transactions/refunds table creation: {str(e)[:120]}")
 
+    # Same story as transactions/refunds above — payment_metrics is another
+    # CoreBase table init_db() skips. PaymentService._update_payment_metrics
+    # (Task 4: webhook → mark sale won + refresh metrics) upserts into this
+    # on every approved payment; without the table it 500s silently inside
+    # the webhook's own try/except and the payments dashboard stays empty.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS payment_metrics (
+                        id VARCHAR(36) PRIMARY KEY,
+                        business_id VARCHAR(36) NOT NULL UNIQUE,
+                        total_transactions INTEGER DEFAULT 0,
+                        total_revenue NUMERIC(15,2) DEFAULT 0,
+                        avg_transaction_value NUMERIC(12,2) DEFAULT 0,
+                        success_rate INTEGER DEFAULT 0,
+                        failed_transactions INTEGER DEFAULT 0,
+                        refund_rate INTEGER DEFAULT 0,
+                        method_breakdown TEXT,
+                        total_settled NUMERIC(15,2) DEFAULT 0,
+                        pending_settlement NUMERIC(15,2) DEFAULT 0,
+                        total_fees NUMERIC(12,2) DEFAULT 0,
+                        transactions_7d INTEGER DEFAULT 0,
+                        revenue_7d NUMERIC(15,2) DEFAULT 0,
+                        updated_at DATETIME
+                    )
+                """))
+            else:
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS payment_metrics (
+                        id UUID PRIMARY KEY,
+                        business_id UUID NOT NULL UNIQUE,
+                        total_transactions INTEGER DEFAULT 0,
+                        total_revenue NUMERIC(15,2) DEFAULT 0,
+                        avg_transaction_value NUMERIC(12,2) DEFAULT 0,
+                        success_rate INTEGER DEFAULT 0,
+                        failed_transactions INTEGER DEFAULT 0,
+                        refund_rate INTEGER DEFAULT 0,
+                        method_breakdown JSONB,
+                        total_settled NUMERIC(15,2) DEFAULT 0,
+                        pending_settlement NUMERIC(15,2) DEFAULT 0,
+                        total_fees NUMERIC(12,2) DEFAULT 0,
+                        transactions_7d INTEGER DEFAULT 0,
+                        revenue_7d NUMERIC(15,2) DEFAULT 0,
+                        updated_at TIMESTAMP
+                    )
+                """))
+            await db.commit()
+        logger.info("✅ payment_metrics table ensured")
+    except Exception as e:
+        logger.warning(f"payment_metrics table creation: {str(e)[:120]}")
+
+    # Task 5: cold-lead follow-up tracking columns on conversations. The
+    # table itself already exists in production (created earlier via the
+    # per-table debug endpoint) — just needs these 2 new columns so
+    # followup_service.py can dedupe ("already nudged this silence window")
+    # and cap ("max N nudges per conversation") without re-scanning history.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(conversations)"))
+                cols = {row[1] for row in existing.all()}
+                if "last_followup_sent_at" not in cols:
+                    await db.execute(text("ALTER TABLE conversations ADD COLUMN last_followup_sent_at DATETIME"))
+                if "followup_count" not in cols:
+                    await db.execute(text("ALTER TABLE conversations ADD COLUMN followup_count INTEGER DEFAULT 0"))
+            else:
+                await db.execute(text(
+                    "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_followup_sent_at TIMESTAMP"
+                ))
+                await db.execute(text(
+                    "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS followup_count INTEGER DEFAULT 0"
+                ))
+            await db.commit()
+        logger.info("✅ conversations follow-up columns ensured")
+    except Exception as e:
+        logger.warning(f"conversations follow-up columns migration: {str(e)[:120]}")
+
+    # Task 6: LLM daily call cap — business_contexts.llm_daily_call_limit
+    # (NULL = unlimited, existing behavior) + the llm_daily_usage counter
+    # table llm_provider.py checks/increments on every LLM call.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        async with AsyncSessionLocal() as db:
+            if is_sqlite:
+                existing = await db.execute(text("PRAGMA table_info(business_contexts)"))
+                cols = {row[1] for row in existing.all()}
+                if "llm_daily_call_limit" not in cols:
+                    await db.execute(text("ALTER TABLE business_contexts ADD COLUMN llm_daily_call_limit INTEGER"))
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS llm_daily_usage (
+                        id VARCHAR(36) PRIMARY KEY,
+                        business_id VARCHAR(36) NOT NULL,
+                        usage_date DATE NOT NULL,
+                        call_count INTEGER DEFAULT 0,
+                        updated_at DATETIME,
+                        UNIQUE(business_id, usage_date)
+                    )
+                """))
+            else:
+                await db.execute(text(
+                    "ALTER TABLE business_contexts ADD COLUMN IF NOT EXISTS llm_daily_call_limit INTEGER"
+                ))
+                await db.execute(text("""
+                    CREATE TABLE IF NOT EXISTS llm_daily_usage (
+                        id UUID PRIMARY KEY,
+                        business_id UUID NOT NULL,
+                        usage_date DATE NOT NULL,
+                        call_count INTEGER DEFAULT 0,
+                        updated_at TIMESTAMP,
+                        UNIQUE(business_id, usage_date)
+                    )
+                """))
+            await db.commit()
+        logger.info("✅ LLM daily usage cap schema ensured")
+    except Exception as e:
+        logger.warning(f"LLM daily usage cap schema migration: {str(e)[:120]}")
+
     # Load Phase 33 seed data if needed (async-compatible)
     try:
         from sqlalchemy import create_engine
@@ -570,11 +696,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Processor background start warning: {e}")
 
+    # Start cold-lead follow-up loop in background (Task 5)
+    try:
+        asyncio.create_task(run_followup_loop())
+        logger.info("✅ Follow-up scheduler started")
+    except Exception as e:
+        logger.warning(f"Follow-up scheduler background start warning: {e}")
+
     yield
 
     # Shutdown
     logger.info("🛑 SellIA Sellbot shutting down...")
     await stop_processor()
+    stop_followup_loop()
     await close_db()
     if scheduler:
         await scheduler.close()

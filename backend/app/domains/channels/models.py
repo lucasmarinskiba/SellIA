@@ -89,6 +89,8 @@ class Conversation(Base):
     lead_source = Column(String(100), nullable=True)
     status = Column(Enum(ConversationStatus), default=ConversationStatus.ACTIVE, nullable=False)
     last_message_at = Column(DateTime(timezone=True), nullable=True)
+    last_followup_sent_at = Column(DateTime(timezone=True), nullable=True)  # cold-lead nudge dedup (Task 5)
+    followup_count = Column(Integer, default=0, nullable=False)  # caps nudges per conversation
     extra_data = Column(JSONB, default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

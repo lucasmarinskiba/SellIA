@@ -395,6 +395,61 @@ def _inject_business_context_into_messages(
         messages.insert(0, SystemMessage(content=context_block))
 
 
+async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.UUID) -> bool:
+    """Task 6 — daily LLM call cap. Returns True (and counts the call) when
+    under the business's configured limit, False when the cap is hit.
+
+    Fails open on any tracking error (missing table on an unmigrated DB,
+    unique-constraint race, etc.) — a broken counter must never be the
+    reason a business's bot goes silent; it should just mean the cap isn't
+    enforced that one time.
+    """
+    from datetime import date as date_cls
+    from app.domains.agents.llm_usage_models import LLMDailyUsage
+    from app.domains.business_context.models import BusinessContext
+
+    try:
+        ctx_result = await db.execute(
+            select(BusinessContext.llm_daily_call_limit).where(
+                BusinessContext.business_id == business_id,
+                BusinessContext.is_active == True,
+            )
+        )
+        limit = ctx_result.scalars().first()
+
+        if limit is None:
+            return True  # no cap configured for this business
+
+        today = date_cls.today()
+        usage_result = await db.execute(
+            select(LLMDailyUsage).where(
+                LLMDailyUsage.business_id == business_id,
+                LLMDailyUsage.usage_date == today,
+            )
+        )
+        usage = usage_result.scalar_one_or_none()
+
+        if usage is not None and usage.call_count >= limit:
+            logger.warning(
+                f"LLM daily call cap reached for business {business_id}: "
+                f"{usage.call_count}/{limit} — call blocked"
+            )
+            return False
+
+        if usage is None:
+            db.add(LLMDailyUsage(business_id=business_id, usage_date=today, call_count=1))
+        else:
+            usage.call_count += 1
+
+        await db.commit()
+        return True
+
+    except Exception as e:
+        await db.rollback()
+        logger.debug(f"LLM usage cap check skipped (non-fatal): {e}")
+        return True
+
+
 async def generate_with_fallback(
     db: AsyncSession,
     business_id: uuid.UUID,
@@ -452,6 +507,12 @@ async def generate_with_fallback(
 
     if not keys["ollama"] and not keys["kimi"] and not keys["openai"] and not keys["anthropic"] and not keys.get("groq"):
         logger.warning("No LLM providers available (Ollama offline and no API keys configured)")
+        return None
+
+    # 2.5 Daily call cap (Task 6) — counted once per logical request, before
+    # the fallback chain runs, so a request that tries 3 providers before
+    # one succeeds still only costs 1 against the business's quota.
+    if business_id and not await _check_and_increment_daily_usage(db, business_id):
         return None
 
     # 3. Smart router: pick cheapest adequate model

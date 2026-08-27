@@ -38,6 +38,7 @@ class BusinessContextBase(BaseModel):
     monthly_leads_goal: Optional[int] = None
     target_countries: List[str] = Field(default_factory=list)
     scheduling_link: Optional[str] = None
+    llm_daily_call_limit: Optional[int] = None  # None = unlimited
 
 
 class BusinessContextCreate(BusinessContextBase):
@@ -74,6 +75,7 @@ class BusinessContextUpdate(BaseModel):
     monthly_leads_goal: Optional[int] = None
     target_countries: Optional[List[str]] = None
     scheduling_link: Optional[str] = None
+    llm_daily_call_limit: Optional[int] = None
 
 
 class CommunicationAngle(BaseModel):
@@ -92,6 +94,7 @@ class BusinessContextRead(BusinessContextBase):
     ai_brand_voice: Optional[str] = None
     communication_angles: List[CommunicationAngle] = Field(default_factory=list)
     winning_offer_summary: Optional[str] = None
+    llm_daily_call_limit: Optional[int] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
