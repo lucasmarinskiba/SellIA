@@ -56,6 +56,7 @@ class Transaction(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     order_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # FK to orders table
     location_id = Column(UUID(as_uuid=True), nullable=True)  # Which location (if multi-location)
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)  # Chat that generated this sale
 
     # Payment details
     amount = Column(Numeric(12, 2), nullable=False)  # Transaction amount

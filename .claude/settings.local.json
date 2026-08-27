@@ -1064,7 +1064,15 @@
       "Bash(curl -s \"https://sellia-production.up.railway.app/docs\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/businesses\")",
       "Bash(git commit -m 'Phase 29: Production deployment verified — health checks passing *)",
-      "Bash(git commit -m 'Add operations setup guide for Sentry, Slack, PagerDuty, alert rules *)"
+      "Bash(git commit -m 'Add operations setup guide for Sentry, Slack, PagerDuty, alert rules *)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/debug/llm-test\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://sellia-brain.vercel.app/sellia-brain\")",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/openapi.json\" -o /tmp/openapi.json)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/businesses/debug/llm-test\")",
+      "Bash(curl -s -X POST \"https://sellia-production.up.railway.app/api/v1/businesses/debug/llm-test\")",
+      "Bash(python -m py_compile app/domains/payments/payment_service.py app/domains/payments/payment_models.py app/domains/payments/sales_service.py app/api/v1/payments.py app/domains/channels/services.py app/sellbot.py app/main.py)",
+      "Bash(python3 -m py_compile app/domains/payments/payment_service.py app/domains/payments/payment_models.py app/domains/payments/sales_service.py app/api/v1/payments.py app/domains/channels/services.py app/sellbot.py app/main.py)",
+      "Bash(py --version)"
     ]
   }
 }
