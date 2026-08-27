@@ -1073,7 +1073,18 @@
       "Bash(python -m py_compile app/domains/payments/payment_service.py app/domains/payments/payment_models.py app/domains/payments/sales_service.py app/api/v1/payments.py app/domains/channels/services.py app/sellbot.py app/main.py)",
       "Bash(python3 -m py_compile app/domains/payments/payment_service.py app/domains/payments/payment_models.py app/domains/payments/sales_service.py app/api/v1/payments.py app/domains/channels/services.py app/sellbot.py app/main.py)",
       "Bash(py --version)",
-      "Bash(curl -s -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/checkout/mercadopago -H 'Content-Type: application/json' -d '{\"customer_email\":\"test@example.com\",\"customer_name\":\"Test Cliente\",\"items\":[{\"name\":\"Producto Test\",\"quantity\":1,\"unit_price\":100}],\"amount\":100,\"currency\":\"ARS\"}')"
+      "Bash(curl -s -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/checkout/mercadopago -H 'Content-Type: application/json' -d '{\"customer_email\":\"test@example.com\",\"customer_name\":\"Test Cliente\",\"items\":[{\"name\":\"Producto Test\",\"quantity\":1,\"unit_price\":100}],\"amount\":100,\"currency\":\"ARS\"}')",
+      "Bash(rm -f test_import_check2.db)",
+      "Bash(rm -f test_import_check3.db)",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/checkout/mercadopago -H 'Content-Type: application/json' -d '{\"customer_email\":\"test2@example.com\",\"customer_name\":\"Test2\",\"items\":[{\"name\":\"Producto2\",\"quantity\":1,\"unit_price\":50}],\"amount\":50,\"currency\":\"ARS\"}')",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/openapi.json\" -o /tmp/openapi_full.json)",
+      "Bash(mkdir -p /c/Users/Usuario/AppData/Local/Temp/claude/C--Users-Usuario-Pictures-Somos-paithon-labs-Agente-IA---Vendedor-Autom-tico/e56f2f2b-c5f3-44df-a271-5c3ed2d92d50/scratchpad)",
+      "Bash(cp /tmp/openapi_full.json /c/Users/Usuario/AppData/Local/Temp/claude/C--Users-Usuario-Pictures-Somos-paithon-labs-Agente-IA---Vendedor-Autom-tico/e56f2f2b-c5f3-44df-a271-5c3ed2d92d50/scratchpad/openapi_full.json)",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/webhooks/mercadopago -H 'Content-Type: application/json' -d '{\"type\":\"payment\",\"data\":{\"id\":\"12345\",\"status\":\"approved\",\"external_reference\":\"00000000-0000-0000-0000-000000000099\"}}')",
+      "Bash(curl -s -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/webhooks/mercadopago -H 'Content-Type: application/json' -d '{\"type\":\"payment\",\"data\":{\"id\":\"99988877\",\"status\":\"approved\",\"external_reference\":\"7be5e020-20f6-4ca1-9c44-0f7bf2ef9a5e\"}}')",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\\\\n\" \"https://sellia-production.up.railway.app/api/v1/businesses/00000000-0000-0000-0000-000000000001/payments/metrics\")",
+      "Bash(rm -f test_import_check5.db)",
+      "Bash(railway variable *)"
     ]
   }
 }

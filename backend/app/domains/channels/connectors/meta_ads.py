@@ -91,6 +91,17 @@ class MetaAdsConnector(BaseChannelConnector):
         data = result.get("data", [])
         return data[0] if data else {}
 
+    async def update_campaign_budget(self, campaign_id: str, daily_budget_minor: int) -> dict[str, Any]:
+        """Set a campaign's daily budget. `daily_budget_minor` is in the ad
+        account's minor currency unit (cents), per the Marketing API."""
+        return await self._api_post(campaign_id, {"daily_budget": str(int(daily_budget_minor))})
+
+    async def pause_campaign(self, campaign_id: str) -> dict[str, Any]:
+        return await self._api_post(campaign_id, {"status": "PAUSED"})
+
+    async def resume_campaign(self, campaign_id: str) -> dict[str, Any]:
+        return await self._api_post(campaign_id, {"status": "ACTIVE"})
+
     async def create_campaign(self, name: str, objective: str = "OUTCOME_LEADS", daily_budget: Optional[int] = None) -> dict[str, Any]:
         """Create a new Meta Ads campaign."""
         account = self.ad_account_id or "act_me"

@@ -103,6 +103,60 @@ def cash_flow_forecast():
     return _async_run(_run())
 
 
+@shared_task(name="app.tasks.finance_tasks.ledger_bank_reconciliation")
+def ledger_bank_reconciliation():
+    """Every 3 hours: auto-match imported bank movements to ledger entries."""
+    async def _run():
+        from app.domains.ledger.reconciliation import ReconciliationService
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Business).where(Business.is_active == True))
+            businesses = result.scalars().all()
+            matched = 0
+            for business in businesses:
+                try:
+                    res = await ReconciliationService(db).run_reconciliation(business.id)
+                    matched += res.get("auto_matched", 0) + res.get("rule_categorized", 0)
+                except Exception as e:
+                    logger.error(f"Ledger reconcile failed for business {business.id}: {e}")
+            logger.info(f"Ledger bank reconciliation: {matched} movements resolved")
+            return {"resolved": matched}
+
+    return _async_run(_run())
+
+
+@shared_task(name="app.tasks.finance_tasks.ledger_month_close")
+def ledger_month_close():
+    """Monthly (1st, 03:00): soft-close the prior calendar month for every business."""
+    async def _run():
+        from datetime import timedelta
+
+        from app.domains.ledger.reports import LedgerReports
+        from app.domains.ledger.service import LedgerService
+
+        first_of_this_month = datetime.now(timezone.utc).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        prior = first_of_this_month - timedelta(days=1)
+        period_name = prior.strftime("%Y-%m")
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Business).where(Business.is_active == True))
+            businesses = result.scalars().all()
+            closed = 0
+            for business in businesses:
+                try:
+                    await LedgerService(db).ensure_setup(business.id)
+                    await LedgerReports(db).close_period(business.id, period_name, lock=False)
+                    closed += 1
+                except Exception as e:
+                    logger.warning(f"Month close skipped for business {business.id}: {e}")
+            logger.info(f"Ledger month close ({period_name}): {closed} businesses closed")
+            return {"period": period_name, "closed": closed}
+
+    return _async_run(_run())
+
+
 @shared_task(name="app.tasks.finance_tasks.auto_reconcile_payments")
 def auto_reconcile_payments():
     """Every 2 hours: reconcile payments with invoices."""
