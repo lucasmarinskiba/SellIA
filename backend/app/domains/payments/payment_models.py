@@ -82,17 +82,17 @@ class Transaction(Base):
     # Fees & Settlement
     gateway_fee = Column(Numeric(12, 2), default=0)  # Fees charged by payment gateway
     net_amount = Column(Numeric(12, 2), nullable=True)  # Amount after fees
-    settlement_date = Column(DateTime(timezone.utc), nullable=True)  # When settled
+    settlement_date = Column(DateTime(timezone=True), nullable=True)  # When settled
     settled = Column(Boolean, default=False)
 
     # Webhook tracking
     webhook_notification_received = Column(Boolean, default=False)
-    webhook_notification_date = Column(DateTime(timezone.utc), nullable=True)
+    webhook_notification_date = Column(DateTime(timezone=True), nullable=True)
 
     # Timing
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    approved_at = Column(DateTime(timezone.utc), nullable=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("idx_business_status", "business_id", "status"),
@@ -121,10 +121,10 @@ class Refund(Base):
     # Processing
     requested_by = Column(UUID(as_uuid=True), nullable=True)  # User who requested
     approved_by = Column(UUID(as_uuid=True), nullable=True)  # Admin who approved
-    processed_at = Column(DateTime(timezone.utc), nullable=True)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("idx_transaction_id", "transaction_id"),
@@ -141,8 +141,8 @@ class Settlement(Base):
     location_id = Column(UUID(as_uuid=True), nullable=True)  # If settling per location
 
     # Settlement period
-    period_start = Column(DateTime(timezone.utc), nullable=False)
-    period_end = Column(DateTime(timezone.utc), nullable=False)
+    period_start = Column(DateTime(timezone=True), nullable=False)
+    period_end = Column(DateTime(timezone=True), nullable=False)
 
     # Totals
     gross_amount = Column(Numeric(12, 2), nullable=False)  # Total transactions
@@ -155,15 +155,15 @@ class Settlement(Base):
 
     # Bank details
     bank_account_id = Column(UUID(as_uuid=True), nullable=True)
-    payout_date = Column(DateTime(timezone.utc), nullable=True)
+    payout_date = Column(DateTime(timezone=True), nullable=True)
     payout_reference = Column(String(255), nullable=True)  # Bank transfer reference
 
     # Metadata
     transaction_count = Column(Integer, default=0)  # Number of transactions
     settlement_metadata = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("idx_business_settlement", "business_id", "status"),
@@ -196,8 +196,8 @@ class PaymentReconciliation(Base):
     match_reason = Column(String(255), nullable=True)  # How matched (exact, fuzzy, manual)
     notes = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    reconciled_at = Column(DateTime(timezone.utc), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    reconciled_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         Index("idx_business_reconciliation", "business_id", "status"),
@@ -235,7 +235,7 @@ class PaymentMetrics(Base):
     transactions_7d = Column(Integer, default=0)
     revenue_7d = Column(Numeric(15, 2), default=0)
 
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("idx_business_metrics", "business_id"),
