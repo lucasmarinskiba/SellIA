@@ -79,6 +79,9 @@ _modules = [
     "app.tasks.consumo_tasks",
     "app.tasks.competitive_tasks",
     "app.tasks.sales_funnel_tasks",
+    "app.tasks.finance_tasks",
+    "app.tasks.ad_budget_tasks",
+    "app.tasks.forecasting_tasks",
     "app.domains.memory.tasks",
     "app.domains.proactive.tasks",
     "app.domains.agents.tasks_scoring",
@@ -347,6 +350,26 @@ celery_app.conf.beat_schedule = {
     "finance-reconcile": {
         "task": "app.tasks.finance_tasks.auto_reconcile_payments",
         "schedule": 7200.0,  # cada 2 horas
+    },
+    "ledger-bank-reconciliation": {
+        "task": "app.tasks.finance_tasks.ledger_bank_reconciliation",
+        "schedule": 10800.0,  # cada 3 horas
+    },
+    "ledger-month-close": {
+        "task": "app.tasks.finance_tasks.ledger_month_close",
+        "schedule": 86400.0,  # diario; el task no-opera salvo período ya cerrado
+    },
+    "ad-budget-cycles": {
+        "task": "app.tasks.ad_budget_tasks.run_budget_cycles",
+        "schedule": 86400.0,  # diario: reasigna presupuesto por ROAS
+    },
+    "forecasting-nightly": {
+        "task": "app.tasks.forecasting_tasks.nightly_forecasts",
+        "schedule": 86400.0,  # diario: reentrena + pronostica demanda
+    },
+    "forecasting-accuracy-weekly": {
+        "task": "app.tasks.forecasting_tasks.weekly_accuracy_eval",
+        "schedule": 604800.0,  # semanal: evalúa error realizado
     },
     # === Memory & Summarization ===
     "summarize-conversations-hourly": {

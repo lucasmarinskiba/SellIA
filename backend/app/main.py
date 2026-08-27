@@ -97,6 +97,11 @@ _try_include("app.api.v1.dashboard.router", "/api/v1", ["dashboard"])
 _try_include("app.api.v1.platforms.router", "/api/v1", ["platforms"])
 _try_include("app.api.v1.order_detail.router", "/api/v1", ["orders"])
 _try_include("app.api.v1.listings.router", "/api/v1", ["listings"])
+_try_include("app.domains.finance.router.router", "/api/v1/businesses", ["finance"])
+_try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"])
+_try_include("app.domains.ad_budget.router.router", "/api/v1/businesses", ["ad-budget"])
+_try_include("app.domains.forecasting.router.router", "/api/v1/businesses", ["forecasting"])
+_try_include("app.domains.cashflow.router.router", "/api/v1/businesses", ["cashflow"])
 
 
 @app.get("/health", tags=["system"])

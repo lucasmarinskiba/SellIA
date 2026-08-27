@@ -62,3 +62,19 @@ pytest-cov==4.1.0
 # a production crash-loop on 2026-08-21 when this became an eager (module-level)
 # import via platforms_integration.py -> channels.connectors -> email.py
 aiosmtplib==3.0.1
+
+# ── Data science / forecasting ────────────────────────────────────────────
+# numpy/pandas/scikit-learn/scipy were already imported by ~19 modules
+# (ml/predictive_models.py, core/ml/*, embeddings, …) but never pinned —
+# pinning them here makes the demand-forecasting domain reproducible.
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.15.3
+scikit-learn==1.6.1
+joblib==1.4.2
+# Optional forecasting backends. The forecasting domain imports these
+# defensively (try/except) and falls back to pure-numpy models when absent,
+# so a wheel that fails to build on a platform degrades quality, not uptime.
+statsmodels==0.14.2
+lightgbm==4.5.0
+holidays==0.57

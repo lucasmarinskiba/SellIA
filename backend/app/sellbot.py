@@ -644,6 +644,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"LLM daily usage cap schema migration: {str(e)[:120]}")
 
+    # Ensure the double-entry ledger tables exist (CoreBase domain that
+    # init_db() skips; migrations are disabled — see entrypoint.sh).
+    try:
+        from app.domains.ledger.bootstrap import ensure_ledger_tables
+        await ensure_ledger_tables()
+        from app.domains.ad_budget.bootstrap import ensure_ad_budget_tables
+        await ensure_ad_budget_tables()
+        from app.domains.forecasting.bootstrap import ensure_forecasting_tables
+        await ensure_forecasting_tables()
+    except Exception as e:
+        logger.warning(f"ledger/ad_budget/forecasting tables bootstrap: {str(e)[:160]}")
+
     # Load Phase 33 seed data if needed (async-compatible)
     try:
         from sqlalchemy import create_engine

@@ -267,9 +267,31 @@ class FinanceAutopilotEngine:
             invoice.paid_amount = order.total_amount
             reconciled += 1
 
+            # Post the sale into the general ledger (idempotent per order).
+            try:
+                await self._post_order_to_ledger(business_id, order)
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f'Ledger posting skipped for order {order.id}: {e}')
+
         await self.db.commit()
         logger.info(f'Auto-reconciled {reconciled} payments for business {business_id}')
         return {'reconciled': reconciled}
+
+    async def _post_order_to_ledger(self, business_id: uuid.UUID, order: Order) -> None:
+        from app.domains.ledger.posting import PostingService
+        from app.domains.ledger.service import LedgerService
+
+        await LedgerService(self.db).ensure_setup(business_id, order.currency or 'ARS')
+        await PostingService(self.db).post_order_paid(
+            business_id,
+            order_id=order.id,
+            total_amount=order.total_amount or Decimal('0'),
+            tax_amount=order.tax_amount,
+            discount_amount=order.discount_amount,
+            gateway=order.payment_gateway or order.payment_method,
+            currency=order.currency or 'ARS',
+            entry_date=order.paid_at,
+        )
 
     async def generate_tax_report(self, business_id: uuid.UUID, month: int, year: int) -> dict[str, Any]:
         start = datetime(year, month, 1, tzinfo=timezone.utc)

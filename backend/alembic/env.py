@@ -81,6 +81,9 @@ _try_import_models("app.domains.agents.app_builder.models")
 _try_import_models("app.domains.agents.crm_builder.models")
 _try_import_models("app.domains.webhooks.models")
 _try_import_models("app.core.semantic_cache", names=["SemanticCacheEmbedding"])
+_try_import_models("app.domains.ledger.models")
+_try_import_models("app.domains.ad_budget.models")
+_try_import_models("app.domains.forecasting.models_db")
 
 settings = get_settings()
 
