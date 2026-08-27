@@ -653,8 +653,14 @@ async def lifespan(app: FastAPI):
         await ensure_ad_budget_tables()
         from app.domains.forecasting.bootstrap import ensure_forecasting_tables
         await ensure_forecasting_tables()
+        from app.domains.hr.models import HR_TABLES
+        from app.domains.legal.models import LEGAL_TABLES
+        from app.domains.procurement.models import PROCUREMENT_TABLES
+        async with engine.begin() as conn:
+            for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES:
+                await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
     except Exception as e:
-        logger.warning(f"ledger/ad_budget/forecasting tables bootstrap: {str(e)[:160]}")
+        logger.warning(f"domain tables bootstrap: {str(e)[:160]}")
 
     # Load Phase 33 seed data if needed (async-compatible)
     try:
