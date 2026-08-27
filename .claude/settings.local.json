@@ -1063,7 +1063,8 @@
       "Bash(curl -s \"https://sellia-production.up.railway.app/openapi.json\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/docs\")",
       "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/businesses\")",
-      "Bash(git commit -m 'Phase 29: Production deployment verified — health checks passing *)"
+      "Bash(git commit -m 'Phase 29: Production deployment verified — health checks passing *)",
+      "Bash(git commit -m 'Add operations setup guide for Sentry, Slack, PagerDuty, alert rules *)"
     ]
   }
 }
