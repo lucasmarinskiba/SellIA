@@ -19,12 +19,25 @@ from app.domains.seo_agents.schemas import (
     ReviewCampaignIn,
     ReviewCampaignOut,
     ReviewAggregateOut,
+    GenerateCalendarRequest,
+    ContentCalendarEntryOut,
+    CreateEntityRequest,
+    EntitySignalOut,
+    CreateLocationRequest,
+    LocationSEOProfileOut,
+    CitationConsistencyReportOut,
+    CreateClusterRequest,
+    TopicalClusterOut,
 )
 from app.domains.seo_agents.service import (
     ContentGenerationService,
     CompetitorKeywordService,
     BacklinkStrategyService,
     ReviewOrchestrationService,
+    ContentCalendarService,
+    EntityOptimizationService,
+    MultiLocationSEOService,
+    TopicalClusterService,
 )
 from app.domains.users.models import User
 
@@ -439,3 +452,362 @@ async def get_review_aggregate(
         two_star=aggregate.two_star,
         one_star=aggregate.one_star,
     )
+
+
+# Content Calendar
+@router.post("/calendar/generate", response_model=list[ContentCalendarEntryOut])
+async def generate_content_calendar(
+    business_id: UUID,
+    body: GenerateCalendarRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a content calendar spaced across a rolling window."""
+    svc = ContentCalendarService(db)
+    entries = await svc.generate_calendar(
+        business_id,
+        body.target_keywords,
+        body.days,
+        body.cadence_days,
+        body.keyword_opportunities,
+    )
+    return [
+        ContentCalendarEntryOut(
+            id=e.id,
+            title=e.title,
+            content_type=e.content_type,
+            target_keyword=e.target_keyword,
+            priority=e.priority,
+            planned_date=e.planned_date.isoformat(),
+            status=e.status,
+            seo_target_score=e.seo_target_score,
+        )
+        for e in entries
+    ]
+
+
+@router.get("/calendar", response_model=list[ContentCalendarEntryOut])
+@cached(ttl_seconds=1800, key_prefix="content_calendar")
+async def list_content_calendar(
+    business_id: UUID,
+    status: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List calendar entries in publication order (cached 30min)."""
+    svc = ContentCalendarService(db)
+    entries = await svc.list_calendar(business_id, status)
+    return [
+        ContentCalendarEntryOut(
+            id=e.id,
+            title=e.title,
+            content_type=e.content_type,
+            target_keyword=e.target_keyword,
+            priority=e.priority,
+            planned_date=e.planned_date.isoformat(),
+            status=e.status,
+            seo_target_score=e.seo_target_score,
+        )
+        for e in entries
+    ]
+
+
+@router.get("/calendar/upcoming", response_model=list[ContentCalendarEntryOut])
+async def upcoming_calendar_entries(
+    business_id: UUID,
+    within_days: int = Query(7),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Entries due within the next N days."""
+    svc = ContentCalendarService(db)
+    entries = await svc.upcoming_entries(business_id, within_days)
+    return [
+        ContentCalendarEntryOut(
+            id=e.id,
+            title=e.title,
+            content_type=e.content_type,
+            target_keyword=e.target_keyword,
+            priority=e.priority,
+            planned_date=e.planned_date.isoformat(),
+            status=e.status,
+            seo_target_score=e.seo_target_score,
+        )
+        for e in entries
+    ]
+
+
+@router.patch("/calendar/{entry_id}", response_model=ContentCalendarEntryOut)
+async def update_calendar_entry(
+    business_id: UUID,
+    entry_id: UUID,
+    status: str = Query(..., pattern="^(planned|in_progress|published|skipped)$"),
+    content_id: UUID | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update a calendar entry's status, optionally linking generated content."""
+    svc = ContentCalendarService(db)
+    entry = await svc.update_entry_status(entry_id, status, content_id)
+    return ContentCalendarEntryOut(
+        id=entry.id,
+        title=entry.title,
+        content_type=entry.content_type,
+        target_keyword=entry.target_keyword,
+        priority=entry.priority,
+        planned_date=entry.planned_date.isoformat(),
+        status=entry.status,
+        seo_target_score=entry.seo_target_score,
+    )
+
+
+# Entity & Knowledge Graph
+@router.post("/entities", response_model=EntitySignalOut)
+async def create_entity_signal(
+    business_id: UUID,
+    body: CreateEntityRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create + generate schema.org markup for an entity."""
+    svc = EntityOptimizationService(db)
+    entity = await svc.create_entity(
+        business_id,
+        body.entity_type,
+        body.entity_name,
+        body.external_links,
+        body.co_mention_targets,
+    )
+    return EntitySignalOut(
+        id=entity.id,
+        entity_type=entity.entity_type,
+        entity_name=entity.entity_name,
+        schema_json=entity.schema_json,
+        external_links=entity.external_links,
+        co_mention_targets=entity.co_mention_targets,
+        status=entity.status,
+    )
+
+
+@router.get("/entities", response_model=list[EntitySignalOut])
+@cached(ttl_seconds=3600, key_prefix="entity_signals")
+async def list_entity_signals(
+    business_id: UUID,
+    entity_type: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List entity signals (cached 1h)."""
+    svc = EntityOptimizationService(db)
+    entities = await svc.list_entities(business_id, entity_type)
+    return [
+        EntitySignalOut(
+            id=e.id,
+            entity_type=e.entity_type,
+            entity_name=e.entity_name,
+            schema_json=e.schema_json,
+            external_links=e.external_links,
+            co_mention_targets=e.co_mention_targets,
+            status=e.status,
+        )
+        for e in entities
+    ]
+
+
+@router.patch("/entities/{entity_id}", response_model=EntitySignalOut)
+async def update_entity_signal(
+    business_id: UUID,
+    entity_id: UUID,
+    external_links: list[str] | None = None,
+    co_mention_targets: list[str] | None = None,
+    status: str | None = Query(None, pattern="^(draft|published)$"),
+    published_url: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update entity links/targets/status; regenerates schema if links change."""
+    svc = EntityOptimizationService(db)
+    entity = await svc.update_entity(entity_id, external_links, co_mention_targets, status, published_url)
+    return EntitySignalOut(
+        id=entity.id,
+        entity_type=entity.entity_type,
+        entity_name=entity.entity_name,
+        schema_json=entity.schema_json,
+        external_links=entity.external_links,
+        co_mention_targets=entity.co_mention_targets,
+        status=entity.status,
+    )
+
+
+# Multi-Location SEO
+@router.post("/locations", response_model=LocationSEOProfileOut)
+async def create_location_profile(
+    business_id: UUID,
+    body: CreateLocationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a location profile with LocalBusiness schema + location keywords."""
+    svc = MultiLocationSEOService(db)
+    profile = await svc.create_location_profile(
+        business_id,
+        body.location_name,
+        body.address,
+        body.city,
+        body.service_type,
+        body.state,
+        body.zip_code,
+        body.country,
+        body.service_area_radius_km,
+    )
+    return LocationSEOProfileOut(
+        id=profile.id,
+        location_name=profile.location_name,
+        city=profile.city,
+        local_schema_json=profile.local_schema_json,
+        location_keywords=profile.location_keywords,
+        citation_status=profile.citation_status,
+        nap_consistent=profile.nap_consistent,
+    )
+
+
+@router.get("/locations", response_model=list[LocationSEOProfileOut])
+@cached(ttl_seconds=3600, key_prefix="seo_locations")
+async def list_location_profiles(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List location profiles (cached 1h)."""
+    svc = MultiLocationSEOService(db)
+    profiles = await svc.list_locations(business_id)
+    return [
+        LocationSEOProfileOut(
+            id=p.id,
+            location_name=p.location_name,
+            city=p.city,
+            local_schema_json=p.local_schema_json,
+            location_keywords=p.location_keywords,
+            citation_status=p.citation_status,
+            nap_consistent=p.nap_consistent,
+        )
+        for p in profiles
+    ]
+
+
+@router.patch("/locations/{profile_id}/citations", response_model=LocationSEOProfileOut)
+async def update_location_citation(
+    business_id: UUID,
+    profile_id: UUID,
+    platform: str = Query(..., pattern="^(google_business|yelp|facebook|bing_places|apple_maps)$"),
+    confirmed: bool = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark a directory citation confirmed/unconfirmed; recomputes NAP consistency."""
+    svc = MultiLocationSEOService(db)
+    profile = await svc.update_citation_status(profile_id, platform, confirmed)
+    return LocationSEOProfileOut(
+        id=profile.id,
+        location_name=profile.location_name,
+        city=profile.city,
+        local_schema_json=profile.local_schema_json,
+        location_keywords=profile.location_keywords,
+        citation_status=profile.citation_status,
+        nap_consistent=profile.nap_consistent,
+    )
+
+
+@router.get("/locations/citation-report", response_model=CitationConsistencyReportOut)
+@cached(ttl_seconds=3600, key_prefix="citation_report")
+async def get_citation_consistency_report(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """NAP citation coverage rollup across all locations (cached 1h)."""
+    svc = MultiLocationSEOService(db)
+    report = await svc.citation_consistency_report(business_id)
+    return CitationConsistencyReportOut(**report)
+
+
+# Link Building Orchestrator (Topical Clusters)
+@router.post("/clusters", response_model=TopicalClusterOut)
+async def create_topical_cluster(
+    business_id: UUID,
+    body: CreateClusterRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a pillar + cluster topic group with a generated internal-linking map."""
+    svc = TopicalClusterService(db)
+    cluster = await svc.create_cluster(
+        business_id,
+        body.pillar_topic,
+        body.cluster_topics,
+        body.pillar_content_id,
+    )
+    return TopicalClusterOut(
+        id=cluster.id,
+        pillar_topic=cluster.pillar_topic,
+        cluster_topics=cluster.cluster_topics,
+        internal_linking_map=cluster.internal_linking_map,
+        authority_score=cluster.authority_score,
+    )
+
+
+@router.get("/clusters", response_model=list[TopicalClusterOut])
+@cached(ttl_seconds=3600, key_prefix="topical_clusters")
+async def list_topical_clusters(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List topical clusters ranked by authority score (cached 1h)."""
+    svc = TopicalClusterService(db)
+    clusters = await svc.list_clusters(business_id)
+    return [
+        TopicalClusterOut(
+            id=c.id,
+            pillar_topic=c.pillar_topic,
+            cluster_topics=c.cluster_topics,
+            internal_linking_map=c.internal_linking_map,
+            authority_score=c.authority_score,
+        )
+        for c in clusters
+    ]
+
+
+@router.patch("/clusters/{cluster_id}/topics", response_model=TopicalClusterOut)
+async def add_cluster_topic(
+    business_id: UUID,
+    cluster_id: UUID,
+    topic: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Add a subtopic to an existing cluster; regenerates the linking map + authority score."""
+    svc = TopicalClusterService(db)
+    cluster = await svc.add_cluster_topic(cluster_id, topic)
+    return TopicalClusterOut(
+        id=cluster.id,
+        pillar_topic=cluster.pillar_topic,
+        cluster_topics=cluster.cluster_topics,
+        internal_linking_map=cluster.internal_linking_map,
+        authority_score=cluster.authority_score,
+    )
+
+
+@router.get("/clusters/{cluster_id}/linking-map")
+async def get_cluster_linking_map(
+    business_id: UUID,
+    cluster_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get the internal-linking map for a cluster."""
+    svc = TopicalClusterService(db)
+    linking_map = await svc.get_linking_map(cluster_id)
+    if linking_map is None:
+        return {"error": "Cluster not found"}
+    return linking_map

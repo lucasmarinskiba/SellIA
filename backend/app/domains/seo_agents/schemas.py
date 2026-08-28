@@ -123,3 +123,98 @@ class ReviewAggregateOut(BaseModel):
     three_star: int
     two_star: int
     one_star: int
+
+
+class GenerateCalendarRequest(BaseModel):
+    """Request to generate a content calendar."""
+
+    target_keywords: list[str]
+    days: int = 90
+    cadence_days: int = 7
+    keyword_opportunities: dict[str, float] | None = None  # keyword -> opportunity_score (0-100)
+
+
+class ContentCalendarEntryOut(BaseModel):
+    """Content calendar entry response."""
+
+    id: UUID
+    title: str
+    content_type: str
+    target_keyword: str
+    priority: str
+    planned_date: str  # ISO datetime
+    status: str
+    seo_target_score: int
+
+
+class CreateEntityRequest(BaseModel):
+    """Request to create an entity signal."""
+
+    entity_type: str  # Organization, Person, Product, LocalBusiness
+    entity_name: str
+    external_links: list[str] | None = None
+    co_mention_targets: list[str] | None = None
+
+
+class EntitySignalOut(BaseModel):
+    """Entity signal response."""
+
+    id: UUID
+    entity_type: str
+    entity_name: str
+    schema_json: dict | None
+    external_links: list | None
+    co_mention_targets: list | None
+    status: str
+
+
+class CreateLocationRequest(BaseModel):
+    """Request to create a location SEO profile."""
+
+    location_name: str
+    address: str
+    city: str
+    service_type: str
+    state: str | None = None
+    zip_code: str | None = None
+    country: str = "US"
+    service_area_radius_km: float | None = None
+
+
+class LocationSEOProfileOut(BaseModel):
+    """Location SEO profile response."""
+
+    id: UUID
+    location_name: str
+    city: str
+    local_schema_json: dict | None
+    location_keywords: list | None
+    citation_status: dict | None
+    nap_consistent: bool
+
+
+class CitationConsistencyReportOut(BaseModel):
+    """NAP citation consistency rollup."""
+
+    total_locations: int
+    avg_citation_coverage_pct: float
+    fully_consistent: int
+    inconsistent_locations: list
+
+
+class CreateClusterRequest(BaseModel):
+    """Request to create a topical cluster."""
+
+    pillar_topic: str
+    cluster_topics: list[str]
+    pillar_content_id: UUID | None = None
+
+
+class TopicalClusterOut(BaseModel):
+    """Topical cluster response."""
+
+    id: UUID
+    pillar_topic: str
+    cluster_topics: list | None
+    internal_linking_map: dict | None
+    authority_score: float

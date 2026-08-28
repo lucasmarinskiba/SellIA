@@ -187,6 +187,94 @@ class ReviewAggregate(Base):
     last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class ContentCalendarEntry(Base):
+    """Scheduled content pipeline entry — plans publication ahead of generation."""
+    __tablename__ = "seo_content_calendar"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    title: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(50))  # blog_post, landing_page, guide, video
+    target_keyword: Mapped[str] = mapped_column(String(255))
+    priority: Mapped[str] = mapped_column(String(20), default="medium")  # high, medium, low
+
+    planned_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    seasonal_context: Mapped[str | None] = mapped_column(String(255), nullable=True)  # "Black Friday", "Back to School"
+    seo_target_score: Mapped[int] = mapped_column(default=85)  # target seo_score once published
+
+    status: Mapped[str] = mapped_column(String(20), default="planned")  # planned, in_progress, published, skipped
+    content_id: Mapped[UUID | None] = mapped_column(ForeignKey("seo_generated_content.id", ondelete="SET NULL"), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class EntitySignal(Base):
+    """Entity + knowledge graph signal — schema.org markup for brand/product/person recognition."""
+    __tablename__ = "seo_entity_signals"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    entity_type: Mapped[str] = mapped_column(String(50))  # Organization, Person, Product, LocalBusiness
+    entity_name: Mapped[str] = mapped_column(String(255))
+
+    schema_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # generated JSON-LD
+    external_links: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # sameAs: wikipedia, wikidata, social profiles
+    co_mention_targets: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # other entities to co-mention with
+
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft, published
+    published_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # page carrying this markup
+
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class LocationSEOProfile(Base):
+    """Location/service-area SEO profile — LocalBusiness schema + NAP citation tracking."""
+    __tablename__ = "seo_location_profiles"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    location_name: Mapped[str] = mapped_column(String(255))
+    address: Mapped[str] = mapped_column(String(500))
+    city: Mapped[str] = mapped_column(String(255))
+    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    zip_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    country: Mapped[str] = mapped_column(String(100), default="US")
+    service_area_radius_km: Mapped[float | None] = mapped_column(nullable=True)  # NULL = single-address only
+
+    local_schema_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # LocalBusiness JSON-LD
+    location_keywords: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # ["plumber in Austin", ...]
+
+    # NAP (Name/Address/Phone) citation consistency across directories
+    citation_status: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {"google_business": true, "yelp": false, ...}
+    nap_consistent: Mapped[bool] = mapped_column(default=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class TopicalCluster(Base):
+    """Pillar + cluster content group — drives internal linking strategy + topical authority."""
+    __tablename__ = "seo_topical_clusters"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    pillar_topic: Mapped[str] = mapped_column(String(255))
+    pillar_content_id: Mapped[UUID | None] = mapped_column(ForeignKey("seo_generated_content.id", ondelete="SET NULL"), nullable=True)
+
+    cluster_topics: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # subtopic strings
+    internal_linking_map: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # {"pillar": "seo-services", "clusters": [{"topic": "...", "anchor_text": "..."}]}
+
+    authority_score: Mapped[float] = mapped_column(default=0.0)  # 0-100, scales with cluster size
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 SEO_AGENTS_TABLES = [
     GeneratedContent.__table__,
     CompetitorKeywordGap.__table__,
@@ -194,4 +282,8 @@ SEO_AGENTS_TABLES = [
     BacklinkOpportunity.__table__,
     ReviewCampaign.__table__,
     ReviewAggregate.__table__,
+    ContentCalendarEntry.__table__,
+    EntitySignal.__table__,
+    LocationSEOProfile.__table__,
+    TopicalCluster.__table__,
 ]

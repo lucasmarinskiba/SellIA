@@ -11,6 +11,10 @@ from app.domains.seo_agents.service import (
     CompetitorKeywordService,
     BacklinkStrategyService,
     ReviewOrchestrationService,
+    ContentCalendarService,
+    EntityOptimizationService,
+    MultiLocationSEOService,
+    TopicalClusterService,
 )
 
 
@@ -209,3 +213,153 @@ class TestReviewOrchestration:
         ratings: list[int] = []
         avg = (sum(ratings) / len(ratings)) if ratings else 0.0
         assert avg == 0.0
+
+
+class TestContentCalendar:
+    def test_priority_band_high(self):
+        """Opportunity >= 70 -> high priority."""
+        svc = ContentCalendarService(None)
+        assert svc._priority_for_score(70) == "high"
+        assert svc._priority_for_score(95) == "high"
+
+    def test_priority_band_medium(self):
+        """40 <= opportunity < 70 -> medium priority."""
+        svc = ContentCalendarService(None)
+        assert svc._priority_for_score(40) == "medium"
+        assert svc._priority_for_score(69) == "medium"
+
+    def test_priority_band_low(self):
+        """Opportunity < 40 -> low priority."""
+        svc = ContentCalendarService(None)
+        assert svc._priority_for_score(0) == "low"
+        assert svc._priority_for_score(39) == "low"
+
+    def test_content_type_rotation_cycles(self):
+        """Content type rotation cycles through all 4 types for 5 keywords."""
+        rotation = ContentCalendarService.CONTENT_TYPE_ROTATION
+        assigned = [rotation[i % len(rotation)] for i in range(5)]
+        assert assigned == ["blog_post", "landing_page", "guide", "video", "blog_post"]
+
+    def test_cadence_spacing_stops_at_window(self):
+        """Entries spaced by cadence_days must stop once they'd exceed the days window."""
+        days = 30
+        cadence_days = 10
+        keywords = ["a", "b", "c", "d", "e"]  # offsets: 0,10,20,30,40 -> last exceeds 30
+        included = [k for i, k in enumerate(keywords) if i * cadence_days <= days]
+        assert included == ["a", "b", "c", "d"]  # offset 40 > 30 excluded
+
+
+class TestEntityOptimization:
+    def test_build_schema_organization(self):
+        """Organization schema includes @context, @type, name."""
+        svc = EntityOptimizationService(None)
+        schema = svc._build_schema("Organization", "Acme Corp")
+        assert schema["@context"] == "https://schema.org"
+        assert schema["@type"] == "Organization"
+        assert schema["name"] == "Acme Corp"
+        assert "sameAs" not in schema  # no links provided
+
+    def test_build_schema_with_external_links(self):
+        """sameAs populated when external_links provided."""
+        svc = EntityOptimizationService(None)
+        links = ["https://en.wikipedia.org/wiki/Acme", "https://twitter.com/acme"]
+        schema = svc._build_schema("Organization", "Acme Corp", links)
+        assert schema["sameAs"] == links
+
+    def test_build_schema_person_type(self):
+        """Person entity type builds correctly."""
+        svc = EntityOptimizationService(None)
+        schema = svc._build_schema("Person", "Jane Founder")
+        assert schema["@type"] == "Person"
+        assert schema["name"] == "Jane Founder"
+
+    def test_build_schema_product_type(self):
+        """Product entity type builds correctly."""
+        svc = EntityOptimizationService(None)
+        schema = svc._build_schema("Product", "Widget Pro")
+        assert schema["@type"] == "Product"
+
+
+class TestMultiLocationSEO:
+    def test_build_local_schema_minimal(self):
+        """LocalBusiness schema with just required fields."""
+        svc = MultiLocationSEOService(None)
+        schema = svc._build_local_schema("Acme Austin", "123 Main St", "Austin", None, None, "US")
+        assert schema["@context"] == "https://schema.org"
+        assert schema["@type"] == "LocalBusiness"
+        assert schema["name"] == "Acme Austin"
+        assert schema["address"]["streetAddress"] == "123 Main St"
+        assert schema["address"]["addressLocality"] == "Austin"
+        assert "addressRegion" not in schema["address"]
+        assert "postalCode" not in schema["address"]
+
+    def test_build_local_schema_full(self):
+        """LocalBusiness schema with state + zip populates full address block."""
+        svc = MultiLocationSEOService(None)
+        schema = svc._build_local_schema("Acme Austin", "123 Main St", "Austin", "TX", "78701", "US")
+        assert schema["address"]["addressRegion"] == "TX"
+        assert schema["address"]["postalCode"] == "78701"
+
+    def test_generate_location_keywords(self):
+        """Location keywords cover the standard local-intent patterns."""
+        svc = MultiLocationSEOService(None)
+        keywords = svc._generate_location_keywords("plumber", "Austin")
+        assert "plumber in Austin" in keywords
+        assert "plumber near me" in keywords
+        assert "best plumber Austin" in keywords
+        assert len(keywords) == 4
+
+    def test_citation_platforms_list(self):
+        """5 directories tracked for NAP consistency."""
+        assert len(MultiLocationSEOService.CITATION_PLATFORMS) == 5
+        assert "google_business" in MultiLocationSEOService.CITATION_PLATFORMS
+
+    def test_nap_consistency_requires_all_platforms(self):
+        """nap_consistent is only true when every tracked platform is confirmed."""
+        platforms = MultiLocationSEOService.CITATION_PLATFORMS
+        partial_status = {p: True for p in platforms[:-1]}  # all but last
+        partial_status[platforms[-1]] = False
+        full_status = {p: True for p in platforms}
+
+        assert all(partial_status.get(p, False) for p in platforms) is False
+        assert all(full_status.get(p, False) for p in platforms) is True
+
+    def test_citation_coverage_percentage(self):
+        """Coverage % = confirmed platforms / total platforms * 100."""
+        platforms = MultiLocationSEOService.CITATION_PLATFORMS
+        status = {p: True for p in platforms[:3]}  # 3 of 5 confirmed
+        confirmed = sum(1 for v in status.values() if v)
+        coverage = (confirmed / len(platforms)) * 100
+        assert coverage == 60.0
+
+
+class TestTopicalCluster:
+    def test_authority_score_scales_with_cluster_size(self):
+        """10 points per subtopic, capped at 100."""
+        svc = TopicalClusterService(None)
+        assert svc._calculate_authority_score(3) == 30.0
+        assert svc._calculate_authority_score(10) == 100.0
+        assert svc._calculate_authority_score(15) == 100.0  # capped
+
+    def test_authority_score_empty_cluster(self):
+        """No subtopics -> zero authority."""
+        svc = TopicalClusterService(None)
+        assert svc._calculate_authority_score(0) == 0.0
+
+    def test_linking_map_hub_and_spoke_structure(self):
+        """Every cluster topic links back to the pillar (hub-and-spoke)."""
+        svc = TopicalClusterService(None)
+        linking_map = svc._build_linking_map("SEO Services", ["Keyword Research", "Link Building"])
+
+        assert linking_map["pillar"] == "seo-services"
+        assert len(linking_map["clusters"]) == 2
+        assert linking_map["clusters"][0]["topic"] == "Keyword Research"
+        assert linking_map["clusters"][0]["slug"] == "keyword-research"
+        assert linking_map["clusters"][0]["links_to_pillar"] is True
+
+    def test_linking_map_empty_clusters(self):
+        """Pillar with no subtopics yet still builds a valid (empty) map."""
+        svc = TopicalClusterService(None)
+        linking_map = svc._build_linking_map("New Pillar", [])
+        assert linking_map["pillar"] == "new-pillar"
+        assert linking_map["clusters"] == []
