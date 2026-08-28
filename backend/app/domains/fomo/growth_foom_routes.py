@@ -2,6 +2,8 @@
 Growth FOOM Routes: Acquisition channels endpoint
 """
 
+import re
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +21,18 @@ from app.domains.fomo.growth_foom import (
 )
 
 router = APIRouter(prefix="/fomo/growth", tags=["growth-foom"])
+
+
+def _parse_mau(expected_mau) -> int:
+    """expected_mau is a display string like '+2000/month' in growth_foom.py's
+    partnership data — extract the leading number for aggregation, 0 if absent."""
+    if isinstance(expected_mau, (int, float)):
+        return int(expected_mau)
+    if isinstance(expected_mau, str):
+        match = re.search(r"\d+", expected_mau)
+        if match:
+            return int(match.group(0))
+    return 0
 
 
 async def get_db():
@@ -149,7 +163,7 @@ async def get_feature_gates():
 async def get_partnerships():
     """List all partnership opportunities"""
     partnerships = await PartnershipFOOMService.create_partnerships()
-    total_mau = sum(p.get("expected_mau", 0) for p in partnerships)
+    total_mau = sum(_parse_mau(p.get("expected_mau", 0)) for p in partnerships)
     return {
         "partnerships": partnerships,
         "total_expected_mau": total_mau,
@@ -202,7 +216,7 @@ async def get_growth_summary():
             },
             "partnerships": {
                 "total_channels": len(partnerships),
-                "estimated_mau": sum(p.get("expected_mau", 0) for p in partnerships),
+                "estimated_mau": sum(_parse_mau(p.get("expected_mau", 0)) for p in partnerships),
             },
             "influencer_seeding": {
                 "estimated_mau": "2000-3000",

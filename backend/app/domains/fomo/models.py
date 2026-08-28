@@ -69,7 +69,7 @@ class FOMOEvent(Base):
     event_type = Column(String(50), nullable=False)  # purchase | view | add_to_cart | abandoned
     customer_id = Column(UUID(as_uuid=True), nullable=True)
     product_id = Column(UUID(as_uuid=True), nullable=True)
-    metadata = Column(JSONB, nullable=True)  # {revenue, customerName, productName, etc}
+    event_metadata = Column("metadata", JSONB, nullable=True)  # {revenue, customerName, productName, etc}
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships

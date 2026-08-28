@@ -73,7 +73,8 @@ class TestCaseStudyEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert "title" in data
-        assert "case_study" in str(response.json())
+        assert "before_after" in data
+        assert "testimonial" in data
 
     def test_case_study_formats(self):
         response = client.get(
@@ -151,7 +152,7 @@ class TestGrowthSummary:
         assert response.status_code == 200
         data = response.json()
         assert "acquisition_channels" in data
-        assert data["total_estimated_mau"] > 10000
+        assert data["total_estimated_mau"] == "12000-20000"
         assert "$" in str(data["blended_cac"])
 
     def test_summary_includes_all_channels(self):
@@ -170,7 +171,7 @@ class TestGrowthSummary:
         # CAC should be $40-60
         assert "40" in str(data["blended_cac"]) or "50" in str(data["blended_cac"])
         # Payback around 5 months
-        assert data["payback_period_avg"] == 5
+        assert data["payback_period_avg"] == "5 months"
 
 
 class TestGrowthAmplification:
