@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, Header, HTTPException
 from datetime import datetime
 import json
+import uuid
 
 router = APIRouter()
 
@@ -27,13 +28,20 @@ async def get_db():
         yield session
 
 
+MEMORY_COLUMNS = """id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
+                 primary_business_type, target_audience_summary, key_challenges, key_interests,
+                 technologies_used, total_conversations, total_messages, favorite_agents,
+                 frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
+                 lifetime_value_estimate, created_at, updated_at"""
+
+
 @router.get("/me")
 async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Get user memory"""
     try:
         from sqlalchemy import text
         result = await db.execute(
-            text("SELECT * FROM user_memory WHERE user_id = :uid"),
+            text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
         )
         row = result.fetchone()
@@ -41,18 +49,18 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
             # Auto-create
             await db.execute(
                 text("""INSERT INTO user_memory
-                (user_id, preferred_language, preferred_tone, industry_focus, business_stage,
+                (id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
                  primary_business_type, target_audience_summary, key_challenges, key_interests,
                  technologies_used, total_conversations, total_messages, favorite_agents,
                  frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
                  lifetime_value_estimate, last_activity_at, created_at, updated_at)
-                VALUES (:uid, 'en', 'professional', NULL, NULL, NULL, NULL, '[]', '[]', '[]',
-                0, 0, '[]', '[]', 0.0, 0.0, 0.0, 0.0, NOW(), NOW(), NOW())"""),
-                {"uid": user_id}
+                VALUES (:new_id, :uid, 'en', 'professional', NULL, NULL, NULL, NULL, '[]', '[]', '[]',
+                0, 0, '[]', '[]', 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())"""),
+                {"uid": user_id, "new_id": str(uuid.uuid4())}
             )
             await db.commit()
             result = await db.execute(
-                text("SELECT * FROM user_memory WHERE user_id = :uid"),
+                text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
                 {"uid": user_id}
             )
             row = result.fetchone()
@@ -120,9 +128,9 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
 
         await db.execute(
             text("""INSERT INTO user_memory_events
-            (user_id, event_type, event_data, created_at)
-            VALUES (:uid, :et, :ed, NOW())"""),
-            {"uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
+            (id, user_id, event_type, event_data, created_at)
+            VALUES (:new_id, :uid, :et, :ed, NOW())"""),
+            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
         )
 
         # Increment total_messages in user_memory
@@ -213,9 +221,9 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
         # If no rows updated, insert
         if result.rowcount == 0:
             await db.execute(
-                text("""INSERT INTO user_preferences (user_id, preference_key, preference_value, created_at, updated_at)
-                VALUES (:uid, :key, :val, NOW(), NOW())"""),
-                {"uid": user_id, "key": key, "val": json.dumps(value)}
+                text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
+                VALUES (:new_id, :uid, :key, :val, NOW(), NOW())"""),
+                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": json.dumps(value)}
             )
 
         await db.commit()
