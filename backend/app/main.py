@@ -107,6 +107,8 @@ _try_include("app.domains.hr.router.router", "/api/v1/businesses", ["hr"])
 _try_include("app.domains.legal.router.router", "/api/v1/businesses", ["legal"])
 _try_include("app.domains.procurement.router.router", "/api/v1/businesses", ["procurement"])
 _try_include("app.domains.invoicing.router.router", "/api/v1/businesses", ["invoicing"])
+_try_include("app.domains.seo_intelligence.router.router", "/api/v1/businesses", ["seo"])
+_try_include("app.domains.fomo_seo.router.router", "/api/v1/businesses", ["fomo-seo"])
 
 
 @app.get("/health", tags=["system"])
