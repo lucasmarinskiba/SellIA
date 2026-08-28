@@ -1,9 +1,32 @@
-"""Memory endpoints - Phase 29 - Deferred imports"""
+"""Memory endpoints - Phase 29 - Deferred imports
+
+JSONB columns are handled with explicit casts rather than relying on
+driver-level auto (de)serialization, which proved inconsistent between
+raw asyncpg and SQLAlchemy's asyncpg dialect in this environment:
+  - write: json.dumps(value) bound as a plain string, cast to ::jsonb in SQL
+  - read:  column selected with ::text, then json.loads() client-side
+This is deterministic regardless of what codec (if any) the connection
+has registered.
+"""
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+import json
 import uuid
 
 router = APIRouter()
+
+
+def _loads(value):
+    """Defensively parse a jsonb::text value. Returns the raw value if
+    it's not a JSON string (e.g. driver already decoded it)."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except ValueError:
+            return value
+    return value
 
 
 async def get_user_id(authorization: str = Header(None)) -> str:
@@ -27,9 +50,11 @@ async def get_db():
 
 
 MEMORY_COLUMNS = """id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
-                 primary_business_type, target_audience_summary, key_challenges, key_interests,
-                 technologies_used, total_conversations, total_messages, favorite_agents,
-                 frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
+                 primary_business_type, target_audience_summary,
+                 key_challenges::text, key_interests::text, technologies_used::text,
+                 total_conversations, total_messages,
+                 favorite_agents::text, frequently_asked_topics::text,
+                 engagement_score, satisfaction_score, churn_risk_score,
                  lifetime_value_estimate, created_at, updated_at"""
 
 
@@ -52,8 +77,9 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
                  technologies_used, total_conversations, total_messages, favorite_agents,
                  frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
                  lifetime_value_estimate, last_activity_at, created_at, updated_at)
-                VALUES (:new_id, :uid, 'en', 'professional', NULL, NULL, NULL, NULL, '[]', '[]', '[]',
-                0, 0, '[]', '[]', 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())"""),
+                VALUES (:new_id, :uid, 'en', 'professional', NULL, NULL, NULL, NULL,
+                '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
+                0, 0, '[]'::jsonb, '[]'::jsonb, 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())"""),
                 {"uid": user_id, "new_id": str(uuid.uuid4())}
             )
             await db.commit()
@@ -72,13 +98,13 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
             "business_stage": row[5],
             "primary_business_type": row[6],
             "target_audience_summary": row[7],
-            "key_challenges": row[8] or [],
-            "key_interests": row[9] or [],
-            "technologies_used": row[10] or [],
+            "key_challenges": _loads(row[8]) or [],
+            "key_interests": _loads(row[9]) or [],
+            "technologies_used": _loads(row[10]) or [],
             "total_conversations": row[11],
             "total_messages": row[12],
-            "favorite_agents": row[13] or [],
-            "frequently_asked_topics": row[14] or [],
+            "favorite_agents": _loads(row[13]) or [],
+            "frequently_asked_topics": _loads(row[14]) or [],
             "engagement_score": row[15],
             "satisfaction_score": row[16],
             "churn_risk_score": row[17],
@@ -90,6 +116,9 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+JSONB_MEMORY_FIELDS = {"key_challenges", "key_interests", "technologies_used", "favorite_agents", "frequently_asked_topics"}
+
+
 @router.patch("/me")
 async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Update user memory"""
@@ -98,10 +127,13 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
         set_clause = []
         params = {"uid": user_id}
         for i, (key, value) in enumerate(data.items()):
-            val = value
             param_name = f"val{i}"
-            set_clause.append(f"{key} = :{param_name}")
-            params[param_name] = val
+            if key in JSONB_MEMORY_FIELDS:
+                set_clause.append(f"{key} = :{param_name}::jsonb")
+                params[param_name] = json.dumps(value)
+            else:
+                set_clause.append(f"{key} = :{param_name}")
+                params[param_name] = value
 
         set_clause.append("updated_at = NOW()")
         sql = f"UPDATE user_memory SET {', '.join(set_clause)} WHERE user_id = :uid"
@@ -124,8 +156,8 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
         await db.execute(
             text("""INSERT INTO user_memory_events
             (id, user_id, event_type, event_data, created_at)
-            VALUES (:new_id, :uid, :et, :ed, NOW())"""),
-            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": event_data}
+            VALUES (:new_id, :uid, :et, :ed::jsonb, NOW())"""),
+            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
         )
 
         # Increment total_messages in user_memory
@@ -153,18 +185,18 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
     try:
         from sqlalchemy import text
         result = await db.execute(
-            text("SELECT key_interests FROM user_memory WHERE user_id = :uid"),
+            text("SELECT key_interests::text FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
         )
         row = result.fetchone()
-        interests = (row[0] if row else None) or []
+        interests = (_loads(row[0]) if row else None) or []
 
         if interest not in interests:
             interests.append(interest)
 
         await db.execute(
-            text("UPDATE user_memory SET key_interests = :interests WHERE user_id = :uid"),
-            {"uid": user_id, "interests": interests}
+            text("UPDATE user_memory SET key_interests = :interests::jsonb WHERE user_id = :uid"),
+            {"uid": user_id, "interests": json.dumps(interests)}
         )
         await db.commit()
 
@@ -179,18 +211,18 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
     try:
         from sqlalchemy import text
         result = await db.execute(
-            text("SELECT key_challenges FROM user_memory WHERE user_id = :uid"),
+            text("SELECT key_challenges::text FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
         )
         row = result.fetchone()
-        challenges = (row[0] if row else None) or []
+        challenges = (_loads(row[0]) if row else None) or []
 
         if challenge not in challenges:
             challenges.append(challenge)
 
         await db.execute(
-            text("UPDATE user_memory SET key_challenges = :challenges WHERE user_id = :uid"),
-            {"uid": user_id, "challenges": challenges}
+            text("UPDATE user_memory SET key_challenges = :challenges::jsonb WHERE user_id = :uid"),
+            {"uid": user_id, "challenges": json.dumps(challenges)}
         )
         await db.commit()
 
@@ -206,19 +238,20 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
         from sqlalchemy import text
         key = data.get("key")
         value = data.get("value")
+        val_json = json.dumps(value)
 
         # Try update first
         result = await db.execute(
-            text("UPDATE user_preferences SET preference_value = :val WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key, "val": value}
+            text("UPDATE user_preferences SET preference_value = :val::jsonb WHERE user_id = :uid AND preference_key = :key"),
+            {"uid": user_id, "key": key, "val": val_json}
         )
 
         # If no rows updated, insert
         if result.rowcount == 0:
             await db.execute(
                 text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
-                VALUES (:new_id, :uid, :key, :val, NOW(), NOW())"""),
-                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": value}
+                VALUES (:new_id, :uid, :key, :val::jsonb, NOW(), NOW())"""),
+                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": val_json}
             )
 
         await db.commit()
@@ -233,11 +266,11 @@ async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Dep
     try:
         from sqlalchemy import text
         result = await db.execute(
-            text("SELECT preference_value FROM user_preferences WHERE user_id = :uid AND preference_key = :key"),
+            text("SELECT preference_value::text FROM user_preferences WHERE user_id = :uid AND preference_key = :key"),
             {"uid": user_id, "key": key}
         )
         row = result.fetchone()
-        value = row[0] if row else None
+        value = _loads(row[0]) if row else None
         return {"key": key, "value": value}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -249,7 +282,7 @@ async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = 
     try:
         from sqlalchemy import text
         result = await db.execute(
-            text("""SELECT id, event_type, event_data, created_at FROM user_memory_events
+            text("""SELECT id, event_type, event_data::text, created_at FROM user_memory_events
             WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""),
             {"uid": user_id, "limit": limit}
         )
@@ -258,7 +291,7 @@ async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = 
             {
                 "id": str(row[0]),
                 "event_type": row[1],
-                "event_data": row[2] or {},
+                "event_data": _loads(row[2]) or {},
                 "created_at": row[3]
             }
             for row in rows
