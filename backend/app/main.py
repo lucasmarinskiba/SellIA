@@ -106,6 +106,7 @@ _try_include("app.domains.orchestrator.router.router", "/api/v1/businesses", ["o
 _try_include("app.domains.hr.router.router", "/api/v1/businesses", ["hr"])
 _try_include("app.domains.legal.router.router", "/api/v1/businesses", ["legal"])
 _try_include("app.domains.procurement.router.router", "/api/v1/businesses", ["procurement"])
+_try_include("app.domains.invoicing.router.router", "/api/v1/businesses", ["invoicing"])
 
 
 @app.get("/health", tags=["system"])
