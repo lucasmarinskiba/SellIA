@@ -12,8 +12,18 @@ from app.core.database import Base
 
 
 class Invoice(Base):
-    """Invoice record."""
-    __tablename__ = "invoices"
+    """Invoice record.
+
+    Table is named `customer_invoices`, not `invoices` — the shared Base
+    already has two other domains claiming that name (app.core.database
+    .payment_models.Invoice and app.domains.subscriptions.models.Invoice),
+    both with real Alembic migrations and production data. Whichever module
+    imports first wins the name and the other two are silently dropped by
+    main.py's _try_include (see its warning log). This domain has no
+    migration/prod data yet, so it took the rename rather than risk a
+    collision with either legacy table.
+    """
+    __tablename__ = "customer_invoices"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
@@ -47,11 +57,16 @@ class InvoiceTemplate(Base):
 
 
 class Payment(Base):
-    """Payment record for invoices."""
-    __tablename__ = "payments"
+    """Payment record for invoices.
+
+    Table is named `customer_invoice_payments`, not `payments` — that name
+    collides with app.core.database.payment_models.Payment. See Invoice's
+    docstring above for the same rationale.
+    """
+    __tablename__ = "customer_invoice_payments"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
-    invoice_id: Mapped[UUID] = mapped_column(ForeignKey("invoices.id", ondelete="CASCADE"))
+    invoice_id: Mapped[UUID] = mapped_column(ForeignKey("customer_invoices.id", ondelete="CASCADE"))
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     amount_aed: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     method: Mapped[str] = mapped_column(String(50))  # bank_transfer, card, cash, etc.

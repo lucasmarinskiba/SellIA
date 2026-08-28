@@ -112,6 +112,7 @@ _try_include("app.domains.seo_intelligence.router.router", "/api/v1/businesses",
 _try_include("app.domains.fomo_seo.router.router", "/api/v1/businesses", ["fomo-seo"])
 _try_include("app.domains.seo_optimization.router.router", "/api/v1/businesses", ["seo-optimization"])
 _try_include("app.domains.seo_agents.router.router", "/api/v1/businesses", ["seo-agents"])
+_try_include("app.domains.financial_dashboard.router.router", "/api/v1/businesses", ["financial-dashboard"])
 _try_include("app.domains.fomo.router.router", "", ["fomo"])
 _try_include("app.domains.fomo.growth_foom_routes.router", "", ["growth-foom"])
 _try_include("app.domains.fomo.customer_fomo_routes.router", "", ["customer-fomo"])
