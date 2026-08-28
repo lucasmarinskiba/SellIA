@@ -129,7 +129,7 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
         for i, (key, value) in enumerate(data.items()):
             param_name = f"val{i}"
             if key in JSONB_MEMORY_FIELDS:
-                set_clause.append(f"{key} = :{param_name}::jsonb")
+                set_clause.append(f"{key} = CAST(:{param_name} AS jsonb)")
                 params[param_name] = json.dumps(value)
             else:
                 set_clause.append(f"{key} = :{param_name}")
@@ -156,7 +156,7 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
         await db.execute(
             text("""INSERT INTO user_memory_events
             (id, user_id, event_type, event_data, created_at)
-            VALUES (:new_id, :uid, :et, :ed::jsonb, NOW())"""),
+            VALUES (:new_id, :uid, :et, CAST(:ed AS jsonb), NOW())"""),
             {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
         )
 
@@ -195,7 +195,7 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
             interests.append(interest)
 
         await db.execute(
-            text("UPDATE user_memory SET key_interests = :interests::jsonb WHERE user_id = :uid"),
+            text("UPDATE user_memory SET key_interests = CAST(:interests AS jsonb) WHERE user_id = :uid"),
             {"uid": user_id, "interests": json.dumps(interests)}
         )
         await db.commit()
@@ -221,7 +221,7 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
             challenges.append(challenge)
 
         await db.execute(
-            text("UPDATE user_memory SET key_challenges = :challenges::jsonb WHERE user_id = :uid"),
+            text("UPDATE user_memory SET key_challenges = CAST(:challenges AS jsonb) WHERE user_id = :uid"),
             {"uid": user_id, "challenges": json.dumps(challenges)}
         )
         await db.commit()
@@ -242,7 +242,7 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
 
         # Try update first
         result = await db.execute(
-            text("UPDATE user_preferences SET preference_value = :val::jsonb WHERE user_id = :uid AND preference_key = :key"),
+            text("UPDATE user_preferences SET preference_value = CAST(:val AS jsonb) WHERE user_id = :uid AND preference_key = :key"),
             {"uid": user_id, "key": key, "val": val_json}
         )
 
@@ -250,7 +250,7 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
         if result.rowcount == 0:
             await db.execute(
                 text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
-                VALUES (:new_id, :uid, :key, :val::jsonb, NOW(), NOW())"""),
+                VALUES (:new_id, :uid, :key, CAST(:val AS jsonb), NOW(), NOW())"""),
                 {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": val_json}
             )
 
