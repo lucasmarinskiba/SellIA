@@ -16,6 +16,7 @@ from app.domains.seo_agents.service import (
     MultiLocationSEOService,
     TopicalClusterService,
 )
+from app.domains.seo_agents.orchestrator import SEOAuditOrchestrator
 
 
 def test_seo_score_calculation():
@@ -363,3 +364,149 @@ class TestTopicalCluster:
         linking_map = svc._build_linking_map("New Pillar", [])
         assert linking_map["pillar"] == "new-pillar"
         assert linking_map["clusters"] == []
+
+
+class _FakeGap:
+    """Minimal stand-in for CompetitorKeywordGap — only what _build_action_plan reads."""
+    def __init__(self, keyword: str, opportunity_score: float):
+        self.keyword = keyword
+        self.opportunity_score = opportunity_score
+
+
+class _FakeBacklink:
+    """Minimal stand-in for BacklinkOpportunity — only what _build_action_plan reads."""
+    def __init__(self, domain: str, priority_score: float):
+        self.domain = domain
+        self.priority_score = priority_score
+
+
+def _healthy_metrics(**overrides) -> dict:
+    """Baseline metrics dict representing a fully healthy business — no action
+    should fire unless a field is deliberately overridden to breach a threshold."""
+    metrics = {
+        "seo_health": {"overall_score": 85, "critical_issues": 0},
+        "keywords_tracked": 20,
+        "fomo_copy_count": 5,
+        "active_ab_tests": 1,
+        "optimization_completed_tasks": 3,
+        "optimization_pending_tasks": 0,
+        "avg_traffic_lift_pct": 15.0,
+        "content_generated_count": 5,
+        "avg_content_seo_score": 88.0,
+        "keyword_gap_count": 0,
+        "backlink_opportunity_count": 0,
+        "review_total": 25,
+        "review_avg_rating": 4.6,
+        "calendar_upcoming_count": 3,
+        "location_total": 2,
+        "location_fully_consistent": 2,
+        "topical_cluster_count": 2,
+    }
+    metrics.update(overrides)
+    return metrics
+
+
+class TestSEOAuditOrchestrator:
+    def test_healthy_business_yields_no_actions(self):
+        """A business clearing every threshold gets an empty action plan."""
+        orchestrator = SEOAuditOrchestrator(None)
+        plan = orchestrator._build_action_plan(_healthy_metrics(), [], [])
+        assert plan == []
+
+    def test_critical_page_issues_flagged_critical(self):
+        """critical_issues > 0 -> a 'critical' priority action."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(seo_health={"overall_score": 40, "critical_issues": 3})
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert any(a["category"] == "page_health" and a["priority"] == "critical" for a in plan)
+
+    def test_low_overall_score_flagged_high(self):
+        """overall_score < 70 -> a 'high' priority page_health action."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(seo_health={"overall_score": 55, "critical_issues": 0})
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert any(a["category"] == "page_health" and a["priority"] == "high" for a in plan)
+
+    def test_keyword_gaps_surface_top_target(self):
+        """Keyword gap action names the highest-opportunity keyword."""
+        orchestrator = SEOAuditOrchestrator(None)
+        gaps = [_FakeGap("cheap seo", 40.0), _FakeGap("best seo tools", 92.0)]
+        metrics = _healthy_metrics(keyword_gap_count=2)
+        plan = orchestrator._build_action_plan(metrics, gaps, [])
+        gap_action = next(a for a in plan if a["category"] == "keyword_gaps")
+        assert "best seo tools" in gap_action["action"]
+
+    def test_backlink_opportunities_surface_top_target(self):
+        """Backlink action names the highest-priority domain."""
+        orchestrator = SEOAuditOrchestrator(None)
+        links = [_FakeBacklink("low.com", 30.0), _FakeBacklink("high.com", 88.0)]
+        metrics = _healthy_metrics(backlink_opportunity_count=2)
+        plan = orchestrator._build_action_plan(metrics, [], links)
+        backlink_action = next(a for a in plan if a["category"] == "backlinks")
+        assert "high.com" in backlink_action["action"]
+
+    def test_low_review_count_flagged(self):
+        """Fewer than 10 reviews -> reviews action fires."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(review_total=3)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert any(a["category"] == "reviews" for a in plan)
+
+    def test_inconsistent_locations_flagged(self):
+        """Some locations not fully NAP-consistent -> local_seo action fires."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(location_total=3, location_fully_consistent=1)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        local_action = next(a for a in plan if a["category"] == "local_seo")
+        assert "2 location" in local_action["action"]
+
+    def test_no_locations_does_not_flag_local_seo(self):
+        """A business with zero tracked locations should not get a local_seo action."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(location_total=0, location_fully_consistent=0)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert not any(a["category"] == "local_seo" for a in plan)
+
+    def test_pending_optimization_tasks_flagged(self):
+        """Pending title/meta/content tasks -> optimization action fires."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(optimization_pending_tasks=4)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert any(a["category"] == "optimization" for a in plan)
+
+    def test_no_clusters_with_content_flagged_low(self):
+        """Content exists but no topical clusters -> low-priority content_structure action."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(topical_cluster_count=0, content_generated_count=5)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        action = next(a for a in plan if a["category"] == "content_structure")
+        assert action["priority"] == "low"
+
+    def test_no_clusters_without_content_not_flagged(self):
+        """No content yet either -> no point flagging missing clusters."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(topical_cluster_count=0, content_generated_count=0)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert not any(a["category"] == "content_structure" for a in plan)
+
+    def test_empty_calendar_flagged(self):
+        """Nothing scheduled in the next 14 days -> content_calendar action fires."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(calendar_upcoming_count=0)
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        assert any(a["category"] == "content_calendar" for a in plan)
+
+    def test_action_plan_sorted_by_priority(self):
+        """Plan is sorted critical -> high -> medium -> low regardless of check order."""
+        orchestrator = SEOAuditOrchestrator(None)
+        metrics = _healthy_metrics(
+            seo_health={"overall_score": 40, "critical_issues": 2},  # critical + high
+            review_total=2,  # medium
+            calendar_upcoming_count=0,  # low
+        )
+        plan = orchestrator._build_action_plan(metrics, [], [])
+        ranks = [_PRIORITY_RANK_FOR_TEST[a["priority"]] for a in plan]
+        assert ranks == sorted(ranks)
+
+
+_PRIORITY_RANK_FOR_TEST = {"critical": 0, "high": 1, "medium": 2, "low": 3}

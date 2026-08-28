@@ -39,6 +39,7 @@ from app.domains.seo_agents.service import (
     MultiLocationSEOService,
     TopicalClusterService,
 )
+from app.domains.seo_agents.orchestrator import SEOAuditOrchestrator
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/seo-agents", tags=["SEO Agents"])
@@ -811,3 +812,18 @@ async def get_cluster_linking_map(
     if linking_map is None:
         return {"error": "Cluster not found"}
     return linking_map
+
+
+# Cross-Domain Audit Orchestrator
+@router.get("/audit")
+@cached(ttl_seconds=1800, key_prefix="seo_audit")
+async def run_seo_audit(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Run a full cross-domain SEO audit (seo_intelligence + fomo_seo +
+    seo_optimization + every seo_agents service) and return a prioritized
+    action plan. Read-only — cached 30min since it fans out across ~10 queries."""
+    orchestrator = SEOAuditOrchestrator(db)
+    return await orchestrator.run_audit(business_id)
