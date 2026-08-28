@@ -137,7 +137,7 @@ async def get_recent_events(
         {
             "id": str(e.id),
             "event_type": e.event_type,
-            "metadata": e.metadata,
+            "metadata": e.event_metadata,
             "created_at": e.created_at.isoformat(),
         }
         for e in events

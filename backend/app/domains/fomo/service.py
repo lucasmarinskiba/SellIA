@@ -83,7 +83,7 @@ class FOMOService:
             event_type=event_type,
             customer_id=customer_id,
             product_id=product_id,
-            metadata=metadata or {},
+            event_metadata=metadata or {},
         )
         db.add(event)
         await db.flush()

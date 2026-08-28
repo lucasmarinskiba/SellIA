@@ -641,7 +641,7 @@ class BrandBuildingService:
             "channels": [
                 {
                     "channel": "Podcast",
-                    "format": "Weekly: "The SellIA Hour" with success stories",
+                    "format": "Weekly: 'The SellIA Hour' with success stories",
                     "guests": "Top users + industry experts",
                     "distribution": "Spotify, Apple Podcasts, YouTube",
                     "expected_listeners": "10K+/week",
