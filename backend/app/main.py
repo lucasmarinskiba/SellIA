@@ -116,6 +116,7 @@ _try_include("app.domains.fomo.growth_foom_routes.router", "", ["growth-foom"])
 _try_include("app.domains.fomo.customer_fomo_routes.router", "", ["customer-fomo"])
 _try_include("app.domains.fomo.ai_copywriter_routes.router", "", ["fomo-ai-copywriter"])
 _try_include("app.domains.fomo.ai_segmentation_routes.router", "", ["fomo-ai-segmentation"])
+_try_include("app.domains.fomo.ai_timing_optimizer_routes.router", "", ["fomo-ai-timing"])
 
 
 @app.get("/health", tags=["system"])
