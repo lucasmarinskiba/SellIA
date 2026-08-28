@@ -41,8 +41,21 @@ class ContractTemplate(Base):
 
 
 class AuditLog(Base):
-    """Audit trail for compliance events."""
-    __tablename__ = "audit_logs"
+    """Audit trail for compliance events.
+
+    Table is named `legal_audit_logs`, not `audit_logs` — 7 files across the
+    codebase claim that name on the shared Base (compliance, tenancy, db,
+    core.multi_tenant, core.database.security_models, core.security
+    .audit_logger, plus this one). Whichever imports first wins; this
+    domain's AuditLog was the loser, which meant legal.router had been
+    silently dead on every app boot (confirmed via main.py's "Skipped extra
+    router ... Table already defined" warning — same failure mode fixed for
+    invoicing's Invoice/Payment tables, see that domain's models.py).
+    No Alembic migration creates any of the 7 `audit_logs` variants (only
+    referenced in alembic/env.py's autogenerate-ignore list), so renaming
+    this one is zero-risk.
+    """
+    __tablename__ = "legal_audit_logs"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
