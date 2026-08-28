@@ -120,6 +120,7 @@ _try_include("app.domains.fomo.ai_timing_optimizer_routes.router", "", ["fomo-ai
 _try_include("app.domains.fomo.ai_scarcity_calibration_routes.router", "", ["fomo-ai-scarcity"])
 _try_include("app.domains.fomo.ai_churn_prevention_routes.router", "", ["fomo-ai-churn"])
 _try_include("app.domains.fomo.ai_autonomous_campaign_routes.router", "", ["fomo-ai-autonomous"])
+_try_include("app.domains.fomo.ai_competitor_monitor_routes.router", "", ["fomo-ai-competitor"])
 
 
 @app.get("/health", tags=["system"])
