@@ -14,8 +14,18 @@ from app.domains.seo_agents.schemas import (
     CompetitorKeywordGapIn,
     CompetitorKeywordGapOut,
     KeywordOpportunityOut,
+    BacklinkOpportunityIn,
+    BacklinkOpportunityOut,
+    ReviewCampaignIn,
+    ReviewCampaignOut,
+    ReviewAggregateOut,
 )
-from app.domains.seo_agents.service import ContentGenerationService, CompetitorKeywordService
+from app.domains.seo_agents.service import (
+    ContentGenerationService,
+    CompetitorKeywordService,
+    BacklinkStrategyService,
+    ReviewOrchestrationService,
+)
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/seo-agents", tags=["SEO Agents"])
@@ -241,3 +251,191 @@ async def seo_agents_dashboard(
         "keyword_opportunities": total_opportunities,
         "estimated_monthly_traffic": total_traffic_potential,
     }
+
+
+# Backlink Strategy
+@router.post("/backlinks/opportunities", response_model=BacklinkOpportunityOut)
+async def add_backlink_opportunity(
+    business_id: UUID,
+    body: BacklinkOpportunityIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Identify + score a backlink outreach opportunity."""
+    svc = BacklinkStrategyService(db)
+    opp = await svc.add_opportunity(
+        business_id,
+        body.domain,
+        body.opportunity_type,
+        body.domain_authority,
+        body.niche_keywords,
+        body.domain_topic_keywords,
+        body.target_url,
+        body.contact_email,
+        body.contact_name,
+    )
+    return BacklinkOpportunityOut(
+        id=opp.id,
+        domain=opp.domain,
+        opportunity_type=opp.opportunity_type,
+        domain_authority=opp.domain_authority,
+        relevance_score=opp.relevance_score,
+        priority_score=opp.priority_score,
+        status=opp.status,
+        contact_email=opp.contact_email,
+    )
+
+
+@router.get("/backlinks/opportunities", response_model=list[BacklinkOpportunityOut])
+@cached(ttl_seconds=3600, key_prefix="backlink_opps")
+async def list_backlink_opportunities(
+    business_id: UUID,
+    status: str | None = Query(None),
+    min_priority: float = Query(0.0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List backlink opportunities ranked by priority (cached 1h)."""
+    svc = BacklinkStrategyService(db)
+    opps = await svc.list_opportunities(business_id, status, min_priority)
+    return [
+        BacklinkOpportunityOut(
+            id=o.id,
+            domain=o.domain,
+            opportunity_type=o.opportunity_type,
+            domain_authority=o.domain_authority,
+            relevance_score=o.relevance_score,
+            priority_score=o.priority_score,
+            status=o.status,
+            contact_email=o.contact_email,
+        )
+        for o in opps
+    ]
+
+
+@router.patch("/backlinks/opportunities/{opportunity_id}", response_model=BacklinkOpportunityOut)
+async def update_backlink_status(
+    business_id: UUID,
+    opportunity_id: UUID,
+    status: str = Query(..., pattern="^(identified|contacted|negotiating|acquired|rejected)$"),
+    acquired_url: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update backlink outreach status."""
+    svc = BacklinkStrategyService(db)
+    opp = await svc.update_status(opportunity_id, status, acquired_url)
+    return BacklinkOpportunityOut(
+        id=opp.id,
+        domain=opp.domain,
+        opportunity_type=opp.opportunity_type,
+        domain_authority=opp.domain_authority,
+        relevance_score=opp.relevance_score,
+        priority_score=opp.priority_score,
+        status=opp.status,
+        contact_email=opp.contact_email,
+    )
+
+
+# Review Orchestration
+@router.post("/reviews/campaigns", response_model=ReviewCampaignOut)
+async def create_review_campaign(
+    business_id: UUID,
+    body: ReviewCampaignIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a review solicitation campaign."""
+    svc = ReviewOrchestrationService(db)
+    campaign = await svc.create_campaign(
+        business_id,
+        body.customer_name,
+        body.customer_email,
+        body.service_type,
+        body.review_platform,
+        body.review_url,
+    )
+    return ReviewCampaignOut(
+        id=campaign.id,
+        customer_name=campaign.customer_name,
+        service_type=campaign.service_type,
+        review_platform=campaign.review_platform,
+        status=campaign.status,
+        rating=campaign.rating,
+    )
+
+
+@router.patch("/reviews/campaigns/{campaign_id}/record", response_model=ReviewCampaignOut)
+async def record_review_result(
+    business_id: UUID,
+    campaign_id: UUID,
+    rating: int = Query(..., ge=1, le=5),
+    review_text: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Record a completed review + refresh the business rating aggregate."""
+    svc = ReviewOrchestrationService(db)
+    campaign = await svc.record_review(campaign_id, rating, review_text)
+    return ReviewCampaignOut(
+        id=campaign.id,
+        customer_name=campaign.customer_name,
+        service_type=campaign.service_type,
+        review_platform=campaign.review_platform,
+        status=campaign.status,
+        rating=campaign.rating,
+    )
+
+
+@router.get("/reviews/campaigns", response_model=list[ReviewCampaignOut])
+async def list_review_campaigns(
+    business_id: UUID,
+    status: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List review campaigns."""
+    svc = ReviewOrchestrationService(db)
+    campaigns = await svc.list_campaigns(business_id, status)
+    return [
+        ReviewCampaignOut(
+            id=c.id,
+            customer_name=c.customer_name,
+            service_type=c.service_type,
+            review_platform=c.review_platform,
+            status=c.status,
+            rating=c.rating,
+        )
+        for c in campaigns
+    ]
+
+
+@router.get("/reviews/aggregate", response_model=ReviewAggregateOut)
+@cached(ttl_seconds=3600, key_prefix="review_aggregate")
+async def get_review_aggregate(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get AggregateRating rollup (cached 1h) — feeds schema.org markup."""
+    svc = ReviewOrchestrationService(db)
+    aggregate = await svc.get_aggregate(business_id)
+    if not aggregate:
+        return ReviewAggregateOut(
+            total_reviews=0,
+            average_rating=0.0,
+            five_star=0,
+            four_star=0,
+            three_star=0,
+            two_star=0,
+            one_star=0,
+        )
+    return ReviewAggregateOut(
+        total_reviews=aggregate.total_reviews,
+        average_rating=aggregate.average_rating,
+        five_star=aggregate.five_star,
+        four_star=aggregate.four_star,
+        three_star=aggregate.three_star,
+        two_star=aggregate.two_star,
+        one_star=aggregate.one_star,
+    )

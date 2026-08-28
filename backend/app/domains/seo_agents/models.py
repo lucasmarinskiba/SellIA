@@ -112,8 +112,86 @@ class KeywordOpportunity(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class BacklinkOpportunity(Base):
+    """Identified backlink opportunity — outreach targets scored by relevance + authority."""
+    __tablename__ = "seo_backlink_opportunities"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    # Target
+    domain: Mapped[str] = mapped_column(String(255))
+    target_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    contact_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Type
+    opportunity_type: Mapped[str] = mapped_column(String(50))  # guest_post, directory, resource_page, broken_link, competitor_backlink
+
+    # Scoring
+    domain_authority: Mapped[int] = mapped_column(default=0)  # 0-100 (Moz DA or similar)
+    relevance_score: Mapped[float] = mapped_column(default=0.0)  # 0-100: topical relevance to niche
+    priority_score: Mapped[float] = mapped_column(default=0.0)  # 0-100: DA * relevance weighted
+
+    # Outreach
+    status: Mapped[str] = mapped_column(String(20), default="identified")  # identified, contacted, negotiating, acquired, rejected
+    outreach_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outreach_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    acquired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    acquired_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # actual backlink URL once live
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReviewCampaign(Base):
+    """Review solicitation campaign — sent to past customers post-purchase."""
+    __tablename__ = "seo_review_campaigns"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
+
+    customer_name: Mapped[str] = mapped_column(String(255))
+    customer_email: Mapped[str] = mapped_column(String(255))
+    service_type: Mapped[str | None] = mapped_column(String(255), nullable=True)  # product/service purchased
+
+    # Request
+    review_platform: Mapped[str] = mapped_column(String(50), default="google")  # google, trustpilot, facebook, internal
+    review_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # deep link to leave review
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Result
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, sent, completed, declined
+    rating: Mapped[int | None] = mapped_column(nullable=True)  # 1-5
+    review_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReviewAggregate(Base):
+    """Aggregated review stats per business — feeds schema.org AggregateRating."""
+    __tablename__ = "seo_review_aggregates"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), unique=True)
+
+    total_reviews: Mapped[int] = mapped_column(default=0)
+    average_rating: Mapped[float] = mapped_column(default=0.0)  # 1.0-5.0
+
+    five_star: Mapped[int] = mapped_column(default=0)
+    four_star: Mapped[int] = mapped_column(default=0)
+    three_star: Mapped[int] = mapped_column(default=0)
+    two_star: Mapped[int] = mapped_column(default=0)
+    one_star: Mapped[int] = mapped_column(default=0)
+
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 SEO_AGENTS_TABLES = [
     GeneratedContent.__table__,
     CompetitorKeywordGap.__table__,
     KeywordOpportunity.__table__,
+    BacklinkOpportunity.__table__,
+    ReviewCampaign.__table__,
+    ReviewAggregate.__table__,
 ]

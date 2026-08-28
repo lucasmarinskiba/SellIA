@@ -64,3 +64,62 @@ class KeywordOpportunityOut(BaseModel):
     opportunity_score: float
     estimated_traffic: int
     status: str
+
+
+class BacklinkOpportunityIn(BaseModel):
+    """Request to add a backlink opportunity."""
+
+    domain: str
+    opportunity_type: str  # guest_post, directory, resource_page, broken_link, competitor_backlink
+    domain_authority: int
+    niche_keywords: list[str]
+    domain_topic_keywords: list[str]
+    target_url: str | None = None
+    contact_email: str | None = None
+    contact_name: str | None = None
+
+
+class BacklinkOpportunityOut(BaseModel):
+    """Backlink opportunity response."""
+
+    id: UUID
+    domain: str
+    opportunity_type: str
+    domain_authority: int
+    relevance_score: float
+    priority_score: float
+    status: str
+    contact_email: str | None
+
+
+class ReviewCampaignIn(BaseModel):
+    """Request to create a review campaign."""
+
+    customer_name: str
+    customer_email: str
+    service_type: str | None = None
+    review_platform: str = "google"
+    review_url: str | None = None
+
+
+class ReviewCampaignOut(BaseModel):
+    """Review campaign response."""
+
+    id: UUID
+    customer_name: str
+    service_type: str | None
+    review_platform: str
+    status: str
+    rating: int | None
+
+
+class ReviewAggregateOut(BaseModel):
+    """AggregateRating rollup."""
+
+    total_reviews: int
+    average_rating: float
+    five_star: int
+    four_star: int
+    three_star: int
+    two_star: int
+    one_star: int

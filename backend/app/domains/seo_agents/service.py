@@ -15,6 +15,9 @@ from app.domains.seo_agents.models import (
     GeneratedContent,
     CompetitorKeywordGap,
     KeywordOpportunity,
+    BacklinkOpportunity,
+    ReviewCampaign,
+    ReviewAggregate,
 )
 
 logger = get_logger(__name__)
@@ -285,3 +288,226 @@ class CompetitorKeywordService:
         await self.db.commit()
         logger.info(f"Created {len(opportunities)} keyword opportunities")
         return opportunities
+
+
+class BacklinkStrategyService:
+    """Identify + score backlink outreach opportunities."""
+
+    # Niche-relevance keyword overlap: naive but deterministic scoring hook.
+    # Real deployment would call a backlink data API (Ahrefs/Moz/Semrush) for domain_authority.
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def add_opportunity(
+        self,
+        business_id: uuid.UUID,
+        domain: str,
+        opportunity_type: str,  # guest_post, directory, resource_page, broken_link, competitor_backlink
+        domain_authority: int,
+        niche_keywords: list[str],
+        domain_topic_keywords: list[str],
+        target_url: Optional[str] = None,
+        contact_email: Optional[str] = None,
+        contact_name: Optional[str] = None,
+    ) -> BacklinkOpportunity:
+        """Score + add a backlink opportunity."""
+        relevance_score = self._calculate_relevance(niche_keywords, domain_topic_keywords)
+        priority_score = self._calculate_priority(domain_authority, relevance_score)
+
+        opportunity = BacklinkOpportunity(
+            business_id=business_id,
+            domain=domain,
+            target_url=target_url,
+            contact_email=contact_email,
+            contact_name=contact_name,
+            opportunity_type=opportunity_type,
+            domain_authority=domain_authority,
+            relevance_score=relevance_score,
+            priority_score=priority_score,
+        )
+        self.db.add(opportunity)
+        await self.db.commit()
+        logger.info(f"Backlink opportunity added: {domain} (priority: {priority_score:.1f})")
+        return opportunity
+
+    def _calculate_relevance(self, niche_keywords: list[str], domain_topic_keywords: list[str]) -> float:
+        """Relevance = overlap ratio between niche and domain topic keywords, 0-100."""
+        if not niche_keywords or not domain_topic_keywords:
+            return 0.0
+        niche_set = {k.lower().strip() for k in niche_keywords}
+        domain_set = {k.lower().strip() for k in domain_topic_keywords}
+        overlap = len(niche_set & domain_set)
+        return min(100.0, (overlap / len(niche_set)) * 100)
+
+    def _calculate_priority(self, domain_authority: int, relevance_score: float) -> float:
+        """Priority weights DA 60% + relevance 40% — a highly relevant DA30 site
+        can outrank an irrelevant DA70 directory for actual outreach value."""
+        return (domain_authority * 0.6) + (relevance_score * 0.4)
+
+    async def update_status(
+        self,
+        opportunity_id: uuid.UUID,
+        status: str,  # identified, contacted, negotiating, acquired, rejected
+        acquired_url: Optional[str] = None,
+    ) -> BacklinkOpportunity:
+        """Update outreach status."""
+        opp = (
+            await self.db.execute(
+                select(BacklinkOpportunity).where(BacklinkOpportunity.id == opportunity_id)
+            )
+        ).scalar_one_or_none()
+        if not opp:
+            raise ValueError(f"Backlink opportunity {opportunity_id} not found")
+
+        opp.status = status
+        if status == "contacted":
+            opp.outreach_sent_at = datetime.now(timezone.utc)
+        elif status == "acquired":
+            opp.acquired_at = datetime.now(timezone.utc)
+            opp.acquired_url = acquired_url
+        await self.db.commit()
+        logger.info(f"Backlink opportunity {opportunity_id} status -> {status}")
+        return opp
+
+    async def list_opportunities(
+        self,
+        business_id: uuid.UUID,
+        status: Optional[str] = None,
+        min_priority: float = 0.0,
+    ) -> list[BacklinkOpportunity]:
+        """List opportunities ranked by priority."""
+        query = select(BacklinkOpportunity).where(
+            and_(
+                BacklinkOpportunity.business_id == business_id,
+                BacklinkOpportunity.priority_score >= min_priority,
+            )
+        )
+        if status:
+            query = query.where(BacklinkOpportunity.status == status)
+        query = query.order_by(desc(BacklinkOpportunity.priority_score))
+        return (await self.db.execute(query)).scalars().all()
+
+
+class ReviewOrchestrationService:
+    """Solicit + aggregate customer reviews for social proof + AggregateRating schema."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def create_campaign(
+        self,
+        business_id: uuid.UUID,
+        customer_name: str,
+        customer_email: str,
+        service_type: Optional[str] = None,
+        review_platform: str = "google",
+        review_url: Optional[str] = None,
+    ) -> ReviewCampaign:
+        """Create + mark-sent a review request campaign.
+
+        Actual email/SMS dispatch is left to the existing sequences/notification
+        infrastructure — this records intent + tracks the funnel from request to review.
+        """
+        campaign = ReviewCampaign(
+            business_id=business_id,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            service_type=service_type,
+            review_platform=review_platform,
+            review_url=review_url,
+            status="sent",
+            sent_at=datetime.now(timezone.utc),
+        )
+        self.db.add(campaign)
+        await self.db.commit()
+        logger.info(f"Review campaign created for {customer_name} ({review_platform})")
+        return campaign
+
+    async def record_review(
+        self,
+        campaign_id: uuid.UUID,
+        rating: int,
+        review_text: Optional[str] = None,
+    ) -> ReviewCampaign:
+        """Record a completed review + refresh the business aggregate."""
+        if not 1 <= rating <= 5:
+            raise ValueError("rating must be between 1 and 5")
+
+        campaign = (
+            await self.db.execute(
+                select(ReviewCampaign).where(ReviewCampaign.id == campaign_id)
+            )
+        ).scalar_one_or_none()
+        if not campaign:
+            raise ValueError(f"Review campaign {campaign_id} not found")
+
+        campaign.status = "completed"
+        campaign.rating = rating
+        campaign.review_text = review_text
+        campaign.completed_at = datetime.now(timezone.utc)
+        await self.db.commit()
+
+        await self._refresh_aggregate(campaign.business_id)
+        logger.info(f"Review recorded: {rating}/5 for campaign {campaign_id}")
+        return campaign
+
+    async def _refresh_aggregate(self, business_id: uuid.UUID) -> ReviewAggregate:
+        """Recompute the AggregateRating rollup from completed campaigns."""
+        completed = (
+            await self.db.execute(
+                select(ReviewCampaign).where(
+                    and_(
+                        ReviewCampaign.business_id == business_id,
+                        ReviewCampaign.status == "completed",
+                    )
+                )
+            )
+        ).scalars().all()
+
+        star_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        for c in completed:
+            if c.rating in star_counts:
+                star_counts[c.rating] += 1
+
+        total = len(completed)
+        avg = (sum(c.rating for c in completed) / total) if total else 0.0
+
+        aggregate = (
+            await self.db.execute(
+                select(ReviewAggregate).where(ReviewAggregate.business_id == business_id)
+            )
+        ).scalar_one_or_none()
+
+        if not aggregate:
+            aggregate = ReviewAggregate(business_id=business_id)
+            self.db.add(aggregate)
+
+        aggregate.total_reviews = total
+        aggregate.average_rating = round(avg, 2)
+        aggregate.one_star = star_counts[1]
+        aggregate.two_star = star_counts[2]
+        aggregate.three_star = star_counts[3]
+        aggregate.four_star = star_counts[4]
+        aggregate.five_star = star_counts[5]
+        await self.db.commit()
+        return aggregate
+
+    async def get_aggregate(self, business_id: uuid.UUID) -> Optional[ReviewAggregate]:
+        """Get the AggregateRating rollup for a business."""
+        return (
+            await self.db.execute(
+                select(ReviewAggregate).where(ReviewAggregate.business_id == business_id)
+            )
+        ).scalar_one_or_none()
+
+    async def list_campaigns(
+        self,
+        business_id: uuid.UUID,
+        status: Optional[str] = None,
+    ) -> list[ReviewCampaign]:
+        """List review campaigns."""
+        query = select(ReviewCampaign).where(ReviewCampaign.business_id == business_id)
+        if status:
+            query = query.where(ReviewCampaign.status == status)
+        query = query.order_by(desc(ReviewCampaign.created_at))
+        return (await self.db.execute(query)).scalars().all()
