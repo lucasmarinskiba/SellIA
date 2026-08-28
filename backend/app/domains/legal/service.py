@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from string import Template
 from typing import Optional
 
 from sqlalchemy import and_, select
@@ -138,7 +137,7 @@ class ContractService:
                 select(ContractTemplate).where(
                     and_(
                         ContractTemplate.business_id == business_id,
-                        ContractTemplate.is_active == True,
+                        ContractTemplate.is_active,
                     )
                 )
             )

@@ -43,7 +43,7 @@ class CustomerFOMOCampaignConfig(BaseModel):
     campaign_type: CampaignType
     name: str
     description: Optional[str] = None
-    start_date: datetime
+    start_date: datetime = Field(default_factory=datetime.utcnow)
     end_date: Optional[datetime] = None
     target_pages: List[str] = []
     target_products: List[str] = []
