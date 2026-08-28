@@ -1,4 +1,5 @@
-"""SEO Agents services — AI content generation + keyword gap analysis."""
+"""SEO Agents services — content generation, keyword gaps, backlinks, reviews,
+content calendar, entity signals, multi-location SEO, topical clusters."""
 
 from __future__ import annotations
 

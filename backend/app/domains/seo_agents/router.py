@@ -1,13 +1,17 @@
-"""SEO Agents API — Phase 1: Content Generation + Keyword Gaps."""
+"""SEO Agents API — Content Generation, Keyword Gaps, Backlinks, Reviews,
+Content Calendar, Entity Signals, Multi-Location SEO, Topical Clusters,
+and the cross-domain Audit Orchestrator."""
 
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.cache import cached
+from app.domains.seo_agents.models import GeneratedContent, KeywordOpportunity
 from app.domains.seo_agents.schemas import (
     GenerateContentRequest,
     GeneratedContentOut,
@@ -113,12 +117,8 @@ async def get_generated_content(
     current_user: User = Depends(get_current_user),
 ):
     """Get full generated content (including body + structure)."""
-    from sqlalchemy import select
-
     result = await db.execute(
-        select(__import__("app.domains.seo_agents.models", fromlist=["GeneratedContent"]).GeneratedContent).where(
-            __import__("app.domains.seo_agents.models", fromlist=["GeneratedContent"]).GeneratedContent.id == content_id
-        )
+        select(GeneratedContent).where(GeneratedContent.id == content_id)
     )
     content = result.scalar_one_or_none()
     if not content:
@@ -230,11 +230,6 @@ async def seo_agents_dashboard(
     current_user: User = Depends(get_current_user),
 ):
     """SEO Agents dashboard — content stats + keyword opportunities."""
-    from sqlalchemy import select, func
-
-    GeneratedContent = __import__("app.domains.seo_agents.models", fromlist=["GeneratedContent"]).GeneratedContent
-    KeywordOpportunity = __import__("app.domains.seo_agents.models", fromlist=["KeywordOpportunity"]).KeywordOpportunity
-
     # Content stats
     content_count = (
         await db.execute(

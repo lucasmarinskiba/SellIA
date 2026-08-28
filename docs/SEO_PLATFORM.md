@@ -2,13 +2,14 @@
 
 ## Overview
 
-SellIA's SEO Platform delivers **business-measurable** organic traffic growth through three integrated domains:
+SellIA's SEO Platform delivers **business-measurable** organic traffic growth through four integrated domains:
 
 1. **SEO Intelligence** — Strategic keyword & competitive analysis
 2. **FOMO+SEO** — Psychological copy optimization combining urgency with SEO metrics
 3. **SEO Auto-Optimization** — Automatic title/meta/content optimization with rank tracking
+4. **SEO Specialist Agents** — Content generation, backlinks, reviews, calendar, entities, multi-location, topical clusters, and a cross-domain audit orchestrator
 
-Together, they form a closed loop: analyze → optimize → measure → repeat.
+Together, they form a closed loop: analyze → optimize → measure → repeat. Domain 4 (`seo_agents`) is what answers "what does SellIA need to actually rank a user's products/services" — it turns the first three domains' *analysis* into concrete *content, outreach, and structure*.
 
 ---
 
@@ -470,3 +471,156 @@ GET    /api/v1/businesses/{business_id}/seo-optimization/dashboard
 - If avg seo_score drops 10+ points in 7 days → content removed or penalized
 - If A/B test winner has < 20% confidence → inconclusive, extend test
 - If optimization task pending > 30 days → escalate for review
+
+---
+
+## 8. SEO Specialist Agents Domain (`seo_agents`)
+
+**Purpose:** Answer "what does SellIA need to actually rank a user's products/services" — turns analysis from domains 1-3 into concrete content, outreach, structure, and a single prioritized action plan. 8 services, 32 endpoints, all under `/api/v1/businesses/{business_id}/seo-agents/*`.
+
+### 8.1 Content Generation (`ContentGenerationService`)
+
+Generates SEO-optimized product/service copy via Claude (`claude-opus-5`): title (50-60 chars), meta (150-160 chars), H1, 2000+ word body, H2 sections, internal link suggestions.
+
+`seo_score` formula: title length band (+35 max), meta length band (+35 max), keyword in title (+15), keyword in meta (+10), keyword ≥3x in body (+10) — capped at 100.
+
+```
+POST /content/generate   — content_type, target_keyword, product_name, product_description, tone
+GET  /content            — list (cached 1h)
+GET  /content/{id}       — full body + H2s + internal links
+```
+
+### 8.2 Keyword Gap Analysis (`CompetitorKeywordService`)
+
+`opportunity_score = search_volume * (1 - difficulty/100) * rank_gap_factor` — `rank_gap_factor` is 1.5x when a competitor ranks for a keyword the business doesn't, 1.0x otherwise.
+
+```
+POST /keywords/analyze-gap              — keyword, search_volume, difficulty, business_rank, competitor ranks
+GET  /keywords/gaps                     — ranked by opportunity (cached 15min)
+POST /keywords/identify-opportunities   — top 10 gaps -> KeywordOpportunity records
+GET  /dashboard                         — content_generated, avg_seo_score, keyword_opportunities, estimated_monthly_traffic
+```
+
+### 8.3 Backlink Strategy (`BacklinkStrategyService`)
+
+`relevance_score` = niche/domain keyword overlap ratio (0-100). `priority_score = DA*0.6 + relevance*0.4` — weighted so a highly relevant DA30 blog can outrank an irrelevant DA70 directory for actual outreach value. Outreach funnel: `identified → contacted → negotiating → acquired/rejected`.
+
+```
+POST  /backlinks/opportunities        — domain, opportunity_type, domain_authority, niche/domain keywords
+GET   /backlinks/opportunities        — ranked by priority (cached 1h)
+PATCH /backlinks/opportunities/{id}   — advance funnel status
+```
+
+### 8.4 Review Orchestration (`ReviewOrchestrationService`)
+
+`create_campaign` (pending→sent) → `record_review` (→completed) auto-refreshes a `ReviewAggregate` rollup (total, average, star buckets) on every completed review — feeds `schema.org` `AggregateRating` markup directly.
+
+```
+POST  /reviews/campaigns              — solicit review from a customer
+PATCH /reviews/campaigns/{id}/record  — record rating (1-5) + refresh aggregate
+GET   /reviews/campaigns              — list, filterable by status
+GET   /reviews/aggregate              — AggregateRating rollup (cached 1h)
+```
+
+### 8.5 Content Calendar (`ContentCalendarService`)
+
+`generate_calendar` spaces one entry per keyword by `cadence_days`, stopping once the schedule would exceed the `days` window. `content_type` rotates round-robin: `blog_post → landing_page → guide → video`. `priority` derives from keyword opportunity score: ≥70 high, ≥40 medium, else low.
+
+```
+POST  /calendar/generate    — target_keywords, days, cadence_days, keyword_opportunities
+GET   /calendar               — publication order (cached 30min)
+GET   /calendar/upcoming      — due within N days
+PATCH /calendar/{id}          — update status, link generated content
+```
+
+### 8.6 Entity & Knowledge Graph (`EntityOptimizationService`)
+
+Builds JSON-LD `schema.org` markup per entity type (`Organization`, `Person`, `Product`, `LocalBusiness`); `sameAs` populated from external links (Wikipedia, Wikidata, socials) for knowledge-graph recognition signals. Schema regenerates automatically when links change.
+
+```
+POST  /entities              — entity_type, entity_name, external_links, co_mention_targets
+GET   /entities                — list (cached 1h)
+PATCH /entities/{id}          — update links/targets/status, regenerates schema
+```
+
+### 8.7 Multi-Location SEO (`MultiLocationSEOService`)
+
+Builds `LocalBusiness` JSON-LD per location and auto-generates location-intent keywords (`"{service} in {city}"`, `"{service} near me"`, `"best {service} {city}"`, `"{city} {service}"`). Tracks NAP (Name/Address/Phone) citation confirmation across 5 directories (`google_business`, `yelp`, `facebook`, `bing_places`, `apple_maps`) — `nap_consistent` is true only when **all** are confirmed.
+
+```
+POST  /locations                    — location_name, address, city, service_type, ...
+GET   /locations                     — list (cached 1h)
+PATCH /locations/{id}/citations      — confirm/unconfirm one directory
+GET   /locations/citation-report     — NAP coverage % across all locations (cached 1h)
+```
+
+### 8.8 Topical Clusters / Link Building (`TopicalClusterService`)
+
+`authority_score` = 10 points per cluster subtopic, capped at 100. `internal_linking_map` is hub-and-spoke: every cluster subtopic links back to its pillar. `add_cluster_topic` grows a cluster and regenerates both the map and the score.
+
+```
+POST  /clusters                — pillar_topic, cluster_topics, pillar_content_id
+GET   /clusters                 — ranked by authority (cached 1h)
+PATCH /clusters/{id}/topics    — add a subtopic
+GET   /clusters/{id}/linking-map — hub-and-spoke linking map
+```
+
+### 8.9 Cross-Domain Audit Orchestrator (`SEOAuditOrchestrator`)
+
+One read-only call that fans out across **all four SEO domains** (`seo_intelligence`, `fomo_seo`, `seo_optimization`, and all 8 `seo_agents` services) and returns a single prioritized action plan.
+
+```
+GET /audit   — cached 30min (fans out ~10 queries)
+```
+
+**Threshold rules** (evaluated against the aggregated metrics, sorted critical→high→medium→low):
+
+| Trigger | Priority | Category |
+|---|---|---|
+| `critical_issues > 0` | critical | page_health |
+| `overall_score < 70` | high | page_health |
+| keyword gaps exist | high | keyword_gaps (names top-opportunity keyword) |
+| backlink opportunities exist | medium | backlinks (names top-priority domain) |
+| `review_total < 10` | medium | reviews |
+| any location not fully NAP-consistent | medium | local_seo |
+| pending optimization tasks exist | medium | optimization |
+| content exists but no topical clusters | low | content_structure |
+| nothing scheduled in next 14 days | low | content_calendar |
+
+**Example response:**
+```json
+{
+  "business_id": "...",
+  "metrics": {
+    "seo_health": {"overall_score": 62, "critical_issues": 1},
+    "keyword_gap_count": 4,
+    "backlink_opportunity_count": 2,
+    "review_total": 6,
+    "location_total": 3,
+    "location_fully_consistent": 1,
+    "...": "..."
+  },
+  "action_plan": [
+    {"category": "page_health", "priority": "critical", "action": "Fix 1 page(s) with critical SEO issues (optimization_score < 30)", "impact_estimate": "high"},
+    {"category": "page_health", "priority": "high", "action": "Overall SEO health score is 62/100 — run content generation on underperforming pages", "impact_estimate": "high"},
+    {"category": "keyword_gaps", "priority": "high", "action": "Generate content for 4 high-opportunity keyword gap(s) — top target: 'best crm for startups' (opportunity 88)", "impact_estimate": "high"},
+    {"category": "reviews", "priority": "medium", "action": "Only 6 reviews collected — launch review solicitation campaigns to reach 10+ for AggregateRating eligibility", "impact_estimate": "medium"},
+    {"category": "local_seo", "priority": "medium", "action": "2 location(s) have inconsistent NAP citations — confirm remaining directory listings", "impact_estimate": "medium"}
+  ]
+}
+```
+
+### 8.10 Complete Workflow: Onboarding a New Business
+
+```
+1. GET /audit → establish baseline (likely near-empty: no content, no locations, no clusters)
+2. For each product/service:
+   a. POST /content/generate → SEO-optimized product page
+   b. POST /keywords/analyze-gap → confirm target keyword vs competitors
+3. POST /clusters → group products into pillar/cluster topics for internal linking
+4. If multi-location: POST /locations for each branch/service area
+5. POST /calendar/generate → schedule ongoing content for the next 90 days
+6. POST /reviews/campaigns → solicit reviews from first customers
+7. POST /backlinks/opportunities → seed outreach targets from competitor backlink analysis
+8. GET /audit weekly → re-run, watch action_plan shrink as items get addressed
+```
