@@ -246,12 +246,13 @@ class TestROICalculation:
     async def test_roi_realistic_payback(self):
         roi = await CustomerFOMOCampaignService.calculate_roi(
             campaign_id="camp123",
-            revenue=1000,  # $1000/day
-            cost=5000,  # $5000 campaign cost
+            revenue=12000,  # $12000 total revenue
+            cost=3000,  # $3000 campaign cost
             baseline_conversion=0.025,
         )
         assert roi["payback_days"] > 0
         assert roi["roi_percent"] > 0
+        assert roi["roi_percent"] == 300  # (12000-3000)/3000 * 100
 
 
 class TestIndustryBenchmarks:

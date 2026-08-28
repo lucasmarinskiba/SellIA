@@ -1,14 +1,76 @@
-"""Tests for Procurement domain."""
+"""Tests for Procurement domain — isolated SQLite."""
 
+import json
+import os
+import uuid
 from datetime import date, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+import pytest_asyncio
 
-from app.domains.procurement.models import PurchaseOrder, RFQ, Vendor
-from app.domains.procurement.service import PurchaseOrderService, RFQService, VendorService
+os.environ.setdefault("ENVIRONMENT", "testing")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-32-chars-long-1234567890")
+
+from sqlalchemy import Column, String, Table, text
+from sqlalchemy.dialects.postgresql import JSONB as PGJSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.pool import StaticPool
+
+
+@compiles(PGUUID, "sqlite")
+def _uuid_sqlite(el, comp, **kw):  # noqa: ANN001
+    return "CHAR(36)"
+
+
+@compiles(PGJSONB, "sqlite")
+def _jsonb_sqlite(el, comp, **kw):  # noqa: ANN001
+    return "TEXT"
+
+
+PGUUID.bind_processor = lambda self, d: (lambda v: None if v is None else str(v))
+PGUUID.result_processor = lambda self, d, c: (
+    lambda v: None if v is None else (_try_uuid(v))
+)
+PGJSONB.bind_processor = lambda self, d: (lambda v: None if v is None else json.dumps(v))
+PGJSONB.result_processor = lambda self, d, c: (
+    lambda v: None if v in (None, "") else (v if isinstance(v, (dict, list)) else json.loads(v))
+)
+
+
+def _try_uuid(v):
+    try:
+        return uuid.UUID(v)
+    except (ValueError, TypeError, AttributeError):
+        return v
+
+
+from app.core.database import Base  # noqa: E402
+from app.domains.procurement.models import PROCUREMENT_TABLES  # noqa: E402
+from app.domains.procurement.models import PurchaseOrder, RFQ, Vendor  # noqa: E402
+from app.domains.procurement.service import PurchaseOrderService, RFQService, VendorService  # noqa: E402
+
+
+@pytest_asyncio.fixture
+async def db() -> AsyncSession:
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    if "businesses" not in Base.metadata.tables:
+        Table("businesses", Base.metadata, Column("id", String(36), primary_key=True))
+    async with engine.begin() as conn:
+        await conn.run_sync(lambda c: Base.metadata.tables["businesses"].create(bind=c, checkfirst=True))
+        for t in PROCUREMENT_TABLES:
+            await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
+    Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with Session() as s:
+        yield s
+    await engine.dispose()
 
 
 class TestVendorService:
