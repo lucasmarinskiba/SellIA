@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.cache import cached
 from app.domains.seo_optimization.service import (
     TitleOptimizationService,
     MetaOptimizationService,
@@ -119,13 +120,14 @@ async def create_optimization_task(
 
 
 @router.get("/tasks/pending")
+@cached(ttl_seconds=300, key_prefix="pending_tasks")
 async def list_pending_tasks(
     business_id: UUID,
     priority: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List pending optimization tasks."""
+    """List pending optimization tasks (cached 5min)."""
     svc = OptimizationTaskService(db)
     tasks = await svc.list_pending_tasks(business_id, priority)
     return {
@@ -183,12 +185,13 @@ async def track_results(
 
 
 @router.get("/dashboard")
+@cached(ttl_seconds=3600, key_prefix="opt_dashboard")
 async def optimization_dashboard(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get optimization impact dashboard."""
+    """Get optimization impact dashboard (cached 1h)."""
     svc = OptimizationTaskService(db)
     dashboard = await svc.impact_dashboard(business_id)
     return dashboard
