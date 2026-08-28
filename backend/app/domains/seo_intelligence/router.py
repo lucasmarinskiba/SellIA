@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.cache import cached
 from app.domains.seo_intelligence.schemas import (
     KeywordCreate,
     KeywordOut,
@@ -53,6 +54,7 @@ async def add_keyword(
 
 
 @router.get("/keywords", response_model=list[KeywordOut])
+@cached(ttl_seconds=3600, key_prefix="keywords")
 async def list_keywords(
     business_id: UUID,
     platform: str | None = Query(None),
@@ -60,18 +62,19 @@ async def list_keywords(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List tracked keywords."""
+    """List tracked keywords (cached 1h)."""
     svc = KeywordService(db)
     return await svc.list_keywords(business_id, platform, limit)
 
 
 @router.get("/keywords/trending")
+@cached(ttl_seconds=900, key_prefix="trending")
 async def get_trending_keywords(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get rising trend keywords."""
+    """Get rising trend keywords (cached 15min)."""
     svc = KeywordService(db)
     keywords = await svc.get_trending_keywords(business_id)
     return {"trending_keywords": [{"keyword": k.keyword, "trend": k.trend} for k in keywords]}
@@ -118,12 +121,13 @@ async def update_page(
 
 
 @router.get("/health", response_model=SEOHealthResponse)
+@cached(ttl_seconds=3600, key_prefix="seo_health")
 async def get_seo_health(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get overall SEO health."""
+    """Get overall SEO health (cached 1h)."""
     svc = PageOptimizationService(db)
     health = await svc.seo_health(business_id)
     return SEOHealthResponse(**health)
@@ -143,12 +147,13 @@ async def analyze_competitor(
 
 
 @router.get("/competitors", response_model=list[CompetitorAnalysisOut])
+@cached(ttl_seconds=3600, key_prefix="competitors")
 async def list_competitors(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List analyzed competitors."""
+    """List analyzed competitors (cached 1h)."""
     svc = CompetitorAnalysisService(db)
     return await svc.list_competitors(business_id)
 

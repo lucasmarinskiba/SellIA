@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.cache import cached
 from app.domains.fomo_seo.service import FOMOSEOCopyService, A_B_TestService
 from app.domains.users.models import User
 
@@ -54,6 +55,7 @@ async def generate_copy(
 
 
 @router.get("/copy")
+@cached(ttl_seconds=3600, key_prefix="fomo_copy")
 async def list_copy(
     business_id: UUID,
     platform: str | None = Query(None),
@@ -61,7 +63,7 @@ async def list_copy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List FOMO+SEO copy."""
+    """List FOMO+SEO copy (cached 1h)."""
     svc = FOMOSEOCopyService(db)
     copies = await svc.list_copy(business_id, platform, status)
     return {
@@ -109,12 +111,13 @@ async def create_ab_test(
 
 
 @router.get("/ab-test/active")
+@cached(ttl_seconds=600, key_prefix="ab_tests")
 async def list_active_tests(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List active A/B tests."""
+    """List active A/B tests (cached 10min)."""
     svc = A_B_TestService(db)
     tests = await svc.list_tests(business_id)
     return {
