@@ -69,8 +69,17 @@ class TenantIsolationPolicy(Base):
 
 
 class AuditLog(Base):
-    """Track all user actions per tenant."""
-    __tablename__ = "audit_logs"
+    """Track all user actions per tenant.
+
+    Table is named `tenant_audit_logs`, not `audit_logs` — that name is
+    claimed on the shared Base by app.domains.compliance.compliance_models
+    .AuditLog (imported unconditionally at app boot via sellbot.py, so it
+    always wins the race). This module is currently dormant (no router or
+    service imports tenant_models anywhere in the app boot chain), but
+    renamed defensively — confirmed via direct import test that loading
+    this alongside compliance raises InvalidRequestError otherwise.
+    """
+    __tablename__ = "tenant_audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)

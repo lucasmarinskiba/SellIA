@@ -199,8 +199,17 @@ class AuditLog(Base):
     """
     Immutable audit trail: all tenant actions logged.
     Required for compliance (SOC2, GDPR, HIPAA).
+
+    Table is named `multi_tenant_audit_logs`, not `audit_logs` — that name
+    is claimed on the shared Base by app.domains.compliance
+    .compliance_models.AuditLog (imported unconditionally at app boot via
+    sellbot.py, so it always wins the race). This module is currently
+    dormant and also has an unrelated broken import (`AppException` missing
+    from app.core.exceptions) that fails before the table collision would
+    even be reached — renamed anyway for defense in depth, since fixing the
+    import bug later would otherwise silently resurrect this collision.
     """
-    __tablename__ = "audit_logs"
+    __tablename__ = "multi_tenant_audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
