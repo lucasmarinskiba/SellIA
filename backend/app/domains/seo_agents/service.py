@@ -243,7 +243,7 @@ class CompetitorKeywordService:
             rank_gap_factor = 1.0
 
         score = base_opportunity * rank_gap_factor
-        return min(100, score / 100) * 100  # Normalize to 0-100
+        return min(100.0, score / 10)  # Normalize to 0-100 (search_volume up to ~1000 maps to full range)
 
     async def list_gaps(
         self,

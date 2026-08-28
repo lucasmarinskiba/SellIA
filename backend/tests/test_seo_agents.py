@@ -30,7 +30,8 @@ def test_opportunity_score_calculation():
     competitor_ranks = {1: 3, 2: 5, 3: 8}  # Competitors rank top 10
 
     opportunity = svc._calculate_opportunity(search_volume, difficulty, business_rank, competitor_ranks)
-    assert 50 < opportunity <= 100  # Should be high opportunity
+    # Formula: base = 1000*0.6=600; score = 600*1.5=900; clamped min(100, 900/10) = 90
+    assert opportunity == 90.0
 
 
 def test_opportunity_low_difficulty():
@@ -64,11 +65,12 @@ def test_keyword_density_calculation():
     text = "SEO tools help you rank. The best seo tools are here. Use seo tools daily."
     keyword = "seo tools"
 
-    word_count = len(text.split())
-    keyword_count = text.lower().count(keyword.lower())
+    word_count = len(text.split())  # 14 words
+    keyword_count = text.lower().count(keyword.lower())  # 3 occurrences
     density = (keyword_count / word_count * 100) if word_count > 0 else 0
+    # density = (3 / 14) * 100 = 21.4%
 
-    assert 1.0 < density < 3.0  # Optimal: 1.5-2.5%
+    assert density > 15.0  # "seo tools" appears 3 times in 14 words
 
 
 def test_readability_score():
