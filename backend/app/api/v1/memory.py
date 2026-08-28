@@ -1,8 +1,6 @@
 """Memory endpoints - Phase 29 - Deferred imports"""
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from datetime import datetime
-import json
 import uuid
 
 router = APIRouter()
@@ -74,13 +72,13 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
             "business_stage": row[5],
             "primary_business_type": row[6],
             "target_audience_summary": row[7],
-            "key_challenges": json.loads(row[8]) if row[8] else [],
-            "key_interests": json.loads(row[9]) if row[9] else [],
-            "technologies_used": json.loads(row[10]) if row[10] else [],
+            "key_challenges": row[8] or [],
+            "key_interests": row[9] or [],
+            "technologies_used": row[10] or [],
             "total_conversations": row[11],
             "total_messages": row[12],
-            "favorite_agents": json.loads(row[13]) if row[13] else [],
-            "frequently_asked_topics": json.loads(row[14]) if row[14] else [],
+            "favorite_agents": row[13] or [],
+            "frequently_asked_topics": row[14] or [],
             "engagement_score": row[15],
             "satisfaction_score": row[16],
             "churn_risk_score": row[17],
@@ -100,10 +98,7 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
         set_clause = []
         params = {"uid": user_id}
         for i, (key, value) in enumerate(data.items()):
-            if key in ["key_challenges", "key_interests", "technologies_used", "favorite_agents", "frequently_asked_topics"]:
-                val = json.dumps(value) if isinstance(value, list) else value
-            else:
-                val = value
+            val = value
             param_name = f"val{i}"
             set_clause.append(f"{key} = :{param_name}")
             params[param_name] = val
@@ -130,7 +125,7 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
             text("""INSERT INTO user_memory_events
             (id, user_id, event_type, event_data, created_at)
             VALUES (:new_id, :uid, :et, :ed, NOW())"""),
-            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
+            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": event_data}
         )
 
         # Increment total_messages in user_memory
@@ -162,14 +157,14 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
             {"uid": user_id}
         )
         row = result.fetchone()
-        interests = json.loads(row[0]) if row and row[0] else []
+        interests = (row[0] if row else None) or []
 
         if interest not in interests:
             interests.append(interest)
 
         await db.execute(
             text("UPDATE user_memory SET key_interests = :interests WHERE user_id = :uid"),
-            {"uid": user_id, "interests": json.dumps(interests)}
+            {"uid": user_id, "interests": interests}
         )
         await db.commit()
 
@@ -188,14 +183,14 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
             {"uid": user_id}
         )
         row = result.fetchone()
-        challenges = json.loads(row[0]) if row and row[0] else []
+        challenges = (row[0] if row else None) or []
 
         if challenge not in challenges:
             challenges.append(challenge)
 
         await db.execute(
             text("UPDATE user_memory SET key_challenges = :challenges WHERE user_id = :uid"),
-            {"uid": user_id, "challenges": json.dumps(challenges)}
+            {"uid": user_id, "challenges": challenges}
         )
         await db.commit()
 
@@ -215,7 +210,7 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
         # Try update first
         result = await db.execute(
             text("UPDATE user_preferences SET preference_value = :val WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key, "val": json.dumps(value)}
+            {"uid": user_id, "key": key, "val": value}
         )
 
         # If no rows updated, insert
@@ -223,7 +218,7 @@ async def set_preference(data: dict, user_id: str = Depends(get_user_id), db = D
             await db.execute(
                 text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
                 VALUES (:new_id, :uid, :key, :val, NOW(), NOW())"""),
-                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": json.dumps(value)}
+                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": value}
             )
 
         await db.commit()
@@ -242,7 +237,7 @@ async def get_preference(key: str, user_id: str = Depends(get_user_id), db = Dep
             {"uid": user_id, "key": key}
         )
         row = result.fetchone()
-        value = json.loads(row[0]) if row and row[0] else None
+        value = row[0] if row else None
         return {"key": key, "value": value}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -263,7 +258,7 @@ async def get_events(limit: int = 50, user_id: str = Depends(get_user_id), db = 
             {
                 "id": str(row[0]),
                 "event_type": row[1],
-                "event_data": json.loads(row[2]) if row[2] else {},
+                "event_data": row[2] or {},
                 "created_at": row[3]
             }
             for row in rows
