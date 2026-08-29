@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 import { consumoApi, type CostAttributionSummary, type QualityGateConfig, type PlanRecommendation, type OnboardingProgress, type OnboardingHelpResponse } from '@/lib/consumo'
+import { memoryApi, type UserMemoryResponse } from '@/lib/memory'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, LineChart, Line
@@ -36,6 +37,9 @@ import {
   Wifi,
   CheckCircle2,
   Circle,
+  Brain,
+  X,
+  Plus,
 } from 'lucide-react'
 
 // ============ API KEYS SECTION ============
@@ -697,6 +701,302 @@ function OnboardingGuideSection() {
   )
 }
 
+// ============ MEMORY / BUSINESS PROFILE SECTION ============
+
+const BUSINESS_STAGES = [
+  { value: '', label: 'Sin especificar' },
+  { value: 'startup', label: 'Startup' },
+  { value: 'growth', label: 'Crecimiento' },
+  { value: 'scaling', label: 'Escalando' },
+  { value: 'mature', label: 'Maduro' },
+]
+
+const TONES = [
+  { value: 'professional', label: 'Profesional' },
+  { value: 'casual', label: 'Casual' },
+  { value: 'persuasive', label: 'Persuasivo' },
+  { value: 'technical', label: 'Técnico' },
+]
+
+function TagList({
+  items,
+  onRemove,
+  onAdd,
+  placeholder,
+  color,
+}: {
+  items: string[]
+  onRemove: (item: string) => void
+  onAdd: (item: string) => void
+  placeholder: string
+  color: string
+}) {
+  const [draft, setDraft] = useState('')
+
+  const submit = () => {
+    const value = draft.trim()
+    if (value) {
+      onAdd(value)
+      setDraft('')
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {items.length === 0 && (
+          <span className="text-xs text-white/30">Todavía no hay ninguno</span>
+        )}
+        {items.map((item) => (
+          <span
+            key={item}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm ${color}`}
+          >
+            {item}
+            <button
+              onClick={() => onRemove(item)}
+              className="hover:opacity-70 transition-opacity"
+              aria-label={`Quitar ${item}`}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), submit())}
+          placeholder={placeholder}
+          className="flex-1 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-brand-orange"
+        />
+        <button
+          onClick={submit}
+          className="px-3 py-2 rounded-lg bg-white/[0.08] hover:bg-white/[0.12] text-white/70 transition-colors"
+          aria-label="Agregar"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MemoriaPerfilSection() {
+  const [memory, setMemory] = useState<UserMemoryResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res = await memoryApi.getMemory()
+      setMemory(res)
+    } catch {
+      setMessage('Error al cargar tu perfil de negocio')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const saveProfile = async () => {
+    if (!memory) return
+    setSaving(true)
+    try {
+      await memoryApi.updateMemory({
+        industry_focus: memory.industry_focus || undefined,
+        business_stage: memory.business_stage || undefined,
+        preferred_tone: memory.preferred_tone,
+      })
+      setMessage('Perfil guardado')
+      setTimeout(() => setMessage(''), 3000)
+    } catch {
+      setMessage('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addInterest = async (interest: string) => {
+    if (!memory) return
+    const optimistic = { ...memory, key_interests: [...memory.key_interests, interest] }
+    setMemory(optimistic)
+    try {
+      await memoryApi.addInterest(interest)
+    } catch {
+      setMemory(memory)
+      setMessage('Error al agregar interés')
+    }
+  }
+
+  const removeInterest = async (interest: string) => {
+    if (!memory) return
+    const next = memory.key_interests.filter((i) => i !== interest)
+    const prev = memory
+    setMemory({ ...memory, key_interests: next })
+    try {
+      await memoryApi.setInterests(next)
+    } catch {
+      setMemory(prev)
+      setMessage('Error al quitar interés')
+    }
+  }
+
+  const addChallenge = async (challenge: string) => {
+    if (!memory) return
+    const optimistic = { ...memory, key_challenges: [...memory.key_challenges, challenge] }
+    setMemory(optimistic)
+    try {
+      await memoryApi.addChallenge(challenge)
+    } catch {
+      setMemory(memory)
+      setMessage('Error al agregar desafío')
+    }
+  }
+
+  const removeChallenge = async (challenge: string) => {
+    if (!memory) return
+    const next = memory.key_challenges.filter((c) => c !== challenge)
+    const prev = memory
+    setMemory({ ...memory, key_challenges: next })
+    try {
+      await memoryApi.setChallenges(next)
+    } catch {
+      setMemory(prev)
+      setMessage('Error al quitar desafío')
+    }
+  }
+
+  return (
+    <div className="mb-8 p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 rounded-lg bg-brand-orange/10">
+          <Brain className="w-5 h-5 text-brand-orange" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-white">Perfil de Negocio</h3>
+          <p className="text-sm text-white/50">
+            SellIA usa esto para personalizar sus respuestas y recomendaciones
+          </p>
+        </div>
+      </div>
+
+      {loading || !memory ? (
+        <div className="flex items-center gap-2 text-white/50 py-8">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Cargando perfil...
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Industria</label>
+              <input
+                type="text"
+                value={memory.industry_focus || ''}
+                onChange={(e) => setMemory({ ...memory, industry_focus: e.target.value })}
+                placeholder="ej. ecommerce, saas"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-brand-orange"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Etapa del negocio</label>
+              <select
+                value={memory.business_stage || ''}
+                onChange={(e) => setMemory({ ...memory, business_stage: e.target.value || null })}
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
+              >
+                {BUSINESS_STAGES.map((s) => (
+                  <option key={s.value} value={s.value} className="bg-[#0f172a]">
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Tono preferido</label>
+              <select
+                value={memory.preferred_tone}
+                onChange={(e) => setMemory({ ...memory, preferred_tone: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-orange"
+              >
+                {TONES.map((t) => (
+                  <option key={t.value} value={t.value} className="bg-[#0f172a]">
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-white/50 mb-2">Intereses</label>
+            <TagList
+              items={memory.key_interests}
+              onAdd={addInterest}
+              onRemove={removeInterest}
+              placeholder="Agregar interés y Enter"
+              color="bg-blue-500/10 text-blue-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-white/50 mb-2">Desafíos</label>
+            <TagList
+              items={memory.key_challenges}
+              onAdd={addChallenge}
+              onRemove={removeChallenge}
+              placeholder="Agregar desafío y Enter"
+              color="bg-amber-500/10 text-amber-300"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={saveProfile}
+              disabled={saving}
+              className="px-4 py-2 rounded-lg bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar perfil'}
+            </button>
+            {message && (
+              <span className={`text-sm ${message.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
+                {message}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-white/[0.06]">
+            <div className="pt-3">
+              <p className="text-xs text-white/40">Conversaciones</p>
+              <p className="text-white font-medium">{memory.total_conversations}</p>
+            </div>
+            <div className="pt-3">
+              <p className="text-xs text-white/40">Mensajes</p>
+              <p className="text-white font-medium">{memory.total_messages}</p>
+            </div>
+            <div className="pt-3">
+              <p className="text-xs text-white/40">Engagement</p>
+              <p className="text-white font-medium">{(memory.engagement_score * 100).toFixed(0)}%</p>
+            </div>
+            <div className="pt-3">
+              <p className="text-xs text-white/40">Valor estimado</p>
+              <p className="text-white font-medium capitalize">{memory.lifetime_value_estimate}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ============ MAIN PAGE ============
 
 export default function ConfiguracionPage() {
@@ -755,8 +1055,8 @@ export default function ConfiguracionPage() {
 
         {activeTab === 'general' && (
           <div>
+            <MemoriaPerfilSection />
             <ApiKeysSection />
-            {/* Aquí se pueden agregar más secciones de configuración general */}
           </div>
         )}
 
