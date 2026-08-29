@@ -6,8 +6,8 @@ Verifica que sistema degrada gracefully, nunca falla silenciosamente.
 
 import pytest
 from datetime import datetime, timedelta
-from backend.app.core.resilience import (
-    CircuitBreaker, CircuitState, InputValidator, retry_with_exponential_backoff
+from app.core.resilience import (
+    CircuitBreaker, CircuitBreakerState, RetryConfig, InputValidator, retry_with_exponential_backoff
 )
 
 
@@ -16,51 +16,53 @@ class TestCircuitBreaker:
 
     def test_circuit_closed_initially(self):
         """Circuit debe estar CLOSED inicialmente."""
-        cb = CircuitBreaker("test_service")
-        assert cb.state == CircuitState.CLOSED
-        assert cb.is_available()
+        cb = CircuitBreaker("test_service", RetryConfig())
+        assert cb.state == CircuitBreakerState.CLOSED
+        assert cb.can_attempt()
 
     def test_circuit_opens_after_threshold(self):
         """Circuit abre después de N fallos."""
-        cb = CircuitBreaker("test_service", failure_threshold=3)
+        cb = CircuitBreaker("test_service", RetryConfig(failure_threshold=3))
         for _ in range(3):
             cb.record_failure()
-        assert cb.state == CircuitState.OPEN
-        assert not cb.is_available()
+        assert cb.state == CircuitBreakerState.OPEN
+        assert not cb.can_attempt()
 
     def test_circuit_half_open_after_timeout(self):
         """Circuit entra en HALF_OPEN después del timeout."""
-        cb = CircuitBreaker("test_service", failure_threshold=2, timeout_seconds=1)
+        cb = CircuitBreaker("test_service", RetryConfig(failure_threshold=2, recovery_timeout=1))
         cb.record_failure()
         cb.record_failure()
-        assert cb.state == CircuitState.OPEN
+        assert cb.state == CircuitBreakerState.OPEN
 
         # Esperar timeout
         import time
         time.sleep(1.1)
 
-        # Debe estar disponible para test (HALF_OPEN)
-        assert cb.is_available()
-        assert cb.state == CircuitState.HALF_OPEN
+        # can_attempt() triggers the OPEN -> HALF_OPEN transition once
+        # recovery_timeout has elapsed
+        assert cb.can_attempt()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
 
     def test_circuit_closes_after_successful_test(self):
         """Circuit se cierra después de test exitoso en HALF_OPEN."""
-        cb = CircuitBreaker("test_service", failure_threshold=1, timeout_seconds=1)
+        cb = CircuitBreaker("test_service", RetryConfig(failure_threshold=1, recovery_timeout=1, success_threshold=2))
         cb.record_failure()
-        assert cb.state == CircuitState.OPEN
+        assert cb.state == CircuitBreakerState.OPEN
 
         import time
         time.sleep(1.1)
 
-        # En HALF_OPEN
-        assert cb.state == CircuitState.HALF_OPEN
+        # En HALF_OPEN (can_attempt() drives the transition)
+        assert cb.can_attempt()
+        assert cb.state == CircuitBreakerState.HALF_OPEN
 
         # Registrar éxito
         cb.record_success()
         cb.record_success()
 
         # Debe estar CLOSED
-        assert cb.state == CircuitState.CLOSED
+        assert cb.state == CircuitBreakerState.CLOSED
 
 
 class TestInputValidator:
@@ -175,18 +177,18 @@ class TestGracefulDegradation:
 
     def test_circuit_breaker_prevents_cascading_failure(self):
         """Circuit breaker previene cascading failure."""
-        cb = CircuitBreaker("failing_service", failure_threshold=2, timeout_seconds=60)
+        cb = CircuitBreaker("failing_service", RetryConfig(failure_threshold=2, recovery_timeout=60))
 
         # Simular 2 fallos
         cb.record_failure()
         cb.record_failure()
 
         # Circuit abierto: servicio no disponible
-        assert not cb.is_available()
+        assert not cb.can_attempt()
 
         # Otros servicios pueden usar fallback mientras espera
         # (Sin martillar servicio fallido)
-        assert cb.state == CircuitState.OPEN
+        assert cb.state == CircuitBreakerState.OPEN
 
     def test_input_validation_prevents_garbage_processing(self):
         """Validación previene procesar basura."""

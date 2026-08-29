@@ -12,8 +12,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from unittest.mock import patch, MagicMock
 
-from backend.app.database import Base, engine
-from backend.app.models.psychology_sales import (
+from app.core.database import Base, engine
+from app.models.psychology_sales import (
     DiscoveryResponse,
     NeedNarrative,
     ObjectionHandling,
@@ -21,8 +21,8 @@ from backend.app.models.psychology_sales import (
     SalesConversation,
     SalesRepPerformance,
 )
-from backend.app.models.deal import Deal
-from backend.app.domains.enterprise.psychology_sales import (
+from app.domains.crm.models import Deal
+from app.domains.enterprise.psychology_sales import (
     DiscoveryQuestionsEngine,
     NeedCreationEngine,
     UrgencyTriggerEngine,

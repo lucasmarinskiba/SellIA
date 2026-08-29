@@ -2,8 +2,8 @@
 
 import pytest
 from datetime import datetime, timedelta
-from backend.app.domains.auth.email_auth import EmailAuthManager
-from backend.app.domains.enterprise.deal_intelligence import DealIntelligenceManager
+from app.domains.auth.email_auth import EmailAuthManager
+from app.domains.enterprise.deal_intelligence import DealIntelligenceManager
 
 
 # ============================================================
@@ -39,7 +39,7 @@ class TestEmailVerification:
         token = auth.create_verification_token("user123", "user@example.com")
 
         # Manually expire the token
-        from backend.app.models.email_auth import EmailVerificationToken
+        from app.models.email_auth import EmailVerificationToken
         from sqlalchemy import select
         query = select(EmailVerificationToken).where(EmailVerificationToken.token == token)
         verification = db.execute(query).scalar()
@@ -102,7 +102,7 @@ class TestAccountApproval:
         )
 
         # Admin approves
-        from backend.app.models.email_auth import AccountApproval
+        from app.models.email_auth import AccountApproval
         approval = db.query(AccountApproval).filter(AccountApproval.user_id == "user123").first()
 
         success = auth.approve_account(
@@ -125,7 +125,7 @@ class TestAccountApproval:
         )
 
         # Admin rejects
-        from backend.app.models.email_auth import AccountApproval
+        from app.models.email_auth import AccountApproval
         approval = db.query(AccountApproval).filter(AccountApproval.user_id == "user123").first()
 
         success = auth.reject_account(
@@ -330,7 +330,7 @@ class TestE2EWorkflows:
         assert approval_result.user_id == "user123"
 
         # 4. Admin approves
-        from backend.app.models.email_auth import AccountApproval
+        from app.models.email_auth import AccountApproval
         approval = db.query(AccountApproval).filter(AccountApproval.user_id == "user123").first()
         success = auth.approve_account(
             approval_id=str(approval.id),
@@ -379,7 +379,7 @@ class TestE2EWorkflows:
 @pytest.fixture
 def sample_deal(db):
     """Create sample deal for testing."""
-    from backend.app.models.deal import Deal
+    from app.domains.crm.models import Deal
 
     deal = Deal(
         id="deal-test-123",
