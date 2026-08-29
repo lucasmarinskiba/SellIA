@@ -23,6 +23,10 @@ class User(Base):
 
     is_superuser = Column(Boolean, default=False, nullable=False)
     failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    last_failed_login = Column(DateTime(timezone=True), nullable=True)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    last_device_fingerprint = Column(String(255), nullable=True)
 
     # 2FA / MFA
     totp_secret = Column(EncryptedString, nullable=True)
