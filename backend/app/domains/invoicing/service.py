@@ -33,7 +33,11 @@ class InvoicingService:
         notes: Optional[str] = None,
     ) -> Invoice:
         """Create invoice."""
-        invoice_number = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Second-precision timestamp alone collides whenever two invoices are
+        # created within the same wall-clock second (e.g. concurrent requests,
+        # a batch loop) — invoice_number is globally unique, so append a short
+        # random suffix to guarantee uniqueness regardless of timing.
+        invoice_number = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
         total_aed = amount_aed + tax_aed
 
         invoice = Invoice(
