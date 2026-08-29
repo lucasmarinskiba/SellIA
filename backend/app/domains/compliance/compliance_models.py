@@ -62,8 +62,24 @@ class DataExportRequest(Base):
 
 
 class AuditLog(Base):
-    __tablename__ = "audit_logs"
-    
+    """Compliance audit trail (GDPR/CCPA — Phase 32).
+
+    Table named `compliance_audit_logs`, not `audit_logs` — that name is
+    also claimed by app/db/models.py's legacy AuditLog on a SEPARATE
+    declarative Base (app.db.models.Base), which is what actually governs
+    the live `audit_logs` table (confirmed: its live columns are
+    entity_type/entity_id/old_values/new_values/reason, not this model's
+    event_type/resource_type/actor_id/details). Two other CoreBase modules
+    already hit and fixed the same name for the same reason — see
+    app/core/multi_tenant/models.py (-> multi_tenant_audit_logs) and
+    app/domains/tenancy/tenant_models.py (-> tenant_audit_logs), both of
+    which document this AuditLog as "always wins the race" among CoreBase
+    competitors — true, but neither knew about the cross-Base legacy
+    collision, which is what's actually live. Every call through
+    compliance_service.py's audit logging crashed until this rename.
+    """
+    __tablename__ = "compliance_audit_logs"
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     
