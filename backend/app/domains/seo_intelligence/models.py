@@ -1,5 +1,6 @@
 """SEO Intelligence domain models."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
@@ -15,7 +16,7 @@ class Keyword(Base):
     """Keyword research and tracking."""
     __tablename__ = "seo_keywords"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     keyword: Mapped[str] = mapped_column(String(255))
     search_volume: Mapped[int] = mapped_column(default=0)
@@ -33,7 +34,7 @@ class Ranking(Base):
     """Keyword ranking tracking over time."""
     __tablename__ = "seo_rankings"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     keyword_id: Mapped[UUID] = mapped_column(ForeignKey("seo_keywords.id", ondelete="CASCADE"))
     rank_position: Mapped[int] = mapped_column()
@@ -47,7 +48,7 @@ class PageOptimization(Base):
     """Page-level SEO optimization tracking."""
     __tablename__ = "seo_page_optimization"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_url: Mapped[str] = mapped_column(String(500))
     page_title: Mapped[str] = mapped_column(String(255))
@@ -72,7 +73,7 @@ class CompetitorAnalysis(Base):
     """Competitor SEO analysis."""
     __tablename__ = "seo_competitor_analysis"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     competitor_name: Mapped[str] = mapped_column(String(255))
     competitor_url: Mapped[str] = mapped_column(String(500))
@@ -90,7 +91,7 @@ class SEORecommendation(Base):
     """SEO optimization recommendations."""
     __tablename__ = "seo_recommendations"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_optimization_id: Mapped[UUID] = mapped_column(ForeignKey("seo_page_optimization.id", ondelete="CASCADE"))
     recommendation_type: Mapped[str] = mapped_column(String(50))  # title, meta, keywords, content, technical, backlinks

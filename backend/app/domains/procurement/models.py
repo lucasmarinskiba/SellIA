@@ -1,5 +1,6 @@
 """Procurement models."""
 
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -15,7 +16,7 @@ class Vendor(Base):
     """Supplier vendor with scoring."""
     __tablename__ = "vendors"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(255))
     category: Mapped[str] = mapped_column(String(100))  # office_supplies, it_hardware, etc.
@@ -33,7 +34,7 @@ class RFQ(Base):
     """Request for Quotation."""
     __tablename__ = "rfqs"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     rfq_number: Mapped[str] = mapped_column(String(50), unique=True)
     vendor_id: Mapped[UUID] = mapped_column(ForeignKey("vendors.id", ondelete="SET NULL"), nullable=True)
@@ -51,7 +52,7 @@ class PurchaseOrder(Base):
     """Purchase Order (PO) tracking."""
     __tablename__ = "purchase_orders"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     po_number: Mapped[str] = mapped_column(String(50), unique=True)
     vendor_id: Mapped[UUID] = mapped_column(ForeignKey("vendors.id", ondelete="SET NULL"), nullable=True)

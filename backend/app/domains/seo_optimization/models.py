@@ -1,5 +1,6 @@
 """SEO Auto-Optimization models."""
 
+import uuid
 from datetime import datetime
 from uuid import UUID
 
@@ -14,7 +15,7 @@ class OptimizationTask(Base):
     """Automatic SEO optimization task."""
     __tablename__ = "seo_optimization_tasks"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_url: Mapped[str] = mapped_column(String(500))
     task_type: Mapped[str] = mapped_column(String(50))  # title_rewrite, meta_optimize, keyword_inject, speed_improve, structure_enhance
@@ -55,7 +56,7 @@ class TitleOptimization(Base):
     """Title tag optimization strategies."""
     __tablename__ = "seo_title_optimization"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_url: Mapped[str] = mapped_column(String(500))
 
@@ -82,7 +83,7 @@ class MetaOptimization(Base):
     """Meta description optimization."""
     __tablename__ = "seo_meta_optimization"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_url: Mapped[str] = mapped_column(String(500))
 
@@ -107,7 +108,7 @@ class ContentOptimization(Base):
     """Content optimization strategies."""
     __tablename__ = "seo_content_optimization"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     page_url: Mapped[str] = mapped_column(String(500))
 

@@ -1,5 +1,6 @@
 """FOMO+SEO integrated models."""
 
+import uuid
 from datetime import datetime
 from uuid import UUID
 
@@ -14,7 +15,7 @@ class FOMOSEOCopy(Base):
     """Generated copy optimized for both FOMO psychology + SEO."""
     __tablename__ = "fomo_seo_copy"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     title: Mapped[str] = mapped_column(String(255))
@@ -48,7 +49,7 @@ class A_B_TestCopy(Base):
     """A/B test variants of FOMO+SEO copy."""
     __tablename__ = "fomo_seo_ab_tests"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     copy_id: Mapped[UUID] = mapped_column(ForeignKey("fomo_seo_copy.id", ondelete="CASCADE"))
 
@@ -79,7 +80,7 @@ class CopyPerformanceMetric(Base):
     """Track copy performance over time."""
     __tablename__ = "fomo_seo_performance"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     copy_id: Mapped[UUID] = mapped_column(ForeignKey("fomo_seo_copy.id", ondelete="CASCADE"))
 
