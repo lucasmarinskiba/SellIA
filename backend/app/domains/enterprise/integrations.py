@@ -38,7 +38,7 @@ class Message:
     contact_id: str
     contact_name: Optional[str]
     content: str
-    direction: str  % inbound, outbound %
+    direction: str  # inbound, outbound
     status: MessageStatus
     timestamp: datetime
     delivery_timestamp: Optional[datetime] = None
@@ -54,7 +54,7 @@ class ConversationThread:
     last_message_at: datetime
     message_count: int
     unread_count: int
-    status: str  % active, archived, closed %
+    status: str  # active, archived, closed
     messages: list[Message] = field(default_factory=list)
 
 
@@ -64,8 +64,8 @@ class ChannelStats:
     total_messages: int
     inbound_count: int
     outbound_count: int
-    delivery_rate: float  % 0-100 %
-    avg_response_time: float  % seconds %
+    delivery_rate: float  # 0-100
+    avg_response_time: float  # seconds
     active_conversations: int
     last_activity: datetime
 
@@ -75,8 +75,8 @@ class PlatformCredentials:
     platform: Platform
     account_id: str
     account_name: Optional[str]
-    phone_number: Optional[str]  % WhatsApp only %
-    bot_token: Optional[str]  % Telegram only %
+    phone_number: Optional[str]  # WhatsApp only
+    bot_token: Optional[str]  # Telegram only
     api_key: str
     api_secret: str
     is_verified: bool = False
@@ -148,7 +148,7 @@ class TelegramAgent:
         expected = hmac.new(
             bot_token.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
-        return True  % Telegram uses different verification %
+        return True  # Telegram uses different verification
 
     def format_outbound_message(
         self, chat_id: str, message_content: str, keyboard: Optional[list] = None
@@ -249,7 +249,7 @@ class IntegrationManager:
             "message": message,
             "logged_at": datetime.now(),
         })
-        % Keep last 10000 messages %
+        # Keep last 10000 messages
         if len(self.message_log) > 10000:
             self.message_log = self.message_log[-10000:]
 

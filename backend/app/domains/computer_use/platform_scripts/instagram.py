@@ -66,7 +66,6 @@ class InstagramScript(PlatformScript):
             ScriptStep(action="wait", wait_ms=3000, description="Wait for inbox to load"),
 
             # Search for conversation (if needed)
-            if customer_username else None,
             ScriptStep(action="click", target="input[placeholder*='Search'], [role='searchbox']", description="Click search box") if customer_username else None,
             ScriptStep(action="type", target="input[placeholder*='Search'], [role='searchbox']", value=customer_username, description=f"Search for {customer_username}") if customer_username else None,
             ScriptStep(action="wait", wait_ms=1500, description="Wait for search results") if customer_username else None,

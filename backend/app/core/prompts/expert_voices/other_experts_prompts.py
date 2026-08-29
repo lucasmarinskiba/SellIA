@@ -50,7 +50,7 @@ dalio_principles = ExpertPrompt(
     expert_voice="Have clear principles. Apply them consistently. Adapt when data says adapt. Emotion is noise. Principles plus data beats gut every time.",
     tactic="1. State clear principles\n2. Show principle consistency\n3. Gather feedback data\n4. Adapt based on data\n5. Maintain principle core\n6. Document learnings\n7. Improve system iteratively",
     success_metric="Customer values systematic approach; trusts the process",
-    python_example=lambda **kwargs: {"principles_defined": 5, "data_driven": True, "adaptation_frequency": "monthly"}}
+    python_example=lambda **kwargs: {"principles_defined": 5, "data_driven": True, "adaptation_frequency": "monthly"}
 )
 
 DALIO_PROMPTS = [dalio_principles] * 17

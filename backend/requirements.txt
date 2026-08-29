@@ -1,7 +1,13 @@
 # Core
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
+pydantic==2.7.4                       # Floor required by langchain-core>=0.3.78 (langchain-anthropic
+                                       # 0.3.22 needs langchain-core>=0.3.78) on Python 3.12.4+, where
+                                       # langchain-core's pydantic constraint tightens to >=2.7.4.
+                                       # Kept at the floor (not latest 2.13.x) because fastapi==0.104.1
+                                       # is too old to introspect newer pydantic FieldInfo internals —
+                                       # bumping past ~2.9 breaks Security/OAuth2 dependency resolution
+                                       # (auth.router fails: 'FieldInfo' object has no attribute 'in_').
 pydantic-settings==2.1.0
 python-multipart==0.0.6
 email-validator==2.1.1
@@ -45,13 +51,23 @@ bcrypt==4.1.2
 fastapi-limiter==0.1.6                          # Redis client (for rate limiting, sessions)
 
 # AI providers
-anthropic==0.40.0
-langchain-core==0.2.43                # Message schema (SystemMessage/HumanMessage) used by
+anthropic==0.125.0                    # Bumped from 0.40.0: langchain-anthropic 0.3.22 requires
+                                       # anthropic>=0.69.0,<1.0.0.
+langchain-core==0.3.86                # Message schema (SystemMessage/HumanMessage) used by
                                        # ai_reply.py / llm_provider.py. Missing from prod caused
                                        # a silent ModuleNotFoundError crash-loop on any code path
                                        # importing ai_reply.py (BANT lead qualification, AI auto-reply).
-                                       # Pinned to 0.2.x (not 0.3.x): 0.3.x requires pydantic>=2.5.2,
-                                       # this project pins pydantic==2.5.0 — 0.2.x only needs >=1.
+                                       # Bumped from 0.2.43: langchain-anthropic 0.3.22 requires
+                                       # langchain-core>=0.3.78. (The old 0.2.43 pin also silently
+                                       # required pydantic>=2.7.4 on Python 3.12.4+ anyway — a fresh
+                                       # `pip install -r requirements.txt` against pydantic==2.5.0
+                                       # was already ResolutionImpossible before this bump.)
+langchain-openai==0.2.6               # Used by llm_provider.py's OpenAIProvider — was imported
+                                       # directly but never pinned here; only present locally because
+                                       # someone installed it out-of-band, invisible to a fresh CI
+                                       # install (this is what "Backend Tests" was failing to install).
+langchain-anthropic==0.3.22           # Used by llm_provider.py's AnthropicProvider — same gap as
+                                       # langchain-openai above, also never pinned.
 
 # Testing
 pytest==7.4.3

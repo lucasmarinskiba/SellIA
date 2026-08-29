@@ -69,6 +69,12 @@ from .retry_engine import (
     retry_engine,
 )
 
+# InputValidator lives in app/core/input_validation.py (moved out of the old
+# app/core/resilience.py file, which collided with this package's name and
+# was silently shadowed by it) — re-exported here so existing callers of
+# `from app.core.resilience import InputValidator` keep working.
+from app.core.input_validation import InputValidator
+
 __all__ = [
     "RetryEngine",
     "RetryPolicy",
@@ -79,4 +85,9 @@ __all__ = [
     "RetryAttempt",
     "retry",
     "retry_engine",
+    "CircuitState",
+    "ServiceHealthTracker",
+    "health_tracker",
+    "retry_with_exponential_backoff",
+    "InputValidator",
 ]

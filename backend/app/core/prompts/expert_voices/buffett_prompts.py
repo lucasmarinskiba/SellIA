@@ -196,7 +196,7 @@ buffett_competitor_moat_comparison = BuffettPrompt(
     expert_voice="The best way to compete isn't to be different, it's to be defensible. Moats beat features. Always.",
     tactic="1. Identify competitor moats (or lack)\n2. Highlight your moat strength\n3. Explain why moat lasts\n4. Show switching costs\n5. Compare sustainability\n6. Emphasize moat > feature\n7. Make long-term case",
     success_metric="Customer chooses based on moat strength, not features",
-    python_example=lambda **kwargs: {"your_moat": "switching_cost", "competitor_moat": "none", "preference": "you")}
+    python_example=lambda **kwargs: {"your_moat": "switching_cost", "competitor_moat": "none", "preference": "you"}
 )
 
 # EXPORT
