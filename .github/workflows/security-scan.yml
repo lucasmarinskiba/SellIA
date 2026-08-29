@@ -126,7 +126,11 @@ jobs:
       - name: Run Bandit
         run: |
           bandit -r backend/app/ -f json -o bandit-results.json || true
-          bandit -r backend/app/ -f screen
+          # Human-readable echo of the same scan, for the job log — bandit
+          # exits non-zero on ANY finding (even LOW), so without `|| true`
+          # this line alone killed the job before the real severity gate
+          # below ever ran.
+          bandit -r backend/app/ -f screen || true
 
       - name: Upload Bandit results
         uses: actions/upload-artifact@v4
@@ -165,7 +169,10 @@ jobs:
       - name: Run pip-audit
         run: |
           pip-audit -r backend/requirements.txt --format=json --output=pip-audit-results.json || true
-          pip-audit -r backend/requirements.txt --format=summary
+          # Human-readable echo for the job log — pip-audit exits non-zero
+          # on ANY finding, so without `|| true` this line alone killed the
+          # job before the real severity gate below ever ran.
+          pip-audit -r backend/requirements.txt --format=summary || true
 
       - name: Upload pip-audit results
         uses: actions/upload-artifact@v4
