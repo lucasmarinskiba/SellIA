@@ -5,6 +5,7 @@ Monitorea performance → optimiza budget automáticamente.
 """
 
 import logging
+import uuid
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
@@ -333,7 +334,7 @@ class AdOrchestrator:
 
             # 3. Crear campaigns por plataforma
             for platform in platforms:
-                campaign_id = f"camp_{platform.value}_{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+                campaign_id = f"camp_{platform.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
                 campaign = AdCampaign(
                     campaign_id=campaign_id,

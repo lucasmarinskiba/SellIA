@@ -4,6 +4,7 @@ Fase 12: Fideliza clientes → upsell → retención → aumenta LTV.
 """
 
 import logging
+import uuid
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
@@ -161,7 +162,7 @@ class CustomerLoyaltyEngine:
     ) -> EmailSequence:
         """Crea secuencia de emails automática."""
         try:
-            sequence_id = f"seq_{sequence_type.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            sequence_id = f"seq_{sequence_type.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             # Usar template default
             if not emails:

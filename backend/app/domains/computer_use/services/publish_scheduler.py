@@ -4,6 +4,7 @@ Decide cuándo + dónde + qué publicar basado en analytics.
 """
 
 import logging
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
@@ -83,7 +84,7 @@ class PublishScheduler:
                 scheduled_time = custom_time
 
             # Crear post
-            post_id = f"post_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            post_id = f"post_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             post = ScheduledPost(
                 post_id=post_id,
