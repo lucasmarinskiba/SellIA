@@ -14,8 +14,8 @@ from datetime import datetime
 from typing import Dict, Any, List
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.core.connectors.base_connector import BaseConnector
-from app.core.connectors.mercadolibre_connector import MercadolibreConnector
-from app.core.connectors.whatsapp_connector import WhatsappConnector
+from app.core.connectors.mercadolibre_connector import MercadoLibreConnector
+from app.core.connectors.whatsapp_connector import WhatsAppConnector
 
 
 class TestChannelInitialization:
@@ -23,7 +23,7 @@ class TestChannelInitialization:
 
     def test_mercadolibre_connector_init(self):
         """Test MercadoLibre connector initialization."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -34,7 +34,7 @@ class TestChannelInitialization:
 
     def test_whatsapp_connector_init(self):
         """Test WhatsApp connector initialization."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -45,7 +45,7 @@ class TestChannelInitialization:
     @pytest.mark.asyncio
     async def test_connector_authentication(self):
         """Test connector authentication."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -57,7 +57,7 @@ class TestChannelInitialization:
     @pytest.mark.asyncio
     async def test_connector_health_check(self):
         """Test connector health check."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -74,7 +74,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_send_whatsapp_message(self):
         """Test sending WhatsApp message."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -90,7 +90,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_send_mercadolibre_message(self):
         """Test sending MercadoLibre message."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -106,7 +106,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_send_bulk_messages(self):
         """Test sending messages to multiple recipients."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -128,7 +128,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_send_template_message(self):
         """Test sending templated messages."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -144,7 +144,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_message_with_media(self):
         """Test sending messages with media attachments."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -161,7 +161,7 @@ class TestMessageSending:
     @pytest.mark.asyncio
     async def test_message_delivery_status(self):
         """Test checking message delivery status."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -262,7 +262,7 @@ class TestChannelSpecificLogic:
     @pytest.mark.asyncio
     async def test_mercadolibre_listing_creation(self):
         """Test creating MercadoLibre listing."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -283,7 +283,7 @@ class TestChannelSpecificLogic:
     @pytest.mark.asyncio
     async def test_mercadolibre_order_handling(self):
         """Test handling MercadoLibre orders."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -295,7 +295,7 @@ class TestChannelSpecificLogic:
     @pytest.mark.asyncio
     async def test_whatsapp_conversation_context(self):
         """Test maintaining WhatsApp conversation context."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -308,7 +308,7 @@ class TestChannelSpecificLogic:
     @pytest.mark.asyncio
     async def test_whatsapp_group_management(self):
         """Test WhatsApp group management."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -327,7 +327,7 @@ class TestChannelAnalytics:
     @pytest.mark.asyncio
     async def test_message_delivery_metrics(self):
         """Test tracking message delivery metrics."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -344,7 +344,7 @@ class TestChannelAnalytics:
     @pytest.mark.asyncio
     async def test_response_rate_analytics(self):
         """Test response rate analytics."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -400,7 +400,7 @@ class TestChannelHealthMonitoring:
     @pytest.mark.asyncio
     async def test_monitor_channel_uptime(self):
         """Test monitoring channel uptime."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -413,7 +413,7 @@ class TestChannelHealthMonitoring:
     @pytest.mark.asyncio
     async def test_detect_channel_outage(self):
         """Test detecting channel outages."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -446,7 +446,7 @@ class TestChannelHealthMonitoring:
     @pytest.mark.asyncio
     async def test_rate_limit_monitoring(self):
         """Test monitoring channel rate limits."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -459,7 +459,7 @@ class TestChannelHealthMonitoring:
     @pytest.mark.asyncio
     async def test_quota_management(self):
         """Test managing channel quotas."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="test_token",
             seller_id="test_seller"
         )
@@ -534,7 +534,7 @@ class TestChannelEdgeCases:
     @pytest.mark.asyncio
     async def test_handle_invalid_phone_number(self):
         """Test handling invalid phone numbers."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )
@@ -552,7 +552,7 @@ class TestChannelEdgeCases:
     @pytest.mark.asyncio
     async def test_handle_expired_token(self):
         """Test handling expired authentication token."""
-        connector = MercadolibreConnector(
+        connector = MercadoLibreConnector(
             access_token="expired_token",
             seller_id="test_seller"
         )
@@ -567,7 +567,7 @@ class TestChannelEdgeCases:
     @pytest.mark.asyncio
     async def test_rate_limit_handling(self):
         """Test handling rate limiting."""
-        connector = WhatsappConnector(
+        connector = WhatsAppConnector(
             phone_number="+1234567890",
             api_token="test_token"
         )

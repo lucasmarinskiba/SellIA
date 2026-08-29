@@ -2,7 +2,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from backend.app.domains.enterprise.platform_monetization import (
+from app.domains.enterprise.platform_monetization import (
     UserSegmentationEngine,
     UpgradeTriggerEngine,
     ABTestOrchestrator,

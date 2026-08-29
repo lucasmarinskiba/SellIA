@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from backend.app.domains.enterprise.voice_sales import (
+from app.domains.enterprise.voice_sales import (
     VoiceCallManager,
     PlaybookExtractor,
     PlaybookRecommender,
@@ -165,7 +165,7 @@ class TestE2EVoiceWorkflow:
 @pytest.fixture
 def sample_voice_call(db):
     """Create sample voice call."""
-    from backend.app.models.voice_sales import VoiceCall
+    from app.models.voice_sales import VoiceCall
 
     call = VoiceCall(
         prospect_id="prospect123",
@@ -182,7 +182,7 @@ def sample_voice_call(db):
 @pytest.fixture
 def sample_successful_calls(db):
     """Create sample successful calls."""
-    from backend.app.models.voice_sales import VoiceCall
+    from app.models.voice_sales import VoiceCall
 
     calls = []
     for i in range(5):
@@ -204,7 +204,7 @@ def sample_successful_calls(db):
 @pytest.fixture
 def sample_playbook(db):
     """Create sample playbook."""
-    from backend.app.models.voice_sales import SalesPlaybook
+    from app.models.voice_sales import SalesPlaybook
 
     playbook = SalesPlaybook(
         name="Enterprise Discovery Playbook",
@@ -221,7 +221,7 @@ def sample_playbook(db):
 @pytest.fixture
 def sample_deal(db):
     """Create sample deal."""
-    from backend.app.models.deal import Deal
+    from app.domains.crm.models import Deal
 
     deal = Deal(
         id="deal123",

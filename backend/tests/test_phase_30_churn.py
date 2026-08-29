@@ -3,8 +3,8 @@ import pytest
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from backend.app.database import Base, engine
-from backend.app.domains.enterprise.churn_retention import (
+from app.core.database import Base, engine
+from app.domains.enterprise.churn_retention import (
     ChurnPredictionModel,
     ExpansionOpportunityDetector,
     ABMIntentScorer,
