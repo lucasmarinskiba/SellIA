@@ -100,7 +100,8 @@ class RFQService:
         expected_delivery_date: date,
     ) -> RFQ:
         """Create RFQ."""
-        rfq_number = f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Same collision risk as po_number above — see that comment.
+        rfq_number = f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
         rfq = RFQ(
             business_id=business_id,
             rfq_number=rfq_number,
@@ -156,7 +157,10 @@ class PurchaseOrderService:
         expected_delivery_date: date,
     ) -> PurchaseOrder:
         """Create purchase order."""
-        po_number = f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Second-precision timestamp alone collides whenever two POs are
+        # created within the same wall-clock second — same fix as
+        # invoicing.service.create_invoice's invoice_number.
+        po_number = f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
         total_amount = quantity * unit_price_aed
 
         po = PurchaseOrder(
