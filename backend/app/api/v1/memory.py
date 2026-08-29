@@ -58,36 +58,40 @@ MEMORY_COLUMNS = """id, user_id, preferred_language, preferred_tone, industry_fo
                  lifetime_value_estimate, created_at, updated_at"""
 
 
+async def _ensure_memory_row(user_id: str, db) -> None:
+    """Idempotently create the user_memory row if it doesn't exist yet.
+    Every endpoint that reads/writes user_memory must call this first —
+    only GET /me used to do this, so calling any other endpoint (PATCH,
+    events, interests, challenges) before ever calling GET /me silently
+    no-op'd against a nonexistent row."""
+    from sqlalchemy import text
+    await db.execute(
+        text("""INSERT INTO user_memory
+        (id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
+         primary_business_type, target_audience_summary, key_challenges, key_interests,
+         technologies_used, total_conversations, total_messages, favorite_agents,
+         frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
+         lifetime_value_estimate, last_activity_at, created_at, updated_at)
+        VALUES (:new_id, :uid, 'en', 'professional', NULL, NULL, NULL, NULL,
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
+        0, 0, '[]'::jsonb, '[]'::jsonb, 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())
+        ON CONFLICT (user_id) DO NOTHING"""),
+        {"uid": user_id, "new_id": str(uuid.uuid4())}
+    )
+    await db.commit()
+
+
 @router.get("/me")
 async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
     """Get user memory"""
     try:
         from sqlalchemy import text
+        await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
         )
         row = result.fetchone()
-        if not row:
-            # Auto-create
-            await db.execute(
-                text("""INSERT INTO user_memory
-                (id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
-                 primary_business_type, target_audience_summary, key_challenges, key_interests,
-                 technologies_used, total_conversations, total_messages, favorite_agents,
-                 frequently_asked_topics, engagement_score, satisfaction_score, churn_risk_score,
-                 lifetime_value_estimate, last_activity_at, created_at, updated_at)
-                VALUES (:new_id, :uid, 'en', 'professional', NULL, NULL, NULL, NULL,
-                '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
-                0, 0, '[]'::jsonb, '[]'::jsonb, 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())"""),
-                {"uid": user_id, "new_id": str(uuid.uuid4())}
-            )
-            await db.commit()
-            result = await db.execute(
-                text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
-                {"uid": user_id}
-            )
-            row = result.fetchone()
 
         return {
             "id": str(row[0]) if row[0] else None,
@@ -124,6 +128,7 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
     """Update user memory"""
     try:
         from sqlalchemy import text
+        await _ensure_memory_row(user_id, db)
         set_clause = []
         params = {"uid": user_id}
         for i, (key, value) in enumerate(data.items()):
@@ -150,6 +155,7 @@ async def log_event(data: dict, user_id: str = Depends(get_user_id), db = Depend
     """Log event"""
     try:
         from sqlalchemy import text
+        await _ensure_memory_row(user_id, db)
         event_type = data.get("event_type", "action")
         event_data = data.get("data", {})
 
@@ -184,6 +190,7 @@ async def add_interest(interest: str, user_id: str = Depends(get_user_id), db = 
     """Add interest"""
     try:
         from sqlalchemy import text
+        await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_interests::text FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
@@ -210,6 +217,7 @@ async def add_challenge(challenge: str, user_id: str = Depends(get_user_id), db 
     """Add challenge"""
     try:
         from sqlalchemy import text
+        await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_challenges::text FROM user_memory WHERE user_id = :uid"),
             {"uid": user_id}
