@@ -32,9 +32,18 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/sellia
+      # +asyncpg is required: app/core/database.py always calls
+      # create_async_engine(), which raises immediately on a plain
+      # postgresql:// (sync/psycopg2) URL — this backend has never been
+      # able to boot via `docker compose up` with the old value.
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/sellia
       REDIS_URL: redis://redis:6379
       API_ENV: ${API_ENV:-development}
+      # SECRET_KEY has no default in app/core/config.py (required: str) —
+      # pydantic-settings fails validation on boot without it. Dev-only
+      # placeholder, override via a real SECRET_KEY env var for anything
+      # beyond local/CI use.
+      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-key-not-for-production-32ch}
     ports:
       - '8000:8000'
     depends_on:
