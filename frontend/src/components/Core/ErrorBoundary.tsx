@@ -2,6 +2,15 @@
 
 import React, { ReactNode } from 'react';
 
+declare global {
+  interface Window {
+    // Optional: only present when the Sentry browser SDK has loaded itself
+    // onto window. Guarded with `typeof window !== 'undefined' && window.__SENTRY__`
+    // below, so this stays untyped/optional rather than pulling in @sentry/browser.
+    __SENTRY__?: { captureException: (error: Error, context?: unknown) => void };
+  }
+}
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: (error: Error) => ReactNode;

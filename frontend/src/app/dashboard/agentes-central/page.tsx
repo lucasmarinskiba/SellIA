@@ -5,9 +5,9 @@ import AgentDashboard from '@/components/AgentDashboard'
 import { redirect } from 'next/navigation'
 
 export default function AgentsCentralPage() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">

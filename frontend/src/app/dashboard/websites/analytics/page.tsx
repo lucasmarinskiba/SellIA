@@ -43,7 +43,7 @@ interface ConversionAnalytics {
 
 function AnalyticsDashboardContent() {
   const searchParams = useSearchParams()
-  const businessId = searchParams.get('businessId') || ''
+  const businessId = searchParams?.get('businessId') || ''
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

@@ -115,7 +115,7 @@ export const SEOAnalyzer: React.FC = () => {
       warning: 'secondary',
       critical: 'destructive',
     };
-    const labels = {
+    const labels: Record<string, string> = {
       good: 'Optimized',
       warning: 'Needs Work',
       critical: 'Critical',
@@ -254,7 +254,7 @@ export const SEOAnalyzer: React.FC = () => {
                 </div>
               </li>
             )}
-            {metrics.find((m) => m.name === 'Keyword Optimization')?.value < 80 && (
+            {(metrics.find((m) => m.name === 'Keyword Optimization')?.value ?? 0) < 80 && (
               <li className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div>

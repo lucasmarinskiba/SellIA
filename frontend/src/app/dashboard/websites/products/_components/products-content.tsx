@@ -19,7 +19,7 @@ interface Product {
 export default function ProductsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const businessId = searchParams.get('businessId') || ''
+  const businessId = searchParams?.get('businessId') || ''
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)

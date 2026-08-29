@@ -21,7 +21,7 @@ interface Product {
 
 export default function StorefrontProducts() {
   const params = useParams()
-  const websiteId = params.website_id as string
+  const websiteId = params?.website_id as string
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)

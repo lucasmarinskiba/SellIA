@@ -40,7 +40,7 @@ interface SEOAudit {
 
 function SEODashboardContent() {
   const searchParams = useSearchParams()
-  const businessId = searchParams.get('businessId') || ''
+  const businessId = searchParams?.get('businessId') || ''
 
   const [tab, setTab] = useState<'audit' | 'meta' | 'schema' | 'sitemap' | 'robots'>('audit')
   const [loading, setLoading] = useState(true)

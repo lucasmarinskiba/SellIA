@@ -3,8 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Card } from '@/components/ui/Card';
+import { Card } from '@/components/ui/card';
 import { LineChart } from '@/components/ui/Charts';
 
 interface Campaign {
@@ -21,7 +20,6 @@ interface Campaign {
 }
 
 export const FOOMDashboard: React.FC = () => {
-  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
@@ -35,7 +33,7 @@ export const FOOMDashboard: React.FC = () => {
     try {
       setLoading(true);
       const res = await fetch('/api/fomo/analytics', {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('access_token') || localStorage.getItem('token')}` },
       });
       const data = await res.json();
       setCampaigns(data);
@@ -49,7 +47,7 @@ export const FOOMDashboard: React.FC = () => {
   const fetchMetrics = async (campaignId: string) => {
     try {
       const res = await fetch(`/api/fomo/analytics/${campaignId}/metrics?days=30`, {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('access_token') || localStorage.getItem('token')}` },
       });
       const data = await res.json();
       setMetrics(data);

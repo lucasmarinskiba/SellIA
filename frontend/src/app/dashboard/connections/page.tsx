@@ -24,6 +24,10 @@ const PLATFORM_CONFIG: Record<ChannelPlatform, { label: string; color: string; o
   amazon: { label: 'Amazon', color: 'bg-orange-500', oauth: false },
   beacons: { label: 'Beacons', color: 'bg-violet-500', oauth: false },
   tiktok: { label: 'TikTok', color: 'bg-black', oauth: true },
+  hotmart: { label: 'Hotmart', color: 'bg-orange-600', oauth: true },
+  woocommerce: { label: 'WooCommerce', color: 'bg-purple-500', oauth: false },
+  etsy: { label: 'Etsy', color: 'bg-orange-500', oauth: true },
+  facebook_marketplace: { label: 'Facebook Marketplace', color: 'bg-blue-500', oauth: true },
 }
 
 const STATUS_STYLES: Record<ChannelStatus, string> = {

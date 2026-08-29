@@ -1,10 +1,16 @@
 interface CardProps {
   children: React.ReactNode
   className?: string
+  onClick?: () => void
+  style?: React.CSSProperties
 }
 
-export const Card = ({ children, className = '' }: CardProps) => (
-  <div className={`rounded-lg border border-gray-200 bg-white shadow-sm ${className}`}>
+export const Card = ({ children, className = '', onClick, style }: CardProps) => (
+  <div
+    className={`rounded-lg border border-gray-200 bg-white shadow-sm ${className}`}
+    onClick={onClick}
+    style={style}
+  >
     {children}
   </div>
 )

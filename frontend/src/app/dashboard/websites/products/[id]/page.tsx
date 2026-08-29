@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import ProductForm from '../form'
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ProductForm productId={params.id} mode="edit" />
+      <ProductForm productId={id} mode="edit" />
     </Suspense>
   )
 }

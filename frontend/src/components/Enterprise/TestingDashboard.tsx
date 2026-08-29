@@ -20,6 +20,7 @@ interface TestResult {
   uplift: string
   confidence: string
   recommendation: string
+  revenue_impact: string
 }
 
 interface Portfolio {

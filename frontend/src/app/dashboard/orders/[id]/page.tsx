@@ -2,14 +2,15 @@
 
 import { ArrowLeft, Clock, MapPin, Truck, CheckCircle, MessageSquare, Edit2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { use, useState } from 'react'
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [note, setNote] = useState('')
 
   const order = {
-    id: params.id,
+    id,
     date: '2025-01-15',
     status: 'Entregado',
     statusColor: 'bg-green-100 text-green-700',

@@ -6,16 +6,16 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function IntelligencePage() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       router.push('/login?from=/dashboard/enterprise/intelligence')
     }
-  }, [user, isLoading, router])
+  }, [user, loading, router])
 
-  if (isLoading) return null
+  if (loading) return null
   if (!user) return null
 
   return (

@@ -41,8 +41,8 @@ export default function Checkout() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const websiteId = params.website_id as string
-  const sessionId = searchParams.get('session_id') || ''
+  const websiteId = params?.website_id as string
+  const sessionId = searchParams?.get('session_id') || ''
 
   const [loading, setLoading] = useState(false)
   const [processing, setProcessing] = useState(false)

@@ -21,6 +21,7 @@ export interface RelatedContent {
   id: string
   title: string
   similarity: number
+  url: string
 }
 
 export function RelatedContentSection({
