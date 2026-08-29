@@ -188,13 +188,13 @@ jobs:
         run: |
           cp .env.example .env
           echo "SECRET_KEY=test-secret-key-for-zap-scan-$(openssl rand -hex 16)" >> .env
-          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sellia" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/sellia" >> .env
           echo "REDIS_URL=redis://redis:6379/0" >> .env
           echo "ENVIRONMENT=test" >> .env
 
       - name: Start application stack
         run: |
-          docker compose -f docker-compose.yml up -d db redis backend frontend
+          docker compose -f docker-compose.yml up -d postgres redis backend frontend
           for i in {1..60}; do
             if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
               echo "✅ Backend is ready"
@@ -249,13 +249,13 @@ jobs:
         run: |
           cp .env.example .env
           echo "SECRET_KEY=test-secret-key-for-zap-scan-$(openssl rand -hex 16)" >> .env
-          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sellia" >> .env
+          echo "DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/sellia" >> .env
           echo "REDIS_URL=redis://redis:6379/0" >> .env
           echo "ENVIRONMENT=test" >> .env
 
       - name: Start application stack
         run: |
-          docker compose -f docker-compose.yml up -d db redis backend frontend
+          docker compose -f docker-compose.yml up -d postgres redis backend frontend
           for i in {1..60}; do
             if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
               echo "✅ Backend is ready"

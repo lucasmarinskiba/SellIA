@@ -40,9 +40,9 @@ jobs:
       - name: Start services
         run: |
           cp .env.example .env || true
-          docker compose up -d db redis backend
+          docker compose up -d postgres redis backend frontend
           # Wait for services
-          npx wait-on http://localhost:8000/health --timeout 60000
+          npx wait-on http://localhost:8000/health http://localhost:3000 --timeout 60000
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_db
           SECRET_KEY: e2e-test-secret-32-chars-long-1234567
