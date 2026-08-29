@@ -15,11 +15,26 @@ from app.core.database import Base
 
 
 class FOMOCampaign(Base):
-    """A FOMO campaign: countdown, limited spots, flash sale, etc."""
-    __tablename__ = "fomo_campaigns"
+    """A FOMO campaign: countdown, limited spots, flash sale, etc.
+
+    Table named `fomo_widget_campaigns`, not `fomo_campaigns` — that name
+    is also claimed by app.domains.fomo_generation.models's FomoCampaign
+    on a SEPARATE declarative Base (app.db.models.Base), which is what
+    actually governs the live `fomo_campaigns` table (a different concept:
+    per-user email/message FOMO nudges, not this model's on-site widget
+    campaigns). This model's columns — accent_color, cta_url, emoji,
+    show_on_pages, target_plan_ids, etc. — were never created; every call
+    through fomo.router/service.py (wired live via
+    _try_include("app.domains.fomo.router.router", ...) in app/main.py)
+    crashed. Also fixed a pre-existing, previously-unreachable bug on this
+    line: ForeignKey('user.id', ...) referenced a table that has never
+    existed — the real table is `users` (plural) — which would have made
+    table creation itself fail the moment this collision was fixed.
+    """
+    __tablename__ = "fomo_widget_campaigns"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('user.id', ondelete='CASCADE'), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
     name = Column(String(200), nullable=False)
     campaign_type = Column(String(50), nullable=False)  # countdown | limited_spots | flash_sale | social_proof | progress | scarcity | exclusivity
     trigger_type = Column(String(50), nullable=True)  # cart_abandon | page_view | churn_risk | low_engagement | product_view
@@ -65,7 +80,7 @@ class FOMOEvent(Base):
     __tablename__ = "fomo_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_campaigns.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
     event_type = Column(String(50), nullable=False)  # purchase | view | add_to_cart | abandoned
     customer_id = Column(UUID(as_uuid=True), nullable=True)
     product_id = Column(UUID(as_uuid=True), nullable=True)
@@ -85,7 +100,7 @@ class FOMOABTest(Base):
     __tablename__ = "fomo_ab_tests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_campaigns.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
 
     # Variants (JSONB config objects)
     variant_a = Column(JSONB, nullable=False)
@@ -116,7 +131,7 @@ class FOMOMetric(Base):
     __tablename__ = "fomo_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_campaigns.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
     date = Column(Date, nullable=False)
     impressions = Column(Integer, default=0, nullable=False)
     conversions = Column(Integer, default=0, nullable=False)
