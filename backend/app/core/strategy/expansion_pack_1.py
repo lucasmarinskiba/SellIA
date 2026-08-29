@@ -520,7 +520,7 @@ ELIMINATE_COMPLEXITY = BlueOceanStrategyDetail(
         "result": "$20B+ valuation in 9 years",
         "key_metric": "1-click join vs 10-step Cisco setup",
         "adoption_speed": "65M users in 1 year (COVID period)",
-        "nps_score": 72 (vs industry avg 40-50)",
+        "nps_score": "72 (vs industry avg 40-50)",
     },
 
     case_study_2={
