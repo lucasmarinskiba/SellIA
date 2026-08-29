@@ -9,7 +9,7 @@ This is deterministic regardless of what codec (if any) the connection
 has registered.
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 import json
 import uuid
 
@@ -29,13 +29,21 @@ def _loads(value):
     return value
 
 
-async def get_user_id(authorization: str = Header(None)) -> str:
-    """Extract user_id from Bearer token"""
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing token")
-    token = authorization[7:]
-
+async def get_user_id(request: Request) -> str:
+    """Extract user_id from either the Authorization: Bearer header or the
+    httpOnly access_token cookie — the dashboard's real login flow only
+    sets the cookie (JS can't read it to build a Bearer header), so both
+    must be supported. Reuses the same token-extraction path as the rest
+    of the app (app.core.deps.get_token_from_request) rather than only
+    checking the header, which silently 401s every cookie-authenticated
+    request from the dashboard."""
+    from app.core.deps import get_token_from_request
     from app.core.security import decode_access_token
+
+    token = await get_token_from_request(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+
     payload = decode_access_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=401, detail="Invalid token")
