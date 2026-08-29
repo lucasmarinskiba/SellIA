@@ -62,8 +62,21 @@ class ConditionOperator(str, Enum):
 
 
 class Workflow(Base):
-    """Workflow definition."""
-    __tablename__ = "workflows"
+    """Workflow definition.
+
+    Table renamed to trigger_workflows (was: workflows) — that name
+    collides with app/db/models.py's legacy Workflow (email-sequence
+    automation), a completely different, already-live feature under the
+    same table name across a different declarative Base. Since two
+    unrelated models declared the same __tablename__, only one schema
+    ever governed the physical table (the legacy one, which is what
+    actually exists in the live DB) — this model's own columns
+    (trigger_type, trigger_config, business_id, is_active, etc.) were
+    silently never created, so every call through WorkflowEngine
+    (wired live at /api/v1/workflows/*) crashed. See
+    memory: login_schema_drift_fixed / model_db_drift_audit.
+    """
+    __tablename__ = "trigger_workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -103,7 +116,7 @@ class WorkflowCondition(Base):
     __tablename__ = "workflow_conditions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Condition definition
     field_name = Column(String(100), nullable=False)  # e.g., "rfm_score", "churn_risk"
@@ -126,7 +139,7 @@ class WorkflowAction(Base):
     __tablename__ = "workflow_actions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Action definition
     action_type = Column(String(50), nullable=False)  # ActionType value
@@ -147,10 +160,10 @@ class WorkflowAction(Base):
 
 class WorkflowExecution(Base):
     """Workflow execution audit log."""
-    __tablename__ = "workflow_executions"
+    __tablename__ = "trigger_workflow_executions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Trigger
@@ -184,7 +197,7 @@ class WorkflowMetrics(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("trigger_workflows.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
 
     # Execution stats
     total_executions = Column(Integer, default=0)
