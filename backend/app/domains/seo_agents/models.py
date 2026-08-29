@@ -1,5 +1,6 @@
 """SEO Agents models — content generation + competitor keyword monitoring."""
 
+import uuid
 from datetime import datetime
 from uuid import UUID
 
@@ -14,7 +15,7 @@ class GeneratedContent(Base):
     """AI-generated product/service content optimized for SEO."""
     __tablename__ = "seo_generated_content"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     # Target
@@ -59,7 +60,7 @@ class CompetitorKeywordGap(Base):
     """Tracks competitor keyword rankings vs business."""
     __tablename__ = "seo_competitor_keyword_gaps"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     # Keyword
@@ -93,7 +94,7 @@ class KeywordOpportunity(Base):
     """High-opportunity keywords (low competition, high volume, undefended by competitors)."""
     __tablename__ = "seo_keyword_opportunities"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     keyword: Mapped[str] = mapped_column(String(255))
@@ -116,7 +117,7 @@ class BacklinkOpportunity(Base):
     """Identified backlink opportunity — outreach targets scored by relevance + authority."""
     __tablename__ = "seo_backlink_opportunities"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     # Target
@@ -147,7 +148,7 @@ class ReviewCampaign(Base):
     """Review solicitation campaign — sent to past customers post-purchase."""
     __tablename__ = "seo_review_campaigns"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     customer_name: Mapped[str] = mapped_column(String(255))
@@ -172,7 +173,7 @@ class ReviewAggregate(Base):
     """Aggregated review stats per business — feeds schema.org AggregateRating."""
     __tablename__ = "seo_review_aggregates"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), unique=True)
 
     total_reviews: Mapped[int] = mapped_column(default=0)
@@ -191,7 +192,7 @@ class ContentCalendarEntry(Base):
     """Scheduled content pipeline entry — plans publication ahead of generation."""
     __tablename__ = "seo_content_calendar"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     title: Mapped[str] = mapped_column(String(255))
@@ -213,7 +214,7 @@ class EntitySignal(Base):
     """Entity + knowledge graph signal — schema.org markup for brand/product/person recognition."""
     __tablename__ = "seo_entity_signals"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     entity_type: Mapped[str] = mapped_column(String(50))  # Organization, Person, Product, LocalBusiness
@@ -234,7 +235,7 @@ class LocationSEOProfile(Base):
     """Location/service-area SEO profile — LocalBusiness schema + NAP citation tracking."""
     __tablename__ = "seo_location_profiles"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     location_name: Mapped[str] = mapped_column(String(255))
@@ -259,7 +260,7 @@ class TopicalCluster(Base):
     """Pillar + cluster content group — drives internal linking strategy + topical authority."""
     __tablename__ = "seo_topical_clusters"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
 
     pillar_topic: Mapped[str] = mapped_column(String(255))

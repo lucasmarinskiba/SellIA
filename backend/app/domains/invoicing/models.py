@@ -1,5 +1,6 @@
 """Invoicing domain models."""
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
@@ -25,7 +26,7 @@ class Invoice(Base):
     """
     __tablename__ = "customer_invoices"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     customer_id: Mapped[UUID | None] = mapped_column(ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
     invoice_number: Mapped[str] = mapped_column(String(50), unique=True)
@@ -47,7 +48,7 @@ class InvoiceTemplate(Base):
     """Invoice template for businesses."""
     __tablename__ = "invoice_templates"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(255))
     template_html: Mapped[str] = mapped_column(Text)
@@ -65,7 +66,7 @@ class Payment(Base):
     """
     __tablename__ = "customer_invoice_payments"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     invoice_id: Mapped[UUID] = mapped_column(ForeignKey("customer_invoices.id", ondelete="CASCADE"))
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     amount_aed: Mapped[Decimal] = mapped_column(Numeric(14, 2))

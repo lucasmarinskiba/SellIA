@@ -1,5 +1,6 @@
 """Legal domain models."""
 
+import uuid
 from datetime import datetime
 from uuid import UUID
 
@@ -14,7 +15,7 @@ class ComplianceChecklistItem(Base):
     """Compliance requirement (labor, tax, privacy, etc.)."""
     __tablename__ = "compliance_checklist_items"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     category: Mapped[str] = mapped_column(String(100))  # labor_law, tax, data_privacy, contract, etc.
     requirement: Mapped[str] = mapped_column(String(500))
@@ -30,7 +31,7 @@ class ContractTemplate(Base):
     """Contract template for employment, NDA, vendor agreements."""
     __tablename__ = "contract_templates"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(255))
     contract_type: Mapped[str] = mapped_column(String(50))  # employment, nda, vendor, etc.
@@ -57,7 +58,7 @@ class AuditLog(Base):
     """
     __tablename__ = "legal_audit_logs"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"))
     entity_type: Mapped[str] = mapped_column(String(50))  # employee, contract, compliance_item, etc.
     entity_id: Mapped[UUID] = mapped_column()
