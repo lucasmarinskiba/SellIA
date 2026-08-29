@@ -65,7 +65,18 @@ jobs:
           ENVIRONMENT: testing
           ENABLE_OPENAPI: "false"
         run: |
-          pytest tests/ -v --tb=short --cov=app --cov-report=xml
+          # --continue-on-collection-errors: a handful of legacy test files
+          # (test_automation_engine.py, test_computer_use.py, test_ml_engine.py,
+          # test_real_estate_agent.py, test_strategy_engine.py,
+          # test_phase_31_psychology.py) import classes that don't exist under
+          # those names anywhere in the current codebase — tests written
+          # against a design that was never actually implemented, or (for
+          # phase_31) using sync SQLAlchemy fixtures against an async-only DB
+          # layer. Without this flag, pytest aborts the ENTIRE run on the
+          # first collection error, hiding every other test's real result.
+          # TODO: dedicated pass to either implement the missing classes or
+          # rewrite these tests against the real API, then drop this flag.
+          pytest tests/ -v --tb=short --continue-on-collection-errors --cov=app --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
