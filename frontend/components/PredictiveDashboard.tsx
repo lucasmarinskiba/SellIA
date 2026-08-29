@@ -93,7 +93,7 @@ const PredictiveDashboard: React.FC<{ businessId: string }> = ({ businessId }) =
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day" />
             <YAxis />
-            <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+            <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
             <Area type="monotone" dataKey="churnRisk" fill="#fca5a5" stroke="#ef4444" name="Churn Risk %" />
           </AreaChart>
         </ResponsiveContainer>
@@ -107,7 +107,7 @@ const PredictiveDashboard: React.FC<{ businessId: string }> = ({ businessId }) =
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day" />
             <YAxis />
-            <Tooltip formatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
+            <Tooltip formatter={(value) => `$${(Number(value) / 1000).toFixed(0)}K`} />
             <Legend />
             <Line type="monotone" dataKey="lower" stroke="#cbd5e1" strokeDasharray="5 5" name="Lower Bound" />
             <Line type="monotone" dataKey="forecast" stroke="#3b82f6" strokeWidth={2} name="Forecast" />

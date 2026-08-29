@@ -18,7 +18,7 @@ const AttributionDashboard: React.FC<{ businessId: string }> = ({ businessId }) 
 
       if (data.channels) {
         setTopChannels(data.channels);
-        setChannelROI(data.channels.map(ch => ({
+        setChannelROI(data.channels.map((ch: any) => ({
           name: ch.channel,
           roas: ch.roas || 0,
           cost: ch.cost || 0,

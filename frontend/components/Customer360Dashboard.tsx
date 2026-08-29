@@ -198,7 +198,7 @@ const Customer360Dashboard: React.FC<{ customerId: string; businessId: string }>
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Segmentos</h2>
           <div className="flex flex-wrap gap-2">
-            {segments.map((segment) => (
+            {segments.map((segment: any) => (
               <span
                 key={segment.name}
                 className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold"
@@ -237,7 +237,7 @@ const Customer360Dashboard: React.FC<{ customerId: string; businessId: string }>
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Recomendaciones AI</h2>
           <div className="space-y-3">
-            {ins.slice(0, 5).map((insight) => (
+            {ins.slice(0, 5).map((insight: any) => (
               <div
                 key={insight.insight_id}
                 className="p-4 bg-blue-50 border border-blue-200 rounded-lg"
@@ -267,7 +267,7 @@ const Customer360Dashboard: React.FC<{ customerId: string; businessId: string }>
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="font-bold text-gray-900 mb-3">Tags</h3>
           <div className="flex flex-wrap gap-2">
-            {p.tags.map((tag) => (
+            {p.tags.map((tag: any) => (
               <span key={tag} className="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">
                 {tag}
               </span>

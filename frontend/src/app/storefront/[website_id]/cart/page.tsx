@@ -32,7 +32,7 @@ interface Cart {
 export default function ShoppingCart() {
   const params = useParams()
   const router = useRouter()
-  const websiteId = params.website_id as string
+  const websiteId = params?.website_id as string
 
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)

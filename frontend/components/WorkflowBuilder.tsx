@@ -6,7 +6,13 @@ const WorkflowBuilder: React.FC<{ businessId: string }> = ({ businessId }) => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    trigger_type: string;
+    conditions: any[];
+    actions: { action_type: string; action_config: Record<string, any> }[];
+  }>({
     name: '',
     description: '',
     trigger_type: 'order.created',

@@ -24,7 +24,7 @@ interface FormData {
 export default function ProductForm({ productId, mode }: { productId?: string; mode: 'create' | 'edit' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const businessId = searchParams.get('businessId') || ''
+  const businessId = searchParams?.get('businessId') || ''
 
   const [loading, setLoading] = useState(mode === 'edit')
   const [saving, setSaving] = useState(false)

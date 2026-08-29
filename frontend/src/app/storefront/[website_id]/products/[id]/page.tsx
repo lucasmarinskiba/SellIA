@@ -24,8 +24,8 @@ interface Product {
 
 export default function ProductDetail() {
   const params = useParams()
-  const websiteId = params.website_id as string
-  const productId = params.id as string
+  const websiteId = params?.website_id as string
+  const productId = params?.id as string
 
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)

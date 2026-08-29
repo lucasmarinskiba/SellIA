@@ -65,7 +65,7 @@ export function useNotifications() {
           icon: '🎯',
           timestamp: new Date(),
           read: false,
-          priority: data.coaching.urgency === 'high' ? 'high' : 'normal' as const,
+          priority: (data.coaching.urgency === 'high' ? 'high' : 'normal') as Notification['priority'],
           metadata: { topic: data.coaching.topic, actionItem: data.coaching.action_item },
         }
       }
@@ -99,7 +99,7 @@ export function useNotifications() {
             icon: '💡',
             timestamp: new Date(),
             read: false,
-            priority: urgency === 'critical' ? 'critical' : urgency === 'high' ? 'high' : 'normal' as const,
+            priority: (urgency === 'critical' ? 'critical' : urgency === 'high' ? 'high' : 'normal') as Notification['priority'],
             actionUrl: '/dashboard/lead-generation',
             requiresApproval: false,
             metadata: { segment, need: primary_need },

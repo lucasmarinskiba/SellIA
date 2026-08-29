@@ -3,6 +3,8 @@ import React, { ReactNode, useState } from 'react'
 interface TabsProps {
   children: ReactNode
   defaultValue?: string
+  value?: string
+  onValueChange?: (value: string) => void
   className?: string
 }
 
@@ -28,8 +30,20 @@ const TabsContext = React.createContext<{
   setActiveTab: (value: string) => void
 } | null>(null)
 
-export const Tabs = ({ children, defaultValue = '', className = '' }: TabsProps) => {
-  const [activeTab, setActiveTab] = useState(defaultValue)
+export const Tabs = ({
+  children,
+  defaultValue = '',
+  value: controlledValue,
+  onValueChange,
+  className = '',
+}: TabsProps) => {
+  const [uncontrolledTab, setUncontrolledTab] = useState(defaultValue)
+
+  // Controlled (value + onValueChange supplied) or uncontrolled (internal state) —
+  // same pattern as the rest of this component set (Card/Badge use plain props).
+  const isControlled = controlledValue !== undefined
+  const activeTab = isControlled ? controlledValue : uncontrolledTab
+  const setActiveTab = isControlled ? (onValueChange ?? (() => {})) : setUncontrolledTab
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>

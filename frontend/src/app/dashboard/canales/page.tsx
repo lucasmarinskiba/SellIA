@@ -9,7 +9,7 @@ import {
   MessageSquare, Mail, Camera as Instagram, ShoppingCart, Briefcase as Linkedin, Link2,
   Plus, Trash2, CheckCircle2, AlertCircle, Clock, ExternalLink,
   Phone, Plug, Zap, X, Loader2, Copy, Check,
-  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem, Facebook
+  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem
 } from 'lucide-react'
 
 const platformConfig: Record<string, { label: string; icon: typeof MessageSquare; color: string; description: string }> = {
@@ -32,7 +32,7 @@ const platformConfig: Record<string, { label: string; icon: typeof MessageSquare
   hotmart: { label: 'Hotmart', icon: GraduationCap, color: 'text-red-500', description: 'Cursos y productos digitales' },
   woocommerce: { label: 'WooCommerce', icon: Store, color: 'text-purple-500', description: 'Tienda WordPress' },
   etsy: { label: 'Etsy', icon: Gem, color: 'text-orange-500', description: 'Productos artesanales y de diseño' },
-  facebook_marketplace: { label: 'Facebook Marketplace', icon: Facebook, color: 'text-blue-500', description: 'Ventas en Marketplace' },
+  facebook_marketplace: { label: 'Facebook Marketplace', icon: Store, color: 'text-blue-500', description: 'Ventas en Marketplace' },
 }
 
 const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {

@@ -7,17 +7,17 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export default function CollaborationPage() {
-  const { user, isLoading } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const [selectedDealId, setSelectedDealId] = useState('deal_001')
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       router.push('/login?from=/dashboard/enterprise/collaboration')
     }
-  }, [user, isLoading, router])
+  }, [user, loading, router])
 
-  if (isLoading) return null
+  if (loading) return null
   if (!user) return null
 
   return (

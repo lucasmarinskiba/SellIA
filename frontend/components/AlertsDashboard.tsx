@@ -210,7 +210,7 @@ const AlertsDashboard: React.FC<{ businessId: string }> = ({ businessId }) => {
                     <h3 className="font-semibold text-gray-900">{rule.name}</h3>
                     <p className="text-sm text-gray-600 mt-1">{rule.alert_type}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      {rule.channels.map((channel) => (
+                      {rule.channels.map((channel: any) => (
                         <span
                           key={channel}
                           className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"

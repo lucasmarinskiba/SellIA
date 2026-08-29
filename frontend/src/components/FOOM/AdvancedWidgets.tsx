@@ -43,14 +43,14 @@ export const PurchaseStreak: React.FC<{ campaignId: string }> = ({ campaignId })
   const [streak, setStreak] = useState(0);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchStreak = async () => {
       const res = await fetch(`/api/fomo/events/${campaignId}/count?type=purchase&hours=1`);
       const { count } = await res.json();
       setStreak(count);
     };
 
-    fetch();
-    const interval = setInterval(fetch, 10000);
+    fetchStreak();
+    const interval = setInterval(fetchStreak, 10000);
     return () => clearInterval(interval);
   }, [campaignId]);
 
@@ -124,7 +124,7 @@ export const PersonalizedOfferWidget: React.FC<{ userId: string }> = ({ userId }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchOffer = async () => {
       try {
         setLoading(true);
         const res = await fetch(`/api/fomo/personalized-offer/${userId}`);
@@ -137,7 +137,7 @@ export const PersonalizedOfferWidget: React.FC<{ userId: string }> = ({ userId }
       }
     };
 
-    fetch();
+    fetchOffer();
   }, [userId]);
 
   if (loading || !offer) return null;

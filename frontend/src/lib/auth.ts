@@ -23,6 +23,7 @@ export interface User {
   is_2fa_enabled: boolean
   created_at: string
   updated_at: string
+  segment?: string
 }
 
 export interface CloudflareInfo {

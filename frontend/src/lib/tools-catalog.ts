@@ -223,9 +223,9 @@ const META: Record<string, Partial<GrowthTool>> = {
     guardrail: { supervised: false, note: 'Lead scoring basado en comportamiento observable (respuestas, engagement). No discriminatorio.' },
     smartDefaults: () => ({
       criteria: 'respuesta_rapida + engagement + budget_indicios',
-      frioMax: 3,
-      tibioMax: 7,
-      calienteMin: 8,
+      frioMax: '3',
+      tibioMax: '7',
+      calienteMin: '8',
     }),
   },
   brand_identity: {

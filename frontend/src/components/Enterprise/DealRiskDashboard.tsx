@@ -104,7 +104,7 @@ export default function DealRiskDashboard({ userId }: { userId: string }) {
         <Card className="p-4">
           <p className="text-slate-600 text-sm mb-2">Revenue at Risk</p>
           <p className="text-3xl font-bold text-brand-night">
-            ${(dashboard?.at_risk.deals.reduce((sum, d) => sum + (d.win_probability || 0), 0) / 1000).toFixed(1)}k
+            ${((dashboard?.at_risk.deals.reduce((sum, d) => sum + (d.win_probability || 0), 0) ?? 0) / 1000).toFixed(1)}k
           </p>
           <p className="text-xs text-orange-600 mt-2">Requires action</p>
         </Card>
