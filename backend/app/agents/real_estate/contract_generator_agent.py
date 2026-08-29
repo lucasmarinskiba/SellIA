@@ -1,6 +1,7 @@
 """Contract Generator Agent — Auto-generate offers and contracts."""
 
 import logging
+import uuid
 from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
 
@@ -15,7 +16,7 @@ class ContractGeneratorAgent:
 
     def generate_purchase_agreement(self, property_id: str, buyer_id: str, terms: Dict[str, Any], region: str = "Argentina") -> Dict[str, Any]:
         """Generate purchase agreement based on offer terms."""
-        contract_id = f"PA_{property_id}_{buyer_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        contract_id = f"PA_{property_id}_{buyer_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
         agreement = {
             "contract_id": contract_id,

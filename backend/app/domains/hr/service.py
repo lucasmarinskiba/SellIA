@@ -69,7 +69,7 @@ class RecruitmentService:
         cand.offer_accepted_at = datetime.now(timezone.utc)
         cand.hired_at = datetime.now(timezone.utc)
 
-        emp_num = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        emp_num = f"EMP{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:6]}"
         emp = Employee(
             business_id=cand.business_id,
             candidate_id=candidate_id,

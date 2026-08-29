@@ -4,6 +4,7 @@ Envía primer mensaje frío → sigue si no responde → personaliza por lead.
 """
 
 import logging
+import uuid
 from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime, timedelta
 from enum import Enum
@@ -121,7 +122,7 @@ We help teams fix this. Worth a quick chat?
     ) -> OutreachCampaign:
         """Crea campaña de outreach."""
         try:
-            campaign_id = f"camp_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            campaign_id = f"camp_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             # Usar template default si no se proporciona
             if not message_template:
