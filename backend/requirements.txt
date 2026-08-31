@@ -1,5 +1,11 @@
 # Core
 fastapi==0.104.1
+starlette==0.27.0                     # fastapi==0.104.1 requires starlette>=0.27.0,<0.28.0. Left
+                                       # unpinned before, an unrelated dependency (elsewhere in a
+                                       # shared/unvenv'd environment) can float it to a newer major
+                                       # that dropped Router.__init__(on_startup=...), breaking every
+                                       # router built with @router.on_event / on_startup callbacks
+                                       # (app.api.v1.leads and others) at import time.
 uvicorn[standard]==0.24.0
 pydantic==2.7.4                       # Floor required by langchain-core>=0.3.78 (langchain-anthropic
                                        # 0.3.22 needs langchain-core>=0.3.78) on Python 3.12.4+, where
@@ -68,6 +74,8 @@ langchain-openai==0.2.6               # Used by llm_provider.py's OpenAIProvider
                                        # install (this is what "Backend Tests" was failing to install).
 langchain-anthropic==0.3.22           # Used by llm_provider.py's AnthropicProvider — same gap as
                                        # langchain-openai above, also never pinned.
+defusedxml==0.7.1                     # Safe XML parsing (amazon_shopify_automation.py) — installed
+                                       # locally already but never pinned, same invisible-to-CI gap.
 
 # Testing
 pytest==7.4.3
