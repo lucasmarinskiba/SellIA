@@ -97,7 +97,12 @@ async def check_password_breach(password: str) -> Optional[dict]:
     if not password:
         return None
 
-    sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+    # SHA-1 here is mandated by the HIBP Pwned Passwords k-anonymity API
+    # protocol itself (https://haveibeenpwned.com/API/v3#PwnedPasswords) —
+    # not a choice, and not used to protect anything: only the first 5 hex
+    # chars ever leave this process, the full password never does.
+    # usedforsecurity=False documents that for Bandit/FIPS-mode Python.
+    sha1_hash = hashlib.sha1(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
     prefix = sha1_hash[:5]
     suffix = sha1_hash[5:]
 

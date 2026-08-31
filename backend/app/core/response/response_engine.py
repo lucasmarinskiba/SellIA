@@ -42,7 +42,7 @@ class Message:
 
     def get_cache_key(self) -> str:
         """Generate cache key for response caching"""
-        content_hash = hashlib.md5(self.content.encode()).hexdigest()
+        content_hash = hashlib.md5(self.content.encode(), usedforsecurity=False).hexdigest()
         return f"response:{self.user_id}:{self.channel}:{content_hash}"
 
 

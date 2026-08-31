@@ -67,7 +67,7 @@ class FeatureFlagService:
 
         if user_id:
             # Deterministic rollout based on user ID hash
-            hash_val = int(hashlib.md5(f"{flag_name}:{user_id}".encode()).hexdigest(), 16)
+            hash_val = int(hashlib.md5(f"{flag_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
             user_bucket = hash_val % 100
             return user_bucket < flag.rollout_percentage
 

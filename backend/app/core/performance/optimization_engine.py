@@ -28,7 +28,7 @@ class OptimizationEngine:
         """Genera cache key determinístico."""
 
         data_str = str(sorted(data.items()))
-        hash_digest = hashlib.md5(data_str.encode()).hexdigest()
+        hash_digest = hashlib.md5(data_str.encode(), usedforsecurity=False).hexdigest()
         return f"{prefix}:{hash_digest}"
 
     @staticmethod

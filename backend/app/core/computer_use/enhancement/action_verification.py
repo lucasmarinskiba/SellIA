@@ -277,7 +277,7 @@ class FileUploadVerifier:
         - Tipo MIME correcto
         """
         start_time = time.time()
-        action_id = f"upload_{hashlib.md5(file_path.encode()).hexdigest()}"
+        action_id = f"upload_{hashlib.md5(file_path.encode(), usedforsecurity=False).hexdigest()}"
 
         try:
             # Verificar que el archivo aparece en la interfaz
@@ -487,7 +487,7 @@ class MessageDeliveryVerifier:
         Verifica que el mensaje aparece en la conversación.
         """
         start_time = time.time()
-        action_id = f"msg_{hashlib.md5(f'{recipient}{message_content}'.encode()).hexdigest()}"
+        action_id = f"msg_{hashlib.md5(f'{recipient}{message_content}'.encode(), usedforsecurity=False).hexdigest()}"
 
         try:
             # Buscar mensaje en conversación
@@ -578,7 +578,7 @@ class NavigationVerifier:
     ) -> VerificationResult:
         """Verificar que navegación fue exitosa."""
         start_time = time.time()
-        action_id = f"nav_{hashlib.md5(target_url.encode()).hexdigest()}"
+        action_id = f"nav_{hashlib.md5(target_url.encode(), usedforsecurity=False).hexdigest()}"
 
         try:
             # Esperar carga de página

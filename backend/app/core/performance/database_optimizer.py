@@ -1,6 +1,7 @@
 """Database Optimizer — Index strategy, query analysis, slow query log."""
 
 import logging
+import re
 import time
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
@@ -107,7 +108,7 @@ class DatabaseOptimizer:
         """Log a slow query execution."""
         import hashlib
 
-        query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+        query_hash = hashlib.md5(query.encode(), usedforsecurity=False).hexdigest()[:8]
 
         slow_query = SlowQuery(
             query_hash=query_hash,
@@ -355,6 +356,13 @@ class DatabaseOptimizer:
         table_name: str,
     ) -> Dict[str, Any]:
         """Analyze table statistics."""
+        # table_name becomes a raw SQL identifier below (PostgreSQL doesn't
+        # support bind params for identifiers) — currently unreferenced
+        # elsewhere in the app, but this is a public method a future admin
+        # endpoint could wire straight to a query param, so validate the
+        # shape defensively rather than trusting the caller.
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", table_name):
+            raise ValueError(f"Invalid table identifier: {table_name!r}")
 
         try:
             # Count rows
