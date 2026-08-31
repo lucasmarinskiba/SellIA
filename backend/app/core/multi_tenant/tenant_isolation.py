@@ -3,6 +3,7 @@ TenantIsolation: Row-level security, schema isolation, data boundaries.
 500 lines: Prevents data leakage between tenants.
 """
 
+import re
 from typing import Optional, List
 from datetime import datetime, timezone
 
@@ -15,6 +16,22 @@ from app.core.exceptions import AppException
 from .models import Tenant, TenantMember
 
 logger = get_logger(__name__)
+
+# PostgreSQL identifiers can't be bind parameters — SET search_path/CREATE
+# SCHEMA/GRANT/DROP SCHEMA below all require the schema name interpolated
+# directly into the statement. schema_name is server-generated
+# (tenant_manager.py: f"tenant_{uuid4().hex[:20]}") and explicitly excluded
+# from client-editable fields, so this isn't reachable with attacker input
+# today — but validating the identifier shape here is cheap, defends
+# against that assumption ever quietly breaking, and is exactly what static
+# analysis (correctly) can't verify from the schema/DB layer alone.
+_SAFE_SCHEMA_NAME = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
+
+
+def _assert_safe_schema_identifier(schema: str) -> str:
+    if not _SAFE_SCHEMA_NAME.match(schema):
+        raise AppException(f"Invalid tenant schema identifier: {schema!r}", status_code=500)
+    return schema
 
 
 class TenantContext:
@@ -181,7 +198,7 @@ class TenantIsolation:
         Set PostgreSQL search_path to tenant schema.
         Run at connection start for isolation.
         """
-        schema = await self.get_tenant_schema(tenant_id)
+        schema = _assert_safe_schema_identifier(await self.get_tenant_schema(tenant_id))
 
         # Set schema for this connection
         await self.db.execute(
@@ -201,7 +218,7 @@ class TenantIsolation:
         if not tenant_obj:
             raise AppException("Tenant not found", status_code=404)
 
-        schema = tenant_obj.schema_name
+        schema = _assert_safe_schema_identifier(tenant_obj.schema_name)
 
         try:
             # Create schema
@@ -253,7 +270,7 @@ class TenantIsolation:
         if not tenant_obj:
             raise AppException("Tenant not found", status_code=404)
 
-        schema = tenant_obj.schema_name
+        schema = _assert_safe_schema_identifier(tenant_obj.schema_name)
 
         try:
             await self.db.execute(

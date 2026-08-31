@@ -16,7 +16,12 @@ import logging
 import httpx
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-import xml.etree.ElementTree as ET
+# defusedxml, not the stdlib xml.etree.ElementTree: this module parses XML
+# responses from Amazon MWS (external input) — stdlib ElementTree is
+# vulnerable to XXE/billion-laughs on untrusted XML. ET is currently unused
+# in this file, but kept as the safe import so any future response-parsing
+# code added here is safe by default rather than by accident.
+import defusedxml.ElementTree as ET
 
 logger = logging.getLogger(__name__)
 

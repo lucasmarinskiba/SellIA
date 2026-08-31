@@ -5,6 +5,7 @@ Data retention, secret rotation, and cleanup.
 
 import asyncio
 import hashlib
+import re
 import secrets
 from datetime import datetime, timezone, timedelta
 from celery import shared_task
@@ -218,7 +219,16 @@ def data_retention_cleanup():
                         log_entry.records_deleted = res.rowcount
 
                     else:
-                        # Generic DELETE for any other table with created_at
+                        # Generic DELETE for any other table with created_at.
+                        # `tbl` becomes a raw SQL identifier below (no bind
+                        # params for table names) and can come from
+                        # DataRetentionPolicy.table_name — no admin API
+                        # writes that column today, but nothing stops one
+                        # from existing later, so validate the identifier
+                        # shape before it ever reaches a DELETE statement.
+                        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", tbl):
+                            logger.warning(f"Skipping retention cleanup for unsafe table identifier: {tbl!r}")
+                            continue
                         try:
                             res = await db.execute(
                                 text(f"DELETE FROM {tbl} WHERE created_at < :cutoff"),

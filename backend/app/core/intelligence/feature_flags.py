@@ -47,7 +47,7 @@ async def can_use_feature(
         return True
 
     if user_id:
-        hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode()).hexdigest(), 16)
+        hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
         user_percentile = hash_val % 100
         return user_percentile < flag.rollout_percentage
 

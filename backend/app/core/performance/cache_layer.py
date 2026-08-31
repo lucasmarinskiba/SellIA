@@ -26,7 +26,7 @@ class CacheKeyBuilder:
     @staticmethod
     def hash_query(query: str) -> str:
         """Hash a query for cache key."""
-        return hashlib.md5(query.encode()).hexdigest()
+        return hashlib.md5(query.encode(), usedforsecurity=False).hexdigest()
 
 
 @dataclass

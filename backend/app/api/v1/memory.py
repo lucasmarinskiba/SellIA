@@ -130,6 +130,19 @@ async def get_memory(user_id: str = Depends(get_user_id), db = Depends(get_db)):
 
 JSONB_MEMORY_FIELDS = {"key_challenges", "key_interests", "technologies_used", "favorite_agents", "frequently_asked_topics"}
 
+# Columns a client is allowed to PATCH via /me — everything in user_memory
+# except id/user_id/created_at/updated_at, which the client must never
+# control directly.
+ALLOWED_UPDATE_FIELDS = {
+    "preferred_language", "preferred_tone", "industry_focus", "business_stage",
+    "primary_business_type", "target_audience_summary",
+    "key_challenges", "key_interests", "technologies_used",
+    "total_conversations", "total_messages",
+    "favorite_agents", "frequently_asked_topics",
+    "engagement_score", "satisfaction_score", "churn_risk_score",
+    "lifetime_value_estimate",
+} | JSONB_MEMORY_FIELDS
+
 
 @router.patch("/me")
 async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = Depends(get_db)):
@@ -137,6 +150,19 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
     try:
         from sqlalchemy import text
         await _ensure_memory_row(user_id, db)
+        # SECURITY: `key` becomes a raw SQL identifier below (column names
+        # can't be bound parameters in SQLAlchemy). Without this whitelist
+        # check, a client-controlled dict key gets interpolated straight
+        # into the UPDATE statement — arbitrary SQL, from any authenticated
+        # user, via a plain PATCH body. Reject anything not on the real
+        # user_memory schema instead of trusting the request body's keys.
+        unknown_fields = set(data.keys()) - ALLOWED_UPDATE_FIELDS
+        if unknown_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown memory field(s): {', '.join(sorted(unknown_fields))}",
+            )
+
         set_clause = []
         params = {"uid": user_id}
         for i, (key, value) in enumerate(data.items()):
@@ -154,6 +180,8 @@ async def update_memory(data: dict, user_id: str = Depends(get_user_id), db = De
         await db.execute(text(sql), params)
         await db.commit()
         return {"status": "updated", "user_id": user_id}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

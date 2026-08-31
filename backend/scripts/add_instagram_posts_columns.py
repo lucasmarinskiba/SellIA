@@ -46,6 +46,10 @@ async def main() -> None:
                 print(f"OK   instagram_posts.{column}: ya existe")
                 continue
 
+            # column/coltype come from the hardcoded COLUMNS_TO_ADD list
+            # above, not from any external/runtime input — no user-supplied
+            # value ever reaches this f-string. One-off admin script, run
+            # manually, not wired to any endpoint.
             await conn.execute(f"ALTER TABLE instagram_posts ADD COLUMN {column} {coltype}")
             print(f"ADDED instagram_posts.{column} {coltype}")
     finally:

@@ -49,6 +49,11 @@ def run_backup():
         "-f", filepath,
     ]
 
+    # cmd is a list (no shell=True) so subprocess.run never goes through a
+    # shell — creds/env values reach pg_dump as literal argv/env entries,
+    # not interpreted shell syntax, so there's no injection surface here
+    # regardless of content. Those values come from DATABASE_URL, which the
+    # operator running this deploy-time script sets — not attacker input.
     result = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"Backup failed: {result.stderr}", file=sys.stderr)
@@ -64,14 +69,21 @@ def run_backup():
             )
             sys.exit(2)
         encrypted = f"{filepath}.enc"
+        # -pass env:BACKUP_ENCRYPTION_KEY instead of "pass:<key>" as a literal
+        # argv entry: a plain command-line arg is visible to other local
+        # users via `ps aux` / /proc/<pid>/cmdline for as long as openssl
+        # runs. Reading it from an env var (passed only to this child
+        # process, not the argv the OS exposes) avoids that exposure window.
+        enc_env = os.environ.copy()
+        enc_env["BACKUP_ENCRYPTION_KEY"] = ENCRYPTION_KEY
         enc_cmd = [
             "openssl", "enc", "-aes-256-cbc", "-salt",
             "-pbkdf2", "-iter", "100000",
             "-in", filepath,
             "-out", encrypted,
-            "-pass", f"pass:{ENCRYPTION_KEY}",
+            "-pass", "env:BACKUP_ENCRYPTION_KEY",
         ]
-        subprocess.run(enc_cmd, check=True)
+        subprocess.run(enc_cmd, env=enc_env, check=True)
         os.remove(filepath)
         filepath = encrypted
         print(f"Encrypted backup created: {filepath}")

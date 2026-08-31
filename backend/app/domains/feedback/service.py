@@ -211,7 +211,7 @@ class FeedbackService:
         # Check rollout percentage (simple hash-based)
         if flag.rollout_percentage < 100 and user_id:
             import hashlib
-            hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode()).hexdigest(), 16)
+            hash_val = int(hashlib.md5(f"{feature_name}:{user_id}".encode(), usedforsecurity=False).hexdigest(), 16)
             user_percentile = hash_val % 100
             return user_percentile < flag.rollout_percentage
 
