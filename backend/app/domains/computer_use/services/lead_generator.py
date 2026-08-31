@@ -4,6 +4,7 @@ Fase 11: Encuentra leads en web → enriquece data → segmenta por fit.
 """
 
 import logging
+import uuid
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from dataclasses import dataclass
@@ -97,7 +98,7 @@ class LeadGenerator:
             imported = []
 
             for i, lead_data in enumerate(leads_data):
-                lead_id = f"lead_{source.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}"
+                lead_id = f"lead_{source.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}_{uuid.uuid4().hex[:6]}"
 
                 lead = Lead(
                     lead_id=lead_id,

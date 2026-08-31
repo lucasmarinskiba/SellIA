@@ -5,6 +5,7 @@ Soporta: responder mensajes, agendar, cerrar ventas, lanzar ads.
 """
 
 import logging
+import uuid
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
@@ -132,7 +133,7 @@ class TaskScheduler:
         if not due_at:
             due_at = datetime.utcnow()
 
-        task_id = f"task_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{task_type.value}"
+        task_id = f"task_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{task_type.value}_{uuid.uuid4().hex[:6]}"
 
         task = Task(
             task_id=task_id,
