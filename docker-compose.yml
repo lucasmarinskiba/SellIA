@@ -59,6 +59,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # This service's command overrides the Dockerfile's CMD to `npm run
+      # dev`, so it never needs the final (production, --only=production)
+      # stage — targeting `builder` instead gets a stage that already ran a
+      # full `npm ci` (deps + devDependencies, including typescript/@types
+      # that `next dev` needs for its TS project). Without this, the
+      # production-stage node_modules is missing those, and `next dev`
+      # silently npm-installs them itself on first request — ~3 minutes and
+      # a full network fetch on every fresh container, which blew past
+      # e2e.yml's `wait-on --timeout 60000`.
+      target: builder
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       NODE_ENV: development
@@ -69,6 +79,17 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      # .next as its own anonymous volume, same reasoning as node_modules
+      # above: without this, the bind mount puts Turbopack's dev build
+      # output on the HOST filesystem. An interrupted/killed container
+      # (a rebuild, `docker compose down` mid-compile, a host reboot) then
+      # leaves partial manifest files behind that the next `next dev`
+      # doesn't regenerate — reproduced locally as a persistent 500:
+      # "Error: ENOENT ... .next/server/app/page/app-build-manifest.json".
+      # Giving .next its own container-local volume means a fresh
+      # container always gets a clean compile, matching how CI's e2e.yml/
+      # security-scan.yml behave (ephemeral runner, no leftover .next).
+      - /app/.next
     command: npm run dev
 
 volumes:
