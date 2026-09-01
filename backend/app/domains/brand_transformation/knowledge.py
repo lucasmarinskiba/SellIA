@@ -387,6 +387,56 @@ def moat_types_digest() -> str:
 
 
 # ---------------------------------------------------------------------------
+# 3d. POSITIONING & CATEGORY-DESIGN TESTS — Etapa 1. Pass/fail gates so the
+#     agent can't ship a mushy enemy, a POV nobody disagrees with, or a
+#     "new category" the business can't actually lead.
+# ---------------------------------------------------------------------------
+
+ENEMY_TEST: list[str] = [
+    "It's a BEHAVIOUR or BELIEF customers currently hold or tolerate — not a named competitor.",
+    "Naming it makes some prospects feel seen ('yes, that's exactly the problem').",
+    "It's specific enough to picture — not 'inefficiency' or 'the old way'.",
+    "The brand's whole offer is a coherent answer to this one enemy.",
+    "It's still true in 5 years — not a temporary market quirk.",
+]
+
+POV_TEST: dict[str, str] = {
+    "polarising": "A reasonable person in the market could disagree with it. If everyone nods, it says nothing.",
+    "defensible": "There's evidence, logic, or the founder's earned experience behind it — not just an opinion.",
+    "actionable": "It tells the customer (and the company) what to do differently, not just what to think.",
+    "ownable": "This brand is uniquely credible saying it — a competitor copying it would look like a follower.",
+    "durable": "It won't be embarrassing or obvious in 3 years.",
+}
+
+CATEGORY_KING_TEST: dict[str, str] = {
+    "can_be_number_one": "Within a realistic horizon, can THIS business be the clear #1 of the category it names? If not, frame within an existing category instead.",
+    "market_feels_the_pain": "Do customers already feel the problem the category solves, or must they be taught to feel it first (expensive, slow)?",
+    "frame_is_teachable": "Can the category be explained in one sentence a customer repeats correctly?",
+    "economics_concentrate": "Category kings take ~70%+ of category economics — is this category worth owning, or too small / too fragmented?",
+    "not_just_a_feature": "Is this a category or a product feature dressed up as one?",
+}
+
+REFRAME_PATTERN = (
+    "State the shift as FROM → TO: the frame customers use today (from) vs the "
+    "frame this positioning installs (to). E.g. Dollar Shave Club: FROM 'razors "
+    "are a grooming purchase you overpay for at the pharmacy' TO 'razors are a "
+    "cheap consumable that should just show up'."
+)
+
+
+def positioning_tests_digest() -> str:
+    return (
+        "ENEMY TEST (all must pass):\n"
+        + "\n".join(f"  - {x}" for x in ENEMY_TEST)
+        + "\n\nPOV TEST (score each 0-2):\n"
+        + "\n".join(f"  - {k}: {v}" for k, v in POV_TEST.items())
+        + "\n\nCATEGORY-KING TEST (answer each before recommending 'design a new category'):\n"
+        + "\n".join(f"  - {k}: {v}" for k, v in CATEGORY_KING_TEST.items())
+        + f"\n\nREFRAME: {REFRAME_PATTERN}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # 4. TRANSFORMATION STAGES  (the staged program the orchestrator runs)
 # ---------------------------------------------------------------------------
 
