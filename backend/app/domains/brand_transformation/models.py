@@ -42,6 +42,16 @@ class BrandDiagnosis(Base):
     scorecard: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {positioning: 2, brand: 1, ...}
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Quality/provenance (draft->critique->refine pass — see service._draft_then_refine)
+    confidence: Mapped[int] = mapped_column(Integer, default=0)  # 0-100, self-assessed rigor
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
+    # Trend tracking (populated by the rediagnosis automation)
+    compared_to_diagnosis_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("bt_diagnoses.id", ondelete="SET NULL"), nullable=True
+    )
+    score_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -63,6 +73,10 @@ class PositioningStatement(Base):
     the_enemy: Mapped[str | None] = mapped_column(Text, nullable=True)
     positioning_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
     one_liner: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 genuinely different bets
+
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -87,6 +101,10 @@ class BrandIdentity(Base):
     sample_rewrites: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     visual_brief: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {mood, palette_direction, typography, imagery}
     brand_architecture: Mapped[str | None] = mapped_column(Text, nullable=True)
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 alternate archetype/voice bets
+
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -107,6 +125,9 @@ class BusinessModelRedesign(Base):
     errc_grid: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # eliminate/reduce/raise/create
     rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -123,6 +144,10 @@ class FOMOPlaybook(Base):
     launch_ritual: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     cadence: Mapped[str | None] = mapped_column(String(120), nullable=True)  # e.g. "weekly drop, Thursday 11:00"
     risk_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 alternate lever combos
+
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -142,6 +167,9 @@ class GTMPlan(Base):
     content_pillars: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     plan_90_days: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # week-by-week or milestone list
 
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -160,6 +188,9 @@ class RestructuringPlan(Base):
     core_processes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{name, owner, sla, why}]
     promise_kpis: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # metrics that prove the brand promise
     unit_economics_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+    frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

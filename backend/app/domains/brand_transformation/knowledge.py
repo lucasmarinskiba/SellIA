@@ -261,6 +261,52 @@ FRAMEWORKS: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
+# 3b. QUALITY BAR — the rubric every agent is held to on its refine pass.
+#     "ocurrencia" (wit/inventiveness) and "elocuencia" (eloquence) are made
+#     concrete here instead of left as vibes, so a second LLM pass can
+#     actually grade a draft against it.
+# ---------------------------------------------------------------------------
+
+CLICHE_BLOCKLIST: list[str] = [
+    "synergy", "leverage synergies", "world-class", "cutting-edge", "best-in-class",
+    "unlock your potential", "take it to the next level", "game-changer", "disruptive innovation",
+    "seamless experience", "robust solution", "innovative solution", "empower", "holistic approach",
+    "think outside the box", "paradigm shift", "value-added", "one-stop shop", "customer-centric",
+    "passionate team", "state-of-the-art", "revolutionize", "elevate your brand",
+]
+
+QUALITY_BAR = """QUALITY BAR — every output is graded against this before it ships:
+
+1. SPECIFIC over generic. Every claim names a mechanism, a number, or a named
+   precedent. "Improve customer engagement" is a failure; "cut the checkout
+   from 5 steps to 2, the way Amazon's 1-Click did" is a pass.
+2. NO CLICHÉS. Banned words/phrases (if you catch yourself writing one of
+   these, rewrite the sentence): """ + ", ".join(f'"{w}"' for w in CLICHE_BLOCKLIST) + """
+3. OCURRENCIA (wit / inventiveness). The recommendation should be the kind
+   a sharp strategist would actually say in a room, not the first bland
+   answer a search engine would give. Prefer the non-obvious angle that is
+   still defensible over the safe, forgettable one. When a field asks for
+   alternatives, make them genuinely different bets, not three phrasings of
+   the same idea.
+4. ELOCUENCIA (eloquence). Short, rhythmic sentences. Concrete imagery over
+   abstraction. Say the hard thing plainly instead of hedging it in five
+   qualifiers. A tagline or manifesto should read like something a real
+   brand would actually publish — not a template with blanks filled in.
+5. CAUSAL, NOT DECORATIVE reasoning. Every recommendation traces to why it
+   works (a mechanism, a precedent, a number) — never asserted by mere
+   confidence.
+6. NAME YOUR SOURCES. When a recommendation borrows a pattern from the
+   reference material (a framework or a brand's origin playbook), say which
+   one and why it transfers to this business specifically — do not silently
+   reuse the example's own product/tagline.
+"""
+
+
+def quality_bar() -> str:
+    return QUALITY_BAR
+
+
+# ---------------------------------------------------------------------------
 # 4. TRANSFORMATION STAGES  (the staged program the orchestrator runs)
 # ---------------------------------------------------------------------------
 
