@@ -658,6 +658,7 @@ async def lifespan(app: FastAPI):
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES
+        from app.core.database import engine
         async with engine.begin() as conn:
             for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES:
                 await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
