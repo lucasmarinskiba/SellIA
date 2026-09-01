@@ -67,6 +67,13 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS reframe JSONB",
     "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS messaging_pillars JSONB",
     "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS migration_risks JSONB",
+    # Etapa 2 deepening — BrandIdentityAgent v2
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS archetype_analysis JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS verbal_identity JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS naming JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS story_spine JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS taglines_alt JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS identity_consistency_rules JSONB",
 ]
 
 

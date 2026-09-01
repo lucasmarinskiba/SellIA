@@ -424,6 +424,38 @@ REFRAME_PATTERN = (
 )
 
 
+NAMING_CRITERIA: dict[str, str] = {
+    "distinctive": "Doesn't blend into the category's naming conventions; a customer can pick it out of a list.",
+    "memorable": "Sticks after one exposure — short, concrete, or surprising.",
+    "sayable": "Survives being said out loud on a phone call and spelled without help.",
+    "meaning_carrying": "Points at the positioning or the feeling, not a random word.",
+    "room_to_grow": "Won't box the brand in if the product line expands.",
+    "legally_plausible": "Not an obvious trademark/domain collision (flag for a real check, don't rule).",
+}
+
+STORY_SPINE_BEATS: list[str] = [
+    "World: how things were / how the customer's world works by default.",
+    "Problem: the specific friction or injustice in that world (this is the enemy).",
+    "Insight: what the founder saw that others missed — the unlock.",
+    "Mission: what the brand is now on a mission to make true for the customer.",
+]
+
+IDENTITY_NON_NEGOTIABLES_HINT = (
+    "5 rules that must hold on every asset forever, phrased as checks a "
+    "non-designer can apply: e.g. 'the enemy is named or implied in the first "
+    "line', 'never discount the hero product', 'no stock photography of people "
+    "in suits shaking hands'."
+)
+
+
+def naming_criteria_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in NAMING_CRITERIA.items())
+
+
+def story_spine_digest() -> str:
+    return "\n".join(f"{i+1}. {b}" for i, b in enumerate(STORY_SPINE_BEATS))
+
+
 def positioning_tests_digest() -> str:
     return (
         "ENEMY TEST (all must pass):\n"
