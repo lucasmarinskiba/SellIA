@@ -84,6 +84,14 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS rollout JSONB",
     "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS risks JSONB",
     "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    # Etapa 4 deepening — FOMOEngineAgent v2
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS lever_selection JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS ethics_review JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS activation_sequence JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS content_hooks JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS measurement JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS integration_notes JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS risk_matrix JSONB",
 ]
 
 

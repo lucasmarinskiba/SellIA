@@ -750,56 +750,100 @@ Return JSON:
 
 
 class FOMOEngineAgent(_BaseAgent):
+    """Etapa 4 — a desire engine that stays on the right side of the line.
+
+    Scores all 7 levers on 5 axes (including ethical risk) before choosing,
+    runs an explicit manipulation review ('would the customer nod or feel used
+    if we explained this on a podcast?'), gives each mechanism a measurable
+    anti-fake guardrail plus the honest alternative to fall back on, sequences
+    activation by risk, and maps every mechanism to the concrete SellIA
+    fomo-domain action that implements it.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> FOMOPlaybook:
         prompt = f"""{_profile_block(profile)}
 
-PRIOR CONTEXT: {json.dumps(context or {}, ensure_ascii=False)[:1800]}
+{_positioning_digest(context)}
 
 FOMO / DESIRE LEVERS (mechanism · cases · anti-pattern):
 {K.levers_digest()}
 
-TASK: Design a FOMO / desire engine tuned to THIS business and its ethics. Pick
-4-6 levers that genuinely fit. For each: why it fits, a CONCRETE implementation
-with a non-obvious detail (the obvious version doesn't count), a KPI, and an
-anti-fake guardrail — scarcity and urgency must be real and disprovable-safe.
-Add a launch ritual with a name, and a cadence the audience can organise their
-week/month around. {extra or ''}
+SCORE ALL 7 LEVERS 0-2 ON THESE AXES, then choose 4-6:
+{K.fomo_lever_axes_digest()}
+
+THE MANIPULATION LINE:
+{K.MANIPULATION_LINE}
+
+SELLIA FOMO-DOMAIN MAP (map each chosen mechanism to the concrete action):
+{K.fomo_domain_map_digest()}
+
+TASK: Design a desire engine tuned to THIS business, its supply reality, and its
+archetype. Nothing theatrical — if the product can't support a lever, say so and
+skip it. Each mechanism needs a MEASURABLE anti-fake guardrail (how you'd prove
+it's real) and an honest_alternative (what to do instead if you can't make it
+real this cycle). {extra or ''}
 
 Return JSON:
 {{
-  "mechanisms": [
-    {{"lever": "...", "why_it_fits": "...", "implementation": "concrete steps incl. one non-obvious detail", "kpi": "...", "anti_fake_guardrail": "...", "precedent": "brand that ran this well"}},
-    ...
+  "lever_selection": [
+    {{"lever": "one of the 7", "scores": {{"business_fit": 0-2, "ethical_risk": 0-2, "operational_feasibility": 0-2, "brand_consistency": 0-2, "expected_impact": 0-2}}, "chosen": true|false, "note": "why chosen or skipped"}}
   ],
-  "launch_ritual": {{"name": "a name the audience would actually use", "sequence": [...], "payoff": "what members get that others don't", "the_hook": "the single reason people show up"}},
-  "cadence": "e.g. 'first Tuesday each month, 11:00' — specific",
-  "sequence_of_rollout": ["which mechanism to turn on first and why", "then...", "..."],
-  "risk_notes": "where this backfires (trust, fatigue, brand) and the specific guardrail",
+  "mechanisms": [
+    {{"lever": "...", "why_it_fits": "...", "implementation": "concrete steps incl. one non-obvious detail", "trigger": "the psychological trigger it pulls", "kpi": "...", "measurement": "how it's tracked", "anti_fake_guardrail": "measurable — how you'd prove it's real", "honest_alternative": "the fallback if it can't be real this cycle", "precedent": "brand that ran this well"}}
+  ],
+  "ethics_review": {{
+    "the_line_for_this_brand": "where desire-building would become manipulation here",
+    "never_do": ["specific practices this brand rules out"],
+    "shown_from_inside_test": "would the customer nod or feel used if we explained the mechanism publicly — and why"
+  }},
+  "activation_sequence": {{"first": "the lowest-risk mechanism to turn on and why", "gating_conditions": ["what must be true before the next one"], "ramp_90d": ["week 1-2 ...", "week 3-6 ...", "week 7-12 ..."]}},
+  "launch_ritual": {{"name": "a name the audience would actually use", "sequence": [...], "the_hook": "the single reason people show up", "payoff": "what participants get that others don't", "what_makes_it_repeatable": "..."}},
+  "cadence": "specific — 'first Tuesday each month, 11:00'",
+  "content_hooks": [{{"mechanism": "...", "copy_angle": "the exact line/angle to use — reusable by the GTM copy"}}],
+  "measurement": {{"leading": ["waitlist growth rate, drop sellout time, ..."], "lagging": ["repeat rate, price realised, referral rate"]}},
+  "integration_notes": [{{"mechanism": "...", "sellia_domain_action": "the concrete endpoint/campaign to create, from the domain map"}}],
+  "risk_matrix": [{{"mechanism": "...", "backfire_mode": "...", "early_warning": "the metric that flips first", "kill_switch": "how to stop it fast"}}],
+  "risk_notes": "the one sentence a founder must remember about running this",
   "alternative_angles": [
     {{"angle": "a different mechanism mix for a different risk appetite", "when_to_pick": "..."}},
     {{"angle": "...", "when_to_pick": "..."}}
   ]
 }}"""
         d = _draft_then_refine(prompt, {
+            "lever_selection": [],
             "mechanisms": [
-                {"lever": "social_proof_velocity", "why_it_fits": "Trust gap in the category", "implementation": "Show verified recent-buyer count + the specific thing they bought, updated hourly", "kpi": "PDP->cart conversion", "anti_fake_guardrail": "Only real, queryable numbers; never round up", "precedent": "Booking.com"},
-                {"lever": "anticipation_and_ritual", "why_it_fits": "Customers have nothing to look forward to", "implementation": "Monthly themed release, teased 7 days out with one detail revealed per day", "kpi": "launch-day revenue vs baseline day", "anti_fake_guardrail": "Ship on the promised date every time or the ritual dies", "precedent": "Glossier"},
+                {"lever": "social_proof_velocity", "why_it_fits": "Trust gap in the category", "implementation": "Show verified recent-buyer count + the specific item, updated hourly", "trigger": "informational social influence", "kpi": "PDP->cart conversion", "measurement": "cohort A/B on the widget", "anti_fake_guardrail": "Numbers query straight from orders; never round up; link to a public methodology note", "honest_alternative": "Show total lifetime customers instead of 'today'", "precedent": "Booking.com"},
+                {"lever": "anticipation_and_ritual", "why_it_fits": "Customers have nothing to look forward to", "implementation": "Monthly themed release teased 7 days out, one detail revealed per day", "trigger": "anticipation / dopamine gap", "kpi": "launch-day revenue vs baseline day", "measurement": "revenue delta on drop day", "anti_fake_guardrail": "Ship on the promised date every time", "honest_alternative": "A monthly note with no product if there's nothing ready", "precedent": "Glossier"},
             ],
-            "launch_ritual": {"name": "The Drop", "sequence": ["tease -7d", "daily reveal", "open", "sellout recap + waitlist"], "payoff": "members get 24h early access", "the_hook": "the thing sells out and doesn't come back"},
+            "ethics_review": {"the_line_for_this_brand": "Any scarcity a customer could disprove; any pressure on a first-time visitor mid-crisis", "never_do": ["Fake countdown timers", "Invented 'X people viewing'", "Manufactured stock warnings"], "shown_from_inside_test": "A customer seeing the real order feed behind the counter would nod — it's true."},
+            "activation_sequence": {"first": "Social proof — no supply risk", "gating_conditions": ["Inventory reliable before running the ritual"], "ramp_90d": ["w1-2: social proof live", "w3-6: first drop", "w7-12: members tier"]},
+            "launch_ritual": {"name": "The Drop", "sequence": ["tease -7d", "daily reveal", "open", "sellout recap + waitlist"], "the_hook": "it sells out and doesn't come back", "payoff": "members get 24h early access", "what_makes_it_repeatable": "a fixed date + a fresh theme each cycle"},
             "cadence": "monthly",
-            "sequence_of_rollout": ["Social proof first (no supply risk)", "then the ritual once inventory is reliable"],
-            "risk_notes": "Permanent 'ending soon' banners train customers to ignore every deadline — use real, infrequent ones.",
+            "content_hooks": [], "measurement": {"leading": ["waitlist growth", "sellout time"], "lagging": ["repeat rate", "price realised"]},
+            "integration_notes": [
+                {"mechanism": "social_proof_velocity", "sellia_domain_action": "fomo_intelligence POST /generate-social-proof + fomo GET /social-proof widget"},
+                {"mechanism": "anticipation_and_ritual", "sellia_domain_action": "fomo POST /campaigns type=drop then scheduled /activate"},
+            ],
+            "risk_matrix": [{"mechanism": "anticipation_and_ritual", "backfire_mode": "missed drop date kills trust", "early_warning": "prep milestones slipping", "kill_switch": "announce a skip early, don't fake it"}],
+            "risk_notes": "Run few, real deadlines — permanent 'ending soon' trains customers to ignore every one.",
             "alternative_angles": [],
-        }, "Reject any mechanism whose implementation is the textbook version — "
-           "each needs one detail a competitor wouldn't think of. Guardrails must "
-           "be concrete, not 'be honest'.")
+        }, "Reject any mechanism the product can't actually support. Every guardrail "
+           "must be measurable ('numbers query from orders'), not 'be honest'. The "
+           "ethics_review must name specific practices this brand rules out.")
         return await self._save(FOMOPlaybook(
             business_id=business_id,
             mechanisms=d.get("mechanisms"),
             launch_ritual=d.get("launch_ritual"),
             cadence=d.get("cadence"),
-            risk_notes=" | ".join(x for x in [d.get("risk_notes"), "Rollout: " + "; ".join(d.get("sequence_of_rollout") or [])] if x and x != "Rollout: "),
+            risk_notes=d.get("risk_notes"),
             alternative_angles=d.get("alternative_angles"),
+            lever_selection=d.get("lever_selection"),
+            ethics_review=d.get("ethics_review"),
+            activation_sequence=d.get("activation_sequence"),
+            content_hooks=d.get("content_hooks"),
+            measurement=d.get("measurement"),
+            integration_notes=d.get("integration_notes"),
+            risk_matrix=d.get("risk_matrix"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),

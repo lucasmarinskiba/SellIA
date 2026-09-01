@@ -590,6 +590,44 @@ STAGE_BY_KEY = {s["key"]: s for s in TRANSFORMATION_STAGES}
 STAGE_ORDER = [s["key"] for s in TRANSFORMATION_STAGES]
 
 
+FOMO_LEVER_AXES: dict[str, str] = {
+    "business_fit": "Does the actual product/supply/customer support this lever, or would it be theatre?",
+    "ethical_risk": "Reputational cost if a customer decided this was manipulation (low / med / high).",
+    "operational_feasibility": "Can the team run it reliably every cycle? (low / med / high)",
+    "brand_consistency": "Does it match the archetype and voice, or fight them?",
+    "expected_impact": "Rough effect on conversion / repeat / price realised (low / med / high).",
+}
+
+MANIPULATION_LINE = (
+    "Desire engineering becomes manipulation when: the scarcity/urgency is not "
+    "real and a customer could prove it; the social proof is fabricated or "
+    "unverifiable; the pressure exploits a vulnerable moment rather than a genuine "
+    "preference; the customer would feel tricked, not delighted, if they saw the "
+    "mechanism from the inside. Every mechanism must pass the 'shown from the "
+    "inside' test: if we explained exactly how it works on a podcast, would the "
+    "customer nod or feel used?"
+)
+
+# lever -> which existing SellIA fomo-domain feature implements it
+FOMO_DOMAIN_MAP: dict[str, str] = {
+    "artificial_scarcity": "fomo_intelligence POST /generate-scarcity + fomo POST /campaigns (type=scarcity) then /activate",
+    "social_proof_velocity": "fomo_intelligence POST /generate-social-proof + fomo GET /social-proof widget; log via /events/{id}/log",
+    "loss_and_urgency_framing": "fomo_intelligence POST /create-countdown-sequence + /generate-price-increase",
+    "anticipation_and_ritual": "fomo POST /campaigns (type=drop) with scheduled /activate; A/B via /ab-tests",
+    "exclusivity_and_status": "fomo_generation personalized scarcity + loyalty_engine VIP tiers",
+    "identity_and_tribe": "auto_marketing + content pillars (not a fomo-domain primitive)",
+    "velocity_of_novelty": "fomo POST /campaigns on a recurring schedule; track /analytics",
+}
+
+
+def fomo_lever_axes_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in FOMO_LEVER_AXES.items())
+
+
+def fomo_domain_map_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in FOMO_DOMAIN_MAP.items())
+
+
 def levers_digest() -> str:
     """Compact text block of every FOMO lever for prompt injection."""
     out = []
