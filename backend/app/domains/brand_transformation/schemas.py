@@ -176,6 +176,13 @@ class FOMOPlaybookOut(_ORM):
     cadence: str | None
     risk_notes: str | None
     alternative_angles: list | None
+    lever_selection: list | None
+    ethics_review: dict | None
+    activation_sequence: dict | None
+    content_hooks: list | None
+    measurement: dict | None
+    integration_notes: list | None
+    risk_matrix: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str

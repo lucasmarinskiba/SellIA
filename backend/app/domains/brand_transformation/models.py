@@ -188,11 +188,20 @@ class FOMOPlaybook(Base):
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
 
     mechanisms: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    # [{lever, why_it_fits, implementation, kpi, anti_fake_guardrail}]
+    # [{lever, why_it_fits, implementation, trigger, kpi, measurement, anti_fake_guardrail, honest_alternative}]
     launch_ritual: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     cadence: Mapped[str | None] = mapped_column(String(120), nullable=True)  # e.g. "weekly drop, Thursday 11:00"
     risk_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 alternate lever combos
+
+    # v2 deep lenses
+    lever_selection: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # all 7 levers scored on FOMO_LEVER_AXES + chosen bool
+    ethics_review: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {the_line_for_this_brand, never_do[], shown_from_inside_test}
+    activation_sequence: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {first, gating_conditions, ramp_90d}
+    content_hooks: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, copy_angle}] — reusable by GTM/copy
+    measurement: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {leading[], lagging[]}
+    integration_notes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, sellia_domain_action}] via FOMO_DOMAIN_MAP
+    risk_matrix: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, backfire_mode, early_warning, kill_switch}]
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
