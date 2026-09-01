@@ -61,6 +61,10 @@ class DiagnosisOut(_ORM):
     highest_leverage_moves: list | None
     scorecard: dict | None
     summary: str | None
+    confidence: int
+    frameworks_applied: list | None
+    compared_to_diagnosis_id: UUID | None
+    score_delta: int | None
     created_at: datetime
 
 
@@ -76,6 +80,9 @@ class PositioningOut(_ORM):
     the_enemy: str | None
     positioning_statement: str | None
     one_liner: str | None
+    alternative_angles: list | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 
@@ -93,6 +100,9 @@ class BrandIdentityOut(_ORM):
     sample_rewrites: list | None
     visual_brief: dict | None
     brand_architecture: str | None
+    alternative_angles: list | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 
@@ -105,6 +115,8 @@ class BusinessModelOut(_ORM):
     pricing_architecture: dict | None
     errc_grid: dict | None
     rationale: str | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 
@@ -114,6 +126,9 @@ class FOMOPlaybookOut(_ORM):
     launch_ritual: dict | None
     cadence: str | None
     risk_notes: str | None
+    alternative_angles: list | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 
@@ -125,6 +140,8 @@ class GTMPlanOut(_ORM):
     funnel: dict | None
     content_pillars: list | None
     plan_90_days: list | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 
@@ -137,6 +154,8 @@ class RestructuringOut(_ORM):
     core_processes: list | None
     promise_kpis: list | None
     unit_economics_notes: str | None
+    confidence: int
+    frameworks_applied: list | None
     created_at: datetime
 
 

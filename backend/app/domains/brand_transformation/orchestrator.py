@@ -32,6 +32,7 @@ from app.domains.brand_transformation.service import (
     PositioningAgent,
     RestructuringAgent,
     _ask_json,
+    _draft_then_refine,
     _profile_block,
 )
 
@@ -169,26 +170,35 @@ class TransformationOrchestrator:
 ALL STAGE OUTPUTS SO FAR:
 {json.dumps(context, ensure_ascii=False)[:6000]}
 
-TASK: Consolidate everything into an execution roadmap. Group actions into 90 /
-180 / 365 day horizons with an owner-role and a success metric each. Then give a
-weekly + monthly review ritual and a metrics board (5-8 KPIs across positioning,
-brand, offer, FOMO, growth, retention).
+TASK: Consolidate every stage into ONE execution roadmap that reads like a
+battle plan, not a to-do list. Sequence matters — order the 90-day actions so
+each unblocks the next. Every action ties to a named owner-role and a single
+success metric. Flag dependencies. Then give a review ritual and a metrics board
+(5-8 KPIs across positioning, brand, offer, FOMO, growth, retention), each KPI
+naming the vanity metric it replaces.
 
 Return JSON:
 {{
+  "north_star": "the one sentence that says what 'won' looks like in 12 months",
   "roadmap": {{
-    "90": [{{"action": "...", "owner": "role", "metric": "...", "stage": "which etapa"}}, ...],
+    "90": [{{"action": "...", "owner": "role", "metric": "...", "stage": "which etapa", "depends_on": "prior action or null"}}, ...],
     "180": [...],
     "365": [...]
   }},
+  "sequencing_logic": "why the 90-day order is what it is",
+  "biggest_risk": "the thing most likely to derail this and the early-warning signal",
   "review_ritual": {{"weekly": "...", "monthly": "...", "quarterly": "..."}},
-  "metrics_board": [{{"kpi": "...", "baseline": "unknown|value", "target": "...", "dimension": "positioning|brand|offer|fomo|growth|retention"}}, ...]
+  "metrics_board": [{{"kpi": "...", "baseline": "unknown|value", "target": "...", "dimension": "positioning|brand|offer|fomo|growth|retention", "replaces_vanity_metric": "..."}}, ...]
 }}"""
-        d = _ask_json(prompt, {
+        d = _draft_then_refine(prompt, {
+            "north_star": "Be the name customers say first in this category, at a price we set.",
             "roadmap": {"90": [], "180": [], "365": []},
-            "review_ritual": {"weekly": "15-min metrics standup", "monthly": "stage retro + roadmap re-rank", "quarterly": "re-run diagnosis"},
+            "sequencing_logic": "Positioning and offer land before any spend; spend before scale.",
+            "biggest_risk": "Executing the tactics while skipping the positioning commitment underneath them.",
+            "review_ritual": {"weekly": "15-min metrics standup", "monthly": "stage retro + roadmap re-rank", "quarterly": "re-run diagnosis, compare score"},
             "metrics_board": [],
-        })
+        }, "The 90-day sequence is the deliverable — make the ordering deliberate "
+           "and the dependencies explicit. Cut any action without an owner and a metric.")
         program.roadmap = d.get("roadmap")
         board = dict(program.metrics_board or {})
         board["roadmap_synthesis"] = d
@@ -222,26 +232,70 @@ Return JSON:
         result: dict
 
         if automation.automation_type == "rediagnosis":
-            row = await DiagnosisAgent(self.db).run(bid, profile, "Re-diagnosis run — compare to prior baseline if provided.")
-            result = {"type": "rediagnosis", "score": row.referent_potential_score, "summary": row.summary, "diagnosis_id": str(row.id)}
+            prior = await DiagnosisAgent(self.db).latest(bid)
+            prior_score = prior.referent_potential_score if prior else None
+            extra = "Periodic re-diagnosis."
+            if prior:
+                extra += (
+                    f" Prior Referent Potential Score was {prior_score} on "
+                    f"{prior.created_at:%Y-%m-%d}; prior symptoms: {json.dumps(prior.symptoms or [])[:600]}. "
+                    "State explicitly what improved, what regressed, and what is still unaddressed."
+                )
+            row = await DiagnosisAgent(self.db).run(bid, profile, extra)
+            delta = (row.referent_potential_score - prior_score) if prior_score is not None else None
+            if prior is not None:
+                row.compared_to_diagnosis_id = prior.id
+                row.score_delta = delta
+                await self.db.commit()
+            result = {
+                "type": "rediagnosis",
+                "score": row.referent_potential_score,
+                "prior_score": prior_score,
+                "score_delta": delta,
+                "trend": ("improving" if (delta or 0) > 2 else "declining" if (delta or 0) < -2 else "flat"),
+                "summary": row.summary,
+                "still_unaddressed": row.root_causes,
+                "diagnosis_id": str(row.id),
+            }
 
         elif automation.automation_type == "fomo_cadence":
-            row = await FOMOEngineAgent(self.db).run(bid, profile, cfg.get("context"), "Generate the next cycle's FOMO activation only.")
-            result = {"type": "fomo_cadence", "cadence": row.cadence, "mechanisms": row.mechanisms, "playbook_id": str(row.id)}
+            row = await FOMOEngineAgent(self.db).run(
+                bid, profile, cfg.get("context"),
+                "Generate ONLY the next cycle's activation: one lead mechanism + the "
+                "ritual beat for this period + the exact copy hook. Keep it shippable this week.",
+            )
+            result = {"type": "fomo_cadence", "cadence": row.cadence, "next_activation": row.mechanisms, "ritual": row.launch_ritual, "playbook_id": str(row.id)}
 
         elif automation.automation_type in ("brand_consistency_monitor", "positioning_drift_watch", "competitor_narrative_watch"):
             samples = cfg.get("samples", [])
+            _focus = {
+                "brand_consistency_monitor": "voice, tone, and vocabulary vs the brand voice system (do/don't list, cliché blocklist)",
+                "positioning_drift_watch": "whether the messaging still fights the stated enemy and holds the category frame, or has drifted back to feature-listing",
+                "competitor_narrative_watch": "whether competitor messaging (in the samples) is encroaching on this brand's owned position, and how to counter it",
+            }[automation.automation_type]
             prompt = f"""{_profile_block(profile)}
 
-MONITOR TYPE: {automation.automation_type}
-MATERIAL TO CHECK: {json.dumps(samples, ensure_ascii=False)[:4000]}
-BRAND REFERENCE (voice/positioning): {json.dumps(cfg.get('brand_reference', {}), ensure_ascii=False)[:2000]}
+{K.QUALITY_BAR}
 
-TASK: Flag drift from the brand's positioning / voice / category. Score 0-100
-consistency. List specific violations and fixes.
+MONITOR: {automation.automation_type} — focus on {_focus}.
+MATERIAL TO CHECK:
+{json.dumps(samples, ensure_ascii=False)[:5000]}
+BRAND REFERENCE (voice / positioning / enemy / category):
+{json.dumps(cfg.get('brand_reference', {}), ensure_ascii=False)[:2500]}
 
-Return JSON: {{"consistency_score": <int>, "violations": [{{"where": "...", "issue": "...", "fix": "..."}}], "verdict": "on-brand|minor-drift|major-drift"}}"""
-            result = _ask_json(prompt, {"consistency_score": 70, "violations": [], "verdict": "minor-drift"})
+TASK: Grade consistency 0-100. List specific violations with the exact offending
+phrase and a rewrite. Give ONE sharp, quotable recommendation the team can act
+on this week.
+
+Return JSON:
+{{
+  "consistency_score": <int 0-100>,
+  "verdict": "on-brand|minor-drift|major-drift",
+  "violations": [{{"where": "...", "offending_phrase": "...", "issue": "...", "rewrite": "..."}}],
+  "single_priority_fix": "the one thing to change first",
+  "trend_note": "if prior runs exist in the reference, is this better or worse"
+}}"""
+            result = _ask_json(prompt, {"consistency_score": 70, "verdict": "minor-drift", "violations": [], "single_priority_fix": "Provide brand_reference + samples in config for a real check."})
             result["type"] = automation.automation_type
         else:
             result = {"type": automation.automation_type, "note": "no runner implemented"}

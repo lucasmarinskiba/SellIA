@@ -48,9 +48,27 @@ growth loops · E-E-A-T authority · brand-voice system.
 
 ---
 
+### Quality bar (`knowledge.QUALITY_BAR` + `CLICHE_BLOCKLIST`)
+Concrete rubric injected into every agent's system prompt: specific-over-generic,
+23-phrase cliché blocklist ("synergy", "world-class", "game-changer"…), explicit
+definitions of *ocurrencia* (non-obvious but defensible) and *elocuencia* (short
+rhythmic sentences, concrete imagery, no hedging), causal-not-decorative
+reasoning, name-your-sources.
+
+---
+
 ## 2. Specialist agents (`service.py`)
 
-Each agent = prompt (injects the relevant research) → Claude JSON → safe fallback → persisted artifact.
+**Two-pass pipeline** (`_draft_then_refine`): every agent does
+DRAFT → adversarial self-critique against the quality bar → REFINED final
+(same JSON keys, sharper prose, clichés cut, precedent added) → safe fallback →
+persisted artifact. Two Claude calls per agent; the refine pass is skipped if the
+draft already fell back. Refine also appends `confidence` (0-100 self-assessed
+rigor) and `frameworks_applied` (names actually used) to every artifact.
+
+The three creative agents (positioning, brand identity, FOMO) also emit
+`alternative_angles` — 2-3 *genuinely different* strategic bets with a
+"when to pick" condition, so the user picks rather than gets one take.
 
 | Agent | Etapa | Output table |
 |---|---|---|
@@ -88,11 +106,11 @@ Reference (no auth cost beyond login): `GET /stages`, `/knowledge/fomo-levers`, 
 
 | Type | What it does |
 |---|---|
-| `rediagnosis` | Re-run the diagnosis on a schedule; track Referent Potential Score over time |
-| `fomo_cadence` | Generate the next cycle's FOMO activation on cadence |
-| `brand_consistency_monitor` | Score sample material 0-100 vs brand voice/positioning; flag violations + fixes |
-| `positioning_drift_watch` | Detect drift from the chosen category/POV |
-| `competitor_narrative_watch` | Flag when competitor messaging encroaches on the owned position |
+| `rediagnosis` | Re-run diagnosis; loads prior diagnosis, feeds prior score+symptoms into the prompt, persists `score_delta` + `compared_to_diagnosis_id`, returns `trend` (improving/flat/declining) + what's still unaddressed |
+| `fomo_cadence` | Generate ONLY the next cycle's shippable activation — one lead mechanism + ritual beat + copy hook |
+| `brand_consistency_monitor` | Grade sample material 0-100 vs the brand voice system + cliché blocklist; per-violation offending phrase + rewrite + single priority fix |
+| `positioning_drift_watch` | Flag when messaging stops fighting the stated enemy / drifts back to feature-listing |
+| `competitor_narrative_watch` | Flag competitor encroachment on the owned position + how to counter |
 
 `POST /automations` to create, `POST /automations/{id}/run` to execute now.
 
@@ -110,7 +128,7 @@ import list.
 ## 5. Wiring
 
 - Router registered in `backend/app/main.py` (`_try_include`, defensive).
-- Tables created at startup by `bootstrap.ensure_brand_transformation_tables`, called from `sellbot.py` alongside ledger/ad_budget/forecasting (migrations are disabled in this deployment).
+- Tables created at startup by `bootstrap.ensure_brand_transformation_tables`, called from `sellbot.py` alongside ledger/ad_budget/forecasting (migrations are disabled in this deployment). Bootstrap also runs idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` patches for the post-v1 columns (`confidence`, `frameworks_applied`, `alternative_angles`, `score_delta`, `compared_to_diagnosis_id`).
 - LLM: `claude-opus-5`, lazy anthropic client (missing key never breaks startup; agents fall back to templated output).
 
 ---

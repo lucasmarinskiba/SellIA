@@ -8,9 +8,38 @@ here, each in its own transaction so one failure never poisons the rest.
 
 from __future__ import annotations
 
+from sqlalchemy import text
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Additive columns introduced after the tables' first ship. `t.create(checkfirst=True)`
+# only CREATEs missing tables — it never ALTERs an existing one — so on a DB that
+# already has the v1 tables these must be added explicitly. Postgres
+# `ADD COLUMN IF NOT EXISTS` is idempotent and safe to run every startup.
+_COLUMN_PATCHES: list[str] = [
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS compared_to_diagnosis_id UUID",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS score_delta INTEGER",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+]
 
 
 async def ensure_brand_transformation_tables() -> None:
@@ -30,7 +59,17 @@ async def ensure_brand_transformation_tables() -> None:
                 "brand_transformation bootstrap: table %s skipped: %s",
                 table.name, str(e)[:160],
             )
+
+    patched = 0
+    for stmt in _COLUMN_PATCHES:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(stmt))
+            patched += 1
+        except Exception as e:  # noqa: BLE001
+            logger.warning("brand_transformation bootstrap: column patch skipped (%s): %s", stmt[:60], str(e)[:120])
+
     logger.info(
-        "✅ brand_transformation tables ensured (%s/%s)",
-        created, len(BRAND_TRANSFORMATION_TABLES),
+        "✅ brand_transformation tables ensured (%s/%s, %s/%s column patches)",
+        created, len(BRAND_TRANSFORMATION_TABLES), patched, len(_COLUMN_PATCHES),
     )
