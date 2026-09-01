@@ -220,6 +220,14 @@ class RestructuringOut(_ORM):
     core_processes: list | None
     promise_kpis: list | None
     unit_economics_notes: str | None
+    capability_gaps: list | None
+    decision_rights: list | None
+    operating_rhythm: dict | None
+    unit_economics_gate: dict | None
+    operating_plan_90d: list | None
+    transition_risks: list | None
+    the_one_hire: str | None
+    alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str

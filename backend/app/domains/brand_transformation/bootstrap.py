@@ -101,6 +101,15 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS anti_goals JSONB",
     "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS north_star_metric VARCHAR(255)",
     "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
+    # Etapa 6 deepening — RestructuringAgent v2
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS capability_gaps JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS decision_rights JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS operating_rhythm JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS unit_economics_gate JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS operating_plan_90d JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS transition_risks JSONB",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS the_one_hire TEXT",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
 ]
 
 

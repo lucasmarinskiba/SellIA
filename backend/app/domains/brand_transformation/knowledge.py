@@ -660,6 +660,42 @@ def growth_loop_axes_digest() -> str:
     return "\n".join(f"- {k}: {v}" for k, v in GROWTH_LOOP_AXES.items())
 
 
+# ---------------------------------------------------------------------------
+# 3g. RESTRUCTURING / OPERATIONS CALIBRATION — Etapa 6.
+# ---------------------------------------------------------------------------
+
+DECISION_RIGHTS_MODEL = (
+    "For each key decision type, name ONE owner (decides), the people Consulted "
+    "before, and who is Informed after. Avoid committees. If two people 'own' a "
+    "decision, nobody does — pick one and make the other a Consulted."
+)
+
+BUILD_BUY_BORROW = (
+    "For each capability the new strategy needs but the org lacks: BUILD (hire / "
+    "train — slow, permanent, owned), BUY (agency / tool / contractor — fast, "
+    "costs margin, not owned), or BORROW (advisor / partner / fractional — cheap, "
+    "temporary, transfers knowledge). Pick one per gap with the reason."
+)
+
+OPERATING_RHYTHM_TEMPLATE: dict[str, str] = {
+    "daily": "15-min: what's blocked, what ships today. No status theatre.",
+    "weekly": "Metrics review + the one decision the week needs. Owner presents, not the whole team.",
+    "monthly": "Stage retro: what the transformation moved, what stalled, re-rank the roadmap.",
+    "quarterly": "Re-run the diagnosis, compare the Referent Potential Score, reset targets.",
+}
+
+PROMISE_KPI_HINT = (
+    "A promise KPI proves the brand promise is being KEPT, not that activity "
+    "happened. Each one: the metric, the target, which specific promise it "
+    "proves, the vanity metric it replaces, where the number comes from, and "
+    "today's baseline (or 'unknown')."
+)
+
+
+def operating_rhythm_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in OPERATING_RHYTHM_TEMPLATE.items())
+
+
 def levers_digest() -> str:
     """Compact text block of every FOMO lever for prompt injection."""
     out = []
