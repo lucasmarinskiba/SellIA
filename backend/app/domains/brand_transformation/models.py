@@ -33,7 +33,10 @@ class BrandDiagnosis(Base):
     revenue_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Output
+    # Input — structured evidence the caller supplied (drives confidence)
+    evidence_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Output — headline
     referent_potential_score: Mapped[int] = mapped_column(Integer, default=0)  # 0-100
     commoditization_level: Mapped[str] = mapped_column(String(20), default="unknown")  # low/medium/high/severe
     symptoms: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # ["undifferentiated pricing", ...]
@@ -41,6 +44,17 @@ class BrandDiagnosis(Base):
     highest_leverage_moves: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # top 3
     scorecard: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {positioning: 2, brand: 1, ...}
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Output — deep lenses
+    commoditization_analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # per dimension: price/product/distribution/brand
+    referent_gap: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # per axis: current / referent looks like / the gap
+    closest_precedent: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {brand, why, what_to_copy, what_not_to_copy}
+    moat_assessment: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {has_moat, buildable_moat_type, how}
+    quick_wins: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # <=30-day moves
+    structural_moves: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 6-12 month moves
+    kill_criteria: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # signals => don't chase referent status, pivot
+    second_order_risk: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_quality: Mapped[str | None] = mapped_column(String(20), nullable=True)  # thin/partial/solid — how grounded the call is
 
     # Quality/provenance (draft->critique->refine pass — see service._draft_then_refine)
     confidence: Mapped[int] = mapped_column(Integer, default=0)  # 0-100, self-assessed rigor

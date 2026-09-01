@@ -72,7 +72,7 @@ The three creative agents (positioning, brand identity, FOMO) also emit
 
 | Agent | Etapa | Output table |
 |---|---|---|
-| `DiagnosisAgent` | 0 | `bt_diagnoses` — Referent Potential Score 0-100, commoditization level, symptoms, root causes, top-3 leverage moves, 6-axis scorecard |
+| `DiagnosisAgent` | 0 | `bt_diagnoses` — **v2, multi-lens.** Headline score + commoditization level, then: `commoditization_analysis` (price/product/distribution/brand each 0-5 + the tell), `scorecard` (6 axes scored against `REFERENT_SCORECARD_RUBRIC` — explicit 0-5 definitions per axis), `referent_gap` (per axis: current → what a referent looks like → the closing move), `closest_precedent` (which of the 12 origin playbooks fits + what transfers / what doesn't), `moat_assessment` (has/buildable moat + type from `MOAT_TYPES`), `quick_wins` (≤30d) vs `structural_moves` (6-12mo), `kill_criteria` (when *not* to chase referent status). Accepts optional structured evidence (pricing, channels, margin, repeat rate, customer quotes…); `evidence_quality` (thin/partial/solid) caps `confidence` at 55/75/92. `GET …/agents/diagnosis/history` for score trend. |
 | `PositioningAgent` | 1 | `bt_positioning_statements` — Dunford statement, category name, POV manifesto, the enemy, one-liner |
 | `BrandIdentityAgent` | 2 | `bt_brand_identities` — primary archetype, rename call, tagline, manifesto, voice do/don't, visual brief |
 | `BusinessModelAgent` | 3 | `bt_business_model_redesigns` — new canvas, applied patterns, grand-slam offer, pricing architecture, ERRC grid |

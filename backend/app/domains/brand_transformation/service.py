@@ -189,6 +189,34 @@ def _int(v: Any, default: int = 0) -> int:
         return default
 
 
+# fields on DiagnosisIn beyond the base profile that make the call more grounded
+_EVIDENCE_FIELDS = (
+    "time_in_market", "monthly_revenue", "gross_margin_pct", "repeat_purchase_rate",
+    "pricing", "channels", "differentiation_claims", "customer_quotes", "recent_marketing",
+)
+
+
+def _evidence_snapshot(p: dict) -> dict:
+    return {k: p[k] for k in _EVIDENCE_FIELDS if p.get(k)}
+
+
+def _evidence_quality(snap: dict) -> str:
+    n = len(snap)
+    return "solid" if n >= 6 else "partial" if n >= 3 else "thin"
+
+
+def _evidence_block(p: dict) -> str:
+    snap = _evidence_snapshot(p)
+    if not snap:
+        return "EVIDENCE: none supplied beyond the profile above — flag every conclusion that rests on assumption."
+    lines = ["EVIDENCE SUPPLIED:"]
+    for k, v in snap.items():
+        v = ", ".join(map(str, v)) if isinstance(v, list) else v
+        lines.append(f"- {k}: {v}")
+    lines.append(f"(evidence quality: {_evidence_quality(snap)})")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -204,42 +232,97 @@ class _BaseAgent:
 
 
 class DiagnosisAgent(_BaseAgent):
+    """Etapa 0 — a multi-lens diagnosis, not a one-liner verdict.
+
+    Produces: headline score + commoditization level, then five lenses
+    (commoditization by dimension, per-axis referent gap, closest precedent
+    from the 12 origin playbooks, moat assessment, quick-wins vs structural
+    moves) and honest kill criteria for when 'become a referent' is the wrong
+    goal. Confidence is floored by how much real evidence was supplied.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, extra: str | None = None) -> BrandDiagnosis:
+        snap = _evidence_snapshot(profile)
+        eq = _evidence_quality(snap)
         prompt = f"""{_profile_block(profile)}
+
+{_evidence_block(profile)}
 
 REFERENCE — how iconic brands beat commoditization (note the REAL engine, not
 the surface product):
 {K.origins_digest()}
 
+SCORECARD RUBRIC — score each axis 0-5 strictly against these definitions:
+{K.scorecard_rubric_digest()}
+
+MOAT TYPES a referent brand defends:
+{K.moat_types_digest()}
+
 FRAMEWORKS:
 {K.frameworks_digest(['dunford_positioning', 'category_design_playbigger', 'eeat_authority', 'blue_ocean_errc'])}
 
-TASK: Diagnose why this business is mediocre / undifferentiated today. Be blunt.
-Score its "Referent Potential" (0-100 = how realistically it could become a
-category reference within 12-18 months given honest constraints). {extra or ''}
+TASK: Diagnose why this business is mediocre / undifferentiated today. Be blunt
+and specific. Score its "Referent Potential" (0-100 = how realistically it could
+become a category reference in 12-18 months given honest constraints). Where the
+evidence is {eq}, say which conclusions are assumptions. {extra or ''}
 
 Return JSON:
 {{
   "referent_potential_score": <int 0-100>,
   "commoditization_level": "low|medium|high|severe",
-  "symptoms": ["specific, observable symptom (name the tell)", ...],
-  "root_causes": ["the underlying cause, one level deeper than the symptom", ...],
-  "highest_leverage_moves": ["the 3 moves that would shift the most, ranked, each with the mechanism", "", ""],
+  "commoditization_analysis": {{
+     "price": {{"score_0_5": <int>, "evidence": "the tell"}},
+     "product": {{"score_0_5": <int>, "evidence": "..."}},
+     "distribution": {{"score_0_5": <int>, "evidence": "..."}},
+     "brand": {{"score_0_5": <int>, "evidence": "..."}}
+  }},
+  "symptoms": ["specific, observable symptom", ...],
+  "root_causes": ["the cause one level deeper than the symptom", ...],
   "scorecard": {{"positioning": <0-5>, "brand_identity": <0-5>, "offer": <0-5>, "fomo_desire": <0-5>, "distribution": <0-5>, "authority": <0-5>}},
+  "referent_gap": {{
+     "positioning": {{"current": "...", "referent_looks_like": "...", "the_gap": "the specific move to close it"}},
+     "brand_identity": {{...}}, "offer": {{...}}, "fomo_desire": {{...}}, "distribution": {{...}}, "authority": {{...}}
+  }},
+  "closest_precedent": {{"brand": "one of the 12 origin playbooks", "why_it_fits": "...", "what_to_copy": "the transferable mechanism", "what_not_to_copy": "the part that doesn't transfer"}},
+  "moat_assessment": {{"has_moat_today": true|false, "buildable_moat_type": "from the moat list", "how": "the concrete path to it", "why_it_holds": "..."}},
+  "highest_leverage_moves": ["ranked, each stating the MECHANISM not just the goal", "", ""],
+  "quick_wins": ["<=30-day move that shifts perception or conversion now", ...],
+  "structural_moves": ["6-12 month move that builds the moat / category", ...],
+  "kill_criteria": ["a signal that would mean 'don't chase referent status here — pivot or sell instead'", ...],
   "second_order_risk": "what breaks if they scale the current model unchanged",
-  "summary": "4-5 sentences a founder would actually want to read — direct, quotable, no hedging"
+  "evidence_quality": "{eq}",
+  "summary": "4-5 sentences a founder would want to read — direct, quotable, no hedging"
 }}"""
         d = _draft_then_refine(prompt, {
             "referent_potential_score": 40,
             "commoditization_level": "high",
+            "commoditization_analysis": {
+                "price": {"score_0_5": 4, "evidence": "Sells at market price; discounts to close"},
+                "product": {"score_0_5": 3, "evidence": "Quality parity with competitors, no signature element"},
+                "distribution": {"score_0_5": 3, "evidence": "Same channels as everyone, no owned audience"},
+                "brand": {"score_0_5": 4, "evidence": "Interchangeable name/story; no point of view"},
+            },
             "symptoms": ["Positioning indistinguishable from competitors", "Wins deals on price, not preference"],
             "root_causes": ["No stated point of view", "No category the business owns"],
-            "highest_leverage_moves": ["Name and own a category", "Commit to one archetype", "Build a grand-slam offer"],
             "scorecard": {"positioning": 1, "brand_identity": 1, "offer": 2, "fomo_desire": 1, "distribution": 2, "authority": 1},
+            "referent_gap": {},
+            "closest_precedent": {"brand": "Red Bull", "why_it_fits": "Commoditized liquid, won on identity + owned culture", "what_to_copy": "Fund content/culture that carries the identity; charge for the badge", "what_not_to_copy": "Extreme-sports theme — pick this business's own subculture"},
+            "moat_assessment": {"has_moat_today": False, "buildable_moat_type": "brand", "how": "Own a category + point of view until customers refuse substitutes", "why_it_holds": "Meaning is expensive to copy once it's established"},
+            "highest_leverage_moves": ["Name and own a category (frame the value so competitors look generic)", "Commit to one archetype (make voice + story consistent everywhere)", "Build a grand-slam offer (tilt the value equation so price stops being the axis)"],
+            "quick_wins": ["Rewrite the homepage around one point of view", "Add real social proof above the fold", "Kill the blanket discount"],
+            "structural_moves": ["Launch a category-defining content asset", "Introduce a membership / recurring tier", "Build one growth loop"],
+            "kill_criteria": ["Margin can't support any brand investment for 12 months", "Founder unwilling to take a polarising position", "Category is a true commodity with switching cost near zero and no premium segment"],
             "second_order_risk": "Scaling ad spend on an undifferentiated offer just raises CAC until margin disappears.",
+            "evidence_quality": eq,
             "summary": "Undifferentiated player in a crowded field, competing on price. Needs positioning and identity before growth spend, or it buys unprofitable volume.",
-        }, "Make the summary sharp enough to quote back to the founder. Each "
-           "leverage move must state the mechanism, not just the goal.")
+        }, "Make the summary sharp enough to quote back to the founder. Every "
+           "leverage move and referent_gap entry must name the mechanism. The "
+           "closest_precedent must explain what transfers and what does not.")
+
+        # confidence can't exceed what the evidence supports
+        cap = {"thin": 55, "partial": 75, "solid": 92}[eq]
+        conf = min(_int(d.get("confidence"), 55), cap)
+
         return await self._save(BrandDiagnosis(
             business_id=business_id,
             industry=profile.get("industry", "n/a"),
@@ -247,14 +330,24 @@ Return JSON:
             known_competitors=profile.get("known_competitors"),
             revenue_model=profile.get("revenue_model"),
             notes=profile.get("notes"),
+            evidence_snapshot=snap or None,
             referent_potential_score=_int(d.get("referent_potential_score")),
             commoditization_level=d.get("commoditization_level", "unknown"),
             symptoms=d.get("symptoms"),
             root_causes=d.get("root_causes"),
             highest_leverage_moves=d.get("highest_leverage_moves"),
-            scorecard=d.get("scorecard") or {"second_order_risk": d.get("second_order_risk")},
+            scorecard=d.get("scorecard"),
             summary=d.get("summary"),
-            confidence=_int(d.get("confidence"), 60),
+            commoditization_analysis=d.get("commoditization_analysis"),
+            referent_gap=d.get("referent_gap"),
+            closest_precedent=d.get("closest_precedent"),
+            moat_assessment=d.get("moat_assessment"),
+            quick_wins=d.get("quick_wins"),
+            structural_moves=d.get("structural_moves"),
+            kill_criteria=d.get("kill_criteria"),
+            second_order_risk=d.get("second_order_risk"),
+            evidence_quality=d.get("evidence_quality") or eq,
+            confidence=conf,
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),
         ))
@@ -265,6 +358,13 @@ Return JSON:
             .order_by(desc(BrandDiagnosis.created_at)).limit(1)
         )
         return r.scalar_one_or_none()
+
+    async def history(self, business_id: uuid.UUID, limit: int = 12) -> list[BrandDiagnosis]:
+        r = await self.db.execute(
+            select(BrandDiagnosis).where(BrandDiagnosis.business_id == business_id)
+            .order_by(desc(BrandDiagnosis.created_at)).limit(limit)
+        )
+        return list(r.scalars().all())
 
 
 class PositioningAgent(_BaseAgent):

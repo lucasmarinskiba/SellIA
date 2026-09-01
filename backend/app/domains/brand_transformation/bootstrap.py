@@ -46,6 +46,17 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
     "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
     "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    # Etapa 0 deepening — DiagnosisAgent v2
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS evidence_snapshot JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS commoditization_analysis JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS referent_gap JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS closest_precedent JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS moat_assessment JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS quick_wins JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS structural_moves JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS kill_criteria JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS second_order_risk TEXT",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS evidence_quality VARCHAR(20)",
 ]
 
 

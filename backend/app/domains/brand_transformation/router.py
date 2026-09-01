@@ -110,6 +110,17 @@ async def latest_diagnosis(
     return await DiagnosisAgent(db).latest(business_id)
 
 
+@router.get("/agents/diagnosis/history", response_model=list[DiagnosisOut])
+async def diagnosis_history(
+    business_id: UUID,
+    limit: int = 12,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Score trend over time — newest first. Feeds the rediagnosis automation."""
+    return await DiagnosisAgent(db).history(business_id, min(limit, 50))
+
+
 @router.post("/agents/positioning", response_model=PositioningOut)
 async def run_positioning(
     business_id: UUID,
