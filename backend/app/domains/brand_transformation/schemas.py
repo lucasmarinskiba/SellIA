@@ -197,6 +197,14 @@ class GTMPlanOut(_ORM):
     funnel: dict | None
     content_pillars: list | None
     plan_90_days: list | None
+    loop_evaluation: list | None
+    channel_plan: list | None
+    content_engine: dict | None
+    week_1_actions: list | None
+    budget_shape: dict | None
+    anti_goals: list | None
+    north_star_metric: str | None
+    alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str

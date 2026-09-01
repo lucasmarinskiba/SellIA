@@ -515,6 +515,40 @@ def _positioning_digest(context: dict | None) -> str:
     return "PRIOR POSITIONING (key parts):\n" + json.dumps(keep or context, ensure_ascii=False)[:2600]
 
 
+_STAGE_HIGHLIGHTS = {
+    "diagnosis": ("referent_potential_score", "highest_leverage_moves", "moat_assessment", "closest_precedent", "kill_criteria"),
+    "positioning": ("positioning_statement", "one_liner", "point_of_view", "the_enemy", "category_decision", "messaging_pillars", "best_fit_customers", "reframe"),
+    "brand_identity": ("primary_archetype", "tagline", "story_spine", "verbal_identity", "identity_consistency_rules"),
+    "business_model": ("applied_patterns", "grand_slam_offer", "pricing_architecture", "unit_economics_targets", "value_equation"),
+    "fomo_engine": ("mechanisms", "launch_ritual", "cadence", "content_hooks", "activation_sequence"),
+    "gtm": ("primary_growth_loop", "lightning_strike", "channel_plan", "plan_90_days", "north_star_metric"),
+    "restructuring": ("kill", "keep", "scale", "core_processes", "promise_kpis"),
+}
+
+
+def _stage_context_digest(context: dict | None, want: tuple[str, ...] | None = None) -> str:
+    """Compact digest of prior-stage artifacts.
+
+    Accepts either the orchestrator's {stage_key: artifact_dict} shape or a
+    single artifact dict. `want` limits which stages to include.
+    """
+    if not context:
+        return "PRIOR STAGES: none — infer from the profile, flag assumptions."
+    stage_keys = set(_STAGE_HIGHLIGHTS)
+    if not (set(context) & stage_keys):  # a single artifact dict, not stage-keyed
+        return "PRIOR CONTEXT:\n" + json.dumps(context, ensure_ascii=False)[:2600]
+    out = []
+    for sk, art in context.items():
+        if sk not in _STAGE_HIGHLIGHTS or not isinstance(art, dict):
+            continue
+        if want and sk not in want:
+            continue
+        picked = {k: art[k] for k in _STAGE_HIGHLIGHTS[sk] if art.get(k) is not None}
+        if picked:
+            out.append(f"[{sk}] " + json.dumps(picked, ensure_ascii=False)[:1500])
+    return "PRIOR STAGES (highlights):\n" + "\n".join(out) if out else "PRIOR STAGES: present but empty."
+
+
 class BrandIdentityAgent(_BaseAgent):
     """Etapa 2 — the full identity system, derived from the positioning.
 
@@ -851,44 +885,96 @@ Return JSON:
 
 
 class GoToMarketAgent(_BaseAgent):
+    """Etapa 5 — a 90-day GTM built around ONE loop, not a channel wish-list.
+
+    Scores loop types on 5 axes before committing, quantifies the chosen
+    loop (the variable it turns on, the metric that says it's turning, target
+    cycle time), gives every channel a hypothesis + effort estimate + a kill
+    signal, builds a content engine off the brand's story spine with a
+    repurposing chain, and names explicit anti-goals for the 90 days.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> GTMPlan:
         prompt = f"""{_profile_block(profile)}
 
-PRIOR CONTEXT: {json.dumps(context or {}, ensure_ascii=False)[:2200]}
+{_stage_context_digest(context, want=("positioning", "brand_identity", "business_model", "fomo_engine"))}
 
 FRAMEWORKS:
 {K.frameworks_digest(['growth_loops', 'category_design_playbigger', 'hormozi_value_equation'])}
 
-TASK: Build a 90-day go-to-market. Choose ONE primary growth loop the model can
-actually sustain (say why the others were rejected). Design a lightning-strike
-launch that concentrates force rather than spreading it. Map 3-4 channels, each
-with a first concrete action and the signal that tells you it's working or not.
+GROWTH LOOP TYPES:
+{K.gtm_loop_types_digest()}
+
+SCORE EACH LOOP TYPE 0-2 ON THESE AXES, then pick ONE primary (+ optional secondary):
+{K.growth_loop_axes_digest()}
+
+CHANNEL ROLES: {', '.join(K.CHANNEL_ROLES)}
+
+TASK: Build a 90-day GTM that concentrates force. Pick ONE primary growth loop
+the model can actually sustain — show the scores and why the others lose. Give
+each channel a hypothesis, an effort estimate, and a kill signal so this is a
+plan, not a wish list. Build the content engine off the brand's story spine.
 {extra or ''}
 
 Return JSON:
 {{
-  "primary_growth_loop": {{"type": "viral|content|paid|ugc|sales", "steps": [...], "reinvestment": "what output feeds back into input", "why_not_the_others": "..."}},
-  "channels": [{{"channel": "...", "role": "...", "first_action": "...", "kill_signal": "what result after N weeks means stop"}}, ...],
-  "lightning_strike": {{"pre_launch": [...], "launch_week": [...], "post_launch": [...], "the_one_moment": "the single thing the launch is built around"}},
-  "funnel": {{"awareness": "...", "consideration": "...", "conversion": "...", "retention": "..."}},
-  "content_pillars": [{{"pillar": "...", "angle": "the POV, not the topic"}}, ...],
-  "plan_90_days": [{{"weeks": "1-2", "focus": "...", "owner": "role", "success_metric": "..."}}, ...],
-  "first_domino": "the single highest-leverage thing to do in week 1"
+  "loop_evaluation": [
+    {{"loop": "content|viral|paid|ugc|sales_led|community", "scores": {{"model_fit": 0-2, "margin_supports_it": 0-2, "time_to_compound": 0-2, "defensibility": 0-2, "team_can_run_it": 0-2}}, "verdict": "primary | secondary | reject", "note": "..."}}
+  ],
+  "primary_growth_loop": {{
+    "type": "the pick",
+    "steps": ["input -> ... -> output that feeds the next input"],
+    "the_variable_it_turns": "the one input the loop compounds",
+    "turning_metric": "the single number that says the loop is working",
+    "cycle_time": "how long one turn takes",
+    "reinvestment": "what output feeds back into input",
+    "why_not_the_others": "one line per rejected loop"
+  }},
+  "channel_plan": [
+    {{"channel": "...", "role": "one of the channel roles", "hypothesis": "why this channel reaches the best-fit customer", "first_action": "concrete, this week", "effort": "rough hours/$ per week", "leading_signal": "what tells you early it's working", "kill_signal": "result after N weeks that means stop"}}
+  ],
+  "lightning_strike": {{"the_one_moment": "the single thing the launch is built around", "carrying_asset": "the piece that does the work", "pre_launch": [{{"task": "...", "owner": "role"}}], "launch_week": [{{"day": "...", "move": "..."}}], "post_launch": ["..."], "success_number": "the metric + threshold that defines a win"}},
+  "content_engine": {{
+    "pillars": [{{"pillar": "from the messaging pillars / story spine", "angle": "the POV, not the topic", "formats": ["..."]}}],
+    "cadence": "how often, per format",
+    "repurposing_chain": "1 anchor piece -> N derivatives (name them)",
+    "owner": "who makes it"
+  }},
+  "funnel": [{{"stage": "awareness|consideration|conversion|retention", "the_job": "what must happen here", "asset": "the thing that does it", "metric": "...", "top_dropoff_risk": "..."}}],
+  "plan_90_days": [{{"milestone": "...", "weeks": "1-2", "focus": "...", "owner": "role", "success_metric": "...", "depends_on": "prior milestone or null"}}],
+  "week_1_actions": ["3 concrete things to do in the first 7 days", "", ""],
+  "budget_shape": {{"allocation": {{"content": "%", "channels": "%", "tools": "%"}}, "constraint": "the binding limit — cash or time"}},
+  "north_star_metric": "the one metric the whole team watches for 90 days",
+  "anti_goals": ["what NOT to do in 90 days — spreading thin, vanity metrics, premature paid, ..."],
+  "alternative_angles": [{{"angle": "a different GTM bet (e.g. sales-led instead of content)", "when_to_pick": "..."}}, {{"angle": "...", "when_to_pick": "..."}}]
 }}"""
         d = _draft_then_refine(prompt, {
-            "primary_growth_loop": {"type": "content", "steps": ["publish POV content", "earns search + shares", "converts to trial", "customers produce case studies that feed content"], "reinvestment": "revenue funds more production", "why_not_the_others": "No viral coefficient in the product; paid loop needs margin the model doesn't have yet"},
-            "channels": [], "lightning_strike": {}, "funnel": {}, "content_pillars": [],
-            "plan_90_days": [], "first_domino": "Publish the point-of-view piece the positioning implies and pin it everywhere.",
-        }, "The loop choice must justify why the alternatives were rejected. Each "
-           "channel needs a kill signal so this isn't a wish list.")
+            "loop_evaluation": [],
+            "primary_growth_loop": {"type": "content", "steps": ["publish POV content", "earns search + shares", "converts to trial", "customers produce case studies that feed content"], "the_variable_it_turns": "indexable POV assets", "turning_metric": "organic sessions -> trial rate", "cycle_time": "~6 weeks per asset to rank", "reinvestment": "revenue funds more production", "why_not_the_others": "viral: no in-product share reason; paid: margin not ready; sales-led: ACV too low"},
+            "channel_plan": [], "lightning_strike": {}, "content_engine": {}, "funnel": [],
+            "plan_90_days": [], "week_1_actions": ["Publish the POV piece the positioning implies", "Pin it everywhere the brand has presence", "DM 10 best-fit customers for reactions"],
+            "budget_shape": {"allocation": {"content": "60%", "channels": "25%", "tools": "15%"}, "constraint": "founder time"},
+            "north_star_metric": "weekly best-fit trials started",
+            "anti_goals": ["Run paid before the offer converts organically", "Post on 6 platforms at once", "Chase follower count"],
+            "alternative_angles": [],
+        }, "The loop choice must show scores and beat the alternatives on them. "
+           "Every channel needs an effort estimate and a kill signal. The content "
+           "engine must derive from the brand's story spine, not generic topics.")
         return await self._save(GTMPlan(
             business_id=business_id,
             primary_growth_loop=d.get("primary_growth_loop"),
-            channels=d.get("channels"),
+            channels=d.get("channel_plan") or d.get("channels"),
             lightning_strike=d.get("lightning_strike"),
             funnel=d.get("funnel"),
-            content_pillars=d.get("content_pillars"),
-            plan_90_days=(d.get("plan_90_days") or []) + ([{"first_domino": d["first_domino"]}] if d.get("first_domino") else []),
+            content_pillars=(d.get("content_engine") or {}).get("pillars") or d.get("content_pillars"),
+            plan_90_days=d.get("plan_90_days"),
+            loop_evaluation=d.get("loop_evaluation"),
+            channel_plan=d.get("channel_plan"),
+            content_engine=d.get("content_engine"),
+            week_1_actions=d.get("week_1_actions"),
+            budget_shape=d.get("budget_shape"),
+            anti_goals=d.get("anti_goals"),
+            north_star_metric=d.get("north_star_metric"),
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),

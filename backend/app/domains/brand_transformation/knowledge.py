@@ -628,6 +628,38 @@ def fomo_domain_map_digest() -> str:
     return "\n".join(f"- {k}: {v}" for k, v in FOMO_DOMAIN_MAP.items())
 
 
+# ---------------------------------------------------------------------------
+# 3f. GO-TO-MARKET CALIBRATION — Etapa 5.
+# ---------------------------------------------------------------------------
+
+GTM_LOOP_TYPES: dict[str, str] = {
+    "content": "Usage / publishing creates indexable, shareable assets that acquire the next user. Compounds slowly, cheap, defensible.",
+    "viral": "Each user invites or exposes others as a side effect of getting value. Needs a real in-product reason to share.",
+    "paid": "Revenue funds ads that fund revenue. Only works once contribution margin and payback are healthy.",
+    "ugc": "Customers produce the marketing (reviews, unboxings, builds). Needs a product worth filming and a nudge.",
+    "sales_led": "Reps close, happy customers refer and give case studies that arm the next pitch. High-touch, high-ACV.",
+    "community": "Members create value for members; the brand hosts. Slow to start, very sticky, hard to copy.",
+}
+
+GROWTH_LOOP_AXES: dict[str, str] = {
+    "model_fit": "Does the product/price/motion actually support this loop, or is it aspirational?",
+    "margin_supports_it": "Can current unit economics fund this loop without going underwater?",
+    "time_to_compound": "How long until the loop meaningfully drives growth (weeks / quarters / a year)?",
+    "defensibility": "How hard is it for a competitor to copy the loop once it works?",
+    "team_can_run_it": "Does the team have the skill and bandwidth to operate it every week?",
+}
+
+CHANNEL_ROLES = ("acquisition", "nurture", "proof", "activation", "retention")
+
+
+def gtm_loop_types_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in GTM_LOOP_TYPES.items())
+
+
+def growth_loop_axes_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in GROWTH_LOOP_AXES.items())
+
+
 def levers_digest() -> str:
     """Compact text block of every FOMO lever for prompt injection."""
     out = []
