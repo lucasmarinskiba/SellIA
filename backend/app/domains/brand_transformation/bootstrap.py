@@ -57,6 +57,16 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS kill_criteria JSONB",
     "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS second_order_risk TEXT",
     "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS evidence_quality VARCHAR(20)",
+    # Etapa 1 deepening — PositioningAgent v2
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS elevator_pitch TEXT",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS alternatives_matrix JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS attribute_value_proof JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS enemy_analysis JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS pov_validation JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS category_decision JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS reframe JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS messaging_pillars JSONB",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS migration_risks JSONB",
 ]
 
 

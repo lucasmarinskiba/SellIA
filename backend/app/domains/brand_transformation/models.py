@@ -88,7 +88,18 @@ class PositioningStatement(Base):
     the_enemy: Mapped[str | None] = mapped_column(Text, nullable=True)
     positioning_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
     one_liner: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    elevator_pitch: Mapped[str | None] = mapped_column(Text, nullable=True)  # ~30s spoken version
     alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 genuinely different bets
+
+    # v2 deep lenses
+    alternatives_matrix: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{alternative, why_tolerated, what_customer_keeps, what_they_lose}]
+    attribute_value_proof: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{attribute, value, proof_point}]
+    enemy_analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {enemy, test_results[], passes}
+    pov_validation: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {who_nods, who_bristles, cost_to_hold, evidence, scores}
+    category_decision: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {recommendation: play|design, rationale, king_test, name_candidates[]}
+    reframe: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {from, to}
+    messaging_pillars: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{pillar, proof}]
+    migration_risks: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {who_we_lose, acceptable, mitigation}
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)

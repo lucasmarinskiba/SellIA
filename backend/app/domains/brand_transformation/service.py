@@ -367,65 +367,133 @@ Return JSON:
         return list(r.scalars().all())
 
 
+_DIAGNOSIS_CARRY = (
+    "referent_gap", "closest_precedent", "moat_assessment", "root_causes",
+    "commoditization_analysis", "highest_leverage_moves", "referent_potential_score",
+)
+
+
+def _diagnosis_digest(context: dict | None) -> str:
+    """Pull just the parts of a prior diagnosis that positioning needs."""
+    if not context:
+        return "PRIOR DIAGNOSIS: none — infer from the profile, flag assumptions."
+    keep = {k: context[k] for k in _DIAGNOSIS_CARRY if context.get(k) is not None}
+    keep = keep or context
+    return "PRIOR DIAGNOSIS (key parts):\n" + json.dumps(keep, ensure_ascii=False)[:2400]
+
+
 class PositioningAgent(_BaseAgent):
+    """Etapa 1 — a positioning + category-design workshop.
+
+    Runs the enemy test, the POV test, and the category-king test explicitly
+    so the output can't be a mushy enemy, a POV nobody disagrees with, or a
+    "new category" this business can't lead. Produces the full messaging kit:
+    positioning statement, one-liner, 30s elevator, 3 pillars with proof, and
+    a FROM->TO reframe — plus the migration risk (who repositioning loses).
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> PositioningStatement:
         prompt = f"""{_profile_block(profile)}
 
-PRIOR DIAGNOSIS: {json.dumps(context or {}, ensure_ascii=False)[:1800]}
+{_diagnosis_digest(context)}
 
 FRAMEWORKS:
-{K.frameworks_digest(['dunford_positioning', 'category_design_playbigger'])}
+{K.frameworks_digest(['dunford_positioning', 'category_design_playbigger', 'blue_ocean_errc'])}
+
+{K.positioning_tests_digest()}
 
 REFERENCE PLAYBOOKS:
 {K.origins_digest()}
 
-TASK: Produce a sharp repositioning + category design. Name a REAL enemy (the
-actual status quo behaviour customers tolerate — not a straw man competitor).
-State a point of view the market can rally around OR reject; a POV nobody could
-disagree with is worthless. {extra or ''}
+TASK: Run a full positioning + category-design pass. Work the tests above, don't
+just assert. The enemy must pass the ENEMY TEST. The POV must score >=1 on every
+POV TEST axis. Only recommend "design a new category" if the CATEGORY-KING TEST
+mostly passes — otherwise frame within an existing category. {extra or ''}
 
 Return JSON:
 {{
-  "competitive_alternatives": ["what the customer actually does instead today", ...],
-  "unique_attributes": ["something true of this business that alternatives can't claim", ...],
-  "value_themes": ["the value those attributes unlock, in the customer's words", ...],
-  "best_fit_customers": ["the segment that cares most about that value — be narrow", ...],
-  "market_category": "existing category to frame within so the value is obvious",
-  "new_category_name": "a category this brand could credibly define and lead (or null if premature)",
-  "point_of_view": "the manifesto-level belief, 2-3 sentences, the kind that makes some people nod hard and others bristle",
-  "the_enemy": "the real status-quo behaviour or belief this brand fights",
+  "alternatives_matrix": [
+    {{"alternative": "what the customer does instead today", "why_tolerated": "...", "what_customer_keeps": "...", "what_they_lose": "..."}}
+  ],
+  "attribute_value_proof": [
+    {{"attribute": "true of this business, alternatives can't claim it", "value": "in the customer's words", "proof_point": "what makes it believable — a number, a demo, a track record"}}
+  ],
+  "best_fit_customers": ["the narrow segment that cares MOST about that value", ...],
+  "enemy_analysis": {{
+    "enemy": "the status-quo behaviour or belief this brand fights",
+    "test_results": [{{"check": "<the ENEMY TEST check>", "pass": true|false, "note": "..."}}],
+    "passes": true|false
+  }},
+  "point_of_view": "2-3 sentences — makes some nod hard, others bristle",
+  "pov_validation": {{
+    "who_nods": "...", "who_bristles": "...", "cost_to_hold_it": "what the brand gives up by saying this",
+    "evidence": "why this brand can defend it",
+    "scores": {{"polarising": 0-2, "defensible": 0-2, "actionable": 0-2, "ownable": 0-2, "durable": 0-2}}
+  }},
+  "category_decision": {{
+    "recommendation": "play_in_existing | design_new",
+    "market_category": "the existing category to frame within",
+    "new_category_name": "only if design_new — a name customers can repeat (else null)",
+    "king_test": {{"can_be_number_one": "...", "market_feels_the_pain": "...", "frame_is_teachable": "...", "economics_concentrate": "...", "not_just_a_feature": "..."}},
+    "rationale": "why this call",
+    "name_candidates": ["Category name — the idea behind it", ...]
+  }},
+  "reframe": {{"from": "the frame customers use today", "to": "the frame this positioning installs"}},
   "positioning_statement": "For [customer] who [need], [brand] is the [category] that [unique value], unlike [alternative], because [reason].",
-  "one_liner": "<12 word external one-liner a customer could repeat verbatim",
+  "one_liner": "<12 words, a customer repeats it verbatim",
+  "elevator_pitch": "~30 seconds spoken, first person, no jargon",
+  "messaging_pillars": [{{"pillar": "one of 3 supporting messages", "proof": "the evidence behind it"}}],
+  "migration_risks": {{"who_we_lose": "the customers this repositioning pushes away", "acceptable": true|false, "mitigation": "how to soften the transition"}},
   "alternative_angles": [
     {{"angle": "a genuinely different positioning bet", "enemy": "...", "when_to_pick": "the condition under which this beats the primary"}},
     {{"angle": "a second, different bet", "enemy": "...", "when_to_pick": "..."}}
   ]
 }}"""
         d = _draft_then_refine(prompt, {
-            "competitive_alternatives": ["Do nothing / live with the problem", "Incumbent competitors", "DIY / in-house"],
-            "unique_attributes": ["TBD — needs founder input"],
-            "value_themes": ["TBD"], "best_fit_customers": ["TBD"],
-            "market_category": profile.get("industry", "n/a"), "new_category_name": None,
-            "point_of_view": "The default way this gets done wastes the customer's time and nobody has said so out loud.",
-            "the_enemy": "The commoditized status quo everyone has stopped questioning",
+            "alternatives_matrix": [
+                {"alternative": "Do nothing / live with the problem", "why_tolerated": "The pain is chronic, not acute", "what_customer_keeps": "Zero switching effort", "what_they_lose": "Compounding time/quality cost"},
+                {"alternative": "Incumbent competitors", "why_tolerated": "Familiar, 'nobody got fired for it'", "what_customer_keeps": "Safety", "what_they_lose": "Any real improvement"},
+            ],
+            "attribute_value_proof": [{"attribute": "TBD — needs founder input", "value": "TBD", "proof_point": "TBD"}],
+            "best_fit_customers": ["TBD — narrow segment"],
+            "enemy_analysis": {"enemy": "The commoditized status quo everyone has stopped questioning", "test_results": [], "passes": False},
+            "point_of_view": "The default way this gets done quietly wastes the customer's money, and the whole industry pretends that's normal.",
+            "pov_validation": {"who_nods": "customers who've been burned", "who_bristles": "incumbents", "cost_to_hold_it": "alienates the price-only buyer", "evidence": "pending founder input", "scores": {"polarising": 1, "defensible": 1, "actionable": 1, "ownable": 1, "durable": 1}},
+            "category_decision": {"recommendation": "play_in_existing", "market_category": profile.get("industry", "n/a"), "new_category_name": None, "king_test": {}, "rationale": "Not enough evidence yet to lead a new category; sharpen the position first.", "name_candidates": []},
+            "reframe": {"from": f"{profile.get('what_they_sell', 'this')} is a commodity you shop on price", "to": f"{profile.get('what_they_sell', 'this')} is a choice that signals something"},
             "positioning_statement": "Positioning statement pending founder input.",
             "one_liner": "The better way to " + str(profile.get("what_they_sell", "do this")),
+            "elevator_pitch": "Pending founder input.",
+            "messaging_pillars": [],
+            "migration_risks": {"who_we_lose": "pure price shoppers", "acceptable": True, "mitigation": "Keep an entry tier while the premium position builds"},
             "alternative_angles": [],
-        }, "The enemy and the POV are the whole game here — make them specific and "
-           "a little provocative. The two alternative_angles must be real strategic "
-           "forks, not reworded versions of the primary.")
+        }, "The enemy and POV are the whole game — make them specific and a little "
+           "provocative, and show the test results. category_decision must be "
+           "justified by the king_test, not asserted. alternative_angles are real "
+           "strategic forks, not rewordings.")
+
+        cat = d.get("category_decision") or {}
         return await self._save(PositioningStatement(
             business_id=business_id,
-            competitive_alternatives=d.get("competitive_alternatives"),
-            unique_attributes=d.get("unique_attributes"),
-            value_themes=d.get("value_themes"),
+            competitive_alternatives=[m.get("alternative") for m in (d.get("alternatives_matrix") or []) if isinstance(m, dict)] or None,
+            unique_attributes=[a.get("attribute") for a in (d.get("attribute_value_proof") or []) if isinstance(a, dict)] or None,
+            value_themes=[a.get("value") for a in (d.get("attribute_value_proof") or []) if isinstance(a, dict)] or None,
             best_fit_customers=d.get("best_fit_customers"),
-            market_category=d.get("market_category"),
-            new_category_name=d.get("new_category_name"),
+            market_category=cat.get("market_category") or d.get("market_category"),
+            new_category_name=cat.get("new_category_name") or d.get("new_category_name"),
             point_of_view=d.get("point_of_view"),
-            the_enemy=d.get("the_enemy"),
+            the_enemy=(d.get("enemy_analysis") or {}).get("enemy") or d.get("the_enemy"),
             positioning_statement=d.get("positioning_statement"),
             one_liner=d.get("one_liner"),
+            elevator_pitch=d.get("elevator_pitch"),
+            alternatives_matrix=d.get("alternatives_matrix"),
+            attribute_value_proof=d.get("attribute_value_proof"),
+            enemy_analysis=d.get("enemy_analysis"),
+            pov_validation=d.get("pov_validation"),
+            category_decision=d.get("category_decision"),
+            reframe=d.get("reframe"),
+            messaging_pillars=d.get("messaging_pillars"),
+            migration_risks=d.get("migration_risks"),
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),

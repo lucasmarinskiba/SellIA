@@ -102,7 +102,16 @@ class PositioningOut(_ORM):
     the_enemy: str | None
     positioning_statement: str | None
     one_liner: str | None
+    elevator_pitch: str | None
     alternative_angles: list | None
+    alternatives_matrix: list | None
+    attribute_value_proof: list | None
+    enemy_analysis: dict | None
+    pov_validation: dict | None
+    category_decision: dict | None
+    reframe: dict | None
+    messaging_pillars: list | None
+    migration_risks: dict | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
