@@ -1,0 +1,370 @@
+"""Brand Transformation — knowledge base.
+
+Structured, prompt-injectable research on how mediocre businesses become
+category references: FOMO / desire mechanics, the origin playbooks of
+iconic brands, and the strategy frameworks the specialist agents apply.
+
+Everything here is DATA, injected verbatim into agent prompts so the LLM
+reasons from concrete patterns instead of generic marketing platitudes.
+Keep entries terse, causal, and example-anchored.
+"""
+
+from __future__ import annotations
+
+# ---------------------------------------------------------------------------
+# 1. FOMO / DESIRE MECHANICS
+#    Each lever: how it manufactures "I must be part of this", the failure
+#    mode when faked, and the brands that ran it well.
+# ---------------------------------------------------------------------------
+
+FOMO_LEVERS: dict[str, dict] = {
+    "artificial_scarcity": {
+        "mechanism": "Cap supply below demand on purpose. Drops, limited runs, "
+        "waitlists, numbered editions. Scarcity signals value and forces a decision now.",
+        "tactics": [
+            "Timed drops with hard sellout (Supreme weekly Thursday drop)",
+            "Numbered / serialized units ('1 of 500')",
+            "Waitlist with visible queue position (Robinhood, Superhuman, Clubhouse)",
+            "Seasonal 'never coming back' framing (McDonald's McRib, Starbucks PSL)",
+        ],
+        "failure_mode": "Fake scarcity that customers can disprove (restocks minutes later) "
+        "destroys trust permanently.",
+        "cases": ["Supreme", "Hermès Birkin", "Nintendo (Wii/Switch)", "McRib", "Ferrari (build fewer than demand)"],
+    },
+    "social_proof_velocity": {
+        "mechanism": "Show that many people — especially peers and insiders — are already in. "
+        "Momentum itself becomes the reason to join.",
+        "tactics": [
+            "Live counters (users, orders today, people viewing)",
+            "UGC volume as the ad (TikTok, GoPro, Airbnb)",
+            "Ratings/reviews front-and-center before price",
+            "'Join 2M+ founders' specificity over vague 'thousands'",
+        ],
+        "failure_mode": "Round, unverifiable numbers read as marketing and lower trust.",
+        "cases": ["Amazon reviews", "Booking.com urgency UI", "Notion templates gallery", "GoPro"],
+    },
+    "exclusivity_and_status": {
+        "mechanism": "Membership as identity. The product is a badge that says something "
+        "about who you are to a group whose opinion you care about.",
+        "tactics": [
+            "Invite-only onboarding (Gmail 2004, Clubhouse, Pinterest early)",
+            "Tiered access / velvet rope (Amex Black, Soho House)",
+            "Owning the object is the flex (Rolex, Gucci, Off-White)",
+            "Members-only language, rituals, symbols",
+        ],
+        "failure_mode": "Exclusivity with nothing behind the door — churns the moment it opens.",
+        "cases": ["American Express Centurion", "Soho House", "Clubhouse", "Nike SNKRS", "Raya"],
+    },
+    "identity_and_tribe": {
+        "mechanism": "Sell a worldview and an enemy, not a product. Customers buy to declare "
+        "allegiance. The brand is a flag.",
+        "tactics": [
+            "Name the enemy (Apple '1984' vs IBM; Nike vs your own excuses)",
+            "Manifesto over feature list (Patagonia 'Don't buy this jacket')",
+            "Rituals and vocabulary only insiders use (CrossFit, Peloton, Harley HOG)",
+            "Founder as protagonist of a mission (Tesla, Liquid Death, Red Bull)",
+        ],
+        "failure_mode": "Borrowed values with no operational proof = greenwashing backlash.",
+        "cases": ["Patagonia", "Harley-Davidson", "Liquid Death", "Tesla", "CrossFit"],
+    },
+    "anticipation_and_ritual": {
+        "mechanism": "Engineer a wait and a repeated cue. The gap between want and get is where "
+        "desire compounds; the ritual re-triggers it on a schedule.",
+        "tactics": [
+            "Countdown launches / keynote theater (Apple September event)",
+            "Recurring drop cadence the audience organizes their week around",
+            "Pre-order as a status act months before delivery (Tesla, video games)",
+            "Unboxing designed as a ceremony (Apple packaging)",
+        ],
+        "failure_mode": "Hype with no payoff on delivery day burns the next launch.",
+        "cases": ["Apple keynotes", "PlayStation launches", "Glossier drops", "Yeezy"],
+    },
+    "loss_and_urgency_framing": {
+        "mechanism": "People act harder to avoid losing than to gain. Frame the offer as "
+        "something being taken away.",
+        "tactics": [
+            "Deadline with real consequence (cohort closes, price rises)",
+            "Grandfather pricing ('lock this in before it goes')",
+            "Abandoned-cart 'your size is almost gone'",
+            "Founder's-edition perks that never return",
+        ],
+        "failure_mode": "Perpetual 'ending soon' banners train customers to ignore every deadline.",
+        "cases": ["ConvertKit lifetime deals", "course launches (Hormozi, B-School)", "airline seat maps"],
+    },
+    "velocity_of_novelty": {
+        "mechanism": "Constant small newness keeps attention and gives people a reason to check "
+        "back and to talk. The feed / shelf is never the same twice.",
+        "tactics": [
+            "Limited flavors / colorways on a cadence (Oreo, Nike, Spotify Wrapped)",
+            "Collabs that borrow another tribe's audience (Supreme x everything, Nike x designers)",
+            "Seasonal menu resets (Starbucks, Shake Shack)",
+        ],
+        "failure_mode": "Novelty with no core identity = forgettable; nothing to be loyal to.",
+        "cases": ["Oreo", "Spotify Wrapped", "Nike", "Starbucks seasonal"],
+    },
+}
+
+# ---------------------------------------------------------------------------
+# 2. ICONIC BRAND ORIGIN PLAYBOOKS
+#    "simple product -> billions" — the actual lever, not the myth.
+# ---------------------------------------------------------------------------
+
+BRAND_ORIGIN_PLAYBOOKS: dict[str, dict] = {
+    "McDonald's": {
+        "surface_product": "hamburgers",
+        "real_engine": "Not food — real estate + a franchised operating system. The Speedee "
+        "Service System productized consistency; Kroc's franchise + property model made land the "
+        "asset and the burger the customer-acquisition cost.",
+        "levers": ["process standardization", "franchise scaling", "predictability as the promise", "site selection moat"],
+        "lesson": "Sell a repeatable system, not a product. Own the layer competitors rent.",
+    },
+    "Coca-Cola": {
+        "surface_product": "sugar water",
+        "real_engine": "Distribution ubiquity + emotional branding + secret-formula mythology. "
+        "'Within an arm's reach of desire' — bottler network put it everywhere; advertising "
+        "attached it to happiness, Christmas, belonging.",
+        "levers": ["distribution density", "emotional association", "ritual (the pause)", "mystery/heritage"],
+        "lesson": "Commodity + total availability + owned emotional occasion = pricing power.",
+    },
+    "Red Bull": {
+        "surface_product": "caffeine + taurine drink",
+        "real_engine": "A media company that happens to sell a can. Owns extreme-sports content, "
+        "events, teams. The drink funds the content; the content sells the identity ('gives you wings').",
+        "levers": ["content as product", "identity/tribe", "event ownership", "premium price as signal"],
+        "lesson": "If the category is commoditized, win the culture around it and charge for the badge.",
+    },
+    "Starbucks": {
+        "surface_product": "coffee",
+        "real_engine": "The 'third place' between home and work. Sold real estate + ritual + "
+        "name-on-the-cup personalization at scale. Premium ambiance repriced a $0.50 commodity to $5.",
+        "levers": ["experience design", "daily ritual habit loop", "ubiquity + consistency", "aspirational accessibility"],
+        "lesson": "Reprice a commodity by selling the context and the routine, not the liquid.",
+    },
+    "Nike": {
+        "surface_product": "shoes",
+        "real_engine": "Sells self-transcendence. Athlete endorsement + 'Just Do It' turned a "
+        "sneaker into a personal-achievement narrative. Later: scarcity engine (SNKRS drops) on top.",
+        "levers": ["hero/aspiration archetype", "narrative over spec", "scarcity drops", "cultural collabs"],
+        "lesson": "Attach the product to who the customer wants to become.",
+    },
+    "Supreme": {
+        "surface_product": "t-shirts / skate gear",
+        "real_engine": "Manufactured scarcity + subculture credibility + collab reach. Deliberately "
+        "under-produces; weekly drops sell out in seconds; resale market advertises for free.",
+        "levers": ["hard scarcity", "subculture authenticity", "drop ritual", "collab borrowing"],
+        "lesson": "Constrain supply, own a cadence, let the resale market be your ad budget.",
+    },
+    "Apple": {
+        "surface_product": "computers / phones",
+        "real_engine": "Design as identity + closed ecosystem lock-in + keynote theater. Premium "
+        "price is the signal; the ecosystem is the moat; the launch is the marketing.",
+        "levers": ["design/craft archetype", "anticipation ritual", "ecosystem lock-in", "premium-as-signal"],
+        "lesson": "Vertical control + ceremony + taste lets you set price instead of taking it.",
+    },
+    "Tesla": {
+        "surface_product": "electric cars",
+        "real_engine": "$0 paid ads. Founder mission narrative + waitlist/pre-order + software-update "
+        "novelty + owners as evangelists. Sold the future, delivered updates.",
+        "levers": ["mission/founder narrative", "pre-order status", "continuous novelty (OTA)", "owner tribe"],
+        "lesson": "A strong enough point of view and a waitlist replaces a marketing budget.",
+    },
+    "Instagram / TikTok / YouTube": {
+        "surface_product": "a feed",
+        "real_engine": "Two-sided attention loop: creators chase reach, viewers chase novelty, the "
+        "algorithm rewards both. Variable-reward scroll + creator status ladder + network effects.",
+        "levers": ["variable reward loop", "creator status economy", "network effects", "low-friction creation"],
+        "lesson": "Build a loop where each user's activity increases the value for the next user.",
+    },
+    "Liquid Death": {
+        "surface_product": "canned water",
+        "real_engine": "Comedy + heavy-metal identity in the most boring category. 'Murder your "
+        "thirst.' The brand voice is the product; water is the medium.",
+        "levers": ["identity/tribe", "category contrast", "shareable voice", "merch as media"],
+        "lesson": "In a commodity, an extreme distinctive voice is the differentiation.",
+    },
+    "Decathlon": {
+        "surface_product": "sports gear",
+        "real_engine": "Vertical integration + own-brands (Quechua, Domyos...) + big-box price "
+        "leadership. Owns design->manufacture->retail, so quality-per-dollar is unmatched.",
+        "levers": ["vertical integration", "private-label portfolio", "price leadership", "accessibility"],
+        "lesson": "Owning the whole chain lets you win on value where others margin-stack.",
+    },
+    "Gucci / Versace (luxury)": {
+        "surface_product": "clothes / bags",
+        "real_engine": "Artificial scarcity + heritage story + price-as-status + creative-director "
+        "reinventions that generate press cycles. Never discount; destroy unsold stock.",
+        "levers": ["price-as-signal", "heritage narrative", "controlled scarcity", "designer news cycle"],
+        "lesson": "Protecting price and scarcity IS the product for status goods.",
+    },
+}
+
+# ---------------------------------------------------------------------------
+# 3. STRATEGY FRAMEWORKS  (agents cite these by name in their reasoning)
+# ---------------------------------------------------------------------------
+
+FRAMEWORKS: dict[str, str] = {
+    "jung_brand_archetypes": (
+        "12 archetypes: Innocent, Explorer, Sage, Hero, Outlaw, Magician, Everyman/Regular Guy, "
+        "Lover, Jester, Caregiver, Creator, Ruler. Pick ONE primary as the brand's personality core; "
+        "it dictates voice, story, and visual mood. (Hero=Nike, Outlaw=Harley/Liquid Death, "
+        "Ruler=Mercedes, Magician=Apple/Disney, Everyman=IKEA, Jester=Old Spice.)"
+    ),
+    "category_design_playbigger": (
+        "Don't compete in a category — design a new one you can be #1 in. Define the problem the "
+        "market didn't know it had, name it, evangelize the frame. Category king takes ~76% of the "
+        "category's economics. Steps: point of view -> name the category -> lightning-strike launch -> "
+        "condition the market -> mobilize the company around it."
+    ),
+    "dunford_positioning": (
+        "Positioning = context. 5 components: (1) competitive alternatives (what customers would do "
+        "otherwise), (2) unique attributes you have that they don't, (3) the value those attributes "
+        "enable, (4) the customers who care most about that value, (5) the market category you frame "
+        "yourself in so the value is obvious."
+    ),
+    "hormozi_value_equation": (
+        "Perceived value = (Dream Outcome x Perceived Likelihood of Achievement) / "
+        "(Time Delay x Effort & Sacrifice). Increase numerator, shrink denominator. A 'grand slam "
+        "offer' stacks bonuses, guarantees, scarcity and urgency until saying no feels stupid."
+    ),
+    "business_model_canvas": (
+        "9 blocks: Customer Segments, Value Propositions, Channels, Customer Relationships, "
+        "Revenue Streams, Key Resources, Key Activities, Key Partners, Cost Structure. "
+        "Innovation = change the relationship between blocks, not just the product."
+    ),
+    "business_model_patterns": (
+        "Recombine known patterns (Gassmann 55): Razor-and-Blade, Freemium, Subscription, "
+        "Long Tail, Two-Sided Market, Franchising, Direct Selling / DTC, Lock-In, Pay-Per-Use, "
+        "Add-On, Flat Rate, Membership/Club, Crowdsourcing, White Label, Guaranteed Availability, "
+        "Ingredient Branding, Experience Selling, Layer Player, Orchestrator, Robin Hood (rich "
+        "subsidize poor)."
+    ),
+    "blue_ocean_errc": (
+        "Eliminate–Reduce–Raise–Create grid. Eliminate factors the industry takes for granted, "
+        "Reduce ones over-served, Raise ones under-served, Create ones the industry never offered. "
+        "Goal: value up, cost down, competition irrelevant."
+    ),
+    "growth_loops": (
+        "Replace linear funnels with loops where output re-feeds input: viral loop (users invite "
+        "users), content loop (usage creates indexable content that acquires users), paid loop "
+        "(revenue funds ads that fund revenue), UGC loop. Pick the loop the model can actually sustain."
+    ),
+    "eeat_authority": (
+        "Experience, Expertise, Authoritativeness, Trust. Referent brands over-signal all four: "
+        "named founders with a track record, published point of view, third-party validation, "
+        "visible customers, transparent operations."
+    ),
+    "brand_voice_system": (
+        "Define: 3-5 voice attributes (e.g. 'blunt, warm, expert, never corporate'), a do/don't "
+        "word list, sentence-length rhythm, humor level, and 3 sample rewrites of the same message "
+        "at different temperatures."
+    ),
+}
+
+# ---------------------------------------------------------------------------
+# 4. TRANSFORMATION STAGES  (the staged program the orchestrator runs)
+# ---------------------------------------------------------------------------
+
+TRANSFORMATION_STAGES: list[dict] = [
+    {
+        "key": "diagnosis",
+        "order": 0,
+        "name": "Etapa 0 — Discovery & Diagnóstico",
+        "goal": "Medir por qué el negocio es mediocre hoy: commoditización, propuesta de valor "
+        "difusa, ausencia de categoría, unit economics, señales de autoridad.",
+        "agent": "DiagnosisAgent",
+        "deliverable": "Diagnóstico + 'Referent Potential Score' (0-100) + 3 palancas de mayor apalancamiento.",
+    },
+    {
+        "key": "positioning",
+        "order": 1,
+        "name": "Etapa 1 — Posicionamiento & Diseño de Categoría",
+        "goal": "Elegir alternativa competitiva, atributo único, valor, cliente que más lo valora "
+        "y categoría-marco. Definir punto de vista y enemigo.",
+        "agent": "PositioningAgent",
+        "deliverable": "Statement de posicionamiento (Dunford), nombre de categoría, POV manifesto, enemigo.",
+    },
+    {
+        "key": "brand_identity",
+        "order": 2,
+        "name": "Etapa 2 — Identidad de Marca & Narrativa",
+        "goal": "Arquetipo primario, nombre (si aplica rebrand), tagline, manifiesto, sistema de "
+        "voz, brief visual, arquitectura de marca.",
+        "agent": "BrandIdentityAgent",
+        "deliverable": "Brand book v1: arquetipo, tagline, manifiesto, voz (do/don't), brief visual.",
+    },
+    {
+        "key": "business_model",
+        "order": 3,
+        "name": "Etapa 3 — Innovación de Modelo de Negocio & Oferta",
+        "goal": "Rediseñar el canvas: nuevos revenue streams, patrón de modelo, oferta irresistible "
+        "(Hormozi), pricing psicológico.",
+        "agent": "BusinessModelAgent",
+        "deliverable": "Canvas nuevo, 2-3 patrones aplicados, grand-slam offer, arquitectura de pricing.",
+    },
+    {
+        "key": "fomo_engine",
+        "order": 4,
+        "name": "Etapa 4 — Motor de FOMO & Deseo",
+        "goal": "Diseñar palancas de escasez, prueba social, exclusividad, ritual y urgencia "
+        "adecuadas al negocio, sin romper la confianza.",
+        "agent": "FOMOEngineAgent",
+        "deliverable": "Playbook de 4-6 mecanismos con implementación concreta y guardarraíles anti-fake.",
+    },
+    {
+        "key": "gtm",
+        "order": 5,
+        "name": "Etapa 5 — Go-to-Market & Growth Loops",
+        "goal": "Canales, secuencia de lanzamiento (lightning strike), loop de crecimiento "
+        "sostenible, funnel de ventas, contenido.",
+        "agent": "GoToMarketAgent",
+        "deliverable": "Plan GTM 90 días, 1 growth loop principal, guion de lanzamiento, mapa de canales.",
+    },
+    {
+        "key": "restructuring",
+        "order": 6,
+        "name": "Etapa 6 — Reestructuración Empresarial & Operación",
+        "goal": "Qué matar / mantener / escalar. Org, procesos, foco, unit economics, sistema "
+        "operativo para sostener la nueva promesa.",
+        "agent": "RestructuringAgent",
+        "deliverable": "Kill/keep/scale list, rediseño org ligero, 3 procesos núcleo, KPIs de la promesa.",
+    },
+    {
+        "key": "roadmap",
+        "order": 7,
+        "name": "Etapa 7 — Roadmap & Ritual de Ejecución",
+        "goal": "Consolidar todas las etapas en un roadmap 90/180/365 con responsables, métricas "
+        "y ritual de revisión.",
+        "agent": "TransformationOrchestrator",
+        "deliverable": "Roadmap 90/180/365, tablero de métricas, cadencia de revisión semanal/mensual.",
+    },
+]
+
+STAGE_BY_KEY = {s["key"]: s for s in TRANSFORMATION_STAGES}
+STAGE_ORDER = [s["key"] for s in TRANSFORMATION_STAGES]
+
+
+def levers_digest() -> str:
+    """Compact text block of every FOMO lever for prompt injection."""
+    out = []
+    for name, d in FOMO_LEVERS.items():
+        out.append(
+            f"- {name}: {d['mechanism']} Cases: {', '.join(d['cases'][:4])}. "
+            f"Anti-pattern: {d['failure_mode']}"
+        )
+    return "\n".join(out)
+
+
+def origins_digest() -> str:
+    """Compact text block of every origin playbook for prompt injection."""
+    out = []
+    for name, d in BRAND_ORIGIN_PLAYBOOKS.items():
+        out.append(
+            f"- {name} (sells '{d['surface_product']}'): {d['real_engine']} "
+            f"Levers: {', '.join(d['levers'])}. Lesson: {d['lesson']}"
+        )
+    return "\n".join(out)
+
+
+def frameworks_digest(keys: list[str] | None = None) -> str:
+    keys = keys or list(FRAMEWORKS.keys())
+    return "\n".join(f"- {k}: {FRAMEWORKS[k]}" for k in keys if k in FRAMEWORKS)

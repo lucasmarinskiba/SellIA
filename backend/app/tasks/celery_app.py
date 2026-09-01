@@ -58,6 +58,7 @@ for _model_module in [
     "app.domains.nps.models",
     "app.domains.product_tours.models",
     "app.domains.training.models",
+    "app.domains.brand_transformation.models",
 ]:
     _try_import_domain_models(_model_module)
 
@@ -82,6 +83,7 @@ _modules = [
     "app.tasks.finance_tasks",
     "app.tasks.ad_budget_tasks",
     "app.tasks.forecasting_tasks",
+    "app.tasks.brand_transformation_tasks",
     "app.domains.memory.tasks",
     "app.domains.proactive.tasks",
     "app.domains.agents.tasks_scoring",
@@ -370,6 +372,11 @@ celery_app.conf.beat_schedule = {
     "forecasting-accuracy-weekly": {
         "task": "app.tasks.forecasting_tasks.weekly_accuracy_eval",
         "schedule": 604800.0,  # semanal: evalúa error realizado
+    },
+    # === Brand Transformation Automations ===
+    "brand-transformation-automations": {
+        "task": "app.tasks.brand_transformation_tasks.run_due_brand_automations",
+        "schedule": 3600.0,  # cada 1 hora; cada automation corre según su propia cadencia
     },
     # === Memory & Summarization ===
     "summarize-conversations-hourly": {
