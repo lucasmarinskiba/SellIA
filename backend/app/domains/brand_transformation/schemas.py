@@ -154,6 +154,15 @@ class BusinessModelOut(_ORM):
     pricing_architecture: dict | None
     errc_grid: dict | None
     rationale: str | None
+    model_diagnosis: dict | None
+    pattern_evaluation: list | None
+    canvas_changes: list | None
+    value_equation: dict | None
+    unit_economics_targets: dict | None
+    pricing_migration: dict | None
+    rollout: dict | None
+    risks: list | None
+    alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
