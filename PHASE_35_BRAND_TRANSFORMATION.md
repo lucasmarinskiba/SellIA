@@ -125,6 +125,21 @@ import list.
 
 ---
 
+## 4b. AI availability & provenance
+
+`service._resolve_api_key()` reads `settings.ANTHROPIC_API_KEY` then env
+`ANTHROPIC_API_KEY` / `CLAUDE_API_KEY` / `ANTHROPIC_KEY` / `ANTHROPIC_AUTH_TOKEN`,
+passed explicitly to `anthropic.Anthropic()`. With no key, `_ask_json`
+short-circuits to fallback and logs ONE loud error.
+
+Every artifact records `generated_by` (`"llm"` | `"fallback"` | `"unknown"`) so
+templated output is never mistaken for AI. Automation results carry `llm_used`.
+`GET …/brand-transformation/health` → `{llm_available, model, agents_mode}`.
+
+> **Prod status (2026-09-01):** Railway backend has **no Anthropic key** →
+> `agents_mode: "fallback"`, every artifact `generated_by: "fallback"`. Set
+> `ANTHROPIC_API_KEY` on the Railway service to switch to `"ai"`.
+
 ## 5. Wiring
 
 - Router registered in `backend/app/main.py` (`_try_include`, defensive).
