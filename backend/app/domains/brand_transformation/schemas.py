@@ -63,6 +63,7 @@ class DiagnosisOut(_ORM):
     summary: str | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     compared_to_diagnosis_id: UUID | None
     score_delta: int | None
     created_at: datetime
@@ -83,6 +84,7 @@ class PositioningOut(_ORM):
     alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 
@@ -103,6 +105,7 @@ class BrandIdentityOut(_ORM):
     alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 
@@ -117,6 +120,7 @@ class BusinessModelOut(_ORM):
     rationale: str | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 
@@ -129,6 +133,7 @@ class FOMOPlaybookOut(_ORM):
     alternative_angles: list | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 
@@ -142,6 +147,7 @@ class GTMPlanOut(_ORM):
     plan_90_days: list | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 
@@ -156,6 +162,7 @@ class RestructuringOut(_ORM):
     unit_economics_notes: str | None
     confidence: int
     frameworks_applied: list | None
+    generated_by: str
     created_at: datetime
 
 

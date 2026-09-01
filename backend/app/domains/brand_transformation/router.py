@@ -50,6 +50,24 @@ router = APIRouter(prefix="/{business_id}/brand-transformation", tags=["Brand Tr
 
 # --------------------------------------------------------------- reference
 
+@router.get("/health")
+async def domain_health(business_id: UUID, current_user: User = Depends(get_current_user)):
+    """Whether the agents run on real AI or templated fallback.
+
+    `llm_available` false => every agent returns deterministic fallback output
+    (`generated_by == "fallback"`). Set ANTHROPIC_API_KEY to enable AI.
+    """
+    from app.domains.brand_transformation.service import _MODEL, llm_available
+
+    ok = llm_available()
+    return {
+        "llm_available": ok,
+        "model": _MODEL,
+        "agents_mode": "ai" if ok else "fallback",
+        "note": None if ok else "No Anthropic API key configured — agents return templated fallback.",
+    }
+
+
 @router.get("/stages", response_model=list[StageInfoOut])
 async def list_stages(business_id: UUID, current_user: User = Depends(get_current_user)):
     """The 8 etapas of the transformation program."""

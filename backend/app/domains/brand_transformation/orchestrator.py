@@ -300,6 +300,9 @@ Return JSON:
         else:
             result = {"type": automation.automation_type, "note": "no runner implemented"}
 
+        from app.domains.brand_transformation.service import llm_available
+
+        result.setdefault("llm_used", llm_available())
         automation.last_run_at = datetime.now(timezone.utc)
         automation.last_result = result
         automation.runs_count = (automation.runs_count or 0) + 1

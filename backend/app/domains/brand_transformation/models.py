@@ -45,6 +45,7 @@ class BrandDiagnosis(Base):
     # Quality/provenance (draft->critique->refine pass — see service._draft_then_refine)
     confidence: Mapped[int] = mapped_column(Integer, default=0)  # 0-100, self-assessed rigor
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     # Trend tracking (populated by the rediagnosis automation)
     compared_to_diagnosis_id: Mapped[UUID | None] = mapped_column(
@@ -77,6 +78,7 @@ class PositioningStatement(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -105,6 +107,7 @@ class BrandIdentity(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -127,6 +130,7 @@ class BusinessModelRedesign(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -148,6 +152,7 @@ class FOMOPlaybook(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -169,6 +174,7 @@ class GTMPlan(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -191,6 +197,7 @@ class RestructuringPlan(Base):
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
