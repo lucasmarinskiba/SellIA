@@ -228,6 +228,15 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           fail_action: false
+          # Defaults to true, which has the action file/update a GitHub
+          # issue with the scan results — that needs `issues: write`, which
+          # this workflow's permissions block intentionally doesn't grant
+          # (kept minimal: contents: read + security-events: write for the
+          # Trivy SARIF upload). Confirmed failing: "Resource not accessible
+          # by integration" on the issues API. Results are already available
+          # via the uploaded report artifact below, so disable issue writing
+          # instead of widening the token's scope for it.
+          allow_issue_writing: false
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
@@ -289,6 +298,11 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           fail_action: false
+          # Same reasoning as zap-baseline above: avoids "Resource not
+          # accessible by integration" from the action's default GitHub
+          # issue-writing, which needs issues: write that this workflow
+          # intentionally doesn't grant.
+          allow_issue_writing: false
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
