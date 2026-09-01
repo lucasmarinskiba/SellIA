@@ -501,74 +501,143 @@ Return JSON:
         ))
 
 
+_POSITIONING_CARRY = (
+    "positioning_statement", "one_liner", "point_of_view", "enemy_analysis",
+    "the_enemy", "reframe", "category_decision", "messaging_pillars",
+    "best_fit_customers", "migration_risks",
+)
+
+
+def _positioning_digest(context: dict | None) -> str:
+    if not context:
+        return "PRIOR POSITIONING: none — infer from the profile, flag assumptions."
+    keep = {k: context[k] for k in _POSITIONING_CARRY if context.get(k) is not None}
+    return "PRIOR POSITIONING (key parts):\n" + json.dumps(keep or context, ensure_ascii=False)[:2600]
+
+
 class BrandIdentityAgent(_BaseAgent):
+    """Etapa 2 — the full identity system, derived from the positioning.
+
+    Shortlists archetypes and scores each on positioning-fit /
+    differentiation-in-category / founder-authenticity before picking. Builds a
+    real verbal identity (voice attributes with 'sounds like / not', a
+    use/ban lexicon tied to the cliché blocklist, rhythm, humour), a naming
+    decision against explicit criteria, a 4-beat story spine downstream agents
+    reuse, an actionable visual brief with moodboard search terms, and 5
+    identity non-negotiables that feed the brand_consistency_monitor.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> BrandIdentity:
         prompt = f"""{_profile_block(profile)}
 
-PRIOR POSITIONING: {json.dumps(context or {}, ensure_ascii=False)[:2200]}
+{_positioning_digest(context)}
 
 FRAMEWORKS:
 {K.frameworks_digest(['jung_brand_archetypes', 'brand_voice_system'])}
 
-TASK: Build brand identity v1. Pick ONE primary archetype and justify it from the
-positioning (not from taste). Decide honestly whether a rename is warranted —
-most of the time it is NOT; say so if so. Write a tagline and a short manifesto
-that read like a real brand published them, not a template. {extra or ''}
+NAMING CRITERIA (score candidates 0-2 on each):
+{K.naming_criteria_digest()}
+
+STORY SPINE (4 beats — the problem beat IS the positioning's enemy):
+{K.story_spine_digest()}
+
+CLICHÉ BLOCKLIST (the lexicon 'ban' list must include these): {', '.join(K.CLICHE_BLOCKLIST)}
+
+IDENTITY NON-NEGOTIABLES: {K.IDENTITY_NON_NEGOTIABLES_HINT}
+
+TASK: Build the identity system. Pick ONE primary archetype, justified from the
+positioning — not taste. A rename is usually NOT warranted; only recommend it
+with a hard reason. The manifesto and tagline are judged on whether a real brand
+would actually ship them. {extra or ''}
 
 Return JSON:
 {{
-  "primary_archetype": "one of the 12",
-  "secondary_archetype": "one of the 12 or null",
-  "archetype_rationale": "why this one follows from the positioning",
-  "rename_recommended": true|false,
-  "rename_rationale": "one sentence — why keep or why change",
-  "name_candidates": ["Name — the idea behind it", ...],
+  "archetype_analysis": {{
+    "shortlist": [{{"archetype": "one of the 12", "positioning_fit": 0-2, "differentiation_in_category": 0-2, "founder_authenticity": 0-2, "note": "..."}}],
+    "primary": "the pick", "secondary": "supporting archetype or null",
+    "blend": "e.g. '70% Outlaw / 30% Sage' and what that means in practice",
+    "rationale": "why this follows from the positioning"
+  }},
+  "story_spine": {{"world": "...", "problem": "the enemy, in story form", "insight": "what the founder saw", "mission": "what the brand makes true"}},
+  "manifesto": "90-150 words in the brand voice, with rhythm — read it aloud first",
   "tagline": "<=6 words, no colon, no cliché",
-  "manifesto": "90-150 words, in the brand voice, with rhythm — read it aloud before you submit it",
-  "voice_attributes": ["adj", "adj", "adj", "adj"],
-  "voice_do": ["concrete instruction", ...],
-  "voice_dont": ["concrete instruction", ...],
+  "taglines_alt": ["3 alternates, each a different angle", "", ""],
+  "verbal_identity": {{
+    "attributes": [{{"adj": "...", "sounds_like": "a sentence that IS this", "not": "the nearby thing to avoid"}}],
+    "lexicon": {{"use": ["signature words"], "ban": ["words that break the voice — include the cliché blocklist"]}},
+    "rhythm": "sentence-length pattern, punctuation habits",
+    "humor": "how much, what kind, where it's off-limits",
+    "first_line_rule": "what every piece of copy must do in sentence one"
+  }},
   "sample_rewrites": [
-    {{"context": "welcome message opener", "text": "..."}},
-    {{"context": "out-of-stock / sold-out notice", "text": "..."}},
-    {{"context": "price objection reply", "text": "..."}}
+    {{"context": "homepage hero", "text": "..."}},
+    {{"context": "welcome message", "text": "..."}},
+    {{"context": "sold-out notice", "text": "..."}},
+    {{"context": "price objection reply", "text": "..."}},
+    {{"context": "shipping delay apology", "text": "..."}}
   ],
-  "visual_brief": {{"mood": "...", "palette_direction": "...", "typography": "...", "imagery": "...", "one_thing_to_avoid": "..."}},
-  "brand_architecture": "1-2 sentences: master brand vs sub-brands",
+  "naming": {{
+    "decision": "keep | rename | add_descriptor",
+    "rationale": "one sentence",
+    "candidates": [{{"name": "...", "idea": "...", "scores": {{"distinctive": 0-2, "memorable": 0-2, "sayable": 0-2, "meaning_carrying": 0-2, "room_to_grow": 0-2, "legally_plausible": 0-2}}}}],
+    "name_test": "the one question that decides it"
+  }},
+  "visual_brief": {{
+    "mood": "3-4 adjectives",
+    "palette_direction": "the role of each colour, not hex — e.g. 'one loud accent for CTAs, everything else near-black + paper'",
+    "typography": "a pairing + why it fits the archetype",
+    "imagery_do": ["..."], "imagery_dont": ["..."],
+    "logo_direction": "wordmark / symbol / etc + why",
+    "moodboard_search_terms": ["5 phrases to paste into an image search", "", "", "", ""],
+    "one_thing_to_avoid": "the category default this brand must never look like"
+  }},
+  "brand_architecture": "master brand vs sub-brands + endorsement model + how future products get named",
+  "identity_consistency_rules": ["5 non-negotiables a non-designer can check on any asset", "", "", "", ""],
   "alternative_angles": [
-    {{"archetype": "a different defensible archetype", "what_changes": "how voice + manifesto would shift", "when_to_pick": "..."}},
+    {{"archetype": "a different defensible archetype", "what_changes": "how voice + manifesto + visuals shift", "when_to_pick": "..."}},
     {{"archetype": "...", "what_changes": "...", "when_to_pick": "..."}}
   ]
 }}"""
         d = _draft_then_refine(prompt, {
-            "primary_archetype": "Hero", "secondary_archetype": "Outlaw",
-            "archetype_rationale": "Positioning frames the brand as the one that fights the status quo for the customer.",
-            "rename_recommended": False, "rename_rationale": "Existing name has equity; the problem is meaning, not letters.",
-            "name_candidates": [], "tagline": "Do it properly.",
+            "archetype_analysis": {"shortlist": [], "primary": "Hero", "secondary": "Outlaw", "blend": "70% Hero / 30% Outlaw — earnest about the customer's goal, irreverent about the industry", "rationale": "Positioning frames the brand as the one that fights the status quo for the customer."},
+            "story_spine": {"world": "Customers accept the category default.", "problem": "The default quietly costs them.", "insight": "It doesn't have to.", "mission": "Make the better way the obvious way."},
             "manifesto": "Manifesto pending positioning sign-off.",
-            "voice_attributes": ["blunt", "warm", "expert", "never corporate"],
-            "voice_do": ["Say the number", "Take a side", "Cut the intro"],
-            "voice_dont": ["Use 'leverage' or 'synergy'", "Hedge with five qualifiers"],
-            "sample_rewrites": [], "visual_brief": {"mood": "bold, high-contrast", "palette_direction": "one loud accent + disciplined neutrals", "typography": "grotesk display + humanist body", "imagery": "real people, unretouched", "one_thing_to_avoid": "stock-photo handshakes"},
-            "brand_architecture": "Single master brand; no sub-brands until there is a second product line.",
+            "tagline": "Do it properly.", "taglines_alt": [],
+            "verbal_identity": {"attributes": [{"adj": "blunt", "sounds_like": "Here's the number. Here's what it means.", "not": "aggressive"}], "lexicon": {"use": [], "ban": list(K.CLICHE_BLOCKLIST)}, "rhythm": "short sentences, one idea each", "humor": "dry, never at the customer's expense", "first_line_rule": "name the enemy or the outcome — never warm up"},
+            "sample_rewrites": [],
+            "naming": {"decision": "keep", "rationale": "Existing name has equity; the gap is meaning, not letters.", "candidates": [], "name_test": "Would a customer repeat it correctly after hearing it once?"},
+            "visual_brief": {"mood": "bold, high-contrast, plain", "palette_direction": "one loud accent for action, near-black + paper for everything else", "typography": "grotesk display + humanist body", "imagery_do": ["real people, unretouched"], "imagery_dont": ["stock handshakes", "gradients on everything"], "logo_direction": "wordmark — the name is the asset", "moodboard_search_terms": [], "one_thing_to_avoid": "looking like every other option in the category"},
+            "brand_architecture": "Single master brand; no sub-brands until a second product line exists; future products take descriptive names under the master.",
+            "identity_consistency_rules": [],
             "alternative_angles": [],
-        }, "The manifesto and tagline are judged on whether a real brand would ship "
-           "them. Kill anything that sounds like a mission-statement generator.")
+        }, "The manifesto, tagline and sample rewrites are judged on whether a real "
+           "brand would ship them — kill anything that reads like a generator. The "
+           "archetype pick must be defended by the shortlist scores.")
+
+        aa = d.get("archetype_analysis") or {}
+        vi = d.get("verbal_identity") or {}
+        naming = d.get("naming") or {}
         return await self._save(BrandIdentity(
             business_id=business_id,
-            primary_archetype=d.get("primary_archetype"),
-            secondary_archetype=d.get("secondary_archetype"),
-            rename_recommended=bool(d.get("rename_recommended", False)),
-            name_candidates=d.get("name_candidates"),
+            primary_archetype=aa.get("primary") or d.get("primary_archetype"),
+            secondary_archetype=aa.get("secondary") or d.get("secondary_archetype"),
+            rename_recommended=(naming.get("decision") in ("rename", "add_descriptor")),
+            name_candidates=[c.get("name") for c in (naming.get("candidates") or []) if isinstance(c, dict)] or d.get("name_candidates"),
             tagline=d.get("tagline"),
             manifesto=d.get("manifesto"),
-            voice_attributes=d.get("voice_attributes"),
-            voice_do=d.get("voice_do"),
-            voice_dont=d.get("voice_dont"),
+            voice_attributes=[a.get("adj") for a in (vi.get("attributes") or []) if isinstance(a, dict)] or d.get("voice_attributes"),
+            voice_do=[a.get("sounds_like") for a in (vi.get("attributes") or []) if isinstance(a, dict)] or d.get("voice_do"),
+            voice_dont=(vi.get("lexicon") or {}).get("ban") or d.get("voice_dont"),
             sample_rewrites=d.get("sample_rewrites"),
             visual_brief=d.get("visual_brief"),
-            brand_architecture=" | ".join(x for x in [d.get("brand_architecture"), d.get("archetype_rationale"), d.get("rename_rationale")] if x),
+            brand_architecture=" | ".join(x for x in [d.get("brand_architecture"), aa.get("rationale"), naming.get("rationale")] if x),
             alternative_angles=d.get("alternative_angles"),
+            archetype_analysis=d.get("archetype_analysis"),
+            verbal_identity=d.get("verbal_identity"),
+            naming=d.get("naming"),
+            story_spine=d.get("story_spine"),
+            taglines_alt=d.get("taglines_alt"),
+            identity_consistency_rules=d.get("identity_consistency_rules"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),

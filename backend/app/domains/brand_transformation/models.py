@@ -130,6 +130,14 @@ class BrandIdentity(Base):
     brand_architecture: Mapped[str | None] = mapped_column(Text, nullable=True)
     alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2-3 alternate archetype/voice bets
 
+    # v2 deep lenses
+    archetype_analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {shortlist:[{archetype,fit,differentiation,authenticity}], primary, secondary, blend}
+    verbal_identity: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {attributes:[{adj,sounds_like,not}], lexicon:{use,ban}, rhythm, humor, rules}
+    naming: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {decision, rationale, candidates:[{name,idea,scores}], name_test}
+    story_spine: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {world, problem, insight, mission}
+    taglines_alt: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 3 alternate taglines
+    identity_consistency_rules: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 5 non-negotiables (feeds brand_consistency_monitor)
+
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown

@@ -133,6 +133,12 @@ class BrandIdentityOut(_ORM):
     visual_brief: dict | None
     brand_architecture: str | None
     alternative_angles: list | None
+    archetype_analysis: dict | None
+    verbal_identity: dict | None
+    naming: dict | None
+    story_spine: dict | None
+    taglines_alt: list | None
+    identity_consistency_rules: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
