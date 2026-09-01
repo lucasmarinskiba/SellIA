@@ -218,12 +218,22 @@ class GTMPlan(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
 
-    primary_growth_loop: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {type, steps, reinvestment}
-    channels: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{channel, role, first_action}]
+    primary_growth_loop: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {type, steps, reinvestment, turning_metric, cycle_time}
+    channels: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{channel, role, first_action}] (kept for back-compat)
     lightning_strike: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # launch sequence
     funnel: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     content_pillars: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    plan_90_days: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # week-by-week or milestone list
+    plan_90_days: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # milestones w/ owner + metric + depends_on
+
+    # v2 deep lenses
+    loop_evaluation: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # loop types scored on GROWTH_LOOP_AXES
+    channel_plan: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{channel, role, hypothesis, first_action, effort, leading_signal, kill_signal}]
+    content_engine: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {pillars, formats, cadence, repurposing_chain, owner}
+    week_1_actions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 3 concrete
+    budget_shape: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {allocation, constraint}
+    anti_goals: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # what NOT to do in 90 days
+    north_star_metric: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2 different GTM bets
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)

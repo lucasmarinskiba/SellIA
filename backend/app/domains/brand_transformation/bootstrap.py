@@ -92,6 +92,15 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS measurement JSONB",
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS integration_notes JSONB",
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS risk_matrix JSONB",
+    # Etapa 5 deepening — GoToMarketAgent v2
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS loop_evaluation JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS channel_plan JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS content_engine JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS week_1_actions JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS budget_shape JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS anti_goals JSONB",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS north_star_metric VARCHAR(255)",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
 ]
 
 
