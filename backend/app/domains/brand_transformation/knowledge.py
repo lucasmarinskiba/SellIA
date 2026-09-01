@@ -307,6 +307,86 @@ def quality_bar() -> str:
 
 
 # ---------------------------------------------------------------------------
+# 3c. DIAGNOSIS CALIBRATION — what the 0-5 scorecard axes mean, and the moat
+#     types a referent brand defends. Injected into DiagnosisAgent so scores
+#     are comparable across businesses instead of vibes.
+# ---------------------------------------------------------------------------
+
+REFERENT_SCORECARD_RUBRIC: dict[str, dict[int, str]] = {
+    "positioning": {
+        0: "No stated position; describes itself by category noun only ('a bakery').",
+        1: "Position = a generic adjective ('quality', 'affordable', 'trusted').",
+        2: "Has a target customer but the value claim is shared by every competitor.",
+        3: "A real differentiator exists but isn't framed as a category or point of view.",
+        4: "Clear Dunford-style position; customers can repeat why it's different.",
+        5: "Owns a named category or point of view the market uses; competitors react to it.",
+    },
+    "brand_identity": {
+        0: "Name + logo only; no voice, no story, interchangeable.",
+        1: "Visual identity exists but no verbal identity or personality.",
+        2: "Consistent look; voice is 'professional' default with no edge.",
+        3: "Recognisable voice and a story, applied unevenly.",
+        4: "One clear archetype; voice, story, visuals reinforce each other everywhere.",
+        5: "Identity is a cultural asset — people wear it / quote it / defend it.",
+    },
+    "offer": {
+        0: "Sells a commodity unit at market price; no packaging of value.",
+        1: "Some bundling but price is the main lever.",
+        2: "Tiered pricing exists; no anchor, guarantee, or reason to buy now.",
+        3: "A differentiated offer with one strong element (guarantee OR bonus OR speed).",
+        4: "Value equation clearly tilted — dream outcome high, effort/time low, risk removed.",
+        5: "Grand-slam offer; saying no feels irrational; competitors can't match the terms.",
+    },
+    "fomo_desire": {
+        0: "Always available, always discountable; no reason to act now.",
+        1: "Occasional promos with fake 'ending soon' urgency.",
+        2: "Some social proof shown; no scarcity, ritual, or exclusivity.",
+        3: "One real desire lever running (waitlist / drop / members perk).",
+        4: "Multiple honest levers + a cadence customers organise around.",
+        5: "Demand outruns supply by design; resale/waitlist markets advertise for free.",
+    },
+    "distribution": {
+        0: "One channel, passive; customers must find it.",
+        1: "Present on 2-3 channels, no compounding loop.",
+        2: "Paid acquisition works but every sale starts from zero.",
+        3: "One growth loop partially working (content/referral/UGC).",
+        4: "A sustained loop where output re-feeds input; CAC trending down.",
+        5: "Category-defining distribution advantage (owned audience, network effect, shelf).",
+    },
+    "authority": {
+        0: "Anonymous; no named founder, no track record, no third-party proof.",
+        1: "Basic testimonials; nothing verifiable.",
+        2: "Named team + some reviews; no published point of view.",
+        3: "Founder has a voice; press or partnerships starting.",
+        4: "Recognised expertise — cited, invited, referenced by others in the space.",
+        5: "The reference others benchmark against; owns the definitive content on the topic.",
+    },
+}
+
+MOAT_TYPES: list[str] = [
+    "brand (customers pay a premium for the name / refuse substitutes)",
+    "network effects (each user makes the product more valuable to the next)",
+    "switching costs / lock-in (leaving is expensive or painful)",
+    "economies of scale (unit cost falls with volume faster than rivals)",
+    "counter-positioning (incumbents can't copy without cannibalising themselves)",
+    "cornered resource (exclusive access to talent, supply, IP, location, distribution)",
+    "process power (an operating system rivals can't replicate quickly — see McDonald's, Toyota)",
+]
+
+
+def scorecard_rubric_digest() -> str:
+    lines = []
+    for axis, levels in REFERENT_SCORECARD_RUBRIC.items():
+        lines.append(f"{axis}:")
+        lines.extend(f"  {n} = {txt}" for n, txt in levels.items())
+    return "\n".join(lines)
+
+
+def moat_types_digest() -> str:
+    return "\n".join(f"- {m}" for m in MOAT_TYPES)
+
+
+# ---------------------------------------------------------------------------
 # 4. TRANSFORMATION STAGES  (the staged program the orchestrator runs)
 # ---------------------------------------------------------------------------
 

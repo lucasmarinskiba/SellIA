@@ -28,7 +28,18 @@ class BusinessProfileIn(BaseModel):
 
 
 class DiagnosisIn(BusinessProfileIn):
-    pass
+    """Etapa 0 input. Every extra field is optional but each one raises the
+    diagnosis from 'thin' toward 'solid' evidence quality."""
+
+    time_in_market: str | None = None            # e.g. "3 years"
+    monthly_revenue: str | None = None           # free-form, e.g. "~$40k"
+    gross_margin_pct: float | None = None
+    repeat_purchase_rate: str | None = None      # e.g. "18%"
+    pricing: list[str] = []                      # ["Bag 250g $12", "Wholesale $9/kg"]
+    channels: list[str] = []                     # ["own store", "Instagram", "2 wholesale accounts"]
+    differentiation_claims: list[str] = []       # what they currently tell customers
+    customer_quotes: list[str] = []              # verbatim review / feedback snippets
+    recent_marketing: list[str] = []             # what they've tried lately
 
 
 class StageRunIn(BaseModel):
@@ -61,6 +72,16 @@ class DiagnosisOut(_ORM):
     highest_leverage_moves: list | None
     scorecard: dict | None
     summary: str | None
+    commoditization_analysis: dict | None
+    referent_gap: dict | None
+    closest_precedent: dict | None
+    moat_assessment: dict | None
+    quick_wins: list | None
+    structural_moves: list | None
+    kill_criteria: list | None
+    second_order_risk: str | None
+    evidence_quality: str | None
+    evidence_snapshot: dict | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
