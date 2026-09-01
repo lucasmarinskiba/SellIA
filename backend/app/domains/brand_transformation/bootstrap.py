@@ -39,6 +39,13 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
     "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS confidence INTEGER DEFAULT 0",
     "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS frameworks_applied JSONB",
+    "ALTER TABLE bt_diagnoses ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_gtm_plans ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
+    "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS generated_by VARCHAR(12) DEFAULT 'unknown'",
 ]
 
 

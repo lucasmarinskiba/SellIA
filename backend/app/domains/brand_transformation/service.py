@@ -58,15 +58,55 @@ _SYSTEM = (
 )
 
 
+# env var names an Anthropic key might be stored under, in priority order
+_KEY_ENV_NAMES = ("ANTHROPIC_API_KEY", "CLAUDE_API_KEY", "ANTHROPIC_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+_missing_key_warned = False
+
+
+def _resolve_api_key() -> str | None:
+    """Anthropic key from settings first, then any of the known env var names."""
+    import os
+
+    try:
+        from app.core.config import get_settings
+
+        key = getattr(get_settings(), "ANTHROPIC_API_KEY", None)
+        if key:
+            return key
+    except Exception:  # noqa: BLE001
+        pass
+    for name in _KEY_ENV_NAMES:
+        if os.environ.get(name):
+            return os.environ[name]
+    return None
+
+
+def llm_available() -> bool:
+    return _resolve_api_key() is not None
+
+
 def _client() -> Any:
     """Lazy anthropic client so a missing key never breaks import/startup."""
     import anthropic
 
-    return anthropic.Anthropic()
+    key = _resolve_api_key()
+    return anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
 
 
 def _ask_json(prompt: str, fallback: dict) -> dict:
     """One Claude call; expect a single JSON object back; fall back on failure."""
+    global _missing_key_warned
+    if not llm_available():
+        if not _missing_key_warned:
+            logger.error(
+                "brand_transformation: no Anthropic API key configured (checked settings "
+                "+ %s) — every agent will return TEMPLATED FALLBACK output, not AI. "
+                "Set ANTHROPIC_API_KEY to enable the agents.",
+                ", ".join(_KEY_ENV_NAMES),
+            )
+            _missing_key_warned = True
+        return fallback
     try:
         msg = _client().messages.create(
             model=_MODEL,
@@ -124,6 +164,7 @@ Return ONLY the final JSON object."""
 
     refined.setdefault("confidence", 45 if used_fallback else 72)
     refined.setdefault("frameworks_applied", [])
+    refined["_generated_by"] = "fallback" if used_fallback else "llm"
     return refined
 
 
@@ -215,6 +256,7 @@ Return JSON:
             summary=d.get("summary"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
     async def latest(self, business_id: uuid.UUID) -> BrandDiagnosis | None:
@@ -287,6 +329,7 @@ Return JSON:
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
 
@@ -360,6 +403,7 @@ Return JSON:
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
 
@@ -413,6 +457,7 @@ Return JSON:
             rationale=d.get("rationale"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
 
@@ -469,6 +514,7 @@ Return JSON:
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
 
@@ -514,6 +560,7 @@ Return JSON:
             alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
 
 
@@ -557,4 +604,5 @@ Return JSON:
             unit_economics_notes=" | ".join(x for x in [d.get("unit_economics_notes"), "90d: " + "; ".join(d.get("90_day_operational_priorities") or [])] if x and x != "90d: "),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
+            generated_by=d.get("_generated_by", "unknown"),
         ))
