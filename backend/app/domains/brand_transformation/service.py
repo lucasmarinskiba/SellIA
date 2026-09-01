@@ -983,43 +983,79 @@ Return JSON:
 
 
 class RestructuringAgent(_BaseAgent):
+    """Etapa 6 — turn the strategy into an operating system.
+
+    Every kill carries its sunk-cost rebuttal and names who pushes back.
+    Decision rights are assigned one-owner-per-decision (no committees).
+    Core processes each protect a named brand promise and declare their
+    failure mode. Unit-economics targets from Etapa 3 become a gate with an
+    explicit 'pause growth spend' trigger. The 90-day operating plan is
+    sequenced with dependencies.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> RestructuringPlan:
         prompt = f"""{_profile_block(profile)}
 
-FULL PRIOR CONTEXT: {json.dumps(context or {}, ensure_ascii=False)[:3200]}
+{_stage_context_digest(context)}
 
-TASK: Turn the strategy into operating reality. Decide what to KILL (with the
-sunk-cost objection pre-answered), KEEP, and SCALE. Propose a light org redesign
-— roles, not headcount fantasy. Define 3 core processes (owner + SLA + why it
-matters to the brand promise). Name the KPIs that would actually prove the new
-promise is being kept, not vanity metrics. {extra or ''}
+DECISION RIGHTS: {K.DECISION_RIGHTS_MODEL}
+BUILD / BUY / BORROW: {K.BUILD_BUY_BORROW}
+OPERATING RHYTHM (adapt, don't just copy):
+{K.operating_rhythm_digest()}
+PROMISE KPIs: {K.PROMISE_KPI_HINT}
+
+TASK: Turn the strategy into operating reality. The kill list is the point —
+each item needs the sunk-cost rebuttal or it won't survive the room. Assign one
+owner per decision. Every core process must protect a specific brand promise from
+the positioning. Carry the unit-economics targets from the business-model stage
+into a gate. {extra or ''}
 
 Return JSON:
 {{
-  "kill": [{{"what": "...", "why": "...", "objection_answered": "the 'but we invested in that' rebuttal"}}, ...],
-  "keep": [{{"what": "...", "why": "..."}}, ...],
-  "scale": [{{"what": "...", "why": "...", "constraint_to_watch": "..."}}, ...],
-  "org_redesign": "2-4 sentences — roles and decision rights, not an org chart",
-  "core_processes": [{{"name": "...", "owner": "role", "sla": "...", "why": "how it protects the brand promise"}}, ...],
-  "promise_kpis": [{{"kpi": "...", "target": "...", "proves": "which specific brand promise", "not_this": "the vanity metric it replaces"}}, ...],
-  "unit_economics_notes": "what must be true (CAC payback, margin, retention) for the model to work — with rough numbers",
-  "90_day_operational_priorities": ["...", "...", "..."]
+  "kill": [{{"what": "...", "why": "...", "sunk_cost_rebuttal": "the 'but we invested in that' answer", "frees": "time | cash | focus — be specific", "who_pushes_back": "role/person + why"}}],
+  "keep": [{{"what": "...", "why": "...", "risk_if_dropped": "..."}}],
+  "scale": [{{"what": "...", "why": "...", "first_constraint": "what breaks first when this grows", "prereq": "what must be true before scaling it"}}],
+  "capability_gaps": [{{"gap": "skill/system/partner the strategy needs and the org lacks", "build_buy_borrow": "build|buy|borrow", "reason": "..."}}],
+  "the_one_hire": "the single role that unblocks the most, or 'none — no hire in 90 days' with why",
+  "org_redesign": "2-4 sentences — roles and where authority sits, not an org chart",
+  "decision_rights": [{{"decision": "e.g. pricing changes / what ships / brand exceptions", "owner": "one role", "consulted": ["..."], "informed": ["..."]}}],
+  "core_processes": [{{"name": "...", "owner": "role", "trigger": "what starts it", "steps": ["brief"], "sla": "...", "promise_protected": "the specific brand promise this keeps", "failure_mode": "what going wrong looks like"}}],
+  "operating_rhythm": {{"daily": {{"purpose": "...", "attendees": "...", "output": "the decision it produces"}}, "weekly": {{...}}, "monthly": {{...}}, "quarterly": {{...}}}},
+  "promise_kpis": [{{"kpi": "...", "target": "...", "proves": "which promise", "replaces_vanity_metric": "...", "source": "where the number comes from", "baseline": "value or unknown"}}],
+  "unit_economics_gate": {{"must_hold": [{{"metric": "gross margin / CAC payback / LTV:CAC / contribution", "threshold": "...", "why": "..."}}], "pause_growth_trigger": "the condition that means stop spending on acquisition"}},
+  "unit_economics_notes": "the one paragraph a founder must internalise",
+  "operating_plan_90d": [{{"change": "...", "owner": "role", "done_looks_like": "observable", "depends_on": "prior change or null"}}],
+  "transition_risks": [{{"risk": "morale | capacity | customer disruption during the change", "mitigation": "..."}}],
+  "alternative_angles": [{{"angle": "lean — founder holds more, hires later", "when_to_pick": "..."}}, {{"angle": "hire ahead of the curve", "when_to_pick": "..."}}]
 }}"""
         d = _draft_then_refine(prompt, {
-            "kill": [], "keep": [], "scale": [],
-            "org_redesign": "Keep the team small; one named owner per core process with authority to decide, not just execute.",
-            "core_processes": [], "promise_kpis": [],
-            "unit_economics_notes": "Contribution margin must cover CAC within ~3 months of first purchase, or growth burns cash.",
-            "90_day_operational_priorities": [],
-        }, "The kill list is the point — each item needs the sunk-cost rebuttal or "
-           "it won't survive the room. KPIs must name the vanity metric they replace.")
+            "kill": [], "keep": [], "scale": [], "capability_gaps": [],
+            "the_one_hire": "none — no hire in the first 90 days; fix process before adding people",
+            "org_redesign": "Keep the team small; one named owner per core process and per key decision, with authority to decide, not just execute.",
+            "decision_rights": [], "core_processes": [],
+            "operating_rhythm": {"daily": {"purpose": "unblock", "attendees": "core team", "output": "today's ship list"}, "weekly": {"purpose": "metrics + one decision", "attendees": "owners", "output": "the week's call"}, "monthly": {"purpose": "stage retro", "attendees": "all", "output": "re-ranked roadmap"}, "quarterly": {"purpose": "re-diagnose", "attendees": "founder + advisors", "output": "reset targets"}},
+            "promise_kpis": [],
+            "unit_economics_gate": {"must_hold": [{"metric": "CAC payback", "threshold": "<= 3 months", "why": "beyond that, growth burns cash faster than it earns"}], "pause_growth_trigger": "CAC payback slips past 4 months two months running"},
+            "unit_economics_notes": "Contribution margin must cover CAC within ~3 months of first purchase, or scaling makes losses bigger, not the business.",
+            "operating_plan_90d": [], "transition_risks": [], "alternative_angles": [],
+        }, "The kill list is the point — each needs the sunk-cost rebuttal and who "
+           "fights it. One owner per decision, no committees. Every core process "
+           "names the promise it protects. The gate needs a concrete pause trigger.")
         return await self._save(RestructuringPlan(
             business_id=business_id,
             kill=d.get("kill"), keep=d.get("keep"), scale=d.get("scale"),
             org_redesign=d.get("org_redesign"),
             core_processes=d.get("core_processes"),
             promise_kpis=d.get("promise_kpis"),
-            unit_economics_notes=" | ".join(x for x in [d.get("unit_economics_notes"), "90d: " + "; ".join(d.get("90_day_operational_priorities") or [])] if x and x != "90d: "),
+            unit_economics_notes=d.get("unit_economics_notes"),
+            capability_gaps=d.get("capability_gaps"),
+            decision_rights=d.get("decision_rights"),
+            operating_rhythm=d.get("operating_rhythm"),
+            unit_economics_gate=d.get("unit_economics_gate"),
+            operating_plan_90d=d.get("operating_plan_90d"),
+            transition_risks=d.get("transition_risks"),
+            the_one_hire=d.get("the_one_hire"),
+            alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),

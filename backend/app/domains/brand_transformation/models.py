@@ -250,13 +250,23 @@ class RestructuringPlan(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
 
-    kill: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    scale: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    kill: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{what, why, sunk_cost_rebuttal, frees, who_pushes_back}]
+    keep: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{what, why, risk_if_dropped}]
+    scale: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{what, why, first_constraint, prereq}]
     org_redesign: Mapped[str | None] = mapped_column(Text, nullable=True)
-    core_processes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{name, owner, sla, why}]
+    core_processes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{name, owner, trigger, steps, sla, promise_protected, failure_mode}]
     promise_kpis: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # metrics that prove the brand promise
     unit_economics_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # v2 deep lenses
+    capability_gaps: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{gap, build_buy_borrow, reason}]
+    decision_rights: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{decision, owner, consulted, informed}]
+    operating_rhythm: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {daily, weekly, monthly, quarterly} each {purpose, attendees, output}
+    unit_economics_gate: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {must_hold[], pause_growth_trigger}
+    operating_plan_90d: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{change, owner, done_looks_like, depends_on}]
+    transition_risks: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{risk, mitigation}]
+    the_one_hire: Mapped[str | None] = mapped_column(Text, nullable=True)  # the single role that unblocks the most
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2 org bets (lean vs hire-ahead)
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
