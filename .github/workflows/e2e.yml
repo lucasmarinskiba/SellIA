@@ -41,8 +41,20 @@ jobs:
         run: |
           cp .env.example .env || true
           docker compose up -d postgres redis backend frontend
-          # Wait for services
-          npx wait-on http://localhost:8000/health http://localhost:3000 --timeout 60000
+          # Wait for services. `up -d` above already blocks until postgres/
+          # redis pass their healthchecks before backend/frontend even
+          # start (confirmed locally: ~70s on a warm-image machine), and on
+          # a cold GitHub-hosted runner that step also has to pull/build
+          # every image first. wait-on's clock only starts after `up -d`
+          # returns, but 60s wasn't enough slack on top of that for the
+          # frontend's first-request Turbopack compile — confirmed: this
+          # step failed in CI (exit 1, no further detail available) right
+          # after the frontend Docker build itself was fixed (alpine/musl
+          # native-binding bug — see frontend/Dockerfile), so the build was
+          # no longer the blocker, just the timeout budget. security-scan.
+          # yml's ZAP jobs poll the same stack with a 300s budget (60
+          # retries * 5s) and pass, which is the number this now matches.
+          npx wait-on http://localhost:8000/health http://localhost:3000 --timeout 300000
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_db
           SECRET_KEY: e2e-test-secret-32-chars-long-1234567
