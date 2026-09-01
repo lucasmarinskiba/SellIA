@@ -1,0 +1,186 @@
+"""Brand Transformation schemas — request / response models."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
+
+
+class _ORM(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ----------------------------- requests -----------------------------
+
+class BusinessProfileIn(BaseModel):
+    """Shared context payload most agents accept."""
+
+    industry: str
+    what_they_sell: str
+    current_positioning: str | None = None
+    known_competitors: list[str] = []
+    revenue_model: str | None = None
+    target_customer: str | None = None
+    price_point: str | None = None
+    notes: str | None = None
+
+
+class DiagnosisIn(BusinessProfileIn):
+    pass
+
+
+class StageRunIn(BaseModel):
+    """Advance / run a single stage inside a program."""
+
+    profile: BusinessProfileIn | None = None
+    extra_instructions: str | None = None
+
+
+class ProgramCreateIn(BaseModel):
+    name: str = "Brand Transformation"
+    profile: BusinessProfileIn
+
+
+class AutomationIn(BaseModel):
+    automation_type: str
+    schedule: str = "monthly"
+    config: dict | None = None
+
+
+# ----------------------------- responses -----------------------------
+
+class DiagnosisOut(_ORM):
+    id: UUID
+    industry: str
+    referent_potential_score: int
+    commoditization_level: str
+    symptoms: list | None
+    root_causes: list | None
+    highest_leverage_moves: list | None
+    scorecard: dict | None
+    summary: str | None
+    created_at: datetime
+
+
+class PositioningOut(_ORM):
+    id: UUID
+    competitive_alternatives: list | None
+    unique_attributes: list | None
+    value_themes: list | None
+    best_fit_customers: list | None
+    market_category: str | None
+    new_category_name: str | None
+    point_of_view: str | None
+    the_enemy: str | None
+    positioning_statement: str | None
+    one_liner: str | None
+    created_at: datetime
+
+
+class BrandIdentityOut(_ORM):
+    id: UUID
+    primary_archetype: str | None
+    secondary_archetype: str | None
+    rename_recommended: bool
+    name_candidates: list | None
+    tagline: str | None
+    manifesto: str | None
+    voice_attributes: list | None
+    voice_do: list | None
+    voice_dont: list | None
+    sample_rewrites: list | None
+    visual_brief: dict | None
+    brand_architecture: str | None
+    created_at: datetime
+
+
+class BusinessModelOut(_ORM):
+    id: UUID
+    canvas: dict | None
+    applied_patterns: list | None
+    new_revenue_streams: list | None
+    grand_slam_offer: dict | None
+    pricing_architecture: dict | None
+    errc_grid: dict | None
+    rationale: str | None
+    created_at: datetime
+
+
+class FOMOPlaybookOut(_ORM):
+    id: UUID
+    mechanisms: list | None
+    launch_ritual: dict | None
+    cadence: str | None
+    risk_notes: str | None
+    created_at: datetime
+
+
+class GTMPlanOut(_ORM):
+    id: UUID
+    primary_growth_loop: dict | None
+    channels: list | None
+    lightning_strike: dict | None
+    funnel: dict | None
+    content_pillars: list | None
+    plan_90_days: list | None
+    created_at: datetime
+
+
+class RestructuringOut(_ORM):
+    id: UUID
+    kill: list | None
+    keep: list | None
+    scale: list | None
+    org_redesign: str | None
+    core_processes: list | None
+    promise_kpis: list | None
+    unit_economics_notes: str | None
+    created_at: datetime
+
+
+class ProgramOut(_ORM):
+    id: UUID
+    name: str
+    status: str
+    current_stage: str
+    completed_stages: list | None
+    stage_artifacts: dict | None
+    roadmap: dict | None
+    metrics_board: dict | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AutomationOut(_ORM):
+    id: UUID
+    automation_type: str
+    schedule: str
+    config: dict | None
+    is_active: bool
+    last_run_at: datetime | None
+    last_result: dict | None
+    runs_count: int
+    created_at: datetime
+
+
+class StageResultOut(BaseModel):
+    """Returned by the orchestrator after running one stage."""
+
+    program_id: UUID
+    stage_key: str
+    stage_name: str
+    artifact_id: UUID | None
+    artifact: dict
+    next_stage: str | None
+    completed_stages: list[str]
+
+
+class StageInfoOut(BaseModel):
+    key: str
+    order: int
+    name: str
+    goal: str
+    agent: str
+    deliverable: str
