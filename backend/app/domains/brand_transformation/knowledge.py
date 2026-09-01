@@ -452,6 +452,45 @@ def naming_criteria_digest() -> str:
     return "\n".join(f"- {k}: {v}" for k, v in NAMING_CRITERIA.items())
 
 
+# ---------------------------------------------------------------------------
+# 3e. BUSINESS-MODEL & PRICING CALIBRATION — Etapa 3.
+# ---------------------------------------------------------------------------
+
+BUSINESS_MODEL_PATTERN_AXES: dict[str, str] = {
+    "positioning_fit": "Does this pattern let the brand deliver its point of view, or fight it?",
+    "margin_impact": "Effect on gross / contribution margin (+ / 0 / -).",
+    "retention_impact": "Does it create a reason to stay (recurring value, lock-in, community)?",
+    "execution_difficulty": "New capabilities, systems, or partners required (low / med / high).",
+    "time_to_cash": "How fast it changes revenue (weeks / quarters / a year+).",
+}
+
+PRICING_PSYCH_TACTICS: list[str] = [
+    "anchoring (show the expensive option first so the target tier feels reasonable)",
+    "decoy / asymmetric dominance (a third option that makes the target tier obviously best)",
+    "charm pricing ($X9 / $X7) — only where the brand isn't premium; round pricing signals confidence",
+    "tiering by outcome not features (name tiers for who the customer wants to be)",
+    "annual prepay discount (pull cash forward, cut churn — frame as 2 months free)",
+    "good-better-best with the middle tier engineered to win",
+    "unbundling the price anchor (charge for the thing competitors give away, give away what they charge for)",
+    "usage-aligned pricing (price scales with the value the customer receives)",
+    "founding-member / grandfather pricing that genuinely never returns",
+]
+
+UNIT_ECONOMICS_TARGETS_HINT = (
+    "State target gross margin %, CAC ceiling, CAC payback (months), LTV:CAC ratio, "
+    "and contribution margin — each with the ONE assumption it rests on. Use rough "
+    "numbers from the profile where given; label the rest as assumptions to validate."
+)
+
+
+def bm_pattern_axes_digest() -> str:
+    return "\n".join(f"- {k}: {v}" for k, v in BUSINESS_MODEL_PATTERN_AXES.items())
+
+
+def pricing_tactics_digest() -> str:
+    return "\n".join(f"- {t}" for t in PRICING_PSYCH_TACTICS)
+
+
 def story_spine_digest() -> str:
     return "\n".join(f"{i+1}. {b}" for i, b in enumerate(STORY_SPINE_BEATS))
 

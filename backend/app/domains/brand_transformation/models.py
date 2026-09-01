@@ -161,6 +161,17 @@ class BusinessModelRedesign(Base):
     errc_grid: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # eliminate/reduce/raise/create
     rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # v2 deep lenses
+    model_diagnosis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {how_it_earns_now, margin_leaks, starts_from_zero, fragility}
+    pattern_evaluation: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # scored shortlist of candidate patterns
+    canvas_changes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{block, from, to, why, forces_change_in}]
+    value_equation: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # quantified Hormozi
+    unit_economics_targets: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {gross_margin, cac_ceiling, payback_months, ltv_cac, contribution_margin} each w/ assumption
+    pricing_migration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # how to move from current pricing without revolt
+    rollout: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {change_first, validate_before, sequence}
+    risks: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # cannibalization / ops load / churn-if-wrong
+    alternative_angles: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 2 different model bets
+
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     generated_by: Mapped[str] = mapped_column(String(12), default="unknown")  # llm | fallback | unknown

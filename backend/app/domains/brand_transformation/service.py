@@ -645,44 +645,86 @@ Return JSON:
 
 
 class BusinessModelAgent(_BaseAgent):
+    """Etapa 3 — business-model redesign as a costed decision, not a canvas fill.
+
+    Diagnoses how the model earns today and where margin leaks, scores a
+    shortlist of named patterns on 5 axes before applying 2-3, rewrites the
+    canvas block-by-block with dependency notes, quantifies the Hormozi value
+    equation, sets unit-economics targets with the assumption behind each, and
+    gives a pricing-migration path so the change doesn't trigger a revolt.
+    """
+
     async def run(self, business_id: uuid.UUID, profile: dict, context: dict | None = None, extra: str | None = None) -> BusinessModelRedesign:
         prompt = f"""{_profile_block(profile)}
 
-PRIOR CONTEXT: {json.dumps(context or {}, ensure_ascii=False)[:2200]}
+{_evidence_block(profile)}
+
+{_positioning_digest(context)}
 
 FRAMEWORKS:
 {K.frameworks_digest(['business_model_canvas', 'business_model_patterns', 'hormozi_value_equation', 'blue_ocean_errc'])}
 
+SCORE EACH CANDIDATE PATTERN 0-2 ON THESE AXES:
+{K.bm_pattern_axes_digest()}
+
+PRICING PSYCHOLOGY TACTICS to draw from (name the ones you use):
+{K.pricing_tactics_digest()}
+
+UNIT ECONOMICS: {K.UNIT_ECONOMICS_TARGETS_HINT}
+
 REFERENCE PLAYBOOKS (the real engine, not the surface product):
 {K.origins_digest()}
 
-TASK: Redesign the business model. Apply 2-3 NAMED patterns and explain how each
-transfers to THIS business specifically (do not just copy the example's product).
-Build a grand-slam offer using the value equation — push the numerator, shrink the
-denominator, and make the guarantee sting a little. Design a pricing architecture
-with a real anchor and named psychological tactics. {extra or ''}
+TASK: Redesign the model so price stops being the axis of competition. Show the
+work: diagnose the current economics, score patterns before picking, rewrite the
+canvas with dependencies, quantify the value equation, set unit-economics targets.
+The guarantee must carry real risk and you must state the worst-case abuse cost.
+{extra or ''}
 
 Return JSON:
 {{
+  "model_diagnosis": {{"how_it_earns_now": "...", "margin_leaks": ["..."], "every_sale_from_zero": true|false, "fragility": "the single biggest structural weakness"}},
+  "pattern_evaluation": [
+    {{"pattern": "named pattern", "scores": {{"positioning_fit": 0-2, "margin_impact": 0-2, "retention_impact": 0-2, "execution_difficulty": 0-2, "time_to_cash": 0-2}}, "verdict": "apply | later | reject", "how_it_transfers_here": "specific, not the precedent's product", "precedent": "brand"}}
+  ],
+  "applied_patterns": ["the 2-3 you chose, with the one-line reason"],
   "canvas": {{"customer_segments": [...], "value_propositions": [...], "channels": [...], "customer_relationships": [...], "revenue_streams": [...], "key_resources": [...], "key_activities": [...], "key_partners": [...], "cost_structure": [...]}},
-  "applied_patterns": [{{"pattern": "name", "how_it_applies_here": "specific to this business", "precedent": "brand that ran it"}}, ...],
-  "new_revenue_streams": [{{"stream": "...", "mechanism": "...", "rough_contribution": "small|medium|large"}}, ...],
-  "grand_slam_offer": {{"dream_outcome": "...", "core": "...", "bonuses": [...], "guarantee": "specific and a little bold", "scarcity": "real, not fake", "urgency": "real deadline with a real reason", "why_saying_no_feels_dumb": "..."}},
-  "pricing_architecture": {{"tiers": [{{"name": "...", "price": "...", "for": "...", "the_trick": "what this tier is really there to do"}}], "anchor": "...", "psych_tactics": ["named tactic — why it works here", ...]}},
+  "canvas_changes": [{{"block": "...", "from": "today", "to": "redesigned", "why": "...", "forces_change_in": "the other block this drags with it"}}],
+  "new_revenue_streams": [{{"stream": "...", "mechanism": "...", "rough_contribution": "small|medium|large", "time_to_first_dollar": "..."}}],
+  "value_equation": {{
+    "dream_outcome": "...",
+    "perceived_likelihood": {{"current": "low|med|high", "levers_to_raise": ["proof, guarantee, case studies..."]}},
+    "time_delay": {{"before": "...", "after": "..."}},
+    "effort_and_sacrifice": {{"before": "...", "after": "..."}},
+    "net_effect": "one sentence — which direction perceived value moves and why"
+  }},
+  "grand_slam_offer": {{"dream_outcome": "...", "core": "...", "bonuses": [{{"bonus": "...", "objection_it_removes": "..."}}], "guarantee": "specific, carries real risk", "worst_case_abuse_cost": "what it costs if abused, and why that's acceptable", "scarcity": "real", "urgency": "real deadline + real reason", "why_saying_no_feels_dumb": "..."}},
+  "pricing_architecture": {{"tiers": [{{"name": "outcome-named", "price": "...", "for": "...", "the_trick": "why this tier exists", "expected_mix_pct": <int>}}], "anchor": "...", "psych_tactics": ["named tactic — why it works here"]}},
+  "pricing_migration": {{"from": "current pricing", "to": "new", "how": "grandfather / phase-in / new-customers-only", "who_might_churn": "...", "message": "how it's communicated"}},
+  "unit_economics_targets": {{"gross_margin_pct": {{"target": "...", "assumption": "..."}}, "cac_ceiling": {{"target": "...", "assumption": "..."}}, "cac_payback_months": {{"target": "...", "assumption": "..."}}, "ltv_cac": {{"target": "...", "assumption": "..."}}, "contribution_margin": {{"target": "...", "assumption": "..."}}}},
   "errc_grid": {{"eliminate": [...], "reduce": [...], "raise": [...], "create": [...]}},
-  "rationale": "why this model beats the current one — in money terms"
+  "rollout": {{"change_first": "lowest-risk move that proves the thesis", "validate_before_committing": ["..."], "sequence": ["step 1", "step 2", "..."]}},
+  "risks": [{{"risk": "cannibalization | ops load | churn if done wrong | ...", "likelihood": "low|med|high", "mitigation": "..."}}],
+  "rationale": "why this model beats the current one — in money terms",
+  "alternative_angles": [{{"model": "a different structural bet", "when_to_pick": "..."}}, {{"model": "...", "when_to_pick": "..."}}]
 }}"""
         d = _draft_then_refine(prompt, {
-            "canvas": {}, "applied_patterns": [
-                {"pattern": "membership_club", "how_it_applies_here": "Convert repeat buyers into a paid tier with earned perks", "precedent": "Amazon Prime"},
-                {"pattern": "razor_and_blade", "how_it_applies_here": "Low-margin entry product, recurring consumable/service attached", "precedent": "Dollar Shave Club"},
+            "model_diagnosis": {"how_it_earns_now": "One-off transactional sales at market price", "margin_leaks": ["Discounting to close", "No recurring revenue"], "every_sale_from_zero": True, "fragility": "Revenue resets to zero every month; no compounding base"},
+            "pattern_evaluation": [
+                {"pattern": "membership_club", "scores": {"positioning_fit": 2, "margin_impact": 1, "retention_impact": 2, "execution_difficulty": 1, "time_to_cash": 1}, "verdict": "apply", "how_it_transfers_here": "Turn repeat buyers into a paid tier with earned perks tied to the brand's point of view", "precedent": "Amazon Prime"},
+                {"pattern": "razor_and_blade", "scores": {"positioning_fit": 1, "margin_impact": 2, "retention_impact": 2, "execution_difficulty": 1, "time_to_cash": 1}, "verdict": "apply", "how_it_transfers_here": "Low-margin entry product, recurring consumable/service attached", "precedent": "Dollar Shave Club"},
             ],
-            "new_revenue_streams": [], "grand_slam_offer": {},
-            "pricing_architecture": {}, "errc_grid": {},
+            "applied_patterns": ["membership_club — recurring base", "razor_and_blade — attach recurring value"],
+            "canvas": {}, "canvas_changes": [], "new_revenue_streams": [],
+            "value_equation": {"dream_outcome": "The result the customer actually wants", "perceived_likelihood": {"current": "low", "levers_to_raise": ["guarantee", "case studies"]}, "time_delay": {"before": "weeks", "after": "days"}, "effort_and_sacrifice": {"before": "high", "after": "low"}, "net_effect": "Perceived value up: same outcome, less risk and wait."},
+            "grand_slam_offer": {}, "pricing_architecture": {}, "pricing_migration": {},
+            "unit_economics_targets": {}, "errc_grid": {}, "rollout": {}, "risks": [],
             "rationale": "Recurring revenue lifts LTV and makes CAC affordable; today every sale starts from zero.",
-        }, "Every applied pattern must say how it transfers here — reject any that "
-           "just restate the precedent. The guarantee and pricing 'trick' fields "
-           "are where this earns its keep.")
+            "alternative_angles": [],
+        }, "Show the pattern scores — an applied pattern with weak scores gets "
+           "rejected. The value_equation must be concrete (before/after), and every "
+           "unit-economics target must name its assumption. Guarantee needs a real "
+           "worst-case number.")
         return await self._save(BusinessModelRedesign(
             business_id=business_id,
             canvas=d.get("canvas"),
@@ -692,6 +734,15 @@ Return JSON:
             pricing_architecture=d.get("pricing_architecture"),
             errc_grid=d.get("errc_grid"),
             rationale=d.get("rationale"),
+            model_diagnosis=d.get("model_diagnosis"),
+            pattern_evaluation=d.get("pattern_evaluation"),
+            canvas_changes=d.get("canvas_changes"),
+            value_equation=d.get("value_equation"),
+            unit_economics_targets=d.get("unit_economics_targets"),
+            pricing_migration=d.get("pricing_migration"),
+            rollout=d.get("rollout"),
+            risks=d.get("risks"),
+            alternative_angles=d.get("alternative_angles"),
             confidence=_int(d.get("confidence"), 60),
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),

@@ -74,6 +74,16 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS story_spine JSONB",
     "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS taglines_alt JSONB",
     "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS identity_consistency_rules JSONB",
+    # Etapa 3 deepening — BusinessModelAgent v2
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS model_diagnosis JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS pattern_evaluation JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS canvas_changes JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS value_equation JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS unit_economics_targets JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS pricing_migration JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS rollout JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS risks JSONB",
+    "ALTER TABLE bt_business_model_redesigns ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
 ]
 
 
