@@ -242,6 +242,7 @@ class ProgramOut(_ORM):
     completed_stages: list | None
     stage_artifacts: dict | None
     roadmap: dict | None
+    execution_plan: dict | None
     metrics_board: dict | None
     created_at: datetime
     updated_at: datetime

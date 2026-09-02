@@ -90,6 +90,18 @@ everything into a **90 / 180 / 365-day roadmap** + review ritual + metrics board
 
 Etapas: `diagnosis → positioning → brand_identity → business_model → fomo_engine → gtm → restructuring → roadmap`
 
+**Etapa 7 — roadmap synthesis (`_synthesize_roadmap` v2).** Not a to-do list:
+`dependency_graph` (each move: blocked_by / unblocks) + `critical_path` (the longest pole),
+`workstreams` (parallel tracks w/ owner + quarter goal), `roadmap.{90,180,365}` (each: theme /
+entry_gate / actions w/ depends_on / **exit_gate with a real "pause" call** + proceed criteria),
+`decision_gates` (day 30/60/90/180 — question / data needed / possible calls), `kill_switches`
+(pulled from diagnosis `kill_criteria` + restructuring `unit_economics_gate` — the conditions to
+stop the whole transformation), `resourcing` (founder time split, outsource, the one hire, budget
+shape), `leading_indicators` (5-7 weekly metrics w/ green/yellow/red that **forecast** a named
+lagging KPI), `metrics_board` (the lagging KPIs), `first_2_weeks` (concrete kickoff from every
+stage's quick-wins). Stored on `bt_transformation_programs.roadmap` + new `execution_plan` column;
+`GET …/programs/{id}/roadmap` returns both.
+
 Endpoints:
 - `POST /programs` — create (needs business profile)
 - `POST /programs/{id}/stages/{stage_key}/run` — run one etapa, advance pointer

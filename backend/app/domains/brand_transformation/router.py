@@ -227,6 +227,30 @@ async def get_program(
     return prog
 
 
+@router.get("/programs/{program_id}/roadmap")
+async def get_program_roadmap(
+    business_id: UUID,
+    program_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Etapa 7 output — roadmap + execution plan (dependency graph, decision
+    gates, kill switches, leading-indicator dashboard). Run the `roadmap` stage
+    first to populate it."""
+    prog = await TransformationOrchestrator(db).get_program(program_id)
+    if not prog or prog.business_id != business_id:
+        raise HTTPException(status_code=404, detail="program not found")
+    return {
+        "program_id": prog.id,
+        "status": prog.status,
+        "completed_stages": prog.completed_stages,
+        "roadmap": prog.roadmap,
+        "execution_plan": prog.execution_plan,
+        "metrics_board_kpis": (prog.roadmap or {}).get("metrics_board"),
+        "synthesized": "roadmap" in (prog.completed_stages or []),
+    }
+
+
 @router.post("/programs/{program_id}/stages/{stage_key}/run", response_model=StageResultOut)
 async def run_program_stage(
     business_id: UUID,

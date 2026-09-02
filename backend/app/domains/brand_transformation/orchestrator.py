@@ -34,6 +34,7 @@ from app.domains.brand_transformation.service import (
     _ask_json,
     _draft_then_refine,
     _profile_block,
+    _stage_context_digest,
 )
 
 logger = get_logger(__name__)
@@ -164,42 +165,99 @@ class TransformationOrchestrator:
     # ------------------------------------------------------------------ roadmap
 
     async def _synthesize_roadmap(self, program: TransformationProgram, profile: dict) -> dict:
+        """Etapa 7 — consolidate all stages into a sequenced execution plan.
+
+        Not a to-do list: a dependency graph, a critical path, decision gates
+        with a real 'pause' option at each horizon, a leading-indicator
+        dashboard that predicts the lagging KPIs, and explicit kill switches.
+        """
         context = self._gather_context(program)
         prompt = f"""{_profile_block(profile)}
 
-ALL STAGE OUTPUTS SO FAR:
-{json.dumps(context, ensure_ascii=False)[:6000]}
+{_stage_context_digest(context)}
 
-TASK: Consolidate every stage into ONE execution roadmap that reads like a
-battle plan, not a to-do list. Sequence matters — order the 90-day actions so
-each unblocks the next. Every action ties to a named owner-role and a single
-success metric. Flag dependencies. Then give a review ritual and a metrics board
-(5-8 KPIs across positioning, brand, offer, FOMO, growth, retention), each KPI
-naming the vanity metric it replaces.
+HORIZONS:
+{K.roadmap_horizons_digest()}
+
+DECISION GATES: {K.DECISION_GATE_TEMPLATE}
+LEADING INDICATORS: {K.LEADING_INDICATOR_HINT}
+
+TASK: Consolidate every stage into ONE execution plan. Sequence is the point —
+build the dependency graph first, then lay actions on it. Every horizon ends in
+a decision gate with a real 'pause' option. The leading-indicator dashboard must
+predict the lagging KPIs, not restate them. Pull kill switches from the
+diagnosis kill_criteria and the restructuring unit_economics_gate.
 
 Return JSON:
 {{
-  "north_star": "the one sentence that says what 'won' looks like in 12 months",
+  "north_star": "one sentence — what 'won' looks like in 12 months",
+  "dependency_graph": [{{"move": "a major move", "stage": "which etapa", "blocked_by": ["moves that must finish first"], "unblocks": ["moves it enables"]}}],
+  "critical_path": ["the ordered chain of moves that sets total time — the longest pole"],
+  "workstreams": [{{"name": "e.g. positioning+brand / offer+pricing / fomo / gtm / ops", "owner": "role", "this_quarter_goal": "..."}}],
   "roadmap": {{
-    "90": [{{"action": "...", "owner": "role", "metric": "...", "stage": "which etapa", "depends_on": "prior action or null"}}, ...],
-    "180": [...],
-    "365": [...]
+    "90": {{"theme": "prove the thesis", "entry_gate": "what must be true to start", "actions": [{{"action": "...", "owner": "role", "metric": "...", "stage": "...", "depends_on": "prior action or null"}}], "exit_gate": {{"question": "...", "data_needed": "...", "calls": ["double down", "adjust", "pause"], "proceed_criteria": "..."}}}},
+    "180": {{"theme": "compound it", ...}},
+    "365": {{"theme": "own it", ...}}
   }},
-  "sequencing_logic": "why the 90-day order is what it is",
-  "biggest_risk": "the thing most likely to derail this and the early-warning signal",
-  "review_ritual": {{"weekly": "...", "monthly": "...", "quarterly": "..."}},
-  "metrics_board": [{{"kpi": "...", "baseline": "unknown|value", "target": "...", "dimension": "positioning|brand|offer|fomo|growth|retention", "replaces_vanity_metric": "..."}}, ...]
+  "decision_gates": [{{"day": 30, "question": "...", "data_needed": "...", "possible_calls": ["..."]}}, {{"day": 60, ...}}, {{"day": 90, ...}}, {{"day": 180, ...}}],
+  "kill_switches": [{{"condition": "from diagnosis kill_criteria / unit_economics_gate", "means": "stop the transformation and pivot/sell", "check_at": "which gate"}}],
+  "resourcing": {{"founder_time_split": {{"positioning/brand": "%", "gtm": "%", "ops": "%"}}, "outsource": ["..."], "the_one_hire": "from restructuring, or none", "budget_shape": "from GTM"}},
+  "leading_indicators": [{{"metric": "...", "source": "...", "green": "...", "yellow": "...", "red": "...", "forecasts_lagging_kpi": "..."}}],
+  "metrics_board": [{{"kpi": "lagging outcome", "baseline": "value|unknown", "target": "...", "dimension": "positioning|brand|offer|fomo|growth|retention", "replaces_vanity_metric": "..."}}],
+  "first_2_weeks": [{{"action": "concrete kickoff task, pulled from the stages' quick-wins / week-1", "owner": "role"}}],
+  "sequencing_logic": "why the order is what it is",
+  "biggest_risk": "most likely derailment + the early-warning signal",
+  "operating_rhythm_ref": "use the restructuring plan's operating_rhythm if present, else: weekly metrics + monthly retro + quarterly re-diagnosis"
 }}"""
         d = _draft_then_refine(prompt, {
             "north_star": "Be the name customers say first in this category, at a price we set.",
-            "roadmap": {"90": [], "180": [], "365": []},
-            "sequencing_logic": "Positioning and offer land before any spend; spend before scale.",
-            "biggest_risk": "Executing the tactics while skipping the positioning commitment underneath them.",
-            "review_ritual": {"weekly": "15-min metrics standup", "monthly": "stage retro + roadmap re-rank", "quarterly": "re-run diagnosis, compare score"},
+            "dependency_graph": [
+                {"move": "Lock positioning + POV", "stage": "positioning", "blocked_by": ["Diagnosis"], "unblocks": ["Brand identity", "Offer redesign", "Content engine"]},
+                {"move": "Ship grand-slam offer", "stage": "business_model", "blocked_by": ["Positioning"], "unblocks": ["GTM launch", "FOMO mechanisms"]},
+            ],
+            "critical_path": ["Diagnosis", "Positioning", "Offer redesign", "GTM launch", "Loop turning", "Moat move"],
+            "workstreams": [],
+            "roadmap": {
+                "90": {"theme": "prove the thesis", "entry_gate": "Diagnosis done, founder committed to a POV", "actions": [], "exit_gate": {"question": "Did the new positioning + offer beat the old on conversion?", "data_needed": "A/B or before/after conv. + qualitative", "calls": ["double down", "adjust", "pause"], "proceed_criteria": "conversion up or clear qualitative pull"}},
+                "180": {"theme": "compound it", "entry_gate": "90-day gate passed", "actions": [], "exit_gate": {"question": "Is the growth loop turning without founder push?", "data_needed": "loop turning_metric trend", "calls": ["scale spend", "fix the loop", "pause"], "proceed_criteria": "loop metric compounding 8+ weeks"}},
+                "365": {"theme": "own it", "entry_gate": "loop compounding", "actions": [], "exit_gate": {"question": "Does the market use our category frame / pay our price?", "data_needed": "inbound language, price realised, win rate", "calls": ["press the lead", "reposition", "hold"], "proceed_criteria": "category recognition + pricing power visible"}},
+            },
+            "decision_gates": [
+                {"day": 30, "question": "Is the POV landing with best-fit customers?", "data_needed": "10+ customer reactions", "possible_calls": ["proceed", "sharpen the enemy", "pause"]},
+                {"day": 90, "question": "New positioning + offer beating the old?", "data_needed": "conversion delta", "possible_calls": ["double down", "adjust", "pause"]},
+            ],
+            "kill_switches": [
+                {"condition": "Margin can't fund any brand investment for 12 months", "means": "Don't chase referent status — fix economics or pivot", "check_at": "day 30"},
+                {"condition": "CAC payback past 4 months two months running", "means": "Pause acquisition spend", "check_at": "day 90 gate"},
+            ],
+            "resourcing": {"founder_time_split": {"positioning/brand": "40%", "gtm": "40%", "ops": "20%"}, "outsource": ["design production", "content editing"], "the_one_hire": "none in first 90 days", "budget_shape": "60% content / 25% channels / 15% tools"},
+            "leading_indicators": [
+                {"metric": "best-fit trials started / week", "source": "signups tagged by ICP", "green": "growing wk/wk", "yellow": "flat", "red": "declining 3 wks", "forecasts_lagging_kpi": "MRR"},
+                {"metric": "POV content shares", "source": "social + referral logs", "green": ">X", "yellow": "some", "red": "none", "forecasts_lagging_kpi": "organic acquisition"},
+            ],
             "metrics_board": [],
-        }, "The 90-day sequence is the deliverable — make the ordering deliberate "
-           "and the dependencies explicit. Cut any action without an owner and a metric.")
-        program.roadmap = d.get("roadmap")
+            "first_2_weeks": [
+                {"action": "Publish the POV piece the positioning implies; pin everywhere", "owner": "founder"},
+                {"action": "Rewrite homepage + hero around the one-liner and enemy", "owner": "founder"},
+                {"action": "DM 10 best-fit customers for reactions to the new frame", "owner": "founder"},
+            ],
+            "sequencing_logic": "Positioning and offer land before any spend; spend before scale; moat moves only once the loop turns.",
+            "biggest_risk": "Executing tactics while skipping the positioning commitment underneath — early signal: the team can't state the enemy in one sentence.",
+            "operating_rhythm_ref": "weekly metrics + monthly retro + quarterly re-diagnosis",
+        }, "The dependency graph and critical path are the deliverable. Every "
+           "horizon needs a real 'pause' call. Leading indicators must forecast a "
+           "named lagging KPI, not duplicate it. Kill switches must be concrete "
+           "conditions, not 'if it's not working'.")
+
+        program.roadmap = {
+            k: d.get(k) for k in ("north_star", "roadmap", "workstreams", "sequencing_logic", "biggest_risk", "metrics_board")
+        }
+        program.execution_plan = {
+            k: d.get(k) for k in (
+                "dependency_graph", "critical_path", "decision_gates", "kill_switches",
+                "resourcing", "leading_indicators", "first_2_weeks", "operating_rhythm_ref",
+            )
+        }
         board = dict(program.metrics_board or {})
         board["roadmap_synthesis"] = d
         program.metrics_board = board
