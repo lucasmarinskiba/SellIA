@@ -90,7 +90,10 @@ class MarketDetector:
                 industry_scores[ind] = score
 
         industry = max(industry_scores, key=industry_scores.get, default=Industry.OTHER)
-        industry_confidence = min(industry_scores.get(industry, 0) / 10.0, 1.0)
+        # Saturating scale, not /10: keyword lists here run 4-8 entries, so a
+        # short user sentence realistically hits 1-3 of them even for a
+        # crystal-clear match — /10 made confidence unreachable in practice.
+        industry_confidence = min(industry_scores.get(industry, 0) / 1.5, 1.0)
 
         model_scores = {}
         for model, keywords in MarketDetector.BUSINESS_MODEL_KEYWORDS.items():
@@ -98,8 +101,18 @@ class MarketDetector:
             if score > 0:
                 model_scores[model] = score
 
-        business_model = max(model_scores, key=model_scores.get, default=BusinessModel.HYBRID)
-        model_confidence = min(model_scores.get(business_model, 0) / 10.0, 1.0)
+        if model_scores:
+            top_score = max(model_scores.values())
+            top_models = [m for m, s in model_scores.items() if s == top_score]
+            # Two+ model categories tied for the lead (e.g. "servicio digital
+            # con producto físico" scores PHYSICAL and SERVICE equally) means
+            # the business genuinely spans both — that's what HYBRID means,
+            # not just "no signal at all" (its old, only, meaning below).
+            business_model = BusinessModel.HYBRID if len(top_models) > 1 else top_models[0]
+            model_confidence = min(top_score / 1.5, 1.0)
+        else:
+            business_model = BusinessModel.HYBRID
+            model_confidence = None  # no signal — excluded from the blend below, not scored as 0
 
         motivation_scores = {}
         for motiv, keywords in MarketDetector.MOTIVATION_KEYWORDS.items():
@@ -113,7 +126,14 @@ class MarketDetector:
         recommended_agents = MarketDetector._recommend_agents(industry, business_model)
         rules_file = MarketDetector._get_rules_file(industry)
         keywords = [kw for kw in re.findall(r'\b\w{3,}\b', input_text) if len(kw) > 3][:10]
-        confidence = (industry_confidence + model_confidence) / 2
+        # Industry is the primary signal; business model only refines it when
+        # there's an actual keyword hit for it. Averaging in a hard 0 whenever
+        # no model keyword matched (the old behavior) halved confidence for
+        # otherwise-unambiguous inputs that simply didn't mention their model.
+        if model_confidence is None:
+            confidence = industry_confidence
+        else:
+            confidence = industry_confidence * 0.7 + model_confidence * 0.3
 
         return MarketProfile(
             industry=industry,
