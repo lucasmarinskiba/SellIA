@@ -19,6 +19,7 @@ from app.domains.brand_transformation.orchestrator import TransformationOrchestr
 from app.domains.brand_transformation.schemas import (
     AutomationIn,
     AutomationOut,
+    DeployCampaignsIn,
     BrandIdentityOut,
     BusinessModelOut,
     BusinessProfileIn,
@@ -163,6 +164,51 @@ async def run_fomo_engine(
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await FOMOEngineAgent(db).run(business_id, profile, extra=body.extra_instructions)
+
+
+async def _resolve_playbook(db: AsyncSession, business_id: UUID, playbook_id: UUID | None):
+    agent = FOMOEngineAgent(db)
+    pb = await agent.by_id(business_id, playbook_id) if playbook_id else await agent.latest(business_id)
+    if not pb:
+        raise HTTPException(status_code=404, detail="no FOMO playbook found — run POST /agents/fomo-engine first")
+    return pb
+
+
+@router.get("/agents/fomo-engine/campaign-preview")
+async def fomo_campaign_preview(
+    business_id: UUID,
+    playbook_id: UUID | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Map the latest (or a given) FOMO playbook's mechanisms to proposed
+    on-site `fomo` campaigns. Read-only — nothing is created."""
+    from app.domains.brand_transformation.fomo_bridge import FOMOBridge
+
+    pb = await _resolve_playbook(db, business_id, playbook_id)
+    return await FOMOBridge(db).preview(pb)
+
+
+@router.post("/agents/fomo-engine/deploy-campaigns")
+async def fomo_deploy_campaigns(
+    business_id: UUID,
+    body: DeployCampaignsIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create real `fomo` campaigns from a FOMO playbook's mechanisms. Campaigns
+    are created as drafts unless `activate` is true. `dry_run` returns the plan
+    only. Campaign links are written back onto the playbook (`deployed_campaigns`)."""
+    from app.domains.brand_transformation.fomo_bridge import FOMOBridge
+
+    pb = await _resolve_playbook(db, business_id, body.playbook_id)
+    return await FOMOBridge(db).deploy(
+        pb,
+        owner_user_id=current_user.id,
+        activate=body.activate,
+        levers=body.levers or None,
+        dry_run=body.dry_run,
+    )
 
 
 @router.post("/agents/gtm", response_model=GTMPlanOut)

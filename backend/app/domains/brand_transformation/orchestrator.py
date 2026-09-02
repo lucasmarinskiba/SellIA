@@ -324,6 +324,20 @@ Return JSON:
             )
             result = {"type": "fomo_cadence", "cadence": row.cadence, "next_activation": row.mechanisms, "ritual": row.launch_ritual, "playbook_id": str(row.id)}
 
+            # optionally push the cycle's mechanisms straight into real fomo campaigns
+            if cfg.get("auto_deploy") and cfg.get("owner_user_id"):
+                try:
+                    from app.domains.brand_transformation.fomo_bridge import FOMOBridge
+
+                    dep = await FOMOBridge(self.db).deploy(
+                        row, owner_user_id=cfg["owner_user_id"],
+                        activate=bool(cfg.get("activate", False)),
+                    )
+                    result["deployed_campaigns"] = dep.get("deployed")
+                    result["campaigns_created"] = dep.get("created_count")
+                except Exception as e:  # noqa: BLE001
+                    result["deploy_error"] = str(e)[:200]
+
         elif automation.automation_type in ("brand_consistency_monitor", "positioning_drift_watch", "competitor_narrative_watch"):
             samples = cfg.get("samples", [])
             _focus = {

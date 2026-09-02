@@ -112,6 +112,8 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_restructuring_plans ADD COLUMN IF NOT EXISTS alternative_angles JSONB",
     # Etapa 7 deepening — roadmap synthesis v2
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS execution_plan JSONB",
+    # FOMO bridge — deployed campaign links
+    "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS deployed_campaigns JSONB",
 ]
 
 
