@@ -125,6 +125,11 @@ _try_include("app.domains.fomo.ai_churn_prevention_routes.router", "", ["fomo-ai
 _try_include("app.domains.fomo.ai_autonomous_campaign_routes.router", "", ["fomo-ai-autonomous"])
 _try_include("app.domains.fomo.ai_competitor_monitor_routes.router", "", ["fomo-ai-competitor"])
 _try_include("app.domains.fomo.ai_orchestrator_routes.router", "", ["fomo-ai-orchestrator"])
+# trade_signals: supervised copy-trade — agent proposes, user approves, backend
+# never executes. Had a full test suite (tests/test_trade_signals_api.py) but
+# was never actually mounted; every request 404'd. See that file's fixture
+# docstring for the related get_store/Redis test-isolation fix.
+_try_include("app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-signals"])
 
 
 @app.get("/health", tags=["system"])
