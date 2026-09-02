@@ -288,7 +288,8 @@ class TransformationProgram(Base):
     current_stage: Mapped[str] = mapped_column(String(40), default="diagnosis")
     completed_stages: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # ["diagnosis", ...]
     stage_artifacts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {stage_key: artifact_id}
-    roadmap: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {"90": [...], "180": [...], "365": [...]}
+    roadmap: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {north_star, horizons{90,180,365}, workstreams, sequencing_logic}
+    execution_plan: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {dependency_graph, critical_path, decision_gates, kill_switches, resourcing, leading_indicators, first_2_weeks}
     metrics_board: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

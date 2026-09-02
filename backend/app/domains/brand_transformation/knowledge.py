@@ -696,6 +696,34 @@ def operating_rhythm_digest() -> str:
     return "\n".join(f"- {k}: {v}" for k, v in OPERATING_RHYTHM_TEMPLATE.items())
 
 
+# ---------------------------------------------------------------------------
+# 3h. ROADMAP SYNTHESIS — Etapa 7.
+# ---------------------------------------------------------------------------
+
+ROADMAP_HORIZON_TEMPLATE: dict[str, str] = {
+    "90": "Prove the thesis. Positioning + offer live, first growth-loop turn, quick wins shipped. Cheap to reverse.",
+    "180": "Compound it. Loop is turning measurably, FOMO cadence running, one structural moat move underway.",
+    "365": "Own it. Category recognition, pricing power, the moat is visible to competitors.",
+}
+
+DECISION_GATE_TEMPLATE = (
+    "At day 30 / 60 / 90 / 180: the QUESTION being answered, the DATA needed to "
+    "answer it, and the possible CALLS (double down / adjust / pause). A gate "
+    "with no 'pause' option is not a gate."
+)
+
+LEADING_INDICATOR_HINT = (
+    "5-7 metrics checked weekly that PREDICT the lagging outcomes. Each: the "
+    "metric, its source, green / yellow / red thresholds, and which lagging KPI "
+    "it forecasts. Leading = you can act on it this week; lagging = you find out "
+    "next quarter."
+)
+
+
+def roadmap_horizons_digest() -> str:
+    return "\n".join(f"- {k} days: {v}" for k, v in ROADMAP_HORIZON_TEMPLATE.items())
+
+
 def levers_digest() -> str:
     """Compact text block of every FOMO lever for prompt injection."""
     out = []
