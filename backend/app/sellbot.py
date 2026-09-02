@@ -770,8 +770,18 @@ async def log_request(request: Request, call_next):
     client_ip = get_client_ip(request)
     request.state.client_ip = client_ip
 
-    # Rate limit check
-    if not rate_limiter.is_allowed(client_ip):
+    # Health/liveness probes are, by design, polled far more often than
+    # any real client — Docker's own HEALTHCHECK, a Kubernetes liveness
+    # probe, a load balancer, or CI's `wait-on` during startup all hit
+    # this path repeatedly from one IP. Rate-limiting it is
+    # self-defeating: confirmed live in CI (run 33567208511 and others) —
+    # wait-on's ~4 req/s polling of /health exceeded 100 rpm within ~25s
+    # and then never recovered (the sliding window kept refilling faster
+    # than it drained), so /health stayed 429 until wait-on's own timeout
+    # gave up, even though the app itself was healthy and had been for
+    # minutes. Excluding health endpoints from the limiter is standard
+    # practice for exactly this reason.
+    if request.url.path not in ("/health", "/api/health", "/api/v1/health") and not rate_limiter.is_allowed(client_ip):
         logger.warning(f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}")
         return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
 
