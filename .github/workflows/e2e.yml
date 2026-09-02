@@ -66,6 +66,32 @@ jobs:
           ENVIRONMENT: testing
           REDIS_URL: redis://localhost:6379/0
 
+      - name: Diagnose failed startup
+        # Every previous "Start services" failure showed up here as a bare
+        # "Process completed with exit code 1" — this repo's GITHUB_TOKEN
+        # can't read job logs (403 "Must have admin rights to Repository",
+        # confirmed repeatedly), so there was never any way to tell backend
+        # crash-loop apart from frontend-still-compiling apart from
+        # containers-never-starting. `::error::` lines DO show up in the
+        # check-run annotations API (that access works, unlike raw logs),
+        # so a compact one-liner here becomes the diagnostic signal for
+        # next time instead of another blind guess.
+        if: failure()
+        run: |
+          BACKEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8000/health || echo "NO_CONN")
+          FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || echo "NO_CONN")
+          PS=$(docker compose ps --format '{{.Name}}={{.Status}}' | tr '\n' ' ')
+          echo "::error::E2E startup failed | backend/health=$BACKEND_CODE frontend=$FRONTEND_CODE | $PS"
+          echo "::group::docker compose ps (full)"
+          docker compose ps
+          echo "::endgroup::"
+          echo "::group::backend logs (tail 80)"
+          docker compose logs --tail=80 backend || true
+          echo "::endgroup::"
+          echo "::group::frontend logs (tail 80)"
+          docker compose logs --tail=80 frontend || true
+          echo "::endgroup::"
+
       - name: Seed test data
         run: |
           cd backend
