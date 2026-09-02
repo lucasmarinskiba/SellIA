@@ -202,6 +202,7 @@ class FOMOPlaybook(Base):
     measurement: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {leading[], lagging[]}
     integration_notes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, sellia_domain_action}] via FOMO_DOMAIN_MAP
     risk_matrix: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, backfire_mode, early_warning, kill_switch}]
+    deployed_campaigns: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{mechanism, lever, campaign_id, campaign_type, status}] — set by fomo_bridge
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)

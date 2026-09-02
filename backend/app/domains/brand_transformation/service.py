@@ -883,6 +883,21 @@ Return JSON:
             generated_by=d.get("_generated_by", "unknown"),
         ))
 
+    async def latest(self, business_id: uuid.UUID) -> FOMOPlaybook | None:
+        r = await self.db.execute(
+            select(FOMOPlaybook).where(FOMOPlaybook.business_id == business_id)
+            .order_by(desc(FOMOPlaybook.created_at)).limit(1)
+        )
+        return r.scalar_one_or_none()
+
+    async def by_id(self, business_id: uuid.UUID, playbook_id: uuid.UUID) -> FOMOPlaybook | None:
+        r = await self.db.execute(
+            select(FOMOPlaybook).where(
+                FOMOPlaybook.id == playbook_id, FOMOPlaybook.business_id == business_id
+            )
+        )
+        return r.scalar_one_or_none()
+
 
 class GoToMarketAgent(_BaseAgent):
     """Etapa 5 — a 90-day GTM built around ONE loop, not a channel wish-list.

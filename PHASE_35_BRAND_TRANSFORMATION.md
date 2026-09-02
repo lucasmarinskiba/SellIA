@@ -137,6 +137,22 @@ import list.
 
 ---
 
+## 4a. FOMO bridge — playbook → real campaigns
+
+`fomo_bridge.py` maps a `FOMOPlaybook`'s `mechanisms` to concrete
+`app.domains.fomo` `FOMOCampaign` rows — **deterministic, no LLM**. Lever →
+`campaign_type`: artificial_scarcity→`limited_spots`, social_proof_velocity→
+`social_proof`, loss_and_urgency→`countdown`, anticipation_and_ritual→`countdown`,
+exclusivity_and_status→`exclusivity`, velocity_of_novelty→`flash_sale`.
+`identity_and_tribe` (no on-site primitive) is skipped and reported. Headline
+comes from the matching `content_hooks` copy angle → `launch_ritual.the_hook` →
+`why_it_fits`; `config` carries the lever, the psychological trigger, the
+anti-fake guardrail and KPI; countdown/flash types get an `ends_at` from `cadence`.
+
+- `GET …/agents/fomo-engine/campaign-preview` — proposed specs, read-only
+- `POST …/agents/fomo-engine/deploy-campaigns` — creates the campaigns (`activate` for live vs draft, `levers` to filter, `dry_run` for plan-only); campaign links written back to `bt_fomo_playbooks.deployed_campaigns`
+- `fomo_cadence` automation: with `config.auto_deploy` + `owner_user_id`, each scheduled cycle now creates the real campaigns automatically
+
 ## 4b. AI availability & provenance
 
 `service._resolve_api_key()` reads `settings.ANTHROPIC_API_KEY` then env

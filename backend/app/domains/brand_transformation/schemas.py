@@ -60,6 +60,15 @@ class AutomationIn(BaseModel):
     config: dict | None = None
 
 
+class DeployCampaignsIn(BaseModel):
+    """Turn a FOMO playbook's mechanisms into real fomo-domain campaigns."""
+
+    playbook_id: UUID | None = None   # default: latest playbook for the business
+    activate: bool = False            # create as draft (False) or activate now (True)
+    levers: list[str] = []            # optional filter; empty = all mapped mechanisms
+    dry_run: bool = False             # return the plan without creating anything
+
+
 # ----------------------------- responses -----------------------------
 
 class DiagnosisOut(_ORM):
@@ -183,6 +192,7 @@ class FOMOPlaybookOut(_ORM):
     measurement: dict | None
     integration_notes: list | None
     risk_matrix: list | None
+    deployed_campaigns: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
