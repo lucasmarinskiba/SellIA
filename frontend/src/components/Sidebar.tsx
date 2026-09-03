@@ -57,6 +57,7 @@ const baseNavItems = [
   { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp },
   { href: '/dashboard/acquisition-engine', label: 'Motor de Adquisición', icon: Sparkles },
   { href: '/dashboard/fomo-intelligence', label: 'FOMO Intelligence', icon: Flame },
+  { href: '/dashboard/transformacion', label: 'Transformación de Marca', icon: Sparkles },
   { href: '/dashboard/marketplace', label: 'Marketplace', icon: ShoppingBag },
   { href: '/dashboard/social-growth', label: 'Social Growth', icon: Instagram },
   { href: '/dashboard/ambassador', label: 'Ambassador', icon: Award },
