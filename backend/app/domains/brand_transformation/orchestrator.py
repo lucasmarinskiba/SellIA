@@ -67,7 +67,14 @@ class TransformationOrchestrator:
 
     # ------------------------------------------------------------------ program
 
-    async def create_program(self, business_id: uuid.UUID, name: str, profile: dict) -> TransformationProgram:
+    async def create_program(
+        self,
+        business_id: uuid.UUID,
+        name: str,
+        profile: dict,
+        auto_bridges: dict | None = None,
+        owner_user_id: uuid.UUID | None = None,
+    ) -> TransformationProgram:
         prog = TransformationProgram(
             business_id=business_id,
             name=name,
@@ -75,11 +82,57 @@ class TransformationOrchestrator:
             completed_stages=[],
             stage_artifacts={},
             metrics_board={"profile": profile},
+            auto_bridges=auto_bridges or None,
+            owner_user_id=owner_user_id,
         )
         self.db.add(prog)
         await self.db.commit()
         await self.db.refresh(prog)
         return prog
+
+    async def set_auto_bridges(self, program: TransformationProgram, auto_bridges: dict, owner_user_id: uuid.UUID | None = None) -> TransformationProgram:
+        program.auto_bridges = auto_bridges or None
+        if owner_user_id is not None:
+            program.owner_user_id = owner_user_id
+        await self.db.commit()
+        await self.db.refresh(program)
+        return program
+
+    async def _run_stage_bridge(self, program: TransformationProgram, stage_key: str) -> dict | None:
+        """After a stage completes, fire its bridge if the program opted in."""
+        cfg = program.auto_bridges or {}
+        try:
+            if stage_key == "positioning" and cfg.get("competitive"):
+                from app.domains.brand_transformation.positioning_bridge import PositioningBridge
+
+                st = await PositioningAgent(self.db).latest(program.business_id)
+                comps = cfg.get("competitors")  # optional [{name,url}]
+                if not comps:
+                    names = (program.metrics_board or {}).get("profile", {}).get("known_competitors") or []
+                    comps = [{"name": n} for n in names]
+                if st and comps and program.owner_user_id:
+                    return await PositioningBridge(self.db).deploy(
+                        st, owner_user_id=program.owner_user_id, competitors=comps,
+                    )
+            elif stage_key == "brand_identity" and cfg.get("assets"):
+                from app.domains.brand_transformation.identity_bridge import IdentityBridge
+
+                it = await BrandIdentityAgent(self.db).latest(program.business_id)
+                if it:
+                    return await IdentityBridge(self.db).deploy(it)
+            elif stage_key == "fomo_engine" and (cfg.get("fomo") or {}).get("enabled"):
+                from app.domains.brand_transformation.fomo_bridge import FOMOBridge
+
+                pb = await FOMOEngineAgent(self.db).latest(program.business_id)
+                if pb and program.owner_user_id:
+                    return await FOMOBridge(self.db).deploy(
+                        pb, owner_user_id=program.owner_user_id,
+                        activate=bool((cfg.get("fomo") or {}).get("activate", False)),
+                    )
+        except Exception as e:  # noqa: BLE001
+            logger.warning("auto-bridge for stage %s failed: %s", stage_key, str(e)[:200])
+            return {"bridge_error": str(e)[:200]}
+        return None
 
     async def get_program(self, program_id: uuid.UUID) -> TransformationProgram | None:
         r = await self.db.execute(select(TransformationProgram).where(TransformationProgram.id == program_id))
@@ -144,6 +197,17 @@ class TransformationOrchestrator:
         await self.db.commit()
         await self.db.refresh(program)
 
+        # opt-in auto-bridges: push this stage's artifact into the real domain
+        bridge_result = None
+        if stage_key != "roadmap" and program.auto_bridges:
+            bridge_result = await self._run_stage_bridge(program, stage_key)
+            if bridge_result is not None:
+                board = dict(program.metrics_board or {})
+                board[f"{stage_key}_bridge"] = bridge_result
+                program.metrics_board = board
+                await self.db.commit()
+                await self.db.refresh(program)
+
         return {
             "program_id": program.id,
             "stage_key": stage_key,
@@ -152,6 +216,7 @@ class TransformationOrchestrator:
             "artifact": artifact,
             "next_stage": next_stage,
             "completed_stages": completed,
+            "bridge_result": bridge_result,
         }
 
     async def run_all(self, program: TransformationProgram, profile: dict | None = None) -> list[dict]:

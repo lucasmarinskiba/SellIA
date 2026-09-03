@@ -294,6 +294,8 @@ class TransformationProgram(Base):
     roadmap: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {north_star, horizons{90,180,365}, workstreams, sequencing_logic}
     execution_plan: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {dependency_graph, critical_path, decision_gates, kill_switches, resourcing, leading_indicators, first_2_weeks}
     coherence_audit: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {score, checks:[{check, verdict, contradiction, fix}], must_fix_before_launch[]}
+    auto_bridges: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {competitive: bool, assets: bool, fomo: {enabled, activate}}
+    owner_user_id: Mapped[UUID | None] = mapped_column(nullable=True)  # for bridges that create user-scoped rows
     metrics_board: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
