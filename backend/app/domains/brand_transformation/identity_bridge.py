@@ -90,7 +90,7 @@ class IdentityBridge:
             return plan
 
         try:
-            from app.domains.ai_content_generation.service import AIContentService
+            from app.domains.ai_content_generation.service import ContentGenerationService as AIContentService
         except Exception as e:  # noqa: BLE001
             return {**plan, "deployed": [], "error": f"content domain unavailable: {str(e)[:160]}"}
 

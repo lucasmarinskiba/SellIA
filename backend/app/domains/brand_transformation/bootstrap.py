@@ -154,6 +154,22 @@ async def ensure_brand_transformation_tables() -> None:
         except Exception as e:  # noqa: BLE001
             logger.warning("brand_transformation bootstrap: column patch skipped (%s): %s", stmt[:60], str(e)[:120])
 
+    # Bridge targets that the positioning bridge writes to — small self-contained
+    # FK graphs (monitors -> businesses, battlecards -> users). Provisioned here
+    # opportunistically because this deployment disables migrations and these
+    # tables were never created (the `competitive` feature depends on them too).
+    try:
+        from app.domains.competitive.models import CompetitiveBattlecard, CompetitiveMonitor
+
+        for t in (CompetitiveMonitor.__table__, CompetitiveBattlecard.__table__):
+            try:
+                async with engine.begin() as conn:
+                    await conn.run_sync(lambda c, tt=t: tt.create(bind=c, checkfirst=True))
+            except Exception as e:  # noqa: BLE001
+                logger.warning("brand_transformation bootstrap: bridge table %s skipped: %s", t.name, str(e)[:120])
+    except Exception as e:  # noqa: BLE001
+        logger.warning("brand_transformation bootstrap: competitive models import skipped: %s", str(e)[:120])
+
     logger.info(
         "✅ brand_transformation tables ensured (%s/%s, %s/%s column patches)",
         created, len(BRAND_TRANSFORMATION_TABLES), patched, len(_COLUMN_PATCHES),
