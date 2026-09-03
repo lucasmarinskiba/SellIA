@@ -268,6 +268,9 @@ class AutomationOut(_ORM):
     last_run_at: datetime | None
     last_result: dict | None
     runs_count: int
+    run_history: list | None
+    last_severity: str | None
+    last_alert: bool
     created_at: datetime
 
 

@@ -309,13 +309,19 @@ class BrandAutomation(Base):
     business_id: Mapped[UUID] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
 
     automation_type: Mapped[str] = mapped_column(String(50))
-    # rediagnosis | brand_consistency_monitor | fomo_cadence | positioning_drift_watch | competitor_narrative_watch
+    # rediagnosis | brand_consistency_monitor | fomo_cadence | positioning_drift_watch |
+    # competitor_narrative_watch | roadmap_gate_check | transformation_pulse
     schedule: Mapped[str] = mapped_column(String(40), default="monthly")  # weekly/monthly/quarterly
     config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     runs_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # v2 — run history + alerting
+    run_history: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # last ~20 {at, severity, alert, headline}
+    last_severity: Mapped[str | None] = mapped_column(String(12), nullable=True)  # ok | info | warn | critical
+    last_alert: Mapped[bool] = mapped_column(Boolean, default=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -106,6 +106,7 @@ export function TransformacionContent() {
   const [programs, setPrograms] = useState<Program[]>([])
   const [activeProgram, setActiveProgram] = useState<Program | null>(null)
   const [fomoPlan, setFomoPlan] = useState<FomoCampaignPlan | null>(null)
+  const [alerts, setAlerts] = useState<Array<{ type: string; severity: string; headline: string | null; recommended_action: string | null }>>([])
 
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
@@ -128,8 +129,8 @@ export function TransformacionContent() {
   const refresh = useCallback(async (bid: string) => {
     setLoading(true)
     try {
-      const [h, st, d, pr] = await Promise.allSettled([
-        bt.health(bid), bt.stages(bid), bt.latestDiagnosis(bid), bt.listPrograms(bid),
+      const [h, st, d, pr, al] = await Promise.allSettled([
+        bt.health(bid), bt.stages(bid), bt.latestDiagnosis(bid), bt.listPrograms(bid), bt.automationAlerts(bid),
       ])
       if (h.status === 'fulfilled') setHealth(h.value)
       if (st.status === 'fulfilled') setStages(st.value)
@@ -138,6 +139,7 @@ export function TransformacionContent() {
         setPrograms(pr.value)
         if (pr.value.length) setActiveProgram(pr.value[0])
       }
+      if (al.status === 'fulfilled') setAlerts(al.value)
     } finally {
       setLoading(false)
     }
@@ -242,6 +244,27 @@ export function TransformacionContent() {
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
           <AlertTriangle className="h-4 w-4" /> {error}
+        </div>
+      )}
+
+      {alerts.length > 0 && (
+        <div className="space-y-1.5">
+          {alerts.map((a, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                a.severity === 'critical'
+                  ? 'border-red-500/30 bg-red-500/10 text-red-200'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+              }`}
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <span className="font-semibold">[{a.type}]</span> {a.headline}
+                {a.recommended_action && <span className="block text-xs opacity-80">→ {a.recommended_action}</span>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
