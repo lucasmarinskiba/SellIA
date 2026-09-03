@@ -21,6 +21,8 @@ from app.core.logger import get_logger
 from app.domains.brand_transformation import knowledge as K
 from app.domains.brand_transformation.models import (
     BrandAutomation,
+    BrandIdentity,
+    PositioningStatement,
     TransformationProgram,
 )
 from app.domains.brand_transformation.service import (
@@ -342,6 +344,58 @@ Return JSON:
         )
         return list(r.scalars().all())
 
+    async def automation_alerts(self, business_id: uuid.UUID) -> list[dict]:
+        """Every automation currently flagging an alert (warn/critical)."""
+        rows = await self.list_automations(business_id)
+        out = []
+        for a in rows:
+            if a.last_alert:
+                out.append({
+                    "automation_id": str(a.id),
+                    "type": a.automation_type,
+                    "severity": a.last_severity,
+                    "at": a.last_run_at.isoformat() if a.last_run_at else None,
+                    "headline": (a.last_result or {}).get("headline") or (a.last_result or {}).get("summary"),
+                    "recommended_action": (a.last_result or {}).get("recommended_action"),
+                })
+        return out
+
+    async def _hydrate_brand_reference(self, bid: uuid.UUID) -> dict:
+        """Latest positioning + identity, for monitors that weren't given a reference."""
+        pos = (await self.db.execute(
+            select(PositioningStatement).where(PositioningStatement.business_id == bid)
+            .order_by(desc(PositioningStatement.created_at)).limit(1)
+        )).scalar_one_or_none()
+        ident = (await self.db.execute(
+            select(BrandIdentity).where(BrandIdentity.business_id == bid)
+            .order_by(desc(BrandIdentity.created_at)).limit(1)
+        )).scalar_one_or_none()
+        ref: dict = {}
+        if pos:
+            ref["positioning_statement"] = pos.positioning_statement
+            ref["one_liner"] = pos.one_liner
+            ref["the_enemy"] = pos.the_enemy
+            ref["point_of_view"] = pos.point_of_view
+            ref["market_category"] = pos.market_category
+            ref["new_category_name"] = pos.new_category_name
+        if ident:
+            ref["primary_archetype"] = ident.primary_archetype
+            ref["tagline"] = ident.tagline
+            ref["voice_attributes"] = ident.voice_attributes
+            ref["verbal_identity"] = ident.verbal_identity
+            ref["identity_consistency_rules"] = ident.identity_consistency_rules
+        return ref
+
+    @staticmethod
+    def _grade_severity(score: int | None, verdict: str | None) -> tuple[str, bool]:
+        """(severity, is_alert) from a 0-100 consistency/coherence score + verdict."""
+        v = (verdict or "").lower()
+        if "major" in v or (score is not None and score < 45):
+            return "critical", True
+        if "minor" in v or (score is not None and score < 70):
+            return "warn", True
+        return "ok", False
+
     async def run_automation(self, automation: BrandAutomation) -> dict:
         """Execute one automation now. Returns its result payload."""
         bid = automation.business_id
@@ -365,12 +419,26 @@ Return JSON:
                 row.compared_to_diagnosis_id = prior.id
                 row.score_delta = delta
                 await self.db.commit()
+            trend = "improving" if (delta or 0) > 2 else "declining" if (delta or 0) < -2 else "flat"
+            alert_below = cfg.get("alert_below")
+            severity, alert = "ok", False
+            if trend == "declining":
+                severity, alert = "warn", True
+            if alert_below is not None and row.referent_potential_score < alert_below:
+                severity, alert = "critical", True
             result = {
                 "type": "rediagnosis",
                 "score": row.referent_potential_score,
                 "prior_score": prior_score,
                 "score_delta": delta,
-                "trend": ("improving" if (delta or 0) > 2 else "declining" if (delta or 0) < -2 else "flat"),
+                "trend": trend,
+                "severity": severity,
+                "alert": alert,
+                "headline": f"Referent Potential {row.referent_potential_score} ({trend}, Δ{delta if delta is not None else 'n/a'})",
+                "recommended_action": (
+                    "Re-run the transformation program's weakest stage" if alert
+                    else "On track — no action"
+                ),
                 "summary": row.summary,
                 "still_unaddressed": row.root_causes,
                 "diagnosis_id": str(row.id),
@@ -405,6 +473,13 @@ Return JSON:
                 "positioning_drift_watch": "whether the messaging still fights the stated enemy and holds the category frame, or has drifted back to feature-listing",
                 "competitor_narrative_watch": "whether competitor messaging (in the samples) is encroaching on this brand's owned position, and how to counter it",
             }[automation.automation_type]
+            _fix_stage = {
+                "brand_consistency_monitor": "brand_identity",
+                "positioning_drift_watch": "positioning",
+                "competitor_narrative_watch": "positioning",
+            }[automation.automation_type]
+            brand_ref = cfg.get("brand_reference") or await self._hydrate_brand_reference(bid)
+            prev_scores = [h.get("score") for h in (automation.run_history or []) if h.get("score") is not None][-5:]
             prompt = f"""{_profile_block(profile)}
 
 {K.QUALITY_BAR}
@@ -412,12 +487,13 @@ Return JSON:
 MONITOR: {automation.automation_type} — focus on {_focus}.
 MATERIAL TO CHECK:
 {json.dumps(samples, ensure_ascii=False)[:5000]}
-BRAND REFERENCE (voice / positioning / enemy / category):
-{json.dumps(cfg.get('brand_reference', {}), ensure_ascii=False)[:2500]}
+BRAND REFERENCE (voice / positioning / enemy / category — pulled from the program):
+{json.dumps(brand_ref, ensure_ascii=False)[:3000]}
+PRIOR CONSISTENCY SCORES (oldest→newest): {prev_scores or "none"}
 
 TASK: Grade consistency 0-100. List specific violations with the exact offending
-phrase and a rewrite. Give ONE sharp, quotable recommendation the team can act
-on this week.
+phrase and a rewrite. Give ONE sharp recommendation for THIS week, and say
+whether the fix is a copy edit or needs the '{_fix_stage}' stage re-run.
 
 Return JSON:
 {{
@@ -425,18 +501,127 @@ Return JSON:
   "verdict": "on-brand|minor-drift|major-drift",
   "violations": [{{"where": "...", "offending_phrase": "...", "issue": "...", "rewrite": "..."}}],
   "single_priority_fix": "the one thing to change first",
-  "trend_note": "if prior runs exist in the reference, is this better or worse"
+  "fix_type": "copy_edit | rerun_stage",
+  "trend_note": "vs the prior scores: improving / flat / worsening"
 }}"""
-            result = _ask_json(prompt, {"consistency_score": 70, "verdict": "minor-drift", "violations": [], "single_priority_fix": "Provide brand_reference + samples in config for a real check."})
+            result = _ask_json(prompt, {
+                "consistency_score": 70, "verdict": "minor-drift", "violations": [],
+                "single_priority_fix": "Provide samples in config for a real check.",
+                "fix_type": "copy_edit", "trend_note": "n/a",
+            })
             result["type"] = automation.automation_type
+            result["score"] = result.get("consistency_score")
+            sev, alert = self._grade_severity(result.get("consistency_score"), result.get("verdict"))
+            result["severity"], result["alert"] = sev, alert
+            result["headline"] = f"{automation.automation_type}: {result.get('verdict')} ({result.get('consistency_score')}/100)"
+            result["recommended_action"] = (
+                f"Re-run the '{_fix_stage}' stage" if result.get("fix_type") == "rerun_stage"
+                else result.get("single_priority_fix")
+            )
+
+        elif automation.automation_type == "roadmap_gate_check":
+            prog = None
+            pid = cfg.get("program_id")
+            if pid:
+                prog = await self.get_program(uuid.UUID(pid) if isinstance(pid, str) else pid)
+            if not prog:
+                progs = await self.list_programs(bid)
+                prog = progs[0] if progs else None
+            plan = (prog.execution_plan if prog else None) or {}
+            readings = cfg.get("indicator_readings", {})  # {metric: current value/status}
+            prompt = f"""{_profile_block(profile)}
+
+EXECUTION PLAN (decision gates + leading indicators):
+{json.dumps({k: plan.get(k) for k in ('decision_gates', 'leading_indicators', 'kill_switches')}, ensure_ascii=False)[:4000]}
+
+CURRENT INDICATOR READINGS (from the business): {json.dumps(readings, ensure_ascii=False)[:2000]}
+DAYS SINCE PROGRAM START: {cfg.get('days_elapsed', 'unknown')}
+
+TASK: For the gate that is due (or most recently passed), evaluate the leading
+indicators against their green/yellow/red thresholds and any kill switches. Make
+the call.
+
+Return JSON:
+{{
+  "gate": "which decision gate this is",
+  "indicator_status": [{{"metric": "...", "reading": "...", "zone": "green|yellow|red"}}],
+  "kill_switch_triggered": true|false,
+  "call": "double_down | adjust | pause | pivot",
+  "why": "...",
+  "next_actions": ["..."]
+}}"""
+            result = _ask_json(prompt, {
+                "gate": "unknown", "indicator_status": [], "kill_switch_triggered": False,
+                "call": "adjust", "why": "Provide indicator_readings + program_id in config.",
+                "next_actions": [],
+            })
+            result["type"] = "roadmap_gate_check"
+            call = str(result.get("call", "")).lower()
+            if result.get("kill_switch_triggered") or call in ("pause", "pivot"):
+                result["severity"], result["alert"] = "critical", True
+            elif call == "adjust":
+                result["severity"], result["alert"] = "warn", True
+            else:
+                result["severity"], result["alert"] = "ok", False
+            result["headline"] = f"Gate '{result.get('gate')}': {result.get('call')}"
+            result["recommended_action"] = "; ".join(result.get("next_actions") or []) or result.get("why")
+
+        elif automation.automation_type == "transformation_pulse":
+            diag = await DiagnosisAgent(self.db).latest(bid)
+            progs = await self.list_programs(bid)
+            prog = progs[0] if progs else None
+            all_auto = await self.list_automations(bid)
+            open_alerts = [
+                {"type": a.automation_type, "severity": a.last_severity,
+                 "headline": (a.last_result or {}).get("headline")}
+                for a in all_auto if a.last_alert and a.id != automation.id
+            ]
+            coh = (prog.coherence_audit if prog else None) or {}
+            result = {
+                "type": "transformation_pulse",
+                "referent_potential_score": diag.referent_potential_score if diag else None,
+                "score_trend": (diag.score_delta if diag else None),
+                "program_status": prog.status if prog else "none",
+                "stages_completed": len(prog.completed_stages or []) if prog else 0,
+                "coherence_score": coh.get("score"),
+                "coherence_must_fix": coh.get("must_fix_before_launch") or [],
+                "open_alerts": open_alerts,
+                "headline": (
+                    f"Score {diag.referent_potential_score if diag else '?'} · "
+                    f"{len(prog.completed_stages or []) if prog else 0}/8 etapas · "
+                    f"coherencia {coh.get('score', '?')} · {len(open_alerts)} alertas"
+                ),
+            }
+            crit = any(a["severity"] == "critical" for a in open_alerts) or (coh.get("score") or 100) < 50
+            result["severity"] = "critical" if crit else ("warn" if open_alerts else "ok")
+            result["alert"] = bool(crit or open_alerts)
+            result["recommended_action"] = (
+                "Address the open critical alerts first" if crit
+                else "Review open alerts" if open_alerts else "Healthy — keep the cadence"
+            )
         else:
-            result = {"type": automation.automation_type, "note": "no runner implemented"}
+            result = {"type": automation.automation_type, "note": "no runner implemented", "severity": "ok", "alert": False}
 
         from app.domains.brand_transformation.service import llm_available
 
         result.setdefault("llm_used", llm_available())
-        automation.last_run_at = datetime.now(timezone.utc)
+        result.setdefault("severity", "ok")
+        result.setdefault("alert", False)
+
+        now = datetime.now(timezone.utc)
+        automation.last_run_at = now
         automation.last_result = result
         automation.runs_count = (automation.runs_count or 0) + 1
+        automation.last_severity = result["severity"]
+        automation.last_alert = bool(result["alert"])
+        hist = list(automation.run_history or [])
+        hist.append({
+            "at": now.isoformat(),
+            "severity": result["severity"],
+            "alert": bool(result["alert"]),
+            "score": result.get("score") or result.get("referent_potential_score") or result.get("coherence_score"),
+            "headline": result.get("headline") or result.get("summary"),
+        })
+        automation.run_history = hist[-20:]
         await self.db.commit()
         return result

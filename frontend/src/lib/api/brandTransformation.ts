@@ -136,6 +136,12 @@ export const brandTransformation = {
 
   // Automations
   listAutomations: (bid: string) => api.get<any[]>(`${base(bid)}/automations`).then((r) => r.data),
+  automationAlerts: (bid: string) =>
+    api.get<Array<{ automation_id: string; type: string; severity: string; at: string | null; headline: string | null; recommended_action: string | null }>>(
+      `${base(bid)}/automations/alerts`,
+    ).then((r) => r.data),
+  automationHistory: (bid: string, aid: string) =>
+    api.get<{ automation_id: string; type: string; runs: any[] }>(`${base(bid)}/automations/${aid}/history`).then((r) => r.data),
   createAutomation: (bid: string, body: { automation_type: string; schedule?: string; config?: any }) =>
     api.post<any>(`${base(bid)}/automations`, body).then((r) => r.data),
   runAutomation: (bid: string, aid: string) =>

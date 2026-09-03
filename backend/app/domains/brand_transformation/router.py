@@ -370,6 +370,33 @@ async def list_automations(
     return await TransformationOrchestrator(db).list_automations(business_id)
 
 
+@router.get("/automations/alerts")
+async def automation_alerts(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Every standing automation currently flagging warn/critical."""
+    return await TransformationOrchestrator(db).automation_alerts(business_id)
+
+
+@router.get("/automations/{automation_id}/history")
+async def automation_history(
+    business_id: UUID,
+    automation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from app.domains.brand_transformation.models import BrandAutomation
+
+    r = await db.execute(select(BrandAutomation).where(BrandAutomation.id == automation_id))
+    a = r.scalar_one_or_none()
+    if not a or a.business_id != business_id:
+        raise HTTPException(status_code=404, detail="automation not found")
+    return {"automation_id": str(a.id), "type": a.automation_type, "runs": a.run_history or []}
+
+
 @router.post("/automations/{automation_id}/run")
 async def run_automation(
     business_id: UUID,
