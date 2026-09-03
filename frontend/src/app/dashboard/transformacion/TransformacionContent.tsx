@@ -207,6 +207,21 @@ export function TransformacionContent() {
       setFomoPlan(await bt.deployFomoCampaigns(businessId, { activate }))
     })
 
+  const [bridgeMsg, setBridgeMsg] = useState('')
+  const doDeployAssets = () =>
+    run('assets', async () => {
+      if (!businessId) return
+      const r = await bt.deployAssets(businessId)
+      setBridgeMsg(`Identidad → contenido: ${r.created_count ?? 0} assets + plantilla de voz.`)
+    })
+  const doDeployCompetitive = () =>
+    run('competitive', async () => {
+      if (!businessId) return
+      const comps = (profile.known_competitors ?? []).map((n) => ({ name: n }))
+      const r = await bt.deployCompetitive(businessId, { competitors: comps })
+      setBridgeMsg(`Posicionamiento → competitive: ${r.created_count ?? 0} (monitores necesitan URL; ${r.skipped?.length ?? 0} sin URL).`)
+    })
+
   const radarData = useMemo(() => {
     const sc = diag?.scorecard
     if (!sc) return []
@@ -517,6 +532,22 @@ export function TransformacionContent() {
           </p>
         </div>
       )}
+
+      {/* Other bridges */}
+      <div className={card}>
+        <p className="mb-3 font-semibold">Integraciones</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={doDeployAssets} disabled={busy === 'assets'}>
+            {busy === 'assets' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Identidad → biblioteca de contenido
+          </Button>
+          <Button size="sm" variant="secondary" onClick={doDeployCompetitive} disabled={busy === 'competitive'}>
+            {busy === 'competitive' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Posicionamiento → monitores + battlecards
+          </Button>
+        </div>
+        {bridgeMsg && <p className="mt-2 text-sm text-emerald-400">{bridgeMsg}</p>}
+      </div>
 
       {/* FOMO bridge */}
       <div className={card}>
