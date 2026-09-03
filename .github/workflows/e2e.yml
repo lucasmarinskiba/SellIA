@@ -53,13 +53,37 @@ jobs:
       - name: Start services
         run: |
           docker compose up -d postgres redis backend frontend
-          # Wait for services. `up -d` blocks until postgres/redis pass
-          # their healthchecks before backend/frontend even start
-          # (confirmed locally: ~70s on a warm-image machine) — wait-on's
-          # own clock only starts after `up -d` returns. security-scan.
-          # yml's ZAP jobs poll the same stack with a 300s budget (60
-          # retries * 5s) and pass, which is the number this matches.
-          npx wait-on http://localhost:8000/health http://localhost:3000 --timeout 300000
+          # `up -d` blocks until postgres/redis pass their healthchecks
+          # before backend/frontend even start (confirmed locally: ~70s on
+          # a warm-image machine).
+          #
+          # Not wait-on: the "Diagnose failed startup" step below proved
+          # (run 33671043664) that both services were already healthy —
+          # backend/health=200, frontend=307, all containers "Up 5
+          # minutes (healthy)" — at the exact moment wait-on gave up after
+          # its full 300s budget. wait-on's http checker defaults to HEAD
+          # requests; Next.js's dev server (this stack always runs `next
+          # dev`, even via this same Dockerfile — see docker-compose.yml's
+          # frontend command) doesn't necessarily answer HEAD the way it
+          # answers GET, which plausibly explains wait-on never seeing it
+          # as ready despite a plain GET (curl, or a real browser)
+          # succeeding the whole time. security-scan.yml's ZAP jobs poll
+          # the same stack with a plain curl retry loop and pass reliably
+          # every run this session — reusing that proven mechanism here
+          # instead of continuing to debug wait-on's HTTP semantics.
+          for i in $(seq 1 60); do
+            BACKEND_OK=false; FRONTEND_OK=false
+            curl -sf http://localhost:8000/health > /dev/null 2>&1 && BACKEND_OK=true
+            curl -sf http://localhost:3000 > /dev/null 2>&1 && FRONTEND_OK=true
+            if $BACKEND_OK && $FRONTEND_OK; then
+              echo "✅ Both services ready after $((i * 5))s"
+              exit 0
+            fi
+            echo "Waiting for services (backend=$BACKEND_OK frontend=$FRONTEND_OK)... ($i/60)"
+            sleep 5
+          done
+          echo "::error::Services did not become ready within 300s"
+          exit 1
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_db
           SECRET_KEY: e2e-test-secret-32-chars-long-1234567
