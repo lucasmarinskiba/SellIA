@@ -119,6 +119,9 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_automations ADD COLUMN IF NOT EXISTS run_history JSONB",
     "ALTER TABLE bt_automations ADD COLUMN IF NOT EXISTS last_severity VARCHAR(12)",
     "ALTER TABLE bt_automations ADD COLUMN IF NOT EXISTS last_alert BOOLEAN DEFAULT FALSE",
+    # Bridges — positioning -> competitive, brand identity -> content/assets
+    "ALTER TABLE bt_positioning_statements ADD COLUMN IF NOT EXISTS deployed_competitive JSONB",
+    "ALTER TABLE bt_brand_identities ADD COLUMN IF NOT EXISTS deployed_assets JSONB",
 ]
 
 

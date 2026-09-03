@@ -100,6 +100,7 @@ class PositioningStatement(Base):
     reframe: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {from, to}
     messaging_pillars: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{pillar, proof}]
     migration_risks: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {who_we_lose, acceptable, mitigation}
+    deployed_competitive: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{competitor, monitor_id, battlecard_id}] — set by positioning_bridge
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)
@@ -137,6 +138,7 @@ class BrandIdentity(Base):
     story_spine: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {world, problem, insight, mission}
     taglines_alt: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 3 alternate taglines
     identity_consistency_rules: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # 5 non-negotiables (feeds brand_consistency_monitor)
+    deployed_assets: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{kind, content_id | template_id}] — set by identity_bridge
 
     confidence: Mapped[int] = mapped_column(Integer, default=0)
     frameworks_applied: Mapped[list | None] = mapped_column(JSONB, nullable=True)

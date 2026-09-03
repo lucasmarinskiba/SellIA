@@ -69,6 +69,27 @@ class DeployCampaignsIn(BaseModel):
     dry_run: bool = False             # return the plan without creating anything
 
 
+class CompetitorIn(BaseModel):
+    name: str
+    url: str | None = None
+    products: list[str] = []
+
+
+class DeployCompetitiveIn(BaseModel):
+    """Turn a positioning statement into competitive monitors + battlecards."""
+
+    statement_id: UUID | None = None      # default: latest positioning for the business
+    competitors: list[CompetitorIn] = []  # name + url (url required for a monitor)
+    dry_run: bool = False
+
+
+class DeployAssetsIn(BaseModel):
+    """Turn a brand identity into a voice template + draft copy assets."""
+
+    identity_id: UUID | None = None       # default: latest identity for the business
+    dry_run: bool = False
+
+
 # ----------------------------- responses -----------------------------
 
 class DiagnosisOut(_ORM):
@@ -121,6 +142,7 @@ class PositioningOut(_ORM):
     reframe: dict | None
     messaging_pillars: list | None
     migration_risks: dict | None
+    deployed_competitive: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str
@@ -148,6 +170,7 @@ class BrandIdentityOut(_ORM):
     story_spine: dict | None
     taglines_alt: list | None
     identity_consistency_rules: list | None
+    deployed_assets: list | None
     confidence: int
     frameworks_applied: list | None
     generated_by: str

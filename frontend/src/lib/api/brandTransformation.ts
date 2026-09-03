@@ -134,6 +134,18 @@ export const brandTransformation = {
   deployFomoCampaigns: (bid: string, body: { activate?: boolean; levers?: string[]; dry_run?: boolean }) =>
     api.post<FomoCampaignPlan>(`${base(bid)}/agents/fomo-engine/deploy-campaigns`, body).then((r) => r.data),
 
+  // Positioning -> competitive bridge
+  competitivePreview: (bid: string) =>
+    api.get<any>(`${base(bid)}/agents/positioning/competitive-preview`).then((r) => r.data),
+  deployCompetitive: (bid: string, body: { competitors: Array<{ name: string; url?: string; products?: string[] }>; dry_run?: boolean }) =>
+    api.post<any>(`${base(bid)}/agents/positioning/deploy-competitive`, body).then((r) => r.data),
+
+  // Brand identity -> content/assets bridge
+  assetsPreview: (bid: string) =>
+    api.get<any>(`${base(bid)}/agents/brand-identity/assets-preview`).then((r) => r.data),
+  deployAssets: (bid: string, body?: { dry_run?: boolean }) =>
+    api.post<any>(`${base(bid)}/agents/brand-identity/deploy-assets`, body ?? {}).then((r) => r.data),
+
   // Automations
   listAutomations: (bid: string) => api.get<any[]>(`${base(bid)}/automations`).then((r) => r.data),
   automationAlerts: (bid: string) =>

@@ -500,6 +500,21 @@ Return JSON:
             generated_by=d.get("_generated_by", "unknown"),
         ))
 
+    async def latest(self, business_id: uuid.UUID) -> PositioningStatement | None:
+        r = await self.db.execute(
+            select(PositioningStatement).where(PositioningStatement.business_id == business_id)
+            .order_by(desc(PositioningStatement.created_at)).limit(1)
+        )
+        return r.scalar_one_or_none()
+
+    async def by_id(self, business_id: uuid.UUID, sid: uuid.UUID) -> PositioningStatement | None:
+        r = await self.db.execute(
+            select(PositioningStatement).where(
+                PositioningStatement.id == sid, PositioningStatement.business_id == business_id
+            )
+        )
+        return r.scalar_one_or_none()
+
 
 _POSITIONING_CARRY = (
     "positioning_statement", "one_liner", "point_of_view", "enemy_analysis",
@@ -676,6 +691,21 @@ Return JSON:
             frameworks_applied=d.get("frameworks_applied"),
             generated_by=d.get("_generated_by", "unknown"),
         ))
+
+    async def latest(self, business_id: uuid.UUID) -> BrandIdentity | None:
+        r = await self.db.execute(
+            select(BrandIdentity).where(BrandIdentity.business_id == business_id)
+            .order_by(desc(BrandIdentity.created_at)).limit(1)
+        )
+        return r.scalar_one_or_none()
+
+    async def by_id(self, business_id: uuid.UUID, iid: uuid.UUID) -> BrandIdentity | None:
+        r = await self.db.execute(
+            select(BrandIdentity).where(
+                BrandIdentity.id == iid, BrandIdentity.business_id == business_id
+            )
+        )
+        return r.scalar_one_or_none()
 
 
 class BusinessModelAgent(_BaseAgent):

@@ -19,7 +19,9 @@ from app.domains.brand_transformation.orchestrator import TransformationOrchestr
 from app.domains.brand_transformation.schemas import (
     AutomationIn,
     AutomationOut,
+    DeployAssetsIn,
     DeployCampaignsIn,
+    DeployCompetitiveIn,
     BrandIdentityOut,
     BusinessModelOut,
     BusinessProfileIn,
@@ -133,6 +135,46 @@ async def run_positioning(
     return await PositioningAgent(db).run(business_id, profile, extra=body.extra_instructions)
 
 
+@router.get("/agents/positioning/competitive-preview")
+async def positioning_competitive_preview(
+    business_id: UUID,
+    statement_id: UUID | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Proposed competitive monitors + battlecards from the positioning. Read-only."""
+    from app.domains.brand_transformation.positioning_bridge import PositioningBridge
+
+    agent = PositioningAgent(db)
+    st = await agent.by_id(business_id, statement_id) if statement_id else await agent.latest(business_id)
+    if not st:
+        raise HTTPException(status_code=404, detail="no positioning statement — run POST /agents/positioning first")
+    return await PositioningBridge(db).preview(st, None)
+
+
+@router.post("/agents/positioning/deploy-competitive")
+async def positioning_deploy_competitive(
+    business_id: UUID,
+    body: DeployCompetitiveIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create competitive-intelligence monitors + battlecards from the positioning.
+    Battlecards are pre-filled; monitors need a competitor URL. Links are written
+    back to `bt_positioning_statements.deployed_competitive`."""
+    from app.domains.brand_transformation.positioning_bridge import PositioningBridge
+
+    agent = PositioningAgent(db)
+    st = await agent.by_id(business_id, body.statement_id) if body.statement_id else await agent.latest(business_id)
+    if not st:
+        raise HTTPException(status_code=404, detail="no positioning statement found")
+    return await PositioningBridge(db).deploy(
+        st, owner_user_id=current_user.id,
+        competitors=[c.model_dump() for c in body.competitors],
+        dry_run=body.dry_run,
+    )
+
+
 @router.post("/agents/brand-identity", response_model=BrandIdentityOut)
 async def run_brand_identity(
     business_id: UUID,
@@ -142,6 +184,42 @@ async def run_brand_identity(
 ):
     profile = (body.profile or _require_profile()).model_dump()
     return await BrandIdentityAgent(db).run(business_id, profile, extra=body.extra_instructions)
+
+
+@router.get("/agents/brand-identity/assets-preview")
+async def brand_identity_assets_preview(
+    business_id: UUID,
+    identity_id: UUID | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Proposed voice template + copy assets from the brand identity. Read-only."""
+    from app.domains.brand_transformation.identity_bridge import IdentityBridge
+
+    agent = BrandIdentityAgent(db)
+    it = await agent.by_id(business_id, identity_id) if identity_id else await agent.latest(business_id)
+    if not it:
+        raise HTTPException(status_code=404, detail="no brand identity — run POST /agents/brand-identity first")
+    return await IdentityBridge(db).preview(it)
+
+
+@router.post("/agents/brand-identity/deploy-assets")
+async def brand_identity_deploy_assets(
+    business_id: UUID,
+    body: DeployAssetsIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a reusable brand-voice ContentTemplate + draft GeneratedContent rows
+    (manifesto, taglines, sample rewrites, story spine, visual brief) in the
+    content library. Links written back to `bt_brand_identities.deployed_assets`."""
+    from app.domains.brand_transformation.identity_bridge import IdentityBridge
+
+    agent = BrandIdentityAgent(db)
+    it = await agent.by_id(business_id, body.identity_id) if body.identity_id else await agent.latest(business_id)
+    if not it:
+        raise HTTPException(status_code=404, detail="no brand identity found")
+    return await IdentityBridge(db).deploy(it, dry_run=body.dry_run)
 
 
 @router.post("/agents/business-model", response_model=BusinessModelOut)
