@@ -123,6 +123,10 @@ Reference (no auth cost beyond login): `GET /stages`, `/knowledge/fomo-levers`, 
 | `brand_consistency_monitor` | Grade sample material 0-100 vs the brand voice system + cliché blocklist; per-violation offending phrase + rewrite + single priority fix |
 | `positioning_drift_watch` | Flag when messaging stops fighting the stated enemy / drifts back to feature-listing |
 | `competitor_narrative_watch` | Flag competitor encroachment on the owned position + how to counter |
+| `roadmap_gate_check` | **v2.** Evaluate the execution plan's leading indicators vs green/yellow/red + kill switches at the due decision gate → the call (double_down / adjust / pause / pivot) |
+| `transformation_pulse` | **v2.** One digest: Referent Potential Score + trend, program progress, coherence score + must-fix, every other automation's open alerts |
+
+**Automations v2:** every run computes `severity` (ok/warn/critical) + `alert` + `headline` + `recommended_action`. `BrandAutomation` keeps `run_history` (last 20), `last_severity`, `last_alert`. Monitors auto-hydrate the brand reference from the latest positioning + identity (no longer required in config) and classify the fix as `copy_edit` vs `rerun_stage`. `GET …/automations/alerts` (all warn/critical), `GET …/automations/{id}/history`. Frontend: alerts strip at the top of the dashboard.
 
 `POST /automations` to create, `POST /automations/{id}/run` to execute now.
 
