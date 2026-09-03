@@ -188,6 +188,15 @@ sample rewrite, the story spine, and the visual brief. Links →
 `bt_brand_identities.deployed_assets`.
 `GET/POST …/agents/brand-identity/{assets-preview, deploy-assets}`.
 
+**Auto-run:** a program can opt in via `auto_bridges`
+(`{competitive, assets, fomo:{enabled,activate}, competitors?}`, set at
+`POST /programs` or later at `POST /programs/{id}/auto-bridges`). When the
+matching stage completes inside `run_stage`, its bridge fires automatically —
+result stored on `metrics_board["{stage}_bridge"]` and returned as
+`StageResult.bridge_result`. `owner_user_id` is captured from the authed user at
+program creation (bridges that write user-scoped rows need it). Failures are
+recorded, never block the stage.
+
 ## 4b. AI availability & provenance
 
 `service._resolve_api_key()` reads `settings.ANTHROPIC_API_KEY` then env
