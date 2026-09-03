@@ -116,6 +116,39 @@ class KnowledgeEngine:
                 return f"{field} no es string"
         return None
 
+    # Sinónimos reales encontrados en los archivos de library/: ~30 categorías
+    # (ecommerce, SaaS, churn, pricing dinámico, etc.) no siguen el schema
+    # canónico principle+tactic — usan name/action/process/logic/formula/
+    # sell_to/signals/scenario en su lugar. Sin esto, _validate_item los
+    # rechazaba TODOS (categoría entera cargando 0 items). Se mapean a
+    # principle/tactic antes de validar, así el contrato estricto de
+    # _validate_item (ver test_all_items_have_required_fields) sigue
+    # exigiendo contenido real, no una versión aflojada del check.
+    _PRINCIPLE_FALLBACK_FIELDS = ("principle", "name", "scenario")
+    _TACTIC_FALLBACK_FIELDS = (
+        "tactic", "action", "process", "logic", "formula",
+        "sell_to", "signals", "impact", "detection",
+    )
+
+    @classmethod
+    def _normalize_item(cls, item_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Rellena principle/tactic desde sus sinónimos si faltan. No
+        pisa un principle/tactic ya presente y no-vacío."""
+        normalized = dict(item_data)
+        if not (isinstance(normalized.get("principle"), str) and normalized["principle"].strip()):
+            for field in cls._PRINCIPLE_FALLBACK_FIELDS:
+                val = item_data.get(field)
+                if isinstance(val, str) and val.strip():
+                    normalized["principle"] = val
+                    break
+        if not (isinstance(normalized.get("tactic"), str) and normalized["tactic"].strip()):
+            for field in cls._TACTIC_FALLBACK_FIELDS:
+                val = item_data.get(field)
+                if isinstance(val, str) and val.strip():
+                    normalized["tactic"] = val
+                    break
+        return normalized
+
     def _load_all(self) -> None:
         """Carga todo el conocimiento de la biblioteca."""
         if self._loaded:
@@ -130,7 +163,8 @@ class KnowledgeEngine:
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                    for item_data in data.get("items", []):
+                    for raw_item_data in data.get("items", []):
+                        item_data = self._normalize_item(raw_item_data)
                         err = self._validate_item(item_data, category)
                         if err:
                             logger.warning(
@@ -139,7 +173,13 @@ class KnowledgeEngine:
                             )
                             continue
                         item = KnowledgeItem(
-                            id=item_data["id"],
+                            # Namespaced by category: the raw ids in library/*.json
+                            # are short mnemonic codes ("re_001", "adv_001") reused
+                            # across unrelated files by different authors — several
+                            # dozen collide globally (see test_all_item_ids_unique).
+                            # No caller anywhere uses KnowledgeEngine.get_by_id with
+                            # a bare un-namespaced id, so this is safe to change.
+                            id=f"{category}:{item_data['id']}",
                             category=category,
                             subcategory=item_data.get("subcategory", ""),
                             principle=item_data.get("principle", ""),
