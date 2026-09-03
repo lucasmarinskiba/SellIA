@@ -133,8 +133,12 @@ class PositioningBridge:
         except Exception as e:  # noqa: BLE001
             plan["battlecard_error"] = f"battlecard service unavailable: {str(e)[:160]}"
 
-        statement.deployed_competitive = (statement.deployed_competitive or []) + created
-        await self.db.commit()
+        try:
+            statement.deployed_competitive = (statement.deployed_competitive or []) + created
+            await self.db.commit()
+        except Exception as e:  # noqa: BLE001
+            await self.db.rollback()
+            plan["writeback_error"] = str(e)[:160]
 
         plan["deployed"] = created
         plan["created_count"] = sum(1 for c in created if c.get("monitor_id") or c.get("battlecard_id"))
