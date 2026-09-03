@@ -158,17 +158,26 @@ async def ensure_brand_transformation_tables() -> None:
     # FK graphs (monitors -> businesses, battlecards -> users). Provisioned here
     # opportunistically because this deployment disables migrations and these
     # tables were never created (the `competitive` feature depends on them too).
+    _bridge_tables = []
     try:
         from app.domains.competitive.models import CompetitiveBattlecard, CompetitiveMonitor
 
-        for t in (CompetitiveMonitor.__table__, CompetitiveBattlecard.__table__):
-            try:
-                async with engine.begin() as conn:
-                    await conn.run_sync(lambda c, tt=t: tt.create(bind=c, checkfirst=True))
-            except Exception as e:  # noqa: BLE001
-                logger.warning("brand_transformation bootstrap: bridge table %s skipped: %s", t.name, str(e)[:120])
+        _bridge_tables += [CompetitiveMonitor.__table__, CompetitiveBattlecard.__table__]
     except Exception as e:  # noqa: BLE001
         logger.warning("brand_transformation bootstrap: competitive models import skipped: %s", str(e)[:120])
+    try:
+        from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent
+
+        _bridge_tables += [ContentTemplate.__table__, GeneratedContent.__table__]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("brand_transformation bootstrap: content models import skipped: %s", str(e)[:120])
+
+    for t in _bridge_tables:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(lambda c, tt=t: tt.create(bind=c, checkfirst=True))
+        except Exception as e:  # noqa: BLE001
+            logger.warning("brand_transformation bootstrap: bridge table %s skipped: %s", t.name, str(e)[:120])
 
     logger.info(
         "✅ brand_transformation tables ensured (%s/%s, %s/%s column patches)",
