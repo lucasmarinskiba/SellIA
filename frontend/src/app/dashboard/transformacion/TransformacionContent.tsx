@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { businessApi } from '@/lib/business'
 import Button from '@/components/ui/Button'
+import { StageArtifact } from './StageArtifact'
 import {
   brandTransformation as bt,
   type Diagnosis, type Program, type StageInfo, type DomainHealth,
@@ -535,14 +536,25 @@ export function TransformacionContent() {
             </div>
           )}
 
-          {/* stage artifacts */}
+          {/* stage artifacts — deep view */}
           {activeProgram.metrics_board && (
             <div className="mt-4 space-y-3">
-              {stages.filter((s) => s.key !== 'roadmap' && activeProgram.metrics_board?.[s.key]).map((s) => (
-                <Accordion key={s.key} title={s.name} subtitle={s.deliverable}>
-                  <Json data={activeProgram.metrics_board![s.key]} />
-                </Accordion>
-              ))}
+              {stages.filter((s) => s.key !== 'roadmap' && activeProgram.metrics_board?.[s.key]).map((s) => {
+                const bridge = activeProgram.metrics_board?.[`${s.key}_bridge`]
+                return (
+                  <Accordion key={s.key} title={s.name} subtitle={s.deliverable}>
+                    <StageArtifact stageKey={s.key} artifact={activeProgram.metrics_board![s.key]} />
+                    {bridge && (
+                      <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                          Bridge automático{bridge.created_count != null ? ` · ${bridge.created_count} creados` : ''}
+                        </p>
+                        <Json data={bridge.deployed ?? bridge} />
+                      </div>
+                    )}
+                  </Accordion>
+                )
+              })}
             </div>
           )}
         </div>
