@@ -111,6 +111,10 @@ class PositioningBridge:
                     )
                     created.append({"competitor": m["competitor_name"], "monitor_id": str(mon.id)})
                 except Exception as e:  # noqa: BLE001
+                    try:
+                        await self.db.rollback()
+                    except Exception:  # noqa: BLE001
+                        pass
                     created.append({"competitor": m["competitor_name"], "monitor_error": str(e)[:160]})
         except Exception as e:  # noqa: BLE001
             plan["monitor_error"] = f"competitive domain unavailable: {str(e)[:160]}"
@@ -128,6 +132,10 @@ class PositioningBridge:
                     entry = by_name.setdefault(b["competitor_name"], {"competitor": b["competitor_name"]})
                     entry["battlecard_id"] = str(card.id)
                 except Exception as e:  # noqa: BLE001
+                    try:
+                        await self.db.rollback()
+                    except Exception:  # noqa: BLE001
+                        pass
                     by_name.setdefault(b["competitor_name"], {"competitor": b["competitor_name"]})["battlecard_error"] = str(e)[:160]
             created = list(by_name.values())
         except Exception as e:  # noqa: BLE001

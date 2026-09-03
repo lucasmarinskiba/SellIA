@@ -166,6 +166,7 @@ async def ensure_brand_transformation_tables() -> None:
     except Exception as e:  # noqa: BLE001
         logger.warning("brand_transformation bootstrap: competitive models import skipped: %s", str(e)[:120])
     try:
+        import app.domains.products.models  # noqa: F401 — resolves generated_content.product_id FK
         from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent
 
         _bridge_tables += [ContentTemplate.__table__, GeneratedContent.__table__]
