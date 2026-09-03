@@ -94,6 +94,13 @@ export interface StageResult {
   completed_stages: string[]
 }
 
+export interface AutoBridges {
+  competitive?: boolean
+  assets?: boolean
+  fomo?: { enabled?: boolean; activate?: boolean } | null
+  competitors?: Array<{ name: string; url?: string; products?: string[] }>
+}
+
 export interface FomoCampaignPlan {
   playbook_id: string
   cadence: string | null
@@ -119,8 +126,10 @@ export const brandTransformation = {
   listPrograms: (bid: string) => api.get<Program[]>(`${base(bid)}/programs`).then((r) => r.data),
   getProgram: (bid: string, pid: string) =>
     api.get<Program>(`${base(bid)}/programs/${pid}`).then((r) => r.data),
-  createProgram: (bid: string, name: string, profile: BusinessProfileIn) =>
-    api.post<Program>(`${base(bid)}/programs`, { name, profile }).then((r) => r.data),
+  createProgram: (bid: string, name: string, profile: BusinessProfileIn, autoBridges?: AutoBridges) =>
+    api.post<Program>(`${base(bid)}/programs`, { name, profile, auto_bridges: autoBridges }).then((r) => r.data),
+  setAutoBridges: (bid: string, pid: string, body: AutoBridges) =>
+    api.post<Program>(`${base(bid)}/programs/${pid}/auto-bridges`, body).then((r) => r.data),
   runStage: (bid: string, pid: string, stageKey: string, body?: { profile?: BusinessProfileIn; extra_instructions?: string }) =>
     api.post<StageResult>(`${base(bid)}/programs/${pid}/stages/${stageKey}/run`, body ?? {}).then((r) => r.data),
   runAll: (bid: string, pid: string) =>

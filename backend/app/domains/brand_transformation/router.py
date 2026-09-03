@@ -17,6 +17,7 @@ from app.core.deps import get_current_user
 from app.domains.brand_transformation import knowledge as K
 from app.domains.brand_transformation.orchestrator import TransformationOrchestrator
 from app.domains.brand_transformation.schemas import (
+    AutoBridgesIn,
     AutomationIn,
     AutomationOut,
     DeployAssetsIn,
@@ -325,8 +326,26 @@ async def create_program(
     current_user: User = Depends(get_current_user),
 ):
     return await TransformationOrchestrator(db).create_program(
-        business_id, body.name, body.profile.model_dump()
+        business_id, body.name, body.profile.model_dump(),
+        auto_bridges=body.auto_bridges.model_dump() if body.auto_bridges else None,
+        owner_user_id=current_user.id,
     )
+
+
+@router.post("/programs/{program_id}/auto-bridges", response_model=ProgramOut)
+async def set_program_auto_bridges(
+    business_id: UUID,
+    program_id: UUID,
+    body: AutoBridgesIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Toggle which bridges fire automatically when their stage completes."""
+    orch = TransformationOrchestrator(db)
+    prog = await orch.get_program(program_id)
+    if not prog or prog.business_id != business_id:
+        raise HTTPException(status_code=404, detail="program not found")
+    return await orch.set_auto_bridges(prog, body.model_dump(), owner_user_id=current_user.id)
 
 
 @router.get("/programs", response_model=list[ProgramOut])

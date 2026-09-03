@@ -13,7 +13,7 @@ import Button from '@/components/ui/Button'
 import {
   brandTransformation as bt,
   type Diagnosis, type Program, type StageInfo, type DomainHealth,
-  type BusinessProfileIn, type FomoCampaignPlan,
+  type BusinessProfileIn, type FomoCampaignPlan, type AutoBridges,
 } from '@/lib/api/brandTransformation'
 
 const card = 'rounded-xl border border-white/10 bg-white/[0.04] p-5'
@@ -113,6 +113,7 @@ export function TransformacionContent() {
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<BusinessProfileIn>(DEFAULT_PROFILE)
   const [showForm, setShowForm] = useState(false)
+  const [autoBridges, setAutoBridges] = useState<AutoBridges>({ competitive: false, assets: false, fomo: { enabled: false } })
 
   useEffect(() => {
     ;(async () => {
@@ -166,7 +167,7 @@ export function TransformacionContent() {
   const doCreateProgram = () =>
     run('program', async () => {
       if (!businessId) return
-      const p = await bt.createProgram(businessId, 'Brand Transformation', profile)
+      const p = await bt.createProgram(businessId, 'Brand Transformation', profile, autoBridges)
       setPrograms((ps) => [p, ...ps]); setActiveProgram(p)
     })
 
@@ -330,6 +331,27 @@ export function TransformacionContent() {
                 value={profile.notes ?? ''}
                 onChange={(e) => setProfile((p) => ({ ...p, notes: e.target.value }))}
               />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/60">
+            <span className="text-white/40">Auto-integraciones al completar etapa:</span>
+            {([['competitive', 'Competencia'], ['assets', 'Contenido']] as [keyof AutoBridges, string][]).map(([k, label]) => (
+              <label key={k} className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={!!autoBridges[k]}
+                  onChange={(e) => setAutoBridges((a) => ({ ...a, [k]: e.target.checked }))}
+                />
+                {label}
+              </label>
+            ))}
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={!!autoBridges.fomo?.enabled}
+                onChange={(e) => setAutoBridges((a) => ({ ...a, fomo: { ...a.fomo, enabled: e.target.checked } }))}
+              />
+              FOMO
             </label>
           </div>
           <div className="mt-4 flex gap-2">

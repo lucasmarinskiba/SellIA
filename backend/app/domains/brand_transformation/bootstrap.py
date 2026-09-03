@@ -113,6 +113,8 @@ _COLUMN_PATCHES: list[str] = [
     # Etapa 7 deepening — roadmap synthesis v2
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS execution_plan JSONB",
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS coherence_audit JSONB",
+    "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS auto_bridges JSONB",
+    "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS owner_user_id UUID",
     # FOMO bridge — deployed campaign links
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS deployed_campaigns JSONB",
     # Automations v2 — history + alerting

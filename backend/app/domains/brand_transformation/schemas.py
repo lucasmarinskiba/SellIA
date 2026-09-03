@@ -49,9 +49,25 @@ class StageRunIn(BaseModel):
     extra_instructions: str | None = None
 
 
+class CompetitorIn(BaseModel):
+    name: str
+    url: str | None = None
+    products: list[str] = []
+
+
+class AutoBridgesIn(BaseModel):
+    """Opt in to firing a bridge automatically when its stage completes."""
+
+    competitive: bool = False              # positioning -> competitive monitors + battlecards
+    assets: bool = False                   # brand identity -> content library
+    fomo: dict | None = None               # {"enabled": bool, "activate": bool}
+    competitors: list[CompetitorIn] = []   # optional; else falls back to profile.known_competitors
+
+
 class ProgramCreateIn(BaseModel):
     name: str = "Brand Transformation"
     profile: BusinessProfileIn
+    auto_bridges: AutoBridgesIn | None = None
 
 
 class AutomationIn(BaseModel):
@@ -67,12 +83,6 @@ class DeployCampaignsIn(BaseModel):
     activate: bool = False            # create as draft (False) or activate now (True)
     levers: list[str] = []            # optional filter; empty = all mapped mechanisms
     dry_run: bool = False             # return the plan without creating anything
-
-
-class CompetitorIn(BaseModel):
-    name: str
-    url: str | None = None
-    products: list[str] = []
 
 
 class DeployCompetitiveIn(BaseModel):
@@ -277,6 +287,7 @@ class ProgramOut(_ORM):
     roadmap: dict | None
     execution_plan: dict | None
     coherence_audit: dict | None
+    auto_bridges: dict | None
     metrics_board: dict | None
     created_at: datetime
     updated_at: datetime
@@ -307,6 +318,7 @@ class StageResultOut(BaseModel):
     artifact: dict
     next_stage: str | None
     completed_stages: list[str]
+    bridge_result: dict | None = None
 
 
 class StageInfoOut(BaseModel):
