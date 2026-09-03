@@ -724,6 +724,30 @@ def roadmap_horizons_digest() -> str:
     return "\n".join(f"- {k} days: {v}" for k, v in ROADMAP_HORIZON_TEMPLATE.items())
 
 
+# ---------------------------------------------------------------------------
+# 3i. CROSS-STAGE COHERENCE CHECKS — the program-level audit. Do the seven
+#     artifacts actually agree with each other, or has the plan drifted
+#     internally between stages?
+# ---------------------------------------------------------------------------
+
+COHERENCE_CHECKS: list[dict] = [
+    {"id": "enemy_consistency", "check": "Is the SAME enemy present across positioning (the_enemy), the brand story spine (problem beat), and the FOMO risk framing? A brand that fights three different enemies has none."},
+    {"id": "archetype_voice_in_copy", "check": "Do the FOMO content_hooks and GTM content pillars actually sound like the chosen archetype and verbal_identity (lexicon, first-line rule), or generic marketing?"},
+    {"id": "offer_affords_the_loop", "check": "Does the business_model's contribution margin / unit economics actually fund the GTM primary growth loop? A paid loop on a thin margin is incoherent."},
+    {"id": "pricing_matches_position", "check": "Does the pricing_architecture (premium vs value, round vs charm) match the positioning and archetype? Charm pricing under a Ruler/premium position is a contradiction."},
+    {"id": "category_vs_gtm", "check": "If category_decision is 'design_new', does the GTM include the market-conditioning work to teach it? If 'play_in_existing', is it not wasting effort evangelising a category?"},
+    {"id": "fomo_vs_ethics_vs_brand", "check": "Do the chosen FOMO mechanisms pass the brand's own ethics_review AND fit the archetype? An Innocent/Caregiver brand running hard-scarcity drops is off-brand."},
+    {"id": "restructuring_supports_promise", "check": "Do the core_processes and promise_kpis actually protect the specific promise in the positioning statement, or generic ops metrics?"},
+    {"id": "roadmap_respects_dependencies", "check": "Does the 90-day roadmap start moves whose blocked_by items land later? Any action before its dependency is a sequencing error."},
+    {"id": "kill_criteria_wired", "check": "Are the diagnosis kill_criteria and the restructuring unit_economics_gate actually represented as kill_switches at a decision gate?"},
+    {"id": "best_fit_customer_consistency", "check": "Is the same narrow best-fit customer targeted in positioning, the offer, the FOMO mechanisms, and the GTM channels — or does each stage drift to a different audience?"},
+]
+
+
+def coherence_checks_digest() -> str:
+    return "\n".join(f"- [{c['id']}] {c['check']}" for c in COHERENCE_CHECKS)
+
+
 def levers_digest() -> str:
     """Compact text block of every FOMO lever for prompt injection."""
     out = []

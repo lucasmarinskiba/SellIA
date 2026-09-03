@@ -137,6 +137,19 @@ import list.
 
 ---
 
+## 3c. Cross-stage coherence audit
+
+`POST …/programs/{id}/coherence-audit` (also auto-run at the end of `run-all`)
+checks that the 7 artifacts actually agree — `bt_transformation_programs.coherence_audit`
+`{score 0-100, checks[], must_fix_before_launch[], summary}`. 10 `COHERENCE_CHECKS`:
+same enemy across positioning/brand/FOMO; archetype voice actually used in the
+FOMO/GTM copy; the offer's margin funds the chosen growth loop; pricing style
+matches the position; category decision matches the GTM effort; FOMO mechanisms
+pass the brand's *own* ethics review; core processes protect the stated promise;
+the 90-day roadmap respects its own dependency graph; kill_criteria +
+unit_economics_gate are wired as decision-gate kill switches; one best-fit
+customer across all stages. Each verdict must quote the contradicting text.
+
 ## 4a. FOMO bridge — playbook → real campaigns
 
 `fomo_bridge.py` maps a `FOMOPlaybook`'s `mechanisms` to concrete
