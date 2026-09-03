@@ -117,6 +117,10 @@ class IdentityBridge:
                 )
                 deployed.append({"kind": a["content_type"], "content_id": str(row.id)})
             except Exception as e:  # noqa: BLE001
+                try:
+                    await self.db.rollback()  # don't let one bad insert cascade to the rest
+                except Exception:  # noqa: BLE001
+                    pass
                 deployed.append({"kind": a["content_type"], "error": str(e)[:160]})
 
         try:
