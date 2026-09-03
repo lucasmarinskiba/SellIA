@@ -119,8 +119,12 @@ class IdentityBridge:
             except Exception as e:  # noqa: BLE001
                 deployed.append({"kind": a["content_type"], "error": str(e)[:160]})
 
-        ident.deployed_assets = (ident.deployed_assets or []) + deployed
-        await self.db.commit()
+        try:
+            ident.deployed_assets = (ident.deployed_assets or []) + deployed
+            await self.db.commit()
+        except Exception as e:  # noqa: BLE001
+            await self.db.rollback()
+            plan["writeback_error"] = str(e)[:160]
 
         plan["deployed"] = deployed
         plan["created_count"] = sum(1 for d in deployed if d.get("content_id") or d.get("template_id"))

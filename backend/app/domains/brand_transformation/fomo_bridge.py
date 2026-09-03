@@ -170,8 +170,12 @@ class FOMOBridge:
                 deployed.append({"mechanism": spec["lever"], "lever": spec["lever"], "error": str(e)[:200]})
 
         # write links back onto the playbook
-        playbook.deployed_campaigns = (playbook.deployed_campaigns or []) + deployed
-        await self.db.commit()
+        try:
+            playbook.deployed_campaigns = (playbook.deployed_campaigns or []) + deployed
+            await self.db.commit()
+        except Exception as e:  # noqa: BLE001
+            await self.db.rollback()
+            plan["writeback_error"] = str(e)[:160]
 
         ok = [d for d in deployed if d.get("campaign_id")]
         return {

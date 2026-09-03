@@ -130,6 +130,13 @@ class TransformationOrchestrator:
                         activate=bool((cfg.get("fomo") or {}).get("activate", False)),
                     )
         except Exception as e:  # noqa: BLE001
+            # a bridge writing to a missing/broken target table can poison the
+            # shared session — roll it back so the rest of the program run
+            # (and the outer commit) still works.
+            try:
+                await self.db.rollback()
+            except Exception:  # noqa: BLE001
+                pass
             logger.warning("auto-bridge for stage %s failed: %s", stage_key, str(e)[:200])
             return {"bridge_error": str(e)[:200]}
         return None
@@ -202,6 +209,7 @@ class TransformationOrchestrator:
         if stage_key != "roadmap" and program.auto_bridges:
             bridge_result = await self._run_stage_bridge(program, stage_key)
             if bridge_result is not None:
+                await self.db.refresh(program)  # bridge may have rolled the session back
                 board = dict(program.metrics_board or {})
                 board[f"{stage_key}_bridge"] = bridge_result
                 program.metrics_board = board
