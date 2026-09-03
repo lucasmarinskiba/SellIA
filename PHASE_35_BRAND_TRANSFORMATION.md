@@ -181,6 +181,17 @@ templated output is never mistaken for AI. Automation results carry `llm_used`.
 > `agents_mode: "fallback"`, every artifact `generated_by: "fallback"`. Set
 > `ANTHROPIC_API_KEY` on the Railway service to switch to `"ai"`.
 
+## 4c. Frontend dashboard
+
+`/dashboard/transformacion` (`frontend/src/app/dashboard/transformacion/`, Sidebar entry).
+Client: `src/lib/api/brandTransformation.ts` (shared axios instance).
+
+- fallback-mode health banner (no `ANTHROPIC_API_KEY`)
+- business profile form → run diagnosis **or** create full program
+- diagnosis panel: Referent Potential Score, commoditization / evidence / provenance chips, 6-axis scorecard **radar** (recharts), symptoms / root causes / leverage moves / quick wins / structural moves / kill criteria, closest-precedent + moat accordions
+- program panel: 8-stage rail (click a stage to run it), **Run-all**, coherence-audit score + must-fix list, roadmap north star + 90/180/365 horizons, per-stage artifact accordions
+- FOMO bridge: preview / create drafts / create + activate real `fomo` campaigns
+
 ## 5. Wiring
 
 - Router registered in `backend/app/main.py` (`_try_include`, defensive).
