@@ -220,8 +220,10 @@ Client: `src/lib/api/brandTransformation.ts` (shared axios instance).
 - fallback-mode health banner (no `ANTHROPIC_API_KEY`)
 - business profile form → run diagnosis **or** create full program
 - diagnosis panel: Referent Potential Score, commoditization / evidence / provenance chips, 6-axis scorecard **radar** (recharts), symptoms / root causes / leverage moves / quick wins / structural moves / kill criteria, closest-precedent + moat accordions
-- program panel: 8-stage rail (click a stage to run it), **Run-all**, coherence-audit score + must-fix list, roadmap north star + 90/180/365 horizons, per-stage artifact accordions
-- FOMO bridge: preview / create drafts / create + activate real `fomo` campaigns
+- program panel: 8-stage rail (click a stage to run it), **Run-all**, coherence-audit score + must-fix list, roadmap north star + 90/180/365 horizons, auto-integration checkboxes
+- **per-stage deep-view** (`StageArtifact.tsx`): a tailored layout for each stage (score bars, FROM→TO reframe, canvas grid, mechanism cards, channel/plan tables, kill/keep/scale columns…) with a collapsible "additional fields" fallback so nothing is hidden; auto-bridge results shown inline under their stage
+- bridges: FOMO (preview / drafts / activate), Positioning→competitive, Identity→content library
+- automation alerts strip
 
 ## 5. Wiring
 
