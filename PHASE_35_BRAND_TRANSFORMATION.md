@@ -170,6 +170,24 @@ anti-fake guardrail and KPI; countdown/flash types get an `ends_at` from `cadenc
 - `POST …/agents/fomo-engine/deploy-campaigns` — creates the campaigns (`activate` for live vs draft, `levers` to filter, `dry_run` for plan-only); campaign links written back to `bt_fomo_playbooks.deployed_campaigns`
 - `fomo_cadence` automation: with `config.auto_deploy` + `owner_user_id`, each scheduled cycle now creates the real campaigns automatically
 
+## 4d. Positioning & Identity bridges
+
+**`positioning_bridge.py`** — a `PositioningStatement` → `competitive` domain
+(deterministic): a `CompetitiveMonitor` per named competitor with a URL + a
+`CompetitiveBattlecard` per competitor pre-filled from the positioning
+(our_strengths ← `attribute_value_proof`, their strengths/weaknesses ← the
+`alternatives_matrix` keep/lose, notes ← enemy + statement, price frame ←
+`reframe.to`). No-URL competitors get a battlecard only. Links →
+`bt_positioning_statements.deployed_competitive`.
+`GET/POST …/agents/positioning/{competitive-preview, deploy-competitive}`.
+
+**`identity_bridge.py`** — a `BrandIdentity` → `ai_content_generation`: one
+reusable brand-voice `ContentTemplate` (verbal identity as a voice system
+prompt) + draft `GeneratedContent` rows for the manifesto, taglines, each
+sample rewrite, the story spine, and the visual brief. Links →
+`bt_brand_identities.deployed_assets`.
+`GET/POST …/agents/brand-identity/{assets-preview, deploy-assets}`.
+
 ## 4b. AI availability & provenance
 
 `service._resolve_api_key()` reads `settings.ANTHROPIC_API_KEY` then env
