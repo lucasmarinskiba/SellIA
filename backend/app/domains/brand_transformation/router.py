@@ -329,6 +329,24 @@ async def run_program_all(
     return await orch.run_all(prog)
 
 
+@router.post("/programs/{program_id}/coherence-audit")
+async def program_coherence_audit(
+    business_id: UUID,
+    program_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cross-stage consistency check: do the 7 artifacts actually agree?
+    Catches internal drift (three different enemies, an offer that can't fund
+    the loop, FOMO that fails the brand's own ethics review, a roadmap that
+    violates its own dependencies)."""
+    orch = TransformationOrchestrator(db)
+    prog = await orch.get_program(program_id)
+    if not prog or prog.business_id != business_id:
+        raise HTTPException(status_code=404, detail="program not found")
+    return await orch.coherence_audit(prog)
+
+
 # --------------------------------------------------------------- automations
 
 @router.post("/automations", response_model=AutomationOut)

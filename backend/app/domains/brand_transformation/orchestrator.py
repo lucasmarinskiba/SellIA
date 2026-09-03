@@ -33,6 +33,7 @@ from app.domains.brand_transformation.service import (
     RestructuringAgent,
     _ask_json,
     _draft_then_refine,
+    _int,
     _profile_block,
     _stage_context_digest,
 )
@@ -156,11 +157,70 @@ class TransformationOrchestrator:
         for key in K.STAGE_ORDER:
             results.append(await self.run_stage(program, key, profile))
             program = await self.get_program(program.id)  # reload
+        # full program done -> audit internal coherence
+        try:
+            await self.coherence_audit(program)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("coherence_audit after run_all failed: %s", str(e)[:160])
         return results
 
     def _gather_context(self, program: TransformationProgram) -> dict:
         board = program.metrics_board or {}
         return {k: board.get(k) for k in K.STAGE_ORDER if board.get(k)}
+
+    # ------------------------------------------------------------------ coherence
+
+    async def coherence_audit(self, program: TransformationProgram) -> dict:
+        """Do the 7 stage artifacts actually agree with each other?
+
+        Program-level check: catches internal drift between stages (three
+        different enemies, an offer that can't fund the loop, FOMO that fails
+        the brand's own ethics review, a roadmap that violates its own
+        dependencies). Read-only over the artifacts; writes the audit back
+        onto the program.
+        """
+        context = self._gather_context(program)
+        done = [k for k in K.STAGE_ORDER if k in context and k != "roadmap"]
+        prompt = f"""{_profile_block((program.metrics_board or {}).get("profile") or {})}
+
+{_stage_context_digest(context)}
+
+STAGES PRESENT: {', '.join(done) or 'none'}
+
+RUN THESE CROSS-STAGE COHERENCE CHECKS:
+{K.coherence_checks_digest()}
+
+TASK: For each check, decide pass / warn / fail based ONLY on the artifacts
+above. If a stage needed for a check is missing, mark it "n/a". Quote the
+specific contradicting text. Then give an overall 0-100 coherence score and the
+list of things that must be fixed before launch.
+
+Return JSON:
+{{
+  "score": <int 0-100>,
+  "checks": [{{"id": "<check id>", "verdict": "pass|warn|fail|n/a", "contradiction": "the specific clash, quoting both sides — or null", "fix": "the concrete change to make them agree"}}],
+  "must_fix_before_launch": ["the fails, in priority order"],
+  "summary": "2-3 sentences — is this program internally consistent or is it drifting?"
+}}"""
+        d = _draft_then_refine(prompt, {
+            "score": 60,
+            "checks": [{"id": c["id"], "verdict": "n/a", "contradiction": None, "fix": "Run the relevant stages first."} for c in K.COHERENCE_CHECKS],
+            "must_fix_before_launch": [],
+            "summary": "Not enough stages completed to judge coherence — run the full program, then re-audit.",
+        }, "Every verdict must cite the artifact text it's based on. 'warn' needs a "
+           "real tension, not a nitpick. The fix must be a concrete edit to one "
+           "named stage.")
+
+        program.coherence_audit = {
+            "score": _int(d.get("score"), 0),
+            "checks": d.get("checks"),
+            "must_fix_before_launch": d.get("must_fix_before_launch"),
+            "summary": d.get("summary"),
+            "stages_audited": done,
+            "generated_by": d.get("_generated_by", "unknown"),
+        }
+        await self.db.commit()
+        return program.coherence_audit
 
     # ------------------------------------------------------------------ roadmap
 
