@@ -208,9 +208,25 @@ Every artifact records `generated_by` (`"llm"` | `"fallback"` | `"unknown"`) so
 templated output is never mistaken for AI. Automation results carry `llm_used`.
 `GET …/brand-transformation/health` → `{llm_available, model, agents_mode}`.
 
-> **Prod status (2026-09-01):** Railway backend has **no Anthropic key** →
+> **Prod status (2026-09-04):** Railway backend still has **no Anthropic key** →
 > `agents_mode: "fallback"`, every artifact `generated_by: "fallback"`. Set
 > `ANTHROPIC_API_KEY` on the Railway service to switch to `"ai"`.
+>
+> **Full-program plumbing E2E passed** against prod: `run-all` completes all
+> 8 stages (`status: completed`), coherence audit auto-runs, roadmap +
+> execution_plan synthesize, and all 3 auto-bridges create real rows —
+> `positioning_bridge` 1/1, `brand_identity_bridge` 5/5, `fomo_engine_bridge`
+> 2/2, zero errors. Getting there surfaced and fixed real bugs (see
+> commits `a516325`…`0cea2c6`): a failed bridge poisoned the shared async
+> session and 500'd the rest of the run; `competitive_monitors` /
+> `competitive_battlecards` / `content_templates` tables were never
+> provisioned in this migration-disabled deployment; `identity_bridge`
+> imported a nonexistent `AIContentService` (real name
+> `ContentGenerationService`); `GeneratedContent.product_id`'s FK targets a
+> table on a *different* declarative Base, which can never resolve during
+> SQLAlchemy's flush-time dependency sort — fixed by writing that insert as
+> raw SQL instead of through the ORM model. Only the **AI content quality**
+> remains blocked on the missing key — the orchestration itself is solid.
 
 ## 4c. Frontend dashboard
 
