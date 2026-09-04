@@ -249,6 +249,25 @@ Client: `src/lib/api/brandTransformation.ts` (shared axios instance).
 
 ---
 
+## 5b. Full-program E2E — passed, 2 bugs found + fixed
+
+Ran a real `run-all` (all 8 etapas + all 3 auto-bridges) against prod. Found and fixed:
+- a failed bridge (missing target table) poisoned the shared async session → 500'd
+  the rest of `run-all`. Fix: rollback in `_run_stage_bridge`'s except + per-item
+  rollback inside each bridge's insert loop, so one bad row never cascades.
+- `identity_bridge` imported a nonexistent `AIContentService` (real class is
+  `ContentGenerationService`) and `generated_content.product_id`'s FK couldn't
+  resolve because `products` wasn't imported before table creation.
+
+Result: `run-all` completes 8/8, coherence audit + roadmap synthesize, all 3
+bridges create real rows. AI quality is still fallback-only in prod (no
+`ANTHROPIC_API_KEY` set) — that part is blocked on the user setting the key.
+
+`backend/tests/test_brand_transformation.py` — a self-contained isolated-SQLite
+regression suite (same pattern as `test_ad_budget.py`) locks down the fallback
+path, 8-stage orchestration, severity grading, and all 3 bridges' deterministic
+mapping functions, independent of network/DB/the Anthropic key. 9 tests passing.
+
 ## 6. Next steps
 
 1. ~~Wire the 5 automation types into the Redis/celery scheduler for real cadence.~~ ✅ done — see §4.
