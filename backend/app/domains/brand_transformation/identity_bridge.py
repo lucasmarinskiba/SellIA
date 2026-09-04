@@ -107,15 +107,30 @@ class IdentityBridge:
         except Exception as e:  # noqa: BLE001
             deployed.append({"kind": "voice_template", "error": str(e)[:160]})
 
+        # Raw INSERT, not the ORM model: GeneratedContent.product_id is a
+        # ForeignKey("products.id") that lives on a DIFFERENT declarative Base
+        # than businesses/GeneratedContent itself, so it can never resolve during
+        # SQLAlchemy's flush-time FK dependency sort — even though product_id is
+        # unused here (always NULL). A plain executed INSERT skips that sort.
+        from sqlalchemy import text as _text
+
         for a in plan["assets"]:
             try:
-                row = await AIContentService.save_generated_content(
-                    self.db,
-                    business_id=ident.business_id,
-                    content_type=a["content_type"][:50],
-                    generated_content=a["content"],
-                )
-                deployed.append({"kind": a["content_type"], "content_id": str(row.id)})
+                new_id = uuid.uuid4()
+                await self.db.execute(_text(
+                    """
+                    INSERT INTO generated_content
+                        (id, business_id, content_type, generated_content, content_length, created_at)
+                    VALUES
+                        (:id, :business_id, :content_type, :generated_content, :content_length, now())
+                    """
+                ), {
+                    "id": new_id, "business_id": ident.business_id,
+                    "content_type": a["content_type"][:50], "generated_content": a["content"],
+                    "content_length": len(a["content"]),
+                })
+                await self.db.commit()
+                deployed.append({"kind": a["content_type"], "content_id": str(new_id)})
             except Exception as e:  # noqa: BLE001
                 try:
                     await self.db.rollback()  # don't let one bad insert cascade to the rest
