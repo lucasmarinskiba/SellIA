@@ -166,12 +166,11 @@ async def ensure_brand_transformation_tables() -> None:
     except Exception as e:  # noqa: BLE001
         logger.warning("brand_transformation bootstrap: competitive models import skipped: %s", str(e)[:120])
     try:
-        import app.domains.products.models  # noqa: F401 — resolves generated_content.product_id FK
-        from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent
+        from app.domains.ai_content_generation.models import ContentTemplate
 
-        _bridge_tables += [ContentTemplate.__table__, GeneratedContent.__table__]
+        _bridge_tables += [ContentTemplate.__table__]
     except Exception as e:  # noqa: BLE001
-        logger.warning("brand_transformation bootstrap: content models import skipped: %s", str(e)[:120])
+        logger.warning("brand_transformation bootstrap: content template model import skipped: %s", str(e)[:120])
 
     for t in _bridge_tables:
         try:
@@ -179,6 +178,33 @@ async def ensure_brand_transformation_tables() -> None:
                 await conn.run_sync(lambda c, tt=t: tt.create(bind=c, checkfirst=True))
         except Exception as e:  # noqa: BLE001
             logger.warning("brand_transformation bootstrap: bridge table %s skipped: %s", t.name, str(e)[:120])
+
+    # generated_content: its ORM model's product_id FK targets `products`, which
+    # lives on a different declarative Base, so t.create() can't resolve it.
+    # Raw DDL, product_id as a bare UUID (no FK), businesses FK only.
+    _GENERATED_CONTENT_DDL = """
+    CREATE TABLE IF NOT EXISTS generated_content (
+        id UUID PRIMARY KEY,
+        business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        product_id UUID,
+        content_type VARCHAR(50) NOT NULL,
+        platform VARCHAR(50),
+        original_content TEXT,
+        generated_content TEXT NOT NULL,
+        content_length INTEGER DEFAULT 0,
+        seo_score DOUBLE PRECISION DEFAULT 0,
+        engagement_score DOUBLE PRECISION DEFAULT 0,
+        is_approved BOOLEAN DEFAULT FALSE,
+        is_published BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        published_at TIMESTAMPTZ
+    )
+    """
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(_GENERATED_CONTENT_DDL))
+    except Exception as e:  # noqa: BLE001
+        logger.warning("brand_transformation bootstrap: generated_content DDL skipped: %s", str(e)[:120])
 
     logger.info(
         "✅ brand_transformation tables ensured (%s/%s, %s/%s column patches)",
