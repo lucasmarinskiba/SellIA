@@ -12,6 +12,8 @@ from app.core.oauth_connectors import (
     get_platform_credential,
 )
 from app.core.config import get_settings
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 settings = get_settings()
@@ -120,8 +122,21 @@ async def hotmart_callback(
 
 
 @router.get("/platforms/status/{seller_id}")
-async def get_platform_status(seller_id: str, db: AsyncSession = Depends(get_db)):
-    """Get connection status for all platforms."""
+async def get_platform_status(
+    seller_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get connection status for all platforms.
+
+    SECURITY NOTE: no auth at all until this fix -- any seller_id's platform
+    connection status (which marketplaces they use, their seller usernames)
+    was readable by anyone. This only requires SOME logged-in account;
+    PlatformCredential (app/models/platform_integration.py) has no user_id/
+    business_id column at all, so there's no field to verify this specific
+    seller_id actually belongs to current_user. Closing that needs a schema
+    change, flagged rather than invented here.
+    """
     platforms = ["mercado_libre", "amazon", "hotmart"]
     status = {}
 
@@ -141,8 +156,9 @@ async def disconnect_platform(
     seller_id: str,
     platform: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Disconnect platform."""
+    """Disconnect platform. Same missing-auth issue as get_platform_status above -- anyone could disconnect any seller's live marketplace integration with zero authentication."""
     cred = await get_platform_credential(db, seller_id, platform)
     if not cred:
         raise HTTPException(status_code=404, detail="Credential not found")

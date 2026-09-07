@@ -146,9 +146,17 @@ async def verify_assertion(
     return True
 
 
-async def remove_credential(db: AsyncSession, cred_id: uuid.UUID) -> bool:
-    """Elimina una credencial."""
-    result = await db.execute(select(WebAuthnCredential).where(WebAuthnCredential.id == cred_id))
+async def remove_credential(db: AsyncSession, cred_id: uuid.UUID, user_id: uuid.UUID) -> bool:
+    """Elimina una credencial.
+
+    `user_id` required and filtered on -- this used to look up cred_id
+    alone, so any authenticated user could pass any other user's cred_id
+    and delete their passkey (a real IDOR: the caller WAS logged in,
+    just never proven to own the specific credential being deleted).
+    """
+    result = await db.execute(
+        select(WebAuthnCredential).where(WebAuthnCredential.id == cred_id, WebAuthnCredential.user_id == user_id)
+    )
     cred = result.scalar_one_or_none()
     if not cred:
         return False
