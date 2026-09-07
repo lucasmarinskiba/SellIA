@@ -213,9 +213,12 @@ Every artifact records `generated_by` (`"llm"` | `"fallback"` | `"unknown"`) so
 templated output is never mistaken for AI. Automation results carry `llm_used`.
 `GET …/brand-transformation/health` → `{llm_available, model, agents_mode}`.
 
-> **Prod status (2026-09-04):** Railway backend still has **no Anthropic key** →
-> `agents_mode: "fallback"`, every artifact `generated_by: "fallback"`. Set
-> `ANTHROPIC_API_KEY` on the Railway service to switch to `"ai"`.
+> **Prod status (2026-09-07):** `ANTHROPIC_API_KEY` set, `agents_mode: "ai"`, real Opus
+> output verified. Model = `os.getenv("BT_MODEL", "claude-opus-5")` — set
+> `BT_MODEL=claude-sonnet-5` on Railway for ~5x lower cost. Extended thinking is
+> disabled for these strict-JSON calls; 240s per-request timeout; calls run off the
+> event loop via `asyncio.to_thread`. `run-all` is a FastAPI BackgroundTask — poll
+> `GET /programs/{id}` → `run_state` (running→done|failed).
 >
 > **Full-program plumbing E2E passed** against prod: `run-all` completes all
 > 8 stages (`status: completed`), coherence audit auto-runs, roadmap +
