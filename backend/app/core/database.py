@@ -1,5 +1,6 @@
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import get_settings
 from sqlalchemy.pool import NullPool
 
@@ -51,6 +52,22 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,
 )
+
+# Sync companion engine, for the handful of call sites that genuinely can't
+# be async -- Celery tasks (app/domains/auth/email_auth.py, app/domains/
+# enterprise/{email_automation,psychology_sales,voice_sales}.py) run in a
+# plain sync worker context with no event loop. Points at the same database
+# via psycopg2 (already a dependency) instead of asyncpg. Prefer
+# AsyncSessionLocal/get_db for anything that can be async -- this exists
+# only because those 4 files' Celery tasks previously imported a
+# `SessionLocal` that never existed anywhere in the codebase.
+_sync_database_url = settings.DATABASE_URL.replace("+asyncpg", "")
+if settings.ENVIRONMENT == "testing" or is_sqlite:
+    sync_engine = create_engine(_sync_database_url, poolclass=NullPool)
+else:
+    sync_engine = create_engine(_sync_database_url, pool_pre_ping=True)
+
+SessionLocal = sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)
 
 Base = declarative_base()
 

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.psychology_sales import (
     DiscoveryQuestionsEngine,
     NeedCreationEngine,
@@ -105,7 +105,7 @@ def get_discovery_questions(
     """Get contextual discovery questions for prospect."""
 
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:

@@ -281,7 +281,7 @@ Core Features:
   ✓ Real-time monitoring
 
 Quick Start:
-  from backend.app.core.computer_use import create_orchestrator
+  from app.core.computer_use import create_orchestrator
   orchestrator = await create_orchestrator()
 
 For full documentation, see: USAGE_AND_DEPLOYMENT.md

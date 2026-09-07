@@ -309,7 +309,7 @@ Features:
   ✓ Production ready (timeouts, limits, graceful shutdown)
 
 Quick Start:
-  from backend.app.core.computer_use.enhancement import create_enhancement_system
+  from app.core.computer_use.enhancement import create_enhancement_system
 
   enhancement = await create_enhancement_system(computer_use_engine)
 

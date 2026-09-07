@@ -155,7 +155,7 @@ class AffiliateSalesEngine:
                    amount: float, commission_pct: float,
                    cost: float = 0.0, customer_id: Optional[str] = None) -> Dict[str, Any]:
         """Record an affiliate sale."""
-        from backend.app.core.commission_tracker import AffiliateProduct
+        from app.core.commission_tracker import AffiliateProduct
 
         # Create sale object
         sale = AffiliateSale(

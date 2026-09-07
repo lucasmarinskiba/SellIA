@@ -429,7 +429,7 @@ class InvoiceGenerator:
             }
         """
         try:
-            from backend.app.core.integrations.sendgrid_email import EmailService
+            from app.core.integrations.sendgrid_email import EmailService  # NOTE: sendgrid pip package not installed + no SENDGRID_API_KEY configured -- this call path will still ImportError until that gap is addressed
 
             # Send via SendGrid
             subject = f"Invoice {invoice_number}"

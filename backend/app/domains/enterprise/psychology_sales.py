@@ -556,7 +556,7 @@ class AssumptiveCloseEngine:
 def create_need_narrative_async(self, deal_id: str, responses: List[str]):
     """Create need narrative in background."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         engine = NeedCreationEngine(db)

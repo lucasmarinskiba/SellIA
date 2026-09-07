@@ -99,7 +99,7 @@ class ScarcityEngine:
     def get_remaining_slots(self, deal_id: str) -> int:
         """Get actual remaining implementation slots."""
         # Query real availability
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if deal:
             return getattr(deal, "remaining_slots", 10)
@@ -441,7 +441,7 @@ class CompetitiveIntelligenceTracker:
     def get_competitor_wins(self, industry: str, days: int = 30) -> int:
         """Get competitor win count."""
         # Query real competitor data
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         recent_deals = self.db.query(Deal).filter(
             Deal.industry == industry,
             Deal.created_at >= datetime.utcnow() - timedelta(days=days),
@@ -460,7 +460,7 @@ class CompetitiveIntelligenceTracker:
     def get_industry_adoption_rate(self, solution_type: str, industry: str) -> int:
         """Get adoption % in industry."""
         # Query adoption data
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         total_companies = self.db.query(Deal).filter(
             Deal.industry == industry,
         ).count() or 1
@@ -485,7 +485,7 @@ class RealTimeFOMODashboard:
 
     def get_deal_foom_status(self, deal_id: str) -> Dict[str, Any]:
         """Get current FOOM level for deal."""
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if not deal:
             return {}
@@ -528,8 +528,8 @@ class RealTimeFOMODashboard:
 
     def get_platform_foom_metrics(self) -> Dict[str, Any]:
         """Get FOOM metrics for SellIA platform itself."""
-        from backend.app.models.deal import Deal
-        from backend.app.models.user import User
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.users.models import User  # NOTE: app.models.user is an isolated, never-created shadow model -- redirected to the real User used by auth.py etc
 
         total_deals = self.db.query(Deal).count()
         closed_deals = self.db.query(Deal).filter(Deal.status == "won").count()

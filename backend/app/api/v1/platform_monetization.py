@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.platform_monetization import (
     UserSegmentationEngine,
     UpgradeTriggerEngine,
@@ -74,7 +74,7 @@ def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
 def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
     """Get optimal upgrade trigger for user."""
     try:
-        from backend.app.domains.enterprise.platform_monetization import UserSegment
+        from app.domains.enterprise.platform_monetization import UserSegment
 
         # Mock: classify user first
         user_data = {
@@ -146,7 +146,7 @@ def list_active_tests(db: Session = Depends(get_db)):
 def get_conversion_funnel(segment: str, db: Session = Depends(get_db)):
     """Get conversion funnel for segment."""
     try:
-        from backend.app.domains.enterprise.platform_monetization import UserSegment
+        from app.domains.enterprise.platform_monetization import UserSegment
 
         segment_enum = UserSegment[segment.upper()]
         analytics = ConversionAnalytics(db)

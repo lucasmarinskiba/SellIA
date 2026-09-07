@@ -191,7 +191,7 @@ class ProposalGenerator:
             return self._generate_template_proposal(deal_id)
 
         try:
-            from backend.app.models.deal import Deal
+            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
             # Gather context
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
@@ -417,7 +417,7 @@ class CompetitorDetector:
 def send_email_with_optimal_timing(self, email_id: str, person_id: str, email_content: str):
     """Send email at optimal time."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         optimizer = SendTimeOptimizer(db)
@@ -441,7 +441,7 @@ def send_email_with_optimal_timing(self, email_id: str, person_id: str, email_co
 def generate_proposal_async(self, deal_id: str):
     """Generate proposal in background."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         generator = ProposalGenerator(db)
