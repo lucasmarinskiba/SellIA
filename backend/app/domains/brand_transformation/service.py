@@ -153,16 +153,18 @@ def _draft_then_refine(prompt: str, fallback: dict, refine_focus: str) -> dict:
     if not used_fallback:
         refine_prompt = f"""You produced this DRAFT:
 
-{json.dumps(draft, ensure_ascii=False, indent=2)[:8000]}
+{json.dumps(draft, ensure_ascii=False, indent=2)[:24000]}
 
 Now CRITIQUE it hard against the quality bar, then return the FINAL improved
 version. {refine_focus}
 
 Rules for the final JSON:
-- Keep EXACTLY the same keys as the draft (same structure, same nesting).
+- Return EVERY key the draft has, with the same structure and nesting. Never
+  drop a key, never replace a populated array/object with an empty one — if a
+  section was already good, return it as-is or sharpen it, don't delete it.
 - Replace every cliché or generic sentence with a specific, concrete one.
 - Every recommendation must trace to a mechanism, a number, or a named
-  precedent — if a claim can't be justified, cut it or make it defensible.
+  precedent — if a claim can't be justified, make it defensible.
 - Raise the prose: shorter sentences, concrete imagery, no hedging.
 - Where the draft is vague, get sharper. Where it is safe and forgettable,
   find the more interesting angle that is still defensible.
@@ -173,7 +175,13 @@ Rules for the final JSON:
        actually used, e.g. "dunford_positioning", "Red Bull">]
 
 Return ONLY the final JSON object."""
-        refined = _ask_json(refine_prompt, draft)
+        refined_raw = _ask_json(refine_prompt, draft)
+        # the refine pass can only improve — merge it over the draft so a key it
+        # omitted or blanked is preserved.
+        refined = {**draft}
+        for k, v in refined_raw.items():
+            if v not in (None, "", [], {}) or k not in draft:
+                refined[k] = v
     else:
         refined = draft
 
