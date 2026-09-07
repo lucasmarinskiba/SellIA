@@ -950,7 +950,7 @@ async def delete_webauthn_credential(
     from app.core.webauthn_service import remove_credential
 
     user = await get_current_user(request, db)
-    success = await remove_credential(db, cred_id)
+    success = await remove_credential(db, cred_id, user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Credencial no encontrada")
     return {"message": "Passkey eliminado"}
@@ -999,7 +999,7 @@ async def trust_device_endpoint(
     from app.core.trusted_devices import trust_device
 
     user = await get_current_user(request, db)
-    device = await trust_device(db, device_id)
+    device = await trust_device(db, device_id, user.id)
     if not device:
         raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
     return {"message": "Dispositivo confiado"}
@@ -1016,7 +1016,7 @@ async def block_device_endpoint(
     from app.core.trusted_devices import block_device
 
     user = await get_current_user(request, db)
-    device = await block_device(db, device_id)
+    device = await block_device(db, device_id, user.id)
     if not device:
         raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
     return {"message": "Dispositivo bloqueado"}

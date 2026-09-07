@@ -12,9 +12,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.db.models import Lead as LeadModel
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
+
+# SECURITY NOTE: every route below had zero authentication until this fix --
+# create/list/get/update/score/contact/delete all worked for any anonymous
+# caller, exposing every lead's name/email/phone/budget/pain_points to the
+# internet and allowing anyone to edit or soft-delete any lead.
+#
+# The fix here only requires SOME logged-in account (Depends(get_current_user))
+# -- it does NOT achieve per-business isolation, because LeadModel (app/db/
+# models.py) has no business_id/user_id/owner column at all. This table is
+# architecturally single-tenant: there is no field to filter "only leads
+# belonging to the caller's business" even if we wanted to. Any authenticated
+# user can still see/edit/delete every lead in the system. Closing that
+# properly needs a schema migration (add + backfill an owner column) and a
+# decision about what "owns" a lead in this app's data model -- flagging
+# rather than inventing that migration mid-security-audit.
 
 # ============================================================
 # MODELOS
@@ -182,7 +199,7 @@ def _generate_score_reasons(lead_data: dict, breakdown: dict) -> List[str]:
 # ENDPOINTS
 # ============================================================
 @router.post("/", response_model=Lead)
-async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db)):
+async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Crear nuevo lead."""
     # Calcular score
     lead_dict = lead_data.dict()
@@ -218,7 +235,8 @@ async def list_leads(
     limit: int = 50,
     min_score: float = 0,
     status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list:
     """Listar leads con filtros (excluye deleted)."""
     query = select(LeadModel).where(
@@ -236,7 +254,7 @@ async def list_leads(
     return leads
 
 @router.get("/{lead_id}", response_model=Lead)
-async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Obtener detalles de un lead."""
     result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -246,7 +264,7 @@ async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     return lead
 
 @router.put("/{lead_id}", response_model=Lead)
-async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db)):
+async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Actualizar lead."""
     from sqlalchemy import select as sa_select
     # Row-level lock to prevent concurrent updates
@@ -281,7 +299,7 @@ async def update_lead(lead_id: int, lead_update: LeadUpdate, db: AsyncSession = 
     return lead
 
 @router.post("/{lead_id}/score", response_model=LeadScore)
-async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Recalcular score de un lead (útil después de engagement)."""
     result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -306,7 +324,7 @@ async def rescore_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     }
 
 @router.post("/{lead_id}/contact")
-async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Marcar lead como contactado."""
     result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -335,7 +353,7 @@ async def mark_contacted(lead_id: int, db: AsyncSession = Depends(get_db)):
     return lead
 
 @router.delete("/{lead_id}")
-async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Soft delete a lead (mark as deleted, don't remove data)."""
     result = await db.execute(select(LeadModel).where(LeadModel.id == lead_id))
     lead = result.scalar_one_or_none()
@@ -349,7 +367,7 @@ async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     return {"status": "deleted", "lead_id": lead_id}
 
 @router.get("/stats/summary")
-async def get_stats(db: AsyncSession = Depends(get_db)):
+async def get_stats(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Resumen de leads (solo activos)."""
     # Only count non-deleted leads
     result = await db.execute(select(LeadModel).where(LeadModel.deleted_at == None))

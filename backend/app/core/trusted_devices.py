@@ -84,9 +84,20 @@ async def record_device_login(
     return device, is_new
 
 
-async def trust_device(db: AsyncSession, device_id: uuid.UUID) -> Optional[TrustedDevice]:
-    """Marca un dispositivo como de confianza."""
-    result = await db.execute(select(TrustedDevice).where(TrustedDevice.id == device_id))
+async def trust_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> Optional[TrustedDevice]:
+    """Marca un dispositivo como de confianza.
+
+    `user_id` is required and filtered on -- this used to look up the
+    device by id alone, so any authenticated user could pass any other
+    user's device_id and mark it trusted (or, via block_device below,
+    silently re-enable a device the real owner had deliberately blocked
+    after a theft/compromise). A real IDOR, not just a missing auth check
+    -- the caller WAS authenticated, just never verified ownership of the
+    specific device_id it was handed.
+    """
+    result = await db.execute(
+        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+    )
     device = result.scalar_one_or_none()
     if device:
         device.is_trusted = True
@@ -96,9 +107,11 @@ async def trust_device(db: AsyncSession, device_id: uuid.UUID) -> Optional[Trust
     return device
 
 
-async def block_device(db: AsyncSession, device_id: uuid.UUID) -> Optional[TrustedDevice]:
-    """Bloquea un dispositivo."""
-    result = await db.execute(select(TrustedDevice).where(TrustedDevice.id == device_id))
+async def block_device(db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID) -> Optional[TrustedDevice]:
+    """Bloquea un dispositivo. See trust_device's docstring -- same IDOR fix."""
+    result = await db.execute(
+        select(TrustedDevice).where(TrustedDevice.id == device_id, TrustedDevice.user_id == user_id)
+    )
     device = result.scalar_one_or_none()
     if device:
         device.is_blocked = True
