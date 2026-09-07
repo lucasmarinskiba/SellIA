@@ -175,9 +175,20 @@ export function TransformacionContent() {
   const doRunAll = () =>
     run('runall', async () => {
       if (!businessId || !activeProgram) return
-      await bt.runAll(businessId, activeProgram.id)
-      const p = await bt.getProgram(businessId, activeProgram.id)
+      const res = await bt.runAll(businessId, activeProgram.id)
+      const dispatched = !Array.isArray(res) && (res as any)?.dispatched
+      // sync path (inline / no worker): result is the stage list, just refresh
+      let p = await bt.getProgram(businessId, activeProgram.id)
       setActiveProgram(p)
+      if (dispatched) {
+        // background job — poll until run_state settles (up to ~40 min)
+        for (let i = 0; i < 160; i++) {
+          await new Promise((r) => setTimeout(r, 15000))
+          p = await bt.getProgram(businessId, activeProgram.id)
+          setActiveProgram(p)
+          if (p.run_state === 'done' || p.run_state === 'failed') break
+        }
+      }
       setPrograms((ps) => ps.map((x) => (x.id === p.id ? p : x)))
     })
 
@@ -461,6 +472,14 @@ export function TransformacionContent() {
               <p className="font-semibold">{activeProgram.name}</p>
               <p className="text-sm text-white/50">
                 {completed.size}/{stages.length} etapas · estado {activeProgram.status}
+                {activeProgram.run_state === 'running' && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-amber-300">
+                    <Loader2 className="h-3 w-3 animate-spin" /> corriendo en background…
+                  </span>
+                )}
+                {activeProgram.run_state === 'failed' && (
+                  <span className="ml-2 text-red-300">run-all falló — revisá logs</span>
+                )}
               </p>
             </div>
             <div className="flex gap-2">

@@ -289,6 +289,7 @@ class ProgramOut(_ORM):
     execution_plan: dict | None
     coherence_audit: dict | None
     auto_bridges: dict | None
+    run_state: str | None
     metrics_board: dict | None
     created_at: datetime
     updated_at: datetime

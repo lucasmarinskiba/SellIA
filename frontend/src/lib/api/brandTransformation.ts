@@ -79,6 +79,7 @@ export interface Program {
   roadmap: Record<string, any> | null
   execution_plan: Record<string, any> | null
   coherence_audit: Record<string, any> | null
+  run_state: string | null
   metrics_board: Record<string, any> | null
   created_at: string
   updated_at: string
@@ -133,7 +134,9 @@ export const brandTransformation = {
   runStage: (bid: string, pid: string, stageKey: string, body?: { profile?: BusinessProfileIn; extra_instructions?: string }) =>
     api.post<StageResult>(`${base(bid)}/programs/${pid}/stages/${stageKey}/run`, body ?? {}).then((r) => r.data),
   runAll: (bid: string, pid: string) =>
-    api.post<StageResult[]>(`${base(bid)}/programs/${pid}/run-all`, {}).then((r) => r.data),
+    api.post<{ dispatched?: boolean; program_id: string; run_state?: string } | StageResult[]>(
+      `${base(bid)}/programs/${pid}/run-all`, {},
+    ).then((r) => r.data),
   coherenceAudit: (bid: string, pid: string) =>
     api.post<Record<string, any>>(`${base(bid)}/programs/${pid}/coherence-audit`, {}).then((r) => r.data),
 
