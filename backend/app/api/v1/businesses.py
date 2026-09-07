@@ -30,12 +30,29 @@ async def test_endpoint():
     return {"status": "ok", "endpoint": "business_create_test"}
 
 
+def _require_superuser(current_user: User) -> None:
+    """All /debug/* routes below had NO auth at all -- confirmed live in
+    production: GET /debug/conversation-state/{business_id} returned any
+    business's full conversation history, lead emails and message content
+    to an unauthenticated caller; /debug/add-type-column, /debug/add-config-
+    column and /debug/create-table/{table_name} ran raw ALTER TABLE / CREATE
+    TYPE / CREATE TABLE against the production schema for anyone who found
+    the URL. Gating on is_superuser (same convention as security.py's
+    check_user_breach) rather than deleting these outright, since they're
+    still useful for the team to debug production issues -- just not to
+    the entire internet."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+
+
 @router.get("/debug/conversation-state/{business_id}", tags=["debug"])
 async def debug_conversation_state(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Temporary: raw dump of conversations/messages/qualifications for a business."""
+    _require_superuser(current_user)
     from sqlalchemy import select as sa_select
     from app.domains.channels.models import Conversation, Message
     from app.domains.agents.lead_qualifier.models import LeadQualification
@@ -62,8 +79,9 @@ async def debug_conversation_state(
 
 
 @router.post("/debug/llm-test", tags=["debug"])
-async def debug_llm_test():
+async def debug_llm_test(current_user: User = Depends(get_current_user)):
     """Temporary: isolate whether the crash is in imports, LLM call, or DB."""
+    _require_superuser(current_user)
     steps = []
     try:
         steps.append("start")
@@ -102,8 +120,10 @@ async def debug_qualify(
     conversation_id: UUID,
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Temporary: directly call qualify_lead and return the result or raw error."""
+    _require_superuser(current_user)
     from app.domains.agents.lead_qualifier import service as lq_service
     try:
         result = await lq_service.qualify_lead(db=db, conversation_id=conversation_id, business_id=business_id)
@@ -114,8 +134,9 @@ async def debug_qualify(
 
 
 @router.get("/debug/enum-values/{type_name}", tags=["debug"])
-async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db)):
+async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Temporary: list actual pg enum labels for a given type name."""
+    _require_superuser(current_user)
     from sqlalchemy import text
     result = await db.execute(text(
         "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = :t ORDER BY enumsortorder"
@@ -124,8 +145,9 @@ async def debug_enum_values(type_name: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/debug/add-type-column", tags=["debug"])
-async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
+async def debug_add_type_column(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Temporary: force-apply the businesses.type schema patch immediately."""
+    _require_superuser(current_user)
     from sqlalchemy import text
     try:
         await db.execute(text("ALTER TABLE businesses DROP COLUMN IF EXISTS type"))
@@ -144,8 +166,9 @@ async def debug_add_type_column(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/debug/add-config-column", tags=["debug"])
-async def debug_add_config_column(db: AsyncSession = Depends(get_db)):
+async def debug_add_config_column(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Temporary: force-apply the businesses.config schema patch immediately."""
+    _require_superuser(current_user)
     from sqlalchemy import text
     try:
         await db.execute(text(
@@ -159,8 +182,9 @@ async def debug_add_config_column(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/debug/create-table/{table_name}", tags=["debug"])
-async def debug_create_table(table_name: str):
+async def debug_create_table(table_name: str, current_user: User = Depends(get_current_user)):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
+    _require_superuser(current_user)
     from app.core.database import Base as CoreBase, engine
     table = CoreBase.metadata.tables.get(table_name)
     if table is None:
