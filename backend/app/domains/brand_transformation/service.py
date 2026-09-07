@@ -114,7 +114,14 @@ def _ask_json(prompt: str, fallback: dict) -> dict:
             system=_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = msg.content[0].text
+        # Opus/Sonnet 5 may return thinking blocks before the answer — take the
+        # first real text block, not content[0].
+        text = next(
+            (b.text for b in msg.content if getattr(b, "type", None) == "text"),
+            "",
+        )
+        if not text:
+            raise ValueError("no text block in response")
         start, end = text.find("{"), text.rfind("}") + 1
         data = json.loads(text[start:end])
         if not isinstance(data, dict):
