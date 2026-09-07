@@ -178,6 +178,47 @@ async def test_orchestrator_run_all_completes_without_bridges(db):
     assert prog2.execution_plan is not None
 
 
+@pytest.mark.asyncio
+async def test_run_all_survives_broken_bridges(db):
+    """A stage auto-bridge whose target tables don't exist (fomo / competitive /
+    content are not created in this fixture) must be caught and recorded — never
+    propagate or 500 the rest of run-all. This is the regression for the
+    session-poisoning bug found in the prod E2E."""
+    orch = TransformationOrchestrator(db)
+    prog = await orch.create_program(
+        uuid.uuid4(), "Broken bridges", PROFILE,
+        auto_bridges={
+            "competitive": True,
+            "assets": True,
+            "fomo": {"enabled": True},
+            "competitors": [{"name": "Acme", "url": "https://acme.com"}],
+        },
+        owner_user_id=uuid.uuid4(),
+    )
+    results = await orch.run_all(prog)
+    assert len(results) == len(K.STAGE_ORDER)
+
+    prog2 = await orch.get_program(prog.id)
+    assert prog2.status == "completed"
+    assert set(prog2.completed_stages) == set(K.STAGE_ORDER)
+    board = prog2.metrics_board or {}
+    for stage in ("positioning", "brand_identity", "fomo_engine"):
+        assert f"{stage}_bridge" in board  # bridge ran and its (failed) result was recorded
+
+
+@pytest.mark.asyncio
+async def test_seed_default_automations(db):
+    orch = TransformationOrchestrator(db)
+    bid = uuid.uuid4()
+    prog = await orch.create_program(bid, "P", PROFILE)
+    created = await orch.seed_default_automations(bid, prog, owner_user_id=uuid.uuid4())
+    types = {a.automation_type for a in created}
+    assert types == {"rediagnosis", "brand_consistency_monitor", "roadmap_gate_check", "transformation_pulse"}
+    # idempotent — a second call adds nothing
+    again = await orch.seed_default_automations(bid, prog)
+    assert again == []
+
+
 def test_grade_severity_thresholds():
     assert TransformationOrchestrator._grade_severity(90, "on-brand") == ("ok", False)
     assert TransformationOrchestrator._grade_severity(60, "minor-drift") == ("warn", True)

@@ -68,6 +68,7 @@ class ProgramCreateIn(BaseModel):
     name: str = "Brand Transformation"
     profile: BusinessProfileIn
     auto_bridges: AutoBridgesIn | None = None
+    with_default_automations: bool = True  # seed rediagnosis / consistency / gate-check / pulse
 
 
 class AutomationIn(BaseModel):
