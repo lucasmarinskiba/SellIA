@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,6 +52,7 @@ from app.domains.brand_transformation.service import (
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/brand-transformation", tags=["Brand Transformation"])
+logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------------------- reference
@@ -419,18 +422,36 @@ async def run_program_stage(
     return await orch.run_stage(prog, stage_key, profile, extra)
 
 
-@router.post("/programs/{program_id}/run-all", response_model=list[StageResultOut])
+@router.post("/programs/{program_id}/run-all")
 async def run_program_all(
     business_id: UUID,
     program_id: UUID,
+    inline: bool = Query(False, description="run synchronously (scripts/tests only — ~15 LLM calls)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Run every etapa. A full run is ~15 real LLM calls (~15-45 min), so by
+    default it is dispatched to a background worker and this returns
+    immediately — poll `GET /programs/{id}` and watch `run_state`
+    (running→done/failed) + `completed_stages`. Pass `inline=true` to block."""
     orch = TransformationOrchestrator(db)
     prog = await orch.get_program(program_id)
     if not prog or prog.business_id != business_id:
         raise HTTPException(status_code=404, detail="program not found")
-    return await orch.run_all(prog)
+
+    if inline:
+        return await orch.run_all(prog)
+
+    try:
+        from app.tasks.brand_transformation_tasks import run_program_all as _task
+
+        _task.delay(str(program_id))
+        prog.run_state = "running"
+        await db.commit()
+        return {"dispatched": True, "program_id": str(program_id), "run_state": "running"}
+    except Exception as e:  # noqa: BLE001 — no worker available, fall back to inline
+        logger.warning("run-all dispatch failed (%s); running inline", str(e)[:120])
+        return await orch.run_all(prog)
 
 
 @router.post("/programs/{program_id}/coherence-audit")

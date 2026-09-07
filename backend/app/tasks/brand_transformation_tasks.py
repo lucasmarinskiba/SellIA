@@ -8,6 +8,7 @@ bounded by the automations' declared cadence, not by the tick frequency.
 """
 
 import asyncio
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from celery import shared_task
@@ -15,7 +16,7 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.domains.brand_transformation.models import BrandAutomation
+from app.domains.brand_transformation.models import BrandAutomation, TransformationProgram
 from app.domains.brand_transformation.orchestrator import TransformationOrchestrator
 
 logger = get_logger(__name__)
@@ -92,5 +93,37 @@ def run_due_brand_automations():
             f"({len(due_ids)} due of {len(due_ids)} checked)"
         )
         return {"ran": ran, "failed": failed, "due": len(due_ids)}
+
+    return _async_run(_run())
+
+
+@shared_task(name="app.tasks.brand_transformation_tasks.run_program_all", time_limit=5400, soft_time_limit=5100)
+def run_program_all(program_id: str):
+    """Run every etapa of a program end to end. Dispatched by the /run-all
+    endpoint because a full run is ~15 real LLM calls and would time out a
+    synchronous HTTP request. Sets program.run_state along the way."""
+
+    async def _run():
+        async with AsyncSessionLocal() as db:
+            orch = TransformationOrchestrator(db)
+            prog = await orch.get_program(uuid.UUID(program_id))
+            if prog is None:
+                return {"error": "program not found"}
+            prog.run_state = "running"
+            await db.commit()
+            try:
+                results = await orch.run_all(prog)
+                prog2 = await orch.get_program(uuid.UUID(program_id))
+                prog2.run_state = "done"
+                await db.commit()
+                logger.info("brand_transformation: program %s run-all done (%s stages)", program_id, len(results))
+                return {"program_id": program_id, "stages": len(results), "status": "done"}
+            except Exception as e:  # noqa: BLE001
+                logger.error("brand_transformation: program %s run-all failed: %s", program_id, e)
+                prog3 = await orch.get_program(uuid.UUID(program_id))
+                if prog3:
+                    prog3.run_state = "failed"
+                    await db.commit()
+                return {"program_id": program_id, "status": "failed", "error": str(e)[:200]}
 
     return _async_run(_run())

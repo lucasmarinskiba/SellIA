@@ -115,6 +115,7 @@ _COLUMN_PATCHES: list[str] = [
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS coherence_audit JSONB",
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS auto_bridges JSONB",
     "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS owner_user_id UUID",
+    "ALTER TABLE bt_transformation_programs ADD COLUMN IF NOT EXISTS run_state VARCHAR(12)",
     # FOMO bridge — deployed campaign links
     "ALTER TABLE bt_fomo_playbooks ADD COLUMN IF NOT EXISTS deployed_campaigns JSONB",
     # Automations v2 — history + alerting
