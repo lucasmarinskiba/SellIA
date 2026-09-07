@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, get_password_hash
+from app.core.security import verify_password, create_access_token, get_password_hash, decode_access_token
 from app.core.config import get_settings
 
 # Optional imports with fallback
@@ -816,7 +816,7 @@ async def verify_email(
     if not user_id:
         raise HTTPException(status_code=400, detail="Token inválido")
 
-    result = await db.execute(select(User).where(User.id == UUID(user_id)))
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -1128,19 +1128,12 @@ async def verify_2fa(request: Verify2FARequest, db: AsyncSession = Depends(get_d
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
 
-@router.post("/2fa/disable")
-async def disable_2fa(request: Disable2FARequest, db: AsyncSession = Depends(get_db)):
-    """Disable 2FA (requires password confirmation)."""
-    result = await db.execute(
-        select(User).where(User.id == request.user_id)
-    )
-    user = result.scalars().first()
-    
-    if not user or not verify_password(request.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid password")
-
-    user.is_2fa_enabled = False
-    user.totp_secret = None
-    await db.commit()
-
-    return {"message": "2FA disabled"}
+# NOTE: a second `POST /2fa/disable` used to live here, taking a raw
+# `user_id` + password in the body with no auth dependency at all (not even
+# get_current_user) -- Starlette matches routes in registration order, so it
+# was always shadowed by the real disable_2fa above (line ~719, which
+# requires an authenticated session + a live TOTP code) and never actually
+# ran. Removed as dead code rather than "fixed" -- an unauthenticated
+# password-only disable is a materially weaker security model than the one
+# actually in effect, and reviving it is a product/security decision, not
+# something to silently restore.
