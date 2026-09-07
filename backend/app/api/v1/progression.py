@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db import get_db
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 from app.db.models import Lead, WorkflowExecution
 from app.services.progression_service import get_progression_service
 
@@ -17,6 +19,14 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/progression", tags=["progression"])
 
+# SECURITY NOTE: all 7 routes below had zero authentication until this fix
+# -- including simulate-open/simulate-click/simulate-bounce, which fabricate
+# real engagement events (feeding into lead scoring and no-engagement
+# timeout logic) for any lead_id, and change_lead_status, which lets anyone
+# flip any lead straight to e.g. "won"/"qualified". Same schema gap as
+# leads.py: LeadModel has no owner column, so this only closes anonymous
+# access, not per-business isolation -- flagged there, not repeated here.
+
 # ============================================================
 # ENDPOINTS
 # ============================================================
@@ -24,7 +34,8 @@ router = APIRouter(prefix="/api/v1/progression", tags=["progression"])
 async def change_lead_status(
     lead_id: int,
     new_status: str,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Manually change lead status (testing/admin)."""
     stmt = select(Lead).where(Lead.id == lead_id)
@@ -51,7 +62,8 @@ async def change_lead_status(
 async def check_no_engagement(
     lead_id: int,
     days_threshold: int = 7,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Check if lead has no engagement for X days."""
     service = await get_progression_service()
@@ -84,7 +96,8 @@ async def check_no_engagement(
 async def trigger_no_engagement_email(
     lead_id: int,
     workflow_id: int,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Trigger no-engagement email sequence."""
     service = await get_progression_service()
@@ -112,7 +125,8 @@ async def trigger_no_engagement_email(
 @router.get("/{lead_id}/workflow-executions")
 async def get_lead_executions(
     lead_id: int,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Get all workflow executions for lead."""
     stmt = select(WorkflowExecution).where(
@@ -146,7 +160,8 @@ async def get_lead_executions(
 @router.post("/{lead_id}/simulate-open")
 async def simulate_email_opened(
     lead_id: int,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Simulate email open (for testing)."""
     service = await get_progression_service()
@@ -177,7 +192,8 @@ async def simulate_email_opened(
 async def simulate_email_clicked(
     lead_id: int,
     url: str = "https://example.com",
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Simulate email click (for testing)."""
     service = await get_progression_service()
@@ -209,7 +225,8 @@ async def simulate_email_clicked(
 async def simulate_email_bounced(
     lead_id: int,
     reason: str = "hard_bounce",
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Simulate email bounce (for testing)."""
     service = await get_progression_service()
