@@ -22,6 +22,7 @@ Agents:
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from typing import Any
 
@@ -42,8 +43,11 @@ from app.domains.brand_transformation.models import (
 
 logger = get_logger(__name__)
 
-_MODEL = "claude-opus-5"
-_MAX_TOKENS = 4500
+# Override with the BT_MODEL env var (e.g. "claude-sonnet-5") to trade quality
+# for cost without a code change.
+_MODEL = os.getenv("BT_MODEL", "claude-opus-5")
+_MAX_TOKENS = 8000
+_REQUEST_TIMEOUT = 240  # seconds — a hung call must not pin a request worker
 
 _SYSTEM = (
     "You are a senior brand strategist and business-model architect who turns "
@@ -108,14 +112,18 @@ def _ask_json(prompt: str, fallback: dict) -> dict:
             _missing_key_warned = True
         return fallback
     try:
+        # strict-JSON extraction task — extended thinking adds cost + makes
+        # parsing worse (thinking blocks land in content before the answer);
+        # disable it. Explicit timeout so a hung call can't pin a worker.
         msg = _client().messages.create(
             model=_MODEL,
             max_tokens=_MAX_TOKENS,
             system=_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
+            timeout=_REQUEST_TIMEOUT,
+            thinking={"type": "disabled"},
         )
-        # Opus/Sonnet 5 may return thinking blocks before the answer — take the
-        # first real text block, not content[0].
+        # if thinking is ever on anyway, take the first real text block.
         text = next(
             (b.text for b in msg.content if getattr(b, "type", None) == "text"),
             "",
