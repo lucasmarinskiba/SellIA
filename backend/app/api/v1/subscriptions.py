@@ -1,4 +1,3 @@
-import os
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -467,35 +466,10 @@ async def get_crypto_payment_status(
 
 # ========== Webhooks ==========
 
-def _verify_mercadopago_signature(request: Request, body: dict) -> bool:
-    """Verify MercadoPago webhook signature (X-Signature header).
-
-    Format: X-Signature: ts=timestamp,v1=signature
-    The signature is HMAC-SHA256 of 'id:<data.id>;type:<type>' using the webhook secret.
-    If no signature header is present, we fall back to API callback validation.
-    """
-    import hashlib
-    import hmac
-    x_signature = request.headers.get("X-Signature", "")
-    if not x_signature:
-        return True  # Legacy IPN may not have signature; rely on API callback
-    secret = settings.MERCADOPAGO_ACCESS_TOKEN or os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
-    if not secret:
-        return False
-    data_id = body.get("data", {}).get("id") if body.get("data") else body.get("id")
-    topic = body.get("topic") or body.get("type")
-    if not data_id or not topic:
-        return False
-    template = f"id:{data_id};topic:{topic}"
-    expected = hmac.new(secret.encode(), template.encode(), hashlib.sha256).hexdigest()
-    parts = x_signature.split(",")
-    sig_map = {}
-    for part in parts:
-        if "=" in part:
-            k, v = part.split("=", 1)
-            sig_map[k.strip()] = v.strip()
-    received = sig_map.get("v1", "")
-    return hmac.compare_digest(received, expected)
+# Moved to app/core/integrations/mercadopago_webhook.py so api/v1/payments.py's
+# webhook handler can share the same real verification instead of trusting
+# its body unconditionally (that handler had none at all -- see that commit).
+from app.core.integrations.mercadopago_webhook import verify_mercadopago_signature as _verify_mercadopago_signature
 
 
 @router.post("/webhook/mercadopago")
