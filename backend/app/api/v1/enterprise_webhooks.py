@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, Query, Body, Path
 from app.domains.enterprise.webhooks import WebhookManager, WebhookEvent, IntegrationProvider
 
 router = APIRouter(tags=["webhooks"])
@@ -59,7 +59,7 @@ async def list_webhooks(user_id: str):
 @router.post("/webhooks/{webhook_id}/trigger")
 async def trigger_webhook(
     user_id: str = Query(...),
-    webhook_id: str = Query(...),
+    webhook_id: str = Path(...),
     payload: dict = Body(...),
 ):
     """Manually trigger webhook (test)."""
@@ -74,7 +74,7 @@ async def trigger_webhook(
 @router.get("/webhooks/{webhook_id}/logs")
 async def get_webhook_logs(
     user_id: str = Query(...),
-    webhook_id: str = Query(...),
+    webhook_id: str = Path(...),
     limit: int = Query(50, le=100),
 ):
     """Get webhook execution logs."""

@@ -13,10 +13,10 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 import logging
 
-from backend.app.core.intelligence.market_analyzer import MarketAnalyzer
-from backend.app.core.intelligence.strategy_generator import StrategyGenerator
-from backend.app.core.intelligence.problem_detector import ProblemDetector, ProblemSolver
-from backend.app.core.intelligence.sales_executor import SalesExecutor
+from app.core.intelligence.market_analyzer import MarketAnalyzer
+from app.core.intelligence.strategy_generator import StrategyGenerator
+from app.core.intelligence.problem_detector import ProblemDetector, ProblemSolver
+from app.core.intelligence.sales_executor import SalesExecutor
 
 router = APIRouter(prefix="/api/v1/super-seller", tags=["super_seller"])
 logger = logging.getLogger(__name__)

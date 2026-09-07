@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import uuid4
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, Float, ForeignKey, Text, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from backend.app.database import Base
+from app.core.database import Base
 
 
 class DiscoveryResponse(Base):

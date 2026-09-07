@@ -17,8 +17,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app.domains.enterprise.fomo_system import (
+from app.database import get_db
+from app.domains.enterprise.fomo_system import (
     ScarcityEngine,
     SocialProofEngine,
     CostOfDelayCalculator,

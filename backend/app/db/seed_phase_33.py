@@ -9,7 +9,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 
 # Import models
-from backend.app.models.platform_integration import (
+from app.models.platform_integration import (
     Product,
     PlatformListing,
     CustomerReview,

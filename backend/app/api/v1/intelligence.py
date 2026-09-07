@@ -13,8 +13,8 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 import logging
 
-from backend.app.core.intelligence.market_analyzer import MarketAnalyzer, MarketAnalysis
-from backend.app.core.intelligence.strategy_generator import StrategyGenerator, StrategyOptimizer
+from app.core.intelligence.market_analyzer import MarketAnalyzer, MarketAnalysis
+from app.core.intelligence.strategy_generator import StrategyGenerator, StrategyOptimizer
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
 logger = logging.getLogger(__name__)

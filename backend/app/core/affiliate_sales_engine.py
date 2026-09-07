@@ -18,25 +18,25 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from backend.app.core.affiliate_platform_analyzer import (
+from app.core.affiliate_platform_analyzer import (
     create_market_analyzer,
     AffiliateMarketAnalyzer,
 )
-from backend.app.core.affiliate_sales_methods import (
+from app.core.affiliate_sales_methods import (
     create_methods_library,
     AffiliateMethodsLibrary,
 )
-from backend.app.core.commission_tracker import (
+from app.core.commission_tracker import (
     create_commission_tracker,
     CommissionTracker,
     AffiliateSale,
     SaleStatus,
 )
-from backend.app.core.affiliate_strategy_engine import (
+from app.core.affiliate_strategy_engine import (
     create_strategy_engine,
     AffiliateStrategyEngine,
 )
-from backend.app.core.affiliate_automation_engine import (
+from app.core.affiliate_automation_engine import (
     create_automation_engine,
     AffiliateAutomationEngine,
 )

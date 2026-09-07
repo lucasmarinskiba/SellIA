@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, Query, Body, Path
 from datetime import datetime
 from app.domains.enterprise.team_management import (
     TeamManager,
@@ -240,7 +240,7 @@ async def create_delegation(
 @router.post("/teams/delegation/{delegation_id}/approve")
 async def approve_delegation(
     user_id: str = Query(...),
-    delegation_id: str = Query(...),
+    delegation_id: str = Path(...),
 ):
     """Approve delegation request."""
     success = team_manager.approve_delegation(user_id, delegation_id)
@@ -254,7 +254,7 @@ async def approve_delegation(
 @router.post("/teams/delegation/{delegation_id}/reject")
 async def reject_delegation(
     user_id: str = Query(...),
-    delegation_id: str = Query(...),
+    delegation_id: str = Path(...),
 ):
     """Reject delegation request."""
     success = team_manager.reject_delegation(user_id, delegation_id)

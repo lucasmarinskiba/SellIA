@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.voice_sales import (
+from app.models.voice_sales import (
     VoiceCall,
     CallTranscript,
     VoiceCallMetrics,
@@ -16,7 +16,7 @@ from backend.app.models.voice_sales import (
     AICallScript,
     MeetingBooking,
 )
-from backend.celery_app import celery_app
+from celery_app import celery_app
 import logging
 import json
 

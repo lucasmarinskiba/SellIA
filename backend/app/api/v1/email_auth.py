@@ -5,9 +5,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app.domains.auth.email_auth import EmailAuthManager
-from backend.app.dependencies import get_current_user, verify_admin_token
+from app.database import get_db
+from app.domains.auth.email_auth import EmailAuthManager
+from app.dependencies import get_current_user, verify_admin_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["email-auth"])
 

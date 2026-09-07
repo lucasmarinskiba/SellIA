@@ -9,14 +9,14 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.email_auth import (
+from app.models.email_auth import (
     EmailVerificationToken,
     AccountApproval,
     ApprovalAuditLog,
     EmailTemplate,
 )
-from backend.app.models.user import User
-from backend.celery_app import celery_app
+from app.models.user import User
+from celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 

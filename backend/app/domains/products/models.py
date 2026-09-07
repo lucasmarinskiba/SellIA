@@ -8,15 +8,25 @@ from app.core.database import Base
 
 # Association table for product categories
 product_categories = Table(
-    'product_categories_association',
+    'storefront_product_categories_association',
     Base.metadata,
-    Column('product_id', UUID(as_uuid=True), ForeignKey('products.id', ondelete='CASCADE')),
-    Column('category_id', UUID(as_uuid=True), ForeignKey('product_categories.id', ondelete='CASCADE')),
+    Column('product_id', UUID(as_uuid=True), ForeignKey('storefront_products.id', ondelete='CASCADE')),
+    Column('category_id', UUID(as_uuid=True), ForeignKey('storefront_product_categories.id', ondelete='CASCADE')),
 )
 
 
 class Product(Base):
-    __tablename__ = 'products'
+    # Namespaced (not plain 'products') -- app.models.platform_integration.py
+    # ALSO declares a table literally named 'products' (multi-marketplace
+    # listings, a different concept) on this same Base.metadata. Both
+    # modules failed to import for unrelated reasons until this session's
+    # fixes, so this collision was never actually exercised before; now
+    # that both load, whichever won registration first silently caused
+    # the other's router to be skipped. Neither table exists in the live
+    # DB yet (confirmed via direct query), so renaming here is data-loss
+    # -free -- this is a storefront/checkout product, not a marketplace
+    # listing, so it gets the more specific name.
+    __tablename__ = 'storefront_products'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     website_id = Column(UUID(as_uuid=True), ForeignKey('websites.id', ondelete='CASCADE'), nullable=False)
@@ -33,7 +43,17 @@ class Product(Base):
     track_inventory = Column(Boolean(), default=True)
     featured_image_url = Column(String(2048), nullable=True)
     images = Column(JSON(), default=list)  # Array of image URLs
-    metadata = Column(JSON(), default=dict)  # Custom fields, seo data, etc.
+    # Python attribute renamed from `metadata` -- that name is reserved by
+    # SQLAlchemy's Declarative API (every Base subclass already has a class
+    # -level `metadata` for the table registry), so declaring a column
+    # attribute with that exact name raises InvalidRequestError at class
+    # -definition time. That failure took down this entire module's import
+    # (and with it every Product/ShoppingCart/Order-dependent router) --
+    # confirmed via production logs: "Skipped extra router ... products.py:
+    # Attribute name 'metadata' is reserved". The DB column itself really is
+    # named `metadata` (see alembic/versions/003_add_products_tables.py), so
+    # keep that via Column("metadata", ...) and only rename the Python side.
+    extra_data = Column("metadata", JSON(), default=dict)  # Custom fields, seo data, etc.
     status = Column(String(50), default='DRAFT')  # DRAFT, PUBLISHED, ARCHIVED
     is_active = Column(Boolean(), default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -53,10 +73,10 @@ class Product(Base):
 
 
 class ProductVariant(Base):
-    __tablename__ = 'product_variants'
+    __tablename__ = 'storefront_product_variants'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('storefront_products.id', ondelete='CASCADE'), nullable=False)
     name = Column(String(255), nullable=False)  # e.g., "Red XL"
     sku = Column(String(100), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)  # Override product price if set
@@ -76,14 +96,14 @@ class ProductVariant(Base):
 
 
 class ProductCategory(Base):
-    __tablename__ = 'product_categories'
+    __tablename__ = 'storefront_product_categories'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     website_id = Column(UUID(as_uuid=True), ForeignKey('websites.id', ondelete='CASCADE'), nullable=False)
     name = Column(String(255), nullable=False)
     slug = Column(String(255), nullable=False)
     description = Column(Text(), nullable=True)
-    parent_id = Column(UUID(as_uuid=True), ForeignKey('product_categories.id'), nullable=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey('storefront_product_categories.id'), nullable=True)
     image_url = Column(String(2048), nullable=True)
     is_active = Column(Boolean(), default=True)
     display_order = Column(Integer(), default=0)
@@ -98,7 +118,7 @@ class ProductCategory(Base):
 
 
 class ShoppingCart(Base):
-    __tablename__ = 'shopping_carts'
+    __tablename__ = 'storefront_shopping_carts'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     website_id = Column(UUID(as_uuid=True), ForeignKey('websites.id', ondelete='CASCADE'), nullable=False)
@@ -113,7 +133,7 @@ class ShoppingCart(Base):
     coupon_code = Column(String(100), nullable=True)
     customer_email = Column(String(255), nullable=True)
     customer_phone = Column(String(20), nullable=True)
-    metadata = Column(JSON(), default=dict)
+    extra_data = Column("metadata", JSON(), default=dict)  # see Product.extra_data for why
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     abandoned_at = Column(DateTime(timezone=True), nullable=True)
@@ -128,12 +148,12 @@ class ShoppingCart(Base):
 
 
 class CartItem(Base):
-    __tablename__ = 'cart_items'
+    __tablename__ = 'storefront_cart_items'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    cart_id = Column(UUID(as_uuid=True), ForeignKey('shopping_carts.id', ondelete='CASCADE'), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
-    variant_id = Column(UUID(as_uuid=True), ForeignKey('product_variants.id'), nullable=True)
+    cart_id = Column(UUID(as_uuid=True), ForeignKey('storefront_shopping_carts.id', ondelete='CASCADE'), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('storefront_products.id', ondelete='CASCADE'), nullable=False)
+    variant_id = Column(UUID(as_uuid=True), ForeignKey('storefront_product_variants.id'), nullable=True)
     quantity = Column(Integer(), default=1)
     unit_price = Column(Numeric(10, 2), nullable=False)  # Price at time of add-to-cart
     line_total = Column(Numeric(10, 2), nullable=False)
@@ -152,7 +172,7 @@ class CartItem(Base):
 
 
 class Order(Base):
-    __tablename__ = 'orders'
+    __tablename__ = 'storefront_orders'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     website_id = Column(UUID(as_uuid=True), ForeignKey('websites.id', ondelete='CASCADE'), nullable=False)
@@ -173,7 +193,7 @@ class Order(Base):
     shipping_address = Column(JSON(), nullable=True)  # {street, city, state, zip, country}
     billing_address = Column(JSON(), nullable=True)
     notes = Column(Text(), nullable=True)
-    metadata = Column(JSON(), default=dict)
+    extra_data = Column("metadata", JSON(), default=dict)  # see Product.extra_data for why
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     paid_at = Column(DateTime(timezone=True), nullable=True)
@@ -192,12 +212,12 @@ class Order(Base):
 
 
 class OrderItem(Base):
-    __tablename__ = 'order_items'
+    __tablename__ = 'storefront_order_items'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    order_id = Column(UUID(as_uuid=True), ForeignKey('orders.id', ondelete='CASCADE'), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey('products.id'), nullable=False)
-    variant_id = Column(UUID(as_uuid=True), ForeignKey('product_variants.id'), nullable=True)
+    order_id = Column(UUID(as_uuid=True), ForeignKey('storefront_orders.id', ondelete='CASCADE'), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey('storefront_products.id'), nullable=False)
+    variant_id = Column(UUID(as_uuid=True), ForeignKey('storefront_product_variants.id'), nullable=True)
     product_name = Column(String(255), nullable=False)  # Snapshot at time of order
     product_sku = Column(String(100), nullable=True)
     variant_name = Column(String(255), nullable=True)

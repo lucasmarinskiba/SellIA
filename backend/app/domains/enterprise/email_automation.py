@@ -7,7 +7,7 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.email_automation import (
+from app.models.email_automation import (
     SendTimePrediction,
     EmailOpenTracking,
     ProposalDraft,
@@ -15,7 +15,7 @@ from backend.app.models.email_automation import (
     CompetitorMention,
     CompetitorResponse,
 )
-from backend.celery_app import celery_app
+from celery_app import celery_app
 import logging
 
 try:
