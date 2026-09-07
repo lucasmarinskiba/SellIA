@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.voice_sales import (
     VoiceCallManager,
     PlaybookExtractor,
@@ -177,7 +177,7 @@ def get_voice_metrics(
 
     try:
         from sqlalchemy import func
-        from backend.app.models.voice_sales import VoiceCall, VoiceCallMetrics
+        from app.models.voice_sales import VoiceCall, VoiceCallMetrics
 
         # Get metrics
         total_calls = db.query(VoiceCall).count()

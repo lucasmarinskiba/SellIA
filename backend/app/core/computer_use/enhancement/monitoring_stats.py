@@ -22,7 +22,7 @@ Líneas: 300+ código
 
 import logging
 import asyncio
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List, Callable, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field, asdict
 from enum import Enum

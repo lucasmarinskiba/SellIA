@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.foom_monetization import (
     PlatformMonetizationFOOM,
     UserFOOMEnablement,

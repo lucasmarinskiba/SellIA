@@ -131,6 +131,33 @@ _try_include("app.domains.fomo.ai_orchestrator_routes.router", "", ["fomo-ai-orc
 # docstring for the related get_store/Redis test-isolation fix.
 _try_include("app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-signals"])
 
+# "Phase 33" cluster: every file below failed to import for a mechanical
+# reason (a `from backend.app...` path that only ever worked if the repo
+# root were itself importable as a package named `backend`, which it isn't
+# -- `app` is the real top-level package) until this session's fixes. All
+# already declare their own full prefix, so pass "" here (same pattern as
+# payments.py above). api/v1/payments_real.py is deliberately NOT included:
+# it targets Account/Order models that live in an isolated, never-bootstrapped
+# database schema (app/core/database/{models,payment_models}.py -- note that
+# whole directory has no __init__.py, so it was never even reachable as
+# app.core.database.X to begin with), needs Stripe/SendGrid credentials that
+# were never added to settings, and duplicates the checkout flow the app
+# actually uses (MercadoPago via api/v1/subscriptions.py) -- reviving it
+# means inventing a second payment provider and a new Account concept from
+# scratch, a product decision rather than a bug fix.
+_try_include("app.api.v1.sales_cycle.router", "", ["sales-cycle"])
+_try_include("app.api.v1.bulk_sales.router", "", ["bulk-sales"])
+_try_include("app.api.v1.super_seller.router", "", ["super-seller"])
+_try_include("app.api.v1.autonomous.router", "", ["autonomous"])
+_try_include("app.api.v1.intelligence.router", "", ["intelligence"])
+_try_include("app.api.v1.churn_retention.router", "", ["churn-retention"])
+_try_include("app.api.v1.fomo_system.router", "", ["foom-system"])
+_try_include("app.api.v1.foom_monetization.router", "", ["foom-monetization"])
+_try_include("app.api.v1.platform_monetization.router", "", ["platform-monetization"])
+_try_include("app.api.v1.psychology_sales.router", "", ["psychology-sales"])
+_try_include("app.api.v1.voice_sales.router", "", ["voice-sales"])
+_try_include("app.api.v1.platform_integration.router", "", ["platform-integration"])
+
 
 @app.get("/health", tags=["system"])
 async def health_alias():

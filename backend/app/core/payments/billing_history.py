@@ -70,7 +70,7 @@ class BillingHistoryManager:
             }
         """
         try:
-            from backend.app.core.database.models import Account
+            from app.core.database.models import Account  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package (no __init__.py). Isolated Base, never bootstrapped in prod either way.
 
             # Verify account exists
             account = db.query(Account).filter(Account.id == account_id).first()
@@ -137,7 +137,7 @@ class BillingHistoryManager:
             }
         """
         try:
-            from backend.app.core.database.payment_models import Payment
+            from app.core.database.payment_models import Payment  # NOTE: same unreachable-package issue as Account above
 
             as_of = as_of_date or datetime.utcnow()
 
@@ -214,7 +214,7 @@ class BillingHistoryManager:
             }
         """
         try:
-            from backend.app.core.database.payment_models import Payment, Order
+            from app.core.database.payment_models import Payment, Order  # NOTE: same unreachable-package issue as Account above
 
             # Get payments in period
             payments = (

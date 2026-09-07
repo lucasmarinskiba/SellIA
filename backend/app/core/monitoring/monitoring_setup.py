@@ -290,7 +290,7 @@ async def health_check_database() -> bool:
 
     try:
         from sqlalchemy import text
-        from backend.app.core.database import get_db
+        from app.core.database import get_db
 
         async with get_db() as db:
             await db.execute(text("SELECT 1"))

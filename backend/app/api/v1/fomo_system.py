@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.fomo_system import (
     ScarcityEngine,
     SocialProofEngine,
@@ -141,7 +141,7 @@ def get_platform_foom_metrics(db: Session = Depends(get_db)):
 def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db)):
     """Generate all FOOM triggers for deal."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:
@@ -234,7 +234,7 @@ def generate_social_post(request: SocialPostRequest, db: Session = Depends(get_d
         # Generate post
         generator = FOOMContentGenerator(db)
         # Create a simple trigger object
-        from backend.app.domains.enterprise.fomo_system import FOOMTrigger
+        from app.domains.enterprise.fomo_system import FOOMTrigger
 
         trigger = FOOMTrigger(
             type=trigger_found["type"],
@@ -279,7 +279,7 @@ def generate_email_subject(request: EmailSubjectRequest, db: Session = Depends(g
             raise HTTPException(status_code=400, detail="Trigger type not found")
 
         generator = FOOMContentGenerator(db)
-        from backend.app.domains.enterprise.fomo_system import FOOMTrigger
+        from app.domains.enterprise.fomo_system import FOOMTrigger
 
         trigger = FOOMTrigger(
             type=trigger_found["type"],
@@ -318,7 +318,7 @@ def generate_video_script(request: VideoScriptRequest, db: Session = Depends(get
             raise HTTPException(status_code=400, detail="Trigger type not found")
 
         generator = FOOMContentGenerator(db)
-        from backend.app.domains.enterprise.fomo_system import FOOMTrigger
+        from app.domains.enterprise.fomo_system import FOOMTrigger
 
         trigger = FOOMTrigger(
             type=trigger_found["type"],

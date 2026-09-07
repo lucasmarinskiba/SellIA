@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.churn_retention import (
     ChurnPredictionModel,
     ExpansionOpportunityDetector,
@@ -95,7 +95,7 @@ class HealthScoreResponse(BaseModel):
 def predict_churn(customer_id: str, db: Session = Depends(get_db)):
     """Get churn prediction for customer."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -129,7 +129,7 @@ def predict_churn(customer_id: str, db: Session = Depends(get_db)):
 def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db)):
     """Get expansion opportunities for customer."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:
@@ -170,7 +170,7 @@ def get_expansion_opportunities(customer_id: str, db: Session = Depends(get_db))
 def get_abm_intent(account_id: str, db: Session = Depends(get_db)):
     """Get ABM intent score for account."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == account_id).first()
         if not deal:
@@ -209,7 +209,7 @@ def launch_retention_campaign(
 ):
     """Launch retention campaign for at-risk customer."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         import uuid
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
@@ -242,7 +242,7 @@ def launch_retention_campaign(
 def get_customer_health(customer_id: str, db: Session = Depends(get_db)):
     """Get comprehensive customer health scorecard."""
     try:
-        from backend.app.models.deal import Deal
+        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
 
         deal = db.query(Deal).filter(Deal.id == customer_id).first()
         if not deal:

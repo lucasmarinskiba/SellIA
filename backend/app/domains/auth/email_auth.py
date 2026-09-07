@@ -316,7 +316,7 @@ def send_email(to_email: str, subject: str, body: str, html: bool = True) -> boo
 def send_verification_email(self, user_id: str, email: str, token: str, verification_url: str):
     """Send verification email to user."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         template = get_email_template("email_verification", db)
@@ -342,7 +342,7 @@ def send_verification_email(self, user_id: str, email: str, token: str, verifica
 def notify_admins_approval_pending(self, approval_id: str, user_email: str, user_name: str, company: str):
     """Notify admins of pending approval."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         template = get_email_template("approval_requested", db)
@@ -375,7 +375,7 @@ def notify_admins_approval_pending(self, approval_id: str, user_email: str, user
 def send_approval_email(self, user_id: str, email: str, full_name: str, approved: bool):
     """Send approval notification."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         template_name = "approval_approved" if approved else "approval_rejected"
@@ -404,7 +404,7 @@ def send_rejection_email(
 ):
     """Send rejection notification."""
     try:
-        from backend.app.database import SessionLocal
+        from app.core.database import SessionLocal
 
         db = SessionLocal()
         template = get_email_template("approval_rejected", db)

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
-from app.database import get_db
+from app.core.database import get_db
 from app.domains.enterprise.platform_integration import (
     PlatformSyncEngine,
     DynamicPricingEngine,
@@ -352,7 +352,7 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
 @router.get("/dashboard/overview")
 def get_dashboard_overview(db: Session = Depends(get_db)):
     """High-level overview: all platforms, all products (real data from DB)."""
-    from backend.app.models.platform_integration import SellerMetrics, Order, PlatformListing
+    from app.models.platform_integration import SellerMetrics, Order, PlatformListing
 
     # Get seller metrics for each platform
     metrics = db.query(SellerMetrics).filter(

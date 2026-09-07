@@ -76,7 +76,7 @@ class PaymentReconciler:
             }
         """
         try:
-            from backend.app.core.database.payment_models import Order, Payment
+            from app.core.database.payment_models import Order, Payment  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package
 
             logger.info(
                 f"Reconciling payment {payment_id} from {payment_provider} | "
@@ -298,7 +298,7 @@ class PaymentReconciler:
             List of unmatched payment records
         """
         try:
-            from backend.app.core.database.payment_models import Payment
+            from app.core.database.payment_models import Payment  # NOTE: same unreachable-package issue
 
             cutoff_date = datetime.utcnow() - timedelta(days=days_ago)
 
@@ -353,7 +353,7 @@ class FulfillmentOrchestrator:
             }
         """
         try:
-            from backend.app.core.database.payment_models import Order
+            from app.core.database.payment_models import Order  # NOTE: same unreachable-package issue
 
             order = db.query(Order).filter(Order.id == order_id).first()
             if not order:
