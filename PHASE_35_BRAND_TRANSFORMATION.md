@@ -126,6 +126,11 @@ Reference (no auth cost beyond login): `GET /stages`, `/knowledge/fomo-levers`, 
 | `roadmap_gate_check` | **v2.** Evaluate the execution plan's leading indicators vs green/yellow/red + kill switches at the due decision gate → the call (double_down / adjust / pause / pivot) |
 | `transformation_pulse` | **v2.** One digest: Referent Potential Score + trend, program progress, coherence score + must-fix, every other automation's open alerts |
 
+**Seeded on program creation** (opt out with `with_default_automations=false`): `rediagnosis`
+quarterly (`alert_below=45`), `brand_consistency_monitor` monthly, `roadmap_gate_check` weekly,
+`transformation_pulse` weekly — each pre-filled with the program profile + id + owner, idempotent
+per business.
+
 **Automations v2:** every run computes `severity` (ok/warn/critical) + `alert` + `headline` + `recommended_action`. `BrandAutomation` keeps `run_history` (last 20), `last_severity`, `last_alert`. Monitors auto-hydrate the brand reference from the latest positioning + identity (no longer required in config) and classify the fix as `copy_edit` vs `rerun_stage`. `GET …/automations/alerts` (all warn/critical), `GET …/automations/{id}/history`. Frontend: alerts strip at the top of the dashboard.
 
 `POST /automations` to create, `POST /automations/{id}/run` to execute now.
