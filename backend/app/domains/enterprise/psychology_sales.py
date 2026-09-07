@@ -7,14 +7,14 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.psychology_sales import (
+from app.models.psychology_sales import (
     DiscoveryResponse,
     NeedNarrative,
     ObjectionHandling,
     CloseAttempt,
     SalesConversation,
 )
-from backend.celery_app import celery_app
+from celery_app import celery_app
 import logging
 
 try:

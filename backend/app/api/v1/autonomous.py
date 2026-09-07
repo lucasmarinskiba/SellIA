@@ -22,9 +22,9 @@ from enum import Enum
 import logging
 import json
 
-from backend.app.core.resilience import InputValidator, health_tracker, retry_with_exponential_backoff
-from backend.app.core.intelligence.market_analyzer import MarketAnalyzer
-from backend.app.core.intelligence.strategy_generator import StrategyGenerator
+from app.core.resilience import InputValidator, health_tracker, retry_with_exponential_backoff
+from app.core.intelligence.market_analyzer import MarketAnalyzer
+from app.core.intelligence.strategy_generator import StrategyGenerator
 
 router = APIRouter(prefix="/api/v1/autonomous", tags=["autonomous"])
 logger = logging.getLogger(__name__)

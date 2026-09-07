@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Path
 from app.domains.enterprise.testing_framework import TestingFramework, TestType
 
 router = APIRouter(tags=["testing"])
@@ -41,7 +41,7 @@ async def create_test(
 @router.post("/testing/{test_id}/start")
 async def start_test(
     user_id: str = Query(...),
-    test_id: str = Query(...),
+    test_id: str = Path(...),
 ):
     """Start A/B test."""
     success = testing_framework.start_test(user_id, test_id)
@@ -55,7 +55,7 @@ async def start_test(
 @router.post("/testing/{test_id}/pause")
 async def pause_test(
     user_id: str = Query(...),
-    test_id: str = Query(...),
+    test_id: str = Path(...),
 ):
     """Pause running test."""
     success = testing_framework.pause_test(user_id, test_id)
@@ -69,7 +69,7 @@ async def pause_test(
 @router.post("/testing/{test_id}/end")
 async def end_test(
     user_id: str = Query(...),
-    test_id: str = Query(...),
+    test_id: str = Path(...),
 ):
     """End test and calculate results."""
     success = testing_framework.end_test(user_id, test_id)

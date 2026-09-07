@@ -12,9 +12,9 @@ from typing import Optional
 import logging
 import uuid
 
-from backend.app.core.orchestration.loop_engineering import LoopEngineering
-from backend.app.core.orchestration.brain_computer_use import BrainComputerUseCoordinator
-from backend.app.core.database.models import get_db
+from app.core.orchestration.loop_engineering import LoopEngineering
+from app.core.orchestration.brain_computer_use import BrainComputerUseCoordinator
+from app.core.database.models import get_db
 
 router = APIRouter(prefix="/api/v1/sales-cycle", tags=["sales"])
 logger = logging.getLogger(__name__)

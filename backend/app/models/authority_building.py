@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from datetime import datetime
 import uuid
 
-from backend.app.database import Base
+from app.core.database import Base
 
 
 class Testimonial(Base):

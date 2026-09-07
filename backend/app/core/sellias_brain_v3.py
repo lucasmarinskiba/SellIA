@@ -14,21 +14,21 @@ import logging
 from typing import Dict, List, Any, Tuple
 from datetime import datetime
 
-from backend.app.core.agents.virtue_agent import VirtueAgent
-from backend.app.core.agents.values_alignment_agent import ValuesAlignmentAgent
-from backend.app.core.agents.ethical_framework import EthicalFramework
-from backend.app.core.agents.authenticity_engine import AuthenticityEngine
+from app.core.agents.virtue_agent import VirtueAgent
+from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
+from app.core.agents.ethical_framework import EthicalFramework
+from app.core.agents.authenticity_engine import AuthenticityEngine
 
-from backend.app.core.responses.comment_response_engine import CommentResponseEngine
+from app.core.responses.comment_response_engine import CommentResponseEngine
 
-from backend.app.core.growth.bootstrap_growth import BootstrapGrowth
-from backend.app.core.growth.viral_mechanics import ViralMechanics
-from backend.app.core.growth.momentum_tracker import MomentumTracker
+from app.core.growth.bootstrap_growth import BootstrapGrowth
+from app.core.growth.viral_mechanics import ViralMechanics
+from app.core.growth.momentum_tracker import MomentumTracker
 
-from backend.app.core.performance.query_optimizer import QueryOptimizer
-from backend.app.core.performance.latency_reducer import LatencyReducer
-from backend.app.core.performance.scalability_engine import ScalabilityEngine
-from backend.app.core.performance.monitoring_stack import MonitoringStack
+from app.core.performance.query_optimizer import QueryOptimizer
+from app.core.performance.latency_reducer import LatencyReducer
+from app.core.performance.scalability_engine import ScalabilityEngine
+from app.core.performance.monitoring_stack import MonitoringStack
 
 logger = logging.getLogger(__name__)
 

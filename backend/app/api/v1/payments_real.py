@@ -14,9 +14,9 @@ from datetime import datetime
 import logging
 import json
 
-from backend.app.core.integrations.stripe_payment import StripePaymentProcessor, StripeWebhookHandler
-from backend.app.core.integrations.sendgrid_email import EmailService
-from backend.app.core.database.models import get_db, Order, Account
+from app.core.integrations.stripe_payment import StripePaymentProcessor, StripeWebhookHandler
+from app.core.integrations.sendgrid_email import EmailService
+from app.core.database.models import get_db, Order, Account
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])

@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
-from backend.app.database import get_db
-from backend.app.domains.enterprise.platform_integration import (
+from app.database import get_db
+from app.domains.enterprise.platform_integration import (
     PlatformSyncEngine,
     DynamicPricingEngine,
     FOOMTriggerEngine,

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, ForeignKey, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
-from backend.app.database import Base
+from app.core.database import Base
 
 
 class EmailVerificationToken(Base):

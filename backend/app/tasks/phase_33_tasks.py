@@ -5,13 +5,13 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from typing import List
 
-from backend.app.database import SessionLocal
-from backend.app.domains.enterprise.platform_integration import (
+from app.database import SessionLocal
+from app.domains.enterprise.platform_integration import (
     PlatformSyncEngine,
     DynamicPricingEngine,
     Platform,
 )
-from backend.app.models.platform_integration import (
+from app.models.platform_integration import (
     Product,
     PlatformListing,
     SellerMetrics,

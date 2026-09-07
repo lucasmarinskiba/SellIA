@@ -13,7 +13,7 @@ from typing import List, Dict, Any, Optional
 import logging
 import uuid
 
-from backend.app.core.tasks.sales_tasks import batch_process_sales_cycles
+from app.core.tasks.sales_tasks import batch_process_sales_cycles
 
 router = APIRouter(prefix="/api/v1/bulk", tags=["bulk-sales"])
 logger = logging.getLogger(__name__)

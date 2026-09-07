@@ -68,7 +68,7 @@ async def create_product(
         featured_image_url=data.featured_image_url,
         images=data.images,
         status=data.status,
-        metadata=data.metadata,
+        extra_data=data.metadata,  # ORM attribute renamed; see Product.extra_data
     )
     db.add(product)
     await db.commit()
@@ -172,7 +172,7 @@ async def update_product(
     if data.status:
         product.status = data.status
     if data.metadata is not None:
-        product.metadata = data.metadata
+        product.extra_data = data.metadata  # ORM attribute renamed; see Product.extra_data
 
     product.updated_at = datetime.utcnow()
     await db.commit()

@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 import enum
 
-from backend.app.database import Base
+from app.core.database import Base
 
 
 class PlatformEnum(str, enum.Enum):
