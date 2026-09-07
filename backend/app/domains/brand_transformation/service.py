@@ -21,6 +21,7 @@ Agents:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import uuid
@@ -140,12 +141,16 @@ def _ask_json(prompt: str, fallback: dict) -> dict:
         return fallback
 
 
-def _draft_then_refine(prompt: str, fallback: dict, refine_focus: str) -> dict:
+def _draft_then_refine_sync(prompt: str, fallback: dict, refine_focus: str) -> dict:
     """Draft -> adversarial critique -> refined final. Two Claude calls.
 
     The refine pass must return the SAME keys as the draft (nothing added or
     removed except the two provenance keys), so downstream persistence is
     unaffected by the extra round-trip.
+
+    SYNC + blocking (the anthropic client is sync). Callers on the event loop
+    must go through `_draft_then_refine` / `_ask_json_async` so a ~200s LLM
+    call doesn't freeze the whole web process.
     """
     draft = _ask_json(prompt, fallback)
     used_fallback = draft is fallback
@@ -189,6 +194,16 @@ Return ONLY the final JSON object."""
     refined.setdefault("frameworks_applied", [])
     refined["_generated_by"] = "fallback" if used_fallback else "llm"
     return refined
+
+
+async def _draft_then_refine(prompt: str, fallback: dict, refine_focus: str) -> dict:
+    """Async wrapper — runs the blocking two-pass call off the event loop."""
+    return await asyncio.to_thread(_draft_then_refine_sync, prompt, fallback, refine_focus)
+
+
+async def _ask_json_async(prompt: str, fallback: dict) -> dict:
+    """Async wrapper for a single blocking Claude call."""
+    return await asyncio.to_thread(_ask_json, prompt, fallback)
 
 
 def _profile_block(p: dict) -> str:
@@ -316,7 +331,7 @@ Return JSON:
   "evidence_quality": "{eq}",
   "summary": "4-5 sentences a founder would want to read — direct, quotable, no hedging"
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "referent_potential_score": 40,
             "commoditization_level": "high",
             "commoditization_analysis": {
@@ -472,7 +487,7 @@ Return JSON:
     {{"angle": "a second, different bet", "enemy": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "alternatives_matrix": [
                 {"alternative": "Do nothing / live with the problem", "why_tolerated": "The pain is chronic, not acute", "what_customer_keeps": "Zero switching effort", "what_they_lose": "Compounding time/quality cost"},
                 {"alternative": "Incumbent competitors", "why_tolerated": "Familiar, 'nobody got fired for it'", "what_customer_keeps": "Safety", "what_they_lose": "Any real improvement"},
@@ -670,7 +685,7 @@ Return JSON:
     {{"archetype": "...", "what_changes": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "archetype_analysis": {"shortlist": [], "primary": "Hero", "secondary": "Outlaw", "blend": "70% Hero / 30% Outlaw — earnest about the customer's goal, irreverent about the industry", "rationale": "Positioning frames the brand as the one that fights the status quo for the customer."},
             "story_spine": {"world": "Customers accept the category default.", "problem": "The default quietly costs them.", "insight": "It doesn't have to.", "mission": "Make the better way the obvious way."},
             "manifesto": "Manifesto pending positioning sign-off.",
@@ -795,7 +810,7 @@ Return JSON:
   "rationale": "why this model beats the current one — in money terms",
   "alternative_angles": [{{"model": "a different structural bet", "when_to_pick": "..."}}, {{"model": "...", "when_to_pick": "..."}}]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "model_diagnosis": {"how_it_earns_now": "One-off transactional sales at market price", "margin_leaks": ["Discounting to close", "No recurring revenue"], "every_sale_from_zero": True, "fragility": "Revenue resets to zero every month; no compounding base"},
             "pattern_evaluation": [
                 {"pattern": "membership_club", "scores": {"positioning_fit": 2, "margin_impact": 1, "retention_impact": 2, "execution_difficulty": 1, "time_to_cash": 1}, "verdict": "apply", "how_it_transfers_here": "Turn repeat buyers into a paid tier with earned perks tied to the brand's point of view", "precedent": "Amazon Prime"},
@@ -896,7 +911,7 @@ Return JSON:
     {{"angle": "...", "when_to_pick": "..."}}
   ]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "lever_selection": [],
             "mechanisms": [
                 {"lever": "social_proof_velocity", "why_it_fits": "Trust gap in the category", "implementation": "Show verified recent-buyer count + the specific item, updated hourly", "trigger": "informational social influence", "kpi": "PDP->cart conversion", "measurement": "cohort A/B on the widget", "anti_fake_guardrail": "Numbers query straight from orders; never round up; link to a public methodology note", "honest_alternative": "Show total lifetime customers instead of 'today'", "precedent": "Booking.com"},
@@ -1016,7 +1031,7 @@ Return JSON:
   "anti_goals": ["what NOT to do in 90 days — spreading thin, vanity metrics, premature paid, ..."],
   "alternative_angles": [{{"angle": "a different GTM bet (e.g. sales-led instead of content)", "when_to_pick": "..."}}, {{"angle": "...", "when_to_pick": "..."}}]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "loop_evaluation": [],
             "primary_growth_loop": {"type": "content", "steps": ["publish POV content", "earns search + shares", "converts to trial", "customers produce case studies that feed content"], "the_variable_it_turns": "indexable POV assets", "turning_metric": "organic sessions -> trial rate", "cycle_time": "~6 weeks per asset to rank", "reinvestment": "revenue funds more production", "why_not_the_others": "viral: no in-product share reason; paid: margin not ready; sales-led: ACV too low"},
             "channel_plan": [], "lightning_strike": {}, "content_engine": {}, "funnel": [],
@@ -1096,7 +1111,7 @@ Return JSON:
   "transition_risks": [{{"risk": "morale | capacity | customer disruption during the change", "mitigation": "..."}}],
   "alternative_angles": [{{"angle": "lean — founder holds more, hires later", "when_to_pick": "..."}}, {{"angle": "hire ahead of the curve", "when_to_pick": "..."}}]
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "kill": [], "keep": [], "scale": [], "capability_gaps": [],
             "the_one_hire": "none — no hire in the first 90 days; fix process before adding people",
             "org_redesign": "Keep the team small; one named owner per core process and per key decision, with authority to decide, not just execute.",

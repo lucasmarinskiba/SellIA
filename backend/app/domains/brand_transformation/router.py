@@ -11,7 +11,7 @@ from uuid import UUID
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -422,18 +422,49 @@ async def run_program_stage(
     return await orch.run_stage(prog, stage_key, profile, extra)
 
 
+async def _run_all_bg(program_id: str) -> None:
+    """Full program run in a detached DB session (FastAPI BackgroundTask —
+    same process, after the response is sent). The agents' LLM calls go
+    through asyncio.to_thread so this doesn't block the event loop."""
+    from app.core.database import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        orch = TransformationOrchestrator(db)
+        prog = await orch.get_program(UUID(program_id))
+        if prog is None:
+            return
+        prog.run_state = "running"
+        await db.commit()
+        try:
+            await orch.run_all(prog)
+            prog2 = await orch.get_program(UUID(program_id))
+            prog2.run_state = "done"
+            await db.commit()
+        except Exception as e:  # noqa: BLE001
+            logger.error("run-all bg for %s failed: %s", program_id, e)
+            try:
+                await db.rollback()
+                prog3 = await orch.get_program(UUID(program_id))
+                if prog3:
+                    prog3.run_state = "failed"
+                    await db.commit()
+            except Exception:  # noqa: BLE001
+                pass
+
+
 @router.post("/programs/{program_id}/run-all")
 async def run_program_all(
     business_id: UUID,
     program_id: UUID,
-    inline: bool = Query(False, description="run synchronously (scripts/tests only — ~15 LLM calls)"),
+    background: BackgroundTasks,
+    inline: bool = Query(False, description="block until done (scripts/tests only — ~15 LLM calls)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Run every etapa. A full run is ~15 real LLM calls (~15-45 min), so by
-    default it is dispatched to a background worker and this returns
-    immediately — poll `GET /programs/{id}` and watch `run_state`
-    (running→done/failed) + `completed_stages`. Pass `inline=true` to block."""
+    """Run every etapa. A full run is ~15 real LLM calls (~15-45 min) — far past
+    any HTTP timeout — so by default it runs as a background task and this
+    returns immediately. Poll `GET /programs/{id}`: watch `run_state`
+    (running → done|failed) and `completed_stages`. Pass `inline=true` to block."""
     orch = TransformationOrchestrator(db)
     prog = await orch.get_program(program_id)
     if not prog or prog.business_id != business_id:
@@ -442,16 +473,10 @@ async def run_program_all(
     if inline:
         return await orch.run_all(prog)
 
-    try:
-        from app.tasks.brand_transformation_tasks import run_program_all as _task
-
-        _task.delay(str(program_id))
-        prog.run_state = "running"
-        await db.commit()
-        return {"dispatched": True, "program_id": str(program_id), "run_state": "running"}
-    except Exception as e:  # noqa: BLE001 — no worker available, fall back to inline
-        logger.warning("run-all dispatch failed (%s); running inline", str(e)[:120])
-        return await orch.run_all(prog)
+    prog.run_state = "running"
+    await db.commit()
+    background.add_task(_run_all_bg, str(program_id))
+    return {"dispatched": True, "program_id": str(program_id), "run_state": "running"}
 
 
 @router.post("/programs/{program_id}/coherence-audit")

@@ -33,7 +33,7 @@ from app.domains.brand_transformation.service import (
     GoToMarketAgent,
     PositioningAgent,
     RestructuringAgent,
-    _ask_json,
+    _ask_json_async,
     _draft_then_refine,
     _int,
     _profile_block,
@@ -302,7 +302,7 @@ Return JSON:
   "must_fix_before_launch": ["the fails, in priority order"],
   "summary": "2-3 sentences — is this program internally consistent or is it drifting?"
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "score": 60,
             "checks": [{"id": c["id"], "verdict": "n/a", "contradiction": None, "fix": "Run the relevant stages first."} for c in K.COHERENCE_CHECKS],
             "must_fix_before_launch": [],
@@ -369,7 +369,7 @@ Return JSON:
   "biggest_risk": "most likely derailment + the early-warning signal",
   "operating_rhythm_ref": "use the restructuring plan's operating_rhythm if present, else: weekly metrics + monthly retro + quarterly re-diagnosis"
 }}"""
-        d = _draft_then_refine(prompt, {
+        d = await _draft_then_refine(prompt, {
             "north_star": "Be the name customers say first in this category, at a price we set.",
             "dependency_graph": [
                 {"move": "Lock positioning + POV", "stage": "positioning", "blocked_by": ["Diagnosis"], "unblocks": ["Brand identity", "Offer redesign", "Content engine"]},
@@ -602,7 +602,7 @@ Return JSON:
   "fix_type": "copy_edit | rerun_stage",
   "trend_note": "vs the prior scores: improving / flat / worsening"
 }}"""
-            result = _ask_json(prompt, {
+            result = await _ask_json_async(prompt, {
                 "consistency_score": 70, "verdict": "minor-drift", "violations": [],
                 "single_priority_fix": "Provide samples in config for a real check.",
                 "fix_type": "copy_edit", "trend_note": "n/a",
@@ -648,7 +648,7 @@ Return JSON:
   "why": "...",
   "next_actions": ["..."]
 }}"""
-            result = _ask_json(prompt, {
+            result = await _ask_json_async(prompt, {
                 "gate": "unknown", "indicator_status": [], "kill_switch_triggered": False,
                 "call": "adjust", "why": "Provide indicator_readings + program_id in config.",
                 "next_actions": [],
