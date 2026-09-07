@@ -90,6 +90,31 @@ class TransformationOrchestrator:
         await self.db.refresh(prog)
         return prog
 
+    # standing automations seeded for a new program (type, schedule, config)
+    _DEFAULT_AUTOMATIONS = (
+        ("rediagnosis", "quarterly", {"alert_below": 45}),
+        ("brand_consistency_monitor", "monthly", {}),
+        ("roadmap_gate_check", "weekly", {}),
+        ("transformation_pulse", "weekly", {}),
+    )
+
+    async def seed_default_automations(
+        self, business_id: uuid.UUID, program: TransformationProgram, owner_user_id: uuid.UUID | None = None,
+    ) -> list[BrandAutomation]:
+        """One-shot: create the standing automation set for a program, skipping
+        any type the business already has."""
+        existing = {a.automation_type for a in await self.list_automations(business_id)}
+        profile = (program.metrics_board or {}).get("profile") or {}
+        created: list[BrandAutomation] = []
+        for atype, schedule, extra in self._DEFAULT_AUTOMATIONS:
+            if atype in existing:
+                continue
+            cfg = {"profile": profile, "program_id": str(program.id), **extra}
+            if owner_user_id is not None:
+                cfg["owner_user_id"] = str(owner_user_id)
+            created.append(await self.create_automation(business_id, atype, schedule, cfg))
+        return created
+
     async def set_auto_bridges(self, program: TransformationProgram, auto_bridges: dict, owner_user_id: uuid.UUID | None = None) -> TransformationProgram:
         program.auto_bridges = auto_bridges or None
         if owner_user_id is not None:

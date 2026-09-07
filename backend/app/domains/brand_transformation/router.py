@@ -325,11 +325,18 @@ async def create_program(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await TransformationOrchestrator(db).create_program(
+    orch = TransformationOrchestrator(db)
+    prog = await orch.create_program(
         business_id, body.name, body.profile.model_dump(),
         auto_bridges=body.auto_bridges.model_dump() if body.auto_bridges else None,
         owner_user_id=current_user.id,
     )
+    if body.with_default_automations:
+        try:
+            await orch.seed_default_automations(business_id, prog, owner_user_id=current_user.id)
+        except Exception:  # noqa: BLE001 — never block program creation on automation seeding
+            pass
+    return prog
 
 
 @router.post("/programs/{program_id}/auto-bridges", response_model=ProgramOut)
