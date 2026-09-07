@@ -60,10 +60,10 @@ class Product(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    variants = relationship('ProductVariant', back_populates='product', cascade='all, delete-orphan')
-    categories = relationship('ProductCategory', secondary=product_categories, back_populates='products')
-    cart_items = relationship('CartItem', back_populates='product', cascade='all, delete-orphan')
-    order_items = relationship('OrderItem', back_populates='product')
+    variants = relationship('app.domains.products.models.ProductVariant', back_populates='product', cascade='all, delete-orphan')
+    categories = relationship('app.domains.products.models.ProductCategory', secondary=product_categories, back_populates='products')
+    cart_items = relationship('app.domains.products.models.CartItem', back_populates='product', cascade='all, delete-orphan')
+    order_items = relationship('app.domains.products.models.OrderItem', back_populates='product')
 
     __table_args__ = (
         Index('ix_products_website_id', 'website_id'),
@@ -86,9 +86,9 @@ class ProductVariant(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     # Relationships
-    product = relationship('Product', back_populates='variants')
-    cart_items = relationship('CartItem', back_populates='variant')
-    order_items = relationship('OrderItem', back_populates='variant')
+    product = relationship('app.domains.products.models.Product', back_populates='variants')
+    cart_items = relationship('app.domains.products.models.CartItem', back_populates='variant')
+    order_items = relationship('app.domains.products.models.OrderItem', back_populates='variant')
 
     __table_args__ = (
         Index('ix_product_variants_product_id', 'product_id'),
@@ -110,7 +110,7 @@ class ProductCategory(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     # Relationships
-    products = relationship('Product', secondary=product_categories, back_populates='categories')
+    products = relationship('app.domains.products.models.Product', secondary=product_categories, back_populates='categories')
 
     __table_args__ = (
         Index('ix_product_categories_website_id', 'website_id'),
@@ -139,7 +139,7 @@ class ShoppingCart(Base):
     abandoned_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    items = relationship('CartItem', back_populates='cart', cascade='all, delete-orphan')
+    items = relationship('app.domains.products.models.CartItem', back_populates='cart', cascade='all, delete-orphan')
 
     __table_args__ = (
         Index('ix_shopping_carts_website_id', 'website_id'),
@@ -161,9 +161,9 @@ class CartItem(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    cart = relationship('ShoppingCart', back_populates='items')
-    product = relationship('Product', back_populates='cart_items')
-    variant = relationship('ProductVariant', back_populates='cart_items')
+    cart = relationship('app.domains.products.models.ShoppingCart', back_populates='items')
+    product = relationship('app.domains.products.models.Product', back_populates='cart_items')
+    variant = relationship('app.domains.products.models.ProductVariant', back_populates='cart_items')
 
     __table_args__ = (
         Index('ix_cart_items_cart_id', 'cart_id'),
@@ -201,7 +201,7 @@ class Order(Base):
     delivered_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    items = relationship('OrderItem', back_populates='order', cascade='all, delete-orphan')
+    items = relationship('app.domains.products.models.OrderItem', back_populates='order', cascade='all, delete-orphan')
 
     __table_args__ = (
         Index('ix_orders_website_id', 'website_id'),
@@ -226,9 +226,9 @@ class OrderItem(Base):
     line_total = Column(Numeric(10, 2), nullable=False)
 
     # Relationships
-    order = relationship('Order', back_populates='items')
-    product = relationship('Product', back_populates='order_items')
-    variant = relationship('ProductVariant', back_populates='order_items')
+    order = relationship('app.domains.products.models.Order', back_populates='items')
+    product = relationship('app.domains.products.models.Product', back_populates='order_items')
+    variant = relationship('app.domains.products.models.ProductVariant', back_populates='order_items')
 
     __table_args__ = (
         Index('ix_order_items_order_id', 'order_id'),
