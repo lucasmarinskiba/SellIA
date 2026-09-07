@@ -7,12 +7,14 @@ from uuid import UUID
 from typing import Any
 from datetime import datetime, timezone, timedelta
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.subscriptions.models import (
     SubscriptionPlan, Subscription, UserAPIKey, SubscriptionStatus,
     PaymentTransaction, Invoice, PaymentStatus, PaymentProvider,
+    BankTransferPayment, BankTransferStatus, CancellationFeedback,
 )
 from app.domains.subscriptions.schemas import (
     SubscriptionPlanResponse, SubscriptionWithPlanResponse,
@@ -42,10 +44,6 @@ from app.domains.subscriptions.stripe_billing import (
     construct_webhook_event, process_stripe_webhook,
 )
 from app.domains.security.models import WebhookEventLog
-from app.domains.subscriptions.models import (
-    PaymentTransaction, Invoice, PaymentStatus, PaymentProvider,
-    BankTransferPayment, BankTransferStatus, CancellationFeedback,
-)
 from app.domains.subscriptions.crypto_billing import (
     generate_crypto_payment, check_crypto_payment_status, verify_crypto_payment, get_usdt_contract_address
 )
@@ -53,6 +51,7 @@ from app.core.security import get_password_hash
 from app.core.encryption import encrypt_value
 
 router = APIRouter()
+settings = get_settings()
 
 
 @router.get("/plans", response_model=list[SubscriptionPlanResponse])

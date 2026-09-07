@@ -36,7 +36,6 @@ from app.domains.agents.schemas import (
     PlanStepResponse,
 )
 from app.domains.agents.services import AgentService
-from app.domains.subscriptions.services import check_subscription_limit
 from app.domains.subscriptions.models import UserAPIKey
 
 router = APIRouter()
