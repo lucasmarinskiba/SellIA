@@ -14,6 +14,16 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Playwright's Chromium binary + its OS-level dependencies (fonts, libgbm,
+# libnss3, etc.) -- the playwright pip package above is only the driver/API;
+# app/domains/computer_use/browser_service.py's real browser-automation
+# engine needs an actual browser installed to launch headless sessions.
+# Installed to a shared path (not root's home, since this image runs as
+# root throughout -- no USER switch here, unlike backend/Dockerfile) so it
+# stays predictable regardless of that.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN playwright install --with-deps chromium
+
 # App code
 COPY backend/ .
 
