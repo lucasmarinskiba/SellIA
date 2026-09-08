@@ -55,6 +55,17 @@ _try_include("app.api.v1.products.router", "/api/v1", ["products"])
 _try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.conversations.router", "/api/v1/businesses", ["conversations"])
 _try_include("app.api.v1.brain_live.router", "/api/v1/brain", ["brain-live"])
+# brain.router's own routes already start with "/brain/..." (graph, activity,
+# flows, cua/dispatch, capabilities, snapshot, overview, sales-team), so it
+# mounts at bare /api/v1, not /api/v1/brain -- this was never wired into any
+# app entrypoint before now, so the real capability registry it serves
+# (app.core.brain) has been completely unreachable: BrainInteractionMap.tsx's
+# fetchGraph() always failed and silently fell back to a static bundled
+# snapshot, and EnterpriseCommandCenter.tsx's Computer Use dispatch button
+# was hitting a 404. No path collisions with brain_live's routes above (its
+# only overlapping name, kpis, was removed from brain.router -- see its
+# top-of-file note).
+_try_include("app.api.v1.brain.router", "/api/v1", ["brain-registry"])
 _try_include("app.api.v1.proximity_tracking.router", "/api/v1", ["proximity"])
 _try_include("app.api.v1.channels.router", "/api/v1/businesses", ["channels"])
 _try_include("app.api.v1.catalog.router", "/api/v1/catalog", ["catalog"])

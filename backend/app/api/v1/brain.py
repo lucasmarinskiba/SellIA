@@ -1,7 +1,7 @@
 """Brain Introspection API.
 
 Read-only endpoints exposing the unified capability registry (agents, skills,
-automations) plus a live agent reasoning trace. Powers the Enterprise Command
+automations) plus real activity telemetry. Powers the Enterprise Command
 Center frontend at `/sellia-brain`.
 
 No business-scoped data is returned here, so endpoints are unauthenticated and
@@ -10,7 +10,6 @@ safe to cache at the edge.
 
 from __future__ import annotations
 
-import random
 import re
 from datetime import datetime, timezone
 from typing import Optional
@@ -189,53 +188,15 @@ async def brain_snapshot() -> dict:
     return get_brain_registry().snapshot().as_dict()
 
 
-# ── live reasoning trace ────────────────────────────────────────────────
-_TRACE_POOL: list[tuple[str, str]] = [
-    ("REASON", "Analizando objeciones del cliente en el último hilo…"),
-    ("QUERY", "Consultando base de datos B2B · enriqueciendo firmographics."),
-    ("REASON", "Evaluando intent signals · score recalculado."),
-    ("ACTION", "Orquestando outreach en LinkedIn para 3 decisores."),
-    ("ACTION", "Generando email hiper-personalizado con contexto de cuenta."),
-    ("REASON", "Estrategia de cierre seleccionada: anclaje de valor + urgencia."),
-    ("QUERY", "Cruzando histórico de deals similares · win-rate estimado."),
-    ("ACTION", "Agendando demo · proponiendo 3 slots al calendario."),
-    ("REASON", "Deal estancado detectado · activando reactivación."),
-    ("RESULT", "Lead movido a Negociación · probabilidad de cierre +14%."),
-    ("QUERY", "Verificando presupuesto vía señales de contratación."),
-    ("RESULT", "Demo confirmada para el próximo día hábil."),
-]
-
-
-@router.get("/brain/kpis")
-async def brain_kpis() -> dict:
-    """High-level KPI tiles for the Command Center top bar.
-
-    Synthetic but stable within a 5-minute window (seeded by wall-clock bucket)
-    so the dashboard does not flicker between polls. Replace `_seed`-derived
-    values with real DB aggregates once business-scoped auth is added here.
-    """
-    now = datetime.now(timezone.utc)
-    bucket = int(now.timestamp()) // 300  # 5-min stability window
-    rnd = random.Random(bucket)
-
-    def _delta() -> dict:
-        v = round(rnd.uniform(-3.5, 12.0), 1)
-        return {"value": abs(v), "up": v >= 0}
-
-    leads = 16000 + rnd.randint(0, 4000)
-    conversion = round(rnd.uniform(28.0, 38.0), 1)
-    roi = round(rnd.uniform(360.0, 460.0))
-    pipeline = round(rnd.uniform(2.2, 3.4), 1)
-
-    return {
-        "generated_at": now.isoformat(),
-        "tiles": [
-            {"key": "roi", "label": "ROI Global", "value": f"{roi:.0f}%", "delta": _delta(), "accent": "emerald"},
-            {"key": "leads", "label": "Leads Procesados", "value": f"{leads / 1000:.1f}K", "delta": _delta(), "accent": "cobalt"},
-            {"key": "conversion", "label": "Tasa de Conversión", "value": f"{conversion:.1f}%", "delta": _delta(), "accent": "cobalt"},
-            {"key": "pipeline", "label": "Pipeline Activo", "value": f"${pipeline:.1f}M", "delta": _delta(), "accent": "amber"},
-        ],
-    }
+# NOTE: no /brain/kpis here. The real one (total_leads/won_leads/active_leads/
+# conversion_rate/pipeline_value, aggregated from the actual leads table) lives
+# in app/api/v1/brain_live.py's GET /kpis, mounted at the same /api/v1/brain
+# prefix -- EnterpriseCommandCenter.tsx already calls it and already expects
+# that exact shape. A second /brain/kpis handler here previously returned
+# random.Random()-seeded "ROI/leads/conversion/pipeline" tiles with no real
+# backing data and no frontend consumer (this whole router was never even
+# wired into main.py) -- removed rather than fixed, since brain_live's
+# version already does this correctly and nothing else called this one.
 
 
 @router.get("/brain/sales-team")
@@ -254,24 +215,10 @@ async def brain_sales_team() -> dict:
         "roles": roles,
     }
 
-
-@router.get("/brain/audit-trace")
-async def brain_audit_trace(
-    limit: int = Query(default=12, ge=1, le=50),
-) -> dict:
-    """Synthetic real-time reasoning trace for the audit-log panel.
-
-    Frontend polls this (or uses it as seed) to render the agent's live
-    thinking stream. Deterministic shape, randomized content.
-    """
-    now = datetime.now(timezone.utc)
-    lines = []
-    for i in range(limit):
-        level, msg = random.choice(_TRACE_POOL)
-        lines.append({
-            "seq": i,
-            "ts": now.isoformat(),
-            "level": level,
-            "message": msg,
-        })
-    return {"count": len(lines), "lines": lines}
+# NOTE: no /brain/audit-trace here either. It previously returned a fake
+# "agent reasoning" stream picked at random from a fixed line pool -- not
+# derived from any real activity, and nothing in the frontend ever called it
+# (grepped: zero consumers). The real equivalent for "what is the agent
+# actually doing" is /brain/activity (real BrainActivityBus events, idle when
+# nothing has happened) and brain_live.py's /audit-log (real computer-use
+# audit trail) -- both already wired and already honest.
