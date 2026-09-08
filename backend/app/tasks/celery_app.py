@@ -28,6 +28,17 @@ def _try_import_domain_models(module_path: str) -> None:
 for _model_module in [
     "app.domains.users.models",
     "app.domains.businesses.models",
+    "app.domains.businesses.location_models",  # Business.locations relationship("Location", ...)
+                                                # targets this module -- SQLAlchemy resolves string
+                                                # relationship targets by name from whatever's already
+                                                # imported, so without this every task touching Business
+                                                # (most of them) crashed mapper configuration with
+                                                # "expression 'Location' failed to locate a name".
+                                                # Worked by accident in the web process only because some
+                                                # API router happens to import it before any request hits
+                                                # the ORM; celery has no such router imports.
+    "app.domains.websites.models",  # Business.website relationship("Website", ...) -- same
+                                     # accident-of-import-order gap as location_models above.
     "app.domains.catalogs.models",
     "app.domains.channels.models",
     "app.domains.subscriptions.models",
