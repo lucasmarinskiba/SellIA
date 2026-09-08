@@ -111,22 +111,44 @@ async def generate_ai_response(
             business_context=business_context or {},
         )
 
-    # Check for active A/B test
+    # Check for active A/B test -- business-scoped sales-agent message/prompt
+    # experiments created via /api/v1/testing (app.api.v1.enterprise_testing),
+    # keyed by agent_type=personality_slug. Falls back to a global experiment
+    # (business_id=None) if the business has none running, same convention
+    # funnel_ab_bridge.py uses.
     try:
         from app.domains.agents.ab_service import ABTestEngine
 
-        ab_engine = ABTestEngine()
-        experiment = await ab_engine.get_active_experiment_for_agent(
-            db, personality_slug
+        experiment = await ABTestEngine.get_active_experiment_for_agent(
+            db, personality_slug, business_id=business_id
         )
+        if not experiment:
+            experiment = await ABTestEngine.get_active_experiment_for_agent(
+                db, personality_slug, business_id=None
+            )
         if experiment:
-            variant = ab_engine.get_variant_for_conversation(
+            variant = ABTestEngine.get_variant_for_conversation(
                 db, experiment.id, conversation.id
             )
-            if variant == "a":
-                system_prompt = experiment.variant_a_prompt
-            else:
-                system_prompt = experiment.variant_b_prompt
+            system_prompt = (
+                experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
+            )
+
+            # Remember the assignment so a later conversion (deal won/lost)
+            # can be attributed back to this experiment/variant -- this was
+            # previously missing entirely, so record_result/check_auto_promote
+            # could never actually fire for this experiment kind.
+            extra_data = dict(conversation.extra_data or {})
+            existing = extra_data.get("personality_ab")
+            if not existing or existing.get("experiment_id") != str(experiment.id):
+                extra_data["personality_ab"] = {
+                    "experiment_id": str(experiment.id),
+                    "variant": variant,
+                    "agent_type": personality_slug,
+                }
+                conversation.extra_data = extra_data
+                db.add(conversation)
+                await db.commit()
     except Exception as e:
         get_logger(__name__).warning(f"A/B test lookup failed: {e}")
 

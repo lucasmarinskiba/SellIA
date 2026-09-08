@@ -109,6 +109,23 @@ async def record_deal_outcome(
             "days_to_close": days_to_close, "reason": win_loss_reason,
         })
 
+        # Real conversion signal for sales-agent message A/B tests (see
+        # api/v1/enterprise_testing.py): a deal reaching won/lost is the
+        # actual "lead -> deal won" conversion the user asked to measure,
+        # not a proxy. No-op if this deal's conversation was never enrolled
+        # in a running experiment.
+        if deal.conversation_id:
+            from app.domains.channels.models import Conversation
+            from app.domains.agents.ab_service import ABTestEngine
+            conv_result = await db.execute(select(Conversation).where(Conversation.id == deal.conversation_id))
+            conversation = conv_result.scalar_one_or_none()
+            if conversation:
+                await ABTestEngine.record_conversation_outcome(
+                    db, conversation, "personality_ab",
+                    "converted" if outcome == "won" else "lost",
+                    revenue=final_value if outcome == "won" else None,
+                )
+
     return {"status": "ok", "outcome": result}
 
 
