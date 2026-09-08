@@ -73,6 +73,12 @@ async def add_opportunity(
     await db.commit()
     await db.refresh(deal)
 
+    from app.domains.webhooks.service import fire_business_event
+    await fire_business_event(db, business_id, "lead.created", {
+        "deal_id": str(deal.id), "title": deal.title, "value": amount,
+        "contact_name": contact_name, "stage": stage_enum.value,
+    })
+
     return {
         "status": "added",
         "opportunity_id": str(deal.id),

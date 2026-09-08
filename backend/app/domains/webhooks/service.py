@@ -152,6 +152,56 @@ async def record_delivery(
     return delivery
 
 
+async def trigger_event(db: AsyncSession, user_id: uuid.UUID, event_type: str, payload: dict) -> int:
+    """Fan out a real business event to every active subscription this user
+    has for it, actually delivering (real signed HTTP POST) and recording
+    each attempt. This was the one piece missing from an otherwise-complete
+    real webhook system -- everything else here (create/list/update/delete
+    subscription, list/retry delivery, HMAC-signed deliver_webhook) already
+    existed and was already wired with real auth; nothing called this fan
+    -out step from anywhere the app's real events (a lead created, a deal
+    won/lost, a payment received) actually happen. Returns how many
+    subscriptions were triggered.
+    """
+    result = await db.execute(
+        select(WebhookSubscription).where(WebhookSubscription.user_id == user_id, WebhookSubscription.active == True)
+    )
+    subscriptions = [s for s in result.scalars().all() if event_type in (s.events or [])]
+
+    for sub in subscriptions:
+        success, status_code, body = await deliver_webhook(sub, event_type, payload)
+        await record_delivery(db, sub.id, event_type, payload, success, status_code, body)
+        sub.updated_at = datetime.now(timezone.utc)
+    if subscriptions:
+        await db.commit()
+
+    return len(subscriptions)
+
+
+async def fire_business_event(db: AsyncSession, business_id: uuid.UUID, event_type: str, payload: dict) -> int:
+    """Convenience wrapper for the real trigger points (lead/deal/payment
+    events) -- they know a business_id, not a user_id (subscriptions are
+    owned by users, since one user can own several businesses). Resolves
+    the business's owner and delegates to trigger_event. Swallows lookup
+    failures (unknown business_id) rather than raising, since a webhook
+    firing is never allowed to break the real operation that triggered it
+    (creating a deal, recording an outcome, confirming a payment must all
+    succeed regardless of whether anyone is subscribed or a delivery
+    fails).
+    """
+    from app.domains.businesses.models import Business
+    from sqlalchemy import select as _select
+
+    try:
+        result = await db.execute(_select(Business).where(Business.id == business_id))
+        business = result.scalar_one_or_none()
+        if not business:
+            return 0
+        return await trigger_event(db, business.user_id, event_type, payload)
+    except Exception:
+        return 0
+
+
 async def retry_delivery(db: AsyncSession, delivery: WebhookDelivery) -> WebhookDelivery:
     result = await db.execute(
         select(WebhookSubscription).where(

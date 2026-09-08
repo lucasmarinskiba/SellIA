@@ -101,6 +101,14 @@ async def record_deal_outcome(
     result = await outcome_analyzer.record_outcome(
         db, deal_id, deal.business_id, outcome, final_value, days_to_close, forecasted_probability, win_loss_reason,
     )
+
+    if outcome in ("won", "lost"):
+        from app.domains.webhooks.service import fire_business_event
+        await fire_business_event(db, deal.business_id, f"deal.{outcome}", {
+            "deal_id": str(deal_id), "title": deal.title, "final_value": final_value,
+            "days_to_close": days_to_close, "reason": win_loss_reason,
+        })
+
     return {"status": "ok", "outcome": result}
 
 
