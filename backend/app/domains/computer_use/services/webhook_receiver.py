@@ -47,14 +47,20 @@ class IncomingMessage:
     # Identidades
     customer_id: str  # ID único en plataforma
     customer_name: str
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
 
-    # Mensaje
+    # Mensaje (campos requeridos, sin default -- deben ir antes de
+    # cualquier campo con default o @dataclass rompe TypeError:
+    # "non-default argument follows default argument" al construir
+    # __init__. Esto bloqueaba el import de este módulo por completo, y
+    # con él el de los 6 routers de Computer Use que dependen de él.)
     message_id: str  # ID único en plataforma
     source: MessageSource
     message_type: MessageType
     content: str
+
+    # Opcionales / con default -- van todos después de los requeridos.
+    customer_email: Optional[str] = None
+    customer_phone: Optional[str] = None
     media_urls: Optional[list] = None
 
     # Contexto
@@ -63,7 +69,7 @@ class IncomingMessage:
     previous_messages: Optional[list] = None  # Historial (últimos 5)
 
     # Metadata
-    received_at: datetime = None
+    received_at: Optional[datetime] = None
     platform_timestamp: Optional[datetime] = None
     raw_data: Optional[Dict[str, Any]] = None  # Datos crudos para debug
 

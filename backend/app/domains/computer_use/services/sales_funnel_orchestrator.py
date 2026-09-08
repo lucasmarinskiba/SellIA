@@ -15,7 +15,7 @@ from app.domains.computer_use.services.sales_closer import get_sales_closer_serv
 from app.domains.computer_use.services.conversion_tracker import get_conversion_tracker
 from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
 from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
-from app.domains.computer_use.services.lead_scorer import get_lead_scorer_service
+from app.domains.computer_use.services.lead_scorer import get_lead_scoring_service
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,14 @@ class SalesFunnelOrchestrator:
         self.conversion = get_conversion_tracker(db) if db else None
         self.growth = get_growth_automation_engine()
         self.loyalty = get_customer_loyalty_engine()
+        # Imported but not yet called anywhere in run_complete_pipeline --
+        # instantiated here for consistency with every other sibling service
+        # above (was previously an unusable dead import under the wrong
+        # name, get_lead_scorer_service, which doesn't exist in lead_scorer.py
+        # and broke import of this whole module). Wiring WHERE in the
+        # pipeline lead scoring should run is a real feature decision, not
+        # made here.
+        self.lead_scorer = get_lead_scoring_service()
 
         # Estado
         self.campaign_id = None

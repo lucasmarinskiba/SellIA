@@ -7,11 +7,11 @@ OAuth2 flow para usuarios.
 import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from google.auth.oauthlib.flow import Flow
+from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google.api_core.exceptions import GoogleAPIError
-from google.calendar import v3
+from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ class GoogleCalendarConnector:
         try:
             # Crear servicio de calendar
             creds = Credentials.from_authorized_user_info(credentials)
-            service = v3.build("calendar", "v3", credentials=creds)
+            service = build("calendar", "v3", credentials=creds)
 
             # Definir timeframe
             start_time = datetime.combine(date.date(), (working_hours[0], 0))
@@ -179,7 +179,7 @@ class GoogleCalendarConnector:
         """
         try:
             creds = Credentials.from_authorized_user_info(credentials)
-            service = v3.build("calendar", "v3", credentials=creds)
+            service = build("calendar", "v3", credentials=creds)
 
             event = {
                 "summary": title,
@@ -232,7 +232,7 @@ class GoogleCalendarConnector:
         """Elimina evento de Google Calendar."""
         try:
             creds = Credentials.from_authorized_user_info(credentials)
-            service = v3.build("calendar", "v3", credentials=creds)
+            service = build("calendar", "v3", credentials=creds)
 
             service.events().delete(calendarId="primary", eventId=event_id).execute()
 

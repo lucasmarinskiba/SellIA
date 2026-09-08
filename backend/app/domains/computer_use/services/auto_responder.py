@@ -41,7 +41,7 @@ from app.domains.computer_use.services.platform_automation_engine import (
     get_platform_automation_engine,
     PlatformAutomationType,
 )
-from app.core.config import settings
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,10 @@ class AutoResponderService:
         self.sales_closer = get_sales_closer_service(db)
         self.closer_mode = closer_mode  # Mode para sales closer
 
-        # Real API connectors para enviar mensajes
+        # Real API connectors para enviar mensajes. Same "from
+        # app.core.config import settings" ImportError as
+        # conversion_tracker.py/ad_orchestrator.py.
+        settings = get_settings()
         self.whatsapp_connector = (
             get_whatsapp_connector(
                 business_account_id=settings.WHATSAPP_BUSINESS_ACCOUNT_ID,

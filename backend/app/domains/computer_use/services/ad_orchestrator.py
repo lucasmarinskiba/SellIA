@@ -17,7 +17,7 @@ from app.domains.computer_use.integrations import (
     get_meta_ads_connector,
     get_google_ads_connector,
 )
-from app.core.config import settings
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +284,10 @@ class AdOrchestrator:
         self.logger = logger
         self.campaigns: Dict[str, AdCampaign] = {}  # campaign_id → AdCampaign
 
-        # Real API connectors
+        # Real API connectors. Same "from app.core.config import settings"
+        # ImportError as conversion_tracker.py -- app.core.config exports
+        # get_settings(), not a module-level `settings` instance.
+        settings = get_settings()
         self.meta_ads_connector = (
             get_meta_ads_connector(
                 access_token=settings.META_ACCESS_TOKEN,

@@ -59,6 +59,14 @@ celery==5.3.6                         # app/domains/enterprise/voice_sales.py (a
                                        # previously masked by an unrelated table-name collision fixed earlier this session
 bcrypt==4.1.2
 fastapi-limiter==0.1.6                          # Redis client (for rate limiting, sessions)
+google-auth==2.29.0                   # app/domains/computer_use/integrations/google_calendar_connector.py --
+google-auth-oauthlib==1.2.0           # OAuth2 flow for real Google Calendar API access. Never in requirements.txt,
+google-api-core==2.19.0               # so 6 of the 8 computer_use API routers (which import this transitively via
+google-api-python-client==2.129.0     # app/domains/computer_use/integrations/__init__.py) were skipped in every
+                                       # production deploy ("No module named 'google.auth.oauthlib'") -- none of
+                                       # these 8 routers were even wired into main.py either (fixed same commit).
+google-ads==24.1.0                    # app/domains/computer_use/integrations/google_ads_connector.py -- same
+                                       # __init__.py import chain, same "never in requirements.txt" gap.
 
 # AI providers
 anthropic==0.125.0                    # Bumped from 0.40.0: langchain-anthropic 0.3.22 requires

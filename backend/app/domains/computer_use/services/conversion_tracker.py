@@ -19,7 +19,7 @@ from app.domains.computer_use.integrations import (
 )
 from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
 from app.domains.computer_use.services.webhook_receiver import IncomingMessage
-from app.core.config import settings
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,15 @@ class ConversionTracker:
         self.db = db
         self.audit_service = AuditLogService(db)
 
-        # Stripe connector
+        # Stripe connector. app.core.config exports get_settings(), not a
+        # module-level `settings` instance -- the old `from app.core.config
+        # import settings` raised ImportError at import time, which took
+        # down this whole module (and, transitively, 6 of Computer Use's 8
+        # API routers) before it ever got a chance to run the hasattr guard
+        # below. STRIPE_SECRET_KEY isn't a declared Settings field, so this
+        # still resolves to None until it's added there -- honest, not a
+        # fabricated connector.
+        settings = get_settings()
         self.stripe_connector = (
             get_stripe_connector(api_key=settings.STRIPE_SECRET_KEY)
             if hasattr(settings, 'STRIPE_SECRET_KEY') else None
