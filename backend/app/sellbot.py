@@ -475,6 +475,67 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"pipelines/deals migration: {str(e)[:120]}")
 
+    # voice_calls + voice_configs (app.domains.voice.models): also
+    # confirmed MISSING from production despite VoiceCall/VoiceConfig
+    # being real, complete models -- same CoreBase gap as everywhere else
+    # in this function. Used by app/domains/enterprise/voice_agent.py.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
+        jsonb_type = "TEXT" if is_sqlite else "JSONB"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS ai_agent_voice_calls (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL,
+                    customer_id {id_type} NOT NULL,
+                    conversation_id {id_type} REFERENCES conversations(id) ON DELETE SET NULL,
+                    phone_number VARCHAR(50) NOT NULL,
+                    direction VARCHAR(20) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'ringing',
+                    recording_url VARCHAR(500),
+                    recording_duration INTEGER,
+                    transcript TEXT,
+                    transcript_segments {jsonb_type},
+                    ai_summary TEXT,
+                    outcome VARCHAR(50),
+                    cost_usd NUMERIC(10, 6) DEFAULT 0,
+                    extra_data {jsonb_type} DEFAULT '{{}}',
+                    started_at {ts_col},
+                    ended_at {ts_col},
+                    created_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_business_id ON ai_agent_voice_calls (business_id)"))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_ai_agent_voice_calls_customer_id ON ai_agent_voice_calls (customer_id)"))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS voice_configs (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL UNIQUE,
+                    is_active {bool_default_true},
+                    voice_id VARCHAR(100) NOT NULL,
+                    tts_provider VARCHAR(20) NOT NULL,
+                    stt_provider VARCHAR(20) NOT NULL,
+                    language VARCHAR(10) NOT NULL DEFAULT 'es',
+                    greeting_message TEXT NOT NULL,
+                    agent_name VARCHAR(100),
+                    system_prompt TEXT,
+                    temperature FLOAT DEFAULT 0.7,
+                    max_call_duration INTEGER NOT NULL DEFAULT 600,
+                    allowed_hours_start TIME DEFAULT '09:00:00',
+                    allowed_hours_end TIME DEFAULT '18:00:00',
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.commit()
+        logger.info("✅ voice_calls/voice_configs tables ensured (2/2)")
+    except Exception as e:
+        logger.warning(f"voice_calls/voice_configs migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which
