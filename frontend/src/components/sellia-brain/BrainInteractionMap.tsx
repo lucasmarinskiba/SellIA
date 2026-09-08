@@ -23,6 +23,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { SELLIA, GROUP_COLOR, GROUP_LABEL } from '@/lib/sellia-theme'
+import { getDisabledCapabilities, setDisabledCapabilities, toggleCapability } from '@/lib/brain-capability-toggles'
 
 const BRAIN_BASE = '/api/v1/brain'
 
@@ -39,24 +40,43 @@ const MAX_PER_COL = 22
 const COL_GAP = 168
 const ROW_GAP = 46
 
-type CatData = { label: string; group: string; health: number; kind: string; dim: boolean; hot: boolean }
+type CatData = {
+  label: string; group: string; health: number; kind: string; dim: boolean; hot: boolean
+  disabled: boolean; onToggle: () => void
+}
 
 const CatNode = ({ data }: NodeProps<Node<CatData>>): React.JSX.Element => {
   const color = GROUP_COLOR[data.group] ?? SELLIA.text2
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 7, padding: '5px 10px',
+      display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px',
       borderRadius: 8, fontFamily: SELLIA.sans, fontSize: 11, fontWeight: 600,
-      color: SELLIA.text, whiteSpace: 'nowrap',
-      background: data.hot ? `${color}26` : SELLIA.panel,
-      border: `1px solid ${data.hot ? color : SELLIA.border}`,
-      opacity: data.dim ? 0.18 : 0.45 + 0.55 * data.health,
-      boxShadow: data.hot ? `0 0 0 1px ${color}, 0 6px 20px -8px ${color}` : 'none',
+      color: data.disabled ? SELLIA.text3 : SELLIA.text, whiteSpace: 'nowrap',
+      background: data.disabled ? 'transparent' : (data.hot ? `${color}26` : SELLIA.panel),
+      border: `1px solid ${data.disabled ? SELLIA.border : (data.hot ? color : SELLIA.border)}`,
+      borderStyle: data.disabled ? 'dashed' : 'solid',
+      opacity: data.disabled ? 0.4 : (data.dim ? 0.18 : 0.45 + 0.55 * data.health),
+      boxShadow: !data.disabled && data.hot ? `0 0 0 1px ${color}, 0 6px 20px -8px ${color}` : 'none',
       transition: 'opacity .15s, border-color .15s, background .15s',
     }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1 }} />
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <span style={{ maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis' }}>{data.label}</span>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: data.disabled ? SELLIA.text3 : color, flexShrink: 0 }} />
+      <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: data.disabled ? 'line-through' : 'none' }}>{data.label}</span>
+      <button
+        type="button"
+        title={data.disabled ? 'Activar esta capacidad' : 'Desactivar esta capacidad'}
+        onClick={(e) => { e.stopPropagation(); data.onToggle() }}
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{
+          cursor: 'pointer', marginLeft: 2, padding: '1px 6px', borderRadius: 100,
+          fontSize: 8, fontWeight: 700, fontFamily: SELLIA.mono, letterSpacing: '0.05em',
+          border: `1px solid ${data.disabled ? SELLIA.text3 : SELLIA.emerald}55`,
+          color: data.disabled ? SELLIA.text3 : SELLIA.emerald,
+          background: data.disabled ? 'transparent' : `${SELLIA.emerald}14`,
+          flexShrink: 0,
+        }}>
+        {data.disabled ? 'OFF' : 'ON'}
+      </button>
       <Handle type="source" position={Position.Right} style={{ opacity: 0, width: 1, height: 1 }} />
     </div>
   )
@@ -92,6 +112,12 @@ const Inner = (): React.JSX.Element => {
   const [hovered, setHovered] = useState<string | null>(null)
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const [hotEdges, setHotEdges] = useState<Set<string>>(new Set())
+  // Toggles ON/OFF reales, persistidos en el navegador (página pública, sin
+  // login) -- ver lib/brain-capability-toggles.ts. Se leen de cero recién en
+  // el mount (evita mismatch de SSR/hydration).
+  const [disabled, setDisabled] = useState<Set<string>>(new Set())
+  useEffect(() => { setDisabled(getDisabledCapabilities()) }, [])
+  const onToggleNode = useCallback((id: string) => { setDisabled(toggleCapability(id)) }, [])
   const [lastEvent, setLastEvent] = useState<string>('—')
   const activityBase = useRef(BRAIN_BASE)
   const sinceSeq = useRef(0)
@@ -184,26 +210,34 @@ const Inner = (): React.JSX.Element => {
     const hot = hovered === n.id || (!!activeGroup && n.group === activeGroup)
     return {
       id: n.id, type: 'cat', position: p, draggable: true,
-      data: { label: n.label, group: n.group, health: n.health, kind: n.kind, dim, hot },
+      data: {
+        label: n.label, group: n.group, health: n.health, kind: n.kind, dim, hot,
+        disabled: disabled.has(n.id), onToggle: () => onToggleNode(n.id),
+      },
     }
-  }), [raw.nodes, positions, focusIds, hovered, activeGroup])
+  }), [raw.nodes, positions, focusIds, hovered, activeGroup, disabled, onToggleNode])
 
   const derivedEdges = useMemo<Edge[]>(() => raw.edges.map(e => {
     const k = edgeKey(e)
     const hot = hotEdges.has(k)
     const focused = focusIds ? (focusIds.has(e.source) && focusIds.has(e.target)) : false
+    const broken = disabled.has(e.source) || disabled.has(e.target)
     const show = hot || focused
-    const color = hot ? SELLIA.cobalt : focused ? SELLIA.text2 : SELLIA.border
+    const color = broken ? SELLIA.text3 : hot ? SELLIA.cobalt : focused ? SELLIA.text2 : SELLIA.border
     return {
       id: k, source: e.source, target: e.target, type: 'smoothstep',
-      animated: hot,
+      animated: hot && !broken,
       label: show ? e.rel : undefined,
       labelStyle: { fill: SELLIA.text2, fontSize: 9, fontFamily: SELLIA.mono },
       labelBgStyle: { fill: SELLIA.bg, fillOpacity: 0.8 },
-      style: { stroke: color, strokeWidth: hot ? 1.8 : focused ? 1.1 : 0.5, opacity: focusIds && !focused ? 0.08 : hot ? 0.95 : 0.32 },
+      style: {
+        stroke: color, strokeWidth: hot && !broken ? 1.8 : focused ? 1.1 : 0.5,
+        opacity: broken ? 0.1 : focusIds && !focused ? 0.08 : hot ? 0.95 : 0.32,
+        strokeDasharray: broken ? '3 3' : undefined,
+      },
       markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color },
     }
-  }), [raw.edges, hotEdges, focusIds])
+  }), [raw.edges, hotEdges, focusIds, disabled])
 
   // Estado controlado de React Flow + sync con los memos derivados (para que
   // los updates de estilo —dim/hot/labels— se reflejen tras el mount).
@@ -232,6 +266,13 @@ const Inner = (): React.JSX.Element => {
         <span style={{ fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 5, color: src === 'live' ? SELLIA.emerald : SELLIA.cobalt, background: `${src === 'live' ? SELLIA.emerald : SELLIA.cobalt}14`, border: `1px solid ${src === 'live' ? SELLIA.emerald : SELLIA.cobalt}33` }}>
           {offline ? 'OFFLINE' : src === 'live' ? 'BACKEND LIVE' : 'REGISTRY SNAPSHOT'}
         </span>
+        {disabled.size > 0 && (
+          <button type="button" onClick={() => { setDisabledCapabilities(new Set()); setDisabled(new Set()) }}
+            title="Reactivar todas las capacidades desactivadas"
+            style={{ cursor: 'pointer', fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 5, color: SELLIA.text3, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
+            {disabled.size} desactivada{disabled.size === 1 ? '' : 's'} · reactivar todas
+          </button>
+        )}
         <span style={{ flex: 1 }} />
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
           {groupsPresent.map(g => {

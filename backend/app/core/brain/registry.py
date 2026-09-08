@@ -290,7 +290,7 @@ _TOOL_SKILLS: list[tuple[str, str, str, str, float]] = [
     # ── Lifecycle + CRM ──
     ("lifecycle_detector", "Detector de Etapa Lifecycle", "Determina en qué etapa está cliente (onboard/engagement/upsell/retention/churn risk).", "analisis", 0.9),
     ("aha_moment_tracker", "Rastreador de Aha Moment", "Detecta cuándo cliente logra primer resultado (objetivo en 48h).", "analisis", 0.85),
-    ("crm_sync", "Sincronizador de CRM", "Sincroniza contacto con Salesforce/HubSpot/Pipedrive (bidireccional).", "datos", 0.85),
+    ("crm_external_sync", "Sincronizador de CRM Externo", "Sincroniza contacto con Salesforce/HubSpot/Pipedrive (bidireccional).", "datos", 0.85),
     ("smart_scheduler", "Programador Inteligente", "Agenda follow-ups óptimos (zona horaria + patrón respuesta + presión calibrada).", "analisis", 0.8),
     ("churn_detector", "Detector de Churn", "Alerta caída 30%+ en uso. Riesgo ALTO de pérdida.", "analisis", 0.85),
     ("qbr_builder", "Constructor de QBR", "Genera review trimestral con métricas + benchmarking + roadmap.", "datos", 0.8),
@@ -750,7 +750,7 @@ class BrainRegistry:
             "dm_outreach": ("linkedin", "instagram", "twitter"),
             "faq_bot": ("web", "whatsapp"), "appointment_booker": ("google_calendar",),
             "calendar_sync": ("google_calendar",), "sheet_sync": ("google_sheets",),
-            "crm_sync": ("hubspot", "salesforce"), "crm_dedupe": ("hubspot",),
+            "crm_external_sync": ("hubspot", "salesforce"), "crm_dedupe": ("hubspot",),
             "segment_builder": ("hubspot",), "data_export": ("google_sheets",),
             "invoice_gen": ("arca", "sat", "dian"), "payment_link": ("stripe", "mercadopago", "paypal"),
             "contract_gen": ("notion",),

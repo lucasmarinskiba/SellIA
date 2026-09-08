@@ -28,6 +28,7 @@ import ComputerUseLauncher from './ComputerUseLauncher'
 import dynamic from 'next/dynamic'
 import { type LobeId } from './toolIndex'
 import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAccountFlows, buildToolPlan } from '@/lib/business-profile'
+import { getDisabledCapabilities } from '@/lib/brain-capability-toggles'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
 const BrainInteractionMap = dynamic(
@@ -587,10 +588,11 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     setNeuralView('flows')
     document.getElementById('sec-neural')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     // Ejecución real best-effort: una sesión CU por flujo (si hay backend+key).
+    const disabled = [...getDisabledCapabilities()]
     flows.forEach(f => {
       void fetch('/api/v1/brain/cua/dispatch', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction: f.instruction ?? f.name, mode: 'supervised' }),
+        body: JSON.stringify({ instruction: f.instruction ?? f.name, mode: 'supervised', disabled }),
       }).catch(() => { /* sin backend → queda como plan visible */ })
     })
   }, [])
@@ -603,11 +605,21 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     try {
       const r = await fetch('/api/v1/brain/cua/dispatch', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction, mode: cuaMode === 'auto' ? 'auto' : 'supervised' }),
+        body: JSON.stringify({
+          instruction, mode: cuaMode === 'auto' ? 'auto' : 'supervised',
+          disabled: [...getDisabledCapabilities()],
+        }),
       })
       if (!r.ok) throw new Error(String(r.status))
       const d = await r.json()
-      const base = `Flujo creado: ${d.flow?.name ?? 'OK'}.`
+      if (d.ok === false) {
+        setCuaMsg(`Los agentes disponibles para esto están desactivados en el mapa (${(d.skipped_disabled_agents ?? []).join(', ')}). Activalos para continuar.`)
+        return
+      }
+      const skippedNote = d.skipped_disabled_agents?.length
+        ? ` (saltó: ${d.skipped_disabled_agents.join(', ')} — desactivados)`
+        : ''
+      const base = `Flujo creado: ${d.flow?.name ?? 'OK'}${skippedNote}.`
       if (d.can_execute) {
         setCuaMsg(`${base} Ejecución real disponible — abriendo sesión Computer Use.`)
         setCuaLauncherOpen(true)
