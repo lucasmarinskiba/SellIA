@@ -3,6 +3,15 @@
 # configured intervals. Without this process running, the tasks exist but
 # nothing ever triggers them. See Dockerfile.celery-worker for why no
 # Chromium/Playwright here and why bookworm.
+#
+# NOTE for future maintainers: this service's Railway "Watch Paths" setting
+# was mistakenly typed as this literal filename instead of being left as a
+# glob covering the app code -- meaning Railway silently SKIPS every build
+# whose diff doesn't touch this exact file ("no changes detected in watch
+# paths, build will skip"), even though the actual celery task code lives
+# under backend/. A push that only changes backend/**/*.py will NOT deploy
+# until this is fixed in the dashboard (Settings -> Watch Paths, e.g. set
+# to "backend/**" or clear it) or this file itself is touched.
 FROM python:3.11-slim-bookworm
 
 WORKDIR /app
