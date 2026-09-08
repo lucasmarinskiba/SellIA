@@ -10,7 +10,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -295,7 +295,7 @@ class ABTestEngine:
                 PromptExperimentResult.variant,
                 func.count(PromptExperimentResult.id).label("n"),
                 func.sum(
-                    func.case(
+                    case(
                         (PromptExperimentResult.outcome.in_(
                             ["lead_generated", "sale_closed", "objection_overcome", "converted"]
                         ), 1),
@@ -308,6 +308,21 @@ class ABTestEngine:
         )
         result = await db.execute(stmt)
         rows = {r.variant: {"n": r.n, "conversions": r.conversions or 0} for r in result.all()}
+
+        # Real revenue attributed to each variant (from record_result's
+        # optional `revenue` arg -- populated with the real Deal.final_value
+        # when the conversion source is a won deal). None/0 for callers that
+        # never pass revenue (e.g. funnel_ab_bridge's voice tests).
+        revenue_stmt = (
+            select(
+                PromptExperimentResult.variant,
+                func.coalesce(func.sum(PromptExperimentResult.revenue), 0).label("revenue"),
+            )
+            .where(PromptExperimentResult.experiment_id == experiment_id)
+            .group_by(PromptExperimentResult.variant)
+        )
+        revenue_result = await db.execute(revenue_stmt)
+        revenue_rows = {r.variant: float(r.revenue or 0) for r in revenue_result.all()}
 
         n_a = rows.get("a", {}).get("n", 0)
         n_b = rows.get("b", {}).get("n", 0)
@@ -352,6 +367,8 @@ class ABTestEngine:
             "p_value": round(p_value, 6),
             "winner": winner,
             "is_significant": is_significant,
+            "revenue_a": round(revenue_rows.get("a", 0.0), 2),
+            "revenue_b": round(revenue_rows.get("b", 0.0), 2),
         }
 
     @staticmethod
@@ -373,6 +390,36 @@ class ABTestEngine:
             )
         else:
             return 1.0 - ABTestEngine._normal_cdf(-x)
+
+    @staticmethod
+    async def record_conversation_outcome(
+        db: AsyncSession,
+        conversation,
+        tracking_key: str,
+        outcome: str,
+        revenue: Optional[float] = None,
+    ) -> None:
+        """Generic helper: read an experiment assignment stashed on
+        conversation.extra_data[tracking_key] (as {"experiment_id", "variant"},
+        written by whatever code path assigned the variant -- e.g. ai_reply.py's
+        personality-level A/B check) and record + check-auto-promote against it.
+        Safe no-op if the conversation was never enrolled in that experiment
+        kind, or the assignment is malformed. Never raises -- a conversion
+        event (a deal closing) must never fail because of A/B bookkeeping.
+        """
+        try:
+            tracking = (conversation.extra_data or {}).get(tracking_key)
+            if not tracking:
+                return
+            experiment_id = uuid.UUID(tracking["experiment_id"])
+            variant = tracking["variant"]
+            await ABTestEngine.record_result(
+                db, experiment_id=experiment_id, conversation_id=conversation.id,
+                variant=variant, outcome=outcome, revenue=revenue,
+            )
+            await ABTestEngine.check_auto_promote(db, experiment_id)
+        except Exception as e:
+            logger.warning(f"Failed to record AB outcome for key '{tracking_key}': {e}")
 
     @staticmethod
     async def check_auto_promote(

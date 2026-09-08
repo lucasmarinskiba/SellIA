@@ -645,6 +645,135 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"webhook tables migration: {str(e)[:120]}")
 
+    # prompt_experiments + prompt_experiment_results (app.domains.agents.ab_testing):
+    # the real A/B-testing engine (app.domains.agents.ab_service.ABTestEngine)
+    # and both of its consumers -- funnel_ab_bridge.py's voice tests (silently
+    # wired into ai_reply.py already) and the business-facing sales-agent
+    # message tests now exposed at /api/v1/testing (app.api.v1.enterprise_testing,
+    # rebuilt for real this session) -- were reading/writing these tables the
+    # entire time with no CREATE TABLE anywhere, so every real A/B assignment
+    # and conversion record silently no-op'd behind a caught exception.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS prompt_experiments (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} REFERENCES businesses(id),
+                    name VARCHAR(200) NOT NULL,
+                    agent_type VARCHAR(50) NOT NULL,
+                    metric VARCHAR(20) NOT NULL,
+                    variant_a_name VARCHAR(100) NOT NULL,
+                    variant_a_prompt TEXT NOT NULL,
+                    variant_b_name VARCHAR(100) NOT NULL,
+                    variant_b_prompt TEXT NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+                    confidence_threshold FLOAT NOT NULL DEFAULT 0.95,
+                    min_samples INTEGER NOT NULL DEFAULT 100,
+                    winner_variant VARCHAR(1),
+                    started_at {ts_col},
+                    completed_at {ts_col},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiments_business_id ON prompt_experiments (business_id)"))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiments_agent_type ON prompt_experiments (agent_type)"))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS prompt_experiment_results (
+                    id {id_type} PRIMARY KEY,
+                    experiment_id {id_type} NOT NULL REFERENCES prompt_experiments(id) ON DELETE CASCADE,
+                    variant VARCHAR(1) NOT NULL,
+                    conversation_id {id_type} NOT NULL,
+                    outcome VARCHAR(50),
+                    revenue NUMERIC(10, 2),
+                    engagement_score FLOAT,
+                    created_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_experiment_id ON prompt_experiment_results (experiment_id)"))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_prompt_experiment_results_conversation_id ON prompt_experiment_results (conversation_id)"))
+            await db.commit()
+        logger.info("✅ A/B testing tables ensured (prompt_experiments, prompt_experiment_results)")
+    except Exception as e:
+        logger.warning(f"A/B testing tables migration: {str(e)[:120]}")
+
+    # agent_personalities + agent_configs (app.domains.agents.models): discovered
+    # while wiring the new testing_framework -- ai_reply.py's generate_ai_response()
+    # (the function that actually generates every AI sales-agent reply, called
+    # from channels/services.py for every incoming message) does an
+    # unconditional `SELECT ... FROM agent_personalities WHERE slug = ...` with
+    # no fallback, and this table has never existed on production. Caught by an
+    # outer try/except in services.py's _maybe_ai_auto_reply, so it fails
+    # silently rather than 500ing the webhook -- but the net effect is that the
+    # AI auto-reply "safety net" and any personality-based reply generation
+    # have been completely non-functional in production this whole time.
+    # AgentService.seed_personalities() (app/domains/agents/services.py) already
+    # has a complete, curated ~150-personality seed list (including the 4
+    # functional slugs captador/cualificador/vendedor/post-venta the whole
+    # reply pipeline depends on) that has simply never run because the table
+    # never existed -- run it for real, not a fabricated shortcut list.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
+        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        jsonb_type = "TEXT" if is_sqlite else "JSONB"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS agent_personalities (
+                    id {id_type} PRIMARY KEY,
+                    slug VARCHAR(50) NOT NULL UNIQUE,
+                    name VARCHAR(100) NOT NULL,
+                    emoji VARCHAR(10) NOT NULL DEFAULT '🤖',
+                    tagline VARCHAR(200) NOT NULL,
+                    description TEXT NOT NULL,
+                    expertise {jsonb_type},
+                    color VARCHAR(20) DEFAULT '#FF6B35',
+                    is_active {bool_default_true},
+                    display_order INTEGER DEFAULT 0,
+                    created_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_personalities_slug ON agent_personalities (slug)"))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS agent_configs (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    personality_id {id_type} NOT NULL REFERENCES agent_personalities(id) ON DELETE CASCADE,
+                    is_enabled {bool_default_true},
+                    custom_instructions TEXT,
+                    tone_override VARCHAR(50),
+                    voice_personality_id {id_type} REFERENCES agent_personalities(id) ON DELETE SET NULL,
+                    ai_auto_reply_enabled {bool_default_false},
+                    ai_auto_reply_personality_id {id_type} REFERENCES agent_personalities(id) ON DELETE SET NULL,
+                    extra_data {jsonb_type},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_configs_business_id ON agent_configs (business_id)"))
+            await db.commit()
+        logger.info("✅ agent personality tables ensured (agent_personalities, agent_configs)")
+
+        # Seed the curated personality catalog now that the table exists --
+        # get_or_create_personality() is idempotent (no-op on already-seeded
+        # rows), so this is safe to run on every boot.
+        try:
+            from app.domains.agents.services import AgentService
+            async with AsyncSessionLocal() as db:
+                seeded = await AgentService(db).seed_personalities()
+            logger.info(f"✅ agent_personalities seeded ({len(seeded)} personalities)")
+        except Exception as e:
+            logger.warning(f"agent_personalities seed: {str(e)[:120]}")
+    except Exception as e:
+        logger.warning(f"agent personality tables migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which
