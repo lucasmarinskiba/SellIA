@@ -25,6 +25,7 @@ import { TOOLS, fuzzyMatch, type LobeId, type Tool } from './toolIndex'
 import NotificationsDropdown from './NotificationsDropdown'
 import SettingsDropdown from './SettingsDropdown'
 import { useVoiceWake } from './useVoiceWake'
+import { authApi, setToken, getToken, extractErrorMessage, api as selliaApi } from '@/lib/sellia-api'
 
 
 /* ─── types ─── */
@@ -52,19 +53,21 @@ interface MissionControlBarProps {
 }
 
 
-/* ─── auth localStorage ─── */
-const USER_KEY     = 'sellia_user_v1'
-const ACCOUNTS_KEY = 'sellia_accounts_v1'
-
-interface StoredAccount {
-  id: string; name: string; email: string; passHash: string; createdAt: string
-}
-
-const simpleHash = (s: string): string => {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
-  return String(h >>> 0)
-}
+/* ─── auth ───
+ * Real accounts now (backend/app/api/v1/signup.py's /auth/signup +
+ * /auth/signin via src/lib/sellia-api, bcrypt-hashed server-side, same
+ * system the rest of the app uses). This used to be a fully local,
+ * disconnected auth: accounts lived only in this browser's localStorage,
+ * "password hashing" was a 32-bit rolling hash (not cryptographic, and
+ * trivially reversible), and nothing here ever reached the real database --
+ * anyone "creating an account" on this page believed they had a SellIA
+ * account when nothing was ever stored server-side.
+ *
+ * USER_KEY still caches the last-seen profile for instant paint on reload,
+ * but it is never the source of truth for whether someone is logged in --
+ * see the isAuthenticated() check below, which requires a real token too.
+ */
+const USER_KEY = 'sellia_user_v1'
 
 export const loadUser = (): UserProfile | null => {
   try { const s = localStorage.getItem(USER_KEY); return s ? (JSON.parse(s) as UserProfile) : null }
@@ -75,15 +78,12 @@ export const saveUser = (u: UserProfile): void => {
 }
 export const clearUser = (): void => {
   try { localStorage.removeItem(USER_KEY) } catch { /* ignore */ }
+  setToken(null)
 }
 
-const loadAccounts = (): StoredAccount[] => {
-  try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? '[]') as StoredAccount[] }
-  catch { return [] }
-}
-const saveAccounts = (a: StoredAccount[]): void => {
-  try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a)) } catch { /* ignore */ }
-}
+// A cached display profile with no real token behind it (e.g. the token was
+// cleared/expired elsewhere) must never read as "logged in".
+export const isAuthenticated = (): boolean => !!loadUser() && !!getToken()
 
 
 /* ─── CUA options ─── */
@@ -286,38 +286,51 @@ const AuthModal = ({
   const [err,   setErr]   = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleRegister = (): void => {
+  // Real accounts (see auth section comment above) -- password strength is
+  // enforced server-side (backend/app/api/v1/signup.py's SignupRequest
+  // validator: 8+ chars, upper, lower, digit, one of @+-!#$%); the client
+  // check here just avoids a pointless round-trip for an obviously-too-short
+  // one, and the real 422 message surfaces via extractErrorMessage otherwise.
+  const handleRegister = async (): Promise<void> => {
     setErr('')
     if (!name.trim())           { setErr('Ingresá tu nombre'); return }
     if (!email.includes('@'))   { setErr('Email inválido'); return }
-    if (pass.length < 6)        { setErr('Contraseña: mínimo 6 caracteres'); return }
-    const accounts = loadAccounts()
-    if (accounts.find(a => a.email === email.toLowerCase())) {
-      setErr('Ya existe una cuenta con ese email'); return
-    }
+    if (pass.length < 8)        { setErr('Contraseña: mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo'); return }
     setLoading(true)
-    const u: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name: name.trim(),
-      email: email.toLowerCase(),
-      createdAt: new Date().toISOString(),
+    try {
+      const data = await authApi.signup({ email: email.toLowerCase(), password: pass, name: name.trim() })
+      setToken(data.access_token)
+      const u: UserProfile = {
+        id: data.user_id, name: data.full_name, email: data.email,
+        createdAt: new Date().toISOString(),
+      }
+      saveUser(u)
+      onAuth(u); onClose()
+    } catch (e) {
+      setErr(extractErrorMessage(e, 'No se pudo crear la cuenta'))
+    } finally {
+      setLoading(false)
     }
-    accounts.push({ ...u, passHash: simpleHash(pass) })
-    saveAccounts(accounts)
-    saveUser(u)
-    setTimeout(() => { setLoading(false); onAuth(u); onClose() }, 400)
   }
 
-  const handleLogin = (): void => {
+  const handleLogin = async (): Promise<void> => {
     setErr('')
     if (!email || !pass) { setErr('Completá todos los campos'); return }
-    const accounts = loadAccounts()
-    const acc = accounts.find(a => a.email === email.toLowerCase() && a.passHash === simpleHash(pass))
-    if (!acc) { setErr('Email o contraseña incorrectos'); return }
     setLoading(true)
-    const u: UserProfile = { id: acc.id, name: acc.name, email: acc.email, createdAt: acc.createdAt }
-    saveUser(u)
-    setTimeout(() => { setLoading(false); onAuth(u); onClose() }, 400)
+    try {
+      const data = await authApi.login({ email: email.toLowerCase(), password: pass })
+      setToken(data.access_token)
+      const u: UserProfile = {
+        id: data.user_id, name: data.full_name, email: data.email,
+        createdAt: new Date().toISOString(),
+      }
+      saveUser(u)
+      onAuth(u); onClose()
+    } catch (e) {
+      setErr(e instanceof Error && !(e as any).response ? e.message : extractErrorMessage(e, 'Email o contraseña incorrectos'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inp: React.CSSProperties = {
@@ -401,16 +414,25 @@ const DeleteConfirm = ({
 }: { user: UserProfile; onClose: () => void; onDeleted: () => void }): React.JSX.Element => {
   const [pass, setPass] = useState('')
   const [err,  setErr]  = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const handleDelete = (): void => {
-    const accounts = loadAccounts()
-    const idx = accounts.findIndex(a => a.id === user.id && a.passHash === simpleHash(pass))
-    if (idx === -1) { setErr('Contraseña incorrecta'); return }
-    accounts.splice(idx, 1)
-    saveAccounts(accounts)
-    clearUser()
-    onDeleted()
-    onClose()
+  const handleDelete = async (): Promise<void> => {
+    setErr('')
+    setBusy(true)
+    try {
+      // Re-verify the real password before a destructive, irreversible call
+      // (the login endpoint IS the password check -- no separate "verify
+      // password" route exists, and this avoids re-implementing one).
+      await authApi.login({ email: user.email, password: pass })
+      await selliaApi.post('/auth/me/delete-account')
+      clearUser()
+      onDeleted()
+      onClose()
+    } catch (e) {
+      setErr(e instanceof Error && !(e as any).response ? e.message : extractErrorMessage(e, 'Contraseña incorrecta'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -433,8 +455,8 @@ const DeleteConfirm = ({
           <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontFamily: 'inherit' }}>
             Cancelar
           </button>
-          <button type="button" onClick={handleDelete} style={{ flex: 1, padding: '12px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', border: 'none', background: '#F87171', color: '#fff', fontFamily: 'inherit' }}>
-            Eliminar cuenta
+          <button type="button" onClick={handleDelete} disabled={busy} style={{ flex: 1, padding: '12px', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: busy ? 'wait' : 'pointer', border: 'none', background: '#F87171', color: '#fff', fontFamily: 'inherit', opacity: busy ? 0.6 : 1 }}>
+            {busy ? 'Eliminando…' : 'Eliminar cuenta'}
           </button>
         </div>
       </div>

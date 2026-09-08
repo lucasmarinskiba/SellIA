@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, type FormEvent } from 'react'
 
-import { api, QueryProvider, useSellIAAuth, SellIAAuthProvider } from '@/lib/sellia-api'
+import { api, QueryProvider, useSellIAAuth, SellIAAuthProvider, extractErrorMessage } from '@/lib/sellia-api'
 import { businessContextApi } from '@/lib/businessContext'
 import BusinessContextWizard from '@/components/missions/BusinessContextWizard'
 
@@ -23,9 +23,11 @@ function Step({ active, num, label }: { active: boolean; num: number; label: str
 function OnboardingInner() {
   const { isAuthenticated, isLoading } = useSellIAAuth()
   const [step, setStep] = useState(1)
+  const [businessName, setBusinessName] = useState('')
   const [subdomain, setSubdomain] = useState('')
   const [available, setAvailable] = useState<boolean | null>(null)
   const [checking, setChecking] = useState(false)
+  const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
   const [connectUrl, setConnectUrl] = useState<string | null>(null)
 
@@ -39,15 +41,19 @@ function OnboardingInner() {
   // fields directly into every AI agent's system prompt.
   const [contextId, setContextId] = useState<string | null>(null)
   const [contextLoading, setContextLoading] = useState(false)
+  // Set from the real business created in step 1 (POST /websites/onboarding/
+  // complete's response) so the questionnaire attaches to that exact
+  // business, not a bare user-level context with business_id=null.
+  const [businessId, setBusinessId] = useState<string | null>(null)
 
   useEffect(() => {
     if (step !== 2 || contextId || !isAuthenticated) return
     setContextLoading(true)
-    businessContextApi.getContext()
+    businessContextApi.getContext(businessId ?? undefined)
       .then((ctx) => setContextId(ctx.id))
-      .catch((e: any) => setClaimError(e?.response?.data?.detail || 'Error preparando el cuestionario'))
+      .catch((e: any) => setClaimError(extractErrorMessage(e, 'Error preparando el cuestionario')))
       .finally(() => setContextLoading(false))
-  }, [step, contextId, isAuthenticated])
+  }, [step, contextId, isAuthenticated, businessId])
 
   if (isLoading) return <div className="min-h-screen bg-[#060812] flex items-center justify-center text-white/50">Cargando…</div>
   if (!isAuthenticated && typeof window !== 'undefined') {
@@ -55,6 +61,9 @@ function OnboardingInner() {
     return null
   }
 
+  // Real endpoints (backend/app/api/v1/websites.py) -- there was never an
+  // /onboarding/subdomain route at all (confirmed 404 in production), so
+  // step 1 could never actually advance for any real user before this.
   const checkSubdomain = async (value: string) => {
     setSubdomain(value)
     setAvailable(null)
@@ -62,11 +71,11 @@ function OnboardingInner() {
     if (value.length < 3) return
     setChecking(true)
     try {
-      const r = await api.get(`/onboarding/subdomain/check`, { params: { subdomain: value } })
+      const r = await api.get('/websites/onboarding/subdomain-check', { params: { subdomain: value } })
       setAvailable(r.data.available)
       if (!r.data.available && r.data.reason) setClaimError(r.data.reason)
     } catch (e: any) {
-      setClaimError(e?.response?.data?.detail || 'Error verificando')
+      setClaimError(extractErrorMessage(e, 'Error verificando'))
     } finally {
       setChecking(false)
     }
@@ -75,11 +84,20 @@ function OnboardingInner() {
   const claim = async (e: FormEvent) => {
     e.preventDefault()
     setClaimError(null)
+    setClaiming(true)
     try {
-      await api.post('/onboarding/subdomain', { subdomain })
+      // Creates the business (first one, if the account has none yet) +
+      // website + domain in one real call.
+      const r = await api.post('/websites/onboarding/complete', {
+        business_name: businessName.trim() || 'Mi Negocio',
+        subdomain,
+      })
+      if (r.data?.business_id) setBusinessId(r.data.business_id)
       setStep(2)
     } catch (e: any) {
-      setClaimError(e?.response?.data?.detail || 'Error claiming')
+      setClaimError(extractErrorMessage(e, 'Error reservando el subdominio'))
+    } finally {
+      setClaiming(false)
     }
   }
 
@@ -119,6 +137,15 @@ function OnboardingInner() {
             <h2 className="text-base font-bold mb-2">1 · Elegí tu subdominio</h2>
             <p className="text-[11px] text-white/40 mb-4">Tu negocio vivirá en <code className="text-cyan-300">{subdomain || 'tunegocio'}.sellia.app</code></p>
             <form onSubmit={claim} className="space-y-3">
+              <input
+                type="text"
+                required
+                minLength={2}
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Nombre de tu negocio"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
+              />
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -138,9 +165,9 @@ function OnboardingInner() {
               {available === true && <p className="text-[11px] text-emerald-400">✓ Disponible</p>}
               {claimError && <p className="text-[11px] text-red-400">{claimError}</p>}
 
-              <button type="submit" disabled={!available || checking}
+              <button type="submit" disabled={!available || checking || claiming || !businessName.trim()}
                 className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-pink-500 text-white font-bold text-sm disabled:opacity-40">
-                Reservar y continuar
+                {claiming ? 'Reservando…' : 'Reservar y continuar'}
               </button>
             </form>
           </div>

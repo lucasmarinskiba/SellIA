@@ -70,6 +70,7 @@ for _model_module in [
     "app.domains.product_tours.models",
     "app.domains.training.models",
     "app.domains.brand_transformation.models",
+    "app.domains.ai_activity.models",
 ]:
     _try_import_domain_models(_model_module)
 

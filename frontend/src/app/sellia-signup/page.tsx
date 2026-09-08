@@ -5,22 +5,36 @@
  */
 import { useState, type FormEvent } from 'react'
 
-import { QueryProvider, useSignup } from '@/lib/sellia-api'
+import { QueryProvider, useSignup, extractErrorMessage } from '@/lib/sellia-api'
+
+// Mirrors backend/app/api/v1/signup.py's real validator (8+ chars, upper,
+// lower, digit, one of @+-!#$%) -- client-side just so the error surfaces
+// before a round-trip, not instead of the real check.
+const PASSWORD_HINT = 'Mínimo 8 caracteres, con mayúscula, minúscula, número y un símbolo (@+-!#$%)'
+const isStrongPassword = (p: string): boolean =>
+  p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /\d/.test(p) && /[@+\-!#$%]/.test(p)
 
 function SignupInner() {
-  const [form, setForm] = useState({ email: '', password: '', name: '', tenant_name: '' })
+  // tenant_name used to be collected here but never sent anywhere real (the
+  // backend's /auth/signup only takes email/password/full_name) -- the
+  // business name is asked for real at /sellia-onboarding step 1 instead
+  // (OnboardingCompleteRequest.business_name), so it's not duplicated here.
+  const [form, setForm] = useState({ email: '', password: '', name: '' })
   const [error, setError] = useState<string | null>(null)
   const signup = useSignup()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (!isStrongPassword(form.password)) {
+      setError(PASSWORD_HINT)
+      return
+    }
     try {
       await signup.mutateAsync(form)
-      window.location.href = '/dashboard'
+      window.location.href = '/sellia-onboarding'
     } catch (err: any) {
-      const detail = err?.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : 'Error creando cuenta')
+      setError(extractErrorMessage(err, 'Error creando cuenta'))
     }
   }
 
@@ -35,9 +49,8 @@ function SignupInner() {
         <form onSubmit={handleSubmit} className="space-y-3">
           {([
             { k: 'name',         label: 'Tu nombre',           type: 'text',     ac: 'name' },
-            { k: 'tenant_name',  label: 'Nombre del negocio',  type: 'text',     ac: 'organization' },
             { k: 'email',        label: 'Email',               type: 'email',    ac: 'email' },
-            { k: 'password',     label: 'Contraseña (8+)',     type: 'password', ac: 'new-password' },
+            { k: 'password',     label: 'Contraseña',          type: 'password', ac: 'new-password' },
           ] as const).map((f) => (
             <div key={f.k}>
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 block">{f.label}</label>
@@ -50,6 +63,9 @@ function SignupInner() {
                 onChange={(e) => setForm((s) => ({ ...s, [f.k]: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
               />
+              {f.k === 'password' && (
+                <p className="text-[10px] text-white/30 mt-1">{PASSWORD_HINT}</p>
+              )}
             </div>
           ))}
 

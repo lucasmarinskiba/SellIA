@@ -34,6 +34,37 @@ def execute_workflow_task(self, execution_id: str, business_id: str, selected_ac
                 business_id=UUID(business_id),
                 selected_actions=selected_actions,
             )
+
+        # Durable per-user record of the action (see ai_activity/models.py) --
+        # separate short session, after the workflow's own commit, so a
+        # logging hiccup never rolls back or blocks the real execution above.
+        async with AsyncSessionLocal() as db2:
+            result = await db2.execute(select(Business.user_id).where(Business.id == business_id))
+            owner_id = result.scalar_one_or_none()
+        if owner_id:
+            from app.domains.ai_activity.service import log_ai_action
+            wf_name = None
+            try:
+                async with AsyncSessionLocal() as db3:
+                    wf_result = await db3.execute(
+                        select(WorkflowExecution).where(WorkflowExecution.id == execution_id)
+                    )
+                    execution = wf_result.scalar_one_or_none()
+                    if execution:
+                        wf_row = await db3.execute(select(Workflow.name).where(Workflow.id == execution.workflow_id))
+                        wf_name = wf_row.scalar_one_or_none()
+            except Exception:
+                pass
+            await log_ai_action(
+                user_id=owner_id,
+                business_id=business_id,
+                actor_type="workflow",
+                actor_id="automation.workflow_engine",
+                action="workflow_executed",
+                summary=f"Workflow ejecutado: {wf_name or execution_id}",
+                payload={"execution_id": execution_id, "selected_actions": selected_actions},
+            )
+
     try:
         run_async(_run())
     except Exception as exc:
@@ -237,6 +268,18 @@ Write ONLY the email body text. Be concise and compelling."""
                 subscription.last_sent_at = datetime.now(timezone.utc)
                 subscription.current_step_index += 1
                 await db.commit()
+
+                if business and business.user_id:
+                    from app.domains.ai_activity.service import log_ai_action
+                    await log_ai_action(
+                        user_id=business.user_id,
+                        business_id=business_id,
+                        actor_type="automation",
+                        actor_id="automation.send_sequence_email",
+                        action="email_sent",
+                        summary=f"Email de secuencia enviado a {conversation.lead_email}: {subject}",
+                        payload={"subscription_id": str(subscription.id), "step_id": step_id, "subject": subject},
+                    )
             except Exception as e:
                 log.status = "failed"
                 await db.commit()
