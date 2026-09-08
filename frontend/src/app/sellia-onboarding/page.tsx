@@ -3,10 +3,11 @@
 /**
  * Onboarding wizard · post-signup · claim subdomain + Stripe Connect.
  */
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 
 import { api, QueryProvider, useSellIAAuth, SellIAAuthProvider } from '@/lib/sellia-api'
 import { businessContextApi } from '@/lib/businessContext'
+import BusinessContextWizard from '@/components/missions/BusinessContextWizard'
 
 function Step({ active, num, label }: { active: boolean; num: number; label: string }) {
   return (
@@ -28,13 +29,25 @@ function OnboardingInner() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [connectUrl, setConnectUrl] = useState<string | null>(null)
 
-  const [contextForm, setContextForm] = useState({
-    business_type: 'other',
-    industry: '',
-    target_audience: '',
-    sales_model: 'b2c',
-  })
-  const [savingContext, setSavingContext] = useState(false)
+  // Real business-context questionnaire (5-step wizard: tipo de negocio,
+  // público objetivo, propuesta de valor, alcance/ubicación, canales, ads,
+  // objetivos y logística) -- replaces the old 4-field inline form, which
+  // only ever asked business_type/industry/target_audience/sales_model and
+  // left everything else (value_proposition, primary_goal, geographic_reach,
+  // channels_configured, etc.) permanently empty for every real signup, even
+  // though app/domains/agents/context_builder.py injects several of those
+  // fields directly into every AI agent's system prompt.
+  const [contextId, setContextId] = useState<string | null>(null)
+  const [contextLoading, setContextLoading] = useState(false)
+
+  useEffect(() => {
+    if (step !== 2 || contextId || !isAuthenticated) return
+    setContextLoading(true)
+    businessContextApi.getContext()
+      .then((ctx) => setContextId(ctx.id))
+      .catch((e: any) => setClaimError(e?.response?.data?.detail || 'Error preparando el cuestionario'))
+      .finally(() => setContextLoading(false))
+  }, [step, contextId, isAuthenticated])
 
   if (isLoading) return <div className="min-h-screen bg-[#060812] flex items-center justify-center text-white/50">Cargando…</div>
   if (!isAuthenticated && typeof window !== 'undefined') {
@@ -67,23 +80,6 @@ function OnboardingInner() {
       setStep(2)
     } catch (e: any) {
       setClaimError(e?.response?.data?.detail || 'Error claiming')
-    }
-  }
-
-  const saveContext = async () => {
-    setSavingContext(true)
-    try {
-      await businessContextApi.updateContext({
-        business_type: contextForm.business_type,
-        industry: contextForm.industry,
-        target_audience: contextForm.target_audience,
-        sales_model: contextForm.sales_model,
-      })
-      setStep(3)
-    } catch (e: any) {
-      setClaimError(e?.response?.data?.detail || 'Error guardando perfil')
-    } finally {
-      setSavingContext(false)
     }
   }
 
@@ -153,71 +149,14 @@ function OnboardingInner() {
         {step === 2 && (
           <div className="rounded-2xl border border-brand-orange/20 bg-[#0a0e1a]/80 p-6">
             <h2 className="text-base font-bold mb-2">2 · Perfil de negocio</h2>
-            <p className="text-[11px] text-white/40 mb-4">Contanos qué hacés para personalizar la IA.</p>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[11px] text-white/40 mb-1">Tipo de negocio</label>
-                <select
-                  value={contextForm.business_type}
-                  onChange={(e) => setContextForm({ ...contextForm, business_type: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange/40"
-                >
-                  <option value="physical_products">Productos físicos</option>
-                  <option value="digital_products">Productos digitales</option>
-                  <option value="services">Servicios</option>
-                  <option value="consulting">Consultoría / Coaching</option>
-                  <option value="software">Software / SaaS</option>
-                  <option value="food_beverage">Food & Beverage</option>
-                  <option value="fashion_beauty">Moda & Belleza</option>
-                  <option value="health_wellness">Salud & Bienestar</option>
-                  <option value="home_decor">Hogar & Decoración</option>
-                  <option value="handcraft">Artesanías</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] text-white/40 mb-1">Industria / Rubro</label>
-                <input
-                  type="text"
-                  value={contextForm.industry}
-                  onChange={(e) => setContextForm({ ...contextForm, industry: e.target.value })}
-                  placeholder="Ej: Indumentaria femenina"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand-orange/40"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-white/40 mb-1">Público objetivo</label>
-                <input
-                  type="text"
-                  value={contextForm.target_audience}
-                  onChange={(e) => setContextForm({ ...contextForm, target_audience: e.target.value })}
-                  placeholder="Ej: Mujeres 25-40"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand-orange/40"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-white/40 mb-1">Modelo de venta</label>
-                <select
-                  value={contextForm.sales_model}
-                  onChange={(e) => setContextForm({ ...contextForm, sales_model: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange/40"
-                >
-                  <option value="b2c">B2C</option>
-                  <option value="b2b">B2B</option>
-                  <option value="b2b2c">B2B2C</option>
-                  <option value="d2c">D2C</option>
-                  <option value="marketplace">Marketplace</option>
-                </select>
-              </div>
-              {claimError && <p className="text-[11px] text-red-400">{claimError}</p>}
-              <button
-                onClick={saveContext}
-                disabled={savingContext}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-r from-brand-orange to-brand-violet text-white font-bold text-sm disabled:opacity-40"
-              >
-                {savingContext ? 'Guardando…' : 'Guardar y continuar →'}
-              </button>
-            </div>
+            <p className="text-[11px] text-white/40 mb-4">Contanos qué hacés para personalizar la IA. Esto alimenta directo a tus agentes.</p>
+            {claimError && <p className="text-[11px] text-red-400 mb-3">{claimError}</p>}
+            {contextLoading && !contextId && (
+              <p className="text-[11px] text-white/40">Preparando cuestionario…</p>
+            )}
+            {contextId && (
+              <BusinessContextWizard contextId={contextId} onComplete={() => setStep(3)} />
+            )}
           </div>
         )}
 

@@ -178,6 +178,27 @@ export default function BusinessContextWizard({ contextId, onComplete }: Busines
                     className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20"
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-white/40">Público objetivo</label>
+                  <textarea
+                    placeholder="Ej: Mujeres 25-40, clase media-alta, interesadas en moda sustentable"
+                    value={data.target_audience || ''}
+                    onChange={e => updateField('target_audience', e.target.value)}
+                    rows={2}
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20 resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-white/40">Propuesta de valor</label>
+                  <textarea
+                    placeholder="¿Por qué te eligen a vos y no a la competencia?"
+                    value={data.value_proposition || ''}
+                    onChange={e => updateField('value_proposition', e.target.value)}
+                    rows={2}
+                    className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/20 resize-none"
+                  />
+                  <p className="text-[11px] text-white/25">Esto se inyecta directo en el prompt de tus agentes IA — cuanto más específico, mejor responden.</p>
+                </div>
               </motion.div>
             )}
 

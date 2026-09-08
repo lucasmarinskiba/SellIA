@@ -265,8 +265,15 @@ class BusinessContextService:
                     {"name": "business_type", "type": "select", "label": "Tipo de negocio", "options": [t.value for t in BusinessType]},
                     {"name": "sales_model", "type": "select", "label": "Modelo de venta", "options": [t.value for t in SalesModel]},
                     {"name": "industry", "type": "text", "label": "Industria/nicho"},
+                    # target_audience + value_proposition are injected directly into the
+                    # agent's system prompt (app/domains/agents/context_builder.py) --
+                    # previously missing from every wizard step definition, so real users
+                    # completing this wizard never actually supplied them despite the
+                    # model/schema supporting both since day one.
+                    {"name": "target_audience", "type": "textarea", "label": "Público objetivo (ej: mujeres 25-40, clase media-alta)"},
+                    {"name": "value_proposition", "type": "textarea", "label": "Propuesta de valor (¿por qué te eligen a vos y no a la competencia?)"},
                 ],
-                is_completed=ctx.business_type != BusinessType.OTHER,
+                is_completed=ctx.business_type != BusinessType.OTHER and bool(ctx.target_audience) and bool(ctx.value_proposition),
             ),
             BusinessContextWizardStep(
                 step=2,

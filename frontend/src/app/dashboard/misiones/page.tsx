@@ -80,6 +80,30 @@ export default function MisionesPage() {
     }
   }
 
+  const openContextWizard = async () => {
+    // BusinessContextWizard always needs a real context UUID -- it used to be
+    // handed the literal string "new" when no context existed yet, which the
+    // backend's context_id: uuid.UUID query param rejects with a silent 422
+    // (swallowed by the wizard's bare `console.error`), so any first-time user
+    // opening this before creating a business could never actually save step 1.
+    // GET /business-context auto-creates one server-side (get_or_create_context),
+    // so just fetch-or-create it here before ever mounting the wizard.
+    if (businessContext) {
+      setShowContextWizard(true)
+      return
+    }
+    setContextLoading(true)
+    try {
+      const ctx = await businessContextApi.getContext(selectedBusinessId || undefined)
+      setBusinessContext(ctx)
+      setShowContextWizard(true)
+    } catch (e: any) {
+      setActionError(e?.response?.data?.detail || 'Error preparando el cuestionario')
+    } finally {
+      setContextLoading(false)
+    }
+  }
+
   const handleRunDiagnostic = async () => {
     setRunningDiagnostic(true)
     setActionError(null)
@@ -218,7 +242,7 @@ export default function MisionesPage() {
               ))}
             </select>
           )}
-          <Button variant="secondary" onClick={() => setShowContextWizard(true)}>
+          <Button variant="secondary" onClick={openContextWizard}>
             <Building2 className="w-4 h-4 mr-2" />
             Mi Negocio
           </Button>
@@ -280,7 +304,7 @@ export default function MisionesPage() {
               <Building2 className="w-5 h-5 text-brand-orange" />
               Contexto de Negocio
             </h2>
-            <Button size="sm" variant="ghost" onClick={() => setShowContextWizard(true)}>
+            <Button size="sm" variant="ghost" onClick={openContextWizard}>
               <Wand2 className="w-3.5 h-3.5 mr-1" />
               Editar
             </Button>
@@ -325,7 +349,7 @@ export default function MisionesPage() {
         <Card className="p-6 text-center">
           <Building2 className="w-8 h-8 text-white/20 mx-auto mb-3" />
           <p className="text-sm text-white/30 mb-4">Configurá el contexto de tu negocio para obtener misiones personalizadas.</p>
-          <Button onClick={() => setShowContextWizard(true)}>
+          <Button onClick={openContextWizard} disabled={contextLoading}>
             <Wand2 className="w-4 h-4 mr-2" />
             Configurar mi negocio
           </Button>
@@ -458,15 +482,6 @@ export default function MisionesPage() {
         {showContextWizard && businessContext && (
           <BusinessContextWizard
             contextId={businessContext.id}
-            onComplete={() => {
-              setShowContextWizard(false)
-              loadBusinessContext()
-            }}
-          />
-        )}
-        {showContextWizard && !businessContext && (
-          <BusinessContextWizard
-            contextId="new"
             onComplete={() => {
               setShowContextWizard(false)
               loadBusinessContext()
