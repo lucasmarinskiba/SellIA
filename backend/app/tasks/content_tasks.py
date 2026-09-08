@@ -8,7 +8,6 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
-from asgiref.sync import async_to_sync
 from celery import shared_task
 from sqlalchemy import select, and_, or_, func
 
