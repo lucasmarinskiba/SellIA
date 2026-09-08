@@ -6,7 +6,6 @@ Tareas en background que requieren acceso a la base de datos.
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
-from asgiref.sync import async_to_sync
 from celery import shared_task
 from sqlalchemy import select
 
