@@ -1,126 +1,75 @@
-from fastapi import APIRouter, Query
-from app.domains.enterprise.knowledge_base import KnowledgeBase, LearningType
+"""Conversation pattern insights -- business-facing API.
+
+Real pattern analysis over a business's own won/lost deal conversations
+(app.domains.enterprise.knowledge_base.ConversationPatternAnalyzer). Replaces
+the previous "knowledge base" mock -- manual note-taking with a fabricated
+confidence_score=random.uniform(60, 95) and estimated_impact=
+random.randint(5, 25) -- with real counts: message volume, time to close,
+and word frequency, compared between conversations that closed a deal and
+ones that didn't. No ML/embeddings, per the product decision this replaces
+(simple pattern counts, not real learning).
+"""
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.users.models import User
+from app.domains.businesses.models import Business
+from app.domains.enterprise.knowledge_base import ConversationPatternAnalyzer
 
 router = APIRouter(tags=["knowledge"])
-knowledge_base = KnowledgeBase()
 
 
-@router.post("/knowledge/add-learning")
-async def add_learning(
-    user_id: str = Query(...),
-    title: str = Query(...),
-    content: str = Query(...),
-    learning_type: str = Query(...),
-    agent_id: str = Query(...),
-    segments: list[str] = Query(...),
+async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+    business = result.scalar_one_or_none()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    return business
+
+
+@router.get("/knowledge/patterns/{business_id}")
+async def get_win_loss_patterns(
+    business_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Record new agent learning."""
-    try:
-        lt = LearningType(learning_type)
-        entry = knowledge_base.add_learning(
-            user_id, title, content, lt, agent_id, segments
-        )
-
-        return {
-            "status": "recorded",
-            "learning_id": entry.id,
-            "title": title,
-            "type": learning_type,
-            "confidence": f"{entry.confidence_score:.1f}%",
-        }
-    except ValueError:
-        return {"status": "error", "message": f"Invalid type: {learning_type}"}
+    """Compare conversations that led to a won deal vs a lost one: message
+    volume, time to close, and win rate by which sales-agent voice/personality
+    was used (from the A/B testing engine's assignment tracking, when present)."""
+    await _get_business_for_user(business_id, current_user, db)
+    patterns = await ConversationPatternAnalyzer.get_win_loss_patterns(db, business_id)
+    return {"business_id": str(business_id), "patterns": patterns}
 
 
-@router.get("/knowledge/agent/{user_id}/{agent_id}")
-async def get_agent_profile(user_id: str, agent_id: str):
-    """Get agent learning profile."""
-    profile = knowledge_base.get_agent_learning_profile(user_id, agent_id)
-
-    return {
-        "agent_id": agent_id,
-        "agent_name": profile.agent_name,
-        "metrics": {
-            "total_learnings": profile.total_learnings,
-            "avg_confidence": f"{profile.confidence_score:.1f}%",
-            "success_rate": f"{profile.success_rate:.1f}%",
-            "segments_covered": profile.segments_covered,
-        },
-        "most_impactful": profile.most_impactful_learning,
-        "last_learning": profile.last_learning_at.isoformat(),
-    }
-
-
-@router.get("/knowledge/by-type/{user_id}")
-async def get_learnings_by_type(user_id: str, learning_type: str = Query(...)):
-    """Get learnings by type."""
-    try:
-        lt = LearningType(learning_type)
-        learnings = knowledge_base.get_learnings_by_type(user_id, lt)
-
-        return {
-            "type": learning_type,
-            "count": len(learnings),
-            "learnings": [
-                {
-                    "id": l.id,
-                    "title": l.title,
-                    "agent": l.agent_id,
-                    "confidence": f"{l.confidence_score:.1f}%",
-                    "usage_count": l.impact_count,
-                }
-                for l in learnings
-            ],
-        }
-    except ValueError:
-        return {"status": "error", "message": f"Invalid type: {learning_type}"}
-
-
-@router.get("/knowledge/recommendations/{user_id}")
-async def get_recommendations(
-    user_id: str, segment: str = Query(...), limit: int = Query(5, le=20)
+@router.get("/knowledge/winning-phrases/{business_id}")
+async def get_winning_phrases(
+    business_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Get AI recommendations for segment."""
-    recommendations = knowledge_base.recommend_learnings(user_id, segment, limit)
-
-    return {
-        "segment": segment,
-        "count": len(recommendations),
-        "recommendations": [
-            {
-                "learning_id": r.learning_id,
-                "title": r.title,
-                "reason": r.reason,
-                "confidence": f"{r.confidence:.1f}%",
-                "estimated_impact": r.estimated_impact,
-            }
-            for r in recommendations
-        ],
-    }
+    """Word-frequency count of the sales agent's own messages in won vs lost
+    conversations -- what words show up more often in conversations that
+    closed. Real counts, not a language model."""
+    await _get_business_for_user(business_id, current_user, db)
+    phrases = await ConversationPatternAnalyzer.get_winning_phrases(db, business_id, limit)
+    return {"business_id": str(business_id), "phrases": phrases}
 
 
-@router.post("/knowledge/record-usage")
-async def record_usage(
-    user_id: str = Query(...),
-    learning_id: str = Query(...),
-    success: bool = Query(...),
+@router.get("/knowledge/summary/{business_id}")
+async def get_summary(
+    business_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Record learning usage and success."""
-    knowledge_base.record_learning_usage(user_id, learning_id, success)
-
-    return {
-        "status": "recorded",
-        "learning_id": learning_id,
-        "success": success,
-    }
-
-
-@router.get("/knowledge/summary/{user_id}")
-async def get_summary(user_id: str):
-    """Get knowledge base summary."""
-    summary = knowledge_base.get_knowledge_summary(user_id)
-
-    return {
-        "user_id": user_id,
-        **summary,
-    }
+    """Combined dashboard view: win/loss patterns + top winning/losing phrases."""
+    await _get_business_for_user(business_id, current_user, db)
+    patterns = await ConversationPatternAnalyzer.get_win_loss_patterns(db, business_id)
+    phrases = await ConversationPatternAnalyzer.get_winning_phrases(db, business_id, limit=10)
+    return {"business_id": str(business_id), "patterns": patterns, "phrases": phrases}

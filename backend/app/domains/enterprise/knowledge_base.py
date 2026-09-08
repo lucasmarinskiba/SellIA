@@ -1,211 +1,155 @@
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
+"""Conversation Pattern Analyzer -- real pattern analysis over conversations/deals.
+
+Replaces the previous "knowledge base" mock (KnowledgeBase/KnowledgeEntry
+dataclasses, in-memory, confidence_score=random.uniform(60, 95),
+estimated_impact=f"+{random.randint(5, 25)}%") with simple, real counts over
+actual data: what did conversations that ended in a won deal look like,
+compared to ones that were lost? No ML/embeddings -- word frequency, message
+counts, and averages over app.domains.enterprise.forecasting_models.DealOutcome
+(real win/loss records, wired in enterprise_deal_intelligence.py) joined to
+their Deal's Conversation and Messages.
+"""
+
+import re
+import uuid
+from collections import Counter
 from typing import Optional
-import random
+
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.crm.models import Deal
+from app.domains.enterprise.forecasting_models import DealOutcome
+from app.domains.channels.models import Conversation, Message, MessageDirection
+
+# Small, pragmatic ES+EN stopword list for word-frequency counting -- not a
+# linguistics library, just enough to keep "que", "the", "de" etc. from
+# drowning out actually distinctive words in the counts.
+_STOPWORDS = {
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "de", "del", "al",
+    "que", "y", "o", "a", "en", "es", "por", "para", "con", "su", "sus", "se",
+    "lo", "le", "les", "te", "me", "mi", "tu", "nos", "si", "no", "ya", "muy",
+    "mas", "más", "pero", "como", "cuando", "donde", "qué", "esta", "este",
+    "esa", "ese", "eso", "esto", "hay", "ha", "he", "vas", "voy", "es", "son",
+    "the", "a", "an", "to", "of", "for", "and", "or", "is", "are", "in", "on",
+    "it", "you", "your", "we", "our", "i", "this", "that", "with", "be", "at",
+    "hola", "gracias", "buenas", "buenos", "dias", "días", "tardes", "noches",
+}
+_WORD_RE = re.compile(r"[a-zA-Záéíóúñü]{3,}", re.IGNORECASE)
 
 
-class LearningType(str, Enum):
-    SUCCESSFUL_STRATEGY = "successful_strategy"
-    FAILED_APPROACH = "failed_approach"
-    CUSTOMER_INSIGHT = "customer_insight"
-    OBJECTION_HANDLING = "objection_handling"
-    PRICING_INSIGHT = "pricing_insight"
-    MARKET_TREND = "market_trend"
+def _tokenize(text: str) -> list[str]:
+    words = _WORD_RE.findall(text.lower())
+    return [w for w in words if w not in _STOPWORDS]
 
 
-@dataclass
-class KnowledgeEntry:
-    id: str
-    title: str
-    content: str
-    learning_type: LearningType
-    agent_id: str  #which agent discovered this %
-    confidence_score: float  #0-100 %
-    applicable_segments: list[str]  #user segments %
-    created_at: datetime
-    impact_count: int = 0  #how many times used successfully %
-    tags: list[str] = field(default_factory=list)
-    related_entries: list[str] = field(default_factory=list)
+class ConversationPatternAnalyzer:
+    """Real pattern analysis over a business's won/lost deal conversations."""
 
-
-@dataclass
-class AgentLearning:
-    agent_id: str
-    agent_name: str
-    total_learnings: int
-    confidence_score: float  #average %
-    most_impactful_learning: Optional[str]
-    success_rate: float
-    segments_covered: int
-    last_learning_at: datetime
-
-
-@dataclass
-class KnowledgeRecommendation:
-    learning_id: str
-    title: str
-    reason: str  #why this learning applies %
-    confidence: float
-    applicable_segment: str
-    estimated_impact: str
-
-
-class KnowledgeBase:
-    def __init__(self):
-        self.entries = {}
-        self.agent_learnings = {}
-        self.usage_tracking = {}
-
-    def add_learning(
-        self,
-        user_id: str,
-        title: str,
-        content: str,
-        learning_type: LearningType,
-        agent_id: str,
-        applicable_segments: list[str],
-    ) -> KnowledgeEntry:
-        entry = KnowledgeEntry(
-            id=f"kb_{datetime.now().timestamp()}",
-            title=title,
-            content=content,
-            learning_type=learning_type,
-            agent_id=agent_id,
-            confidence_score=random.uniform(60, 95),
-            applicable_segments=applicable_segments,
-            created_at=datetime.now(),
+    @staticmethod
+    async def get_win_loss_patterns(db: AsyncSession, business_id: uuid.UUID) -> dict:
+        """Compare conversations that led to a won deal vs a lost one:
+        message volume, time to close, and win rate broken down by which
+        sales-agent personality/voice was used (from the A/B testing
+        assignment stashed on Conversation.extra_data, when present)."""
+        result = await db.execute(
+            select(DealOutcome, Deal)
+            .join(Deal, Deal.id == DealOutcome.deal_id)
+            .where(DealOutcome.business_id == business_id)
         )
+        rows = result.all()
 
-        key = f"{user_id}:{entry.id}"
-        self.entries[key] = entry
-        return entry
+        won = [(o, d) for o, d in rows if o.outcome == "won"]
+        lost = [(o, d) for o, d in rows if o.outcome == "lost"]
 
-    def get_agent_learning_profile(self, user_id: str, agent_id: str) -> AgentLearning:
-        agent_entries = [
-            e for k, e in self.entries.items()
-            if k.startswith(f"{user_id}:") and e.agent_id == agent_id
-        ]
-
-        total_impact = sum(e.impact_count for e in agent_entries)
-        success_rate = (
-            (total_impact / (len(agent_entries) * 10))
-            if agent_entries else 0
-        )
-
-        most_impactful = max(
-            agent_entries,
-            key=lambda x: x.impact_count,
-            default=None
-        )
-
-        agent_names = {
-            "lead_scout": "Lead Scout",
-            "closer_bot": "Closer Bot",
-            "coach_agent": "Coach Agent",
-            "analytics_engine": "Analytics Engine",
-        }
-
-        return AgentLearning(
-            agent_id=agent_id,
-            agent_name=agent_names.get(agent_id, agent_id),
-            total_learnings=len(agent_entries),
-            confidence_score=sum(e.confidence_score for e in agent_entries) / max(len(agent_entries), 1),
-            most_impactful_learning=most_impactful.title if most_impactful else None,
-            success_rate=min(100, success_rate * 100),
-            segments_covered=len(set(
-                s for e in agent_entries for s in e.applicable_segments
-            )),
-            last_learning_at=max(
-                (e.created_at for e in agent_entries),
-                default=datetime.now()
-            ),
-        )
-
-    def get_learnings_by_type(
-        self, user_id: str, learning_type: LearningType
-    ) -> list[KnowledgeEntry]:
-        return [
-            e for k, e in self.entries.items()
-            if k.startswith(f"{user_id}:") and e.learning_type == learning_type
-        ]
-
-    def get_learnings_by_segment(
-        self, user_id: str, segment: str
-    ) -> list[KnowledgeEntry]:
-        return [
-            e for k, e in self.entries.items()
-            if k.startswith(f"{user_id}:") and segment in e.applicable_segments
-        ]
-
-    def recommend_learnings(
-        self, user_id: str, segment: str, limit: int = 5
-    ) -> list[KnowledgeRecommendation]:
-        segment_learnings = self.get_learnings_by_segment(user_id, segment)
-
-        #Sort by confidence and impact %
-        sorted_learnings = sorted(
-            segment_learnings,
-            key=lambda x: (x.confidence_score, x.impact_count),
-            reverse=True,
-        )[:limit]
-
-        recommendations = []
-        for learning in sorted_learnings:
-            rec = KnowledgeRecommendation(
-                learning_id=learning.id,
-                title=learning.title,
-                reason=f"Successful in {segment} segment",
-                confidence=learning.confidence_score,
-                applicable_segment=segment,
-                estimated_impact=f"+{random.randint(5, 25)}% conversion",
+        async def _avg_message_count(pairs: list) -> Optional[float]:
+            conv_ids = [d.conversation_id for _, d in pairs if d.conversation_id]
+            if not conv_ids:
+                return None
+            count_result = await db.execute(
+                select(func.count(Message.id)).where(Message.conversation_id.in_(conv_ids))
             )
-            recommendations.append(rec)
+            total_messages = count_result.scalar() or 0
+            return round(total_messages / len(conv_ids), 1)
 
-        return recommendations
+        async def _win_rate_by_personality() -> dict:
+            conv_ids = [d.conversation_id for _, d in rows if d.conversation_id]
+            if not conv_ids:
+                return {}
+            conv_result = await db.execute(
+                select(Conversation.id, Conversation.extra_data).where(Conversation.id.in_(conv_ids))
+            )
+            personality_by_conv = {}
+            for conv_id, extra_data in conv_result.all():
+                tracking = (extra_data or {}).get("personality_ab") or (extra_data or {}).get("funnel_ab")
+                slug = tracking.get("agent_type") or tracking.get("stage") if tracking else None
+                if slug:
+                    personality_by_conv[conv_id] = slug
 
-    def record_learning_usage(
-        self, user_id: str, learning_id: str, success: bool
-    ) -> None:
-        key = f"{user_id}:{learning_id}"
-        if key in self.entries:
-            if success:
-                self.entries[key].impact_count += 1
-                #Increase confidence on success %
-                self.entries[key].confidence_score = min(
-                    99.9,
-                    self.entries[key].confidence_score + 1
-                )
-            else:
-                #Decrease confidence on failure %
-                self.entries[key].confidence_score = max(
-                    10, self.entries[key].confidence_score - 2
-                )
+            tally: dict = {}
+            for outcome_row, deal in rows:
+                slug = personality_by_conv.get(deal.conversation_id)
+                if not slug:
+                    continue
+                bucket = tally.setdefault(slug, {"won": 0, "lost": 0})
+                bucket[outcome_row.outcome] = bucket.get(outcome_row.outcome, 0) + 1
 
-    def get_knowledge_summary(self, user_id: str) -> dict:
-        all_entries = [
-            e for k, e in self.entries.items()
-            if k.startswith(f"{user_id}:")
-        ]
-
-        by_type = {}
-        for lt in LearningType:
-            by_type[lt.value] = len([
-                e for e in all_entries if e.learning_type == lt
-            ])
-
-        by_agent = {}
-        for agent_id in ["lead_scout", "closer_bot", "coach_agent", "analytics_engine"]:
-            profile = self.get_agent_learning_profile(user_id, agent_id)
-            by_agent[agent_id] = {
-                "total_learnings": profile.total_learnings,
-                "avg_confidence": f"{profile.confidence_score:.1f}%",
-                "success_rate": f"{profile.success_rate:.1f}%",
+            return {
+                slug: {
+                    **counts,
+                    "win_rate": f"{(counts['won'] / max(counts['won'] + counts['lost'], 1)) * 100:.1f}%",
+                }
+                for slug, counts in tally.items()
             }
 
+        avg_days_won = round(sum(o.days_to_close for o, _ in won if o.days_to_close is not None) / max(len([o for o, _ in won if o.days_to_close is not None]), 1), 1) if won else None
+        avg_days_lost = round(sum(o.days_to_close for o, _ in lost if o.days_to_close is not None) / max(len([o for o, _ in lost if o.days_to_close is not None]), 1), 1) if lost else None
+
         return {
-            "total_entries": len(all_entries),
-            "by_type": by_type,
-            "by_agent": by_agent,
-            "avg_confidence": f"{sum(e.confidence_score for e in all_entries) / max(len(all_entries), 1):.1f}%",
+            "sample_size": {"won": len(won), "lost": len(lost)},
+            "avg_messages_before_won": await _avg_message_count(won),
+            "avg_messages_before_lost": await _avg_message_count(lost),
+            "avg_days_to_close_won": avg_days_won,
+            "avg_days_to_close_lost": avg_days_lost,
+            "win_rate_by_agent": await _win_rate_by_personality(),
+        }
+
+    @staticmethod
+    async def get_winning_phrases(
+        db: AsyncSession, business_id: uuid.UUID, limit: int = 20
+    ) -> dict:
+        """Simple word-frequency count over the sales agent's own (outbound)
+        messages in won vs lost conversations -- what words show up more in
+        conversations that closed, vs ones that didn't. Real counts, not a
+        language model."""
+        result = await db.execute(
+            select(DealOutcome.outcome, Deal.conversation_id)
+            .join(Deal, Deal.id == DealOutcome.deal_id)
+            .where(DealOutcome.business_id == business_id, Deal.conversation_id.isnot(None))
+        )
+        rows = result.all()
+        won_conv_ids = [c for outcome, c in rows if outcome == "won"]
+        lost_conv_ids = [c for outcome, c in rows if outcome == "lost"]
+
+        async def _word_counts(conv_ids: list) -> Counter:
+            counter: Counter = Counter()
+            if not conv_ids:
+                return counter
+            msg_result = await db.execute(
+                select(Message.content).where(
+                    Message.conversation_id.in_(conv_ids),
+                    Message.direction == MessageDirection.OUTBOUND,
+                )
+            )
+            for (content,) in msg_result.all():
+                counter.update(_tokenize(content or ""))
+            return counter
+
+        won_counts = await _word_counts(won_conv_ids)
+        lost_counts = await _word_counts(lost_conv_ids)
+
+        return {
+            "sample_size": {"won_conversations": len(won_conv_ids), "lost_conversations": len(lost_conv_ids)},
+            "top_words_in_won": [{"word": w, "count": c} for w, c in won_counts.most_common(limit)],
+            "top_words_in_lost": [{"word": w, "count": c} for w, c in lost_counts.most_common(limit)],
         }
