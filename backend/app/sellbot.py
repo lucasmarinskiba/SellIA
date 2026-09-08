@@ -233,6 +233,248 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"computer_use_audit_logs migration: {str(e)[:120]}")
 
+    # Create the 5 team-collaboration tables (deal comments, approvals,
+    # handoffs, deal shares, notifications) used by
+    # app/domains/enterprise/collaboration.py -- same situation as
+    # computer_use_audit_logs above: these are on CoreBase, whose domain
+    # -table auto-creation is deliberately skipped app-wide (see this
+    # function's own comment further down / app/db/database.py's init_db),
+    # and this module previously used a completely separate, never-
+    # bootstrapped isolated Base, so none of these ever existed either way.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        id_col = "VARCHAR(36) PRIMARY KEY"
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
+        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS deal_comments (
+                    id {id_col},
+                    deal_id VARCHAR(255) NOT NULL,
+                    user_id VARCHAR(255) NOT NULL,
+                    user_name VARCHAR(255) NOT NULL,
+                    content TEXT NOT NULL,
+                    mentions VARCHAR(500),
+                    is_internal {bool_default_false},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_deal_comments ON deal_comments (deal_id, created_at)"
+            ))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS approval_chains (
+                    id {id_col},
+                    action_id VARCHAR(255) NOT NULL,
+                    action_type VARCHAR(50) NOT NULL,
+                    requester_id VARCHAR(255) NOT NULL,
+                    requester_name VARCHAR(255) NOT NULL,
+                    approval_steps TEXT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    decision_by VARCHAR(255),
+                    decision_at {ts_col},
+                    rejection_reason TEXT,
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_approval_action ON approval_chains (action_id)"
+            ))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_approval_status ON approval_chains (status, created_at)"
+            ))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS handoffs (
+                    id {id_col},
+                    deal_id VARCHAR(255) NOT NULL,
+                    from_user_id VARCHAR(255) NOT NULL,
+                    from_user_name VARCHAR(255) NOT NULL,
+                    to_user_id VARCHAR(255) NOT NULL,
+                    to_user_name VARCHAR(255) NOT NULL,
+                    reason TEXT,
+                    notes TEXT,
+                    context TEXT,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    accepted_at {ts_col},
+                    created_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_handoff_deal ON handoffs (deal_id, created_at)"
+            ))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_handoff_user ON handoffs (to_user_id, status)"
+            ))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS deal_shares (
+                    id {id_col},
+                    deal_id VARCHAR(255) NOT NULL,
+                    shared_by_user_id VARCHAR(255) NOT NULL,
+                    shared_with_user_id VARCHAR(255) NOT NULL,
+                    permissions VARCHAR(20) DEFAULT 'read',
+                    shared_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_deal_shares_deal ON deal_shares (deal_id, shared_at)"
+            ))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS team_notifications (
+                    id {id_col},
+                    user_id VARCHAR(255) NOT NULL,
+                    type VARCHAR(50) NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    related_deal_id VARCHAR(255),
+                    related_user_id VARCHAR(255),
+                    is_read {bool_default_false},
+                    created_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_notif_user ON team_notifications (user_id, is_read, created_at)"
+            ))
+            await db.commit()
+        logger.info("✅ team collaboration tables ensured (5/5)")
+    except Exception as e:
+        logger.warning(f"team collaboration tables migration: {str(e)[:120]}")
+
+    # deal_outcomes: win/loss history for forecast-accuracy tracking, used by
+    # app/domains/enterprise/forecasting.py's DealOutcomeAnalyzer. Its ORM
+    # model (forecasting_models.DealOutcome) declares deal_id/business_id as
+    # real FKs to deals.id/businesses.id -- those are native Postgres UUID
+    # columns, so id_col here uses the native UUID type too (unlike the
+    # VARCHAR(36) ids used above for collaboration's tables, which have no
+    # FK relationship to a UUID-typed table).
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS deal_outcomes (
+                    id {id_type} PRIMARY KEY,
+                    deal_id {id_type} NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    outcome VARCHAR(10) NOT NULL,
+                    final_value NUMERIC(14, 2),
+                    days_to_close INTEGER,
+                    forecasted_probability NUMERIC(5, 4) NOT NULL,
+                    forecast_accuracy NUMERIC(5, 4) NOT NULL,
+                    win_loss_reason TEXT,
+                    recorded_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_deal_outcomes_business ON deal_outcomes (business_id, recorded_at)"
+            ))
+            await db.commit()
+        logger.info("✅ deal_outcomes table ensured")
+    except Exception as e:
+        logger.warning(f"deal_outcomes migration: {str(e)[:120]}")
+
+    # pipelines + deals (app.domains.crm.models): the app's real sales-
+    # pipeline/deal-tracking tables, confirmed MISSING entirely from
+    # production (queried information_schema.tables directly) -- the same
+    # "CoreBase domain tables deliberately skipped" gap as everywhere else
+    # in this function. Every feature built on Deal this session (team
+    # collaboration's deal comments/approvals, forecasting, deal
+    # intelligence) depends on this table actually existing.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
+        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        jsonb_type = "TEXT" if is_sqlite else "JSONB"
+        async with AsyncSessionLocal() as db:
+            if not is_sqlite:
+                # Deal.stage is a SQLAlchemy Enum(LeadStage) column, which by
+                # default expects a native Postgres enum TYPE (not just a
+                # VARCHAR) -- confirmed by generating the real DDL SQLAlchemy
+                # produces for it (Enum(LeadStage).name == "leadstage",
+                # .enums == the member NAMES, e.g. "NEW_LEAD" not
+                # "new_lead"). Without this type existing, every INSERT/
+                # SELECT against deals.stage fails with `type "leadstage"
+                # does not exist` -- confirmed by testing an actual insert
+                # against production before adding this.
+                await db.execute(text("""
+                    DO $$ BEGIN
+                        CREATE TYPE leadstage AS ENUM (
+                            'NEW_LEAD', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT',
+                            'NEGOTIATING', 'CLOSED_WON', 'CLOSED_LOST', 'NURTURE'
+                        );
+                    EXCEPTION WHEN duplicate_object THEN null; END $$;
+                """))
+                await db.commit()
+            stage_type = "VARCHAR(20)" if is_sqlite else "leadstage"
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS pipelines (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    name VARCHAR(200) NOT NULL DEFAULT 'Pipeline Principal',
+                    description TEXT,
+                    stages {jsonb_type} DEFAULT '[]',
+                    is_default {bool_default_false},
+                    is_active {bool_default_true},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_pipelines_business_id ON pipelines (business_id)"
+            ))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS deals (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    pipeline_id {id_type} REFERENCES pipelines(id) ON DELETE SET NULL,
+                    conversation_id {id_type} REFERENCES conversations(id) ON DELETE SET NULL,
+                    title VARCHAR(300) NOT NULL,
+                    description TEXT,
+                    contact_name VARCHAR(255),
+                    contact_email VARCHAR(255),
+                    contact_phone VARCHAR(100),
+                    value NUMERIC(14, 2),
+                    currency VARCHAR(3) NOT NULL DEFAULT 'ARS',
+                    stage {stage_type} NOT NULL DEFAULT 'NEW_LEAD',
+                    stage_order INTEGER NOT NULL DEFAULT 0,
+                    probability INTEGER NOT NULL DEFAULT 10,
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    expected_close_date {ts_col},
+                    actual_close_date {ts_col},
+                    close_reason TEXT,
+                    source_channel VARCHAR(50),
+                    source_campaign VARCHAR(200),
+                    source_agent_id {id_type},
+                    extra_data {jsonb_type} DEFAULT '{{}}',
+                    is_active {bool_default_true},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_deals_business_id ON deals (business_id)"
+            ))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_deals_pipeline_id ON deals (pipeline_id)"
+            ))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_deals_conversation_id ON deals (conversation_id)"
+            ))
+            await db.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_deals_stage ON deals (stage)"
+            ))
+            await db.commit()
+        logger.info("✅ pipelines/deals tables ensured (2/2)")
+    except Exception as e:
+        logger.warning(f"pipelines/deals migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which

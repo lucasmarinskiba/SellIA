@@ -7,7 +7,18 @@ from datetime import datetime
 import uuid
 import enum
 
-from app.database import Base
+# Was `from app.database import Base` -- an isolated Base with no create-
+# table mechanism of its own at all. Switched to the real CoreBase (used by
+# Deal/Business, which these tables FK toward conceptually via deal_id/
+# user_id) for consistency, though note CoreBase's OWN domain-table auto-
+# creation is deliberately skipped app-wide (see app/db/database.py's
+# init_db -- "CoreBase domain tables have messy FK relationships (100+
+# models)... provisioned via Alembic migrations (currently disabled)").
+# These 5 tables are new (this module's read methods didn't exist until
+# this fix), so a dedicated CREATE TABLE IF NOT EXISTS bootstrap was added
+# to app/sellbot.py's lifespan, matching the same pattern already used
+# there for computer_use_audit_logs.
+from app.core.database import Base
 
 
 class CollaborationActionEnum(str, enum.Enum):
@@ -99,6 +110,29 @@ class Handoff(Base):
     )
 
 
+class DealShare(Base):
+    """Deal shared with a team member (view/edit access grant).
+
+    Added while completing this module -- api/v1/enterprise_collaboration.py's
+    POST /collaboration/share route already existed and called a share_deal()
+    method that was never implemented, so this table/model never existed
+    either. Minimal schema matching what that route's request/response
+    already specified (deal_id, shared_by, shared_with, permissions).
+    """
+    __tablename__ = "deal_shares"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    deal_id = Column(String(255), nullable=False)
+    shared_by_user_id = Column(String(255), nullable=False)
+    shared_with_user_id = Column(String(255), nullable=False)
+    permissions = Column(String(20), default="read")  # read, edit
+    shared_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_deal_shares_deal', 'deal_id', 'shared_at'),
+    )
+
+
 class TeamNotification(Base):
     """Real-time notifications (comments, approvals, handoffs)."""
     __tablename__ = "team_notifications"
@@ -152,6 +186,97 @@ class CollaborationManager:
         return comment
 
     @staticmethod
+    async def get_deal_comments(db: AsyncSession, deal_id: str, limit: int = 50) -> list[DealComment]:
+        """List comments on a deal, most recent first.
+
+        This method (and get_pending_approvals/get_deal_activity_feed/
+        share_deal below) didn't exist at all -- api/v1/enterprise_
+        collaboration.py's get_comments route called
+        collab_manager.get_deal_comments(...), a name that had never been
+        implemented, so every call would have raised AttributeError.
+        """
+        result = await db.execute(
+            select(DealComment).where(DealComment.deal_id == deal_id)
+            .order_by(DealComment.created_at.desc()).limit(limit)
+        )
+        return list(result.scalars().all())
+
+    @staticmethod
+    async def share_deal(
+        db: AsyncSession,
+        deal_id: str,
+        shared_by_user_id: str,
+        shared_with_user_id: str,
+        permissions: str = "read",
+    ) -> DealShare:
+        """Share a deal with a teammate (view/edit access grant)."""
+        share = DealShare(
+            deal_id=deal_id,
+            shared_by_user_id=shared_by_user_id,
+            shared_with_user_id=shared_with_user_id,
+            permissions=permissions,
+        )
+        db.add(share)
+        await db.commit()
+        await db.refresh(share)
+        return share
+
+    @staticmethod
+    async def get_pending_approvals(db: AsyncSession, user_id: str) -> list[ApprovalChain]:
+        """List approval chains where `user_id` is an approver still pending
+        a decision. approval_steps is stored as a serialized JSON string
+        (see approve_action below), not a queryable JSONB column, so this
+        fetches pending chains and filters in Python -- matches the same
+        JSON handling approve_action already uses for consistency.
+        """
+        import json
+
+        result = await db.execute(select(ApprovalChain).where(ApprovalChain.status == "pending"))
+        chains = result.scalars().all()
+        pending = []
+        for chain in chains:
+            steps = json.loads(chain.approval_steps)
+            if any(s["approver_id"] == user_id and s["status"] == "pending" for s in steps):
+                pending.append(chain)
+        return pending
+
+    @staticmethod
+    async def get_deal_activity_feed(db: AsyncSession, deal_id: str, limit: int = 50) -> list[dict]:
+        """Combined, timestamp-sorted feed of comments + shares for a deal."""
+        comments_result = await db.execute(
+            select(DealComment).where(DealComment.deal_id == deal_id)
+            .order_by(DealComment.created_at.desc()).limit(limit)
+        )
+        shares_result = await db.execute(
+            select(DealShare).where(DealShare.deal_id == deal_id)
+            .order_by(DealShare.shared_at.desc()).limit(limit)
+        )
+
+        activity = [
+            {
+                "type": "comment",
+                "id": c.id,
+                "user_id": c.user_id,
+                "timestamp": c.created_at,
+                "content": c.content,
+                "mentions": c.mentions.split(",") if c.mentions else [],
+            }
+            for c in comments_result.scalars().all()
+        ] + [
+            {
+                "type": "share",
+                "id": s.id,
+                "user_id": s.shared_by_user_id,
+                "timestamp": s.shared_at,
+                "shared_with": s.shared_with_user_id,
+            }
+            for s in shares_result.scalars().all()
+        ]
+
+        activity.sort(key=lambda a: a["timestamp"], reverse=True)
+        return activity[:limit]
+
+    @staticmethod
     async def request_approval(
         db: AsyncSession,
         action_id: str,
@@ -188,7 +313,15 @@ class CollaborationManager:
         decision: str,  # "approved" or "rejected"
         rejection_reason: str | None = None,
     ) -> ApprovalChain:
-        """Process approval decision."""
+        """Process approval decision.
+
+        Raises ValueError if action_id doesn't exist OR if approver_id isn't
+        actually one of the chain's listed approvers -- previously the loop
+        below silently did nothing when approver_id wasn't found, but the
+        `elif decision == "rejected"` branch after it fired regardless,
+        meaning ANY caller could reject ANY approval chain just by knowing
+        its action_id, without ever being a real approver on it.
+        """
         import json
 
         stmt = select(ApprovalChain).where(ApprovalChain.action_id == action_id)
@@ -200,9 +333,14 @@ class CollaborationManager:
 
         # Update step status
         steps = json.loads(chain.approval_steps)
+        matched = False
         for step in steps:
             if step["approver_id"] == approver_id:
                 step["status"] = decision
+                matched = True
+
+        if not matched:
+            raise ValueError(f"{approver_id} is not an approver on action {action_id}")
 
         chain.approval_steps = json.dumps(steps)
 

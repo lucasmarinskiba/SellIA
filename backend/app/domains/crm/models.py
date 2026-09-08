@@ -40,7 +40,13 @@ class Pipeline(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    deals = relationship("Deal", back_populates="pipeline", cascade="all, delete-orphan")
+    # Fully-qualified: app.domains.agents.crm_builder.service.py ALSO
+    # declares a class literally named `Deal` on this same shared Base --
+    # an unqualified relationship("Deal", ...) string here would raise
+    # "Multiple classes found for path 'Deal'" the moment any query touches
+    # the mapper graph (same failure mode already fixed once this session
+    # for app.domains.products.models -- see that commit).
+    deals = relationship("app.domains.crm.models.Deal", back_populates="pipeline", cascade="all, delete-orphan")
 
 
 class Deal(Base):
@@ -87,7 +93,7 @@ class Deal(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    pipeline = relationship("Pipeline", back_populates="deals")
+    pipeline = relationship("app.domains.crm.models.Pipeline", back_populates="deals")
 
 
 class LeadScore(Base):
