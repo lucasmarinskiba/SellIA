@@ -236,6 +236,15 @@ class PaymentService:
 
         await db.commit()
 
+        if transaction.status == TransactionStatus.APPROVED:
+            from app.domains.webhooks.service import fire_business_event
+            await fire_business_event(db, business_id, "payment.received", {
+                "transaction_id": str(transaction.id),
+                "payment_id": payment_id,
+                "amount": float(transaction.amount) if transaction.amount is not None else None,
+                "currency": getattr(transaction, "currency", None),
+            })
+
         logger.info(f"Transaction {transaction.id} updated to status: {transaction.status}")
 
         # Keep the payments dashboard (PaymentMetrics) truthful — nothing

@@ -596,6 +596,55 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"team management migration: {str(e)[:120]}")
 
+    # webhook_subscriptions + webhook_deliveries (app.domains.webhooks.models):
+    # the real webhook system's router/service/schemas were already complete
+    # and already wired at /api/v1/webhooks with real auth, but its tables
+    # were never created on production -- same CoreBase gap as every other
+    # domain model this session. Needed now that fire_business_event() (real
+    # lead.created/deal.won/deal.lost/payment.received triggers wired into
+    # enterprise_forecast.py, enterprise_deal_intelligence.py, and
+    # payment_service.py) actually reads/writes these tables.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
+        bool_default_false = "BOOLEAN DEFAULT 0" if is_sqlite else "BOOLEAN DEFAULT false"
+        jsonb_type = "TEXT" if is_sqlite else "JSONB"
+        async with AsyncSessionLocal() as db:
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+                    id {id_type} PRIMARY KEY,
+                    user_id {id_type} NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    url VARCHAR(500) NOT NULL,
+                    events {jsonb_type} NOT NULL,
+                    secret VARCHAR(255) NOT NULL,
+                    active {bool_default_true},
+                    created_at {ts_col},
+                    updated_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_webhook_subscriptions_user_id ON webhook_subscriptions (user_id)"))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS webhook_deliveries (
+                    id {id_type} PRIMARY KEY,
+                    subscription_id {id_type} NOT NULL REFERENCES webhook_subscriptions(id) ON DELETE CASCADE,
+                    event_type VARCHAR(100) NOT NULL,
+                    payload {jsonb_type} NOT NULL,
+                    response_status INTEGER,
+                    response_body TEXT,
+                    delivered_at {ts_col},
+                    retry_count INTEGER DEFAULT 0,
+                    success {bool_default_false}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_webhook_deliveries_subscription_id ON webhook_deliveries (subscription_id)"))
+            await db.commit()
+        logger.info("✅ webhook tables ensured (webhook_subscriptions, webhook_deliveries)")
+    except Exception as e:
+        logger.warning(f"webhook tables migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which
