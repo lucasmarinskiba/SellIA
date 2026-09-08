@@ -4,11 +4,11 @@
 self-configuration, self-repair, self-optimization, self-protection.
 """
 
-import asyncio
 from celery import shared_task
 from datetime import datetime, timezone, timedelta
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.intelligence.service import MessageIntelligenceService
@@ -23,18 +23,6 @@ from sqlalchemy import select
 logger = get_logger(__name__)
 
 
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
-
-
 @shared_task(name="app.tasks.autonomous_tasks.message_intelligence_analyzer")
 def message_intelligence_analyzer():
     """Every 5 min: analyze pending inbound messages."""
@@ -44,7 +32,7 @@ def message_intelligence_analyzer():
             count = await service.analyze_pending_messages()
             logger.info(f"Message intelligence analyzer: {count} messages analyzed")
             return {"analyzed": count}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.smart_action_router_evaluator")
@@ -91,7 +79,7 @@ def smart_action_router_evaluator():
 
             logger.info(f"Smart action router: {actions_taken} actions executed")
             return {"actions_taken": actions_taken}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.proactive_outreach_scheduler")
@@ -113,7 +101,7 @@ def proactive_outreach_scheduler():
 
             logger.info(f"Proactive outreach scheduler: {total} outreach messages scheduled")
             return {"scheduled": total}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.briefing_delivery")
@@ -135,7 +123,7 @@ def briefing_delivery():
 
             logger.info(f"Briefing delivery: {delivered} briefings sent")
             return {"delivered": delivered}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.handoff_alert_sender")
@@ -171,7 +159,7 @@ def handoff_alert_sender():
 
             logger.info(f"Handoff alert sender: {sent} alerts sent")
             return {"sent": sent}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.experiment_evaluator")
@@ -193,7 +181,7 @@ def experiment_evaluator():
 
             logger.info(f"Experiment evaluator: {evaluated} experiments evaluated")
             return {"evaluated": evaluated}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.auto_optimizer_runner")
@@ -215,7 +203,7 @@ def auto_optimizer_runner():
 
             logger.info(f"Auto optimizer: {adjustments} adjustments recommended")
             return {"adjustments": adjustments}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.ab_test_winner_applier")
@@ -244,7 +232,7 @@ def ab_test_winner_applier():
 
             logger.info(f"A/B winner applier: {applied} winners applied")
             return {"applied": applied}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.pipeline_automation_trigger_scanner")
@@ -284,7 +272,7 @@ def pipeline_automation_trigger_scanner():
 
             logger.info(f"Pipeline trigger scanner: {triggered} automations triggered")
             return {"triggered": triggered}
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ═══════════════════════════════════════════════════════
@@ -348,7 +336,7 @@ def autonomous_operations_cycle(self, business_id: str | None = None):
                 return {"businesses_processed": len(businesses), "summaries": summaries}
 
     try:
-        return _async_run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"[AOC] autonomous_operations_cycle error: {exc}")
         raise self.retry(exc=exc)
@@ -375,7 +363,7 @@ def system_health_check(business_id: str | None = None):
                 logger.warning(f"[HealthCheck] Score bajo: {score}/100 para business={business_id}")
             return result
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.deep_system_optimization")
@@ -418,7 +406,7 @@ def deep_system_optimization(business_id: str | None = None):
                 logger.info(f"[DeepOpt] Completado para {len(businesses)} negocios")
                 return {"businesses_processed": len(businesses)}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(
@@ -445,7 +433,7 @@ def emergency_security_scan(self, business_id: str | None = None, reason: str = 
                 )
             return result
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autonomous_tasks.weekly_executive_report")
@@ -531,4 +519,4 @@ def weekly_executive_report(business_id: str | None = None):
                     await _report_for(biz.id, biz.name)
                 logger.info(f"[WeeklyReport] {len(businesses)} reportes generados")
 
-    return _async_run(_run())
+    return run_async(_run())

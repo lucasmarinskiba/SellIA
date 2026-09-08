@@ -4,7 +4,6 @@ Tareas en background para generar imágenes, videos, copy, carruseles y thumbnai
 usando el ContentGenerationRouter que optimiza costos y calidad.
 """
 
-import asyncio
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
@@ -14,7 +13,9 @@ from celery import shared_task
 from sqlalchemy import select, and_, or_, func
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.config import get_settings
+from app.core.logger import get_logger
 from app.domains.automations.models import (
     GeneratedContent, ContentCalendar, WorkflowActionType,
     WorkflowExecution, Workflow,
@@ -23,24 +24,11 @@ from app.domains.catalogs.models import CatalogItem
 from app.domains.businesses.models import Business
 from app.integrations.content_generation.router import ContentGenerationRouter
 from app.integrations.content_generation.base import GenerationConfig, ContentQuality, ContentType
+
+logger = get_logger(__name__)
 from app.integrations.content_generation.cache import ContentCache
 
 settings = get_settings()
-
-
-def run_async(coro):
-    """Run an async coroutine in a sync context."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        else:
-            return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 # ============================================================================

@@ -1,27 +1,16 @@
 """Demand-forecasting Celery tasks."""
 
-import asyncio
 
 from celery import shared_task
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.forecasting.service import ForecastingService
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="app.tasks.forecasting_tasks.nightly_forecasts", time_limit=3600, soft_time_limit=3300)
@@ -45,7 +34,7 @@ def nightly_forecasts():
         logger.info(f"nightly_forecasts: {summary}")
         return summary
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.forecasting_tasks.weekly_accuracy_eval", time_limit=1800)
@@ -67,4 +56,4 @@ def weekly_accuracy_eval():
         logger.info(f"weekly_accuracy_eval: {rows} rows")
         return {"accuracy_rows": rows}
 
-    return _async_run(_run())
+    return run_async(_run())

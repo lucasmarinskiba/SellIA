@@ -7,7 +7,6 @@ runs when its own interval has elapsed since `last_run_at`, so the LLM cost is
 bounded by the automations' declared cadence, not by the tick frequency.
 """
 
-import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +14,7 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.brand_transformation.models import BrandAutomation, TransformationProgram
 from app.domains.brand_transformation.orchestrator import TransformationOrchestrator
@@ -31,18 +31,6 @@ _INTERVALS = {
 }
 # run a bit early rather than skipping a whole cycle on scheduler jitter
 _SLACK = 1800  # 30 min
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-
-            nest_asyncio.apply()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 def _is_due(automation: BrandAutomation, now: datetime) -> bool:
@@ -94,7 +82,7 @@ def run_due_brand_automations():
         )
         return {"ran": ran, "failed": failed, "due": len(due_ids)}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.brand_transformation_tasks.run_program_all", time_limit=5400, soft_time_limit=5100)
@@ -126,4 +114,4 @@ def run_program_all(program_id: str):
                     await db.commit()
                 return {"program_id": program_id, "status": "failed", "error": str(e)[:200]}
 
-    return _async_run(_run())
+    return run_async(_run())
