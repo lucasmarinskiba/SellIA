@@ -3363,8 +3363,8 @@
 ]
 },
 {
-"id": "skill.tool.crm_sync",
-"label": "Sincronizador de CRM",
+"id": "skill.tool.crm_external_sync",
+"label": "Sincronizador de CRM Externo",
 "kind": "skill",
 "category": "Herramienta",
 "layer": 1,
@@ -6515,12 +6515,12 @@
 "rel": "produce"
 },
 {
-"source": "skill.tool.crm_sync",
+"source": "skill.tool.crm_external_sync",
 "target": "platform.hubspot",
 "rel": "produce"
 },
 {
-"source": "skill.tool.crm_sync",
+"source": "skill.tool.crm_external_sync",
 "target": "platform.salesforce",
 "rel": "produce"
 },

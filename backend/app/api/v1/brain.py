@@ -68,6 +68,15 @@ async def brain_cua_flows(limit: int = Query(default=20, ge=1, le=30)) -> dict:
 class CuaDispatch(BaseModel):
     instruction: str = Field(min_length=1, max_length=1000)
     mode: str = Field(default="supervised")  # auto | supervised
+    # Capability ids (e.g. "agent.expert.ad_copywriter", "platform.whatsapp")
+    # the caller has toggled OFF via the Brain Interaction Map's ON/OFF
+    # buttons. This page is public/unauthenticated (no per-visitor login), so
+    # there is no server-side per-user state to persist here -- the toggle
+    # lives in the caller's own browser (localStorage) and is sent with every
+    # dispatch. Real enforcement: an intent whose agent or ALL of whose
+    # platforms are disabled is skipped in favor of the next matching intent,
+    # never silently ignored.
+    disabled: list[str] = Field(default_factory=list)
 
 
 # intent → (agente, tools, plataformas, etiqueta de acción)
@@ -99,6 +108,12 @@ _CUA_INTENTS: list[tuple[str, dict]] = [
 ]
 
 
+_FALLBACK_INTENT: dict = {
+    "agent": ("acquisition_strategist", "Estratega"), "tools": ["retrieve_knowledge"],
+    "platforms": ["web"], "action": "Planificar y ejecutar",
+}
+
+
 @router.post("/brain/cua/dispatch")
 async def brain_cua_dispatch(body: CuaDispatch) -> dict:
     """Recibe una indicación del usuario y la convierte en un flujo de Computer Use.
@@ -106,14 +121,39 @@ async def brain_cua_dispatch(body: CuaDispatch) -> dict:
     Construye pasos planificados (trigger → agente → tools → plataformas) según el
     intent de la indicación, los registra como actividad real (observabilidad) y los
     guarda como sesión CU para la vista de flujos. Best-effort.
+
+    Respeta `body.disabled` (los toggles ON/OFF del Brain Interaction Map): un
+    intent cuyo agente está apagado se salta a favor del siguiente intent que
+    matchee, y las tools/platforms individuales apagadas se excluyen del plan
+    en lugar de romperlo -- nunca se ignora el toggle en silencio.
     """
     text = body.instruction.strip()
     mode = body.mode if body.mode in ("auto", "supervised") else "supervised"
+    disabled = set(body.disabled)
 
-    intent = next((cfg for rx, cfg in _CUA_INTENTS if re.search(rx, text, re.I)), {
-        "agent": ("acquisition_strategist", "Estratega"), "tools": ["retrieve_knowledge"],
-        "platforms": ["web"], "action": "Planificar y ejecutar",
-    })
+    candidates = [cfg for rx, cfg in _CUA_INTENTS if re.search(rx, text, re.I)]
+    candidates.append(_FALLBACK_INTENT)
+
+    intent = None
+    skipped: list[str] = []
+    for cfg in candidates:
+        aslug, aname = cfg["agent"]
+        if f"agent.expert.{aslug}" in disabled:
+            skipped.append(aname)
+            continue
+        intent = cfg
+        break
+    if intent is None:
+        # Every matching intent's agent (fallback included) was disabled --
+        # still respond honestly instead of silently doing nothing.
+        return {
+            "ok": False, "flow": None, "can_execute": False,
+            "skipped_disabled_agents": skipped,
+            "hint": "Todos los agentes para esta indicación están desactivados en el mapa. Activá alguno para continuar.",
+        }
+
+    active_tools = [t for t in intent["tools"] if f"skill.tool.{t}" not in disabled]
+    active_platforms = [p for p in intent["platforms"] if f"platform.{p}" not in disabled]
 
     steps: list[dict] = []
     edges: list[dict] = []
@@ -127,18 +167,18 @@ async def brain_cua_dispatch(body: CuaDispatch) -> dict:
     aid = add(f"agent.expert.{aslug}", aname, "agent", 1)
     edges.append({"source": trig, "target": aid, "rel": "interpreta"})
     last = aid
-    for tslug in intent["tools"]:
+    for tslug in active_tools:
         tid = add(f"skill.tool.{tslug}", tslug.replace("_", " ").title(), "skill", 2)
         edges.append({"source": aid, "target": tid, "rel": "usa"})
         last = tid
-    for pslug in intent["platforms"]:
+    for pslug in active_platforms:
         pid = add(f"platform.{pslug}", pslug.replace("_", " ").title(), "platform", 3)
         edges.append({"source": last, "target": pid, "rel": "ejecuta"})
 
     # registrar como actividad real (observabilidad en el grafo overview)
     record_activity("computer_use", f"agent.expert.{aslug}",
                     f"Computer Use [{mode}] · {intent['action']}: {text[:80]}")
-    for tslug in intent["tools"]:
+    for tslug in active_tools:
         record_activity("function", f"skill.tool.{tslug}", f"CU usa {tslug} para: {text[:60]}")
 
     flow = get_cua_store().add({
@@ -152,6 +192,7 @@ async def brain_cua_dispatch(body: CuaDispatch) -> dict:
     can_execute = bool(getattr(_s, "ANTHROPIC_API_KEY", None) or getattr(_s, "OPENAI_API_KEY", None))
     return {
         "ok": True, "flow": flow, "can_execute": can_execute,
+        "skipped_disabled_agents": skipped,
         "hint": (
             "Sesión real disponible: usá /api/v1/computer_use/sessions para ejecutar."
             if can_execute else
