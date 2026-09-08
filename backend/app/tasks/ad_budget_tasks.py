@@ -1,28 +1,17 @@
 """Ad-budget autopilot Celery tasks."""
 
-import asyncio
 
 from celery import shared_task
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.ad_budget.models import AdBudgetConfig
 from app.domains.ad_budget.service import AdBudgetService
 from app.domains.businesses.models import Business
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="app.tasks.ad_budget_tasks.run_budget_cycles")
@@ -54,4 +43,4 @@ def run_budget_cycles():
             logger.info(f"ad_budget: {ran} cycles run, {applied} auto-applied")
             return {"cycles": ran, "applied": applied}
 
-    return _async_run(_run())
+    return run_async(_run())

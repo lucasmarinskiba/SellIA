@@ -3,11 +3,11 @@
 24/7 autonomous sales execution.
 """
 
-import asyncio
 from celery import shared_task
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.autopilot.service import AutopilotEngine, AutopilotReportService, AutopilotExecutor
 from app.domains.outreach.service import FatigueScoringService
@@ -18,18 +18,6 @@ from app.domains.businesses.models import Business
 from sqlalchemy import select
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="app.tasks.autopilot_tasks.autopilot_recommendation_executor")
@@ -63,7 +51,7 @@ def autopilot_recommendation_executor():
             logger.info(f"Autopilot recommendation executor: {executed} executed, {escalated} escalated")
             return {"executed": executed, "escalated": escalated}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.autopilot_daily_report_generator")
@@ -89,7 +77,7 @@ def autopilot_daily_report_generator():
             logger.info(f"Generated {generated} daily autopilot reports")
             return {"generated": generated}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.fatigue_score_recalculation")
@@ -115,7 +103,7 @@ def fatigue_score_recalculation():
             logger.info(f"Recalculated fatigue scores for {total_updated} conversations")
             return {"updated": total_updated}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.auto_close_evaluator")
@@ -128,7 +116,7 @@ def auto_close_evaluator():
             logger.info(f"Auto-close evaluator: {len(actions)} deals auto-closed")
             return {"closed": len(actions), "details": actions}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.health_score_recalculation")
@@ -154,7 +142,7 @@ def health_score_recalculation():
             logger.info(f"Recalculated health scores for {total_updated} customers")
             return {"updated": total_updated}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.churn_prevention_activator")
@@ -180,7 +168,7 @@ def churn_prevention_activator():
             logger.info(f"Churn prevention: {total_actions} actions activated")
             return {"activated": total_actions}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.cadence_engine_scheduler")
@@ -221,7 +209,7 @@ def cadence_engine_scheduler():
             logger.info(f"Cadence scheduler: {scheduled} contacts recommended")
             return {"recommended": scheduled}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.autopilot_tasks.director_executive_loop")
@@ -264,4 +252,4 @@ def director_executive_loop():
 
             return {"businesses_evaluated": len(businesses)}
 
-    return _async_run(_run())
+    return run_async(_run())

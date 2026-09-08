@@ -3,30 +3,16 @@
 Async Celery task to run simulations in the background.
 """
 
-import asyncio
 import uuid
 from celery import shared_task
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.training.service import execute_simulation
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    """Helper to run async coroutine in sync Celery task."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="app.domains.training.tasks.run_simulation_task")
@@ -73,4 +59,4 @@ def run_simulation_task(scenario_id: str, agent_type: str, run_id: str):
                     logger.error(f"Failed to mark run as failed: {inner_exc}")
                 raise
 
-    return _async_run(_run())
+    return run_async(_run())

@@ -3,7 +3,6 @@
 Tareas en background que requieren acceso a la base de datos.
 """
 
-import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +11,7 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.domains.automations.models import (
     Workflow, WorkflowExecution, WorkflowStatus, EmailSequence, SequenceStep, EmailTemplate,
     SequenceSubscription, SequenceEmailLog,
@@ -22,22 +22,6 @@ from app.domains.businesses.models import Business
 
 
 # Helper para correr código async desde sync Celery
-def run_async(coro):
-    """Run an async coroutine in a sync context."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If already in an async context, use asyncio.run_coroutine_threadsafe
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        else:
-            return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
-
-
 @shared_task(bind=True, max_retries=3)
 def execute_workflow_task(self, execution_id: str, business_id: str, selected_actions: Optional[List[Dict[str, Any]]] = None):
     """Execute a workflow via Celery task."""

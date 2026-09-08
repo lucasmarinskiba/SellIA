@@ -1,6 +1,5 @@
 """SellIA Department Tasks — Celery tasks for the virtual company."""
 
-import asyncio
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -10,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.domains.businesses.models import Business
 from app.domains.orchestration.director import SellIADirector
 from app.domains.retention.services import RetentionService
@@ -19,19 +19,6 @@ from app.domains.objectives.services import ObjectiveService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    """Helper to run async coroutine in sync Celery task."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 async def _get_active_business_ids(db: AsyncSession) -> List[UUID]:
@@ -62,8 +49,8 @@ def selia_director_daily(business_id: Optional[str] = None):
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:
-        return _async_run(_run_single(UUID(business_id)))
-    return _async_run(_run_all())
+        return run_async(_run_single(UUID(business_id)))
+    return run_async(_run_all())
 
 
 @shared_task(name="app.tasks.selia_tasks.rfm_segmentation")
@@ -88,8 +75,8 @@ def rfm_segmentation(business_id: Optional[str] = None):
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:
-        return _async_run(_run_single(UUID(business_id)))
-    return _async_run(_run_all())
+        return run_async(_run_single(UUID(business_id)))
+    return run_async(_run_all())
 
 
 @shared_task(name="app.tasks.selia_tasks.payment_reminder_check")
@@ -121,8 +108,8 @@ def payment_reminder_check(business_id: Optional[str] = None):
         return {"status": "ok", "total_sent": total_sent, "total_businesses": len(business_ids)}
 
     if business_id:
-        return _async_run(_run_single(UUID(business_id)))
-    return _async_run(_run_all())
+        return run_async(_run_single(UUID(business_id)))
+    return run_async(_run_all())
 
 
 @shared_task(name="app.tasks.selia_tasks.bi_analytics_daily")
@@ -148,5 +135,5 @@ def bi_analytics_daily(business_id: Optional[str] = None):
         return {"status": "ok", "processed": len(results), "total": len(business_ids)}
 
     if business_id:
-        return _async_run(_run_single(UUID(business_id)))
-    return _async_run(_run_all())
+        return run_async(_run_single(UUID(business_id)))
+    return run_async(_run_all())

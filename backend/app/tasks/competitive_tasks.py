@@ -4,27 +4,15 @@ Competitive Intelligence Celery Tasks
 Tareas periodicas que escanean competidores y generan alertas.
 """
 
-import asyncio
 from celery import shared_task
 from datetime import datetime, timezone
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="competitive.intelligence_scanner")
@@ -81,4 +69,4 @@ def competitive_intelligence_scanner():
                 "alerts_created": alerts_created,
             }
 
-    return _async_run(_run())
+    return run_async(_run())

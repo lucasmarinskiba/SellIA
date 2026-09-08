@@ -3,29 +3,17 @@
 Autopilot financiero: facturación, cobranza, conciliación y reporting.
 """
 
-import asyncio
 from celery import shared_task
 from datetime import datetime, timezone
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.finance.autopilot import FinanceAutopilotEngine
 from sqlalchemy import select
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 @shared_task(name="app.tasks.finance_tasks.auto_deliver_invoices")
@@ -50,7 +38,7 @@ def auto_deliver_invoices():
             logger.info(f'Finance auto-deliver: {total_delivered} invoices delivered')
             return {'delivered': total_delivered}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.finance_tasks.dunning_sequence")
@@ -75,7 +63,7 @@ def dunning_sequence():
             logger.info(f'Finance dunning: {total_reminders} reminders sent')
             return {'reminders_sent': total_reminders}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.finance_tasks.cash_flow_forecast")
@@ -100,7 +88,7 @@ def cash_flow_forecast():
             logger.info(f'Finance cash flow: {forecasts} forecasts generated')
             return {'forecasts': forecasts}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.finance_tasks.ledger_bank_reconciliation")
@@ -122,7 +110,7 @@ def ledger_bank_reconciliation():
             logger.info(f"Ledger bank reconciliation: {matched} movements resolved")
             return {"resolved": matched}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.finance_tasks.ledger_month_close")
@@ -154,7 +142,7 @@ def ledger_month_close():
             logger.info(f"Ledger month close ({period_name}): {closed} businesses closed")
             return {"period": period_name, "closed": closed}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 @shared_task(name="app.tasks.finance_tasks.auto_reconcile_payments")
@@ -179,4 +167,4 @@ def auto_reconcile_payments():
             logger.info(f'Finance reconcile: {total_reconciled} payments reconciled')
             return {'reconciled': total_reconciled}
 
-    return _async_run(_run())
+    return run_async(_run())

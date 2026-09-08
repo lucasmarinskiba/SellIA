@@ -3,7 +3,6 @@
 Data retention, secret rotation, and cleanup.
 """
 
-import asyncio
 import hashlib
 import re
 import secrets
@@ -12,6 +11,7 @@ from celery import shared_task
 from sqlalchemy import select, text, func
 
 from app.core.database import AsyncSessionLocal
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.domains.channels.models import ChannelConnection
 from app.domains.security.models import (
@@ -26,19 +26,6 @@ from app.domains.security.models import (
 )
 
 logger = get_logger(__name__)
-
-
-def _async_run(coro):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import nest_asyncio
-
-            nest_asyncio.apply()
-            return loop.run_until_complete(coro)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
 
 
 # ---------------------------------------------------------------------------
@@ -252,7 +239,7 @@ def data_retention_cleanup():
             logger.info(f"Data retention cleanup completed: {total_deleted}")
             return total_deleted
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +294,7 @@ def rotate_webhook_tokens():
             logger.info(f"Rotated {rotated} webhook tokens ({errors} errors)")
             return {"rotated": rotated, "errors": errors}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -373,7 +360,7 @@ def rotate_expired_secrets():
             logger.info(f"Expired secrets rotation completed: {total}")
             return total
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -476,7 +463,7 @@ def security_audit_report():
 
             return report
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -500,7 +487,7 @@ def cleanup_expired_ip_blocks():
             logger.info(f"Cleaned up {result.rowcount} expired IP blocks")
             return {"cleaned": result.rowcount}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -552,7 +539,7 @@ def auto_block_high_risk_ips():
             await db.commit()
             return {"blocked": blocked}
 
-    return _async_run(_run())
+    return run_async(_run())
 
 
 # ---------------------------------------------------------------------------
@@ -574,4 +561,4 @@ def db_integrity_check():
                 logger.info("DB integrity check: all %d checks passed", report["total"])
             return report
 
-    return _async_run(_run())
+    return run_async(_run())
