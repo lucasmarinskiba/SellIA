@@ -67,6 +67,20 @@ google-api-python-client==2.129.0     # app/domains/computer_use/integrations/__
                                        # these 8 routers were even wired into main.py either (fixed same commit).
 google-ads==24.1.0                    # app/domains/computer_use/integrations/google_ads_connector.py -- same
                                        # __init__.py import chain, same "never in requirements.txt" gap.
+playwright==1.47.0                    # app/domains/computer_use/browser_service.py -- real browser automation
+                                       # engine backing Computer Use sessions. Was masked in local `railway run`
+                                       # checks (already installed in the shared local dev env from an unrelated
+                                       # project) but genuinely missing from the real deploy container -- blocked
+                                       # app.api.v1.computer_use.router's import entirely. NOTE: the pip package
+                                       # alone is enough to import and register the router (session CRUD against
+                                       # the DB works), but actually launching a headless browser at runtime still
+                                       # needs `playwright install --with-deps chromium` as a Dockerfile build
+                                       # step, which this does not add -- see Dockerfile.
+pillow==10.4.0                        # screenshot_compare.py, ocr_service.py, captcha_detector.py, browser_pool.py,
+                                       # browser_service.py -- real image processing for Computer Use screenshots/
+                                       # OCR/CAPTCHA detection. Same masked-locally, missing-in-prod gap; blocked
+                                       # 6 of the 8 computer_use routers (everything importing computer_use.services
+                                       # transitively).
 
 # AI providers
 anthropic==0.125.0                    # Bumped from 0.40.0: langchain-anthropic 0.3.22 requires
