@@ -1,0 +1,26 @@
+# SellIA Celery Worker — runs the ~68 real scheduled automations in
+# app/tasks/celery_app.py (cart recovery, lead nurturing, deal reactivation,
+# forecasting, finance autopilot, etc). Shares the same code as the web
+# service (/Dockerfile) but with a different CMD; no Chromium/Playwright
+# needed here (that's only for Computer Use browser sessions in the web
+# process), so this build skips it and stays lean.
+#
+# Pinned to bookworm (Debian 12) for consistency with /Dockerfile -- see
+# that file's comment for why (Playwright/trixie incompatibility doesn't
+# apply here since this image never installs Playwright, but keeping the
+# base image identical avoids any other subtle distro-version surprises).
+FROM python:3.11-slim-bookworm
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ .
+
+CMD ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
