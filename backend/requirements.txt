@@ -53,6 +53,10 @@ qrcode==7.4.2                         # QR code generation
 cryptography==41.0.7                  # Encryption (Fernet)
 slowapi==0.1.9                        # Rate limiting (FastAPI integration)
 redis==5.0.1
+celery==5.3.6                         # app/domains/enterprise/voice_sales.py (and celery_app.py at repo root)
+                                       # import this directly -- was never in requirements.txt, so voice_sales.py's
+                                       # router has been skipped in every production deploy ("No module named 'celery'"),
+                                       # previously masked by an unrelated table-name collision fixed earlier this session
 bcrypt==4.1.2
 fastapi-limiter==0.1.6                          # Redis client (for rate limiting, sessions)
 
