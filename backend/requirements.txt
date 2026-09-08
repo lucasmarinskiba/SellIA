@@ -81,6 +81,11 @@ pillow==10.4.0                        # screenshot_compare.py, ocr_service.py, c
                                        # OCR/CAPTCHA detection. Same masked-locally, missing-in-prod gap; blocked
                                        # 6 of the 8 computer_use routers (everything importing computer_use.services
                                        # transitively).
+prometheus-client==0.20.0             # app/core/metrics.py -- real Counter/Histogram/Gauge usage, transitively
+                                       # imported by computer_use's session_manager chain. Last of the 8 computer_use
+                                       # routers (app.api.v1.computer_use.router itself) to still fail after the
+                                       # playwright/Pillow fix; pure-Python, no build-step implications like
+                                       # playwright's browser binaries.
 
 # AI providers
 anthropic==0.125.0                    # Bumped from 0.40.0: langchain-anthropic 0.3.22 requires
