@@ -96,7 +96,16 @@ for mod in _modules:
         __import__(mod)
         _includes.append(mod)
     except Exception:
-        pass
+        # Same isolation rationale as _try_import_domain_models above: one
+        # broken task module must never take down the whole worker/beat
+        # process. But silently swallowing this with a bare `pass` (as this
+        # used to do) meant a real import bug in any of these 24 modules
+        # produced zero diagnostic trace anywhere -- the only symptom was
+        # celery logging "Received unregistered task ... KeyError" every
+        # time beat dispatched one of that module's tasks, with no hint of
+        # the actual cause. Print the real traceback to stderr instead.
+        print(f"[celery_app.py] WARNING: skipped task module {mod!r} due to error:", file=_sys.stderr)
+        traceback.print_exc()
 
 celery_app = Celery(
     "sellia",
