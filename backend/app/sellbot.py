@@ -536,6 +536,66 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"voice_calls/voice_configs migration: {str(e)[:120]}")
 
+    # business_members + deal_delegations (app.domains.businesses.team_models):
+    # real multi-user-per-business membership, built while rebuilding
+    # app/domains/enterprise/team_management.py for real. Plus
+    # deals.assigned_to_user_id -- a new column on the already-existing
+    # `deals` table (created two commits ago), so this needs ALTER TABLE
+    # ADD COLUMN IF NOT EXISTS rather than CREATE TABLE.
+    try:
+        from sqlalchemy import text
+        from app.core.database import AsyncSessionLocal, is_sqlite
+        ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
+        id_type = "VARCHAR(36)" if is_sqlite else "UUID"
+        bool_default_true = "BOOLEAN DEFAULT 1" if is_sqlite else "BOOLEAN DEFAULT true"
+        jsonb_type = "TEXT" if is_sqlite else "JSONB"
+        async with AsyncSessionLocal() as db:
+            if not is_sqlite:
+                await db.execute(text("""
+                    DO $$ BEGIN
+                        CREATE TYPE businessmemberrole AS ENUM ('ADMIN', 'MEMBER');
+                    EXCEPTION WHEN duplicate_object THEN null; END $$;
+                """))
+                await db.commit()
+            role_type = "VARCHAR(20)" if is_sqlite else "businessmemberrole"
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS business_members (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    user_id {id_type} NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    role {role_type} NOT NULL DEFAULT 'MEMBER',
+                    is_active {bool_default_true},
+                    joined_at {ts_col},
+                    CONSTRAINT uq_business_member UNIQUE (business_id, user_id)
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_business_members_business_id ON business_members (business_id)"))
+            await db.execute(text(f"""
+                CREATE TABLE IF NOT EXISTS deal_delegations (
+                    id {id_type} PRIMARY KEY,
+                    business_id {id_type} NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+                    from_user_id {id_type} NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    to_user_id {id_type} NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    deal_ids {jsonb_type} DEFAULT '[]',
+                    reason TEXT,
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    created_at {ts_col},
+                    expires_at {ts_col},
+                    decided_at {ts_col}
+                )
+            """))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_deal_delegations_business_id ON deal_delegations (business_id)"))
+            await db.execute(text("CREATE INDEX IF NOT EXISTS ix_deal_delegations_to_user ON deal_delegations (to_user_id, status)"))
+            await db.execute(text(
+                f"ALTER TABLE deals ADD COLUMN IF NOT EXISTS assigned_to_user_id {id_type} REFERENCES users(id) ON DELETE SET NULL"
+                if not is_sqlite else
+                f"ALTER TABLE deals ADD COLUMN assigned_to_user_id {id_type}"
+            ))
+            await db.commit()
+        logger.info("✅ team management tables ensured (business_members, deal_delegations, deals.assigned_to_user_id)")
+    except Exception as e:
+        logger.warning(f"team management migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which
