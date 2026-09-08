@@ -64,6 +64,27 @@ for _model_module in [
 
 settings = get_settings()
 
+# Create the real Celery app BEFORE importing any task module below. Every
+# task file uses the bare `@shared_task` decorator (no explicit app), which
+# binds to whichever app is "current" at decoration time -- if no app exists
+# yet, celery queues the registration as a pending finalizer callback instead
+# of binding it immediately. That queued-registration path turned out to be
+# genuinely version-sensitive: locally (celery 5.4.0) it resolved correctly,
+# but the pinned production version (celery==5.3.6, see requirements.txt)
+# silently dropped the registration for whichever modules happened to import
+# first (app.tasks.workflow_tasks, app.tasks.content_tasks) -- their tasks
+# imported with zero errors, yet never appeared in `celery_app.tasks`, so
+# beat's real dispatches for them all failed with "Received unregistered
+# task ... KeyError" nonstop. Creating the app first means every
+# `@shared_task` below binds to this concrete, already-existing instance
+# immediately, sidestepping the deferred-finalizer path (and its version
+# quirk) entirely.
+celery_app = Celery(
+    "sellia",
+    broker=settings.REDIS_URL,
+    backend=settings.REDIS_URL,
+)
+
 _modules = [
     "app.tasks.workflow_tasks",
     "app.domains.documents.tasks",
@@ -107,12 +128,7 @@ for mod in _modules:
         print(f"[celery_app.py] WARNING: skipped task module {mod!r} due to error:", file=_sys.stderr)
         traceback.print_exc()
 
-celery_app = Celery(
-    "sellia",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
-    include=_includes,
-)
+celery_app.conf.include = _includes
 
 celery_app.conf.update(
     task_serializer="json",
