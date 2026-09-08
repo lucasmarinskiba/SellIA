@@ -81,6 +81,11 @@ class Deal(Base):
     actual_close_date = Column(DateTime(timezone=True), nullable=True)
     close_reason = Column(Text, nullable=True)  # Why won/lost
 
+    # Team ownership -- added while building real multi-user team
+    # management (app/domains/enterprise/team_management.py); the deal a
+    # team member is actually responsible for working.
+    assigned_to_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Source attribution
     source_channel = Column(String(50), nullable=True)
     source_campaign = Column(String(200), nullable=True)
