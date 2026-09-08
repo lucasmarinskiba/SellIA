@@ -146,6 +146,28 @@ _try_include("app.domains.fomo.ai_orchestrator_routes.router", "", ["fomo-ai-orc
 # docstring for the related get_store/Redis test-isolation fix.
 _try_include("app.api.v1.trade_signals.router", "/api/v1/computer-use", ["trade-signals"])
 
+# The Computer Use domain (app/domains/computer_use, ~80 files/17.7k lines:
+# session management, platform automation scripts, browser control, lead
+# scoring, ad orchestration, task scheduling, webhooks) has 8 dedicated API
+# router files -- none of them were ever included anywhere (main.py or
+# sellbot.py). /brain/cua/dispatch's own "can_execute" hint has been telling
+# users to "usá /api/v1/computer_use/sessions para ejecutar" this whole time,
+# and that route has never existed in production. Verified zero method+path
+# collisions across all 8 files before mounting them together at the same
+# prefix. Each _try_include is independent and best-effort (logs + skips on
+# import failure rather than crashing boot), so a broken one doesn't take
+# down the others -- exactly what surfaces which of these 8 are actually
+# import-clean vs still broken, the same way it did for the enterprise_*
+# cluster earlier this session.
+_try_include("app.api.v1.computer_use.router", "/api/v1/computer_use", ["computer-use-sessions"])
+_try_include("app.api.v1.computer_use_extended.router", "/api/v1/computer_use", ["computer-use-extended"])
+_try_include("app.api.v1.computer_use_ad_orchestrator.router", "/api/v1/computer_use", ["computer-use-ads"])
+_try_include("app.api.v1.computer_use_audit_log.router", "/api/v1/computer_use", ["computer-use-audit"])
+_try_include("app.api.v1.computer_use_brain.router", "/api/v1/computer_use", ["computer-use-brain"])
+_try_include("app.api.v1.computer_use_lead_scoring.router", "/api/v1/computer_use", ["computer-use-lead-scoring"])
+_try_include("app.api.v1.computer_use_task_scheduler.router", "/api/v1/computer_use", ["computer-use-tasks"])
+_try_include("app.api.v1.computer_use_webhooks.router", "/api/v1/computer_use", ["computer-use-webhooks"])
+
 # "Phase 33" cluster: every file below failed to import for a mechanical
 # reason (a `from backend.app...` path that only ever worked if the repo
 # root were itself importable as a package named `backend`, which it isn't

@@ -15,7 +15,7 @@ from app.domains.computer_use.services.publish_scheduler import (
     ScheduledPost,
 )
 from app.domains.computer_use.services.growth_analytics import get_growth_analytics
-from app.domains.computer_use.platform_automation_engine import (
+from app.domains.computer_use.services.platform_automation_engine import (
     get_platform_automation_engine,
     PlatformAutomationType,
 )

@@ -774,6 +774,57 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"agent personality tables migration: {str(e)[:120]}")
 
+    # Computer Use domain tables (app.domains.computer_use.models +
+    # models_extended): 8 real API routers for this feature (session
+    # management, ad orchestration, audit logs, brain scoring, lead scoring,
+    # task scheduling, webhooks) were discovered this session to have never
+    # been wired into main.py at all, AND 6 of the 8 failed to import for
+    # real bugs (wrong import paths for google-auth-oauthlib/googleapiclient,
+    # a missing google-ads pip dependency, a dataclass field-ordering bug, a
+    # nonexistent `from app.core.config import settings` in 3 files, and a
+    # wrong function name) -- all fixed this session, see the commit. Their
+    # 14 models are on CoreBase (app.core.database.Base), same
+    # never-auto-created gap as everything else this session.
+    #
+    # Uses Base.metadata.create_all(tables=[...]) per table instead of hand-
+    # written DDL -- 14 tables with real FK relationships is large enough
+    # that hand-transcribing every column/type/constraint risks a silent
+    # mismatch against the actual ORM models. Each table gets its own
+    # connection/transaction (the safe-per-table pattern app/db/database.py's
+    # init_db() already documents in a comment but never implements), in FK
+    # dependency order, so one bad table can't roll back the others.
+    try:
+        from app.core.database import engine, Base
+        from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+        from app.domains.computer_use.models_extended import (
+            ComputerUseTemplate, ComputerUseScheduledTask, ComputerUseAnnotation,
+            ComputerUseBrowserProfile, ComputerUseProxyConfig, ComputerUseSessionShare,
+            ComputerUseBatchJob, ComputerUseSessionTag, ComputerUseSessionNote,
+            ComputerUseSessionBookmark, ComputerUseWebhook,
+        )
+
+        cu_batches = [
+            [ComputerUseBrowserProfile, ComputerUseProxyConfig, ComputerUseTemplate,
+             ComputerUseBatchJob, ComputerUseWebhook],
+            [ComputerUseSession],
+            [ComputerUseStep, ComputerUseMessage, ComputerUseAnnotation,
+             ComputerUseSessionShare, ComputerUseSessionTag, ComputerUseSessionNote,
+             ComputerUseSessionBookmark, ComputerUseScheduledTask],
+        ]
+        cu_created = []
+        for cu_batch in cu_batches:
+            for cu_model in cu_batch:
+                cu_table = cu_model.__table__
+                try:
+                    async with engine.begin() as cu_conn:
+                        await cu_conn.run_sync(Base.metadata.create_all, tables=[cu_table], checkfirst=True)
+                    cu_created.append(cu_table.name)
+                except Exception as cu_e:
+                    logger.warning(f"computer_use table '{cu_table.name}' migration: {str(cu_e)[:120]}")
+        logger.info(f"✅ Computer Use tables ensured ({len(cu_created)}/14)")
+    except Exception as e:
+        logger.warning(f"Computer Use tables migration: {str(e)[:120]}")
+
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
     # dropped it from the ORM model instead of restoring the column, which
