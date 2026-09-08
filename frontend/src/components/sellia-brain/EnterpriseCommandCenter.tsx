@@ -20,7 +20,7 @@ import {
 import { t } from '@/lib/sellia-i18n'
 
 import MissionControlBar, {
-  type CuaMode, type UserProfile, loadUser, clearUser,
+  type CuaMode, type UserProfile, loadUser, clearUser, isAuthenticated,
 } from './MissionControlBar'
 import { useLeads } from '@/hooks/useSellIA'
 import HandsFreeOverlay from './HandsFreeOverlay'
@@ -29,6 +29,7 @@ import dynamic from 'next/dynamic'
 import { type LobeId } from './toolIndex'
 import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAccountFlows, buildToolPlan } from '@/lib/business-profile'
 import { getDisabledCapabilities } from '@/lib/brain-capability-toggles'
+import { getToken } from '@/lib/sellia-api'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
 const BrainInteractionMap = dynamic(
@@ -557,7 +558,10 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
   const [cuaMode, setCuaMode] = useState<CuaMode>('off')
   const [cuaLauncherOpen, setCuaLauncherOpen] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
-  useEffect(() => { const u = loadUser(); if (u) setUser(u) }, [])
+  // A cached display profile with no real backend token behind it (token
+  // cleared/expired elsewhere) must never render as "logged in" -- see
+  // isAuthenticated() in MissionControlBar.tsx.
+  useEffect(() => { if (isAuthenticated()) { const u = loadUser(); if (u) setUser(u) } }, [])
 
   // ── vista del cerebro: flujos (n8n) vs overview (grafo apagado) ──
   const [neuralView, setNeuralView] = useState<'flows' | 'overview'>('flows')
@@ -589,9 +593,15 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     document.getElementById('sec-neural')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     // Ejecución real best-effort: una sesión CU por flujo (si hay backend+key).
     const disabled = [...getDisabledCapabilities()]
+    // Attaching the real Bearer token (when logged in) is what lets the
+    // backend persist this dispatch to ai_action_logs for this account --
+    // an anonymous/demo visitor with no token behaves exactly as before.
+    const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+    const token = getToken()
+    if (token) authHeaders.Authorization = `Bearer ${token}`
     flows.forEach(f => {
       void fetch('/api/v1/brain/cua/dispatch', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: authHeaders,
         body: JSON.stringify({ instruction: f.instruction ?? f.name, mode: 'supervised', disabled }),
       }).catch(() => { /* sin backend → queda como plan visible */ })
     })
@@ -603,8 +613,11 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     if (!instruction || cuaMode === 'off') return
     setCuaSending(true); setCuaMsg('')
     try {
+      const dispatchHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+      const dispatchToken = getToken()
+      if (dispatchToken) dispatchHeaders.Authorization = `Bearer ${dispatchToken}`
       const r = await fetch('/api/v1/brain/cua/dispatch', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: dispatchHeaders,
         body: JSON.stringify({
           instruction, mode: cuaMode === 'auto' ? 'auto' : 'supervised',
           disabled: [...getDisabledCapabilities()],

@@ -14,14 +14,40 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.brain import (
     get_brain_registry, CapabilityKind, get_activity_bus, record_activity, get_cua_store,
 )
+from app.core.database import get_db
 
 router = APIRouter()
+
+
+async def _optional_user(request: Request, db: AsyncSession = Depends(get_db)):
+    """Best-effort auth for the one mutating endpoint in this otherwise-public,
+    unauthenticated router (see module docstring). Returns None on any missing/
+    invalid/absent token -- callers must treat that as "anonymous/demo visitor"
+    and keep behaving exactly as before, never raise 401 here."""
+    try:
+        from app.core.deps import get_token_from_request
+        from app.core.security import decode_access_token
+        from app.domains.users.models import User
+
+        token = await get_token_from_request(request)
+        if not token:
+            return None
+        payload = decode_access_token(token)
+        if not payload or not payload.get("sub"):
+            return None
+        result = await db.execute(select(User).where(User.id == payload["sub"]))
+        user = result.scalar_one_or_none()
+        return user if (user and user.is_active) else None
+    except Exception:
+        return None
 
 
 @router.get("/brain/graph")
@@ -115,12 +141,18 @@ _FALLBACK_INTENT: dict = {
 
 
 @router.post("/brain/cua/dispatch")
-async def brain_cua_dispatch(body: CuaDispatch) -> dict:
+async def brain_cua_dispatch(body: CuaDispatch, request: Request, db: AsyncSession = Depends(get_db)) -> dict:
     """Recibe una indicación del usuario y la convierte en un flujo de Computer Use.
 
     Construye pasos planificados (trigger → agente → tools → plataformas) según el
     intent de la indicación, los registra como actividad real (observabilidad) y los
     guarda como sesión CU para la vista de flujos. Best-effort.
+
+    Sigue siendo accesible sin login (ver docstring del módulo) -- pero si la
+    llamada trae un Bearer token válido de un usuario real, esa acción queda
+    además persistida en ai_action_logs (ver app/domains/ai_activity), visible
+    después vía GET /api/v1/ai-activity para ese usuario. Un visitante anónimo
+    ve exactamente el mismo comportamiento que antes: cero cambios ahí.
 
     Respeta `body.disabled` (los toggles ON/OFF del Brain Interaction Map): un
     intent cuyo agente está apagado se salta a favor del siguiente intent que
@@ -186,6 +218,27 @@ async def brain_cua_dispatch(body: CuaDispatch) -> dict:
         "name": intent["action"], "instruction": text, "mode": mode,
         "kind": "cua", "status": "running", "steps": steps, "edges": edges,
     })
+
+    # Persistencia real per-user (además del ring buffer en memoria de arriba,
+    # que es global/proceso y se pierde en cada redeploy -- ver ai_activity/models.py).
+    user = await _optional_user(request, db)
+    if user is not None:
+        from app.domains.businesses.models import Business
+        from app.domains.ai_activity.service import log_ai_action
+        biz_result = await db.execute(
+            select(Business.id).where(Business.user_id == user.id).limit(1)
+        )
+        business_id = biz_result.scalar_one_or_none()
+        await log_ai_action(
+            user_id=user.id,
+            business_id=business_id,
+            actor_type="brain",
+            actor_id=f"agent.expert.{aslug}",
+            action="brain_plan_dispatched",
+            summary=f"{intent['action']}: {text[:120]}",
+            payload={"mode": mode, "tools": active_tools, "platforms": active_platforms, "skipped_disabled_agents": skipped},
+        )
+
     # ¿hay credenciales para ejecutar de verdad (sesión Playwright + LLM)?
     from app.core.config import get_settings
     _s = get_settings()

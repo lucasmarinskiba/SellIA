@@ -40,6 +40,22 @@ def _validate_subdomain(subdomain: str) -> bool:
     return bool(re.match(pattern, subdomain.lower()))
 
 
+@router.get("/onboarding/subdomain-check")
+async def check_subdomain_available(
+    subdomain: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Live availability check used while the user types (see /sellia-onboarding
+    step 1). Public/no-auth by design -- it never reveals anything beyond a
+    single boolean for the exact string queried."""
+    subdomain = subdomain.lower()
+    if not _validate_subdomain(subdomain):
+        return {"available": False, "reason": "Solo letras, números y guiones (3-63 caracteres)"}
+    result = await db.execute(select(Domain).where(Domain.subdomain == subdomain))
+    taken = result.scalar_one_or_none() is not None
+    return {"available": not taken, "reason": "Subdominio no disponible" if taken else None}
+
+
 @router.post("/onboarding/complete", response_model=WebsiteResponse)
 async def complete_onboarding(
     req: OnboardingCompleteRequest,
@@ -59,7 +75,12 @@ async def complete_onboarding(
     if domain_check.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Subdominio no disponible")
 
-    # Get or create business
+    # Get or create business -- this used to only ever GET (raising 404
+    # "Crea uno primero" despite the comment), so a brand-new user with zero
+    # businesses could never complete onboarding through this single call.
+    # There was no other automatic "create my first business" step anywhere
+    # in the real signup/onboarding path, so this is genuinely the first
+    # opportunity most new accounts have to get one at all.
     business_query = await db.execute(
         select(Business).where(
             Business.user_id == current_user.id,
@@ -69,13 +90,19 @@ async def complete_onboarding(
     business = business_query.scalars().first()
 
     if not business:
-        raise HTTPException(status_code=404, detail="Negocio no encontrado. Crea uno primero.")
-
-    # Update business info if provided
-    if req.business_name:
-        business.name = req.business_name
-    if req.business_description:
-        business.description = req.business_description
+        business = Business(
+            user_id=current_user.id,
+            name=req.business_name or "Mi Negocio",
+            description=req.business_description,
+        )
+        db.add(business)
+        await db.flush()
+    else:
+        # Update business info if provided
+        if req.business_name:
+            business.name = req.business_name
+        if req.business_description:
+            business.description = req.business_description
 
     # Create website
     website = Website(

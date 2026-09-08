@@ -5,6 +5,8 @@ from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 import hashlib
 import base64
 import uuid
@@ -221,16 +223,18 @@ async def disable_2fa(
 
 
 @router.get("/me")
-async def get_current_user(user_id: str, db: AsyncSession = Depends(get_db)):
-    """Get current user profile."""
-    result = await db.execute(text("SELECT id, email, full_name FROM users WHERE id = :id"), {"id": user_id})
-    user_row = result.first()
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Get the AUTHENTICATED caller's own profile.
 
-    if not user_row:
-        raise HTTPException(status_code=404, detail="User not found")
-
+    Was previously `get_current_user(user_id: str)` -- a bare, unauthenticated
+    query param, letting anyone fetch any other user's email/full_name just by
+    guessing/enumerating a UUID (a real IDOR). Now resolves identity from the
+    caller's own Bearer token/cookie via the shared get_current_user dependency
+    (shadowing the import name below on purpose, same pattern used elsewhere
+    in this file), same as every other authenticated endpoint in this app.
+    """
     return {
-        "user_id": user_row[0],
-        "email": user_row[1],
-        "full_name": user_row[2],
+        "user_id": str(current_user.id),
+        "email": current_user.email,
+        "full_name": current_user.full_name,
     }

@@ -16,10 +16,27 @@ export const api = axios.create({
   withCredentials: true, // Enviar cookies httpOnly automáticamente
 })
 
+// Bridges this cookie-based client with the sellia-api family's Bearer-token
+// auth (src/lib/sellia-api/client.ts). Real accounts created through
+// /sellia-signup + /sellia-login only ever get a JSON access_token (no
+// cookie is set anywhere in backend/app/api/v1/signup.py's /signup or
+// /signin), so businessContextApi/business.ts/missions.ts -- all built on
+// THIS client -- had zero credentials to send for those users, even after
+// a successful login: withCredentials sent an empty cookie jar, silently
+// 401ing every call. get_current_user (app/core/deps.py) already accepts
+// either a Bearer header or a cookie, so attaching whichever token this
+// browser actually has makes both auth systems interoperate without
+// touching either one's own storage mechanism.
+const SELLIA_API_TOKEN_KEY = 'sellia.token'
+
 api.interceptors.request.use((config) => {
   const csrfToken = getCookie('csrf_token')
   if (csrfToken && config.method && config.method !== 'get') {
     config.headers['X-CSRF-Token'] = csrfToken
+  }
+  if (!config.headers.Authorization && typeof window !== 'undefined') {
+    const bearerToken = window.localStorage.getItem(SELLIA_API_TOKEN_KEY)
+    if (bearerToken) config.headers.Authorization = `Bearer ${bearerToken}`
   }
   return config
 })
@@ -29,7 +46,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        window.location.href = '/login'
+        // Send sellia-api users back to their own login, not the legacy one.
+        const hasBearerToken = !!window.localStorage.getItem(SELLIA_API_TOKEN_KEY)
+        window.location.href = hasBearerToken ? '/sellia-login' : '/login'
       }
     }
     if (error.response?.status === 429) {

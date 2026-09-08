@@ -6,7 +6,7 @@
  */
 import { useState, type FormEvent } from 'react'
 
-import { useLogin, QueryProvider } from '@/lib/sellia-api'
+import { useLogin, QueryProvider, extractErrorMessage } from '@/lib/sellia-api'
 
 function LoginInner() {
   const [email, setEmail] = useState('')
@@ -21,7 +21,8 @@ function LoginInner() {
       await login.mutateAsync({ email, password })
       window.location.href = '/dashboard'
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Error iniciando sesión')
+      const hasResponse = !!err?.response
+      setError(!hasResponse && err instanceof Error ? err.message : extractErrorMessage(err, 'Error iniciando sesión'))
     }
   }
 
