@@ -101,6 +101,25 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_optional(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """Identify the caller when it is signed in, without ever rejecting.
+
+    For endpoints that are legitimately public (the /sellia-brain demo) but
+    must return the caller's OWN data when there is a real session behind the
+    request -- so a logged-in visitor stops being served the anonymous,
+    account-less view of a page that is supposed to be about their business.
+    """
+    try:
+        return await get_current_user(request, db)
+    except HTTPException:
+        return None
+    except Exception:  # noqa: BLE001 -- a broken/expired token is not an error here
+        return None
+
+
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:

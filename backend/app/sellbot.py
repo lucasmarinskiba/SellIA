@@ -1251,6 +1251,8 @@ async def lifespan(app: FastAPI):
         await ensure_ai_activity_tables()
         from app.domains.websites.bootstrap import ensure_website_tables
         await ensure_website_tables()
+        from app.db.leads_bootstrap import ensure_leads_owner_column
+        await ensure_leads_owner_column()
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES

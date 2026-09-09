@@ -4,9 +4,12 @@ Every endpoint here reads from actual database tables (leads, computer-use
 audit log). Nothing here fabricates numbers: an empty result means no
 activity has happened yet, not a fake fallback.
 
-This is a public ops/command-center dashboard (no per-visitor auth), so
-these endpoints intentionally read across all records rather than scoping
-to a single signed-in user like the per-user /audit-logs endpoints do.
+The dashboard is reachable without logging in, so every endpoint here takes
+the caller optionally (see _optional_user): a signed-in caller gets THEIR OWN
+rows, an anonymous visitor gets only ownerless rows -- the platform's demo
+data. They used to read across all records regardless of who asked, which
+both showed a logged-in user other people's numbers as if they were their own
+and would have exposed real accounts' leads and AI reasoning on a public page.
 """
 from typing import Optional
 
@@ -20,6 +23,21 @@ from app.db.models import Lead as LeadModel
 from app.core.database import get_db
 
 router = APIRouter(tags=["brain-live"])
+
+
+def _owner_filter(user):
+    """Which lead rows this caller may see.
+
+    Signed in  -> only rows they own (leads.user_id == their id).
+    Anonymous  -> only ownerless rows (user_id IS NULL): the platform's demo
+                  data. Before leads had an owner column these endpoints
+                  returned EVERY row to everyone, so the public dashboard
+                  would have started leaking real customers' leads (names,
+                  emails, budgets) the moment accounts began creating them.
+    """
+    if user is not None:
+        return LeadModel.user_id == user.id
+    return LeadModel.user_id.is_(None)
 
 
 async def _query_audit_logs(**filters):
@@ -36,6 +54,15 @@ async def _query_audit_logs(**filters):
 
         async with AuditSessionLocal() as db:
             query = select(ComputerUseAuditLog).order_by(desc(ComputerUseAuditLog.created_at))
+            # Same ownership rule as the lead endpoints: a signed-in caller
+            # sees only their own AI actions, an anonymous visitor only
+            # ownerless rows. Without this, the public dashboard exposed
+            # every account's AI reasoning, inputs and outputs to anyone.
+            user = filters.get("user")
+            if user is not None:
+                query = query.where(ComputerUseAuditLog.user_id == str(user.id))
+            else:
+                query = query.where(ComputerUseAuditLog.user_id.is_(None))
             if filters.get("status"):
                 query = query.where(ComputerUseAuditLog.status == filters["status"])
             if filters.get("platforms"):
@@ -205,7 +232,9 @@ async def _public_lead_notifications(limit: int) -> list[dict]:
     async with LeadsSessionLocal() as db:
         result = await db.execute(
             select(LeadModel)
-            .where(LeadModel.deleted_at.is_(None))
+            # Ownerless rows only: this feed is shown to anonymous visitors,
+            # so it must never surface a real account's lead names/companies.
+            .where(LeadModel.deleted_at.is_(None), LeadModel.user_id.is_(None))
             .order_by(desc(LeadModel.updated_at))
             .limit(limit)
         )
@@ -264,24 +293,30 @@ async def get_notifications(
 
 
 @router.get("/squads")
-async def get_squads():
-    """Real squad performance, aggregated from actual lead counts/scores by source."""
-    async with LeadsSessionLocal() as db:
-        result = await db.execute(
+async def get_squads(request: Request, db: AsyncSession = Depends(get_db)):
+    """Real squad performance, aggregated from actual lead counts/scores by
+    source -- scoped to the caller's own leads when signed in (see
+    _owner_filter), platform demo rows for an anonymous visitor."""
+    from app.api.v1.brain import _optional_user
+    user = await _optional_user(request, db)
+    owner = _owner_filter(user)
+
+    async with LeadsSessionLocal() as leads_db:
+        result = await leads_db.execute(
             select(
                 LeadModel.source,
                 func.count(LeadModel.id).label("total"),
                 func.avg(LeadModel.score).label("avg_score"),
                 func.sum(func.coalesce(LeadModel.budget, 0)).label("pipeline_value"),
             )
-            .where(LeadModel.deleted_at.is_(None))
+            .where(LeadModel.deleted_at.is_(None), owner)
             .group_by(LeadModel.source)
         )
         rows = result.all()
 
-        won_result = await db.execute(
+        won_result = await leads_db.execute(
             select(LeadModel.source, func.count(LeadModel.id))
-            .where(LeadModel.deleted_at.is_(None), LeadModel.status == "won")
+            .where(LeadModel.deleted_at.is_(None), owner, LeadModel.status == "won")
             .group_by(LeadModel.source)
         )
         won_by_source = dict(won_result.all())
@@ -312,44 +347,51 @@ async def get_squads():
 
 
 @router.get("/kpis")
-async def get_kpis():
+async def get_kpis(request: Request, db: AsyncSession = Depends(get_db)):
     """Real, honestly-computable KPIs from the leads table.
 
-    No ROI/ad-spend figure is included — nothing in this codebase tracks
-    marketing spend, so a "ROI" number would have to be invented. Everything
-    below is a direct aggregate of real lead rows.
+    Scoped to the caller's own leads when signed in; the platform's demo rows
+    for an anonymous visitor. No ROI/ad-spend figure is included — nothing in
+    this codebase tracks marketing spend, so a "ROI" number would have to be
+    invented. Everything below is a direct aggregate of real lead rows.
     """
-    async with LeadsSessionLocal() as db:
-        total_result = await db.execute(
-            select(func.count(LeadModel.id)).where(LeadModel.deleted_at.is_(None))
+    from app.api.v1.brain import _optional_user
+    user = await _optional_user(request, db)
+    owner = _owner_filter(user)
+
+    async with LeadsSessionLocal() as leads_db:
+        total_result = await leads_db.execute(
+            select(func.count(LeadModel.id)).where(LeadModel.deleted_at.is_(None), owner)
         )
         total = total_result.scalar() or 0
 
-        won_result = await db.execute(
+        won_result = await leads_db.execute(
             select(func.count(LeadModel.id)).where(
-                LeadModel.deleted_at.is_(None), LeadModel.status == "won"
+                LeadModel.deleted_at.is_(None), owner, LeadModel.status == "won"
             )
         )
         won = won_result.scalar() or 0
 
-        active_result = await db.execute(
+        active_result = await leads_db.execute(
             select(func.count(LeadModel.id)).where(
                 LeadModel.deleted_at.is_(None),
+                owner,
                 LeadModel.status.notin_(["won", "lost"]),
             )
         )
         active = active_result.scalar() or 0
 
-        pipeline_result = await db.execute(
+        pipeline_result = await leads_db.execute(
             select(func.sum(func.coalesce(LeadModel.budget, 0))).where(
                 LeadModel.deleted_at.is_(None),
+                owner,
                 LeadModel.status.notin_(["won", "lost"]),
             )
         )
         pipeline_value = float(pipeline_result.scalar() or 0)
 
-        avg_score_result = await db.execute(
-            select(func.avg(LeadModel.score)).where(LeadModel.deleted_at.is_(None))
+        avg_score_result = await leads_db.execute(
+            select(func.avg(LeadModel.score)).where(LeadModel.deleted_at.is_(None), owner)
         )
         avg_score = float(avg_score_result.scalar() or 0)
 
@@ -364,16 +406,21 @@ async def get_kpis():
 
 
 @router.get("/pipeline-summary")
-async def get_pipeline_summary():
-    """Real pipeline totals by status, for the sales pipeline widget."""
-    async with LeadsSessionLocal() as db:
-        result = await db.execute(
+async def get_pipeline_summary(request: Request, db: AsyncSession = Depends(get_db)):
+    """Real pipeline totals by status, for the sales pipeline widget --
+    the caller's own leads when signed in, demo rows when anonymous."""
+    from app.api.v1.brain import _optional_user
+    user = await _optional_user(request, db)
+    owner = _owner_filter(user)
+
+    async with LeadsSessionLocal() as leads_db:
+        result = await leads_db.execute(
             select(
                 LeadModel.status,
                 func.count(LeadModel.id),
                 func.sum(func.coalesce(LeadModel.budget, 0)),
             )
-            .where(LeadModel.deleted_at.is_(None))
+            .where(LeadModel.deleted_at.is_(None), owner)
             .group_by(LeadModel.status)
         )
         rows = result.all()
@@ -404,16 +451,24 @@ def _serialize_audit_log(log) -> dict:
 
 
 @router.get("/audit-log")
-async def get_audit_log(limit: int = Query(default=50, ge=1, le=200)):
-    """Real agent audit trail, platform-wide (not scoped to one signed-in user)."""
-    logs, error = await _query_audit_logs(limit=limit)
+async def get_audit_log(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real agent audit trail for the caller's own account (demo rows when anonymous)."""
+    from app.api.v1.brain import _optional_user
+    logs, error = await _query_audit_logs(limit=limit, user=await _optional_user(request, db))
     return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}
 
 
 @router.get("/audit-log/pending")
-async def get_pending_approvals():
-    """Real actions awaiting human approval, platform-wide."""
-    logs, error = await _query_audit_logs(status="pending_approval", limit=100)
+async def get_pending_approvals(request: Request, db: AsyncSession = Depends(get_db)):
+    """Real actions awaiting human approval, for the caller's own account."""
+    from app.api.v1.brain import _optional_user
+    logs, error = await _query_audit_logs(
+        status="pending_approval", limit=100, user=await _optional_user(request, db)
+    )
     return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}
 
 
@@ -463,7 +518,15 @@ HANDOFF_PLATFORMS = ["slack", "whatsapp", "email"]
 
 
 @router.get("/handoff-log")
-async def get_handoff_log(limit: int = Query(default=50, ge=1, le=200)):
-    """Real agent-to-human handoff events (Slack/WhatsApp/email escalations)."""
-    logs, error = await _query_audit_logs(platforms=HANDOFF_PLATFORMS, limit=limit)
+async def get_handoff_log(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real agent-to-human handoff events (Slack/WhatsApp/email escalations),
+    for the caller's own account."""
+    from app.api.v1.brain import _optional_user
+    logs, error = await _query_audit_logs(
+        platforms=HANDOFF_PLATFORMS, limit=limit, user=await _optional_user(request, db)
+    )
     return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}

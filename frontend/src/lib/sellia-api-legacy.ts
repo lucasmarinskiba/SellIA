@@ -6,6 +6,28 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/**
+ * Auth headers for this legacy client.
+ *
+ * Every call here used to go out with no credentials at all, which was fine
+ * while /api/v1/leads was public and single-tenant. Those routes are
+ * authenticated and per-account now (leads.user_id), so without the token a
+ * signed-in user just gets 401s and an empty pipeline instead of their own
+ * leads. Reads the same key the modern client writes (lib/sellia-api).
+ */
+const jsonHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window !== "undefined") {
+    try {
+      const token = window.localStorage.getItem("sellia.token");
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch {
+      /* storage blocked -> anonymous request, same as before */
+    }
+  }
+  return headers;
+};
+
 // ============================================================
 // TIPOS
 // ============================================================
@@ -67,7 +89,7 @@ export const leadsAPI = {
     if (filters?.score_min) params.append("score_min", filters.score_min.toString());
 
     const res = await fetch(`${API_BASE_URL}/api/v1/leads?${params}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to list leads: ${res.status}`);
     return res.json();
@@ -77,7 +99,7 @@ export const leadsAPI = {
   async create(data: Partial<Lead>) {
     const res = await fetch(`${API_BASE_URL}/api/v1/leads`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`Failed to create lead: ${res.status}`);
@@ -87,7 +109,7 @@ export const leadsAPI = {
   // Get lead
   async get(id: number) {
     const res = await fetch(`${API_BASE_URL}/api/v1/leads/${id}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get lead: ${res.status}`);
     return res.json();
@@ -97,7 +119,7 @@ export const leadsAPI = {
   async update(id: number, data: Partial<Lead>) {
     const res = await fetch(`${API_BASE_URL}/api/v1/leads/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`Failed to update lead: ${res.status}`);
@@ -107,7 +129,7 @@ export const leadsAPI = {
   // Get stats
   async stats() {
     const res = await fetch(`${API_BASE_URL}/api/v1/leads/stats/summary`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get stats: ${res.status}`);
     return res.json();
@@ -124,7 +146,7 @@ export const workflowsAPI = {
     if (status) params.append("status", status);
 
     const res = await fetch(`${API_BASE_URL}/api/v1/workflows?${params}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to list workflows: ${res.status}`);
     return res.json();
@@ -133,7 +155,7 @@ export const workflowsAPI = {
   // Get workflow
   async get(id: number) {
     const res = await fetch(`${API_BASE_URL}/api/v1/workflows/${id}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get workflow: ${res.status}`);
     return res.json();
@@ -143,7 +165,7 @@ export const workflowsAPI = {
   async activate(id: number) {
     const res = await fetch(`${API_BASE_URL}/api/v1/workflows/${id}/activate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to activate workflow: ${res.status}`);
     return res.json();
@@ -153,7 +175,7 @@ export const workflowsAPI = {
   async enrollLead(workflowId: number, leadId: number) {
     const res = await fetch(`${API_BASE_URL}/api/v1/workflows/${workflowId}/enroll-lead`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
       body: JSON.stringify({ lead_id: leadId }),
     });
     if (!res.ok) throw new Error(`Failed to enroll lead: ${res.status}`);
@@ -168,7 +190,7 @@ export const workflowsAPI = {
     if (filters?.status) params.append("status", filters.status);
 
     const res = await fetch(`${API_BASE_URL}/api/v1/workflows/executions/list?${params}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to list executions: ${res.status}`);
     return res.json();
@@ -182,7 +204,7 @@ export const analyticsAPI = {
   // Get funnel
   async funnel() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/funnel`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get funnel: ${res.status}`);
     return res.json();
@@ -191,7 +213,7 @@ export const analyticsAPI = {
   // Get email metrics
   async emailMetrics() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/email-metrics`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get email metrics: ${res.status}`);
     return res.json();
@@ -200,7 +222,7 @@ export const analyticsAPI = {
   // Get lead sources
   async leadSources() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/lead-sources`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get lead sources: ${res.status}`);
     return res.json();
@@ -209,7 +231,7 @@ export const analyticsAPI = {
   // Get lead health
   async leadHealth() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/lead-health`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get lead health: ${res.status}`);
     return res.json();
@@ -218,7 +240,7 @@ export const analyticsAPI = {
   // Get complete summary
   async summary() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/summary`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get summary: ${res.status}`);
     return res.json();
@@ -232,7 +254,7 @@ export const queueAPI = {
   // Get queue stats
   async stats() {
     const res = await fetch(`${API_BASE_URL}/api/v1/queue/stats`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get queue stats: ${res.status}`);
     return res.json();
@@ -241,7 +263,7 @@ export const queueAPI = {
   // Peek queue
   async peek(count: number = 5) {
     const res = await fetch(`${API_BASE_URL}/api/v1/queue/peek?count=${count}`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to peek queue: ${res.status}`);
     return res.json();
@@ -255,7 +277,7 @@ export const progressionAPI = {
   // Get lead workflow executions
   async getExecutions(leadId: number) {
     const res = await fetch(`${API_BASE_URL}/api/v1/progression/${leadId}/workflow-executions`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get executions: ${res.status}`);
     return res.json();
@@ -266,7 +288,7 @@ export const progressionAPI = {
     const res = await fetch(
       `${API_BASE_URL}/api/v1/progression/${leadId}/no-engagement-check?days_threshold=${daysThreshold}`,
       {
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
       }
     );
     if (!res.ok) throw new Error(`Failed to check no-engagement: ${res.status}`);
@@ -276,7 +298,7 @@ export const progressionAPI = {
   // Get lead health
   async getHealth() {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/lead-health`, {
-      headers: { "Content-Type": "application/json" },
+      headers: jsonHeaders(),
     });
     if (!res.ok) throw new Error(`Failed to get health: ${res.status}`);
     return res.json();

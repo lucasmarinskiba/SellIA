@@ -6,7 +6,7 @@ SQLAlchemy ORM Models
 - Lead Sources
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, JSON, Enum, Index, Uuid, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
@@ -20,8 +20,22 @@ class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True)
+    # Owner of the lead. Deliberately a bare indexed UUID and NOT a
+    # ForeignKey("users.id"): `users` lives in the other declarative Base
+    # (app.core.database), so a real FK here would make this Base's
+    # create_all() fail with NoReferencedTableError on a fresh database.
+    # Nullable because rows created before this column existed genuinely
+    # have no owner -- they are the platform's demo rows, and they stay
+    # visible only to anonymous visitors (see app/api/v1/brain_live.py).
+    # (SQLAlchemy's generic Uuid, not the postgresql dialect one, so the
+    # SQLite fallback used for local runs still creates this table.)
+    user_id = Column(Uuid(as_uuid=True), nullable=True, index=True)
     name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
+    # NOT globally unique any more: with per-account leads, a global
+    # UNIQUE(email) meant the first account to add juan@cliente.com stopped
+    # every other account from ever adding that same contact. Uniqueness is
+    # now per owner (see __table_args__ below).
+    email = Column(String(255), nullable=False)
     company = Column(String(255))
     job_title = Column(String(255))
     industry = Column(String(100))
@@ -50,6 +64,8 @@ class Lead(Base):
         Index("idx_lead_status", "status", "deleted_at"),
         Index("idx_lead_deleted", "deleted_at"),
         Index("idx_lead_created", "created_at"),
+        Index("idx_lead_owner_status", "user_id", "status", "deleted_at"),
+        UniqueConstraint("user_id", "email", name="uq_leads_user_email"),
     )
 
 # ============================================================

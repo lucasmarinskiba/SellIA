@@ -32,22 +32,12 @@ async def _optional_user(request: Request, db: AsyncSession = Depends(get_db)):
     unauthenticated router (see module docstring). Returns None on any missing/
     invalid/absent token -- callers must treat that as "anonymous/demo visitor"
     and keep behaving exactly as before, never raise 401 here."""
-    try:
-        from app.core.deps import get_token_from_request
-        from app.core.security import decode_access_token
-        from app.domains.users.models import User
+    # Delegates to the canonical implementation in app/core/deps.py so token
+    # validation lives in exactly one place (this used to re-decode the JWT
+    # itself, a second copy of auth logic that could drift from the real one).
+    from app.core.deps import get_current_user_optional
 
-        token = await get_token_from_request(request)
-        if not token:
-            return None
-        payload = decode_access_token(token)
-        if not payload or not payload.get("sub"):
-            return None
-        result = await db.execute(select(User).where(User.id == payload["sub"]))
-        user = result.scalar_one_or_none()
-        return user if (user and user.is_active) else None
-    except Exception:
-        return None
+    return await get_current_user_optional(request, db)
 
 
 @router.get("/brain/graph")
