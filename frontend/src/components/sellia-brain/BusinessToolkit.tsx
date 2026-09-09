@@ -22,21 +22,29 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 
 import { TOOL_BY_ID, CATEGORY_COLOR } from '@/lib/tools-catalog'
 
-interface Props { profile: BusinessProfile | null; onEdit: () => void; onPlan: () => void; onOpenTool: (id: string) => void; onPlanComplete: (toolIds: string[]) => void }
+/** `setupDone` = the account's REAL backend setup (cuenta + subdominio +
+ *  cuestionario + canal declarado) is already complete. Only the per-platform
+ *  links this toolkit operates on are missing, so saying "completá tu negocio"
+ *  there would contradict the header's (real) "AGENTE ACTIVO". */
+interface Props { profile: BusinessProfile | null; onEdit: () => void; onPlan: () => void; onOpenTool: (id: string) => void; onPlanComplete: (toolIds: string[]) => void; setupDone?: boolean }
 
 const card: React.CSSProperties = { background: T.panel, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }
 
-export default function BusinessToolkit({ profile, onEdit, onPlan, onOpenTool, onPlanComplete }: Props): React.JSX.Element {
+export default function BusinessToolkit({ profile, onEdit, onPlan, onOpenTool, onPlanComplete, setupDone = false }: Props): React.JSX.Element {
   if (!isComplete(profile)) {
     return (
       <div style={{ ...card, textAlign: 'center', padding: 28, fontFamily: T.sans }}>
         <Rocket size={22} style={{ color: T.cobalt, marginBottom: 8 }} />
-        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Completá tu negocio</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
+          {setupDone ? 'Agregá los links de tus plataformas' : 'Completá tu negocio'}
+        </div>
         <div style={{ fontSize: 12, color: T.text2, margin: '6px 0 14px' }}>
-          Cargá qué vendés y tus links (venta, anuncios, redes) para que SellIA venda por vos.
+          {setupDone
+            ? 'Tu cuestionario ya está completo. Falta cargar los links reales (Mercado Libre, Amazon, Instagram, tu web) para que SellIA opere sobre ellos.'
+            : 'Cargá qué vendés y tus links (venta, anuncios, redes) para que SellIA venda por vos.'}
         </div>
         <button type="button" onClick={onEdit} style={{ padding: '9px 18px', borderRadius: 9, border: 'none', background: T.cobalt, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>
-          Completar negocio
+          {setupDone ? 'Agregar links' : 'Completar negocio'}
         </button>
       </div>
     )

@@ -662,11 +662,31 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
   const [openToolId, setOpenToolId] = useState<string | null>(null)
   useEffect(() => { setProfile(loadProfile()) }, [])
   const profileDone = isComplete(profile)
+  // Which editor "Completar / Editar negocio" should open:
+  //  - real questionnaire (backend BusinessContext) while the account's real
+  //    setup is still missing -- that's what actually gates the AI;
+  //  - the local links wizard once setup is done, since per-platform URLs
+  //    (ML/Amazon/IG/web) only exist there and are what Computer Use needs.
+  const openBusinessEditor = useCallback((): void => {
+    if (isLoggedIn && !accountSetup?.setup.setup_complete) { void openRealContextWizard(); return }
+    setProfileOpen(true)
+  }, [isLoggedIn, accountSetup, openRealContextWizard])
   // Real, honest readiness gate: a logged-in account is only "ready" per the
   // backend's setup block (real Business + subdomain + questionnaire +
   // declared channel) -- the local fake profile is never consulted for
   // logged-in users. Anonymous demo visitors keep the old local-profile gate.
   const setupComplete = isLoggedIn ? !!accountSetup?.setup.setup_complete : profileDone
+  // Exactly what this account is still missing, straight from the backend --
+  // no invented steps, no "casi listo" when nothing has been answered.
+  const missingSetupParts = useMemo((): string[] => {
+    const s = accountSetup?.setup
+    if (!s) return []
+    const parts: string[] = []
+    if (!s.has_subdomain) parts.push('tu subdominio')
+    if (!s.questionnaire_complete) parts.push('el cuestionario (qué vendés, modelo de venta, público, propuesta de valor)')
+    else if (!s.has_channel_declared) parts.push('declarar un canal (redes, web, MercadoLibre/Amazon)')
+    return parts
+  }, [accountSetup])
 
   // Computer Use acciona sobre flujos planificados (por cuenta o de rescate).
   const [plannedFlows, setPlannedFlows] = useState<PlannedFlow[]>([])
@@ -934,16 +954,9 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         }}>
           <Store size={16} style={{ color: T.amber }} />
           <span style={{ fontSize: 13, color: T.text }}>
-            {isLoggedIn ? (
-              <>
-                Completá tu negocio para que SellIA venda por vos —
-                {!accountSetup?.setup.has_subdomain && ' falta tu subdominio,'}
-                {!accountSetup?.setup.questionnaire_complete && ' falta el cuestionario (qué vendés, modelo de venta, público, propuesta de valor),'}
-                {accountSetup?.setup.questionnaire_complete && !accountSetup?.setup.has_channel_declared && ' falta declarar un canal (redes, web, MercadoLibre/Amazon).'}
-              </>
-            ) : (
-              'Completá tu negocio (qué vendés + tus links de venta/anuncios/redes) para que SellIA venda por vos.'
-            )}
+            {isLoggedIn
+              ? `Completá tu negocio para que SellIA venda por vos — falta ${missingSetupParts.join(' · ') || 'terminar la configuración'}.`
+              : 'Completá tu negocio (qué vendés + tus links de venta/anuncios/redes) para que SellIA venda por vos.'}
           </span>
           <span style={{ flex: 1 }} />
           {isLoggedIn && !accountSetup?.setup.has_subdomain && (
@@ -1164,7 +1177,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <p style={{ margin: '2px 0 0', fontSize: 12, color: T.text2 }}>Lo que vendés, tus plataformas y links · recomendaciones para vender + lanzar Computer Use sobre tus canales.</p>
           </div>
         </div>
-        <BusinessToolkit profile={profile} onEdit={() => { if (isLoggedIn) { void openRealContextWizard() } else { setProfileOpen(true) } }} onPlan={planFromToolkit} onOpenTool={setOpenToolId}
+        <BusinessToolkit profile={profile} setupDone={setupComplete} onEdit={openBusinessEditor} onPlan={planFromToolkit} onOpenTool={setOpenToolId}
           onPlanComplete={(ids) => executePlan(buildToolPlan(loadProfile(), ids))} />
       </section>
       )}
@@ -1172,7 +1185,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       {/* ── MODO RESCATE: sin clientes → estrategia de adquisición ── */}
       {showKpis && (
       <section id="sec-rescue" style={{ padding: '20px 28px 0' }}>
-        <RescueMode profile={profile} onEdit={() => { if (isLoggedIn) { void openRealContextWizard() } else { setProfileOpen(true) } }} onRescue={executePlan} />
+        <RescueMode profile={profile} setupDone={setupComplete} onEdit={openBusinessEditor} onRescue={executePlan} />
       </section>
       )}
 
