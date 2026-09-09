@@ -18,7 +18,7 @@ from app.domains.users.models import User
 from app.domains.security.models import (
     UserLoginLog, UserSession, PushSubscription, TwoFABackupCode,
     BreachCheckLog, EmailOTP, WebAuthnCredential, SecurityKey,
-    TrustedDevice, SessionNonce, IPAllowlist, LoginAnomaly,
+    TrustedDevice, IPAllowlist, LoginAnomaly,
     SubscriptionAccessLog, ChargebackAlert,
 )
 from app.core.field_encryption import encrypt_field
@@ -69,11 +69,16 @@ async def secure_delete_user(db: AsyncSession, user_id: uuid.UUID) -> bool:
     user.is_active = False
     user.totp_secret = None
 
-    # Delete related security records
+    # Delete related security records. SessionNonce used to be in this list
+    # but has no user_id (or any user reference at all -- it's keyed by
+    # session_hash) and was never legitimately per-user data to delete here;
+    # every real /auth/me/delete-account call 500'd on
+    # `AttributeError: type object 'SessionNonce' has no attribute 'user_id'`
+    # before reaching any of the deletions below, confirmed live.
     models_to_delete = [
         UserLoginLog, UserSession, PushSubscription, TwoFABackupCode,
         BreachCheckLog, EmailOTP, WebAuthnCredential, SecurityKey,
-        TrustedDevice, SessionNonce, IPAllowlist, LoginAnomaly,
+        TrustedDevice, IPAllowlist, LoginAnomaly,
         SubscriptionAccessLog, ChargebackAlert,
     ]
 
