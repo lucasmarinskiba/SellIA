@@ -234,3 +234,20 @@ class OrderItem(Base):
         Index('ix_order_items_order_id', 'order_id'),
         Index('ix_order_items_product_id', 'product_id'),
     )
+
+
+# Ordered parents-before-children so a plain create-per-table pass satisfies
+# the FKs. These tables were never created in production: the storefront
+# routes mounted under /businesses/{id}/orders and /products crashed with
+# UndefinedTableError ("relation \"storefront_orders\" does not exist"), which
+# surfaced as a 500 on every call. Alembic is disabled in this deployment, so
+# they are provisioned at startup like the websites/domains tables.
+STOREFRONT_TABLES = [
+    ProductCategory.__table__,
+    Product.__table__,
+    ProductVariant.__table__,
+    ShoppingCart.__table__,
+    CartItem.__table__,
+    Order.__table__,
+    OrderItem.__table__,
+]

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
+import { api } from '@/lib/api'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -28,6 +29,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => { alive = false }
   }, [user])
 
+  // GET /users/me masks the caller's own name and email ("O*** T***",
+  // "o***4@selliatest.dev") -- fine for listing other people, wrong for the
+  // header showing you your own account. /auth/me returns the real values for
+  // the token's own user, so the header shows who you actually are.
+  const [ownName, setOwnName] = useState<string | null>(null)
+  useEffect(() => {
+    if (!user) { setOwnName(null); return }
+    let alive = true
+    api.get<{ full_name?: string; email?: string }>('/auth/me')
+      .then(res => { if (alive) setOwnName(res.data.full_name || res.data.email || null) })
+      .catch(() => { /* se cae al valor enmascarado de useAuth */ })
+    return () => { alive = false }
+  }, [user])
+
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/dashboard/orders', label: 'Órdenes', icon: ShoppingCart },
@@ -41,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
   ]
 
-  const accountName = user?.full_name || user?.email || (loading ? '' : 'Sin sesión')
+  const accountName = ownName || user?.full_name || user?.email || (loading ? '' : 'Sin sesión')
   const accountSubtitle = business?.name
     ?? (user ? 'Sin negocio configurado' : 'Iniciá sesión para ver tus datos')
 
@@ -109,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="text-xs text-slate-500">{accountSubtitle}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-pink-400 grid place-items-center text-white font-bold">
-              {(user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
+              {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
             </div>
           </div>
         </div>
