@@ -1249,6 +1249,8 @@ async def lifespan(app: FastAPI):
         await ensure_brand_transformation_tables()
         from app.domains.ai_activity.bootstrap import ensure_ai_activity_tables
         await ensure_ai_activity_tables()
+        from app.domains.websites.bootstrap import ensure_website_tables
+        await ensure_website_tables()
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES
