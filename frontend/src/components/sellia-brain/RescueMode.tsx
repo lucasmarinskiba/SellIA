@@ -21,7 +21,9 @@ import { TOOL_BY_ID } from '@/lib/tools-catalog'
 
 const T = SELLIA
 
-interface Props { profile: BusinessProfile | null; onEdit: () => void; onRescue: (flows: PlannedFlow[]) => void }
+/** `setupDone`: the account's real backend setup is complete (see
+ *  BusinessToolkit) -- only the per-platform links are still missing. */
+interface Props { profile: BusinessProfile | null; onEdit: () => void; onRescue: (flows: PlannedFlow[]) => void; setupDone?: boolean }
 
 const MODES: Array<{ id: GrowthMode; label: string; icon: React.ReactNode; accent: string }> = [
   { id: 'rescate', label: 'Rescate', icon: <LifeBuoy size={15} />, accent: T.amber },
@@ -40,7 +42,7 @@ const SITU: Array<{ id: keyof RescueSituation; label: string }> = [
 
 const card: React.CSSProperties = { background: T.panel, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, fontFamily: T.sans }
 
-export default function RescueMode({ profile, onEdit, onRescue }: Props): React.JSX.Element {
+export default function RescueMode({ profile, onEdit, onRescue, setupDone = false }: Props): React.JSX.Element {
   const [mode, setMode] = useState<GrowthMode>('rescate')
   const [s, setS] = useState<RescueSituation>({ noSales: true, hasSocial: false, hasAds: false, hasPhysical: false, lowTraffic: false })
   const [openStrat, setOpenStrat] = useState<string | null>(null)
@@ -64,8 +66,12 @@ export default function RescueMode({ profile, onEdit, onRescue }: Props): React.
     return (
       <div style={{ ...card, textAlign: 'center', padding: 24 }}>
         <Rocket size={20} style={{ color: T.cobalt }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginTop: 6 }}>Completá tu negocio para activar el Motor de Crecimiento</div>
-        <button type="button" onClick={onEdit} style={{ marginTop: 10, padding: '8px 16px', borderRadius: 9, border: 'none', background: T.cobalt, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Completar negocio</button>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginTop: 6 }}>
+          {setupDone
+            ? 'Agregá los links de tus plataformas para activar el Motor de Crecimiento'
+            : 'Completá tu negocio para activar el Motor de Crecimiento'}
+        </div>
+        <button type="button" onClick={onEdit} style={{ marginTop: 10, padding: '8px 16px', borderRadius: 9, border: 'none', background: T.cobalt, color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>{setupDone ? 'Agregar links' : 'Completar negocio'}</button>
       </div>
     )
   }
