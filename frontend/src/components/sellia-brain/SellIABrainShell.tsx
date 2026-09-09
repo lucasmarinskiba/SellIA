@@ -431,7 +431,11 @@ export const SellIABrainShell = (): React.JSX.Element => {
     setTimeout(() => {
       const el = document.getElementById(id)
       if (!el) return
-      el.scrollIntoView({ behavior:'smooth', block:'start' })
+      // 'instant' overrides the global CSS scroll-behavior:smooth on purpose
+      // -- see EnterpriseCommandCenter.tsx's scrollToSection for why a
+      // requested smooth animation can silently no-op if anything on the
+      // page re-renders while it's in flight.
+      el.scrollIntoView({ behavior: 'instant', block: 'start' })
       el.classList.add('brain-flash')
       setTimeout(() => el.classList.remove('brain-flash'), 1200)
     }, 80)
@@ -444,7 +448,7 @@ export const SellIABrainShell = (): React.JSX.Element => {
   const jumpToLobe = useCallback((id: LobeId): void => {
     setActiveLobe(id)
     const el = document.getElementById(`zone-${id}`)
-    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' })
+    if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' })
   }, [])
 
   // ⌘K shortcut
