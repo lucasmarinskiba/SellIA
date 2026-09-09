@@ -99,6 +99,14 @@ celery_app = Celery(
 
 _modules = [
     "app.tasks.workflow_tasks",
+    "app.tasks.security_tasks",  # referenced by 5 beat_schedule entries below
+                                  # (data_retention_cleanup, rotate_webhook_tokens,
+                                  # security_audit_report, cleanup_expired_ip_blocks,
+                                  # auto_block_high_risk_ips) but was never in this
+                                  # list -- every dispatch of any of them hit
+                                  # "Received unregistered task ... KeyError",
+                                  # identical failure mode to the workflow_tasks/
+                                  # content_tasks bug fixed earlier this session.
     "app.domains.documents.tasks",
     "app.tasks.content_tasks",
     "app.tasks.subscription_tasks",
