@@ -3,7 +3,20 @@
  */
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/v1'
+// NEXT_PUBLIC_API_URL is set (both locally and in Vercel prod) to the bare
+// backend origin (e.g. https://sellia-production.up.railway.app), same as
+// lib/api.ts expects (which builds `${API_URL}/api/v1` itself) -- this
+// client used to use the env var AS the full base with no `/api/v1`
+// appended, so every real call (auth/signup, auth/signin, business-context,
+// ai-activity, ...) actually hit `<origin>/auth/signup` etc. and 404'd.
+// Confirmed live-broken in production this way -- the real backend has
+// nothing mounted at that bare path. Normalizes defensively in case some
+// deployment ever does set the var WITH the suffix already.
+const normalizeApiBase = (raw: string): string => {
+  const trimmed = raw.replace(/\/+$/, '')
+  return /\/api\/v1$/.test(trimmed) ? trimmed : `${trimmed}/api/v1`
+}
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
 
 const TOKEN_KEY = 'sellia.token'
 
