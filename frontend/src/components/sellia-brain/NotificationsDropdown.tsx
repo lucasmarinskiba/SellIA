@@ -115,8 +115,14 @@ export default function NotificationsDropdown(): React.JSX.Element {
         setOffline(false)
       } catch {
         if (!alive) return
-        // Fallback: demo seed (only first load)
-        setItems(p => p.length === 0 ? SEED : p)
+        // Demo seed ONLY for anonymous visitors (the public showcase). For a
+        // real signed-in account a backend hiccup used to fabricate its
+        // notification feed -- "Deal cerrado · USD 4,820", "Outbound enviado ·
+        // 27 prospectos" -- events that never happened, shown as that user's
+        // own activity. A logged-in bell now keeps whatever real items it had
+        // (usually none) and says the feed could not be reached.
+        const loggedIn = !!getToken()
+        if (!loggedIn) setItems(p => p.length === 0 ? SEED : p)
         setOffline(true)
       }
     }
@@ -252,8 +258,16 @@ export default function NotificationsDropdown(): React.JSX.Element {
                   <Inbox size={20} color="rgba(160,180,220,0.4)" />
                 </div>
                 <div style={{ fontSize: 12, color: 'rgba(200,210,240,0.6)' }}>
-                  Sin notificaciones nuevas
+                  {offline
+                    ? 'No se pudo leer tu feed de notificaciones'
+                    : 'Sin notificaciones nuevas'}
                 </div>
+                {!offline && (
+                  <div style={{ fontSize: 11, color: 'rgba(160,180,220,0.45)', maxWidth: 250, lineHeight: 1.5 }}>
+                    Acá aparecen mensajes reales de tus canales, respuestas de la IA
+                    y automatizaciones ejecutadas — en cuanto ocurran.
+                  </div>
+                )}
               </div>
             ) : (
               sorted.map(n => {
