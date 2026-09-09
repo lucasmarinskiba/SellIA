@@ -20,6 +20,17 @@ async def account_summary(
     return await service.get_account_summary(db, user)
 
 
+@router.get("/business-snapshot")
+async def business_snapshot(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Verification signals, per-platform channel activity and real order
+    revenue for the current account. Feeds the SEO / autoridad / vendedor
+    multiplataforma pages, which used to render invented figures."""
+    return await service.get_business_snapshot(db, user)
+
+
 @router.get("/account-kpis")
 async def account_kpis(
     user: User = Depends(get_current_user),
