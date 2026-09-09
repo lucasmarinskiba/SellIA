@@ -250,6 +250,26 @@ const KPI_ICONS: Record<string, React.ReactNode> = {
   channels: <Workflow size={18} />, conversations: <Users size={18} />,
   ai_replies: <Bot size={18} />, ai_actions: <Cpu size={18} />,
 }
+/** Strip mostrado sobre los paneles alimentados por endpoints GLOBALES
+ *  (/brain/squads, /brain/handoff-log, /brain/audit-log, la tabla `leads`).
+ *  Ninguno de esos datos tiene dueño: son de la plataforma, no de la cuenta
+ *  logueada. Antes se mostraban tal cual dentro del dashboard de un usuario,
+ *  que los leía como propios ("1/1 ejecutando" en una cuenta recién creada).
+ *  No se ocultan —siguen sirviendo como demo— pero quedan rotulados. */
+const DemoDataNotice = ({ what }: { what: string }): React.JSX.Element => (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+    padding: '7px 12px', marginBottom: 10, borderRadius: 8,
+    border: `1px solid ${T.amber}33`, background: `${T.amber}0F`,
+    fontSize: 11, color: T.amber, fontFamily: T.mono, letterSpacing: '0.03em',
+  }}>
+    DEMO · {what} de la plataforma, no de tu cuenta
+    <a href="/dashboard/conversaciones" style={{ color: T.emerald, fontWeight: 700, textDecoration: 'none' }}>
+      ver lo real de tu cuenta →
+    </a>
+  </div>
+)
+
 // Mirrors backend/app/domains/ai_activity/service.py's get_account_kpis --
 // every number is scoped to the logged-in account (Business.user_id), unlike
 // /brain/kpis which aggregates an unowned global table.
@@ -1297,6 +1317,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       {/* ── ESCUADRONES IA · telemetría por departamento ── */}
       {showSquads && (
       <section id="sec-squads" style={{ padding: '20px 28px 0' }}>
+        {isLoggedIn && <DemoDataNotice what="telemetría de escuadrones" />}
         <SquadStatusPanel />
       </section>
       )}
@@ -1314,6 +1335,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         {/* ─ DATA TABLE ─ */}
         {showPipeline && (
         <div style={cardStyle}>
+          {isLoggedIn && <DemoDataNotice what="prospectos" />}
           {/* table header / controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
             <div>
@@ -1451,7 +1473,9 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             }}><Cpu size={16} /></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Agent Audit Log</div>
-              <div style={{ fontSize: 11, color: T.text2, fontFamily: T.mono }}>Razonamiento en tiempo real</div>
+              <div style={{ fontSize: 11, color: isLoggedIn ? T.amber : T.text2, fontFamily: T.mono }}>
+                {isLoggedIn ? 'DEMO · razonamiento de la plataforma, no de tu cuenta' : 'Razonamiento en tiempo real'}
+              </div>
             </div>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.emerald, animation: 'ecc-pulse 1.6s ease-in-out infinite' }} />
           </div>
@@ -1482,13 +1506,15 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
       {/* ── HANDOFF LOG + APPROVALS — vista combinada o por separado ── */}
       {(showHandoff || showApprovals) && (
-      <section id="sec-collab" style={{
-        padding: '12px 28px 8px', display: 'grid',
-        gridTemplateColumns: view === 'handoff'   ? '1fr'
-                          : view === 'approvals' ? '1fr'
-                          : '1fr 1fr',
-        gap: 16, alignItems: 'start',
-      }}>
+      <section id="sec-collab" style={{ padding: '12px 28px 8px' }}>
+        {isLoggedIn && <DemoDataNotice what="handoffs y aprobaciones" />}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: view === 'handoff'   ? '1fr'
+                            : view === 'approvals' ? '1fr'
+                            : '1fr 1fr',
+          gap: 16, alignItems: 'start',
+        }}>
         {showHandoff   && <HandoffLog events={handoffEvents} simulateLive={false} />}
         {showApprovals && (
           <ApprovalsCenter
@@ -1498,6 +1524,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             onReject={handleRejectAction}
           />
         )}
+        </div>
       </section>
       )}
 
