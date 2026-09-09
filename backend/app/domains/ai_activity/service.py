@@ -138,9 +138,70 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
     )
     last_action_at = last_result.scalar_one_or_none()
 
+    # Real setup readiness -- the single source of truth for whether this
+    # account's AI agents/automations should be presented as genuinely
+    # active anywhere in the UI. Before this, the Brain page's own
+    # "¿está todo listo?" gate read a completely different, localStorage-only
+    # "business profile" (frontend/src/lib/business-profile.ts) that never
+    # touches this database at all -- a user could fill that local form and
+    # see "AGENTE ACTIVO" while their real BusinessContext stayed empty (or
+    # vice versa: finish the real questionnaire via /sellia-onboarding and
+    # still see "Completá tu negocio" on the Brain page), because the two
+    # systems never talked to each other.
+    setup: dict[str, Any] = {
+        "has_business": False,
+        "has_subdomain": False,
+        "questionnaire_complete": bool(questionnaire.get("is_fully_complete")),
+        "has_channel_declared": False,
+    }
+    try:
+        from app.domains.businesses.models import Business
+        from app.domains.websites.models import Website, Domain
+
+        biz_result = await db.execute(
+            select(Business.id).where(Business.user_id == user.id).limit(1)
+        )
+        business_id = biz_result.scalar_one_or_none()
+        setup["has_business"] = business_id is not None
+
+        if business_id:
+            domain_result = await db.execute(
+                select(Domain.subdomain)
+                .join(Website, Domain.website_id == Website.id)
+                .where(Website.business_id == business_id)
+                .limit(1)
+            )
+            subdomain = domain_result.scalar_one_or_none()
+            setup["has_subdomain"] = subdomain is not None
+            setup["subdomain"] = subdomain
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_account_summary: setup/subdomain lookup failed: %s", str(e)[:200])
+
+    if questionnaire.get("has_context"):
+        try:
+            from app.domains.business_context.models import BusinessContext
+
+            ctx_result = await db.execute(
+                select(BusinessContext.channels_configured).where(
+                    BusinessContext.id == uuid.UUID(questionnaire["context_id"])
+                )
+            )
+            channels = ctx_result.scalar_one_or_none() or {}
+            setup["has_channel_declared"] = any(bool(v) for v in channels.values())
+        except Exception as e:  # noqa: BLE001
+            logger.warning("get_account_summary: channels lookup failed: %s", str(e)[:200])
+
+    setup["setup_complete"] = (
+        setup["has_business"]
+        and setup["has_subdomain"]
+        and setup["questionnaire_complete"]
+        and setup["has_channel_declared"]
+    )
+
     return {
         "registration": registration,
         "questionnaire": questionnaire,
+        "setup": setup,
         "ai_activity": {
             "total_actions": total_actions,
             "last_action_at": last_action_at.isoformat() if last_action_at else None,
