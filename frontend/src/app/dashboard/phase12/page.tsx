@@ -47,7 +47,8 @@ export default function SeoPage(): React.JSX.Element {
         if (!alive) return
         setBusiness(biz)
         if (!biz) return
-        const res = await api.get<SeoAudit>(`/businesses/${biz.id}/seo/audit`)
+        // Router montado en /api/v1/seo, con rutas propias /businesses/{id}/seo/...
+        const res = await api.get<SeoAudit>(`/seo/businesses/${biz.id}/seo/audit`)
         if (alive) setAudit(res.data)
       } catch {
         if (alive) setError('No se pudo leer el estado SEO de tu sitio.')

@@ -16,7 +16,7 @@ async def analyze_seo(url: str = Query(None)):
     a PageSpeed/Lighthouse API key, which this deployment does not have, so
     the endpoint reports that instead of inventing a measurement. The real,
     computable SEO state of an account lives in
-    GET /api/v1/businesses/{business_id}/seo/audit.
+    GET /api/v1/seo/businesses/{business_id}/seo/audit.
     """
     return {
         "available": False,
@@ -25,7 +25,7 @@ async def analyze_seo(url: str = Query(None)):
             "No hay integración de PageSpeed/Lighthouse configurada, así que no se "
             "pueden medir Core Web Vitals reales para esta URL."
         ),
-        "real_alternative": "/api/v1/businesses/{business_id}/seo/audit",
+        "real_alternative": "/api/v1/seo/businesses/{business_id}/seo/audit",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
