@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Brain, ChevronLeft, ChevronRight,
   Cpu, Filter, LifeBuoy, Search, Store, Target, TrendingUp, Users, Workflow,
+  Bot, Power,
 } from 'lucide-react'
 import { t } from '@/lib/sellia-i18n'
 
@@ -28,7 +29,7 @@ import ComputerUseLauncher from './ComputerUseLauncher'
 import dynamic from 'next/dynamic'
 import { type LobeId } from './toolIndex'
 import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAccountFlows, buildToolPlan } from '@/lib/business-profile'
-import { getDisabledCapabilities } from '@/lib/brain-capability-toggles'
+import { getDisabledCapabilities, onCapabilitiesChanged } from '@/lib/brain-capability-toggles'
 import { getToken } from '@/lib/sellia-api'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
@@ -576,6 +577,16 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
   // ── vista del cerebro: flujos (n8n) vs overview (grafo apagado) ──
   const [neuralView, setNeuralView] = useState<'flows' | 'overview'>('flows')
+  // Real ON/OFF count for the Dashboard-level summary card -- the toggle
+  // grid itself (BrainInteractionMap) lives 2 clicks deep (Cerebro Neuronal
+  // -> Vista general), which is why it went unnoticed even after being
+  // built: this surfaces the same real state on the very first screen.
+  const [disabledCount, setDisabledCount] = useState(0)
+  useEffect(() => {
+    const sync = (): void => setDisabledCount(getDisabledCapabilities().size)
+    sync()
+    return onCapabilitiesChanged(sync)
+  }, [])
   // ── Client-only timestamp (fixes hydration mismatch) ──
   const [currentTime, setCurrentTime] = useState('')
   useEffect(() => {
@@ -926,6 +937,22 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <Store size={14} />
             Phase 33 · Vendedor Multi-Plataforma
           </a>
+          <a href="/dashboard/conversaciones" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+            borderRadius: 8, border: `1px solid rgba(16,185,129,0.4)`, background: `rgba(16,185,129,0.16)`,
+            fontSize: 12, fontWeight: 700, color: '#10b981', textDecoration: 'none',
+            transition: 'background .14s, border-color .14s',
+            cursor: 'pointer',
+          }} onMouseEnter={e => {
+            e.currentTarget.style.background = `rgba(16,185,129,0.26)`;
+            e.currentTarget.style.borderColor = `rgba(16,185,129,0.6)`;
+          }} onMouseLeave={e => {
+            e.currentTarget.style.background = `rgba(16,185,129,0.16)`;
+            e.currentTarget.style.borderColor = `rgba(16,185,129,0.4)`;
+          }} title="Ver conversaciones reales de WhatsApp, Instagram, MercadoLibre y más — con prueba de qué respondió la IA">
+            <Bot size={14} />
+            Conversaciones IA en vivo
+          </a>
         </div>
         <div style={{ flex: 1 }} />
         {brain && (
@@ -990,6 +1017,47 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
           vista: {view}
         </span>
       </nav>
+
+      {/* ── CONTROL ON/OFF: resumen real + acceso directo -- el grid de
+          toggles (BrainInteractionMap) vive 2 clicks adentro (Cerebro
+          Neuronal → Vista general), así que estaba construido pero nadie
+          lo encontraba. Esto lo pone en la primera pantalla, con el
+          conteo real. ── */}
+      {showKpis && brain && (
+      <section style={{ padding: '20px 28px 0' }}>
+        <button
+          onClick={() => { setView('neural'); setNeuralView('overview') }}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 16, padding: '14px 18px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+            background: disabledCount > 0 ? `${T.amber}0F` : `${T.emerald}0F`,
+            border: `1px solid ${disabledCount > 0 ? T.amber : T.emerald}40`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{
+              width: 34, height: 34, borderRadius: 9, display: 'grid', placeItems: 'center',
+              background: `${disabledCount > 0 ? T.amber : T.emerald}1F`,
+              color: disabledCount > 0 ? T.amber : T.emerald,
+            }}>
+              <Power size={17} />
+            </span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
+                {brain.counts.total - disabledCount} de {brain.counts.total} activados
+                {disabledCount > 0 && <span style={{ color: T.amber }}> · {disabledCount} desactivados</span>}
+              </div>
+              <div style={{ fontSize: 12, color: T.text2, marginTop: 2 }}>
+                Agentes, skills, automatizaciones y plataformas · encendé o apagá cada uno acá
+              </div>
+            </div>
+          </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: T.cobalt, flexShrink: 0 }}>
+            Ver y controlar <ChevronRight size={14} />
+          </span>
+        </button>
+      </section>
+      )}
 
       {/* ── MI NEGOCIO: toolkit (recomendaciones + validador de links) ── */}
       {showKpis && (
@@ -1272,7 +1340,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
                   background: neuralView === v ? `${T.cobalt}1F` : 'transparent',
                   color: neuralView === v ? T.cobalt : T.text2,
                 }}>
-                {v === 'flows' ? 'Flujos en vivo' : 'Vista general'}
+                {v === 'flows' ? 'Flujos en vivo' : 'Activar / Desactivar'}
               </button>
             ))}
           </div>

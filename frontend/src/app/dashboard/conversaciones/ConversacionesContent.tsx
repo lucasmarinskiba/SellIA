@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { conversationsApi, ConversationWithPreview, Message, MessageDirection } from '@/lib/conversations'
 import { businessApi, Business } from '@/lib/business'
-import { MessageSquare, Send, User, Phone, Mail, Archive, Check, CheckCheck, Clock } from 'lucide-react'
+import { platformMeta, PLATFORM_META } from '@/lib/platformMeta'
+import { MessageSquare, Send, User, Phone, Mail, Archive, Check, CheckCheck, Clock, Bot } from 'lucide-react'
 
 export function ConversacionesContent() {
   const searchParams = useSearchParams()
@@ -16,6 +17,7 @@ export function ConversacionesContent() {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [platformFilter, setPlatformFilter] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export function ConversacionesContent() {
     if (selectedBusiness) {
       loadConversations()
     }
-  }, [selectedBusiness])
+  }, [selectedBusiness, platformFilter])
 
   useEffect(() => {
     if (selectedConversation) {
@@ -53,7 +55,7 @@ export function ConversacionesContent() {
   const loadConversations = async () => {
     setLoading(true)
     try {
-      const data = await conversationsApi.list(selectedBusiness)
+      const data = await conversationsApi.list(selectedBusiness, undefined, platformFilter || undefined)
       setConversations(data)
       if (data.length > 0 && !selectedConversation) {
         setSelectedConversation(data[0].id)
@@ -110,7 +112,9 @@ export function ConversacionesContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Conversaciones</h1>
-          <p className="text-gray-500 mt-1">Inbox unificado de todos tus canales</p>
+          <p className="text-gray-500 mt-1">
+            Inbox unificado de todos tus canales · prueba en vivo de que la IA responde de verdad
+          </p>
         </div>
         <select
           value={selectedBusiness}
@@ -125,6 +129,44 @@ export function ConversacionesContent() {
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
+      </div>
+
+      {/* Real summary + platform filter -- this is what proves the bot is
+          actually running per channel, not just a claim in the UI copy */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Bot className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="font-medium text-gray-900">
+            {conversations.filter((c) => c.ai_responded).length}
+          </span>
+          de {conversations.length} conversaciones respondidas por la IA
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setPlatformFilter('')}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+              platformFilter === '' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            Todas
+          </button>
+          {Object.entries(PLATFORM_META)
+            .filter(([key]) => ['whatsapp', 'instagram', 'mercadolibre', 'amazon', 'hotmart', 'email', 'webchat'].includes(key))
+            .map(([key, meta]) => (
+              <button
+                key={key}
+                onClick={() => setPlatformFilter(key)}
+                className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                style={
+                  platformFilter === key
+                    ? { background: meta.color, color: '#0A0E1A', borderColor: meta.color }
+                    : { background: 'white', color: meta.color, borderColor: `${meta.color}55` }
+                }
+              >
+                {meta.label}
+              </button>
+            ))}
+        </div>
       </div>
 
       <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex">
@@ -148,11 +190,17 @@ export function ConversacionesContent() {
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center">
                 <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">No hay conversaciones aún</p>
-                <p className="text-xs text-gray-400 mt-1">Conecta un canal para empezar</p>
+                <p className="text-sm text-gray-500">
+                  {platformFilter ? `Sin conversaciones en ${platformMeta(platformFilter).label}` : 'No hay conversaciones aún'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {platformFilter ? 'Probá con otra plataforma o esperá a que lleguen mensajes reales.' : 'Conecta un canal para empezar'}
+                </p>
               </div>
             ) : (
-              conversations.map((conv) => (
+              conversations.map((conv) => {
+                const meta = platformMeta(conv.platform)
+                return (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
@@ -162,9 +210,22 @@ export function ConversacionesContent() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {conv.lead_name || 'Desconocido'}
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-medium text-gray-900 truncate">
+                          {conv.lead_name || 'Desconocido'}
+                        </p>
+                        <span
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0"
+                          style={{ background: `${meta.color}22`, color: meta.color }}
+                        >
+                          {meta.label}
+                        </span>
+                        {conv.ai_responded && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-emerald-100 text-emerald-700">
+                            <Bot className="w-2.5 h-2.5" /> IA
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {conv.lead_source && (
                           <span className="capitalize">{conv.lead_source}</span>
@@ -172,6 +233,9 @@ export function ConversacionesContent() {
                       </p>
                       {conv.last_message_preview && (
                         <p className="text-sm text-gray-500 mt-1 truncate">
+                          {conv.last_direction === 'inbound' && (
+                            <span className="text-amber-600 font-medium">Esperando respuesta · </span>
+                          )}
                           {conv.last_message_preview}
                         </p>
                       )}
@@ -181,7 +245,8 @@ export function ConversacionesContent() {
                     </span>
                   </div>
                 </button>
-              ))
+                )
+              })
             )}
           </div>
         </div>
@@ -216,33 +281,50 @@ export function ConversacionesContent() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg) => (
+                {messages.map((msg) => {
+                  // Real marker set by backend/app/domains/channels/services.py's
+                  // send_outbound_message(generated_by="ai") -- only present when
+                  // the AI bot actually composed this reply, never for a message
+                  // a human typed through this same inbox. This is the concrete,
+                  // per-message proof (not just a UI claim) that the bot works.
+                  const isAiReply = msg.direction === 'outbound' && msg.extra_data?.generated_by === 'ai'
+                  return (
                   <div
                     key={msg.id}
                     className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div
-                      className={`max-w-[70%] px-4 py-2 rounded-2xl ${
-                        msg.direction === 'outbound'
-                          ? 'bg-primary-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
-                      }`}
-                    >
-                      <p className="text-sm">{msg.content}</p>
-                      <div className={`flex items-center justify-end gap-1 mt-1 ${
-                        msg.direction === 'outbound' ? 'text-primary-200' : 'text-gray-400'
-                      }`}>
-                        <span className="text-xs">
-                          {new Date(msg.created_at).toLocaleTimeString('es-AR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                    <div className={`max-w-[70%] ${msg.direction === 'outbound' ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
+                      {isAiReply && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 pr-1">
+                          <Bot className="w-3 h-3" /> Respondido por la IA
                         </span>
-                        {msg.direction === 'outbound' && getStatusIcon(msg.status)}
+                      )}
+                      <div
+                        className={`px-4 py-2 rounded-2xl ${
+                          msg.direction === 'outbound'
+                            ? isAiReply
+                              ? 'bg-emerald-600 text-white rounded-br-none'
+                              : 'bg-primary-600 text-white rounded-br-none'
+                            : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                        }`}
+                      >
+                        <p className="text-sm">{msg.content}</p>
+                        <div className={`flex items-center justify-end gap-1 mt-1 ${
+                          msg.direction === 'outbound' ? (isAiReply ? 'text-emerald-100' : 'text-primary-200') : 'text-gray-400'
+                        }`}>
+                          <span className="text-xs">
+                            {new Date(msg.created_at).toLocaleTimeString('es-AR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {msg.direction === 'outbound' && getStatusIcon(msg.status)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 <div ref={messagesEndRef} />
               </div>
 

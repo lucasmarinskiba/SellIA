@@ -378,7 +378,7 @@ async def _maybe_ai_auto_reply(
         voice_slug=voice_slug,
     )
     if ai_response:
-        await send_outbound_message(db, conversation.id, ai_response)
+        await send_outbound_message(db, conversation.id, ai_response, generated_by="ai")
 
 
 async def process_incoming_message(
@@ -695,7 +695,15 @@ async def send_outbound_message(
     conversation_id: Any,
     content: str,
     content_type: str = "text",
+    generated_by: str | None = None,
 ) -> dict[str, Any]:
+    """generated_by tags who actually wrote this message -- "ai" for a real
+    auto-reply (see _maybe_ai_auto_reply below), None/omitted for a human
+    manually typing through the conversations inbox. Both paths call this
+    same function and previously produced identical rows, so there was no
+    way to tell from a conversation's history whether the AI bot had ever
+    actually replied to anyone or every reply was typed by a person --
+    exactly what a business owner needs to see to trust the bot is real."""
     result = await db.execute(
         select(Conversation).where(Conversation.id == conversation_id)
     )
@@ -720,13 +728,16 @@ async def send_outbound_message(
 
     response = await connector.send_message(recipient, content, content_type)
 
+    extra_data: dict[str, Any] = {"api_response": response}
+    if generated_by:
+        extra_data["generated_by"] = generated_by
     message = Message(
         conversation_id=conversation.id,
         direction=MessageDirection.OUTBOUND,
         content=content,
         content_type=content_type,
         status=MessageStatus.SENT,
-        extra_data={"api_response": response},
+        extra_data=extra_data,
     )
     db.add(message)
     conversation.last_message_at = message.created_at

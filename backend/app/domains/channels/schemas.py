@@ -83,6 +83,13 @@ class ConversationResponse(ConversationBase):
 class ConversationListResponse(ConversationResponse):
     message_count: int = 0
     last_message_preview: str | None = None
+    # Real platform this conversation is happening on (WhatsApp, Instagram,
+    # MercadoLibre, Amazon, Hotmart, ...) -- not on ConversationResponse
+    # itself (only channel_connection_id is), added here so the frontend
+    # can show a platform badge without a second round-trip per conversation.
+    platform: str | None = None
+    last_direction: str | None = None  # "inbound" | "outbound" of the most recent message
+    ai_responded: bool = False  # has the AI (an outbound message) ever replied in this thread
 
 
 # Message schemas

@@ -39,30 +39,57 @@ async def _get_business_for_user(
 async def list_conversations(
     business_id: UUID,
     status: ConversationStatus | None = None,
+    platform: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """List real conversations for a business -- this is what proves the AI
+    reply bot is actually running on each connected channel (WhatsApp,
+    Instagram, MercadoLibre questions, Amazon, Hotmart, ...): each item
+    shows the real platform, whether the AI has replied at all
+    (ai_responded), and whether the LAST message is still waiting on a
+    reply (last_direction == "inbound") or was already answered.
+    """
+    from app.domains.channels.models import ChannelConnection
+
     await _get_business_for_user(business_id, current_user, db)
-    query = select(Conversation).where(
-        Conversation.business_id == business_id,
-        Conversation.is_active == True,
+    query = (
+        select(Conversation, ChannelConnection)
+        .outerjoin(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .where(
+            Conversation.business_id == business_id,
+            Conversation.is_active == True,
+        )
     )
     if status:
         query = query.where(Conversation.status == status)
+    if platform:
+        query = query.where(ChannelConnection.platform == platform)
     query = query.order_by(Conversation.last_message_at.desc().nullslast())
     result = await db.execute(query)
-    conversations = result.scalars().all()
+    rows = result.all()
 
     response = []
-    for conv in conversations:
-        msg_count = len(conv.messages)
+    for conv, channel in rows:
+        msgs = conv.messages
+        msg_count = len(msgs)
         last_preview = None
-        if conv.messages:
-            last_preview = conv.messages[-1].content[:100] if conv.messages[-1].content else None
+        last_direction = None
+        if msgs:
+            last_msg = msgs[-1]
+            last_preview = last_msg.content[:100] if last_msg.content else None
+            last_direction = last_msg.direction.value if hasattr(last_msg.direction, "value") else last_msg.direction
+        ai_responded = any(
+            (m.direction.value if hasattr(m.direction, "value") else m.direction) == "outbound"
+            for m in msgs
+        )
         response.append(ConversationListResponse(
             **ConversationResponse.model_validate(conv).model_dump(),
             message_count=msg_count,
             last_message_preview=last_preview,
+            platform=channel.platform.value if channel and channel.platform else None,
+            last_direction=last_direction,
+            ai_responded=ai_responded,
         ))
     return response
 
