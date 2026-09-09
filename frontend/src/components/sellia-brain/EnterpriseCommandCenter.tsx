@@ -31,6 +31,7 @@ import { type LobeId } from './toolIndex'
 import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAccountFlows, buildToolPlan } from '@/lib/business-profile'
 import { getDisabledCapabilities, onCapabilitiesChanged } from '@/lib/brain-capability-toggles'
 import { getToken } from '@/lib/sellia-api'
+import { businessContextApi } from '@/lib/businessContext'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
 const BrainInteractionMap = dynamic(
@@ -42,6 +43,9 @@ const BrainFlowsView = dynamic(
   { ssr: false, loading: () => <div style={{ height: 460, display: 'grid', placeItems: 'center', color: '#5C6B85', fontFamily: 'monospace', fontSize: 11 }}>cargando flujos…</div> },
 )
 const BusinessProfileWizard = dynamic(() => import('./BusinessProfileWizard'), { ssr: false })
+// Real, backend-synced questionnaire (business_context) -- used for logged-in
+// users instead of the fake localStorage-only BusinessProfileWizard below.
+const RealBusinessContextWizard = dynamic(() => import('../missions/BusinessContextWizard'), { ssr: false })
 const BusinessToolkit = dynamic(() => import('./BusinessToolkit'), { ssr: false })
 const RescueMode = dynamic(() => import('./RescueMode'), { ssr: false })
 const ToolStudio = dynamic(() => import('./ToolStudio'), { ssr: false })
@@ -214,6 +218,21 @@ const nowTs = (): string => {
 interface BrainOverview {
   counts: { agents: number; skills: number; automations: number; total: number }
   health: number
+}
+
+// Mirrors backend/app/domains/ai_activity/service.py's get_account_summary --
+// the real, per-account source of truth for whether this account's AI is
+// actually ready to be shown as active anywhere in the UI.
+interface AccountSetupSummary {
+  questionnaire: { is_fully_complete?: boolean; completed_steps?: number; total_steps?: number }
+  setup: {
+    has_business: boolean
+    has_subdomain: boolean
+    subdomain?: string | null
+    questionnaire_complete: boolean
+    has_channel_declared: boolean
+    setup_complete: boolean
+  }
 }
 
 type KpiAccent = 'emerald' | 'cobalt' | 'amber'
@@ -587,6 +606,44 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     sync()
     return onCapabilitiesChanged(sync)
   }, [])
+
+  // Real, backend-truthful setup readiness -- replaces the old gate, which
+  // read a completely separate localStorage-only "business profile"
+  // (lib/business-profile.ts) that never touched this account's real
+  // Business/BusinessContext/Domain rows at all. A logged-in user now sees
+  // "AGENTE ACTIVO" / no setup banner only once all four real things exist:
+  // an account, a claimed subdomain, the questionnaire fully answered, and
+  // at least one channel declared. Anonymous visitors (the public demo)
+  // keep the old localStorage-profile behavior untouched below.
+  const [accountSetup, setAccountSetup] = useState<AccountSetupSummary | null>(null)
+  const refetchAccountSetup = useCallback((): void => {
+    const token = getToken()
+    if (!token) { setAccountSetup(null); return }
+    fetch(`${BRAIN_BACKEND_URL}/api/v1/ai-activity/summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data) setAccountSetup(data) })
+      .catch(() => { /* stay as-is -> never a false "active" claim */ })
+  }, [])
+  useEffect(() => { refetchAccountSetup() }, [user, refetchAccountSetup])
+
+  // Logged-in users get the REAL, backend-synced questionnaire; anonymous
+  // demo visitors keep the local fake one (BusinessProfileWizard) below.
+  const isLoggedIn = !!user
+  const [contextWizardId, setContextWizardId] = useState<string | null>(null)
+  const [contextWizardLoading, setContextWizardLoading] = useState(false)
+  const openRealContextWizard = useCallback(async (): Promise<void> => {
+    setContextWizardLoading(true)
+    try {
+      const ctx = await businessContextApi.getContext()
+      setContextWizardId(ctx.id)
+    } catch {
+      /* no backend / not logged in -> wizard just won't open */
+    } finally {
+      setContextWizardLoading(false)
+    }
+  }, [])
   // ── Client-only timestamp (fixes hydration mismatch) ──
   const [currentTime, setCurrentTime] = useState('')
   useEffect(() => {
@@ -605,6 +662,11 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
   const [openToolId, setOpenToolId] = useState<string | null>(null)
   useEffect(() => { setProfile(loadProfile()) }, [])
   const profileDone = isComplete(profile)
+  // Real, honest readiness gate: a logged-in account is only "ready" per the
+  // backend's setup block (real Business + subdomain + questionnaire +
+  // declared channel) -- the local fake profile is never consulted for
+  // logged-in users. Anonymous demo visitors keep the old local-profile gate.
+  const setupComplete = isLoggedIn ? !!accountSetup?.setup.setup_complete : profileDone
 
   // Computer Use acciona sobre flujos planificados (por cuenta o de rescate).
   const [plannedFlows, setPlannedFlows] = useState<PlannedFlow[]>([])
@@ -849,28 +911,56 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       {/* ── SIDEBAR lateral izquierdo ── */}
       <SideToolbar />
 
-      {/* ── Cuestionario de negocio (modal) ── */}
+      {/* ── Cuestionario de negocio (modal) ── anónimo: fake local; logueado: real backend */}
       <BusinessProfileWizard open={profileOpen} onClose={() => setProfileOpen(false)} onSaved={(p) => setProfile(p)} />
+      {contextWizardId && (
+        <RealBusinessContextWizard
+          contextId={contextWizardId}
+          onComplete={() => { setContextWizardId(null); refetchAccountSetup() }}
+        />
+      )}
 
       {/* ── Tool Studio (detalle + lanzar herramienta) ── */}
       <ToolStudio toolId={openToolId} profile={profile} onClose={() => setOpenToolId(null)} onLaunch={(f) => executePlan([f])}
         onAddToPlan={(f) => { setPlannedFlows(prev => [...prev, f]); setNeuralView('flows'); scrollToSection('sec-neural') }} />
 
-      {/* ── Banner obligatorio si el perfil no está completo ── */}
-      {!profileDone && (
+      {/* ── Banner obligatorio si el setup no está completo -- logueado: gate
+          real (cuenta + subdominio + cuestionario + canal declarado);
+          anónimo (demo público): gate local de siempre, sin cambios. ── */}
+      {!setupComplete && (
         <div style={{
           position: 'sticky', top: 56, zIndex: 19, display: 'flex', alignItems: 'center', gap: 12,
           padding: '10px 28px', background: `${T.amber}14`, borderBottom: `1px solid ${T.amber}40`,
         }}>
           <Store size={16} style={{ color: T.amber }} />
           <span style={{ fontSize: 13, color: T.text }}>
-            Completá tu negocio (qué vendés + tus links de venta/anuncios/redes) para que SellIA venda por vos.
+            {isLoggedIn ? (
+              <>
+                Completá tu negocio para que SellIA venda por vos —
+                {!accountSetup?.setup.has_subdomain && ' falta tu subdominio,'}
+                {!accountSetup?.setup.questionnaire_complete && ' falta el cuestionario (qué vendés, modelo de venta, público, propuesta de valor),'}
+                {accountSetup?.setup.questionnaire_complete && !accountSetup?.setup.has_channel_declared && ' falta declarar un canal (redes, web, MercadoLibre/Amazon).'}
+              </>
+            ) : (
+              'Completá tu negocio (qué vendés + tus links de venta/anuncios/redes) para que SellIA venda por vos.'
+            )}
           </span>
           <span style={{ flex: 1 }} />
-          <button type="button" onClick={() => setProfileOpen(true)} style={{
-            padding: '7px 14px', borderRadius: 8, border: 'none', background: T.amber, color: '#1a1205',
-            fontWeight: 700, fontSize: 12, cursor: 'pointer',
-          }}>Completar</button>
+          {isLoggedIn && !accountSetup?.setup.has_subdomain && (
+            <a href="/sellia-onboarding" style={{
+              padding: '7px 14px', borderRadius: 8, border: `1px solid ${T.amber}`, color: T.amber,
+              fontWeight: 700, fontSize: 12, textDecoration: 'none',
+            }}>Reclamar subdominio</a>
+          )}
+          <button
+            type="button"
+            disabled={contextWizardLoading}
+            onClick={() => { if (isLoggedIn) { void openRealContextWizard() } else { setProfileOpen(true) } }}
+            style={{
+              padding: '7px 14px', borderRadius: 8, border: 'none', background: T.amber, color: '#1a1205',
+              fontWeight: 700, fontSize: 12, cursor: contextWizardLoading ? 'default' : 'pointer',
+              opacity: contextWizardLoading ? 0.6 : 1,
+            }}>{contextWizardLoading ? 'Abriendo…' : 'Completar'}</button>
         </div>
       )}
 
@@ -967,13 +1057,16 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <span style={{ color: T.emerald }}>salud {(brain.health * 100).toFixed(0)}%</span>
           </span>
         )}
+        {/* Real, honest state -- was a static, unconditional "AGENTE ACTIVO"
+            regardless of whether the account had ever finished setup. */}
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 12px',
-          borderRadius: 8, border: `1px solid ${T.emerald}33`, background: `${T.emerald}14`,
-          fontSize: 12, fontWeight: 600, color: T.emerald, fontFamily: T.mono,
+          borderRadius: 8, border: `1px solid ${(setupComplete ? T.emerald : T.amber)}33`,
+          background: `${setupComplete ? T.emerald : T.amber}14`,
+          fontSize: 12, fontWeight: 600, color: setupComplete ? T.emerald : T.amber, fontFamily: T.mono,
         }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.emerald, animation: 'ecc-pulse 2s ease-in-out infinite' }} />
-          AGENTE ACTIVO
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: setupComplete ? T.emerald : T.amber, animation: 'ecc-pulse 2s ease-in-out infinite' }} />
+          {setupComplete ? 'AGENTE ACTIVO' : 'CONFIGURACIÓN PENDIENTE'}
         </span>
       </header>
 
@@ -1071,7 +1164,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             <p style={{ margin: '2px 0 0', fontSize: 12, color: T.text2 }}>Lo que vendés, tus plataformas y links · recomendaciones para vender + lanzar Computer Use sobre tus canales.</p>
           </div>
         </div>
-        <BusinessToolkit profile={profile} onEdit={() => setProfileOpen(true)} onPlan={planFromToolkit} onOpenTool={setOpenToolId}
+        <BusinessToolkit profile={profile} onEdit={() => { if (isLoggedIn) { void openRealContextWizard() } else { setProfileOpen(true) } }} onPlan={planFromToolkit} onOpenTool={setOpenToolId}
           onPlanComplete={(ids) => executePlan(buildToolPlan(loadProfile(), ids))} />
       </section>
       )}
@@ -1079,7 +1172,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       {/* ── MODO RESCATE: sin clientes → estrategia de adquisición ── */}
       {showKpis && (
       <section id="sec-rescue" style={{ padding: '20px 28px 0' }}>
-        <RescueMode profile={profile} onEdit={() => setProfileOpen(true)} onRescue={executePlan} />
+        <RescueMode profile={profile} onEdit={() => { if (isLoggedIn) { void openRealContextWizard() } else { setProfileOpen(true) } }} onRescue={executePlan} />
       </section>
       )}
 
