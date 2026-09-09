@@ -1,178 +1,128 @@
 'use client'
 
-import { ExternalLink, CheckCircle, Circle, AlertCircle, Loader } from 'lucide-react'
-import { useState } from 'react'
+/**
+ * Plataformas — estado real de conexión.
+ *
+ * Antes el botón "Conectar" hacía esto:
+ *     setTimeout(() => marcar como conectada, 1500)
+ * es decir, simulaba la conexión: la tarjeta quedaba en verde "Conectado"
+ * sin que existiera ninguna credencial ni ningún canal, y el usuario se iba
+ * creyendo que su MercadoLibre estaba enlazado. Ahora el estado sale de las
+ * conexiones reales de la cuenta (channel_connections) y conectar lleva al
+ * flujo real de canales.
+ */
 
-const PLATFORMS = [
-  {
-    id: 'mercado-libre',
-    name: 'Mercado Libre',
-    description: 'Vende en Mercado Libre con sincronización automática',
-    icon: '🏪',
-    color: 'from-yellow-400 to-yellow-600',
-    connected: false,
-    authUrl: 'https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=YOUR_CLIENT_ID&redirect_uri=https://sellia-brain.vercel.app/api/v1/oauth/mercado-libre/callback',
-  },
-  {
-    id: 'amazon',
-    name: 'Amazon',
-    description: 'Gestiona tu tienda en Amazon Seller Central',
-    icon: '📦',
-    color: 'from-orange-400 to-orange-600',
-    connected: false,
-    authUrl: 'https://sellercentral.amazon.com/ap/signin',
-  },
-  {
-    id: 'hotmart',
-    name: 'Hotmart',
-    description: 'Vende productos digitales en Hotmart',
-    icon: '🎓',
-    color: 'from-purple-400 to-purple-600',
-    connected: false,
-    authUrl: 'https://app.hotmart.com/login',
-  },
+import Link from 'next/link'
+import { CheckCircle, Circle, Loader2, ExternalLink } from 'lucide-react'
+import { useBusinessSnapshot } from '@/lib/businessSnapshot'
+import { platformMeta } from '@/lib/platformMeta'
+
+interface PlatformCard {
+  id: string
+  name: string
+  description: string
+  icon: string
+  /** valores de ChannelPlatform (backend) que cuentan como esta plataforma */
+  matches: string[]
+}
+
+const PLATFORMS: PlatformCard[] = [
+  { id: 'mercadolibre', name: 'Mercado Libre', description: 'Preguntas y ventas de tus publicaciones', icon: '🏪', matches: ['mercadolibre'] },
+  { id: 'amazon', name: 'Amazon', description: 'Mensajes de compradores de Amazon', icon: '📦', matches: ['amazon'] },
+  { id: 'hotmart', name: 'Hotmart', description: 'Consultas de tus productos digitales', icon: '🎓', matches: ['hotmart'] },
+  { id: 'whatsapp', name: 'WhatsApp', description: 'Atención por WhatsApp Business', icon: '💬', matches: ['whatsapp'] },
+  { id: 'instagram', name: 'Instagram', description: 'DMs y comentarios de Instagram', icon: '📸', matches: ['instagram'] },
+  { id: 'shopify', name: 'Shopify', description: 'Tu tienda Shopify', icon: '🛍️', matches: ['shopify'] },
 ]
 
 export default function PlatformsPage() {
-  const [platforms, setPlatforms] = useState(PLATFORMS)
-  const [connecting, setConnecting] = useState<string | null>(null)
-
-  const handleConnect = (platformId: string) => {
-    setConnecting(platformId)
-    // Simulado: después de 1.5s marca como conectado
-    setTimeout(() => {
-      setPlatforms(
-        platforms.map((p) =>
-          p.id === platformId ? { ...p, connected: true } : p
-        )
-      )
-      setConnecting(null)
-    }, 1500)
-  }
-
-  const handleDisconnect = (platformId: string) => {
-    setPlatforms(
-      platforms.map((p) =>
-        p.id === platformId ? { ...p, connected: false } : p
-      )
-    )
-  }
+  const { snapshot, loading, unavailable } = useBusinessSnapshot()
+  const channels = snapshot?.channels ?? []
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900">Conecta tus plataformas</h1>
-        <p className="text-slate-600 mt-2">Sincroniza órdenes, inventario y listings automáticamente</p>
-      </div>
-
-      {/* Connection Status */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-900">
-          {platforms.filter((p) => p.connected).length} de {platforms.length} plataformas conectadas
+        <h1 className="text-3xl font-black text-slate-900">Plataformas</h1>
+        <p className="text-slate-600 mt-2">
+          Qué está realmente conectado a tu cuenta y qué actividad tuvo.
         </p>
-        <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all"
-            style={{
-              width: `${(platforms.filter((p) => p.connected).length / platforms.length) * 100}%`,
-            }}
-          />
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-3 text-slate-500 py-10">
+          <Loader2 className="w-5 h-5 animate-spin" /> Leyendo tus conexiones…
         </div>
-      </div>
+      )}
 
-      {/* Platform Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {platforms.map((platform) => (
-          <div
-            key={platform.id}
-            className="bg-white border-2 border-slate-200 rounded-lg p-6 transition-all hover:border-slate-300"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">{platform.icon}</div>
-                <div>
-                  <h3 className="font-bold text-slate-900">{platform.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{platform.description}</p>
-                </div>
-              </div>
-              {platform.connected ? (
-                <CheckCircle size={20} className="text-green-600" />
-              ) : (
-                <Circle size={20} className="text-slate-300" />
-              )}
-            </div>
+      {!loading && unavailable && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <p className="font-semibold text-slate-900">No se pudo leer tu cuenta.</p>
+          <p className="text-sm text-slate-600 mt-1">
+            No se marca ninguna plataforma como conectada sin poder verificarlo.
+          </p>
+        </div>
+      )}
 
-            {/* Status Info */}
-            {platform.connected ? (
-              <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm font-medium text-green-900">Conectado</p>
-                <p className="text-xs text-green-700 mt-1">
-                  Última sincronización: Hace 2 minutos
-                </p>
-              </div>
-            ) : (
-              <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm font-medium text-yellow-900">No conectado</p>
-                <p className="text-xs text-yellow-700 mt-1">
-                  Haz clic en conectar para comenzar
-                </p>
-              </div>
-            )}
+      {!loading && !unavailable && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PLATFORMS.map(p => {
+              const conn = channels.find(ch => p.matches.includes(ch.platform))
+              const meta = platformMeta(p.matches[0])
+              return (
+                <div key={p.id} className="bg-white rounded-lg border border-slate-200 p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">{p.icon}</span>
+                    {conn
+                      ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-full">
+                          <CheckCircle size={13} /> Conectado
+                        </span>
+                      : <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-full">
+                          <Circle size={13} /> Sin conectar
+                        </span>}
+                  </div>
+                  <h2 className="font-bold text-slate-900" style={{ color: conn ? meta.color : undefined }}>{p.name}</h2>
+                  <p className="text-sm text-slate-600 mt-1">{p.description}</p>
 
-            {/* Actions */}
-            <div className="flex gap-2">
-              {platform.connected ? (
-                <>
-                  <button className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg font-medium text-sm transition-colors">
-                    Configurar
-                  </button>
-                  <button
-                    onClick={() => handleDisconnect(platform.id)}
-                    className="flex-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    Desconectar
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => handleConnect(platform.id)}
-                  disabled={connecting === platform.id}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-slate-300 disabled:to-slate-400 text-white rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
-                >
-                  {connecting === platform.id ? (
-                    <>
-                      <Loader size={16} className="animate-spin" />
-                      Conectando...
-                    </>
+                  {conn ? (
+                    <div className="mt-4 text-sm text-slate-700 space-y-0.5">
+                      <p>{conn.conversations} conversación(es) · {conn.ai_replies} respondidas por la IA</p>
+                      <p className="text-xs text-slate-500">
+                        Estado: {conn.status}
+                        {conn.last_message_at
+                          ? ` · último mensaje ${new Date(conn.last_message_at).toLocaleString('es-AR')}`
+                          : ' · sin mensajes todavía'}
+                      </p>
+                    </div>
                   ) : (
-                    <>
-                      <ExternalLink size={16} />
-                      Conectar
-                    </>
+                    <Link
+                      href="/dashboard/canales"
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                    >
+                      Conectar <ExternalLink size={14} />
+                    </Link>
                   )}
-                </button>
-              )}
-            </div>
+                </div>
+              )
+            })}
           </div>
-        ))}
-      </div>
 
-      {/* Info Section */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
-        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-          <AlertCircle size={18} />
-          ¿Cómo funciona?
-        </h3>
-        <ol className="space-y-2 text-sm text-slate-700 list-decimal list-inside">
-          <li>Haz clic en "Conectar" para autenticar tu cuenta en la plataforma</li>
-          <li>Se abrirá una nueva ventana con el login de la plataforma</li>
-          <li>Autoriza a SellIA para acceder a tus datos</li>
-          <li>Serás redirigido de vuelta a tu dashboard</li>
-          <li>¡Listo! Tu inventario se sincronizará automáticamente</li>
-        </ol>
-      </div>
+          {channels.some(ch => !PLATFORMS.some(p => p.matches.includes(ch.platform))) && (
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
+              <h2 className="font-bold text-slate-900 mb-3">Otros canales conectados</h2>
+              <ul className="text-sm text-slate-700 space-y-1">
+                {channels
+                  .filter(ch => !PLATFORMS.some(p => p.matches.includes(ch.platform)))
+                  .map(ch => (
+                    <li key={`${ch.platform}-${ch.name}`}>
+                      {platformMeta(ch.platform).label} · {ch.name} — {ch.conversations} conversación(es)
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
