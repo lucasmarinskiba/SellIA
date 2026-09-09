@@ -13,6 +13,7 @@ import {
   Bell, BellOff, Check, ChevronRight, Activity, ShieldAlert,
   Zap, Inbox, AlertTriangle, Sparkles,
 } from 'lucide-react'
+import { getToken } from '@/lib/sellia-api'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app'
 const NOTIFY_BASE = `${BACKEND_URL}/api/v1/brain/notifications`
@@ -99,7 +100,14 @@ export default function NotificationsDropdown(): React.JSX.Element {
     let alive = true
     const fetchOnce = async (): Promise<void> => {
       try {
-        const r = await fetch(`${NOTIFY_BASE}?limit=50`, { cache: 'no-store' })
+        // Without the real Bearer token, the backend can't tell this is a
+        // signed-in account and falls back to the same public/global feed
+        // every anonymous visitor sees -- a logged-in user's bell showed
+        // generic demo-account leads instead of their own real activity.
+        const token = getToken()
+        const headers: Record<string, string> = {}
+        if (token) headers.Authorization = `Bearer ${token}`
+        const r = await fetch(`${NOTIFY_BASE}?limit=50`, { cache: 'no-store', headers })
         if (!r.ok) throw new Error(String(r.status))
         const data = (await r.json()) as { notifications?: Notification[] }
         if (!alive) return
