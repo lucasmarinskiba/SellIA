@@ -55,8 +55,14 @@ def normalize_url(raw: str) -> str:
     return urlunparse((parts.scheme, netloc, parts.path or "/", parts.params, parts.query, ""))
 
 
-def _assert_public_host(url: str) -> None:
-    """Resolve the host and refuse anything that is not a public IP."""
+def assert_public_host(url: str) -> None:
+    """Resolve the host and refuse anything that is not a public IP.
+
+    Called both before every fetch AND before a URL is stored: a link that can
+    never be fetched has no business sitting in the account's link list, and it
+    used to leak from there into generated output (the JSON-LD sameAs handed to
+    the user for pasting into their site).
+    """
     host = urlparse(url).hostname
     if not host:
         raise UnsafeUrlError("La URL no tiene dominio")
@@ -113,7 +119,7 @@ async def fetch(raw_url: str) -> FetchResult:
             headers={"User-Agent": USER_AGENT, "Accept": "text/html,*/*"},
         ) as client:
             for _ in range(MAX_REDIRECTS + 1):
-                _assert_public_host(current)
+                assert_public_host(current)
                 response = await client.get(current)
 
                 if response.is_redirect:

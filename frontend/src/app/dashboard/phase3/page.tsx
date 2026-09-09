@@ -13,11 +13,15 @@
  *    respuesta real de las conversaciones) salen del snapshot de la cuenta.
  */
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, XCircle, Loader2, Award, MessageSquare, ExternalLink } from 'lucide-react'
+import {
+  CheckCircle2, XCircle, Loader2, Award, MessageSquare, ExternalLink, Link2, Network, AlertCircle,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { useBusinessSnapshot } from '@/lib/businessSnapshot'
+import LinksManager from '@/components/web-presence/LinksManager'
+import { webPresenceApi, type AuthorityReport } from '@/lib/webPresence'
 
 interface TrustScore {
   available: boolean
@@ -37,8 +41,18 @@ export default function AutoridadPage(): React.JSX.Element {
   const { snapshot, loading: snapLoading, unavailable } = useBusinessSnapshot()
   const [trust, setTrust] = useState<TrustScore | null>(null)
   const [loadingTrust, setLoadingTrust] = useState(true)
+  const [authority, setAuthority] = useState<AuthorityReport | null>(null)
 
   const businessId = snapshot?.business.id ?? null
+
+  // La red de marca: si tu web, tus redes y tus tiendas no se enlazan entre sí,
+  // Google las trata como negocios distintos y ninguna hereda la autoridad de
+  // las otras. Esto se chequea sobre las páginas reales, no sobre una lista.
+  const loadAuthority = useCallback((): void => {
+    webPresenceApi.authorityReport().then(setAuthority).catch(() => setAuthority(null))
+  }, [])
+
+  useEffect(() => { loadAuthority() }, [loadAuthority])
 
   useEffect(() => {
     if (!businessId) { setLoadingTrust(false); return }
@@ -90,6 +104,108 @@ export default function AutoridadPage(): React.JSX.Element {
 
       {!snapLoading && !unavailable && snapshot && (
         <div className="space-y-6">
+          {/* ── Red de marca: web + redes + e-commerce enlazados entre sí ── */}
+          <div className="rounded-xl border border-slate-200 bg-white">
+            <div className="p-6 flex items-start justify-between flex-wrap gap-4 border-b border-slate-100">
+              <div className="max-w-xl">
+                <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Network className="w-4 h-4 text-blue-600" /> Tu red de marca
+                </h2>
+                <p className="text-sm text-slate-600 mt-1">
+                  Google reparte autoridad siguiendo enlaces. Si tu web no enlaza tus redes y tu
+                  tienda —y no las declara como el mismo negocio— cada una posiciona sola, desde cero.
+                </p>
+              </div>
+              {authority && (
+                <div className="text-right">
+                  <p className={`text-4xl font-bold ${
+                    authority.score >= 75 ? 'text-emerald-600'
+                      : authority.score >= 40 ? 'text-amber-600' : 'text-red-600'
+                  }`}>{authority.score}%</p>
+                  <p className="text-xs text-slate-500">de tu red conectada</p>
+                </div>
+              )}
+            </div>
+
+            {authority && (
+              <div className="p-6 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {authority.checks.map(check => (
+                    <div key={check.key} className="flex gap-2.5 items-start">
+                      {check.passed
+                        ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                        : <XCircle className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />}
+                      <div>
+                        <p className={`text-sm font-medium ${check.passed ? 'text-slate-900' : 'text-slate-700'}`}>
+                          {check.title}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">{check.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {authority.profiles.length > 0 && (
+                  <div className="rounded-lg border border-slate-200 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="text-left font-medium px-4 py-2.5">Perfil / tienda</th>
+                          <th className="text-center font-medium px-3 py-2.5">Enlazado desde tu web</th>
+                          <th className="text-center font-medium px-3 py-2.5">Declarado en sameAs</th>
+                          <th className="text-center font-medium px-3 py-2.5">Enlaza de vuelta</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {authority.profiles.map(p => (
+                          <tr key={p.id}>
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-slate-900">{p.platform}</p>
+                              <p className="text-xs text-slate-500 truncate max-w-[260px]">{p.url}</p>
+                              {p.unverifiable_reason && (
+                                <p className="text-xs text-amber-700 mt-0.5 flex items-start gap-1">
+                                  <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                                  {p.unverifiable_reason}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              {p.linked_from_hub
+                                ? <CheckCircle2 className="w-4 h-4 text-emerald-500 inline" />
+                                : <XCircle className="w-4 h-4 text-slate-300 inline" />}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              {p.declared_same_as
+                                ? <CheckCircle2 className="w-4 h-4 text-emerald-500 inline" />
+                                : <XCircle className="w-4 h-4 text-slate-300 inline" />}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              {p.links_back_to_hub === null
+                                ? <span className="text-xs text-slate-400">sin verificar</span>
+                                : p.links_back_to_hub
+                                  ? <CheckCircle2 className="w-4 h-4 text-emerald-500 inline" />
+                                  : <XCircle className="w-4 h-4 text-slate-300 inline" />}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <Link
+                  href="/dashboard/phase12"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline"
+                >
+                  <Link2 className="w-4 h-4" />
+                  Generar el código que une tu marca (JSON-LD con sameAs)
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <LinksManager onChanged={loadAuthority} compact />
+
           {/* Señales verificables: nada acá es una estimación */}
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
