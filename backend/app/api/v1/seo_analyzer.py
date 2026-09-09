@@ -1,27 +1,33 @@
 """SEO Analysis endpoints - Core Web Vitals, structured data, keyword research."""
 
-from fastapi import APIRouter, Query, HTTPException
-from datetime import datetime, timedelta
-import random
+from fastapi import APIRouter, Query
+from datetime import datetime
 
 router = APIRouter(prefix="/seo", tags=["seo"])
 
 
 @router.get("/analyze")
 async def analyze_seo(url: str = Query(None)):
-    """Analyze SEO metrics for URL (demo data, ready for real PageSpeed API integration)."""
-    # Demo data - production: integrate Google PageSpeed API + Lighthouse
-    demo_metrics = {
-        "pagespeed_score": random.randint(65, 95),
-        "cwv_lcp": round(random.uniform(1.5, 3.5), 1),  # Largest Contentful Paint (seconds)
-        "cwv_fid": random.randint(40, 150),  # First Input Delay (milliseconds)
-        "cwv_cls": round(random.uniform(0.05, 0.2), 2),  # Cumulative Layout Shift
-        "mobile_friendly": True,
-        "schema_coverage": ["Product", "Organization", "Breadcrumb", "LocalBusiness"],
-        "keyword_optimization": random.randint(60, 90),
+    """Core Web Vitals / PageSpeed for a URL.
+
+    This used to answer with random.randint()/uniform() values -- a different
+    "PageSpeed 83, LCP 2.4s, keyword optimization 71%" on every reload, for
+    any URL, including URLs that do not exist. Measuring these for real needs
+    a PageSpeed/Lighthouse API key, which this deployment does not have, so
+    the endpoint reports that instead of inventing a measurement. The real,
+    computable SEO state of an account lives in
+    GET /api/v1/businesses/{business_id}/seo/audit.
+    """
+    return {
+        "available": False,
+        "url": url,
+        "reason": (
+            "No hay integración de PageSpeed/Lighthouse configurada, así que no se "
+            "pueden medir Core Web Vitals reales para esta URL."
+        ),
+        "real_alternative": "/api/v1/businesses/{business_id}/seo/audit",
         "timestamp": datetime.utcnow().isoformat(),
     }
-    return demo_metrics
 
 
 @router.get("/schemas")
@@ -93,22 +99,22 @@ async def validate_schema_markup(schema_type: str, markup: dict):
 
 @router.get("/cwv-trend")
 async def get_cwv_trend_data(days: int = Query(30)):
-    """Get Core Web Vitals trend over time (demo)."""
-    trend = []
-    base_lcp = 2.5
-    base_fid = 80
-    base_cls = 0.1
+    """Core Web Vitals over time.
 
-    for i in range(days):
-        date = datetime.utcnow() - timedelta(days=days - i)
-        trend.append({
-            "date": date.isoformat(),
-            "lcp": round(base_lcp + random.uniform(-0.3, 0.3), 2),
-            "fid": base_fid + random.randint(-20, 20),
-            "cls": round(base_cls + random.uniform(-0.02, 0.02), 3),
-        })
-
-    return {"trend": trend}
+    Previously generated a random walk around fixed base values, i.e. a chart
+    of a site nobody ever measured. Nothing in this deployment collects CWV
+    history, so it returns an empty series and says why -- a flat "no data"
+    chart is honest, a wobbling fake one is not.
+    """
+    return {
+        "available": False,
+        "days": days,
+        "trend": [],
+        "reason": (
+            "No hay histórico real de Core Web Vitals: falta una integración de "
+            "PageSpeed/Lighthouse que los mida y los guarde."
+        ),
+    }
 
 
 @router.get("/keyword-research")
@@ -116,26 +122,29 @@ async def keyword_research(
     primary_keyword: str = Query(...),
     platform: str = Query("amazon"),
 ):
-    """Research keyword search volume, difficulty, and opportunity."""
-    # Production: integrate with SemRush/Ahrefs API
+    """Keyword volume/difficulty.
+
+    Used to answer with random search volumes, difficulty and "seasonal
+    trends" for ANY keyword typed in -- numbers a user could act on that
+    described nothing. Real figures need a SemRush/Ahrefs (or platform)
+    keyword API, which is not configured here. The related-keyword
+    suggestions below are plain string patterns, not measurements, so they
+    stay -- clearly labelled as suggestions.
+    """
     return {
+        "available": False,
         "keyword": primary_keyword,
         "platform": platform,
-        "search_volume": random.randint(100, 50000),
-        "difficulty": round(random.uniform(0, 100), 1),
-        "opportunity_score": round(random.uniform(0, 100), 1),
-        "related_keywords": [
-            f"{primary_keyword} price",
-            f"best {primary_keyword}",
-            f"{primary_keyword} review",
-            f"cheap {primary_keyword}",
+        "reason": (
+            "No hay integración de investigación de keywords configurada, así que no "
+            "hay volumen ni dificultad reales para mostrar."
+        ),
+        "suggested_variants": [
+            f"{primary_keyword} precio",
+            f"mejor {primary_keyword}",
+            f"{primary_keyword} opiniones",
+            f"{primary_keyword} barato",
         ],
-        "seasonal_trends": {
-            "Q1": random.randint(60, 100),
-            "Q2": random.randint(60, 100),
-            "Q3": random.randint(60, 100),
-            "Q4": random.randint(80, 120),
-        },
     }
 
 

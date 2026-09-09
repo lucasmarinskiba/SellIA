@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta
-import random
 
 from app.core.database import get_db
 from app.models.authority_building import (
@@ -138,24 +137,61 @@ async def get_seller_reviews(
 
 @router.get("/trust-score/{seller_id}")
 async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_db)):
-    """Calculate trust/authority score (E-E-A-T)."""
-    # Demo calculation — production: fetch real data from all sources
-    review_rating = random.uniform(4.0, 5.0)
-    review_count = random.randint(50, 500)
-    response_rate = random.uniform(0.8, 1.0) * 100
-    verification = random.uniform(60, 100)
-    longevity = random.uniform(50, 100)
+    """E-E-A-T trust score computed from this seller's REAL rows.
 
-    # Weighted average (0-100)
-    trust_score = (
-        review_rating * 20 +  # Max 100 (from 5 stars)
-        min(review_count / 5, 20) +  # Max 20
-        response_rate / 5 +  # Max 20
-        verification / 5 +  # Max 20
-        longevity / 5  # Max 20
+    This used to be five random.uniform()/randint() calls dressed up as a
+    score: every reload invented a different "82.5 GOLD · 234 reviews ·
+    8 years" for any seller id, including ones that do not exist. It now
+    reads platform_reviews/testimonials/awards, and when a seller has no
+    rows at all it says so (available: false) instead of manufacturing a
+    plausible number.
+    """
+    reviews_result = await db.execute(
+        select(Review).where(Review.seller_id == seller_id, Review.is_flagged == False)  # noqa: E712
+    )
+    reviews = reviews_result.scalars().all()
+
+    testimonials_result = await db.execute(
+        select(Testimonial).where(Testimonial.seller_id == seller_id)
+    )
+    testimonials = testimonials_result.scalars().all()
+
+    awards_result = await db.execute(select(Award).where(Award.seller_id == seller_id))
+    awards = awards_result.scalars().all()
+
+    if not reviews and not testimonials and not awards:
+        return {
+            "seller_id": seller_id,
+            "available": False,
+            "reason": (
+                "Todavía no hay reseñas, testimonios ni premios cargados para esta "
+                "cuenta. El score aparece cuando existan señales reales."
+            ),
+            "components": {
+                "review_count": 0,
+                "testimonial_count": 0,
+                "award_count": 0,
+            },
+        }
+
+    review_count = len(reviews)
+    review_rating = round(sum(r.rating for r in reviews) / review_count, 2) if review_count else 0.0
+    answered = sum(1 for r in reviews if r.seller_response)
+    response_rate = round(answered / review_count * 100, 1) if review_count else 0.0
+    verified_reviews = sum(1 for r in reviews if r.is_verified_purchase)
+    verification = round(verified_reviews / review_count * 100, 1) if review_count else 0.0
+
+    # Each component is a real measurement, weighted into 0-100. No component
+    # is included unless the data behind it exists.
+    trust_score = round(
+        review_rating * 10           # max 50 (5 stars)
+        + min(review_count / 2, 20)  # max 20
+        + response_rate * 0.15       # max 15
+        + verification * 0.10        # max 10
+        + min(len(awards) * 2.5, 5),  # max 5
+        1,
     )
 
-    # Tier assignment
     if trust_score >= 90:
         tier = "platinum"
     elif trust_score >= 75:
@@ -165,21 +201,25 @@ async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_d
     else:
         tier = "bronze"
 
+    thresholds = {"bronze": 60, "silver": 75, "gold": 90, "platinum": 100}
     return {
         "seller_id": seller_id,
-        "trust_score": round(trust_score, 1),
+        "available": True,
+        "trust_score": trust_score,
         "tier": tier,
         "components": {
-            "review_rating": round(review_rating, 1),
+            "review_rating": review_rating,
             "review_count": review_count,
-            "response_rate": round(response_rate, 1),
-            "verification": round(verification, 1),
-            "longevity_years": round(longevity / 10),
+            "responded_reviews": answered,
+            "response_rate": response_rate,
+            "verified_purchase_rate": verification,
+            "testimonial_count": len(testimonials),
+            "award_count": len(awards),
         },
-        "next_tier": "platinum" if tier != "platinum" else None,
-        "points_to_next": max(0, (
-            {"bronze": 60, "silver": 75, "gold": 90, "platinum": 100}.get(tier, 100) - trust_score
-        )),
+        "next_tier": None if tier == "platinum" else (
+            "silver" if tier == "bronze" else "gold" if tier == "silver" else "platinum"
+        ),
+        "points_to_next": max(0, round(thresholds.get(tier, 100) - trust_score, 1)),
     }
 
 
@@ -214,11 +254,17 @@ async def get_authority_insights(seller_id: str):
             "authoritativeness": "Media mentions, LinkedIn, website",
             "trustworthiness": "Reviews, response rate, verified badges",
         },
+        # "your_rating"/"your_reviews" used to be random numbers presented as
+        # this seller's own benchmark, and the category averages were invented
+        # constants. Real per-seller figures come from GET /authority/reviews/
+        # {seller_id} and /authority/trust-score/{seller_id}, both counted from
+        # actual platform_reviews rows.
         "benchmarks": {
-            "category_avg_rating": 4.2,
-            "category_avg_reviews": 150,
-            "your_rating": random.uniform(4.3, 4.9),
-            "your_reviews": random.randint(50, 300),
+            "available": False,
+            "reason": (
+                "No hay datos de benchmark de categoría cargados. Tus números reales "
+                "están en /authority/reviews/{seller_id} y /authority/trust-score/{seller_id}."
+            ),
         },
     }
 

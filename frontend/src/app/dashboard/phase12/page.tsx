@@ -1,217 +1,170 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SEOAnalyzer } from '@/components/Enterprise/SEOAnalyzer';
-import { TrendingUp, BookOpen, Zap } from 'lucide-react';
-import { t, subscribeLocale } from '@/lib/sellia-i18n';
+/**
+ * SEO — estado real del posicionamiento de la cuenta.
+ *
+ * Antes esta página mostraba "Search Visibility 45% · Organic Traffic +28% ·
+ * Avg Ranking #4.2" y un roadmap con semanas marcadas como completadas: todo
+ * hardcodeado, igual para cualquier cuenta, sin nada detrás. Lo que se ve acá
+ * ahora sale de GET /businesses/{id}/seo/audit, que evalúa las filas reales
+ * del sitio y el dominio del negocio (meta title/description, imagen social,
+ * dominio verificado, sitio publicado, contenido cargado).
+ */
 
-export default function Phase12Dashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [, setRefresh] = useState(0);
+import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { CheckCircle2, XCircle, Loader2, TrendingUp, ExternalLink, AlertTriangle } from 'lucide-react'
+import { api } from '@/lib/api'
+import { businessApi, type Business } from '@/lib/business'
+import { useBusinessSnapshot } from '@/lib/businessSnapshot'
+
+interface SeoCheck {
+  label: string
+  passed: boolean
+  recommendation: string
+}
+
+interface SeoAudit {
+  score: number
+  passed: number
+  total: number
+  checks: Record<string, SeoCheck>
+}
+
+export default function SeoPage(): React.JSX.Element {
+  const { snapshot } = useBusinessSnapshot()
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [audit, setAudit] = useState<SeoAudit | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsubscribe = subscribeLocale(() => setRefresh(r => r + 1));
-    return unsubscribe;
-  }, []);
+    let alive = true
+    const load = async (): Promise<void> => {
+      try {
+        const list = await businessApi.list()
+        const biz = list[0] ?? null
+        if (!alive) return
+        setBusiness(biz)
+        if (!biz) return
+        const res = await api.get<SeoAudit>(`/businesses/${biz.id}/seo/audit`)
+        if (alive) setAudit(res.data)
+      } catch {
+        if (alive) setError('No se pudo leer el estado SEO de tu sitio.')
+      } finally {
+        if (alive) setLoading(false)
+      }
+    }
+    void load()
+    return () => { alive = false }
+  }, [])
+
+  const scoreColor = (score: number): string =>
+    score >= 80 ? 'text-emerald-600' : score >= 50 ? 'text-amber-600' : 'text-red-600'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            {t('phases.seo_foundation')}
-          </h1>
-          <p className="text-lg text-slate-600">
-            Structured data, Core Web Vitals, keyword optimization
-          </p>
+    <div className="max-w-5xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 mb-1">SEO</h1>
+        <p className="text-slate-600">
+          Estado real del sitio de tu negocio: qué está listo para que Google te encuentre y qué falta.
+        </p>
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-3 text-slate-500 py-16 justify-center">
+          <Loader2 className="w-5 h-5 animate-spin" /> Leyendo el estado de tu sitio…
         </div>
+      )}
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="analyzer" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              SEO Analyzer
-            </TabsTrigger>
-            <TabsTrigger value="guide" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              Implementation Guide
-            </TabsTrigger>
-          </TabsList>
+      {!loading && error && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 flex gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-slate-900">{error}</p>
+            <p className="text-sm text-slate-600 mt-1">
+              No se muestran métricas estimadas: si no se puede medir, no se inventa.
+            </p>
+          </div>
+        </div>
+      )}
 
-          {/* Overview Tab */}
-          <TabsContent value="overview">
-            <div className="space-y-6">
-              {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-slate-600">
-                      Search Visibility
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-emerald-600">45%</div>
-                    <p className="text-sm text-slate-600 mt-2">vs industry avg 32%</p>
-                  </CardContent>
-                </Card>
+      {!loading && !error && !business && (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-lg font-semibold text-slate-900 mb-2">Todavía no tenés un negocio creado</p>
+          <p className="text-slate-600 mb-5">
+            El SEO se mide sobre tu sitio real. Creá tu negocio y reclamá tu subdominio para empezar a medirlo.
+          </p>
+          <Link
+            href="/sellia-onboarding"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+          >
+            Configurar mi negocio <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-slate-600">
-                      Organic Traffic
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-blue-600">+28%</div>
-                    <p className="text-sm text-slate-600 mt-2">This month</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-slate-600">
-                      Avg Ranking Position
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-purple-600">#4.2</div>
-                    <p className="text-sm text-slate-600 mt-2">For target keywords</p>
-                  </CardContent>
-                </Card>
+      {!loading && !error && business && audit && (
+        <div className="space-y-6">
+          {/* Score real: cuántos chequeos concretos pasan hoy */}
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Estado SEO de {business.name}</p>
+                <p className={`text-4xl font-bold ${scoreColor(audit.score)}`}>{audit.score}%</p>
+                <p className="text-sm text-slate-600 mt-1">
+                  {audit.passed} de {audit.total} chequeos cumplidos
+                </p>
               </div>
-
-              {/* Timeline */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Phase Timeline</CardTitle>
-                  <CardDescription>Implementation roadmap</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold">
-                          ✓
-                        </div>
-                        <div className="w-0.5 h-12 bg-emerald-500 my-2"></div>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">Week 1: Foundation</h3>
-                        <p className="text-sm text-slate-600 mt-1">
-                          Implement Product + Organization JSON-LD schemas, setup robots.txt
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
-                          ⚙
-                        </div>
-                        <div className="w-0.5 h-12 bg-slate-300 my-2"></div>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">Week 2-3: Core Web Vitals</h3>
-                        <p className="text-sm text-slate-600 mt-1">
-                          Optimize LCP, FID, CLS. Image optimization, JS bundle reduction, preconnect
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 bg-slate-400 text-white rounded-full flex items-center justify-center font-bold">
-                          →
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">Week 4: Keyword Optimization</h3>
-                        <p className="text-sm text-slate-600 mt-1">
-                          Target keywords in titles, H1s, bullet points. A/B test variations
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Analyzer Tab */}
-          <TabsContent value="analyzer">
-            <SEOAnalyzer />
-          </TabsContent>
-
-          {/* Guide Tab */}
-          <TabsContent value="guide">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Start: JSON-LD Implementation</CardTitle>
-                <CardDescription>Copy-paste schemas for your products</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Product Schema Example</h3>
-                  <pre className="bg-slate-900 text-slate-100 p-4 rounded overflow-x-auto text-xs">
-                    {`<script type="application/ld+json">
-{
-  "@context": "https://schema.org/",
-  "@type": "Product",
-  "name": "Executive Anvil",
-  "image": "https://example.com/anvil.jpg",
-  "description": "Sleek and durable anvil",
-  "brand": {
-    "@type": "Brand",
-    "name": "Acme"
-  },
-  "offers": {
-    "@type": "Offer",
-    "url": "https://example.com/anvil",
-    "priceCurrency": "USD",
-    "price": "119.99",
-    "priceFeelingType": "https://purl.org/goodrelations/v1#FixedPrice",
-    "availability": "https://schema.org/InStock"
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.4",
-    "reviewCount": "88"
-  }
-}
-</script>`}
-                  </pre>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-2">Implementation Steps</h3>
-                  <ol className="space-y-2 list-decimal list-inside text-slate-700">
-                    <li>Add the JSON-LD block to your product page &lt;head&gt; or before &lt;/body&gt;</li>
-                    <li>Replace values with actual product data (name, price, images, rating)</li>
-                    <li>Test with Google Rich Results Test: https://search.google.com/test/rich-results</li>
-                    <li>Monitor rich snippet appearance in Search Console</li>
-                    <li>Repeat for all product variations</li>
-                  </ol>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded">
-                  <p className="text-sm text-blue-900">
-                    <strong>💡 Pro Tip:</strong> Use dynamic schema generation on your backend. For each product, generate Product + Breadcrumb + Organization schemas at render time.
+              {snapshot?.verification.subdomain && (
+                <div className="text-right">
+                  <p className="text-sm text-slate-500">Tu subdominio</p>
+                  <p className="font-mono text-slate-900">{snapshot.verification.subdomain}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {snapshot.verification.website_published ? 'Sitio publicado' : 'Sitio sin publicar'}
+                    {' · '}
+                    {snapshot.verification.domain_verified ? 'dominio verificado' : 'dominio sin verificar'}
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  );
-}
+              )}
+            </div>
+            <div className="mt-4 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className={`h-full ${audit.score >= 80 ? 'bg-emerald-500' : audit.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                style={{ width: `${audit.score}%` }}
+              />
+            </div>
+          </div>
 
+          {/* Checklist real, con la acción concreta que falta en cada punto */}
+          <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+            <div className="p-5">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-blue-600" /> Qué falta para posicionar mejor
+              </h2>
+            </div>
+            {Object.entries(audit.checks).map(([key, check]) => (
+              <div key={key} className="p-5 flex gap-3">
+                {check.passed
+                  ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  : <XCircle className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />}
+                <div>
+                  <p className={`font-medium ${check.passed ? 'text-slate-900' : 'text-slate-700'}`}>
+                    {check.label}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-0.5">{check.recommendation}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Core Web Vitals, tráfico orgánico y posiciones de keywords no se muestran porque esta
+            instalación no tiene conectada una API que los mida (PageSpeed/Search Console). Cuando se
+            conecte, aparecen acá con datos reales.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}

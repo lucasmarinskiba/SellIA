@@ -170,6 +170,188 @@ async def get_account_kpis(db: AsyncSession, user) -> dict[str, Any]:
     }
 
 
+async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
+    """One honest, per-account picture of the business: verification signals,
+    real per-platform channel activity and real order revenue.
+
+    This exists because the dashboard's SEO / authority / multi-platform pages
+    were rendering invented figures -- "Trust Score 82.5 GOLD" came from a
+    backend that literally called random.uniform(), "$550k GMV / 350 listings /
+    8.0% conversion" was a hardcoded frontend fallback, and none of it was tied
+    to the signed-in account. Every field below is counted from this account's
+    own rows; an account with nothing gets zeros and empty lists, never a
+    plausible-looking number.
+    """
+    from app.domains.businesses.models import Business
+    from app.domains.channels.models import (
+        ChannelConnection, Conversation, Message, MessageDirection,
+    )
+    from app.domains.orders.models import Order, OrderStatus
+    from app.domains.websites.models import Website, Domain
+
+    biz_rows = await db.execute(
+        select(Business.id, Business.name).where(Business.user_id == user.id)
+    )
+    businesses = biz_rows.all()
+    business_ids = [b[0] for b in businesses]
+
+    now = datetime.now(timezone.utc)
+    created = getattr(user, "created_at", None)
+    account_age_days = (now - created).days if created else 0
+
+    snapshot: dict[str, Any] = {
+        "business": {
+            "id": str(business_ids[0]) if business_ids else None,
+            "name": businesses[0][1] if businesses else None,
+            "count": len(businesses),
+        },
+        "verification": {
+            "email_verified": bool(getattr(user, "email_verified", False)),
+            "two_factor_enabled": bool(getattr(user, "is_2fa_enabled", False)),
+            "account_age_days": account_age_days,
+            "has_business": bool(business_ids),
+            "website_published": False,
+            "domain_verified": False,
+            "subdomain": None,
+        },
+        "channels": [],
+        "conversations": {
+            "total": 0, "inbound": 0, "answered": 0, "ai_answered": 0,
+            "response_rate": 0.0, "ai_share": 0.0,
+        },
+        "revenue": {
+            "orders_total": 0, "orders_paid": 0,
+            "gross_amount": 0.0, "paid_amount": 0.0, "currency": None,
+        },
+        "generated_at": now.isoformat(),
+    }
+
+    if not business_ids:
+        return snapshot
+
+    # ── Website / domain: real publication + verification state ──
+    try:
+        site_rows = await db.execute(
+            select(Website.status, Domain.subdomain, Domain.is_verified)
+            .outerjoin(Domain, Domain.website_id == Website.id)
+            .where(Website.business_id.in_(business_ids))
+            .limit(1)
+        )
+        row = site_rows.first()
+        if row:
+            status, subdomain, verified = row
+            snapshot["verification"]["website_published"] = str(getattr(status, "value", status)).lower() == "published"
+            snapshot["verification"]["subdomain"] = subdomain
+            snapshot["verification"]["domain_verified"] = bool(verified)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("business snapshot: website lookup failed: %s", str(e)[:200])
+
+    # ── Channels: one row per real connection, with its real traffic ──
+    try:
+        conn_rows = await db.execute(
+            select(ChannelConnection)
+            .where(ChannelConnection.business_id.in_(business_ids))
+            .where(ChannelConnection.is_active.is_(True))
+        )
+        for conn in conn_rows.scalars().all():
+            conv_ids_q = select(Conversation.id).where(
+                Conversation.channel_connection_id == conn.id,
+                Conversation.is_active.is_(True),
+            )
+            conv_count = (await db.execute(
+                select(func.count()).select_from(conv_ids_q.subquery())
+            )).scalar() or 0
+            ai_count = (await db.execute(
+                select(func.count()).select_from(Message).where(
+                    Message.conversation_id.in_(conv_ids_q),
+                    Message.direction == MessageDirection.OUTBOUND,
+                    Message.extra_data["generated_by"].astext == "ai",
+                )
+            )).scalar() or 0
+            last_msg = (await db.execute(
+                select(func.max(Message.created_at)).where(Message.conversation_id.in_(conv_ids_q))
+            )).scalar()
+            snapshot["channels"].append({
+                "platform": getattr(conn.platform, "value", str(conn.platform)),
+                "name": conn.name,
+                "status": getattr(conn.status, "value", str(conn.status)),
+                "conversations": conv_count,
+                "ai_replies": ai_count,
+                "last_message_at": last_msg.isoformat() if last_msg else None,
+            })
+    except Exception as e:  # noqa: BLE001
+        logger.warning("business snapshot: channels lookup failed: %s", str(e)[:200])
+
+    # ── Conversations: real response rate, real AI share ──
+    try:
+        conv_ids_q = select(Conversation.id).where(
+            Conversation.business_id.in_(business_ids),
+            Conversation.is_active.is_(True),
+        )
+        total = (await db.execute(select(func.count()).select_from(conv_ids_q.subquery()))).scalar() or 0
+
+        inbound_convs = select(Message.conversation_id).where(
+            Message.conversation_id.in_(conv_ids_q),
+            Message.direction == MessageDirection.INBOUND,
+        ).distinct()
+        inbound = (await db.execute(select(func.count()).select_from(inbound_convs.subquery()))).scalar() or 0
+
+        answered_convs = select(Message.conversation_id).where(
+            Message.conversation_id.in_(inbound_convs),
+            Message.direction == MessageDirection.OUTBOUND,
+        ).distinct()
+        answered = (await db.execute(select(func.count()).select_from(answered_convs.subquery()))).scalar() or 0
+
+        ai_convs = select(Message.conversation_id).where(
+            Message.conversation_id.in_(inbound_convs),
+            Message.direction == MessageDirection.OUTBOUND,
+            Message.extra_data["generated_by"].astext == "ai",
+        ).distinct()
+        ai_answered = (await db.execute(select(func.count()).select_from(ai_convs.subquery()))).scalar() or 0
+
+        snapshot["conversations"] = {
+            "total": total,
+            "inbound": inbound,
+            "answered": answered,
+            "ai_answered": ai_answered,
+            "response_rate": round(answered / inbound * 100, 1) if inbound else 0.0,
+            "ai_share": round(ai_answered / answered * 100, 1) if answered else 0.0,
+        }
+    except Exception as e:  # noqa: BLE001
+        logger.warning("business snapshot: conversations lookup failed: %s", str(e)[:200])
+
+    # ── Revenue: real orders only (no projections, no "avg ticket" guesses) ──
+    try:
+        rows = await db.execute(
+            select(
+                func.count(Order.id),
+                func.coalesce(func.sum(Order.total_amount), 0),
+                func.max(Order.currency),
+            ).where(Order.business_id.in_(business_ids))
+        )
+        orders_total, gross, currency = rows.one()
+
+        paid_rows = await db.execute(
+            select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)).where(
+                Order.business_id.in_(business_ids),
+                Order.status.in_([OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED]),
+            )
+        )
+        orders_paid, paid_amount = paid_rows.one()
+
+        snapshot["revenue"] = {
+            "orders_total": orders_total or 0,
+            "orders_paid": orders_paid or 0,
+            "gross_amount": float(gross or 0),
+            "paid_amount": float(paid_amount or 0),
+            "currency": currency,
+        }
+    except Exception as e:  # noqa: BLE001
+        logger.warning("business snapshot: orders lookup failed: %s", str(e)[:200])
+
+    return snapshot
+
+
 async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
     """Registration + questionnaire + AI-activity completeness for one user.
 
