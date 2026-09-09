@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { Loader2, Plug, Bot, ShoppingBag, ExternalLink } from 'lucide-react'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
 import { platformMeta } from '@/lib/platformMeta'
+import ChannelConnectPanel from '@/components/channels/ChannelConnectPanel'
 
 const MARKETPLACES = ['mercadolibre', 'amazon', 'hotmart', 'shopify', 'tiktok_shop']
 
@@ -82,6 +83,10 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
               <p className="text-xs text-slate-500 mt-1">mensajes que escribió el bot</p>
             </div>
           </div>
+
+          {/* Conectar de verdad: formulario real por plataforma + prueba real
+              de credenciales contra la propia plataforma. */}
+          <ChannelConnectPanel />
 
           {/* Detalle real por canal conectado */}
           <div className="rounded-xl border border-slate-200 bg-white">
