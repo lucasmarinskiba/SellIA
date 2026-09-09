@@ -18,7 +18,7 @@ from app.domains.automations.models import (
     Workflow, WorkflowExecution, WorkflowTriggerType, WorkflowActionType,
     WorkflowStatus, WorkflowVariant,
 )
-from app.domains.channels.models import Conversation, Message, MessageDirection, MessageStatus, ChannelPlatform
+from app.domains.channels.models import Conversation, Message, MessageDirection, MessageStatus, ChannelPlatform, ChannelConnection
 from app.domains.agents.models import AgentConversation, AgentMessage
 from app.domains.agents.services import AgentService
 from app.domains.agents.prompts import get_system_prompt, compose_system_prompt
@@ -483,7 +483,7 @@ class WorkflowEngine:
 
         if response_text:
             from app.domains.channels.services import send_outbound_message
-            await send_outbound_message(self.db, execution.conversation_id, response_text)
+            await send_outbound_message(self.db, execution.conversation_id, response_text, generated_by="ai")
 
     async def _action_add_tag(self, config: Dict[str, Any], execution: WorkflowExecution):
         """Add a tag to the conversation."""

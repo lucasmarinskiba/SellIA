@@ -24,6 +24,15 @@ export interface Conversation {
 export interface ConversationWithPreview extends Conversation {
   message_count: number
   last_message_preview: string | null
+  // Real platform this conversation is happening on -- WhatsApp, Instagram,
+  // MercadoLibre (product questions), Amazon, Hotmart, etc. null only if the
+  // conversation has no channel_connection_id set (rare/manual entries).
+  platform: string | null
+  last_direction: MessageDirection | null
+  // true once at least one message in this thread was actually sent by the
+  // AI bot (see Message.extra_data.generated_by) -- the concrete proof this
+  // isn't just a manually-answered thread.
+  ai_responded: boolean
 }
 
 export interface Message {
@@ -47,8 +56,10 @@ export interface SendMessageData {
 }
 
 export const conversationsApi = {
-  list: async (businessId: string, status?: ConversationStatus): Promise<ConversationWithPreview[]> => {
-    const params = status ? { status } : {}
+  list: async (businessId: string, status?: ConversationStatus, platform?: string): Promise<ConversationWithPreview[]> => {
+    const params: Record<string, string> = {}
+    if (status) params.status = status
+    if (platform) params.platform = platform
     const res = await api.get(`/businesses/${businessId}/conversations`, { params })
     return res.data
   },
