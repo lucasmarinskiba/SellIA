@@ -77,3 +77,15 @@ class Domain(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     website = relationship("Website", back_populates="domain")
+
+
+# This app disables Alembic migrations in production (see entrypoint.sh) --
+# every other domain gets its tables via an explicit bootstrap call
+# (app.domains.<x>.bootstrap.ensure_<x>_tables, wired into app/sellbot.py's
+# startup), but websites/domains never got one. Confirmed as a real,
+# currently-live bug: POST /api/v1/websites/onboarding/complete and GET
+# .../onboarding/subdomain-check both 500 in production with
+# `asyncpg.exceptions.UndefinedTableError: relation "domains" does not
+# exist` -- the ORM models existed and imported fine, but their tables were
+# never actually created anywhere.
+WEBSITE_TABLES = [Website.__table__, Domain.__table__]
