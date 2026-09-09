@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { getToken } from '@/lib/sellia-api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mail, Megaphone, Radio, Headphones, MonitorCheck,
@@ -125,7 +126,14 @@ export default function SquadStatusPanel(): React.JSX.Element {
     let alive = true
     const fetchSquads = async (): Promise<void> => {
       try {
-        const r = await fetch(`${BACKEND_URL}/api/v1/brain/squads`, { cache: 'no-store' })
+        // /brain/squads is per-account now: with the token it returns THIS
+        // account's leads, without it the platform's demo rows. A signed-in
+        // user was still being shown the demo aggregate here.
+        const token = getToken()
+        const r = await fetch(`${BACKEND_URL}/api/v1/brain/squads`, {
+          cache: 'no-store',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (!r.ok) throw new Error(String(r.status))
         const data = (await r.json()) as { squads: RawSquad[] }
         if (!alive) return
