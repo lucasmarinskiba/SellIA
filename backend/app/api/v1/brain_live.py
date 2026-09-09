@@ -202,7 +202,7 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
 
     # 4) Real pending Computer Use approvals (already user-scoped)
     try:
-        cu_logs, _err = await _query_audit_logs(status="pending_approval", limit=limit)
+        cu_logs, _err = await _query_audit_logs(status="pending_approval", limit=limit, user=user)
         for log in cu_logs:
             if str(getattr(log, "user_id", "")) != str(user.id):
                 continue
@@ -220,21 +220,26 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
     except Exception:
         pass
 
+    # 5) Real activity on this account's own leads (they carry an owner now,
+    #    so a user's own pipeline movement finally reaches their bell).
+    try:
+        notifications.extend(await _lead_notifications(limit, user))
+    except Exception:
+        pass
+
     notifications.sort(key=lambda n: n["ts"], reverse=True)
     return notifications[:limit]
 
 
-async def _public_lead_notifications(limit: int) -> list[dict]:
-    """Fallback for anonymous/demo visitors: the original global, unscoped
-    feed derived from lead activity. Kept as-is for the public ops dashboard
-    (see module docstring) -- a real per-user account gets _real_user_notifications
-    instead, which is what actually answers "what has SellIA done for ME"."""
+async def _lead_notifications(limit: int, user=None) -> list[dict]:
+    """Lead activity as notifications: the caller's own leads when signed in,
+    the ownerless demo rows for an anonymous visitor. Anonymous callers must
+    never see a real account's lead names/companies, which is exactly what
+    _owner_filter enforces here."""
     async with LeadsSessionLocal() as db:
         result = await db.execute(
             select(LeadModel)
-            # Ownerless rows only: this feed is shown to anonymous visitors,
-            # so it must never surface a real account's lead names/companies.
-            .where(LeadModel.deleted_at.is_(None), LeadModel.user_id.is_(None))
+            .where(LeadModel.deleted_at.is_(None), _owner_filter(user))
             .order_by(desc(LeadModel.updated_at))
             .limit(limit)
         )
@@ -287,7 +292,7 @@ async def get_notifications(
     if user is not None:
         notifications = await _real_user_notifications(user, limit)
     else:
-        notifications = await _public_lead_notifications(limit)
+        notifications = await _lead_notifications(limit)
 
     return {"notifications": notifications}
 
