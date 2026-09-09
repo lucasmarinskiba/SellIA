@@ -660,7 +660,15 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       .then(data => { if (data) setAccountSetup(data) })
       .catch(() => { /* stay as-is -> never a false "active" claim */ })
   }, [])
-  useEffect(() => { refetchAccountSetup() }, [user, refetchAccountSetup])
+  // Polled, not fetch-once: a single transient failure at page load (the
+  // backend does occasionally answer slowly enough to drop a request) left
+  // accountSetup null forever, so a fully-configured account kept seeing
+  // "CONFIGURACIÓN PENDIENTE" and a vague banner until a manual reload.
+  useEffect(() => {
+    refetchAccountSetup()
+    const id = window.setInterval(refetchAccountSetup, 30000)
+    return () => window.clearInterval(id)
+  }, [user, refetchAccountSetup])
 
   // Logged-in users get the REAL, backend-synced questionnaire; anonymous
   // demo visitors keep the local fake one (BusinessProfileWizard) below.
