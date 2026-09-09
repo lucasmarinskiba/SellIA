@@ -61,8 +61,17 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next()
   applySecurityHeaders(response, request)
 
-  // Verificar autenticación vía cookie httpOnly
-  const token = request.cookies.get('access_token')?.value
+  // Verificar autenticación vía cookie httpOnly (login clásico, mismo-origen
+  // con el backend) O la cookie de sesión no-httpOnly que src/lib/sellia-api
+  // setea (login vía /sellia-login, /sellia-signup, o el modal de
+  // /sellia-brain) -- ese segundo login habla directo con
+  // NEXT_PUBLIC_API_URL (otro dominio, p.ej. Railway), así que cualquier
+  // cookie httpOnly que el backend intente setear ahí nunca le llega a este
+  // middleware; sellia_session es la señal de "hay sesión" que SÍ es
+  // same-origin. No reemplaza la autorización real de cada request (eso lo
+  // sigue validando el backend vía el Bearer token real), solo decide si la
+  // navegación puede pasar.
+  const token = request.cookies.get('access_token')?.value || request.cookies.get('sellia_session')?.value
   const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
   const isPublicOnly = PUBLIC_ONLY_ROUTES.some((route) => pathname === route)
   const isPublic = PUBLIC_ROUTES.some((route) => pathname === route)

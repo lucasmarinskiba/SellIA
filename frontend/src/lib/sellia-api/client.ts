@@ -7,6 +7,35 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/v1'
 
 const TOKEN_KEY = 'sellia.token'
 
+// middleware.ts gates /dashboard/* on an `access_token` httpOnly cookie --
+// but NEXT_PUBLIC_API_URL points this whole client straight at
+// sellia-production.up.railway.app (a different domain from wherever this
+// frontend is deployed, e.g. sellia-brain.vercel.app), so any cookie the
+// backend sets is scoped to railway.app and can NEVER reach this frontend's
+// own middleware, no matter which login flow issued it. That's why a real,
+// just-created, just-logged-in account still got bounced back to /login the
+// moment it clicked into /dashboard/*: the middleware's cookie was
+// structurally unreachable, not missing due to a login bug.
+//
+// SELLIA_SESSION_COOKIE is a plain (non-httpOnly), same-origin marker this
+// JS sets itself whenever it has a real token -- readable by middleware.ts
+// server-side. It carries no secret (never the JWT itself, just "1"/absent)
+// so it changes nothing about the real security boundary: every actual API
+// call is still authorized by the real Bearer token in localStorage,
+// attached by the interceptor below and (for the legacy cookie-based
+// lib/api.ts client) by its own Bearer-fallback interceptor. This cookie's
+// only job is letting middleware answer "should this render at all".
+const SELLIA_SESSION_COOKIE = 'sellia_session'
+
+export const setSessionCookie = (present: boolean): void => {
+  if (typeof document === 'undefined') return
+  if (present) {
+    document.cookie = `${SELLIA_SESSION_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+  } else {
+    document.cookie = `${SELLIA_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`
+  }
+}
+
 export const getToken = (): string | null => {
   if (typeof window === 'undefined') return null
   return window.localStorage.getItem(TOKEN_KEY)
@@ -16,6 +45,7 @@ export const setToken = (token: string | null): void => {
   if (typeof window === 'undefined') return
   if (token) window.localStorage.setItem(TOKEN_KEY, token)
   else window.localStorage.removeItem(TOKEN_KEY)
+  setSessionCookie(!!token)
 }
 
 export const api: AxiosInstance = axios.create({
