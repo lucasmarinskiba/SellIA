@@ -375,7 +375,7 @@ const AuthModal = ({
             <div style={{ position: 'relative' }}>
               <input type={show ? 'text' : 'password'} value={pass} onChange={e => setPass(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { if (tab === 'login') { handleLogin() } else { handleRegister() } } }}
-                placeholder={tab === 'register' ? 'Mínimo 6 caracteres' : '••••••••'}
+                placeholder={tab === 'register' ? '8+ car., mayús., minús., número y símbolo' : '••••••••'}
                 style={{ ...inp, paddingRight: 44 }} />
               <button type="button" onClick={() => setShow(v => !v)}
                 style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', padding: 4 }}>
