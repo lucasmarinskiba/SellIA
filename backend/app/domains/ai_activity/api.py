@@ -20,6 +20,18 @@ async def account_summary(
     return await service.get_account_summary(db, user)
 
 
+@router.get("/account-kpis")
+async def account_kpis(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real KPIs for the current account only (canales, conversaciones,
+    respuestas de la IA, acciones registradas). Unlike GET /brain/kpis, which
+    aggregates an unowned global `leads` table, nothing here can belong to
+    another account."""
+    return await service.get_account_kpis(db, user)
+
+
 @router.get("")
 async def recent_actions(
     limit: int = Query(default=50, ge=1, le=200),

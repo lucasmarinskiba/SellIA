@@ -86,6 +86,90 @@ async def list_recent_actions(
     ]
 
 
+async def get_account_kpis(db: AsyncSession, user) -> dict[str, Any]:
+    """Real, per-account KPIs -- everything here belongs to THIS user.
+
+    The Brain page's KPI row used to be fed by GET /brain/kpis, which
+    aggregates the whole `leads` table with no ownership filter at all (that
+    table has no user_id/business_id column, so its rows cannot be attributed
+    to anyone). A brand-new account therefore saw "4 leads activos ·
+    $55.8K pipeline" that were not its own -- exactly the invented activity
+    this endpoint exists to replace. Every number below is scoped through
+    Business.user_id, and an account with nothing yet honestly gets zeros.
+    """
+    from .models import AIActionLog
+    from app.domains.businesses.models import Business
+    from app.domains.channels.models import (
+        ChannelConnection, Conversation, Message, MessageDirection,
+    )
+
+    biz_ids_q = select(Business.id).where(Business.user_id == user.id)
+
+    channels_result = await db.execute(
+        select(func.count())
+        .select_from(ChannelConnection)
+        .where(
+            ChannelConnection.business_id.in_(biz_ids_q),
+            ChannelConnection.is_active.is_(True),
+        )
+    )
+    channels_connected = channels_result.scalar() or 0
+
+    conv_ids_q = select(Conversation.id).where(
+        Conversation.business_id.in_(biz_ids_q),
+        Conversation.is_active.is_(True),
+    )
+    conv_result = await db.execute(
+        select(func.count()).select_from(conv_ids_q.subquery())
+    )
+    conversations_total = conv_result.scalar() or 0
+
+    msgs_result = await db.execute(
+        select(func.count())
+        .select_from(Message)
+        .where(Message.conversation_id.in_(conv_ids_q))
+    )
+    messages_total = msgs_result.scalar() or 0
+
+    # Only messages the AI itself composed carry extra_data.generated_by ==
+    # "ai" (set at the real generation call sites in channels/services.py and
+    # automations/engine.py), so a human replying through the same inbox is
+    # never counted as an AI reply.
+    ai_msgs_result = await db.execute(
+        select(func.count())
+        .select_from(Message)
+        .where(
+            Message.conversation_id.in_(conv_ids_q),
+            Message.direction == MessageDirection.OUTBOUND,
+            Message.extra_data["generated_by"].astext == "ai",
+        )
+    )
+    messages_ai = ai_msgs_result.scalar() or 0
+
+    actions_result = await db.execute(
+        select(func.count()).select_from(AIActionLog).where(AIActionLog.user_id == user.id)
+    )
+    ai_actions_total = actions_result.scalar() or 0
+
+    last_action_result = await db.execute(
+        select(AIActionLog.created_at)
+        .where(AIActionLog.user_id == user.id)
+        .order_by(AIActionLog.created_at.desc())
+        .limit(1)
+    )
+    last_action_at = last_action_result.scalar_one_or_none()
+
+    return {
+        "channels_connected": channels_connected,
+        "conversations_total": conversations_total,
+        "messages_total": messages_total,
+        "messages_ai": messages_ai,
+        "ai_actions_total": ai_actions_total,
+        "last_action_at": last_action_at.isoformat() if last_action_at else None,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
     """Registration + questionnaire + AI-activity completeness for one user.
 

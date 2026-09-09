@@ -247,7 +247,21 @@ const ACCENT_MAP: Record<KpiAccent, string> = { emerald: T.emerald, cobalt: T.co
 const KPI_ICONS: Record<string, React.ReactNode> = {
   active: <TrendingUp size={18} />, leads: <Users size={18} />,
   conversion: <Target size={18} />, pipeline: <Activity size={18} />,
+  channels: <Workflow size={18} />, conversations: <Users size={18} />,
+  ai_replies: <Bot size={18} />, ai_actions: <Cpu size={18} />,
 }
+// Mirrors backend/app/domains/ai_activity/service.py's get_account_kpis --
+// every number is scoped to the logged-in account (Business.user_id), unlike
+// /brain/kpis which aggregates an unowned global table.
+interface AccountKpis {
+  channels_connected: number
+  conversations_total: number
+  messages_total: number
+  messages_ai: number
+  ai_actions_total: number
+  last_action_at: string | null
+}
+
 const FALLBACK_KPIS: KpiTile[] = [
   { key: 'active', label: 'Leads Activos', value: '—', delta: { value: 0, up: true }, accent: 'emerald' },
   { key: 'leads', label: 'Leads Totales', value: '—', delta: { value: 0, up: true }, accent: 'cobalt' },
@@ -844,6 +858,49 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     return () => { alive = false; window.clearInterval(id) }
   }, [])
 
+  // ── KPIs REALES de la cuenta ──
+  // GET /brain/kpis (arriba) agrega la tabla `leads` entera, que no tiene
+  // columna de dueño: sus números no son de nadie en particular, así que
+  // mostrárselos a un usuario logueado como "tus leads / tu pipeline" es
+  // justamente inventar actividad. Para una cuenta real usamos
+  // /ai-activity/account-kpis, que sí está scopeado por Business.user_id y
+  // devuelve ceros honestos cuando todavía no pasó nada.
+  const [accountKpis, setAccountKpis] = useState<AccountKpis | null>(null)
+  useEffect(() => {
+    const token = getToken()
+    if (!token) { setAccountKpis(null); return }
+    let alive = true
+    const fetchAccountKpis = async (): Promise<void> => {
+      try {
+        const r = await fetch(`${BRAIN_BACKEND_URL}/api/v1/ai-activity/account-kpis`, {
+          headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+        })
+        if (!r.ok) return
+        const d = await r.json() as AccountKpis
+        if (alive) setAccountKpis(d)
+      } catch {
+        /* sin backend → se mantiene el último valor real conocido */
+      }
+    }
+    void fetchAccountKpis()
+    const id = window.setInterval(() => { void fetchAccountKpis() }, 20000)
+    return () => { alive = false; window.clearInterval(id) }
+  }, [user])
+
+  // Cuenta real → métricas de la cuenta. Visitante anónimo → demo pública
+  // (los KPIs globales de siempre, ya rotulados como demo en la sección).
+  const displayedKpis = useMemo((): KpiTile[] => {
+    if (!isLoggedIn) return kpis
+    if (!accountKpis) return FALLBACK_KPIS.map(k => ({ ...k, value: '—' }))
+    const flat = { value: 0, up: true }
+    return [
+      { key: 'channels', label: 'Canales conectados', value: accountKpis.channels_connected.toLocaleString(), delta: flat, accent: 'emerald' },
+      { key: 'conversations', label: 'Conversaciones', value: accountKpis.conversations_total.toLocaleString(), delta: flat, accent: 'cobalt' },
+      { key: 'ai_replies', label: 'Respuestas de la IA', value: accountKpis.messages_ai.toLocaleString(), delta: flat, accent: 'emerald' },
+      { key: 'ai_actions', label: 'Acciones IA registradas', value: accountKpis.ai_actions_total.toLocaleString(), delta: flat, accent: 'cobalt' },
+    ]
+  }, [isLoggedIn, accountKpis, kpis])
+
   // Map real audit log entries (already polled every 20s above) into log lines
   useEffect(() => {
     const toLevel = (l: RawAuditLog): LogLevel =>
@@ -1066,8 +1123,16 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
           }}>
             <Brain size={13} style={{ color: T.cobalt }} />
             {brain.counts.total} capacidades
-            <span style={{ color: T.text3 }}>·</span>
-            <span style={{ color: T.emerald }}>salud {(brain.health * 100).toFixed(0)}%</span>
+            {/* "salud" sale de la tabla global de leads, que no pertenece a
+                ninguna cuenta: para un usuario logueado sería un número
+                inventado sobre su negocio, así que solo se muestra en la
+                demo pública. */}
+            {!isLoggedIn && (
+              <>
+                <span style={{ color: T.text3 }}>·</span>
+                <span style={{ color: T.emerald }}>salud {(brain.health * 100).toFixed(0)}%</span>
+              </>
+            )}
           </span>
         )}
         {/* Real, honest state -- was a static, unconditional "AGENTE ACTIVO"
@@ -1150,11 +1215,17 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             </span>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>
-                {brain.counts.total - disabledCount} de {brain.counts.total} activados
+                {brain.counts.total - disabledCount} de {brain.counts.total} {setupComplete ? 'activados' : 'habilitados'}
                 {disabledCount > 0 && <span style={{ color: T.amber }}> · {disabledCount} desactivados</span>}
               </div>
-              <div style={{ fontSize: 12, color: T.text2, marginTop: 2 }}>
-                Agentes, skills, automatizaciones y plataformas · encendé o apagá cada uno acá
+              {/* "Activado" acá significa "no apagado en el mapa". Con el
+                  setup real incompleto nada de esto corre todavía, así que
+                  decir "activados" sería anunciar automatizaciones que no
+                  existen. */}
+              <div style={{ fontSize: 12, color: setupComplete ? T.text2 : T.amber, marginTop: 2 }}>
+                {setupComplete
+                  ? 'Agentes, skills, automatizaciones y plataformas · encendé o apagá cada uno acá'
+                  : 'Quedan habilitados pero no corren hasta que completes el setup de tu cuenta'}
               </div>
             </div>
           </div>
@@ -1191,18 +1262,35 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
       {/* ── KPI ROW ── (solo en Dashboard) */}
       {showKpis && (
-      <section id="sec-kpis" style={{ padding: '24px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        {kpis.map(k => (
-          <KpiCard
-            key={k.key}
-            icon={KPI_ICONS[k.key] ?? <Activity size={18} />}
-            label={k.label}
-            value={k.value}
-            delta={`${k.delta.value}%`}
-            deltaUp={k.delta.up}
-            accent={ACCENT_MAP[k.accent] ?? T.cobalt}
-          />
-        ))}
+      <section id="sec-kpis" style={{ padding: '24px 28px 0' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
+          fontSize: 11, fontFamily: T.mono, letterSpacing: '0.04em',
+          color: isLoggedIn ? T.text2 : T.amber, textTransform: 'uppercase',
+        }}>
+          {isLoggedIn
+            ? 'Datos reales de tu cuenta'
+            : 'Demo pública · totales de la plataforma, no de una cuenta'}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          {displayedKpis.map(k => (
+            <KpiCard
+              key={k.key}
+              icon={KPI_ICONS[k.key] ?? <Activity size={18} />}
+              label={k.label}
+              value={k.value}
+              delta={`${k.delta.value}%`}
+              deltaUp={k.delta.up}
+              accent={ACCENT_MAP[k.accent] ?? T.cobalt}
+            />
+          ))}
+        </div>
+        {isLoggedIn && accountKpis && accountKpis.conversations_total === 0 && (
+          <div style={{ marginTop: 10, fontSize: 12, color: T.text2 }}>
+            Todavía no hay conversaciones reales en esta cuenta. Los números se llenan solos
+            cuando conectes un canal (WhatsApp, Instagram, MercadoLibre, Amazon…) y entren mensajes.
+          </div>
+        )}
       </section>
       )}
 
