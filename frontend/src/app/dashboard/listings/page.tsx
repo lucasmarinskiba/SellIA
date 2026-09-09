@@ -1,59 +1,132 @@
 'use client'
 
-import { Plus, Eye, Edit2, Trash2 } from 'lucide-react'
+/**
+ * Listings — los productos reales publicados por el negocio.
+ *
+ * Antes mostraba tres productos inventados (iPhone 15 Pro con 12 de stock y
+ * 1234 vistas, AirPods, MacBook) escritos a mano en el componente, con
+ * ratings y visitas que nadie midió. Ahora lee
+ * GET /businesses/{id}/products del negocio del usuario.
+ */
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Plus, Loader2, Package, ExternalLink } from 'lucide-react'
+import { api } from '@/lib/api'
+import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
+
+interface ProductRow {
+  id: string
+  name: string
+  sku: string | null
+  price: number | string
+  stock_quantity: number | null
+  status: string
+  track_inventory?: boolean
+}
 
 export default function ListingsPage() {
-  const listings = [
-    { id: 'LST-001', product: 'iPhone 15 Pro', platform: 'Mercado Libre', price: '$999', stock: 12, views: 1234, rating: 4.8 },
-    { id: 'LST-002', product: 'AirPods Pro', platform: 'Amazon', price: '$249', stock: 45, views: 856, rating: 4.6 },
-    { id: 'LST-003', product: 'MacBook Air M3', platform: 'Hotmart', price: '$1,299', stock: 5, views: 432, rating: 4.9 },
-  ]
+  const { snapshot, loading: snapLoading } = useBusinessSnapshot()
+  const [products, setProducts] = useState<ProductRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const businessId = snapshot?.business.id ?? null
+
+  useEffect(() => {
+    if (snapLoading) return
+    if (!businessId) { setLoading(false); return }
+    let alive = true
+    api.get<{ products: ProductRow[] }>(`/businesses/${businessId}/products?limit=100`)
+      .then(res => { if (alive) setProducts(res.data.products ?? []) })
+      .catch(() => { /* sin tienda / sin productos -> lista vacía real */ })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [businessId, snapLoading])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Listings</h1>
-          <p className="text-slate-600 mt-2">Gestiona tus productos en todas las plataformas</p>
+          <p className="text-slate-600 mt-2">
+            {products.length > 0
+              ? `${products.length} producto(s) publicados en tu tienda`
+              : 'Tus productos publicados'}
+          </p>
         </div>
-        <Link href="/dashboard/listings/create" className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
-          <Plus size={18} />
-          Nuevo listing
-        </Link>
+        {businessId && (
+          <Link href="/dashboard/listings/create" className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+            <Plus size={18} />
+            Nuevo listing
+          </Link>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {listings.map((listing) => (
-          <div key={listing.id} className="bg-white border border-slate-200 rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-slate-900">{listing.product}</h3>
-                <p className="text-xs text-slate-500 mt-1">{listing.platform}</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-slate-100 rounded"><Eye size={16} /></button>
-                <button className="p-2 hover:bg-slate-100 rounded"><Edit2 size={16} /></button>
-                <button className="p-2 hover:bg-slate-100 rounded"><Trash2 size={16} /></button>
-              </div>
+      {(snapLoading || loading) && (
+        <div className="flex items-center gap-3 text-slate-500 py-10">
+          <Loader2 className="w-5 h-5 animate-spin" /> Leyendo tus productos…
+        </div>
+      )}
+
+      {!snapLoading && !loading && !businessId && (
+        <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
+          <p className="font-semibold text-slate-900 mb-1">Todavía no tenés un negocio creado</p>
+          <p className="text-slate-600 text-sm mb-5">Creá tu negocio para publicar productos.</p>
+          <Link
+            href="/sellia-onboarding"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+          >
+            Configurar mi negocio <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
+
+      {!snapLoading && !loading && businessId && (
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          {products.length === 0 ? (
+            <div className="text-center py-6">
+              <Package className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              <p className="font-semibold text-slate-900 mb-1">Todavía no publicaste productos</p>
+              <p className="text-slate-600 text-sm">
+                Cuando cargues uno, aparece acá con su precio y stock reales.
+              </p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-slate-50 p-2 rounded text-center">
-                <p className="text-xs text-slate-600">Precio</p>
-                <p className="font-bold">{listing.price}</p>
-              </div>
-              <div className="bg-slate-50 p-2 rounded text-center">
-                <p className="text-xs text-slate-600">Stock</p>
-                <p className="font-bold">{listing.stock}</p>
-              </div>
-              <div className="bg-slate-50 p-2 rounded text-center">
-                <p className="text-xs text-slate-600">Rating</p>
-                <p className="font-bold">⭐ {listing.rating}</p>
-              </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">Producto</th>
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">SKU</th>
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">Precio</th>
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">Stock</th>
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(p => (
+                    <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-3 px-2 text-slate-900 font-medium">{p.name}</td>
+                      <td className="py-3 px-2 font-mono text-slate-600">{p.sku ?? '—'}</td>
+                      <td className="py-3 px-2 font-semibold text-slate-900">
+                        {formatMoney(Number(p.price), snapshot?.revenue.currency ?? null)}
+                      </td>
+                      <td className="py-3 px-2 text-slate-600">
+                        {p.track_inventory === false ? 'sin control' : (p.stock_quantity ?? 0)}
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                          {p.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
