@@ -11,6 +11,7 @@
 
 import { TrendingUp, MessageSquare, Bot, Plug, Loader2 } from 'lucide-react'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
+import AnalystReadout from '@/components/analytics/AnalystReadout'
 
 export default function AnalyticsPage() {
   const { snapshot, loading, unavailable } = useBusinessSnapshot()
@@ -76,6 +77,10 @@ export default function AnalyticsPage() {
 
       {!loading && !unavailable && (
         <>
+          {/* Lectura del analista: cada número con su evidencia (n, intervalo,
+              confianza) en vez de un porcentaje suelto sin denominador. */}
+          <AnalystReadout />
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {metrics.map((metric) => {
               const Icon = metric.icon
@@ -119,8 +124,8 @@ export default function AnalyticsPage() {
           )}
 
           <p className="text-xs text-slate-500">
-            Series históricas y comparaciones contra el mes anterior no se muestran porque esta cuenta
-            todavía no acumuló historial propio: en cuanto haya datos de más de un período, aparecen acá.
+            La serie diaria y las comparaciones semanales de arriba se cuentan sobre las fechas reales
+            de tus conversaciones. Un período sin actividad se dibuja vacío, nunca se rellena.
           </p>
         </>
       )}
