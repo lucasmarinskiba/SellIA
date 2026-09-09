@@ -6,9 +6,9 @@
  * Wraps app in <QueryProvider> → <AuthProvider>.
  * Children read state via useAuth().
  */
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 
-import { getToken, type MeResponse } from './client'
+import { getToken, setSessionCookie, type MeResponse } from './client'
 import { useMe, useLogout } from './queries'
 
 interface AuthCtx {
@@ -24,6 +24,15 @@ export function SellIAAuthProvider({ children }: { children: ReactNode }) {
   const hasToken = typeof window !== 'undefined' && !!getToken()
   const meQuery = useMe({ enabled: hasToken })
   const logout = useLogout()
+
+  // Covers sessions that started before the middleware-visible session
+  // cookie existed, or a token set by another tab -- setToken() keeps it in
+  // sync going forward, this just corrects it once on mount so a stale
+  // "no cookie yet" state doesn't bounce an otherwise-valid session to
+  // /login the next time middleware.ts checks a /dashboard/* navigation.
+  useEffect(() => {
+    setSessionCookie(hasToken)
+  }, [hasToken])
 
   const value = useMemo<AuthCtx>(
     () => ({
