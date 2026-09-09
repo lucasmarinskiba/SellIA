@@ -432,11 +432,22 @@ const NAV_ITEMS: Array<{ id: string; label: string; icon: React.ReactNode; accen
   { id: 'sec-neural', label: 'Cerebro Neuronal', icon: <Brain size={18} />, accent: T.cobalt },
 ]
 
+// Shared by the sidebar nav and every other "jump to section" action in this
+// file. Used to call scrollIntoView({ behavior: 'smooth', ... }) -- with the
+// global CSS `html { scroll-behavior: smooth }` this app already sets, that
+// is a redundant, doubly-smooth request, and it is genuinely fragile: any
+// layout shift or re-render while the animation is in flight (this page
+// polls KPIs/notifications continuously) makes some browsers silently
+// abandon an in-progress smooth scroll rather than resume it, so the button
+// looked like it had stopped working entirely -- not just "less smooth".
+// `behavior: 'instant'` always overrides the CSS-level smooth setting per
+// spec, trading the animation for a scroll that reliably happens every time.
+const scrollToSection = (id: string): void => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' })
+}
+
 const SideToolbar = (): React.JSX.Element => {
-  const go = (id: string): void => {
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const go = scrollToSection
   return (
     <nav style={{
       position: 'fixed', top: 56, left: 0, bottom: 0, width: 64, zIndex: 30,
@@ -590,7 +601,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     setPlannedFlows(flows)
     setCuaMode('supervised')
     setNeuralView('flows')
-    document.getElementById('sec-neural')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection('sec-neural')
     // Ejecución real best-effort: una sesión CU por flujo (si hay backend+key).
     const disabled = [...getDisabledCapabilities()]
     // Attaching the real Bearer token (when logged in) is what lets the
@@ -640,7 +651,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         setCuaMsg(`${base} Plan + telemetría (ver en Flujos). Para ejecutar de verdad falta API key del cerebro.`)
       }
       setCuaPrompt(''); setNeuralView('flows')
-      document.getElementById('sec-neural')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollToSection('sec-neural')
     } catch {
       setCuaMsg('No se pudo despachar (¿backend del cerebro arriba?). Intentá de nuevo.')
     } finally {
@@ -661,15 +672,14 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
   // El command bar busca/abre módulos; en este shell scrolleamos al destino si existe.
   const handleJump = useCallback((componentId: string, _lobe?: LobeId): void => {
-    const el = document.getElementById(componentId)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollToSection(componentId)
   }, [])
 
   // Resuelve y EJECUTA una orden de voz; retorna la respuesta hablada.
   const handleVoiceCommand = useCallback((text: string): string => {
     const t = text.toLowerCase()
     const scrollTo = (id: string, label: string): string => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollToSection(id)
       return `Listo, te muestro ${label}.`
     }
     if (/cerebro|neuronal|sinapsis|red neuronal|grafo/.test(t)) return scrollTo('sec-neural', 'el cerebro neuronal en vivo')
@@ -833,7 +843,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
       {/* ── Tool Studio (detalle + lanzar herramienta) ── */}
       <ToolStudio toolId={openToolId} profile={profile} onClose={() => setOpenToolId(null)} onLaunch={(f) => executePlan([f])}
-        onAddToPlan={(f) => { setPlannedFlows(prev => [...prev, f]); setNeuralView('flows'); document.getElementById('sec-neural')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} />
+        onAddToPlan={(f) => { setPlannedFlows(prev => [...prev, f]); setNeuralView('flows'); scrollToSection('sec-neural') }} />
 
       {/* ── Banner obligatorio si el perfil no está completo ── */}
       {!profileDone && (
