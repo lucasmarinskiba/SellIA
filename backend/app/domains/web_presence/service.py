@@ -78,7 +78,12 @@ async def upsert_link(
     """Add or update one real link. The URL is normalized (and rejected if it is
     not a fetchable public http(s) URL) before it is ever stored, so the audit
     job never has to deal with junk."""
-    clean = fetcher.normalize_url(url)  # raises UnsafeUrlError -> 400 at the API layer
+    # Both raise UnsafeUrlError -> 400 at the API layer. The host is resolved
+    # here too, not only at fetch time: storing a URL that can never be fetched
+    # let an internal address (169.254.169.254) reach the generated JSON-LD
+    # sameAs the user is told to paste into their own site.
+    clean = fetcher.normalize_url(url)
+    fetcher.assert_public_host(clean)
     kind, default_label = PLATFORM_KINDS.get(platform, (LinkKind.OTHER, platform))
 
     existing = await db.execute(
