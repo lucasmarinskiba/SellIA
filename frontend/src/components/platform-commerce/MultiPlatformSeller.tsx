@@ -19,11 +19,12 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertTriangle, Check, ChevronDown, Loader2, Package, PlayCircle, Plug, RefreshCw,
-  Settings2, TrendingUp, XCircle,
+  MessageSquare, Settings2, TrendingUp, XCircle,
 } from 'lucide-react'
 import {
   commerceApi, COST_LABEL, formatMoney,
-  type CommerceOverview, type PlatformCosts, type PlatformRow, type SyncResult,
+  type CommerceOverview, type PendingQuestion, type PlatformCosts, type PlatformRow,
+  type SyncResult,
 } from '@/lib/platformCommerce'
 import { platformMeta } from '@/lib/platformMeta'
 
@@ -110,6 +111,7 @@ export default function MultiPlatformSeller(): React.JSX.Element {
   const [results, setResults] = useState<Record<string, string>>({})
   const [openSettings, setOpenSettings] = useState<string | null>(null)
   const [openDetail, setOpenDetail] = useState<string | null>(null)
+  const [pending, setPending] = useState<{ platform: string; items: PendingQuestion[] } | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -131,6 +133,18 @@ export default function MultiPlatformSeller(): React.JSX.Element {
       await load()
     } finally {
       setSyncing(false)
+    }
+  }
+
+  /** Answering buyers reaches real customers, so the open questions are shown
+   *  first and the AI only writes after the seller confirms. */
+  const previewPending = async (platform: string): Promise<void> => {
+    setBusy(`${platform}:answer_pending`)
+    try {
+      const res = await commerceApi.pendingQuestions(platform)
+      setPending({ platform, items: res.pending })
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -332,7 +346,11 @@ export default function MultiPlatformSeller(): React.JSX.Element {
                   <button
                     key={action.key}
                     type="button"
-                    onClick={() => runAction(row.platform, action.key)}
+                    onClick={() => (
+                      action.key === 'answer_pending'
+                        ? previewPending(row.platform)
+                        : runAction(row.platform, action.key)
+                    )}
                     disabled={busy === id}
                     title={action.detail}
                     className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-1.5"
@@ -434,6 +452,69 @@ export default function MultiPlatformSeller(): React.JSX.Element {
         plataforma: no se estiman comisiones ni costos de producto, porque una tasa supuesta
         produciría una ganancia equivocada con aspecto de dato.
       </p>
+
+      {/* Consultas reales sin responder: se muestran antes de que la IA
+          escriba, porque el mensaje sale con el nombre del vendedor. */}
+      {pending && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-900 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                {pending.items.length} consulta(s) sin responder en {platformMeta(pending.platform).label}
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                La IA va a redactar y enviar una respuesta a cada uno de estos compradores reales,
+                por tu canal y con tu nombre.
+              </p>
+            </div>
+
+            <div className="p-5">
+              {pending.items.length === 0 ? (
+                <p className="text-sm text-slate-600">
+                  No hay consultas colgadas ahora mismo. Nada que responder.
+                </p>
+              ) : (
+                <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+                  {pending.items.map(item => (
+                    <li key={item.conversation_id} className="p-3">
+                      <p className="text-sm font-medium text-slate-900">{item.name}</p>
+                      <p className="text-sm text-slate-600 mt-0.5">{item.question}</p>
+                      {item.asked_at && (
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          preguntó el {new Date(item.asked_at).toLocaleString('es-AR')}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPending(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={pending.items.length === 0 || busy !== null}
+                onClick={async () => {
+                  const platform = pending.platform
+                  setPending(null)
+                  await runAction(platform, 'answer_pending')
+                }}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+              >
+                Que la IA responda a {pending.items.length}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -142,6 +142,20 @@ async def sync_orders(
     }
 
 
+@router.get("/{platform}/pending-questions")
+async def pending_questions(
+    platform: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Buyers on this platform still waiting for an answer, with their real
+    question -- shown before the AI is allowed to reply to them."""
+    business_ids = await _business_ids(db, user)
+    if not business_ids:
+        return {"pending": []}
+    return {"pending": await selling.pending_questions(db, business_ids[0], platform)}
+
+
 @router.post("/{platform}/actions/{action_key}")
 async def run_action(
     platform: str,
@@ -166,6 +180,8 @@ async def run_action(
     try:
         if action_key == "answer_buyers":
             return await selling.answer_buyers(db, business_ids[0])
+        if action_key == "answer_pending":
+            return await selling.answer_pending(db, business_ids[0], platform)
         if action_key == "sync_orders":
             return await selling.sync_orders(db, business_ids[0], platform)
         if action_key == "publish_catalog":
