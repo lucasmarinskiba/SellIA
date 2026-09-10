@@ -425,6 +425,7 @@ async def personalize_script(
     try:
         from langchain_core.messages import HumanMessage, SystemMessage
 
+        from app.core.database import AsyncSessionLocal
         from app.domains.agents.llm_provider import generate_with_fallback
 
         system = SystemMessage(content=(
@@ -444,13 +445,20 @@ async def personalize_script(
             f"Mensaje base a reescribir:\n{action.script}"
         ))
 
-        response = await generate_with_fallback(
-            db=db,
-            business_id=business_id,
-            messages=[system, human],
-            max_tokens=500,
-            temperature=0.7,
-        )
+        # Its own short-lived session, deliberately. The LLM path touches
+        # several optional tables (business context builder, usage caps,
+        # semantic cache) and any of them failing aborts the transaction it
+        # runs in. On the request's session that meant a swallowed error
+        # elsewhere silently downgraded this call to a template -- and a
+        # failure here would poison the request that asked for it.
+        async with AsyncSessionLocal() as llm_db:
+            response = await generate_with_fallback(
+                db=llm_db,
+                business_id=business_id,
+                messages=[system, human],
+                max_tokens=500,
+                temperature=0.7,
+            )
         if response and response.content.strip():
             return response.content.strip(), "ia"
     except Exception as e:  # noqa: BLE001
