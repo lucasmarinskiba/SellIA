@@ -109,7 +109,9 @@ async def platform_pnl(
     currencies: set[str] = set()
 
     for platform, platform_orders in sorted(by_platform.items()):
-        paid = [o for o in platform_orders if o.payment_status == PaymentStatus.PAID]
+        # COMPLETED, not PAID: PaymentStatus has no PAID member, and
+        # referencing one raises AttributeError the moment an order exists.
+        paid = [o for o in platform_orders if o.payment_status == PaymentStatus.COMPLETED]
         revenue = sum((o.total_amount or ZERO) for o in paid) or ZERO
         shipping = sum((o.shipping_cost or ZERO) for o in paid) or ZERO
         for order in platform_orders:
@@ -194,6 +196,16 @@ async def platform_pnl(
     # than printing a sum of pesos and dollars.
     mixed_currencies = len(currencies) > 1
     currency = next(iter(currencies)) if len(currencies) == 1 else None
+
+    # Nothing sold and nothing declared is not "a margin of zero, computed
+    # completely". It is no information, and printing 0 with a green tick
+    # invites the seller to believe their books are done.
+    nothing_known = total_revenue == ZERO and total_known_costs == ZERO
+    consolidated_margin = (
+        None if (nothing_known or not all_complete)
+        else _money(total_revenue - total_known_costs)
+    )
+
     return {
         "period_days": days,
         "platforms": rows,
@@ -201,8 +213,8 @@ async def platform_pnl(
             "revenue": _money(total_revenue),
             "orders": total_orders,
             "known_costs": _money(total_known_costs),
-            "margin": _money(total_revenue - total_known_costs) if all_complete else None,
-            "margin_complete": all_complete,
+            "margin": consolidated_margin,
+            "margin_complete": all_complete and not nothing_known,
             "currency": currency,
             "mixed_currencies": mixed_currencies,
         },
