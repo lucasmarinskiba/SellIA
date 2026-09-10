@@ -16,12 +16,12 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-  Activity, BrainCircuit, Check, ChevronDown, Copy, Loader2, Minus, RefreshCw, Sparkles,
-  TrendingDown, TrendingUp, X,
+  Activity, AlertTriangle, BrainCircuit, Check, ChevronDown, Copy, Loader2, Minus, PlayCircle,
+  RefreshCw, Sparkles, TrendingDown, TrendingUp, Users, X,
 } from 'lucide-react'
 import {
   authorityApi, MODE_LABEL, pillarColor, scoreTone,
-  type AuthorityAction, type AuthorityDashboard, type TrendPoint,
+  type ActionPreview, type AuthorityAction, type AuthorityDashboard, type TrendPoint,
 } from '@/lib/authorityBuilder'
 
 const CHANNEL_LABEL: Record<string, string> = {
@@ -88,6 +88,9 @@ export default function AuthorityBuilder(): React.JSX.Element {
   const [scriptSource, setScriptSource] = useState<Record<string, 'ia' | 'plantilla'>>({})
   const [openScript, setOpenScript] = useState<string | null>(null)
   const [showAgents, setShowAgents] = useState(false)
+  const [preview, setPreview] = useState<{ action: AuthorityAction; data: ActionPreview } | null>(null)
+  const [running, setRunning] = useState(false)
+  const [runResult, setRunResult] = useState<Record<string, string>>({})
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -132,6 +135,46 @@ export default function AuthorityBuilder(): React.JSX.Element {
       })
     } finally {
       setBusyAction(null)
+    }
+  }
+
+  /** Anything that reaches the user's customers goes through a preview first:
+   *  they see the real recipient list and the exact text before confirming. */
+  const startRun = async (action: AuthorityAction): Promise<void> => {
+    setBusyAction(action.id)
+    try {
+      const data = await authorityApi.preview(action.id)
+      if (data.executable && data.needs_confirmation) {
+        setPreview({ action, data })
+      } else if (data.executable) {
+        const res = await authorityApi.run(action.id)
+        setRunResult(prev => ({ ...prev, [action.id]: res.detail }))
+        await load()
+      }
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setRunResult(prev => ({ ...prev, [action.id]: detail || 'No se pudo ejecutar.' }))
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const confirmRun = async (): Promise<void> => {
+    if (!preview) return
+    setRunning(true)
+    try {
+      const res = await authorityApi.run(preview.action.id, {
+        confirm: true,
+        conversation_ids: preview.data.recipients?.map(r => r.conversation_id),
+      })
+      setRunResult(prev => ({ ...prev, [preview.action.id]: res.detail }))
+      setPreview(null)
+      await load()
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setRunResult(prev => ({ ...prev, [preview.action.id]: detail || 'No se pudo enviar.' }))
+    } finally {
+      setRunning(false)
     }
   }
 
@@ -316,8 +359,13 @@ export default function AuthorityBuilder(): React.JSX.Element {
                           {action.principle}
                         </span>
                       )}
-                      {action.impact_points ? (
-                        <span className="text-[11px] text-slate-500">+{action.impact_points} pts</span>
+                      {action.impact_score ? (
+                        <span
+                          className="text-[11px] text-slate-500"
+                          title="Proyección calculada con la misma fórmula del pilar: cerrar esta brecha mueve el score exactamente esto."
+                        >
+                          +{action.impact_score.toFixed(1)} pts de score
+                        </span>
                       ) : null}
                     </div>
                     {action.rationale && (
@@ -325,6 +373,19 @@ export default function AuthorityBuilder(): React.JSX.Element {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    {action.executable && (
+                      <button
+                        type="button"
+                        onClick={() => startRun(action)}
+                        disabled={busyAction === action.id}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-1.5"
+                      >
+                        {busyAction === action.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <PlayCircle className="w-3.5 h-3.5" />}
+                        {action.needs_confirmation ? 'Preparar envío' : 'Ejecutar'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => mark(action, 'done')}
@@ -344,6 +405,13 @@ export default function AuthorityBuilder(): React.JSX.Element {
                     </button>
                   </div>
                 </div>
+
+                {runResult[action.id] && (
+                  <p className="text-sm text-slate-700 mt-2 flex gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    {runResult[action.id]}
+                  </p>
+                )}
 
                 {action.script && (
                   <div className="mt-3">
@@ -419,6 +487,81 @@ export default function AuthorityBuilder(): React.JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Confirmación de envío: los destinatarios son conversaciones reales y el
+          mensaje sale con el nombre del usuario, así que no se manda nada sin
+          que los vea primero. */}
+      {preview && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-900">{preview.action.title}</h3>
+              {preview.data.warning && (
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3 flex gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  {preview.data.warning}
+                </p>
+              )}
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-slate-900 mb-1">Mensaje que se envía</p>
+                <pre className="text-sm text-slate-800 whitespace-pre-wrap font-sans rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  {preview.data.script}
+                </pre>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  El marcador de nombre se reemplaza por el nombre real de cada cliente.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-slate-900 mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  {preview.data.recipients?.length ?? 0} cliente(s) reales
+                </p>
+                {(preview.data.recipients?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-slate-600">
+                    Todavía no hay clientes que califiquen: hace falta alguien que te haya escrito
+                    y a quien hayas respondido en los últimos 90 días.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 max-h-64 overflow-y-auto">
+                    {preview.data.recipients?.map(r => (
+                      <li key={r.conversation_id} className="px-3 py-2">
+                        <p className="text-sm font-medium text-slate-900 truncate">{r.name}</p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {r.platform}
+                          {r.last_message_at && ` · último mensaje ${new Date(r.last_message_at).toLocaleDateString('es-AR')}`}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmRun}
+                disabled={running || (preview.data.recipients?.length ?? 0) === 0}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                {running && <Loader2 className="w-4 h-4 animate-spin" />}
+                Enviar a {preview.data.recipients?.length ?? 0}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

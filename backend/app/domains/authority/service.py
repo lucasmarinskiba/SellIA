@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
+from . import automations
 from . import pillars as pillar_calc
 from . import psychology
 from .models import ActionMode, ActionStatus, AuthorityAction, AuthoritySnapshot
@@ -42,6 +43,14 @@ async def _safe_rollback(db: AsyncSession) -> None:
         await db.rollback()
     except Exception:  # noqa: BLE001
         pass
+
+
+async def business_ids_for(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]:
+    """This account's businesses. Automations act on these and nothing else."""
+    from app.domains.businesses.models import Business
+
+    result = await db.execute(select(Business.id).where(Business.user_id == user_id))
+    return [row[0] for row in result.all()]
 
 
 async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
@@ -211,14 +220,14 @@ async def sync_actions(
                 script=rec.script,
                 channel=rec.channel,
                 mode=rec.mode,
-                impact_points=rec.impact_points,
+                impact_score=rec.impact_score,
             ))
         elif action.status == ActionStatus.SUGGESTED:
             # Keep the wording current with the numbers, but never resurrect a
             # decision the user already made.
             action.title = rec.title
             action.rationale = rec.rationale
-            action.impact_points = rec.impact_points
+            action.impact_score = rec.impact_score
             if not action.script:
                 action.script = rec.script
 
@@ -237,12 +246,30 @@ async def list_actions(db: AsyncSession, user_id: uuid.UUID) -> list[AuthorityAc
     result = await db.execute(
         select(AuthorityAction)
         .where(AuthorityAction.user_id == user_id)
-        .order_by(AuthorityAction.status.asc(), AuthorityAction.impact_points.desc())
+        .order_by(AuthorityAction.status.asc(), AuthorityAction.impact_score.desc())
     )
     return list(result.scalars().all())
 
 
+def effective_mode(action: AuthorityAction) -> ActionMode:
+    """Reconcile the agent's intent with what SellIA can really do.
+
+    The registry in automations.py is the source of truth: if an action is not
+    in it, it cannot be labelled "La hace SellIA" no matter what the agent that
+    proposed it assumed.
+    """
+    if automations.is_executable(action.action_key):
+        return (
+            ActionMode.ASSISTED
+            if automations.needs_confirmation(action.action_key)
+            else ActionMode.AUTOMATIC
+        )
+    declared = action.mode
+    return ActionMode.ASSISTED if declared == ActionMode.ASSISTED else ActionMode.MANUAL
+
+
 def serialize_action(action: AuthorityAction) -> dict[str, Any]:
+    mode = effective_mode(action)
     return {
         "id": str(action.id),
         "action_key": action.action_key,
@@ -253,9 +280,11 @@ def serialize_action(action: AuthorityAction) -> dict[str, Any]:
         "rationale": action.rationale,
         "script": action.script,
         "channel": action.channel,
-        "mode": action.mode.value if isinstance(action.mode, ActionMode) else str(action.mode),
+        "mode": mode.value,
+        "executable": automations.is_executable(action.action_key),
+        "needs_confirmation": automations.needs_confirmation(action.action_key),
         "status": action.status.value if isinstance(action.status, ActionStatus) else str(action.status),
-        "impact_points": action.impact_points,
+        "impact_score": action.impact_score,
         "completed_at": action.completed_at.isoformat() if action.completed_at else None,
     }
 

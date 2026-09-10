@@ -99,6 +99,7 @@ celery_app = Celery(
 
 _modules = [
     "app.tasks.workflow_tasks",
+    "app.tasks.authority_tasks",
     "app.tasks.security_tasks",  # referenced by 5 beat_schedule entries below
                                   # (data_retention_cleanup, rotate_webhook_tokens,
                                   # security_audit_report, cleanup_expired_ip_blocks,
@@ -164,6 +165,12 @@ celery_app.conf.update(
 
 # Beat schedule para tareas periódicas
 celery_app.conf.beat_schedule = {
+    # Weekly, so the authority trend is real history rather than a redraw of
+    # whatever the score happened to be the last time someone opened the page.
+    "weekly-authority-snapshot": {
+        "task": "app.tasks.authority_tasks.weekly_authority_snapshot",
+        "schedule": 604800.0,  # 7 días
+    },
     "check-pending-workflows": {
         "task": "app.tasks.workflow_tasks.check_pending_workflows",
         "schedule": 30.0,  # cada 30 segundos
