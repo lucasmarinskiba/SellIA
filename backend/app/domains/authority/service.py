@@ -361,7 +361,7 @@ def analyze_trend(trend: list[dict[str, Any]], current: dict[str, Any]) -> dict[
 
     if movements:
         top = movements[0]
-        moved = "impulsada" if top["change"] > 0 else "arrastrada"
+        moved = "impulsado" if top["change"] > 0 else "arrastrado"
         base["detail"] = (
             f"El movimiento está {moved} sobre todo por «{top['label']}» "
             f"({'+' if top['change'] > 0 else ''}{top['change']} puntos)."
