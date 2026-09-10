@@ -111,6 +111,16 @@ export const commerceApi = {
 
   runAction: (platform: string, action: string): Promise<{ detail?: string }> =>
     api.post(`/platform-commerce/${platform}/actions/${action}`).then(r => r.data),
+
+  pendingQuestions: (platform: string): Promise<{ pending: PendingQuestion[] }> =>
+    api.get(`/platform-commerce/${platform}/pending-questions`).then(r => r.data),
+}
+
+export interface PendingQuestion {
+  conversation_id: string
+  name: string
+  question: string
+  asked_at: string | null
 }
 
 export const formatMoney = (amount: number, currency: string | null): string =>
