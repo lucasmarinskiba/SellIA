@@ -39,3 +39,45 @@ async def ensure_authority_tables() -> None:
         except Exception as e:  # noqa: BLE001
             logger.warning("authority bootstrap: table %s skipped: %s", table.name, str(e)[:160])
     logger.info("✅ authority tables ensured (%s)", len(tables))
+    await _migrate_impact_score()
+
+
+async def _migrate_impact_score() -> None:
+    """impact_points (int) -> impact_score (float).
+
+    The column used to hold a hand-written constant, so an integer was enough.
+    It now holds a projection replayed from the pillar's own formula, which
+    lands on 4.7 as often as on 5 -- an integer column would silently truncate
+    every one of those to a rounder, wronger number. create(checkfirst=True)
+    never alters an existing table, so the change is applied explicitly here.
+    """
+    from sqlalchemy import text
+
+    from app.core.database import engine
+
+    statements = [
+        # Rename only if the old column is the one that exists.
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'authority_actions' AND column_name = 'impact_points')
+               AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'authority_actions' AND column_name = 'impact_score')
+            THEN
+                ALTER TABLE authority_actions RENAME COLUMN impact_points TO impact_score;
+            END IF;
+        END $$;
+        """,
+        """
+        ALTER TABLE authority_actions
+        ALTER COLUMN impact_score TYPE double precision
+        USING impact_score::double precision;
+        """,
+    ]
+    for statement in statements:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(statement))
+        except Exception as e:  # noqa: BLE001
+            logger.warning("authority bootstrap: impact_score migration: %s", str(e)[:160])

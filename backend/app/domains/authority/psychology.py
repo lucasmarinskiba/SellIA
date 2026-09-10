@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from . import pillars as pillar_calc
 from .models import ActionMode
 
 
@@ -32,7 +33,9 @@ class Recommendation:
     title: str
     rationale: str
     mode: ActionMode = ActionMode.MANUAL
-    impact_points: int = 5
+    #: Points this would add to the TOTAL score, projected by replaying the
+    #: pillar's own formula with the gap closed (pillars.score_gain).
+    impact_score: float = 0.0
     channel: str | None = None
     script: str | None = None
 
@@ -45,7 +48,7 @@ class Recommendation:
             "title": self.title,
             "rationale": self.rationale,
             "mode": self.mode.value,
-            "impact_points": self.impact_points,
+            "impact_score": self.impact_score,
             "channel": self.channel,
             "script": self.script,
         }
@@ -109,7 +112,10 @@ def _social_proof(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommen
                    if answered_convs else "")
             ),
             mode=ActionMode.ASSISTED if answered_convs else ActionMode.MANUAL,
-            impact_points=15,
+            # Five reviews, all answered. The future rating is unknown, so it
+            # is left as-is: the projection can only understate, never flatter.
+            impact_score=pillar_calc.score_gain(
+                "prueba_social", data, reviews=5, answered_reviews=5),
             channel="whatsapp",
             script=(
                 f"Hola {{nombre}}, soy de {_business_name(ctx)}. Vi que te llevaste "
@@ -133,7 +139,8 @@ def _social_proof(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommen
                 "y empieza a parecer un patrón."
             ),
             mode=ActionMode.ASSISTED,
-            impact_points=10,
+            impact_score=pillar_calc.score_gain(
+                "prueba_social", data, reviews=10, answered_reviews=max(answered, 10)),
             channel="whatsapp",
             script=(
                 f"Hola {{nombre}}, gracias por elegir {_business_name(ctx)}. "
@@ -156,7 +163,8 @@ def _social_proof(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommen
                 "muestra qué pasa cuando algo sale mal."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=8,
+            impact_score=pillar_calc.score_gain(
+                "prueba_social", data, answered_reviews=reviews),
         ))
 
     if testimonials == 0 and reviews:
@@ -172,7 +180,7 @@ def _social_proof(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommen
                 f"Sobre todo si tu público es {_audience(ctx)}."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=6,
+            impact_score=pillar_calc.score_gain("prueba_social", data, testimonials=3),
         ))
 
     return out
@@ -197,7 +205,7 @@ def _authority(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendat
                 "generado con tus datos reales en la herramienta SEO: falta pegarlo."
             ),
             mode=ActionMode.ASSISTED,
-            impact_points=12,
+            impact_score=pillar_calc.score_gain("identidad", ident, org_schema=True),
         ))
 
     if not verif.get("domain_verified"):
@@ -213,7 +221,7 @@ def _authority(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendat
                 "autoría de tu contenido."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=10,
+            impact_score=pillar_calc.score_gain("verificacion", verif, domain_verified=True),
         ))
 
     if not ident.get("has_value_proposition"):
@@ -229,7 +237,8 @@ def _authority(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendat
                 "permite sostener el mismo mensaje en todos tus canales."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=8,
+            impact_score=pillar_calc.score_gain(
+                "identidad", ident, has_value_proposition=True, has_target_audience=True),
         ))
 
     return out
@@ -255,7 +264,9 @@ def _reciprocity(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommend
                 f"y de paso te posiciona como quien sabe de {_what_you_sell(ctx)}."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=10,
+            # 300 words is where the "thin content" finding clears -- not the
+            # 800 at which the depth component saturates.
+            impact_score=pillar_calc.score_gain("contenido", content, average_words=300),
             channel="web",
             script=(
                 f"Ideas concretas para {_what_you_sell(ctx)}:\n"
@@ -291,7 +302,7 @@ def _consistency(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommend
                 f"{linked} de {total} perfiles enlazados desde tu sitio."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=10,
+            impact_score=pillar_calc.score_gain("red", red, linked_from_hub=total),
         ))
 
     if verifiable and back < verifiable:
@@ -307,7 +318,7 @@ def _consistency(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommend
                 "te cambia el alcance."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=8,
+            impact_score=pillar_calc.score_gain("red", red, linking_back=verifiable),
         ))
 
     return out
@@ -333,7 +344,7 @@ def _liking(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendation
                 "acción de marketing con mejor retorno que atender a quien ya te escribió."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=12,
+            impact_score=pillar_calc.score_gain("respuesta", resp, answered=inbound),
         ))
 
     if isinstance(median, (int, float)) and median > 60:
@@ -349,7 +360,9 @@ def _liking(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendation
                 "otro lado. Activar la respuesta automática de la IA cubre justo esa ventana."
             ),
             mode=ActionMode.AUTOMATIC,
-            impact_points=10,
+            # 5 minutes is the top latency band, which is what an always-on
+            # auto-reply actually achieves.
+            impact_score=pillar_calc.score_gain("respuesta", resp, median_minutes=5),
             channel="whatsapp",
             script=(
                 f"¡Hola! Gracias por escribir a {_business_name(ctx)}. "
@@ -381,7 +394,10 @@ def _scarcity(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recommendati
             "Si no tenés un límite real, no lo uses."
         ),
         mode=ActionMode.MANUAL,
-        impact_points=4,
+        # Deliberately 0: honest scarcity is good practice but moves no
+        # measurable pillar, and inventing points for it would be the same
+        # dishonesty the recommendation itself warns against.
+        impact_score=0.0,
         channel="instagram",
         script=(
             "Quedan {cantidad} unidades de {producto} de esta tanda.\n"
@@ -407,7 +423,8 @@ def _mere_exposure(pillars: dict[str, Any], ctx: dict[str, Any]) -> list[Recomme
                 "aparecer una vez en seis."
             ),
             mode=ActionMode.MANUAL,
-            impact_points=8,
+            impact_score=pillar_calc.score_gain(
+                "red", red, profiles=2, linked_from_hub=2, back_verifiable=0),
         )]
     return []
 
@@ -488,4 +505,4 @@ def run_agents(pillars: dict[str, Any], context: dict[str, Any]) -> list[Recomme
             recommendations.extend(agent.analyze(pillars, context))
         except Exception:  # noqa: BLE001 -- one agent must not break the panel
             continue
-    return sorted(recommendations, key=lambda r: -r.impact_points)
+    return sorted(recommendations, key=lambda r: -r.impact_score)

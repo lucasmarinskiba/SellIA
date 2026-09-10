@@ -51,7 +51,11 @@ export interface AuthorityAction {
   channel: string | null
   mode: ActionMode
   status: ActionStatus
-  impact_points: number | null
+  /** Points this would add to the total score, projected from the pillar's
+   *  own formula — not an estimate of business impact. */
+  impact_score: number | null
+  executable: boolean
+  needs_confirmation: boolean
   completed_at: string | null
 }
 
@@ -86,11 +90,39 @@ export const authorityApi = {
 
   personalize: (id: string): Promise<{ script: string; source: 'ia' | 'plantilla' }> =>
     api.post(`/authority-builder/actions/${id}/personalize`).then(r => r.data),
+
+  preview: (id: string): Promise<ActionPreview> =>
+    api.get<ActionPreview>(`/authority-builder/actions/${id}/preview`).then(r => r.data),
+
+  run: (id: string, body: { confirm?: boolean; conversation_ids?: string[] } = {}):
+    Promise<{ executed: boolean; detail: string; sent?: number; failed?: number }> =>
+    api.post(`/authority-builder/actions/${id}/run`, body).then(r => r.data),
 }
 
+export interface CampaignRecipient {
+  conversation_id: string
+  channel_connection_id: string
+  name: string
+  contact: string | null
+  platform: string
+  last_message_at: string | null
+}
+
+export interface ActionPreview {
+  executable: boolean
+  reason?: string
+  needs_confirmation?: boolean
+  recipients?: CampaignRecipient[]
+  script?: string | null
+  warning?: string
+  detail?: string
+}
+
+/** The label comes from the backend's executable registry, so "La hace SellIA"
+ *  is only ever shown where there is a real automation behind the button. */
 export const MODE_LABEL: Record<ActionMode, { label: string; className: string }> = {
-  automatic: { label: 'La hace SellIA', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  assisted: { label: 'SellIA te lo prepara', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  automatic: { label: 'La ejecuta SellIA', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  assisted: { label: 'SellIA lo prepara y vos confirmás', className: 'bg-blue-50 text-blue-700 border-blue-200' },
   manual: { label: 'Lo hacés vos', className: 'bg-slate-50 text-slate-600 border-slate-200' },
 }
 

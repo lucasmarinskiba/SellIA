@@ -17,7 +17,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, Float, Integer, String, Text
+from sqlalchemy import Column, DateTime, Enum, Float, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
@@ -83,7 +83,10 @@ class AuthorityAction(Base):
 
     mode = Column(Enum(ActionMode), nullable=False, default=ActionMode.MANUAL)
     status = Column(Enum(ActionStatus), nullable=False, default=ActionStatus.SUGGESTED)
-    impact_points = Column(Integer, nullable=True)  # estimated pillar points, from the gap itself
+    #: Points this would add to the TOTAL score, projected by replaying the
+    #: pillar's own formula with the gap closed. Float, because a real
+    #: projection lands on 4.7 as often as on 5.
+    impact_score = Column(Float, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
