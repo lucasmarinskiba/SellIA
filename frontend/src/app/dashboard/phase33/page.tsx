@@ -20,6 +20,7 @@ import { Loader2, Plug, Bot, ShoppingBag, ExternalLink } from 'lucide-react'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
 import { platformMeta } from '@/lib/platformMeta'
 import ChannelConnectPanel from '@/components/channels/ChannelConnectPanel'
+import MultiPlatformSeller from '@/components/platform-commerce/MultiPlatformSeller'
 
 const MARKETPLACES = ['mercadolibre', 'amazon', 'hotmart', 'shopify', 'tiktok_shop']
 
@@ -83,6 +84,10 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
               <p className="text-xs text-slate-500 mt-1">mensajes que escribió el bot</p>
             </div>
           </div>
+
+          {/* Números reales por plataforma: qué puede hacer SellIA en cada
+              una (derivado del conector), qué vendió y cuál es su margen. */}
+          <MultiPlatformSeller />
 
           {/* Conectar de verdad: formulario real por plataforma + prueba real
               de credenciales contra la propia plataforma. */}
