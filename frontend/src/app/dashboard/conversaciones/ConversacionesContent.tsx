@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import { conversationsApi, ConversationWithPreview, Message, MessageDirection } from '@/lib/conversations'
 import { businessApi, Business } from '@/lib/business'
 import { platformMeta, PLATFORM_META } from '@/lib/platformMeta'
-import { MessageSquare, Send, User, Phone, Mail, Archive, Check, CheckCheck, Clock, Bot } from 'lucide-react'
+import { MessageSquare, Send, User, Phone, Mail, Archive, Check, CheckCheck, Clock, Bot, ChevronDown } from 'lucide-react'
+import PlatformBots from '@/components/chatbots/PlatformBots'
 
 export function ConversacionesContent() {
   const searchParams = useSearchParams()
@@ -13,6 +14,9 @@ export function ConversacionesContent() {
   const [selectedBusiness, setSelectedBusiness] = useState<string>(searchParams?.get('business') || '')
   const [conversations, setConversations] = useState<ConversationWithPreview[]>([])
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
+  // Bots panel is collapsed by default: this page's job is the inbox, and
+  // the fixed-height layout has no room to give up permanently.
+  const [showBots, setShowBots] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -116,6 +120,15 @@ export function ConversacionesContent() {
             Inbox unificado de todos tus canales · prueba en vivo de que la IA responde de verdad
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowBots((v) => !v)}
+          className="ml-auto mr-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <Bot className="w-4 h-4 text-blue-600" />
+          Chatbots por plataforma
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showBots ? 'rotate-180' : ''}`} />
+        </button>
         <select
           value={selectedBusiness}
           onChange={(e) => {
@@ -130,6 +143,12 @@ export function ConversacionesContent() {
           ))}
         </select>
       </div>
+
+      {showBots && (
+        <div className="max-h-[55vh] overflow-y-auto pr-1">
+          <PlatformBots />
+        </div>
+      )}
 
       {/* Real summary + platform filter -- this is what proves the bot is
           actually running per channel, not just a claim in the UI copy */}
