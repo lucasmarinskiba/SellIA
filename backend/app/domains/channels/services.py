@@ -340,6 +340,60 @@ async def _maybe_ai_auto_reply(
     if recent_outbound.scalar_one_or_none():
         return
 
+    # ── Per-platform bot ───────────────────────────────────────────────────
+    # A seller can want the AI answering on MercadoLibre and staying out of
+    # Instagram, or a different bot on each. When a row exists for this
+    # platform it decides; when none does, the old business-wide AgentConfig
+    # behaviour applies unchanged.
+    platform_name = (
+        channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+    )
+    platform_bot = None
+    try:
+        from app.domains.chatbots.service import get_bot
+
+        platform_bot = await get_bot(db, channel.business_id, platform_name)
+    except Exception as e:  # noqa: BLE001 -- never block the reply on config lookup
+        from app.core.logger import get_logger
+
+        get_logger(__name__).warning(
+            "platform bot lookup failed (%s): %s", platform_name, str(e)[:160]
+        )
+        try:
+            await db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+
+    if platform_bot is not None and not platform_bot.enabled:
+        return  # the seller turned the bot off for this platform
+
+    if platform_bot is not None:
+        # Words that mean "get me a human". Flagging the conversation is what
+        # actually stops the AI: the guard at the top of this function already
+        # refuses to answer an awaiting_human conversation, now and later.
+        incoming = (payload.content or "").lower()
+        for keyword in (platform_bot.handoff_keywords or []):
+            if keyword and keyword in incoming:
+                extra = dict(conversation.extra_data or {})
+                extra["awaiting_human"] = True
+                extra["handoff_reason"] = f"el comprador dijo «{keyword}»"
+                conversation.extra_data = extra
+                await db.commit()
+                return
+
+        if platform_bot.max_ai_replies:
+            from sqlalchemy import func as sa_func
+
+            ai_count = await db.execute(
+                select(sa_func.count(Message.id)).where(
+                    Message.conversation_id == conversation.id,
+                    Message.direction == MessageDirection.OUTBOUND,
+                    Message.extra_data["generated_by"].astext == "ai",
+                )
+            )
+            if (ai_count.scalar() or 0) >= platform_bot.max_ai_replies:
+                return  # cap reached: leave the rest to a person
+
     # Check business AI auto-reply config
     from app.domains.agents.models import AgentConfig
     result = await db.execute(
@@ -374,12 +428,28 @@ async def _maybe_ai_auto_reply(
 
     # Generate AI response
     from app.domains.agents.ai_reply import generate_ai_response
+    if platform_bot is not None and platform_bot.personality_slug:
+        personality_slug = platform_bot.personality_slug
+
+    from app.domains.chatbots.models import BotFocus
+
+    force_stage = None
+    if platform_bot is not None:
+        focus_value = (
+            platform_bot.focus.value
+            if hasattr(platform_bot.focus, "value") else str(platform_bot.focus)
+        )
+        if focus_value != BotFocus.AUTO.value:
+            force_stage = focus_value
+
     ai_response = await generate_ai_response(
         db=db,
         conversation=conversation,
         personality_slug=personality_slug,
         business_id=channel.business_id,
+        custom_prompt=(platform_bot.custom_instructions or "") if platform_bot else "",
         voice_slug=voice_slug,
+        force_stage=force_stage,
     )
     if ai_response:
         await send_outbound_message(db, conversation.id, ai_response, generated_by="ai")

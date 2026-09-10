@@ -27,6 +27,7 @@ async def generate_ai_response(
     custom_prompt: str = "",
     voice_slug: Optional[str] = None,
     max_tokens: int = 1500,
+    force_stage: Optional[str] = None,
 ) -> Optional[str]:
     """
     Generate an AI response for a conversation using a personality + optional expert voice.
@@ -88,7 +89,19 @@ async def generate_ai_response(
         )
         business_type = business_result.scalar_one_or_none()
         if business_type:
-            detected_stage = await detect_funnel_stage(db, business_id, conversation)
+            # A per-platform bot can pin the funnel stage: a seller who wants
+            # their Instagram bot to always work on attracting, or their
+            # post-sale WhatsApp to always work on loyalty, overrides the
+            # detector rather than fighting it.
+            detected_stage = None
+            if force_stage:
+                from app.core.prompts.funnel_specialists import FunnelStage
+                try:
+                    detected_stage = FunnelStage(force_stage)
+                except ValueError:
+                    detected_stage = None
+            if detected_stage is None:
+                detected_stage = await detect_funnel_stage(db, business_id, conversation)
             if not voice_slug:
                 # Picks the primary recommended voice for this stage, or A/B
                 # tests between the top 2 when the stage has multiple
