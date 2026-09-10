@@ -3,7 +3,10 @@
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from pydantic import BaseModel, Field
+
+from app.domains.orders.models import OrderStatus as OrderStatusEnum
+from app.domains.orders.models import PaymentStatus as PaymentStatusEnum, ConfigDict, field_serializer
 from app.core.pii_masking import mask_email, mask_phone, mask_name
 
 
@@ -24,9 +27,12 @@ class OrderBase(BaseModel):
     discount_amount: Optional[float] = None
     shipping_cost: Optional[float] = None
     currency: str = "ARS"
-    status: str = "pending"
+    # Typed against the real enums: as plain strings, any typo reached Postgres
+    # and came back as a raw 500 ("invalid input value for enum orderstatus"),
+    # instead of the 422 a client can actually act on.
+    status: OrderStatusEnum = OrderStatusEnum.PENDING
     payment_method: Optional[str] = None
-    payment_status: str = "pending"
+    payment_status: PaymentStatusEnum = PaymentStatusEnum.PENDING
     shipping_address: Dict[str, Any] = Field(default_factory=dict)
     shipping_provider: Optional[str] = None
     tracking_number: Optional[str] = None

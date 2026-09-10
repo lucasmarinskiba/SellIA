@@ -189,7 +189,7 @@ async def sync_platform_orders(
         # platforms really use, never by assumption.
         status_raw = str(norm["status_raw"] or "").lower()
         if any(word in status_raw for word in ("paid", "approved", "complete", "shipped", "delivered")):
-            order.payment_status = PaymentStatus.PAID
+            order.payment_status = PaymentStatus.COMPLETED
             if order.paid_at is None:
                 order.paid_at = norm["created_at"] or datetime.now(timezone.utc)
 
