@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from uuid import UUID
 from typing import Any
 
@@ -55,6 +56,11 @@ async def list_conversations(
     await _get_business_for_user(business_id, current_user, db)
     query = (
         select(Conversation, ChannelConnection)
+        # Eager-load: the loop below reads conv.messages, and a lazy load in an
+        # async request raises MissingGreenlet (SQLAlchemy refuses to do IO
+        # from the sync attribute-access path). This endpoint answered 500 for
+        # every account that actually had a conversation.
+        .options(selectinload(Conversation.messages))
         .outerjoin(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
         .where(
             Conversation.business_id == business_id,

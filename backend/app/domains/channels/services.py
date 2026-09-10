@@ -324,13 +324,18 @@ async def _maybe_ai_auto_reply(
     if payload.content_type in ("order", "abandoned_cart", "customer", "system", "lead"):
         return
 
-    # Check if any outbound message was sent in the last 30 seconds
-    from sqlalchemy import func
+    # Check if any outbound message was sent in the last 30 seconds.
+    # Computed in Python: func.interval("30 seconds") renders as
+    # `interval($1::VARCHAR)`, which Postgres rejects -- interval is a type,
+    # not a function. Every auto-reply attempt died on this query.
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=30)
     recent_outbound = await db.execute(
         select(Message).where(
             Message.conversation_id == conversation.id,
             Message.direction == MessageDirection.OUTBOUND,
-            Message.created_at >= func.now() - func.interval("30 seconds"),
+            Message.created_at >= cutoff,
         )
     )
     if recent_outbound.scalar_one_or_none():
