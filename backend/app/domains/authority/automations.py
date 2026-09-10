@@ -27,7 +27,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -119,10 +119,16 @@ async def review_campaign_recipients(
         .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
         .where(
             Conversation.business_id.in_(business_ids),
-            Conversation.last_message_at >= since,
+            # last_message_at is NULL on every conversation created before it
+            # was fixed (it was assigned from an unflushed column default), so
+            # recency falls back to when the conversation itself started.
+            or_(
+                Conversation.last_message_at >= since,
+                and_(Conversation.last_message_at.is_(None), Conversation.created_at >= since),
+            ),
             ChannelConnection.is_active.is_(True),
         )
-        .order_by(Conversation.last_message_at.desc())
+        .order_by(Conversation.created_at.desc())
         .limit(200)
     )
 

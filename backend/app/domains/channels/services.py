@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from typing import Any, Optional
@@ -328,8 +329,6 @@ async def _maybe_ai_auto_reply(
     # Computed in Python: func.interval("30 seconds") renders as
     # `interval($1::VARCHAR)`, which Postgres rejects -- interval is a type,
     # not a function. Every auto-reply attempt died on this query.
-    from datetime import datetime, timedelta, timezone
-
     cutoff = datetime.now(timezone.utc) - timedelta(seconds=30)
     recent_outbound = await db.execute(
         select(Message).where(
@@ -435,7 +434,11 @@ async def process_incoming_message(
     db.add(message)
     await db.flush()
 
-    conversation.last_message_at = message.created_at
+    # Explicit timestamp, not message.created_at: that column has a Python-side
+    # default, and reading it back off the instance here was yielding None --
+    # leaving last_message_at NULL on every conversation, which is what the
+    # inbox sorts by and what any "recent activity" query filters on.
+    conversation.last_message_at = message.created_at or datetime.now(timezone.utc)
     await db.commit()
 
     # === Procesar confirmaciones de citas ===
@@ -745,7 +748,9 @@ async def send_outbound_message(
         extra_data=extra_data,
     )
     db.add(message)
-    conversation.last_message_at = message.created_at
+    # Was `message.created_at` -- read before any flush, so the column default
+    # had not been applied yet and this assigned None every single time.
+    conversation.last_message_at = datetime.now(timezone.utc)
     await db.commit()
 
     # === Emitir evento de mensaje enviado ===
