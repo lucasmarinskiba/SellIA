@@ -354,20 +354,31 @@ async def resolve_api_keys(
         "ollama": await _is_ollama_available(),
     }
 
-    for provider in ["kimi", "openai", "anthropic", "groq"]:
-        result = await db.execute(
-            select(UserAPIKey).where(
-                UserAPIKey.user_id == business.user_id,
-                UserAPIKey.provider == provider,
-                UserAPIKey.is_active == True,
+    # Per-business keys override the platform ones. If the key store itself is
+    # unreachable (the user_api_keys table did not exist on this deployment at
+    # all), that must degrade to the platform keys resolved above -- not throw,
+    # which is what made the whole app behave as if no provider were configured.
+    try:
+        for provider in ["kimi", "openai", "anthropic", "groq"]:
+            result = await db.execute(
+                select(UserAPIKey).where(
+                    UserAPIKey.user_id == business.user_id,
+                    UserAPIKey.provider == provider,
+                    UserAPIKey.is_active == True,
+                )
             )
-        )
-        key_record = result.scalar_one_or_none()
-        if key_record and key_record.api_key_fernet:
-            try:
-                keys[provider] = decrypt_value(key_record.api_key_fernet).strip()
-            except Exception as e:
-                logger.error(f"Failed to decrypt {provider} key: {e}")
+            key_record = result.scalar_one_or_none()
+            if key_record and key_record.api_key_fernet:
+                try:
+                    keys[provider] = decrypt_value(key_record.api_key_fernet).strip()
+                except Exception as e:
+                    logger.error(f"Failed to decrypt {provider} key: {e}")
+    except Exception as e:
+        logger.warning(f"Per-business API keys unavailable, using platform keys: {e}")
+        try:
+            await db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
 
     return keys
 
