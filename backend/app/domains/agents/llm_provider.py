@@ -491,7 +491,17 @@ async def generate_with_fallback(
             builder = BusinessContextBuilder(db)
             business_context = await builder.build_system_prompt_context(business_id)
         except Exception as exc:
-            logger.debug(f"Auto-load business_context failed: {exc}")
+            # Roll back before carrying on: Postgres aborts the whole
+            # transaction on the first failing statement, so continuing here
+            # without one made the very next query (resolve_api_keys) die with
+            # "current transaction is aborted" -- which looked exactly like
+            # "no API keys configured" and silently downgraded every AI
+            # response in the app to a template.
+            logger.warning(f"Auto-load business_context failed: {exc}")
+            try:
+                await db.rollback()
+            except Exception:  # noqa: BLE001
+                pass
 
     # Inject business context into system prompt if available
     if business_context:
