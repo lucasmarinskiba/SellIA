@@ -119,6 +119,13 @@ _try_include("app.api.v1.memory.router", "/api/v1/memory", ["memory"])
 _try_include("app.api.v1.dashboard.router", "/api/v1", ["dashboard"])
 _try_include("app.api.v1.platforms.router", "/api/v1", ["platforms"])
 _try_include("app.api.v1.order_detail.router", "/api/v1", ["orders"])
+# The orders domain router (create/list orders, revenue summary, attribution)
+# was never mounted anywhere, so every call the frontend makes to /orders --
+# the Órdenes page and the revenue widgets -- has been answering 404.
+# Mounted AFTER order_detail on purpose: both declare GET /orders/{order_id},
+# and FastAPI takes the first match, so order_detail keeps serving the detail
+# view it already served.
+_try_include("app.domains.orders.router.router", "/api/v1", ["orders-domain"])
 _try_include("app.api.v1.listings.router", "/api/v1", ["listings"])
 _try_include("app.domains.finance.router.router", "/api/v1/businesses", ["finance"])
 _try_include("app.domains.ledger.router.router", "/api/v1/businesses", ["ledger"])
