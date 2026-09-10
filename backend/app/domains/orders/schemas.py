@@ -3,10 +3,10 @@
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.domains.orders.models import OrderStatus as OrderStatusEnum
-from app.domains.orders.models import PaymentStatus as PaymentStatusEnum, ConfigDict, field_serializer
+from app.domains.orders.models import PaymentStatus as PaymentStatusEnum
 from app.core.pii_masking import mask_email, mask_phone, mask_name
 
 
