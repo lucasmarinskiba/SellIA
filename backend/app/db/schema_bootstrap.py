@@ -89,7 +89,28 @@ async def ensure_all_tables() -> dict[str, int]:
     # at least one such dangling reference here), which would take down the
     # entire bootstrap over one bad relationship.
     tables = list(CoreBase.metadata.tables.values())
-    pending = tables
+
+    # Ask once which tables already exist, instead of paying a round trip per
+    # table to rediscover it. In the steady state (everything created) this
+    # turns ~450 transactions per boot into a single query, which matters
+    # because it runs on every start.
+    existing: set[str] = set()
+    try:
+        from sqlalchemy import text
+
+        async with engine.connect() as conn:
+            result = await conn.execute(text(
+                "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
+            ))
+            existing = {row[0] for row in result}
+    except Exception as e:  # noqa: BLE001 -- fall back to per-table checkfirst
+        logger.warning("schema bootstrap: could not list existing tables: %s", str(e)[:160])
+
+    pending = [t for t in tables if t.name not in existing]
+    if not pending:
+        logger.info("✅ schema bootstrap: %s domain tables already present", len(tables))
+        return {"tables": len(tables), "created": 0, "skipped": 0}
+
     created = 0
     errors: dict[str, str] = {}
 
