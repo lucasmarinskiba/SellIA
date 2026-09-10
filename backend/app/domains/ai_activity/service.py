@@ -21,6 +21,21 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 
 
+async def _safe_rollback(db: AsyncSession) -> None:
+    """Undo a failed statement so the caller's session stays usable.
+
+    Postgres aborts the whole transaction on the first failing statement, so a
+    lookup that fails and is only logged still kills every query that follows --
+    including ones in a completely different feature that merely called this
+    function. A missing `orders` table was taking down the authority dashboard
+    this way.
+    """
+    try:
+        await db.rollback()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 async def log_ai_action(
     *,
     user_id: Optional[uuid.UUID | str],
@@ -245,6 +260,7 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
             snapshot["verification"]["domain_verified"] = bool(verified)
     except Exception as e:  # noqa: BLE001
         logger.warning("business snapshot: website lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     # ── Channels: one row per real connection, with its real traffic ──
     try:
@@ -281,6 +297,7 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
             })
     except Exception as e:  # noqa: BLE001
         logger.warning("business snapshot: channels lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     # ── Conversations: real response rate, real AI share ──
     try:
@@ -319,6 +336,7 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
         }
     except Exception as e:  # noqa: BLE001
         logger.warning("business snapshot: conversations lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     # ── Revenue: real orders only (no projections, no "avg ticket" guesses) ──
     try:
@@ -348,6 +366,7 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
         }
     except Exception as e:  # noqa: BLE001
         logger.warning("business snapshot: orders lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     return snapshot
 
@@ -390,6 +409,7 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
         }
     except Exception as e:  # noqa: BLE001
         logger.warning("get_account_summary: questionnaire lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     total_result = await db.execute(
         select(func.count()).select_from(AIActionLog).where(AIActionLog.user_id == user.id)
@@ -442,6 +462,7 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             setup["subdomain"] = subdomain
     except Exception as e:  # noqa: BLE001
         logger.warning("get_account_summary: setup/subdomain lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     if questionnaire.get("has_context"):
         try:
@@ -456,6 +477,7 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             setup["has_channel_declared"] = any(bool(v) for v in channels.values())
         except Exception as e:  # noqa: BLE001
             logger.warning("get_account_summary: channels lookup failed: %s", str(e)[:200])
+            await _safe_rollback(db)
 
     setup["setup_complete"] = (
         setup["has_business"]
