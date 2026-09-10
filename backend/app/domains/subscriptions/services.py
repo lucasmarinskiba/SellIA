@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Any
@@ -155,7 +155,39 @@ async def _check_subscription_limit_inner(
     )
     row = result.first()
     if not row:
-        return {"metric": metric_type, "used": 0, "limit": 0, "remaining": 0, "has_limit": True, "allowed": False}
+        # No subscription row is NOT "denied everything". It is an account that
+        # has never been through checkout -- which, on this deployment, is every
+        # account. Returning limit 0 / allowed False here blocked core actions
+        # (connecting a channel answered "Límite de canales alcanzado. Usados:
+        # 0/0"); it went unnoticed only because the subscriptions table did not
+        # exist, so the whole check errored and failed open. The moment the
+        # table was created, the real answer surfaced and locked everyone out.
+        #
+        # Fall back to the free plan's limits when one is defined, and otherwise
+        # allow: refusing to serve a user because billing was never set up is a
+        # product decision nobody made here.
+        free_plan = await db.execute(
+            select(SubscriptionPlan)
+            .where(SubscriptionPlan.slug == "free", SubscriptionPlan.is_active.is_(True))
+            .limit(1)
+        )
+        plan = free_plan.scalar_one_or_none()
+        if plan is None:
+            return {
+                "metric": metric_type, "used": 0, "limit": -1, "remaining": -1,
+                "has_limit": False, "allowed": True, "plan": "sin plan",
+            }
+        limit = (plan.limits or {}).get(metric_type, -1)
+        if limit == -1:
+            return {
+                "metric": metric_type, "used": 0, "limit": -1, "remaining": -1,
+                "has_limit": False, "allowed": True, "plan": plan.slug,
+            }
+        return {
+            "metric": metric_type, "used": 0, "limit": limit,
+            "remaining": max(0, limit - quantity), "has_limit": True,
+            "allowed": quantity <= limit, "plan": plan.slug,
+        }
 
     sub, plan = row
     limits = plan.limits or {}
