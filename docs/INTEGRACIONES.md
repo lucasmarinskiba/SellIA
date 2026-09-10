@@ -22,6 +22,8 @@ claves reemplazan ese mensaje por datos reales, no arreglan un dato falso.
 | Prioridad | Integración | Herramienta | Costo | Variables |
 | --- | --- | --- | --- | --- |
 | 🔴 Primero | Anthropic (Claude) | Agentes IA | pago | `ANTHROPIC_API_KEY` |
+| 🔴 Primero | Resend | Notificaciones | free tier + pago | `RESEND_API_KEY` |
+| 🔴 Primero | MercadoPago | Pagos | pago | `MERCADOPAGO_ACCESS_TOKEN` |
 | 🔴 Primero | Google Search Console API | SEO | gratis | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` |
 | 🔴 Primero | PageSpeed Insights API | SEO | gratis | `GOOGLE_PAGESPEED_API_KEY` |
 | 🔴 Primero | App de Meta (WhatsApp / Instagram / Messenger) | Vendedor Multiplataforma | gratis | `META_APP_ID`, `META_APP_SECRET` |
@@ -198,6 +200,17 @@ claves reemplazan ese mensaje por datos reales, no arreglan un dato falso.
 
 ## Notificaciones
 
+### Resend
+
+- **Proveedor:** Resend
+- **Costo:** free tier + pago
+- **Prioridad:** 🔴 Primero
+- **Variables requeridas:** `RESEND_API_KEY`
+- **Opcionales:** `RESEND_WEBHOOK_SECRET`
+- **Cómo obtenerla:** https://resend.com/docs/introduction
+- **Qué desbloquea:** Envío de emails transaccionales y seguimiento de aperturas.
+- **Qué hace hoy sin esto:** Ya está configurado y en uso.
+
 ### Twilio
 
 - **Proveedor:** Twilio
@@ -221,6 +234,17 @@ claves reemplazan ese mensaje por datos reales, no arreglan un dato falso.
 - **Qué hace hoy sin esto:** Los errores se ven sólo en los logs del deploy.
 
 ## Pagos
+
+### MercadoPago
+
+- **Proveedor:** MercadoPago
+- **Costo:** pago
+- **Prioridad:** 🔴 Primero
+- **Variables requeridas:** `MERCADOPAGO_ACCESS_TOKEN`
+- **Opcionales:** `MERCADOPAGO_PUBLIC_KEY`, `MERCADOPAGO_WEBHOOK_SECRET`
+- **Cómo obtenerla:** https://www.mercadopago.com.ar/developers/es/docs
+- **Qué desbloquea:** Checkout y cobros en Argentina y Latam.
+- **Qué hace hoy sin esto:** Ya está configurado y en uso.
 
 ### Stripe
 
