@@ -132,37 +132,42 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
     return computed, context
 
 
-async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> AuthoritySnapshot:
-    """Measure now and store it, unless the last measurement is very recent."""
+async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> dict[str, Any]:
+    """Measure now and store it, unless the last measurement is very recent.
+
+    Returns plain values, never the ORM object: commit() expires every loaded
+    instance, so reading `snapshot.total_score` after the later commit in
+    sync_actions would trigger a lazy reload -- synchronous IO inside async,
+    which SQLAlchemy refuses with MissingGreenlet.
+    """
     computed, context = await compute_pillars(db, user)
+    total = pillar_calc.total_score(computed)
+    signals = pillar_calc.flatten_signals(computed)
+    now = datetime.now(timezone.utc)
 
     last = await _latest_snapshot(db, user.id)
-    now = datetime.now(timezone.utc)
-    if last is not None and not force and (now - last.captured_at) < MIN_SNAPSHOT_GAP:
+    last_captured_at = last.captured_at if last is not None else None
+
+    if last is not None and not force and (now - last_captured_at) < MIN_SNAPSHOT_GAP:
         # Refresh the existing point instead of stacking a new one.
-        last.total_score = pillar_calc.total_score(computed)
+        last.total_score = total
         last.pillars = computed
-        last.signals = pillar_calc.flatten_signals(computed)
+        last.signals = signals
         last.captured_at = now
         await db.commit()
-        await db.refresh(last)
-        await sync_actions(db, user, computed, context)
-        return last
-
-    snapshot = AuthoritySnapshot(
-        user_id=user.id,
-        business_id=context.get("business_id"),
-        captured_at=now,
-        total_score=pillar_calc.total_score(computed),
-        pillars=computed,
-        signals=pillar_calc.flatten_signals(computed),
-    )
-    db.add(snapshot)
-    await db.commit()
-    await db.refresh(snapshot)
+    else:
+        db.add(AuthoritySnapshot(
+            user_id=user.id,
+            business_id=context.get("business_id"),
+            captured_at=now,
+            total_score=total,
+            pillars=computed,
+            signals=signals,
+        ))
+        await db.commit()
 
     await sync_actions(db, user, computed, context)
-    return snapshot
+    return {"total_score": total, "captured_at": now, "pillars": computed}
 
 
 async def _latest_snapshot(db: AsyncSession, user_id: uuid.UUID) -> Optional[AuthoritySnapshot]:
@@ -380,11 +385,11 @@ async def get_dashboard(db: AsyncSession, user) -> dict[str, Any]:
     snapshot = await capture_snapshot(db, user)
     trend = await get_trend(db, user.id)
     actions = await list_actions(db, user.id)
-    computed = snapshot.pillars or {}
+    computed = snapshot["pillars"]
 
     return {
-        "total_score": snapshot.total_score,
-        "captured_at": snapshot.captured_at.isoformat(),
+        "total_score": snapshot["total_score"],
+        "captured_at": snapshot["captured_at"].isoformat(),
         "pillars": [
             {
                 "key": key,
