@@ -21,6 +21,7 @@ import {
 import { api } from '@/lib/api'
 import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import LinksManager from '@/components/web-presence/LinksManager'
+import AuthorityBuilder from '@/components/authority/AuthorityBuilder'
 import { webPresenceApi, type AuthorityReport } from '@/lib/webPresence'
 
 interface TrustScore {
@@ -104,6 +105,10 @@ export default function AutoridadPage(): React.JSX.Element {
 
       {!snapLoading && !unavailable && snapshot && (
         <div className="space-y-6">
+          {/* ── Constructor de autoridad: score real, tendencia, analista y
+              plan de trabajo de los agentes de psicología. ── */}
+          <AuthorityBuilder />
+
           {/* ── Red de marca: web + redes + e-commerce enlazados entre sí ── */}
           <div className="rounded-xl border border-slate-200 bg-white">
             <div className="p-6 flex items-start justify-between flex-wrap gap-4 border-b border-slate-100">
