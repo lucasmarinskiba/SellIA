@@ -46,8 +46,8 @@ async def measure_now(
     """Force a fresh measurement — used after the user says they did the work."""
     snapshot = await service.capture_snapshot(db, user, force=True)
     return {
-        "total_score": snapshot.total_score,
-        "captured_at": snapshot.captured_at.isoformat(),
+        "total_score": snapshot["total_score"],
+        "captured_at": snapshot["captured_at"].isoformat(),
     }
 
 
