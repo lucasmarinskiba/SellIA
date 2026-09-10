@@ -329,12 +329,27 @@ async def resolve_api_keys(
     # .strip(): a trailing \r/\n on a platform-pasted env var breaks the
     # "Authorization: Bearer <token>" header outright (same class of bug
     # found and fixed in MERCADOPAGO_ACCESS_TOKEN — see mercadopago_processor.py)
-    env_groq = (get_settings().GROQ_API_KEY or "").strip() or None
+    settings = get_settings()
+    env_groq = (settings.GROQ_API_KEY or "").strip() or None
+    # Platform-level keys are a real fallback for every provider, not only Groq.
+    # Without this, an ANTHROPIC_API_KEY configured on the deployment was never
+    # used by anything: keys were read exclusively from per-user UserAPIKey rows,
+    # so every business without its own stored key silently fell through to
+    # template responses while the platform key sat there working and paid for.
+    # A per-business key still wins over the platform one below.
+    env_anthropic = (settings.ANTHROPIC_API_KEY or "").strip() or None
+    env_openai = (settings.OPENAI_API_KEY or "").strip() or None
+
     if not business:
-        return {"kimi": None, "openai": None, "anthropic": None, "groq": env_groq, "ollama": False}
+        return {
+            "kimi": None, "openai": env_openai, "anthropic": env_anthropic,
+            "groq": env_groq, "ollama": False,
+        }
 
     keys: Dict[str, Any] = {
-        "kimi": None, "openai": None, "anthropic": None,
+        "kimi": None,
+        "openai": env_openai,
+        "anthropic": env_anthropic,
         "groq": env_groq,  # env fallback; per-business key overrides below
         "ollama": await _is_ollama_available(),
     }
