@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
-from . import analyzer, fetcher
+from . import analyzer, fetcher, site_files
 from .models import PLATFORM_KINDS, BusinessLink, LinkKind
 
 logger = get_logger(__name__)
@@ -148,15 +148,52 @@ async def audit_link(db: AsyncSession, link: BusinessLink) -> BusinessLink:
 
     if result.ok and "html" in result.content_type.lower():
         audit = analyzer.analyze(result.content, result.final_url)
-        link.audit = audit.as_dict()
+        payload = audit.as_dict()
+
+        # robots.txt / sitemap.xml only for properties the user actually
+        # controls. Running it on a marketplace listing would audit Amazon's
+        # robots.txt and report it as the seller's problem, which it is not.
+        if link.kind == LinkKind.WEBSITE:
+            try:
+                files = await site_files.check(result.final_url)
+                payload["site_files"] = files.as_dict()
+                extra = site_files.issues_from(files)
+                audit.issues = sorted(
+                    audit.issues + extra,
+                    key=lambda i: analyzer.SEVERITY_ORDER.get(i["severity"], 9),
+                )
+                payload["issues"] = audit.issues
+            except Exception as e:  # noqa: BLE001 -- page audit still stands
+                logger.warning("site_files check failed for %s: %s", link.url[:120], str(e)[:200])
+
+        link.audit = payload
         link.seo_score = analyzer.score_page(audit, result.elapsed_ms)
     else:
         link.audit = None
         link.seo_score = None
 
+    _record_history(db, link)
     await db.commit()
     await db.refresh(link)
     return link
+
+
+def _record_history(db: AsyncSession, link: BusinessLink) -> None:
+    """Append this audit to the link's history so progress is real history, not
+    the current value redrawn."""
+    from .models import BusinessLinkAudit
+
+    issues = (link.audit or {}).get("issues", []) if link.audit else []
+    db.add(BusinessLinkAudit(
+        link_id=link.id,
+        user_id=link.user_id,
+        checked_at=link.last_checked_at or datetime.now(timezone.utc),
+        http_status=link.http_status,
+        response_ms=link.response_ms,
+        seo_score=link.seo_score,
+        issues_total=len(issues),
+        issues_critical=sum(1 for i in issues if i.get("severity") == "critical"),
+    ))
 
 
 async def audit_all(db: AsyncSession, user_id: uuid.UUID) -> list[BusinessLink]:
@@ -213,6 +250,8 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
             "title": (link.audit or {}).get("title") if link.audit else None,
             "word_count": (link.audit or {}).get("word_count") if link.audit else None,
             "json_ld_types": (link.audit or {}).get("json_ld_types", []) if link.audit else [],
+            "terms": (link.audit or {}).get("terms") if link.audit else None,
+            "site_files": (link.audit or {}).get("site_files") if link.audit else None,
         }
         pages.append(entry)
         if link.seo_score is not None:
@@ -236,8 +275,82 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         "average_score": round(sum(scored) / len(scored), 1) if scored else None,
         "pages": pages,
         "priorities": priorities[:12],
+        "duplicates": _find_duplicates(links),
+        "history": await _score_history(db, user_id),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+def _find_duplicates(links: list[BusinessLink]) -> list[dict[str, Any]]:
+    """Two pages sharing a title or description compete against each other in
+    the same search. It is invisible page-by-page and obvious across the set --
+    which is exactly why an audit that only ever looks at one URL misses it."""
+    by_title: dict[str, list[str]] = {}
+    by_desc: dict[str, list[str]] = {}
+
+    for link in links:
+        if not link.audit:
+            continue
+        title = (link.audit.get("title") or "").strip().lower()
+        desc = (link.audit.get("meta_description") or "").strip().lower()
+        if title:
+            by_title.setdefault(title, []).append(link.url)
+        if desc:
+            by_desc.setdefault(desc, []).append(link.url)
+
+    duplicates: list[dict[str, Any]] = []
+    for value, urls in by_title.items():
+        if len(urls) > 1:
+            duplicates.append({
+                "kind": "title",
+                "value": value[:120],
+                "urls": urls,
+                "fix": "Escribí un título distinto por página: si dos compiten por la misma "
+                       "búsqueda, Google elige una y descarta la otra.",
+            })
+    for value, urls in by_desc.items():
+        if len(urls) > 1:
+            duplicates.append({
+                "kind": "description",
+                "value": value[:120],
+                "urls": urls,
+                "fix": "Dale a cada página su propia meta description, describiendo lo que esa "
+                       "página específica ofrece.",
+            })
+    return duplicates
+
+
+async def _score_history(db: AsyncSession, user_id: uuid.UUID, limit: int = 30) -> list[dict[str, Any]]:
+    """Average score per audit run, oldest first -- real progress over time."""
+    from .models import BusinessLinkAudit
+
+    result = await db.execute(
+        select(BusinessLinkAudit.checked_at, BusinessLinkAudit.seo_score,
+               BusinessLinkAudit.issues_critical)
+        .where(BusinessLinkAudit.user_id == user_id, BusinessLinkAudit.seo_score.isnot(None))
+        .order_by(BusinessLinkAudit.checked_at.desc())
+        .limit(limit * 4)
+    )
+    rows = list(result.all())
+    if not rows:
+        return []
+
+    # Group by day: several links audited in one run should read as one point.
+    by_day: dict[str, list[tuple[float, int]]] = {}
+    for checked_at, score, critical in rows:
+        day = checked_at.date().isoformat()
+        by_day.setdefault(day, []).append((float(score), int(critical or 0)))
+
+    history = [
+        {
+            "date": day,
+            "average_score": round(sum(s for s, _ in values) / len(values), 1),
+            "pages": len(values),
+            "critical_issues": sum(c for _, c in values),
+        }
+        for day, values in sorted(by_day.items())
+    ]
+    return history[-limit:]
 
 
 async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:

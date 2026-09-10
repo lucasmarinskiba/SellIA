@@ -104,4 +104,34 @@ class BusinessLink(Base):
     )
 
 
-WEB_PRESENCE_TABLES = [BusinessLink.__table__]
+class BusinessLinkAudit(Base):
+    """One historical audit result per link.
+
+    BusinessLink only keeps the LAST audit, which cannot answer the question a
+    user actually has after doing the work: "¿mejoró?". These rows are append
+    only and small (a score and a few counters, not the whole page), so the
+    progress line on the SEO page is real history rather than a redraw of the
+    current value.
+    """
+
+    __tablename__ = "business_link_audits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    link_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("business_links.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    checked_at = Column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    http_status = Column(Integer, nullable=True)
+    response_ms = Column(Integer, nullable=True)
+    seo_score = Column(Float, nullable=True)
+    issues_total = Column(Integer, nullable=True)
+    issues_critical = Column(Integer, nullable=True)
+
+
+WEB_PRESENCE_TABLES = [BusinessLink.__table__, BusinessLinkAudit.__table__]

@@ -71,6 +71,30 @@ export interface BusinessLink {
   audit: PageAudit | null
 }
 
+export interface TermProfile {
+  top_terms: { term: string; score: number; in_title: boolean; in_body: boolean }[]
+  title_terms: string[]
+  promised_not_delivered: string[]
+  distinct_terms: number
+  body_tokens: number
+}
+
+export interface SiteFiles {
+  origin: string
+  robots_found: boolean
+  robots_url: string | null
+  robots_status: number | null
+  blocks_this_page: boolean
+  blocking_rule: string | null
+  sitemaps_declared: string[]
+  sitemap_checked: string | null
+  sitemap_found: boolean
+  sitemap_is_index: boolean
+  sitemap_url_count: number
+  contains_this_page: boolean | null
+  notes: string[]
+}
+
 export interface SeoReportPage {
   id: string
   platform: string
@@ -86,6 +110,22 @@ export interface SeoReportPage {
   title: string | null
   word_count: number | null
   json_ld_types: string[]
+  terms: TermProfile | null
+  site_files: SiteFiles | null
+}
+
+export interface SeoDuplicate {
+  kind: 'title' | 'description'
+  value: string
+  urls: string[]
+  fix: string
+}
+
+export interface SeoHistoryPoint {
+  date: string
+  average_score: number
+  pages: number
+  critical_issues: number
 }
 
 export interface SeoReport {
@@ -94,7 +134,26 @@ export interface SeoReport {
   average_score: number | null
   pages: SeoReportPage[]
   priorities: { key: string; title: string; severity: IssueSeverity; fix: string; pages: number }[]
+  duplicates: SeoDuplicate[]
+  history: SeoHistoryPoint[]
   generated_at: string
+}
+
+export interface CompareRow {
+  label: string
+  mine: number | null
+  theirs: number | null
+  higher_is_better: boolean
+}
+
+export interface CompareResult {
+  ok: boolean
+  error?: string
+  mine?: { url: string; score: number | null; title: string | null }
+  theirs?: { url: string; score: number | null; title: string | null }
+  rows?: CompareRow[]
+  topics_they_cover?: string[]
+  their_schema?: string[]
 }
 
 export interface AuthorityProfile {
@@ -139,6 +198,9 @@ export const webPresenceApi = {
 
   auditAll: (): Promise<BusinessLink[]> =>
     api.post<{ links: BusinessLink[] }>('/web-presence/audit-all').then(r => r.data.links),
+
+  compare: (url: string): Promise<CompareResult> =>
+    api.post<CompareResult>('/web-presence/compare', { url }).then(r => r.data),
 
   seoReport: (): Promise<SeoReport> =>
     api.get<SeoReport>('/web-presence/seo-report').then(r => r.data),
