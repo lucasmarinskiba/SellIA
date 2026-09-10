@@ -29,6 +29,21 @@ logger = get_logger(__name__)
 MIN_SNAPSHOT_GAP = timedelta(hours=6)
 
 
+async def _safe_rollback(db: AsyncSession) -> None:
+    """Undo a failed statement so the session stays usable.
+
+    Postgres aborts the whole transaction on the first failing statement:
+    every later query then dies with "current transaction is aborted". So an
+    optional lookup that fails must roll back, or it takes the entire request
+    down with it -- which is exactly what a missing table did here, turning a
+    silent pre-existing 500 in one endpoint into a 500 in this one.
+    """
+    try:
+        await db.rollback()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
     """The account's real business identity, for grounding the advice."""
     ctx: dict[str, Any] = {}
@@ -44,6 +59,7 @@ async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
             ctx["business_name"] = row[1]
     except Exception as e:  # noqa: BLE001
         logger.warning("authority: business lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     try:
         from app.domains.business_context.models import BusinessContext
@@ -62,6 +78,7 @@ async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
             })
     except Exception as e:  # noqa: BLE001
         logger.warning("authority: context lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     return ctx
 
@@ -89,6 +106,7 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
                 break
     except Exception as e:  # noqa: BLE001
         logger.warning("authority: insights lookup failed: %s", str(e)[:200])
+        await _safe_rollback(db)
 
     trust: dict[str, Any] | None = None
     business_id = context.get("business_id")
@@ -99,6 +117,7 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
             trust = await calculate_trust_score(str(business_id), db)
         except Exception as e:  # noqa: BLE001
             logger.warning("authority: trust score failed: %s", str(e)[:200])
+            await _safe_rollback(db)
 
     computed = {
         "identidad": pillar_calc.identidad(authority_report, context),
