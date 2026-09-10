@@ -17,19 +17,15 @@
 import React from 'react'
 import Link from 'next/link'
 import { Loader2, Plug, Bot, ShoppingBag, ExternalLink } from 'lucide-react'
-import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
+import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import { platformMeta } from '@/lib/platformMeta'
 import ChannelConnectPanel from '@/components/channels/ChannelConnectPanel'
 import MultiPlatformSeller from '@/components/platform-commerce/MultiPlatformSeller'
-
-const MARKETPLACES = ['mercadolibre', 'amazon', 'hotmart', 'shopify', 'tiktok_shop']
 
 export default function VendedorMultiplataformaPage(): React.JSX.Element {
   const { snapshot, loading, unavailable } = useBusinessSnapshot()
 
   const channels = snapshot?.channels ?? []
-  const marketplaceChannels = channels.filter(ch => MARKETPLACES.includes(ch.platform))
-  const totalAiReplies = channels.reduce((acc, ch) => acc + ch.ai_replies, 0)
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -57,34 +53,6 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
 
       {!loading && !unavailable && snapshot && (
         <div className="space-y-6">
-          {/* Cifras reales de la cuenta (cero es cero) */}
-          <div className="grid sm:grid-cols-4 gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-600">Facturación cobrada</p>
-              <p className="text-2xl font-bold text-slate-900">
-                {formatMoney(snapshot.revenue.paid_amount, snapshot.revenue.currency)}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">{snapshot.revenue.orders_paid} órdenes pagadas</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-600">Órdenes totales</p>
-              <p className="text-2xl font-bold text-slate-900">{snapshot.revenue.orders_total}</p>
-              <p className="text-xs text-slate-500 mt-1">
-                {formatMoney(snapshot.revenue.gross_amount, snapshot.revenue.currency)} facturados
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-600">Plataformas conectadas</p>
-              <p className="text-2xl font-bold text-slate-900">{channels.length}</p>
-              <p className="text-xs text-slate-500 mt-1">{marketplaceChannels.length} marketplaces</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <p className="text-sm text-slate-600">Respuestas de la IA</p>
-              <p className="text-2xl font-bold text-slate-900">{totalAiReplies}</p>
-              <p className="text-xs text-slate-500 mt-1">mensajes que escribió el bot</p>
-            </div>
-          </div>
-
           {/* Números reales por plataforma: qué puede hacer SellIA en cada
               una (derivado del conector), qué vendió y cuál es su margen. */}
           <MultiPlatformSeller />
@@ -155,9 +123,9 @@ export default function VendedorMultiplataformaPage(): React.JSX.Element {
           </div>
 
           <p className="text-xs text-slate-500">
-            GMV, ranking de best sellers y tasa de conversión por marketplace no se muestran porque esta
-            cuenta no tiene todavía una integración que traiga esas ventas. Cuando MercadoLibre/Amazon
-            estén conectados y entren órdenes reales, los números aparecen acá solos.
+            Ranking de best sellers y tasa de conversión por marketplace todavía no se muestran: eso
+            necesita que la plataforma reporte visitas e impresiones por publicación, y sólo algunos
+            conectores lo exponen. Facturación, costos y margen ya salen de tus órdenes reales.
           </p>
         </div>
       )}
