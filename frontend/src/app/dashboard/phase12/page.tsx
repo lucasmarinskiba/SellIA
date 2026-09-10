@@ -16,14 +16,16 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Check, CheckCircle2, ChevronDown, Copy, ExternalLink, Loader2, Sparkles,
-  TrendingUp, XCircle,
+  AlertTriangle, Check, CheckCircle2, ChevronDown, Copy, ExternalLink, FileSearch, Loader2,
+  Sparkles, Swords, Tags, TrendingUp, XCircle,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { businessApi, type Business } from '@/lib/business'
 import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import LinksManager from '@/components/web-presence/LinksManager'
-import { webPresenceApi, SEVERITY_STYLE, scoreColor, type SeoReport } from '@/lib/webPresence'
+import {
+  webPresenceApi, SEVERITY_STYLE, scoreColor, type CompareResult, type SeoReport,
+} from '@/lib/webPresence'
 
 interface SeoCheck {
   label: string
@@ -47,6 +49,21 @@ export default function SeoPage(): React.JSX.Element {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [rivalUrl, setRivalUrl] = useState('')
+  const [compare, setCompare] = useState<CompareResult | null>(null)
+  const [comparing, setComparing] = useState(false)
+
+  const runCompare = async (): Promise<void> => {
+    if (!rivalUrl.trim()) return
+    setComparing(true)
+    try {
+      setCompare(await webPresenceApi.compare(rivalUrl.trim()))
+    } catch {
+      setCompare({ ok: false, error: 'No se pudo completar la comparación.' })
+    } finally {
+      setComparing(false)
+    }
+  }
 
   const loadReport = useCallback(async (): Promise<void> => {
     const [rep, sch] = await Promise.all([
@@ -129,6 +146,239 @@ export default function SeoPage(): React.JSX.Element {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Progreso real: histórico de auditorías, no el valor actual redibujado */}
+            {report.history.length > 1 && (
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
+                  <p className="font-medium text-slate-900">Tu progreso</p>
+                  <p className="text-sm text-slate-600">
+                    {(() => {
+                      const first = report.history[0]
+                      const last = report.history[report.history.length - 1]
+                      const delta = Math.round((last.average_score - first.average_score) * 10) / 10
+                      if (delta > 0) return `+${delta} puntos desde el ${first.date}`
+                      if (delta < 0) return `${delta} puntos desde el ${first.date}`
+                      return `sin cambios desde el ${first.date}`
+                    })()}
+                  </p>
+                </div>
+                <div className="flex items-end gap-1 h-20">
+                  {report.history.map(point => (
+                    <div
+                      key={point.date}
+                      title={`${point.date}: ${point.average_score}/100 · ${point.critical_issues} críticos`}
+                      className="flex-1 bg-blue-500/80 rounded-t hover:bg-blue-600"
+                      style={{ height: `${Math.max(4, point.average_score)}%` }}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Cada barra es una corrida de análisis real, no una proyección.
+                </p>
+              </div>
+            )}
+
+            {/* robots.txt + sitemap: deciden si la página puede rankear siquiera */}
+            {report.pages.filter(p => p.site_files).map(page => {
+              const sf = page.site_files as NonNullable<typeof page.site_files>
+              return (
+                <div key={`sf-${page.id}`} className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="font-medium text-slate-900 flex items-center gap-2">
+                    <FileSearch className="w-4 h-4 text-blue-600" /> Rastreo e indexación · {sf.origin}
+                  </p>
+                  <div className="grid sm:grid-cols-3 gap-3 mt-3">
+                    <div className="flex gap-2 items-start">
+                      {sf.blocks_this_page
+                        ? <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        : <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />}
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {sf.blocks_this_page ? 'robots.txt la bloquea' : 'Google puede rastrearla'}
+                        </p>
+                        {sf.blocking_rule && (
+                          <p className="text-xs text-red-600 mt-0.5 font-mono">{sf.blocking_rule}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 items-start">
+                      {sf.robots_found
+                        ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                        : <XCircle className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />}
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {sf.robots_found ? 'robots.txt encontrado' : 'Sin robots.txt'}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {sf.sitemaps_declared.length > 0
+                            ? `declara ${sf.sitemaps_declared.length} sitemap(s)`
+                            : 'no declara sitemap'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 items-start">
+                      {sf.sitemap_found
+                        ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                        : <XCircle className="w-5 h-5 text-slate-300 shrink-0 mt-0.5" />}
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {sf.sitemap_found ? `Sitemap con ${sf.sitemap_url_count} URLs` : 'Sin sitemap'}
+                        </p>
+                        {sf.contains_this_page !== null && (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {sf.contains_this_page ? 'incluye esta página' : 'no incluye esta página'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {sf.notes.map((note, i) => (
+                    <p key={i} className="text-xs text-slate-500 mt-2">{note}</p>
+                  ))}
+                </div>
+              )
+            })}
+
+            {/* Perfil de términos: de qué habla la página según la página misma */}
+            {report.pages.filter(p => p.terms && p.terms.top_terms.length > 0).slice(0, 2).map(page => {
+              const t = page.terms as NonNullable<typeof page.terms>
+              const max = Math.max(...t.top_terms.map(x => x.score), 1)
+              return (
+                <div key={`terms-${page.id}`} className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="font-medium text-slate-900 flex items-center gap-2">
+                    <Tags className="w-4 h-4 text-blue-600" /> De qué habla tu página
+                  </p>
+                  <p className="text-sm text-slate-600 mt-0.5 mb-3 truncate">{page.url}</p>
+                  <div className="space-y-1.5">
+                    {t.top_terms.slice(0, 8).map(term => (
+                      <div key={term.term} className="flex items-center gap-3">
+                        <span className="text-sm text-slate-700 w-48 truncate">{term.term}</span>
+                        <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className={`h-full ${term.in_title ? 'bg-blue-500' : 'bg-slate-300'}`}
+                            style={{ width: `${(term.score / max) * 100}%` }}
+                          />
+                        </div>
+                        {term.in_title && (
+                          <span className="text-[11px] text-blue-600 shrink-0">en el título</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">
+                    Peso calculado sobre tu propio texto (título ×5, H1 ×4, descripción ×3, subtítulos ×2).
+                    No es volumen de búsqueda: eso necesita una API paga y no se inventa acá.
+                  </p>
+                </div>
+              )
+            })}
+
+            {report.duplicates.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+                <p className="font-medium text-slate-900 flex items-center gap-2">
+                  <Copy className="w-4 h-4 text-amber-600" /> Páginas que compiten entre sí
+                </p>
+                <div className="mt-3 space-y-3">
+                  {report.duplicates.map((dup, i) => (
+                    <div key={i}>
+                      <p className="text-sm text-slate-900">
+                        {dup.kind === 'title' ? 'Mismo título' : 'Misma meta description'}:
+                        <span className="font-mono text-xs"> “{dup.value}”</span>
+                      </p>
+                      <ul className="text-xs text-slate-600 mt-1 space-y-0.5">
+                        {dup.urls.map(u => <li key={u} className="truncate">· {u}</li>)}
+                      </ul>
+                      <p className="text-sm text-slate-700 mt-1">{dup.fix}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comparación real contra un competidor */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="font-medium text-slate-900 flex items-center gap-2">
+                <Swords className="w-4 h-4 text-blue-600" /> Compararte con un competidor
+              </p>
+              <p className="text-sm text-slate-600 mt-0.5 mb-3">
+                Pegá la URL de un competidor y la analizamos igual que la tuya, señal por señal.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  value={rivalUrl}
+                  onChange={e => setRivalUrl(e.target.value)}
+                  placeholder="https://competidor.com/producto"
+                  className="flex-1 min-w-[220px] px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={runCompare}
+                  disabled={comparing || !rivalUrl.trim()}
+                  className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 inline-flex items-center gap-2"
+                >
+                  {comparing && <Loader2 className="w-4 h-4 animate-spin" />} Comparar
+                </button>
+              </div>
+
+              {compare && !compare.ok && (
+                <p className="text-sm text-amber-700 mt-3">
+                  No se pudo analizar esa URL: {compare.error}
+                </p>
+              )}
+
+              {compare?.ok && compare.rows && (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-slate-600">
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left font-medium py-2">Señal</th>
+                        <th className="text-right font-medium py-2 px-3">Tu página</th>
+                        <th className="text-right font-medium py-2 px-3">Competidor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr>
+                        <td className="py-2 font-medium text-slate-900">Score</td>
+                        <td className={`py-2 px-3 text-right font-bold ${scoreColor(compare.mine?.score ?? null)}`}>
+                          {compare.mine?.score ?? '—'}
+                        </td>
+                        <td className={`py-2 px-3 text-right font-bold ${scoreColor(compare.theirs?.score ?? null)}`}>
+                          {compare.theirs?.score ?? '—'}
+                        </td>
+                      </tr>
+                      {compare.rows.map(r => {
+                        const mine = r.mine ?? 0
+                        const theirs = r.theirs ?? 0
+                        const iWin = r.higher_is_better ? mine >= theirs : mine <= theirs
+                        return (
+                          <tr key={r.label}>
+                            <td className="py-2 text-slate-700">{r.label}</td>
+                            <td className={`py-2 px-3 text-right ${iWin ? 'text-emerald-600 font-semibold' : 'text-slate-700'}`}>
+                              {r.mine ?? '—'}
+                            </td>
+                            <td className={`py-2 px-3 text-right ${!iWin ? 'text-emerald-600 font-semibold' : 'text-slate-700'}`}>
+                              {r.theirs ?? '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  {compare.topics_they_cover && compare.topics_they_cover.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-slate-900">Temas que ellos cubren y vos no</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {compare.topics_they_cover.map(topic => (
+                          <span key={topic} className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {report.priorities.length > 0 && (

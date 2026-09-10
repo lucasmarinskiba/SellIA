@@ -22,6 +22,8 @@ from html.parser import HTMLParser
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
 
+from . import terms
+
 SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
 
 # Google truncates around these; they are display limits, not guesses.
@@ -52,6 +54,9 @@ class PageAudit:
     twitter_card: dict[str, str] = field(default_factory=dict)
     word_count: int = 0
     is_https: bool = False
+    #: Weighted term profile of the page (see terms.py). Never search volume --
+    #: only what this page itself actually says.
+    terms: dict[str, Any] = field(default_factory=dict)
     issues: list[dict[str, str]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
@@ -79,6 +84,7 @@ class PageAudit:
             "twitter_card": self.twitter_card,
             "word_count": self.word_count,
             "is_https": self.is_https,
+            "terms": self.terms,
             "issues": self.issues,
         }
 
@@ -96,6 +102,9 @@ class _PageParser(HTMLParser):
         self._heading: Optional[str] = None
         self._text_parts: list[str] = []
         self.raw_links: list[str] = []
+        #: H2/H3 text, kept (not just counted) so the term profile can weight
+        #: subheadings above body prose.
+        self.subheadings: list[str] = []
 
     # ── tags ──
     def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
@@ -170,6 +179,10 @@ class _PageParser(HTMLParser):
             text = data.strip()
             if text:
                 self.audit.h1.append(text)
+        elif self._heading in ("h2", "h3"):
+            text = data.strip()
+            if text:
+                self.subheadings.append(text)
         self._text_parts.append(data)
 
     # ── structured data ──
@@ -238,6 +251,14 @@ def analyze(html: str, final_url: str) -> PageAudit:
             if host not in hosts:
                 hosts.append(host)
     audit.external_hosts = hosts[:60]
+
+    audit.terms = terms.extract(
+        title=audit.title,
+        description=audit.meta_description,
+        h1=audit.h1,
+        subheadings=parser.subheadings,
+        body_text=parser.text,
+    )
 
     audit.issues = _find_issues(audit)
     return audit
@@ -325,6 +346,18 @@ def _find_issues(a: PageAudit) -> list[dict[str, str]]:
         add("warning", "thin_content", "Contenido escaso",
             f"Solo {a.word_count} palabras: a Google le sobra poco texto para entender el tema.",
             "Sumá descripción real del producto/servicio, preguntas frecuentes y casos de uso.")
+
+    # Consistency between what the title promises and what the page says. This
+    # is the one "keyword" check that needs no external data: the evidence is
+    # entirely inside the page.
+    missing_terms = (a.terms or {}).get("promised_not_delivered") or []
+    if missing_terms and a.word_count >= 50:
+        shown = ", ".join(missing_terms[:4])
+        add("warning", "title_not_in_body", "El título promete algo que la página no dice",
+            f"Tu título usa {shown}, pero esas palabras no aparecen en el texto de la página. "
+            "Google contrasta título y contenido: si no coinciden, se queda con el contenido.",
+            f"Escribí al menos un párrafo real sobre {shown}, o cambiá el título por lo que la "
+            "página realmente ofrece.")
 
     if not a.lang:
         add("info", "no_lang", "Sin atributo lang",
