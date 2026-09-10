@@ -1259,6 +1259,13 @@ async def lifespan(app: FastAPI):
         await ensure_orders_tables()
         from app.domains.agents.keys_bootstrap import ensure_llm_support_tables
         await ensure_llm_support_tables()
+        # Everything the ORM declares, not only the domains that happened to
+        # get their own bootstrap. See app/db/schema_bootstrap.py: migrations
+        # are disabled here and init_db() skipped the CoreBase tables, so most
+        # domain tables never existed and their absence surfaced as ordinary
+        # emptiness in the UI.
+        from app.db.schema_bootstrap import ensure_all_tables
+        await ensure_all_tables()
         from app.db.leads_bootstrap import ensure_leads_owner_column
         await ensure_leads_owner_column()
         from app.domains.hr.models import HR_TABLES
