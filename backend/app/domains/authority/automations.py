@@ -187,6 +187,7 @@ async def send_review_campaign(
         )
 
     sent, failed = 0, 0
+    last_error: Optional[str] = None
     for recipient in recipients:
         try:
             message = script.replace("{nombre}", recipient["name"])
@@ -206,16 +207,29 @@ async def send_review_campaign(
         except Exception as e:  # noqa: BLE001 -- one bad recipient must not sink the batch
             logger.warning("review campaign: send failed for %s: %s",
                            recipient["conversation_id"], str(e)[:200])
+            last_error = str(e)[:200]
             failed += 1
 
     await db.commit()
+
+    # Zero sends is a failure, not a completed automation. Reporting
+    # executed: true here (and letting the caller tick the action off) would be
+    # the same lie as a metric nobody measured: the platform rejected every
+    # message, usually because its credentials are wrong.
+    if sent == 0:
+        raise NotExecutable(
+            f"No se pudo enviar ninguno de los {failed} mensajes. La plataforma los rechazó"
+            + (f": {last_error}" if last_error else ".")
+            + " Revisá las credenciales del canal en Vendedor Multiplataforma."
+        )
+
     return {
         "executed": True,
         "sent": sent,
         "failed": failed,
         "detail": (
             f"Pedido de reseña enviado a {sent} cliente(s) reales por su propio canal."
-            + (f" {failed} no se pudieron enviar." if failed else "")
+            + (f" {failed} no se pudieron enviar: {last_error}" if failed else "")
         ),
     }
 
