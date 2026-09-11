@@ -39,8 +39,8 @@ class User(Base):
     country_code = Column(String(2), default="AR", nullable=False)
     preferred_currency = Column(String(3), default="ARS", nullable=False)
     timezone = Column(String(64), default="America/Argentina/Buenos_Aires", nullable=False)
-    billing_address = Column(String, nullable=True)
-    payment_methods = Column(String, nullable=True)
+    billing_address = Column(JSONB, nullable=True)
+    payment_methods = Column(JSONB, nullable=True)
 
     businesses = relationship("Business", back_populates="user", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
