@@ -146,9 +146,15 @@ async def lifespan(app: FastAPI):
                     await db.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))
                 if "is_2fa_enabled" not in cols:
                     await db.execute(text("ALTER TABLE users ADD COLUMN is_2fa_enabled BOOLEAN DEFAULT 0"))
+                # Email OTP is a second factor of its own: a user can have it
+                # without TOTP, so it needs its own flag rather than sharing
+                # is_2fa_enabled with the authenticator app.
+                if "email_otp_enabled" not in cols:
+                    await db.execute(text("ALTER TABLE users ADD COLUMN email_otp_enabled BOOLEAN DEFAULT 0"))
             else:
                 await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"))
                 await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN DEFAULT false"))
+                await db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_otp_enabled BOOLEAN DEFAULT false"))
             await db.commit()
         logger.info("✅ 2FA schema migrated")
     except Exception as e:

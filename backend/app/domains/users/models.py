@@ -31,6 +31,9 @@ class User(Base):
     # 2FA / MFA
     totp_secret = Column(EncryptedString, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False, nullable=False)
+    #: Second factor by emailed code, independent from the authenticator app:
+    #: a user can have one, the other, or both.
+    email_otp_enabled = Column(Boolean, default=False, nullable=False)
 
     # Region & billing (must match signup.py INSERT schema)
     country_code = Column(String(2), default="AR", nullable=False)
