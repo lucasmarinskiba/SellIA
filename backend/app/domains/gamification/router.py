@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, resolve_business_id
 from app.domains.users.models import User
 
 from app.domains.gamification.models import UserGamificationProfile, Achievement, UserAchievement, CelebrationEvent
@@ -32,7 +32,7 @@ async def get_profile(
     engine = GamificationEngine(db)
     profile = await engine.get_or_create_profile(
         current_user.id,
-        current_user.business_id or current_user.id,
+        await resolve_business_id(db, current_user),
     )
     return profile
 
@@ -44,7 +44,7 @@ async def record_login(
 ):
     """Record daily login, update streaks, check achievements."""
     engine = GamificationEngine(db)
-    business_id = current_user.business_id or current_user.id
+    business_id = await resolve_business_id(db, current_user)
 
     result = await engine.record_login(current_user.id, business_id)
     welcome_msg = await engine.get_companion_message(current_user.id, business_id, "welcome")
@@ -110,7 +110,7 @@ async def get_garden(
 ):
     """Get user's Business Garden state."""
     engine = GamificationEngine(db)
-    business_id = current_user.business_id or current_user.id
+    business_id = await resolve_business_id(db, current_user)
     profile = await engine.get_or_create_profile(current_user.id, business_id)
     return {
         "garden": profile.garden_state,
@@ -127,7 +127,7 @@ async def garden_action(
 ):
     """Trigger a garden update action."""
     engine = GamificationEngine(db)
-    business_id = current_user.business_id or current_user.id
+    business_id = await resolve_business_id(db, current_user)
     result = await engine.update_garden(current_user.id, business_id, action)
     return result
 
@@ -140,7 +140,7 @@ async def get_companion_message(
 ):
     """Get a personalized companion message."""
     engine = GamificationEngine(db)
-    business_id = current_user.business_id or current_user.id
+    business_id = await resolve_business_id(db, current_user)
     msg = await engine.get_companion_message(current_user.id, business_id, context)
 
     # Update companion state
@@ -176,7 +176,7 @@ async def mood_checkin(
         from app.domains.agents.ai_reply import generate_raw_ai_response
         companion_response = await generate_raw_ai_response(
             db=db,
-            business_id=current_user.business_id or current_user.id,
+            business_id=await resolve_business_id(db, current_user),
             system_prompt="Eres Selia, la compañera AI de un emprendedor. Respondes a su check-in de humor con empatía, motivación y calidez. Máximo 2 oraciones. Tono: amiga cercana, no robótica.",
             user_prompt=f"Mi humor hoy es: {data.mood}. Nivel de energía: {data.energy_level}/10. Notas: {data.notes or 'Ninguna'}. Respondeme como mi compañera.",
             max_tokens=200,
@@ -194,7 +194,7 @@ async def mood_checkin(
     engine = GamificationEngine(db)
     profile = await engine.get_or_create_profile(
         current_user.id,
-        current_user.business_id or current_user.id,
+        await resolve_business_id(db, current_user),
     )
     profile.user_mood_today = data.mood
     profile.mood_history.append({

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, resolve_business_id
 from app.domains.users.models import User
 
 from app.domains.growth.models import (
@@ -50,7 +50,7 @@ async def get_growth_dashboard(
 ):
     """Get unified organic growth dashboard metrics."""
     engine = InboundGrowthEngine(db)
-    return await engine.get_dashboard_metrics(current_user.business_id)
+    return await engine.get_dashboard_metrics(await resolve_business_id(db, current_user))
 
 
 # ========== Campaigns ==========
@@ -64,7 +64,7 @@ async def create_campaign(
     """Create a new organic growth campaign."""
     engine = InboundGrowthEngine(db)
     campaign = await engine.create_campaign(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         name=data.name,
         campaign_type=GrowthCampaignType(data.campaign_type),
         description=data.description,
@@ -86,7 +86,7 @@ async def list_campaigns(
     """List growth campaigns with optional filters."""
     engine = InboundGrowthEngine(db)
     campaigns = await engine.get_campaigns(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         campaign_type=GrowthCampaignType(campaign_type) if campaign_type else None,
         status=GrowthCampaignStatus(status) if status else None,
     )
@@ -138,7 +138,7 @@ async def create_lead_magnet(
     engine = LeadMagnetEngine(db)
     from app.domains.growth.models import LeadMagnetFormat
     magnet = await engine.generate_lead_magnet(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         topic=data.topic,
         magnet_format=LeadMagnetFormat(data.magnet_format),
         target_audience=data.target_audience,
@@ -156,7 +156,7 @@ async def list_lead_magnets(
     from sqlalchemy import select, desc
     result = await db.execute(
         select(LeadMagnet).where(
-            LeadMagnet.business_id == current_user.business_id,
+            LeadMagnet.business_id == await resolve_business_id(db, current_user),
             LeadMagnet.is_active == True,
         ).order_by(desc(LeadMagnet.created_at))
     )
@@ -182,7 +182,7 @@ async def get_top_lead_magnets(
 ):
     """Get top performing lead magnets."""
     engine = LeadMagnetEngine(db)
-    return await engine.get_top_performing_magnets(current_user.business_id, limit)
+    return await engine.get_top_performing_magnets(await resolve_business_id(db, current_user), limit)
 
 
 # ========== Inbound Leads ==========
@@ -196,7 +196,7 @@ async def capture_inbound_lead(
     """Capture a new organic inbound lead."""
     engine = InboundGrowthEngine(db)
     lead = await engine.capture_inbound_lead(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         source_type=data.source_type,
         conversation_id=data.conversation_id,
         campaign_id=data.campaign_id,
@@ -218,7 +218,7 @@ async def list_inbound_leads(
     """List inbound leads with filters."""
     engine = InboundGrowthEngine(db)
     return await engine.get_leads(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         stage=NurturingStage(stage) if stage else None,
         source_type=source_type,
         limit=limit,
@@ -239,7 +239,7 @@ async def generate_seo_blog_post(
     """Generate an SEO-optimized blog post."""
     pipeline = SEOPipeline(db)
     content = await pipeline.generate_blog_post(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         keyword=keyword,
         search_intent=search_intent,
         word_count=word_count,
@@ -259,7 +259,7 @@ async def generate_seo_guide(
     """Generate a how-to guide."""
     pipeline = SEOPipeline(db)
     content = await pipeline.generate_guide(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         topic=topic,
         difficulty=difficulty,
         campaign_id=campaign_id,
@@ -275,7 +275,7 @@ async def get_scheduled_content(
 ):
     """Get scheduled SEO content."""
     pipeline = SEOPipeline(db)
-    return await pipeline.get_scheduled_content(current_user.business_id, platform)
+    return await pipeline.get_scheduled_content(await resolve_business_id(db, current_user), platform)
 
 
 # ========== Social Proof ==========
@@ -291,7 +291,7 @@ async def get_social_proof_wall(
     """Get approved social proof items."""
     engine = SocialProofEngine(db)
     items = await engine.get_social_proof_wall(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         item_type=SocialProofType(item_type) if item_type else None,
         count=count,
         min_rating=min_rating,
@@ -308,7 +308,7 @@ async def collect_social_proof(
     """Collect a testimonial/review."""
     engine = SocialProofEngine(db)
     item = await engine.collect_testimonial(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         conversation_id=data.conversation_id,
         content=data.content,
         order_id=data.order_id,
@@ -350,7 +350,7 @@ async def get_social_proof_stats(
 ):
     """Get social proof statistics."""
     engine = SocialProofEngine(db)
-    return await engine.get_stats(current_user.business_id)
+    return await engine.get_stats(await resolve_business_id(db, current_user))
 
 
 @router.get("/social-proof/moderation-queue", response_model=List[SocialProofResponse])
@@ -360,7 +360,7 @@ async def get_moderation_queue(
 ):
     """Get pending social proof items for moderation."""
     engine = SocialProofEngine(db)
-    return await engine.get_moderation_queue(current_user.business_id)
+    return await engine.get_moderation_queue(await resolve_business_id(db, current_user))
 
 
 # ========== UGC ==========
@@ -374,7 +374,7 @@ async def create_ugc_request(
     """Create a UGC request."""
     engine = UGCCollector(db)
     request = await engine.request_ugc(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         order_id=data.order_id,
         conversation_id=data.conversation_id,
         content_type=data.content_type,
@@ -404,7 +404,7 @@ async def get_ugc_gallery(
 ):
     """Get approved UGC gallery."""
     engine = UGCCollector(db)
-    return await engine.get_ugc_gallery(current_user.business_id, content_type, limit)
+    return await engine.get_ugc_gallery(await resolve_business_id(db, current_user), content_type, limit)
 
 
 @router.post("/ugc/requests/{request_id}/approve", response_model=UgcRequestResponse)
@@ -429,7 +429,7 @@ async def create_referral_campaign(
     """Create or update a referral program."""
     engine = ViralReferralEngine(db)
     program = await engine.create_referral_campaign(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         name=data.name,
         incentive_type=data.incentive_type,
         reward_value=data.reward_value,
@@ -448,7 +448,7 @@ async def generate_referral_link(
     """Generate a referral code for a customer."""
     engine = ViralReferralEngine(db)
     code = await engine.generate_referral_link(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         conversation_id=conversation_id,
         program_id=program_id,
     )
@@ -462,7 +462,7 @@ async def get_referral_metrics(
 ):
     """Get viral coefficient and referral metrics."""
     engine = ViralReferralEngine(db)
-    return await engine.calculate_viral_coefficient(current_user.business_id)
+    return await engine.calculate_viral_coefficient(await resolve_business_id(db, current_user))
 
 
 @router.get("/referrals/report", response_model=ReferralCampaignReport)
@@ -472,7 +472,7 @@ async def get_referral_report(
 ):
     """Get full referral campaign report."""
     engine = ViralReferralEngine(db)
-    return await engine.get_campaign_report(current_user.business_id)
+    return await engine.get_campaign_report(await resolve_business_id(db, current_user))
 
 
 # ========== Value Sequences ==========
@@ -486,7 +486,7 @@ async def create_value_sequence(
     """Create an educational value sequence."""
     engine = ValueFirstOutreach(db)
     sequence = await engine.create_educational_sequence(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         name=data.name,
         topic=data.topic,
         message_count=data.message_count,
@@ -506,7 +506,7 @@ async def list_value_sequences(
     from sqlalchemy import select
     result = await db.execute(
         select(ValueSequence).where(
-            ValueSequence.business_id == current_user.business_id,
+            ValueSequence.business_id == await resolve_business_id(db, current_user),
             ValueSequence.is_active == True,
         )
     )
@@ -548,7 +548,7 @@ async def get_warming_leads(
 ):
     """Get leads that are showing warming signals."""
     engine = WarmLeadDetector(db)
-    return await engine.scan_for_warming_leads(current_user.business_id, lookback_hours)
+    return await engine.scan_for_warming_leads(await resolve_business_id(db, current_user), lookback_hours)
 
 
 @router.get("/warming-leads/report")
@@ -559,7 +559,7 @@ async def get_warming_report(
 ):
     """Get warming leads report."""
     engine = WarmLeadDetector(db)
-    return await engine.get_warming_report(current_user.business_id, days)
+    return await engine.get_warming_report(await resolve_business_id(db, current_user), days)
 
 
 # ========== Voice Notes ==========
@@ -573,7 +573,7 @@ async def generate_welcome_voice_note(
 ):
     """Generate a welcome voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_welcome_voice_note(current_user.business_id, lead_name, source)
+    script = await engine.generate_welcome_voice_note(await resolve_business_id(db, current_user), lead_name, source)
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
@@ -587,7 +587,7 @@ async def generate_value_voice_note(
 ):
     """Generate a value voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_value_voice_note(current_user.business_id, lead_name, topic, tip)
+    script = await engine.generate_value_voice_note(await resolve_business_id(db, current_user), lead_name, topic, tip)
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
@@ -600,7 +600,7 @@ async def generate_soft_close_voice_note(
 ):
     """Generate a soft-close voice note script."""
     engine = VoiceNoteEngine(db)
-    script = await engine.generate_soft_close_voice_note(current_user.business_id, lead_name, product_name)
+    script = await engine.generate_soft_close_voice_note(await resolve_business_id(db, current_user), lead_name, product_name)
     return {"script": script, "estimated_seconds": len(script.split()) // 2}
 
 
@@ -615,7 +615,7 @@ async def syndicate_content(
 ):
     """Syndicate content across multiple platforms."""
     engine = ContentSyndicationEngine(db)
-    return await engine.syndicate_content(current_user.business_id, content_id, platforms)
+    return await engine.syndicate_content(await resolve_business_id(db, current_user), content_id, platforms)
 
 
 # ========== Comment Responder ==========
@@ -634,7 +634,7 @@ async def process_comment(
     """Process a social media comment and generate response strategy."""
     engine = CommentResponder(db)
     return await engine.process_comment(
-        business_id=current_user.business_id,
+        business_id=await resolve_business_id(db, current_user),
         platform=platform,
         post_id=post_id,
         comment_id=comment_id,
@@ -652,4 +652,4 @@ async def get_comment_analytics(
 ):
     """Get comment engagement analytics."""
     engine = CommentResponder(db)
-    return await engine.get_comment_analytics(current_user.business_id, days)
+    return await engine.get_comment_analytics(await resolve_business_id(db, current_user), days)
