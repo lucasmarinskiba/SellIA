@@ -1,19 +1,24 @@
 """Orders API Router"""
 
+import csv
+import io
 from uuid import UUID
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.domains.users.models import User
-from app.domains.orders.models import Order, OrderStatus, PaymentStatus, RevenueEvent
+from app.domains.orders.models import Order, OrderStatus, RevenueEvent
 from app.domains.orders.schemas import OrderCreate, OrderUpdate, OrderResponse, RevenueSummary, AttributionSummary
 from app.domains.orders.revenue import RevenueAttributionEngine
+from app.domains.orders import status_flow, table as orders_table
 from app.domains.automations.models import Workflow
 from app.domains.services.models import ServiceDelivery, ServiceDeliveryStatus, Appointment, AppointmentStatus
 from app.domains.services.schemas import ServiceDeliveryResponse, AppointmentResponse
@@ -32,12 +37,18 @@ async def list_orders(
 ):
     query = select(Order).where(Order.business_id == business_id, Order.is_active == True)
     if status:
-        query = query.where(Order.status == status)
+        parsed = status_flow.parse_status(status)
+        if not parsed:
+            raise HTTPException(status_code=422, detail=f"Estado desconocido: {status}")
+        query = query.where(Order.status == parsed)
     if search:
+        # customer_name/email/phone are encrypted at rest, so ILIKE compares
+        # ciphertext and never matches — searching them needs decryption, which
+        # /orders/table does. Here, only the columns stored in clear.
         query = query.where(
             Order.order_number.ilike(f"%{search}%") |
-            Order.customer_name.ilike(f"%{search}%") |
-            Order.customer_email.ilike(f"%{search}%")
+            Order.external_id.ilike(f"%{search}%") |
+            Order.tracking_number.ilike(f"%{search}%")
         )
     result = await db.execute(query.order_by(desc(Order.created_at)))
     return result.scalars().all()
@@ -103,6 +114,199 @@ async def create_order(
     return order
 
 
+# ========== Spreadsheet ==========
+# Declared before /{order_id}: FastAPI matches in order, and "table" would
+# otherwise be parsed as a UUID path param.
+
+
+def _table_query(
+    search: Optional[str],
+    status_in: Optional[str],
+    payment_status: Optional[str],
+    platform: Optional[str],
+    channel: Optional[str],
+    currency: Optional[str],
+    date_from: Optional[datetime],
+    date_to: Optional[datetime],
+    amount_min: Optional[float],
+    amount_max: Optional[float],
+    has_tracking: Optional[bool],
+    sort_by: str,
+    sort_dir: str,
+    page: int,
+    page_size: int,
+) -> orders_table.TableQuery:
+    def split(raw: Optional[str]) -> list[str]:
+        return [part.strip() for part in raw.split(",") if part.strip()] if raw else []
+
+    return orders_table.TableQuery(
+        search=search,
+        status=split(status_in),
+        payment_status=split(payment_status),
+        platform=split(platform),
+        channel=split(channel),
+        currency=split(currency),
+        date_from=date_from,
+        date_to=date_to,
+        amount_min=amount_min,
+        amount_max=amount_max,
+        has_tracking=has_tracking,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/table")
+async def orders_spreadsheet(
+    business_id: UUID = Query(...),
+    search: Optional[str] = None,
+    status_in: Optional[str] = Query(None, description="Lista separada por comas"),
+    payment_status: Optional[str] = None,
+    platform: Optional[str] = None,
+    channel: Optional[str] = None,
+    currency: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    amount_min: Optional[float] = None,
+    amount_max: Optional[float] = None,
+    has_tracking: Optional[bool] = None,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """A page of the orders sheet, with totals and facets over the whole filter."""
+    query = _table_query(
+        search, status_in, payment_status, platform, channel, currency,
+        date_from, date_to, amount_min, amount_max, has_tracking,
+        sort_by, sort_dir, page, page_size,
+    )
+    data = await orders_table.fetch_table(db, business_id, query)
+    data["columns"] = [
+        {"key": key, "label": label, "sortable": key in orders_table.SORTABLE}
+        for key, label in orders_table.EXPORT_COLUMNS
+    ]
+    data["transitions"] = status_flow.ALLOWED_TRANSITIONS
+    return data
+
+
+@router.get("/export.csv")
+async def export_orders_csv(
+    business_id: UUID = Query(...),
+    search: Optional[str] = None,
+    status_in: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    platform: Optional[str] = None,
+    channel: Optional[str] = None,
+    currency: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    amount_min: Optional[float] = None,
+    amount_max: Optional[float] = None,
+    has_tracking: Optional[bool] = None,
+    sort_by: str = "created_at",
+    sort_dir: str = "desc",
+    limit: int = Query(5000, ge=1, le=20000),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """The same filtered sheet as a CSV Excel opens directly.
+
+    Customer columns come out masked, exactly as they render on screen: the
+    export is a copy of the view, not a way around the masking policy.
+    """
+    query = _table_query(
+        search, status_in, payment_status, platform, channel, currency,
+        date_from, date_to, amount_min, amount_max, has_tracking,
+        sort_by, sort_dir, 1, limit,
+    )
+    data = await orders_table.fetch_table(db, business_id, query)
+
+    buffer = io.StringIO()
+    # Excel in es-AR reads ; as the column separator; BOM so it detects UTF-8.
+    writer = csv.writer(buffer, delimiter=";")
+    writer.writerow([label for _, label in orders_table.EXPORT_COLUMNS])
+    for row in data["rows"]:
+        writer.writerow([row.get(key, "") if row.get(key) is not None else "" for key, _ in orders_table.EXPORT_COLUMNS])
+    writer.writerow([])
+    for total in data["totals"]:
+        writer.writerow([
+            f"TOTAL {total['currency']}", "", "", "", "", "", "",
+            total["orders"], total["revenue"], total["currency"],
+        ])
+    if data["total"] > len(data["rows"]):
+        writer.writerow([f"Exportadas {len(data['rows'])} de {data['total']} órdenes del filtro"])
+
+    payload = "﻿" + buffer.getvalue()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    return StreamingResponse(
+        iter([payload]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="ordenes-{stamp}.csv"'},
+    )
+
+
+class BulkStatusRequest(BaseModel):
+    order_ids: list[UUID] = Field(..., min_length=1, max_length=200)
+    status: str
+
+
+@router.post("/bulk-status")
+async def bulk_update_status(
+    data: BulkStatusRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Move many orders at once, one verdict per order.
+
+    Orders whose current state does not allow the move are reported as skipped
+    with the reason — a bulk action that says "50 actualizadas" when 12 were
+    illegal is the kind of number this product does not print.
+    """
+    new_status = status_flow.parse_status(data.status)
+    if not new_status:
+        raise HTTPException(status_code=422, detail=f"Estado desconocido: {data.status}")
+
+    result = await db.execute(select(Order).where(Order.id.in_(data.order_ids)))
+    orders = result.scalars().all()
+    found = {order.id for order in orders}
+
+    outcomes: list[dict] = []
+    pending_triggers: list[dict] = []
+    changed = 0
+    for order in orders:
+        verdict = status_flow.apply_status(order, new_status)
+        if verdict["changed"]:
+            changed += 1
+            if verdict.get("fires_service_paid"):
+                pending_triggers.append(status_flow.service_paid_payload(order))
+        outcomes.append({
+            "order_id": str(order.id),
+            "changed": verdict["changed"],
+            "reason": verdict.get("reason"),
+        })
+    for missing in data.order_ids:
+        if missing not in found:
+            outcomes.append({"order_id": str(missing), "changed": False, "reason": "No encontrada"})
+
+    if changed:
+        await db.commit()
+    for payload in pending_triggers:
+        await status_flow.fire_service_paid(db, payload)
+
+    return {
+        "requested": len(data.order_ids),
+        "updated": changed,
+        "skipped": len(outcomes) - changed,
+        "status": new_status.value,
+        "results": outcomes,
+    }
+
+
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: UUID,
@@ -130,35 +334,28 @@ async def update_order(
 
     update_data = data.model_dump(exclude_unset=True)
 
-    # Auto-set timestamps based on status changes
-    if "status" in update_data:
-        new_status = update_data["status"]
-        if new_status == OrderStatus.PAID.value and not order.paid_at:
-            update_data["paid_at"] = datetime.now(timezone.utc)
-            update_data["payment_status"] = PaymentStatus.COMPLETED.value
-            # Emit service_paid trigger if order contains service items
-            if order.items and any(item.get("type") == "service" for item in order.items):
-                from app.domains.automations.engine import WorkflowEngine
-                engine = WorkflowEngine(db)
-                await engine.process_trigger(
-                    trigger_type="service_paid",
-                    business_id=order.business_id,
-                    conversation_id=order.conversation_id,
-                    trigger_data={"order_id": str(order.id), "total_amount": float(order.total_amount)},
-                )
-        elif new_status == OrderStatus.SHIPPED.value and not order.shipped_at:
-            update_data["shipped_at"] = datetime.now(timezone.utc)
-        elif new_status == OrderStatus.DELIVERED.value and not order.delivered_at:
-            update_data["delivered_at"] = datetime.now(timezone.utc)
-        elif new_status == OrderStatus.CANCELLED.value:
-            update_data["payment_status"] = PaymentStatus.FAILED.value
-        elif new_status == OrderStatus.REFUNDED.value:
-            update_data["payment_status"] = PaymentStatus.REFUNDED.value
+    # The status change and everything it implies (timestamps, payment status,
+    # the service-paid automation) live in status_flow, so the bulk action and
+    # this endpoint cannot drift apart.
+    trigger_payload = None
+    raw_status = update_data.pop("status", None)
+    if raw_status is not None:
+        new_status = status_flow.parse_status(raw_status)
+        if not new_status:
+            raise HTTPException(status_code=422, detail=f"Estado desconocido: {raw_status}")
+        verdict = status_flow.apply_status(order, new_status)
+        if not verdict["changed"] and verdict.get("reason") and new_status.value != (order.status.value if order.status else None):
+            raise HTTPException(status_code=409, detail=verdict["reason"])
+        if verdict.get("fires_service_paid"):
+            trigger_payload = status_flow.service_paid_payload(order)
 
     for field, value in update_data.items():
         setattr(order, field, value)
     await db.commit()
     await db.refresh(order)
+
+    if trigger_payload:
+        await status_flow.fire_service_paid(db, trigger_payload)
     return order
 
 

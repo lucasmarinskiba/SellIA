@@ -7,10 +7,10 @@ import { businessApi } from '@/lib/business'
 import { ordersApi, Order } from '@/lib/orders'
 import { shipmentsApi } from '@/lib/shipments'
 import { servicesApi } from '@/lib/services'
-import Button from '@/components/ui/Button'
+import OrdersSheet from '@/components/orders/OrdersSheet'
 import {
-  ShoppingCart, Plus, Search, Loader2, Package, Truck, CheckCircle2,
-  XCircle, Clock, CreditCard, AlertCircle, Filter, ChevronDown, Calendar
+  ShoppingCart, Search, Loader2, Package, Truck, CheckCircle2,
+  XCircle, Clock, CreditCard, AlertCircle, Calendar, Table2, LayoutList
 } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
@@ -29,6 +29,7 @@ export default function OrdenesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [view, setView] = useState<'gestion' | 'planilla'>('gestion')
 
   useEffect(() => {
     businessApi.list().then(data => {
@@ -38,10 +39,10 @@ export default function OrdenesPage() {
   }, [])
 
   useEffect(() => {
-    if (!selectedBusinessId) return
+    if (!selectedBusinessId || view !== 'gestion') return
     loadOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBusinessId, statusFilter])
+  }, [selectedBusinessId, statusFilter, view])
 
   const loadOrders = async () => {
     setLoading(true)
@@ -140,6 +141,24 @@ export default function OrdenesPage() {
           <p className="text-sm text-white/40 mt-1">Gestiona tus ventas, pagos y envíos.</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-xl bg-white/5 border border-white/10 p-0.5">
+            <button
+              onClick={() => setView('gestion')}
+              className={`px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors ${
+                view === 'gestion' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              <LayoutList className="w-3.5 h-3.5" /> Gestión
+            </button>
+            <button
+              onClick={() => setView('planilla')}
+              className={`px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors ${
+                view === 'planilla' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              <Table2 className="w-3.5 h-3.5" /> Planilla
+            </button>
+          </div>
           {businesses.length > 0 && (
             <select
               value={selectedBusinessId}
@@ -154,6 +173,10 @@ export default function OrdenesPage() {
         </div>
       </div>
 
+      {view === 'planilla' && selectedBusinessId && <OrdersSheet businessId={selectedBusinessId} />}
+
+      {view === 'gestion' && (
+      <>
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
@@ -287,6 +310,8 @@ export default function OrdenesPage() {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   )
