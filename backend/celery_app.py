@@ -84,6 +84,13 @@ celery_app.conf.update(
             "schedule": crontab(minute="*/5"),
             "options": {"queue": "webhooks", "priority": 6},
         },
+
+        # Execute scheduled toggles every minute (Tier 3)
+        "execute-toggle-schedules": {
+            "task": "app.domains.automations.tasks.execute_toggle_schedules",
+            "schedule": crontab(minute="*"),  # Every minute
+            "options": {"queue": "automations", "priority": 7},
+        },
     },
 
     # Task routing (different queues for different task types)
@@ -96,6 +103,9 @@ celery_app.conf.update(
         # High priority (integrations, webhooks)
         "backend.tasks.sync_*": {"queue": "integrations"},
         "backend.tasks.retry_*": {"queue": "webhooks"},
+
+        # Automations (Tier 3)
+        "app.domains.automations.tasks.*": {"queue": "automations"},
 
         # Medium priority (exports, reports, recording)
         "backend.tasks.export_*": {"queue": "processing"},
