@@ -1175,6 +1175,142 @@ async def export_my_data(
     return data
 
 
+@router.get("/security-status")
+async def security_status(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """One honest summary of how protected this account actually is.
+
+    The Seguridad screen asked for this and got a 404, so it had nothing to show
+    at the top. Every number here is counted, and anything whose table cannot be
+    read is reported as unknown rather than as zero — "0 sesiones activas" and
+    "no se pudo contar las sesiones" mean opposite things to someone checking
+    whether a stranger is in their account.
+    """
+    from app.core.deps import get_current_user
+
+    user = await get_current_user(request, db)
+
+    status_payload: dict = {
+        "totp_enabled": bool(user.is_2fa_enabled),
+        "email_otp_enabled": bool(getattr(user, "email_otp_enabled", False)),
+        "email_verified": bool(getattr(user, "email_verified", False)),
+        "unknown": [],
+    }
+
+    async def _count(label: str, statement) -> Optional[int]:
+        try:
+            result = await db.execute(statement)
+            return int(result.scalar() or 0)
+        except Exception as e:  # noqa: BLE001
+            # Postgres aborts the transaction on the first failed statement, so
+            # roll back before the next count runs.
+            await db.rollback()
+            status_payload["unknown"].append(label)
+            import logging
+
+            logging.getLogger(__name__).warning("security-status %s: %s", label, str(e)[:160])
+            return None
+
+    if UserSession is not None:
+        status_payload["active_sessions"] = await _count(
+            "sesiones activas",
+            select(func.count(UserSession.id)).where(
+                UserSession.user_id == user.id,
+                UserSession.is_revoked.is_(False),
+            ),
+        )
+    else:
+        status_payload["active_sessions"] = None
+        status_payload["unknown"].append("sesiones activas")
+
+    try:
+        from app.domains.security.models import WebAuthnCredential
+
+        status_payload["passkeys"] = await _count(
+            "passkeys",
+            select(func.count(WebAuthnCredential.id)).where(
+                WebAuthnCredential.user_id == user.id
+            ),
+        )
+    except ImportError:
+        status_payload["passkeys"] = None
+        status_payload["unknown"].append("passkeys")
+
+    try:
+        from app.core.trusted_devices import list_user_devices
+
+        devices = await list_user_devices(db, user.id)
+        status_payload["trusted_devices"] = sum(1 for d in devices if getattr(d, "is_trusted", False))
+        status_payload["known_devices"] = len(devices)
+    except Exception as e:  # noqa: BLE001
+        await db.rollback()
+        status_payload["trusted_devices"] = None
+        status_payload["known_devices"] = None
+        status_payload["unknown"].append("dispositivos")
+        import logging
+
+        logging.getLogger(__name__).warning("security-status devices: %s", str(e)[:160])
+
+    # What is actually missing, in the order worth fixing it.
+    recommendations: list[dict] = []
+    if not status_payload["totp_enabled"] and not status_payload["email_otp_enabled"]:
+        recommendations.append({
+            "key": "second_factor",
+            "title": "Activá un segundo factor",
+            "detail": (
+                "Hoy tu cuenta se abre solo con la contraseña. Con tu negocio, tus ventas y los "
+                "datos de tus clientes adentro, eso es lo único que separa a un tercero de todo."
+            ),
+        })
+    if not status_payload["email_verified"]:
+        recommendations.append({
+            "key": "verify_email",
+            "title": "Verificá tu email",
+            "detail": "Sin eso no podés recuperar la cuenta si perdés la contraseña.",
+        })
+    if status_payload.get("active_sessions") and status_payload["active_sessions"] > 3:
+        recommendations.append({
+            "key": "review_sessions",
+            "title": f"Revisá tus {status_payload['active_sessions']} sesiones abiertas",
+            "detail": "Cerrá las que no reconozcas: cada una puede operar tu cuenta.",
+        })
+    status_payload["recommendations"] = recommendations
+    return status_payload
+
+
+@router.post("/devices/{device_id}/revoke")
+async def revoke_device(
+    device_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Stop trusting a device. The screen offered this and it did not exist.
+
+    Blocking and revoking are different things: revoking removes the trust so the
+    device has to verify again, blocking refuses it outright. Only the second one
+    had an endpoint.
+    """
+    from app.core.deps import get_current_user
+    from app.domains.security.models import TrustedDevice
+
+    user = await get_current_user(request, db)
+    result = await db.execute(
+        select(TrustedDevice).where(
+            TrustedDevice.id == device_id,
+            TrustedDevice.user_id == user.id,
+        )
+    )
+    device = result.scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
+
+    device.is_trusted = False
+    await db.commit()
+    return {"message": "El dispositivo ya no es de confianza", "device_id": str(device_id)}
+
+
 @router.post("/me/delete-account")
 async def delete_my_account(
     request: Request,

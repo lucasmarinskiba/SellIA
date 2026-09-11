@@ -157,7 +157,7 @@ export default function SeguridadPage() {
 
   const fetchSessions = async () => {
     try {
-      const res = await api.get('/auth/sessions')
+      const res = await api.get('/security/sessions')
       setSessions(res.data.sessions || [])
     } catch {
       // silencioso
@@ -363,7 +363,7 @@ export default function SeguridadPage() {
   // Session handlers
   const handleKillSession = async (id: string) => {
     try {
-      await api.post(`/auth/sessions/${id}/revoke`)
+      await api.post(`/security/sessions/${id}/revoke`)
       fetchSessions()
       setMessage('Sesión cerrada')
     } catch (e: any) {
