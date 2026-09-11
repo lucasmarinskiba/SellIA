@@ -28,19 +28,42 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-#: Messages only began carrying their sender on this date. Replies older than
-#: this cannot be attributed to a person, and the response says so instead of
-#: crediting them to nobody in silence.
-ATTRIBUTION_SINCE = datetime(2026, 9, 12, tzinfo=timezone.utc)
-
 WON_STATES = ("won", "ganado", "closed_won")
+
+
+async def _attribution_started_at(db: AsyncSession, conversation_ids: list[Any]):
+    """When this account's replies first began carrying their author.
+
+    Read from the data rather than hardcoded: messages only started recording
+    sent_by_user_id once that was deployed, and a constant written by hand would
+    be wrong for anyone whose first attributed reply came later — or, worse, would
+    name a date in the future. Returns None when no reply has an author yet, and
+    the caller says that plainly instead of printing a date nothing supports.
+    """
+    from app.domains.channels.models import Message, MessageDirection
+
+    if not conversation_ids:
+        return None
+    try:
+        result = await db.execute(
+            select(func.min(Message.created_at)).where(
+                Message.conversation_id.in_(conversation_ids),
+                Message.direction == MessageDirection.OUTBOUND,
+                Message.extra_data["sent_by_user_id"].isnot(None),
+            )
+        )
+        return result.scalar()
+    except Exception as e:  # noqa: BLE001
+        logger.info("team board: attribution start unreadable (%s)", str(e)[:120])
+        await db.rollback()
+        return None
 
 
 async def _members(db: AsyncSession, business_id: uuid.UUID) -> dict[uuid.UUID, dict[str, Any]]:
@@ -217,10 +240,16 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
             "enviaron antes de que el sistema empezara a guardarlo, o desde una "
             "automatización. No se le cuentan a nadie."
         )
+    started_at = await _attribution_started_at(db, list(conversations))
     if not any(row["replies"] for row in rows):
         gaps.append(
-            "Todavía no hay respuestas con autor en este período. La atribución arranca "
-            f"el {ATTRIBUTION_SINCE.date().isoformat()}: lo anterior no se puede asignar."
+            "Todavía no hay respuestas con autor en este período."
+            + (
+                f" La primera con autor registrado es del {started_at.date().isoformat()}."
+                if started_at is not None
+                else " Las respuestas enviadas antes de esta versión no guardaban quién las"
+                " escribió, así que no se pueden asignar."
+            )
         )
 
     total_human = sum(row["replies"] for row in rows)
@@ -239,7 +268,7 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
         "unattributed_replies": unattributed_replies,
         "conversations_waiting": waiting,
         "gaps": gaps,
-        "attribution_since": ATTRIBUTION_SINCE.date().isoformat(),
+        "attribution_since": started_at.date().isoformat() if started_at is not None else None,
         "period_days": days,
         "generated_at": now.isoformat(),
     }
