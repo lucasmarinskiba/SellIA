@@ -67,6 +67,12 @@ export interface SellerProfile {
   voice_notes: string | null
   autonomous_replies: boolean
   completeness: Completeness
+  /**
+   * Which parts of the profile could not be read at all (a table down, say).
+   * Empty normally. A field blank because nothing was saved and a field blank
+   * because its source failed look identical without this.
+   */
+  unavailable?: string[]
 }
 
 export interface PreferencesResponse {

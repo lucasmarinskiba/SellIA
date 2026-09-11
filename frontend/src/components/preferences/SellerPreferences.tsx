@@ -218,6 +218,14 @@ const SellerPreferences = (): React.JSX.Element => {
         {message && <p className="text-xs text-brand-orange mt-2">{message}</p>}
       </div>
 
+      {/* Something failed to load — say which part, instead of showing it empty */}
+      {(profile.unavailable?.length ?? 0) > 0 && (
+        <div className="p-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20 text-[11px] text-amber-200/80">
+          No se pudo leer una parte de tu configuración: {profile.unavailable!.join(' · ')}. Lo que se
+          muestra vacío ahí puede estar guardado — no lo sobreescribas hasta que cargue bien.
+        </div>
+      )}
+
       {/* Negocio */}
       <section className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-4">
         <h3 className="text-sm font-medium text-white flex items-center gap-2">
