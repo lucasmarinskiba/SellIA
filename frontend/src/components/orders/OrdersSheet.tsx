@@ -201,6 +201,23 @@ const OrdersSheet = ({ businessId }: Props): React.JSX.Element => {
     return Object.keys(STATUS_LABELS).filter(status => sets.every(s => s.has(status)))
   }, [data, rows, selected])
 
+  const moveOne = async (orderId: string, status: string): Promise<void> => {
+    setBusy(true)
+    try {
+      const result = await ordersApi.bulkStatus([orderId], status)
+      // Same endpoint as the bulk bar, so a refused move comes back with the
+      // backend's own reason instead of silently doing nothing.
+      if (!result.updated) setError(result.results[0]?.reason || 'No se pudo cambiar el estado.')
+      else setError(null)
+      await load()
+    } catch (e) {
+      logger.error(String(e))
+      setError('No se pudo cambiar el estado.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const runBulk = async (status: string): Promise<void> => {
     setBusy(true)
     setBulkResult(null)
@@ -492,6 +509,9 @@ const OrdersSheet = ({ businessId }: Props): React.JSX.Element => {
                     </th>
                   )
                 })}
+                <th className="px-3 py-2.5 border-b border-white/10 text-left font-medium text-white/40 whitespace-nowrap">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -523,6 +543,23 @@ const OrdersSheet = ({ businessId }: Props): React.JSX.Element => {
                       {renderCell(row, col.key)}
                     </td>
                   ))}
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <div className="flex gap-1">
+                      {(data?.transitions[row.status || 'pending'] || []).map(next => (
+                        <button
+                          key={next}
+                          disabled={busy}
+                          onClick={() => void moveOne(row.id, next)}
+                          className="px-2 py-0.5 rounded-md bg-white/[0.07] hover:bg-white/[0.14] text-[10px] text-white/70 disabled:opacity-30"
+                        >
+                          {STATUS_LABELS[next]}
+                        </button>
+                      ))}
+                      {(data?.transitions[row.status || 'pending'] || []).length === 0 && (
+                        <span className="text-[10px] text-white/20">estado final</span>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
