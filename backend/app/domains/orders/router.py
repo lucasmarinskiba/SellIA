@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.domains.users.models import User
-from app.domains.orders.models import Order, OrderStatus, RevenueEvent
+from app.domains.orders.models import Order, OrderStatus, PaymentStatus, RevenueEvent
 from app.domains.orders.schemas import OrderCreate, OrderUpdate, OrderResponse, RevenueSummary, AttributionSummary
 from app.domains.orders.revenue import RevenueAttributionEngine
 from app.domains.orders import status_flow, table as orders_table
@@ -67,7 +67,23 @@ async def create_order(
         item if isinstance(item, dict) else dict(item)
         for item in (payload.get("items") or [])
     ]
+
+    # An order created as paid/shipped/delivered without an explicit
+    # payment_status kept the PENDING default, so it showed up as sold and not
+    # collected: "1 orden, 0 cobradas" for an order whose status says paid.
+    # Only filled in when the caller did not state it — an importer that really
+    # means "delivered but unpaid" is still believed.
+    status_value = payload.get("status")
+    if "payment_status" not in data.model_fields_set and status_value in (
+        OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED,
+    ):
+        payload["payment_status"] = PaymentStatus.COMPLETED
+        if not payload.get("paid_at"):
+            payload.pop("paid_at", None)
+
     order = Order(**payload)
+    if order.payment_status == PaymentStatus.COMPLETED and not order.paid_at:
+        order.paid_at = datetime.now(timezone.utc)
 
     # Run revenue attribution
     engine = RevenueAttributionEngine(db)
