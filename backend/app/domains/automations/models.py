@@ -368,3 +368,78 @@ class ContentCalendar(Base):
     extra_data = Column(JSONB, default=dict, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+# ========== Automation Toggles (Control Center) ==========
+
+class ToggleCategory(str, enum.Enum):
+    AGENT = "agent"
+    AUTOMATION = "automation"
+    FEATURE = "feature"
+    INTEGRATION = "integration"
+
+
+class AutomationToggle(Base):
+    """Control on/off de automaciones, agentes, funciones por negocio."""
+    __tablename__ = "automation_toggles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Identificador único + categoría
+    toggle_key = Column(String(100), nullable=False)  # e.g. "agent:lead_scorer", "automation:cold_email"
+    category = Column(Enum(ToggleCategory), nullable=False)
+
+    # Estado + timestamps
+    is_enabled = Column(Boolean, default=True, nullable=False)
+    enabled_at = Column(DateTime(timezone=True), nullable=True)
+    disabled_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Límites por usuario/negocio
+    monthly_limit = Column(Integer, nullable=True)  # ej: max 100 leads scored/mes
+    current_month_usage = Column(Integer, default=0, nullable=False)
+    last_reset_date = Column(DateTime(timezone=True), nullable=True)
+
+    # Metadata
+    display_name = Column(String(255), nullable=False)  # "Lead Scorer"
+    description = Column(Text, nullable=True)
+    icon = Column(String(50), nullable=True)  # "🤖", "📧", etc
+
+    # Auditoría
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    changed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    __table_args__ = (
+        Index("ix_business_toggle_key", "business_id", "toggle_key"),
+        Index("ix_business_category", "business_id", "category"),
+    )
+
+
+class ToggleAuditLog(Base):
+    """Registro de cada cambio de toggle + impacto."""
+    __tablename__ = "toggle_audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    toggle_id = Column(UUID(as_uuid=True), ForeignKey("automation_toggles.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    action = Column(String(20), nullable=False)  # "enabled" | "disabled" | "limit_changed"
+    old_value = Column(JSONB, nullable=True)
+    new_value = Column(JSONB, nullable=True)
+
+    changed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    changed_by_email = Column(String(255), nullable=True)  # snapshot para auditoría
+
+    reason = Column(Text, nullable=True)  # "Cost control", "Testing phase", etc
+
+    # Impacto observado
+    leads_affected = Column(Integer, nullable=True)
+    estimated_impact_pct = Column(Integer, nullable=True)  # % cambio esperado en conversión
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_business_toggle_audit", "business_id", "toggle_id"),
+        Index("ix_created_at", "created_at"),
+    )
