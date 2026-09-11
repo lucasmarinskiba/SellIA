@@ -68,6 +68,21 @@ class PlatformBot(Base):
     #: stepping in. NULL = no cap.
     max_ai_replies = Column(Integer, nullable=True)
 
+    #: When this bot is allowed to answer, in the seller's own local time:
+    #: {"from": 9, "to": 21, "utc_offset": -3}. NULL = always.
+    #: Outside the window the bot either stays silent or sends one honest
+    #: "fuera de horario" reply — never a normal sales answer pretending
+    #: somebody is there.
+    active_hours = Column(JSONB, nullable=True)
+    after_hours_message = Column(Text, nullable=True)
+    #: Hand over when the buyer sounds angry, not only when they say a keyword.
+    #: Uses the existing emotion engine; off by default because it costs a call.
+    escalate_on_frustration = Column(Boolean, nullable=False, default=False)
+    #: Hold for a human instead of sending when the reply breaks the platform's
+    #: own rules (a link where links are forbidden, contact data on a
+    #: marketplace that sanctions it). See playbooks.py.
+    hold_on_policy_violation = Column(Boolean, nullable=False, default=True)
+
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime(timezone=True),

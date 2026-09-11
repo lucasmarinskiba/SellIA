@@ -394,6 +394,59 @@ async def _maybe_ai_auto_reply(
             if (ai_count.scalar() or 0) >= platform_bot.max_ai_replies:
                 return  # cap reached: leave the rest to a person
 
+        # ── Hours ──────────────────────────────────────────────────────────
+        # Outside its window the bot does not answer as if someone were there.
+        # It either says nothing, or sends the one honest out-of-hours line the
+        # seller wrote — and marks the conversation for the morning either way.
+        from app.domains.chatbots.brief import check_hours
+
+        hours = check_hours(platform_bot.active_hours)
+        if not hours.within_hours:
+            extra = dict(conversation.extra_data or {})
+            extra["awaiting_human"] = True
+            extra["handoff_reason"] = hours.reason
+            conversation.extra_data = extra
+            await db.commit()
+            if platform_bot.after_hours_message:
+                await send_outbound_message(
+                    db,
+                    conversation.id,
+                    platform_bot.after_hours_message,
+                    generated_by="ai_after_hours",
+                )
+            return
+
+        # ── Frustration ────────────────────────────────────────────────────
+        # A buyer who is angry should reach a person, whether or not they used
+        # one of the handoff words.
+        if platform_bot.escalate_on_frustration and (payload.content or "").strip():
+            try:
+                from app.domains.agents.emotion_engine import EmotionDetector
+
+                emotion = await EmotionDetector.detect_emotion(
+                    db=db,
+                    business_id=channel.business_id,
+                    message=payload.content,
+                    conversation_history=[],
+                    conversation_id=conversation.id,
+                )
+                label = str(getattr(emotion, "emotion", emotion) or "").lower()
+                if any(word in label for word in ("anger", "frustrat", "enoj", "angry", "upset")):
+                    extra = dict(conversation.extra_data or {})
+                    extra["awaiting_human"] = True
+                    extra["handoff_reason"] = "el comprador suena molesto"
+                    conversation.extra_data = extra
+                    await db.commit()
+                    return
+            except Exception as e:  # noqa: BLE001 -- detection is a bonus, not a gate
+                from app.core.logger import get_logger
+
+                get_logger(__name__).warning("frustration check failed: %s", str(e)[:160])
+                try:
+                    await db.rollback()
+                except Exception:  # noqa: BLE001
+                    pass
+
     # Check business AI auto-reply config
     from app.domains.agents.models import AgentConfig
     result = await db.execute(
@@ -442,17 +495,50 @@ async def _maybe_ai_auto_reply(
         if focus_value != BotFocus.AUTO.value:
             force_stage = focus_value
 
+    # ── The brief ──────────────────────────────────────────────────────────
+    # The platform's own rules plus everything the seller configured (idiomas,
+    # temas prohibidos, instrucciones de voz, gustos). Without this the reply
+    # ignored the configuration screen entirely.
+    from app.domains.chatbots.brief import build_brief, vet_reply
+
+    brief = await build_brief(db, channel.business_id, platform_name, platform_bot)
+
     ai_response = await generate_ai_response(
         db=db,
         conversation=conversation,
         personality_slug=personality_slug,
         business_id=channel.business_id,
-        custom_prompt=(platform_bot.custom_instructions or "") if platform_bot else "",
+        custom_prompt=brief.prompt,
         voice_slug=voice_slug,
         force_stage=force_stage,
     )
-    if ai_response:
-        await send_outbound_message(db, conversation.id, ai_response, generated_by="ai")
+    if not ai_response:
+        return
+
+    # ── The platform's rules, checked on the real text ─────────────────────
+    # Asking the model to obey is not the same as it obeying. A reply that
+    # breaks a rule which costs the seller their listing is held for a person
+    # instead of being sent or silently edited.
+    hold = platform_bot.hold_on_policy_violation if platform_bot is not None else True
+    verdict = vet_reply(platform_name, ai_response, hold_on_violation=hold)
+    if not verdict.send:
+        extra = dict(conversation.extra_data or {})
+        extra["awaiting_human"] = True
+        extra["handoff_reason"] = (
+            "la respuesta generada no cumple las reglas de "
+            f"{platform_name}: {'; '.join(verdict.problems)}"
+        )
+        extra["held_reply"] = verdict.text
+        conversation.extra_data = extra
+        await db.commit()
+        from app.core.logger import get_logger
+
+        get_logger(__name__).info(
+            "auto-reply held on %s: %s", platform_name, "; ".join(verdict.problems)
+        )
+        return
+
+    await send_outbound_message(db, conversation.id, verdict.text, generated_by="ai")
 
 
 async def process_incoming_message(

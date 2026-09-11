@@ -1257,6 +1257,8 @@ async def lifespan(app: FastAPI):
         await ensure_authority_tables()
         from app.domains.orders.bootstrap import ensure_orders_tables
         await ensure_orders_tables()
+        from app.domains.chatbots.bootstrap import ensure_chatbot_tables
+        await ensure_chatbot_tables()
         from app.domains.agents.keys_bootstrap import ensure_llm_support_tables
         await ensure_llm_support_tables()
         # Everything the ORM declares, not only the domains that happened to
