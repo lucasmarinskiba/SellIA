@@ -11,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
@@ -60,14 +61,31 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    order = Order(**data.model_dump())
+    payload = data.model_dump()
+    # items arrive as OrderItem models; JSONB needs plain dicts.
+    payload["items"] = [
+        item if isinstance(item, dict) else dict(item)
+        for item in (payload.get("items") or [])
+    ]
+    order = Order(**payload)
 
     # Run revenue attribution
     engine = RevenueAttributionEngine(db)
     await engine.attrib_order(order)
 
     db.add(order)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        # Almost always a repeated order_number within this business. Say that,
+        # instead of letting the driver error surface as a 500.
+        await db.rollback()
+        if "uq_orders_business_number" in str(e) or "order_number" in str(e):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Ya tenés una orden con el número '{data.order_number}'",
+            )
+        raise HTTPException(status_code=409, detail="No se pudo guardar la orden")
     await db.refresh(order)
 
     # Create revenue event

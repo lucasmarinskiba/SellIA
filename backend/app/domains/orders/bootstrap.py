@@ -31,3 +31,42 @@ async def ensure_orders_tables() -> None:
         except Exception as e:  # noqa: BLE001
             logger.warning("orders bootstrap: table %s skipped: %s", table.name, str(e)[:160])
     logger.info("✅ orders tables ensured (%s/%s)", created, len(tables))
+    await _scope_order_number_to_business()
+
+
+async def _scope_order_number_to_business() -> None:
+    """Make order_number unique per business instead of globally.
+
+    The column was created UNIQUE on its own, so the second account to issue
+    "1001" — or to import a marketplace order whose number another account
+    already had — hit a duplicate-key error on an order that was genuinely
+    theirs. create_all() never alters an existing table, so the live constraint
+    has to be swapped by hand (migrations are disabled on this deployment).
+    """
+    from sqlalchemy import text
+
+    from app.core.database import engine
+
+    statements = [
+        # Postgres names a single-column unique constraint <table>_<column>_key.
+        "ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_order_number_key",
+        "DROP INDEX IF EXISTS orders_order_number_key",
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_business_number
+        ON orders (business_id, order_number)
+        WHERE order_number IS NOT NULL
+        """,
+        "CREATE INDEX IF NOT EXISTS ix_orders_order_number ON orders (order_number)",
+    ]
+    for statement in statements:
+        try:
+            # One transaction each: a statement that cannot apply (duplicate
+            # numbers already in one business, say) must not undo the others.
+            async with engine.begin() as conn:
+                await conn.execute(text(statement))
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "orders bootstrap: order_number constraint step skipped (%s): %s",
+                statement.strip().split("\n")[0][:60],
+                str(e)[:160],
+            )
