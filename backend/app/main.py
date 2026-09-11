@@ -52,6 +52,7 @@ _try_include("app.domains.authority.api.router", "/api/v1", ["authority-builder"
 _try_include("app.domains.platform_commerce.api.router", "/api/v1", ["platform-commerce"])
 _try_include("app.domains.chatbots.api.router", "/api/v1", ["chatbots"])
 _try_include("app.domains.preferences.api.router", "/api/v1", ["preferences"])
+_try_include("app.domains.team_performance.api.router", "/api/v1", ["team-performance"])
 _try_include("app.domains.next_steps.api.router", "/api/v1", ["next-steps"])
 
 # ── Routers that existed and were never mounted ────────────────────────────

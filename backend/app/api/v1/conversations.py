@@ -205,7 +205,12 @@ async def send_message(
     if message_in.direction == MessageDirection.OUTBOUND:
         try:
             from app.domains.channels.services import send_outbound_message
-            await send_outbound_message(db, conversation_id, message_in.content, message_in.content_type)
+            await send_outbound_message(
+                db, conversation_id, message_in.content, message_in.content_type,
+                # Credits the reply to whoever is logged in, so a team can
+                # see who is actually answering customers.
+                sent_by_user_id=current_user.id,
+            )
         except Exception as e:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Failed to send outbound message: {e}")

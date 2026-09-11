@@ -19,6 +19,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Info, Loader2, Package, Store, Trophy, Users } from 'lucide-react'
 import { logger } from '@/lib/logger'
 import { formatAmounts, nextStepsApi, type RankingResponse } from '@/lib/nextSteps'
+import TeamPerformance from '@/components/team/TeamPerformance'
 
 const Section = ({ title, icon: Icon, subtitle, children }: {
   title: string
@@ -213,6 +214,11 @@ export default function RankingNegocioPage(): React.JSX.Element {
           </Section>
         </div>
       )}
+
+      {/* Ranking de personas, que es lo que esta pantalla prometía: ahora sale
+          del trabajo real de cada una y no de un contador de XP que solo se
+          incrementaba para el dueño. */}
+      <TeamPerformance />
 
       {data?.has_data && (
         <p className="text-[11px] text-slate-400">
