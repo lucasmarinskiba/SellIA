@@ -87,6 +87,18 @@ _try_include("app.domains.growth.router.router", "/api/v1", ["growth"])
 _try_include("app.domains.retention.router.router", "/api/v1/businesses", ["retention"])
 _try_include("app.domains.referrals.router.router", "/api/v1", ["referrals"])
 _try_include("app.domains.marketplace.router.router", "/api/v1", ["marketplace"])
+# Third batch, found the same way:
+# - competitive.router   declares prefix="/battlecards" — exactly what the
+#                        Battlecards screen calls, so that whole page was asking
+#                        a router nobody had included.
+# - feedback.router      the in-app feedback board (submit, vote, comment).
+# - assistant            the assistant's conversations and chat.
+# - ambassador_router    the certifications and public profile the Embajador
+#                        screen renders.
+_try_include("app.domains.competitive.router.router", "/api/v1", ["battlecards"])
+_try_include("app.domains.feedback.router.router", "/api/v1", ["feedback"])
+_try_include("app.api.v1.assistant.router", "/api/v1/assistant", ["assistant"])
+_try_include("app.domains.gamification.ambassador_router.router", "/api/v1", ["ambassador"])
 _try_include("app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"])
 _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 # payments.py's router already declares prefix="/api/v1" internally — pass "" here to avoid doubling it
