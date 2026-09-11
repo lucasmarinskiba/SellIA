@@ -124,6 +124,8 @@ async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
         _dormant_customers,
         _incomplete_profile,
         _ai_not_configured,
+        _channel_gaps,
+        _reach_opportunity,
     ):
         try:
             found = await builder(ctx)
@@ -147,7 +149,8 @@ async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
             name for name in (
                 "waiting_conversations", "bot_off_where_traffic_is", "unpaid_orders",
                 "unshipped_orders", "customers_without_contact", "dormant_customers",
-                "incomplete_profile", "ai_not_configured",
+                "incomplete_profile", "ai_not_configured", "channel_gaps",
+                "reach_opportunity",
             ) if name not in checked
         ],
         "generated_at": now.isoformat(),
@@ -526,5 +529,109 @@ async def _ai_not_configured(ctx: "Ctx") -> list[Action]:
             urgency="alta",
             where="/dashboard/configuracion",
             size=len(ai_group),
+        )
+    ]
+
+
+# ── Recovered from the page this engine replaced ───────────────────────────
+# The old "Misiones" screen was not entirely dead: alongside the /missions calls
+# that 404, it read /business-context/channel-gaps, /reach-analysis and
+# /recommended-playbooks, and those three ARE live and return real analysis
+# (critical channels missing, whether the business could sell beyond its current
+# reach, and which playbooks fit its type). Replacing the page dropped them, so
+# they come back here — prioritised alongside everything else instead of sitting
+# in a separate tab.
+
+
+async def _channel_gaps(ctx: "Ctx") -> list[Action]:
+    """Channels this kind of business needs and does not have connected."""
+    from app.domains.business_context.service import BusinessContextService
+
+    service = BusinessContextService(ctx.db)
+    context = await service.get_or_create_context(ctx.user_id, ctx.business_ids[0])
+    gaps = await service.analyze_channel_gaps(ctx.user_id, context.id)
+
+    critical = [gap for gap in gaps if not gap.is_configured and gap.priority == "critical"]
+    if not critical:
+        return []
+
+    names = ", ".join(gap.channel for gap in critical)
+    playbooks = [gap.recommended_playbook for gap in critical if gap.recommended_playbook]
+    return [
+        Action(
+            key="channel_gaps",
+            title=f"Te faltan {len(critical)} canal(es) que tu rubro necesita",
+            evidence=(
+                f"Sin conectar: {names}. "
+                + " · ".join(f"{gap.channel}: {gap.impact_estimate}" for gap in critical[:3])
+            ),
+            why=(
+                "Son los canales donde tus compradores ya están buscando lo que vendés. "
+                "Un canal que no existe no recibe consultas, y esto no se arregla vendiendo mejor "
+                "en los que ya tenés."
+            ),
+            urgency="media",
+            where="/dashboard/canales",
+            size=len(critical),
+            extra={
+                "channels": [gap.channel for gap in critical],
+                "playbooks": playbooks,
+                "difficulty": {gap.channel: gap.setup_difficulty for gap in critical},
+            },
+        )
+    ]
+
+
+async def _reach_opportunity(ctx: "Ctx") -> list[Action]:
+    """When the business could sell beyond where it sells today."""
+    from app.domains.business_context.service import BusinessContextService
+
+    service = BusinessContextService(ctx.db)
+    context = await service.get_or_create_context(ctx.user_id, ctx.business_ids[0])
+    reach = await service.analyze_reach(ctx.user_id, context.id)
+
+    current = getattr(reach, "current_reach", None)
+    recommended = getattr(reach, "recommended_reach", None)
+    if not current or not recommended or current == recommended:
+        return []
+
+    labels = {
+        "local": "tu ciudad",
+        "regional": "tu provincia o región",
+        "national": "todo el país",
+        "cross_border": "los países vecinos",
+        "global": "el mundo",
+    }
+    shipping = list(getattr(reach, "shipping_recommendations", []) or [])
+    platforms = list(getattr(reach, "platform_recommendations", []) or [])
+    pieces = []
+    if platforms:
+        pieces.append("Plataformas que llegan ahí: " + ", ".join(platforms[:4]) + ".")
+    if shipping:
+        pieces.append("Envíos: " + ", ".join(shipping[:3]) + ".")
+
+    return [
+        Action(
+            key="reach_opportunity",
+            title=f"Podrías vender en {labels.get(recommended, recommended)}",
+            evidence=(
+                f"Hoy vendés en {labels.get(current, current)} y tu tipo de negocio puede llegar a "
+                f"{labels.get(recommended, recommended)}. " + " ".join(pieces)
+            ),
+            why=(
+                "Es la única acción de esta lista que agranda el mercado en vez de exprimir el "
+                "que ya tenés. No promete ventas: dice que el techo actual es una decisión, no un límite."
+            ),
+            # Lower than anything with money or a customer waiting: expanding is
+            # never more urgent than answering someone who is already buying.
+            urgency="baja",
+            where="/dashboard/configuracion",
+            size=1,
+            extra={
+                "current_reach": current,
+                "recommended_reach": recommended,
+                "platforms": platforms,
+                "shipping": shipping,
+            },
         )
     ]

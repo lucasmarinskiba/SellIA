@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { gamificationApi, GamificationProfile } from '@/lib/gamification'
+import { nextStepsApi, type NextStepsResponse } from '@/lib/nextSteps'
 import { autopilotApi } from '@/lib/autopilot'
 import { crmApi } from '@/lib/crm'
 import { businessApi } from '@/lib/business'
@@ -144,8 +145,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [gardenOpen, setGardenOpen] = useState(false)
-  const [companionMessage, setCompanionMessage] = useState("¡Hola! Soy SellIA. Tu negocio está activo.")
   const [garden, setGarden] = useState<any>(null)
+  const [nextSteps, setNextSteps] = useState<NextStepsResponse | null>(null)
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -160,7 +161,7 @@ export default function HomePage() {
 
       setProfile(prof)
       setGarden(gardenData)
-      setCompanionMessage(companion?.message || "¡Hola! Tu negocio está activo.")
+      nextStepsApi.actions().then(setNextSteps).catch(() => setNextSteps(null))
 
       // Load business-specific data if a business exists
       const firstBusiness = businesses?.[0]
@@ -218,7 +219,15 @@ export default function HomePage() {
   const healthLabel = healthScore >= 80 ? 'Óptimo' : healthScore >= 60 ? 'Estable' : healthScore >= 40 ? 'Degradado' : 'Crítico'
   const healthColor = healthScore >= 80 ? '#10b981' : healthScore >= 60 ? '#eab308' : healthScore >= 40 ? '#f97316' : '#ef4444'
 
-  const isNewUser = !profile || (profile.total_sales_closed === 0 && profile.total_xp < 100)
+  // Was `!profile || profile.total_sales_closed === 0`, read from
+  // /gamification/profile — an endpoint that does not exist here, so `profile`
+  // is always null and every account was greeted as brand new forever, sales or
+  // not. Now it asks the data: no orders and no conversations means new.
+  const isNewUser =
+    nextSteps === null
+      ? !profile
+      : nextSteps.actions.some(action => action.key === 'create_business') ||
+        ((kpis?.revenue ?? 0) === 0 && (kpis?.conversations ?? 0) === 0 && (kpis?.deals ?? 0) === 0)
 
   return (
     <div className="min-h-screen bg-[#060812]">
@@ -548,84 +557,81 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Companion + Gamification (Secondary) ─────────────────── */}
+        {/* ── Próximos pasos ───────────────────────────────────────────
+            Acá había un panel de gamificación: nivel, XP, racha, logros y un
+            jardín. Los tres endpoints que lo alimentaban (/gamification/profile,
+            /gamification/garden, /gamification/companion/message) no existen en
+            este backend, así que mostraba ceros con nombre de logro; el botón
+            "Ver todos los logros" llevaba a /dashboard/gamification, una ruta que
+            tampoco existe. En su lugar va lo que de verdad mueve el negocio: las
+            tres cosas más urgentes calculadas sobre las órdenes y conversaciones
+            reales de la cuenta. */}
         <div className="border border-white/[0.06] rounded-2xl overflow-hidden">
-          <button
-            onClick={() => setGardenOpen(prev => !prev)}
-            className="w-full flex items-center justify-between px-5 py-4 bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
-          >
+          <div className="flex items-center justify-between px-5 py-4 bg-white/[0.02]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-purple-400" />
+              <div className="w-8 h-8 rounded-lg bg-brand-orange/10 border border-brand-orange/20 flex items-center justify-center">
+                <Target className="w-4 h-4 text-brand-orange" />
               </div>
               <div className="text-left">
-                <p className="text-white text-sm font-medium">Tu Progreso y Jardín</p>
+                <p className="text-white text-sm font-medium">Próximos pasos</p>
                 <p className="text-white/30 text-xs">
-                  {profile ? `Nivel ${profile.level} • ${profile.total_xp} XP • ${profile.total_sales_closed} ventas` : 'Sistema de gamificación'}
+                  {nextSteps === null
+                    ? 'Revisando tu cuenta…'
+                    : nextSteps.actions.length === 0
+                      ? 'No hay nada pendiente de lo que se puede medir'
+                      : `${nextSteps.actions.length} pendiente(s) sobre tus datos reales`}
                 </p>
               </div>
             </div>
-            <div className={`w-5 h-5 flex items-center justify-center text-white/30 transition-transform ${gardenOpen ? 'rotate-90' : ''}`}>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </button>
+            <button
+              onClick={() => router.push('/dashboard/misiones')}
+              className="text-xs text-white/50 hover:text-white inline-flex items-center gap-1"
+            >
+              Ver todo <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-          {gardenOpen && (
-            <div className="px-5 pb-5 bg-white/[0.01] space-y-4">
-              {/* Companion message */}
-              <div className="flex items-start gap-3 pt-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-3">
-                  <p className="text-white/50 text-[10px] mb-1">{profile?.companion_name || 'Selia'}</p>
-                  <p className="text-white/70 text-sm leading-relaxed">{companionMessage}</p>
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { icon: Flame, value: profile?.current_login_streak || 0, label: 'Racha', color: 'text-orange-400' },
-                  { icon: Trophy, value: profile?.total_achievements || 0, label: 'Logros', color: 'text-amber-400' },
-                  { icon: Zap, value: profile?.total_sales_closed || 0, label: 'Ventas', color: 'text-emerald-400' },
-                  { icon: Star, value: profile?.level || 1, label: 'Nivel', color: 'text-purple-400' },
-                ].map(stat => (
-                  <div key={stat.label} className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
-                    <stat.icon className={`w-4 h-4 ${stat.color} mx-auto mb-1`} />
-                    <p className="text-white font-bold">{stat.value}</p>
-                    <p className="text-white/30 text-xs">{stat.label}</p>
+          {nextSteps && nextSteps.actions.length > 0 && (
+            <div className="px-5 pb-5 pt-4 bg-white/[0.01] space-y-2">
+              {nextSteps.actions.slice(0, 3).map(action => (
+                <button
+                  key={action.key}
+                  onClick={() => router.push(action.where)}
+                  className="w-full text-left rounded-xl bg-white/5 border border-white/5 hover:border-white/10 p-3 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-white text-sm font-medium">{action.title}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{action.evidence}</p>
+                    </div>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                        action.urgency === 'alta'
+                          ? 'bg-red-500/15 text-red-300'
+                          : 'bg-amber-500/15 text-amber-300'
+                      }`}
+                    >
+                      {action.urgency === 'alta' ? 'urgente' : 'importante'}
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              {/* Mini garden */}
-              <GardenMini garden={garden} />
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => router.push('/dashboard/gamification')}
-                  className="flex-1 py-2.5 text-sm bg-white/5 hover:bg-white/10 border border-white/5 text-white/50 hover:text-white rounded-xl transition-colors"
-                >
-                  Ver todos los logros
                 </button>
-                <button
-                  onClick={() => router.push('/dashboard/leaderboard')}
-                  className="flex-1 py-2.5 text-sm bg-white/5 hover:bg-white/10 border border-white/5 text-white/50 hover:text-white rounded-xl transition-colors"
-                >
-                  Ranking global
-                </button>
-              </div>
+              ))}
+              {nextSteps.not_checked.length > 0 && (
+                <p className="text-[10px] text-amber-200/60">
+                  {nextSteps.not_checked.length} revisión(es) no se pudieron hacer: puede haber
+                  pendientes que esta lista no ve.
+                </p>
+              )}
             </div>
           )}
         </div>
+
 
       </div>
     </div>
   )
 }
 
-// ─── Mini Garden Component ─────────────────────────────────────────────────────
 
 function GardenMini({ garden }: { garden: any }) {
   const flowers = garden?.garden?.flowers || 0
