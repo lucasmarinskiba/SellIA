@@ -1,8 +1,24 @@
 'use client'
 
 import { ToggleAuditLogResponse } from '@/lib/api/toggles'
-import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
+
+const formatRelativeTime = (dateString: string): string => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (seconds < 60) return 'hace unos segundos'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `hace ${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `hace ${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `hace ${days}d`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `hace ${months}mo`
+  const years = Math.floor(months / 12)
+  return `hace ${years}a`
+}
 
 interface AuditPanelProps {
   logs: ToggleAuditLogResponse[]
@@ -63,10 +79,7 @@ export const AuditPanel = ({ logs, onClose }: AuditPanelProps) => {
                   </span>
                 </div>
                 <span className="text-xs text-slate-500 dark:text-slate-500">
-                  {formatDistanceToNow(new Date(log.created_at), {
-                    addSuffix: true,
-                    locale: es,
-                  })}
+                  {formatRelativeTime(log.created_at)}
                 </span>
               </div>
 

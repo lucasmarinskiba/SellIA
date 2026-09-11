@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useSession } from '@/lib/auth/hooks'
+import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 
 import { SettingsProvider } from '@/lib/settings'
 import { ServerSoftwareApplicationSchema, ServerFAQPageSchema } from '@/components/seo/ServerJsonLd'
@@ -33,8 +33,18 @@ const ToggleAnalytics = dynamic(
 
 export default function SelliaBrainPage(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'overview' | 'control' | 'analytics'>('overview')
-  const { session } = useSession()
-  const businessId = session?.businesses?.[0]?.id
+  const { snapshot, loading } = useBusinessSnapshot()
+  const businessId = snapshot?.business.id
+
+  if (loading) {
+    return (
+      <SettingsProvider>
+        <main className="w-full p-4 flex items-center justify-center min-h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </main>
+      </SettingsProvider>
+    )
+  }
 
   if (!businessId) {
     return (
