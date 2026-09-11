@@ -84,6 +84,14 @@ async def generate_ai_response(
         get_logger(__name__).warning(f"Personality '{personality_slug}' not found")
         return None
 
+    # Everything below may roll back after a swallowed error, and a rollback
+    # expires every loaded instance: the next attribute read would lazy-load in
+    # an async context and raise MissingGreenlet. So take the plain values now
+    # and never touch these ORM objects for reading again.
+    base_slug = personality.slug
+    conversation_id = conversation.id
+    conversation_extra = dict(conversation.extra_data or {})
+
     # Build business context
     business_context = {}
     try:
@@ -145,13 +153,13 @@ async def generate_ai_response(
     # Build system prompt with voice composition
     if voice_slug:
         system_prompt = compose_system_prompt(
-            base_slug=personality.slug,
+            base_slug=base_slug,
             voice_slug=voice_slug,
             business_context=business_context or {},
         )
     else:
         system_prompt = get_system_prompt(
-            personality.slug,
+            base_slug,
             business_context=business_context or {},
         )
 
@@ -172,7 +180,7 @@ async def generate_ai_response(
             )
         if experiment:
             variant = ABTestEngine.get_variant_for_conversation(
-                db, experiment.id, conversation.id
+                db, experiment.id, conversation_id
             )
             system_prompt = (
                 experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
@@ -182,7 +190,7 @@ async def generate_ai_response(
             # can be attributed back to this experiment/variant -- this was
             # previously missing entirely, so record_result/check_auto_promote
             # could never actually fire for this experiment kind.
-            extra_data = dict(conversation.extra_data or {})
+            extra_data = dict(conversation_extra)
             existing = extra_data.get("personality_ab")
             if not existing or existing.get("experiment_id") != str(experiment.id):
                 extra_data["personality_ab"] = {
@@ -212,7 +220,7 @@ async def generate_ai_response(
         engine = MemoryEngine(db)
         cust_result = await db.execute(
             select(ConversationMemoryChunk.user_id)
-            .where(ConversationMemoryChunk.conversation_id == conversation.id)
+            .where(ConversationMemoryChunk.conversation_id == conversation_id)
             .limit(1)
         )
         customer_id = cust_result.scalar_one_or_none()
@@ -245,31 +253,34 @@ async def generate_ai_response(
     # Get recent conversation history
     result = await db.execute(
         select(Message).where(
-            Message.conversation_id == conversation.id
+            Message.conversation_id == conversation_id
         ).order_by(Message.created_at.desc()).limit(10)
     )
-    recent_msgs = list(reversed(result.scalars().all()))
+    recent_msgs = [
+        {"id": m.id, "content": m.content, "direction": m.direction.value}
+        for m in reversed(result.scalars().all())
+    ]
 
     # --- Emotional Intelligence ---
-    latest_customer_msg = None
+    latest_customer_text = None
     latest_customer_msg_id = None
     for msg in reversed(recent_msgs):
-        if msg.direction.value == "inbound":
-            latest_customer_msg = msg
-            latest_customer_msg_id = msg.id
+        if msg["direction"] == "inbound":
+            latest_customer_text = msg["content"]
+            latest_customer_msg_id = msg["id"]
             break
 
-    if latest_customer_msg:
+    if latest_customer_text:
         try:
             from app.domains.agents.emotion_engine import EmotionDetector, ToneAdapter
 
             emotion = await EmotionDetector.detect_emotion(
                 db=db,
                 business_id=business_id,
-                message=latest_customer_msg.content,
-                conversation_history=[m.content for m in recent_msgs],
+                message=latest_customer_text,
+                conversation_history=[m["content"] for m in recent_msgs],
                 message_id=latest_customer_msg_id,
-                conversation_id=conversation.id,
+                conversation_id=conversation_id,
             )
             system_prompt = ToneAdapter.adapt_tone(system_prompt, emotion)
         except Exception as e:
@@ -277,21 +288,21 @@ async def generate_ai_response(
             await _rollback(db)
 
     # --- Negotiation Engine ---
-    if latest_customer_msg:
+    if latest_customer_text:
         try:
             from app.domains.agents.negotiation_engine import NegotiationEngine
 
             neg_engine = NegotiationEngine(db)
             is_negotiation = await neg_engine.detect_negotiation_intent(
-                latest_customer_msg.content,
+                latest_customer_text,
                 business_id=business_id,
             )
             if is_negotiation:
-                state = await neg_engine.get_active_state(conversation.id)
-                offer = neg_engine.extract_offer_amount(latest_customer_msg.content)
+                state = await neg_engine.get_active_state(conversation_id)
+                offer = neg_engine.extract_offer_amount(latest_customer_text)
 
                 if state and offer:
-                    neg_resp = await neg_engine.process_offer(conversation.id, offer)
+                    neg_resp = await neg_engine.process_offer(conversation_id, offer)
                     reply = await neg_engine.generate_negotiation_reply(
                         business_id=business_id,
                         negotiation_response=neg_resp,
@@ -309,7 +320,7 @@ async def generate_ai_response(
                             "Estás negociando precio con este cliente. "
                             "Pide amablemente que aclare su oferta numérica."
                         ),
-                        user_prompt=latest_customer_msg.content,
+                        user_prompt=latest_customer_text,
                         max_tokens=max_tokens,
                         temperature=0.7,
                     )
@@ -324,7 +335,7 @@ async def generate_ai_response(
                         "El cliente quiere negociar el precio. "
                         "Pregunta amablemente cuál es su presupuesto o qué precio tenía en mente."
                     ),
-                    user_prompt=latest_customer_msg.content,
+                    user_prompt=latest_customer_text,
                     max_tokens=max_tokens,
                     temperature=0.7,
                 )
@@ -336,11 +347,10 @@ async def generate_ai_response(
     # Rebuild messages list after potential system_prompt changes
     messages = [SystemMessage(content=system_prompt)]
     for msg in recent_msgs:
-        role = "user" if msg.direction.value == "inbound" else "assistant"
-        if role == "user":
-            messages.append(HumanMessage(content=msg.content))
+        if msg["direction"] == "inbound":
+            messages.append(HumanMessage(content=msg["content"]))
         else:
-            messages.append(AIMessage(content=msg.content))
+            messages.append(AIMessage(content=msg["content"]))
 
     # Generate using fallback provider (OpenAI -> Anthropic)
     try:
@@ -363,7 +373,7 @@ async def generate_ai_response(
         try:
             msg_count_result = await db.execute(
                 select(func.count(Message.id)).where(
-                    Message.conversation_id == conversation.id
+                    Message.conversation_id == conversation_id
                 )
             )
             msg_count = msg_count_result.scalar() or 0
@@ -371,7 +381,7 @@ async def generate_ai_response(
                 from app.domains.memory.service import MemoryEngine
 
                 mem_engine = MemoryEngine(db)
-                await mem_engine.extract_facts_from_conversation(conversation.id)
+                await mem_engine.extract_facts_from_conversation(conversation_id)
         except Exception as e:
             get_logger(__name__).warning(f"Failed to trigger fact extraction: {e}")
             await _rollback(db)
@@ -380,13 +390,13 @@ async def generate_ai_response(
     is_complex = bool(
         custom_prompt
         or (len(recent_msgs) > 5)
-        or (latest_customer_msg and len(latest_customer_msg.content) > 100)
+        or (latest_customer_text and len(latest_customer_text) > 100)
     )
     if result and is_complex:
         try:
             from app.domains.agents.reflection import ChainOfThought
 
-            query = latest_customer_msg.content if latest_customer_msg else ""
+            query = latest_customer_text or ""
             tools_used = []
             if custom_prompt:
                 # Heuristic: extract tool names from custom_prompt
@@ -408,7 +418,7 @@ async def generate_ai_response(
             if thought_steps:
                 await ChainOfThought.log_thought_process(
                     db=db,
-                    conversation_id=conversation.id,
+                    conversation_id=conversation_id,
                     message_id=latest_customer_msg_id,
                     thought_steps=thought_steps,
                 )
