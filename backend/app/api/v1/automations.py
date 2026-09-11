@@ -1185,3 +1185,26 @@ async def get_toggles_dashboard(
         by_category=by_category,
         timestamp=datetime.now(timezone.utc),
     )
+
+
+@router.post("/toggles/seed/{business_id}", status_code=status.HTTP_201_CREATED)
+async def seed_toggles_endpoint(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Crear los toggles por defecto para un negocio nuevo."""
+    from app.domains.automations.seed_toggles import seed_toggles_for_business
+
+    try:
+        await seed_toggles_for_business(business_id, db)
+        return {
+            "ok": True,
+            "message": f"12 toggles creados para negocio {business_id}",
+            "toggles_created": 12,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error al seed toggles: {str(e)}",
+        )
