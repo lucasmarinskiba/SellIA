@@ -45,6 +45,14 @@ def _clean_list(values: Any, *, allowed: Optional[set[str]] = None) -> list[str]
     return out
 
 
+async def _safe_rollback(db: AsyncSession) -> None:
+    """Postgres aborts the whole transaction on the first failed statement."""
+    try:
+        await db.rollback()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("preferences rollback failed: %s", str(e)[:160])
+
+
 async def _get_or_create_prefs(db: AsyncSession, business_id: uuid.UUID) -> SellerPreferences:
     result = await db.execute(
         select(SellerPreferences).where(SellerPreferences.business_id == business_id)
@@ -79,10 +87,39 @@ async def load_profile(
     user_id: uuid.UUID,
     business_id: Optional[uuid.UUID],
 ) -> dict[str, Any]:
-    """Everything the configuration screen shows, plus what is still missing."""
-    prefs = await _get_or_create_prefs(db, business_id) if business_id else None
-    context = await _get_context(db, user_id, business_id)
-    memory = await _get_memory(db, user_id)
+    """Everything the configuration screen shows, plus what is still missing.
+
+    The three owners are read independently. If one is unreachable the screen
+    still opens with the other two and says which part could not be read —
+    letting the whole configuration 500 because one table is missing is how a
+    seller ends up unable to configure anything.
+    """
+    unavailable: list[str] = []
+
+    prefs = None
+    if business_id:
+        try:
+            prefs = await _get_or_create_prefs(db, business_id)
+        except Exception as e:  # noqa: BLE001
+            logger.error("preferences: seller_preferences unreadable: %s", str(e)[:200])
+            await _safe_rollback(db)
+            unavailable.append("plataformas, idiomas, mercados y gustos")
+
+    context = None
+    try:
+        context = await _get_context(db, user_id, business_id)
+    except Exception as e:  # noqa: BLE001
+        logger.error("preferences: business_context unreadable: %s", str(e)[:200])
+        await _safe_rollback(db)
+        unavailable.append("rubro, audiencia y objetivo")
+
+    memory = None
+    try:
+        memory = await _get_memory(db, user_id)
+    except Exception as e:  # noqa: BLE001
+        logger.error("preferences: user_memory unreadable: %s", str(e)[:200])
+        await _safe_rollback(db)
+        unavailable.append("idioma principal, tono e intereses")
 
     profile: dict[str, Any] = {
         # Identity of the business — BusinessContext owns these.
@@ -118,6 +155,9 @@ async def load_profile(
         profile["markets"] = _clean_list(context.target_countries)
 
     profile["completeness"] = _completeness(profile)
+    # Named, not swallowed: a blank field because nothing was saved and a blank
+    # field because the table could not be read look identical otherwise.
+    profile["unavailable"] = unavailable
     return profile
 
 

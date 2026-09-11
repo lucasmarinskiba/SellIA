@@ -35,8 +35,14 @@ async def _resolve_business(
             raise HTTPException(status_code=404, detail="Negocio no encontrado")
         return owned
 
+    # Ordered by name, not by creation date: the businesses table has no
+    # created_at column, and reaching for one raised AttributeError on every
+    # call to this endpoint — a 500 before any of it ran.
     result = await db.execute(
-        select(Business.id).where(Business.user_id == user.id).order_by(Business.created_at).limit(1)
+        select(Business.id)
+        .where(Business.user_id == user.id, Business.is_active.is_(True))
+        .order_by(Business.name)
+        .limit(1)
     )
     return result.scalar_one_or_none()
 
