@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import Any
 
@@ -188,31 +189,75 @@ async def send_message(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
+    now = datetime.now(timezone.utc)
+
+    # An outbound reply is written by send_outbound_message, which sends it AND
+    # records the row — including who typed it. This endpoint used to create its
+    # own row first and then call that function, so every manually typed reply
+    # was stored TWICE: the history showed each message doubled and every count
+    # built on messages (the team board, the bot stats, the analyst's reply
+    # counts) was inflated. One writer now.
+    if message_in.direction == MessageDirection.OUTBOUND:
+        from app.domains.channels.services import send_outbound_message
+
+        try:
+            await send_outbound_message(
+                db, conversation_id, message_in.content, message_in.content_type,
+                # Credits the reply to whoever is logged in, so a team can see
+                # who is actually answering customers.
+                sent_by_user_id=current_user.id,
+            )
+            result = await db.execute(
+                select(Message)
+                .where(
+                    Message.conversation_id == conversation_id,
+                    Message.direction == MessageDirection.OUTBOUND,
+                )
+                .order_by(Message.created_at.desc())
+                .limit(1)
+            )
+            sent = result.scalar_one_or_none()
+            if sent is not None:
+                return sent
+        except Exception as e:
+            from app.core.logger import get_logger
+
+            get_logger(__name__).error(f"Failed to send outbound message: {e}")
+            await db.rollback()
+            # The send failed, but the seller's words are not thrown away: the
+            # row is kept, attributed, and flagged as undelivered so the inbox
+            # can show that it never reached the customer.
+            extra = dict(message_in.extra_data or {})
+            extra["sent_by_user_id"] = str(current_user.id)
+            extra["delivery_failed"] = str(e)[:300]
+            message = Message(
+                conversation_id=conversation_id,
+                direction=MessageDirection.OUTBOUND,
+                content=message_in.content,
+                content_type=message_in.content_type,
+                status=MessageStatus.FAILED,
+                extra_data=extra,
+                created_at=now,
+            )
+            db.add(message)
+            conversation.last_message_at = now
+            await db.commit()
+            await db.refresh(message)
+            return message
+
+    # Inbound messages logged by hand (a call, a walk-in) are written here.
     message = Message(
         conversation_id=conversation_id,
         direction=message_in.direction,
         content=message_in.content,
         content_type=message_in.content_type,
         extra_data=message_in.extra_data or {},
+        created_at=now,
     )
     db.add(message)
-
-    conversation.last_message_at = message.created_at
+    # Explicit timestamp: message.created_at is still None before the flush, so
+    # assigning it here used to leave last_message_at empty.
+    conversation.last_message_at = now
     await db.commit()
     await db.refresh(message)
-
-    # Send outbound message via channel connector
-    if message_in.direction == MessageDirection.OUTBOUND:
-        try:
-            from app.domains.channels.services import send_outbound_message
-            await send_outbound_message(
-                db, conversation_id, message_in.content, message_in.content_type,
-                # Credits the reply to whoever is logged in, so a team can
-                # see who is actually answering customers.
-                sent_by_user_id=current_user.id,
-            )
-        except Exception as e:
-            from app.core.logger import get_logger
-            get_logger(__name__).error(f"Failed to send outbound message: {e}")
-
     return message
