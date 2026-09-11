@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
@@ -848,18 +850,124 @@ async def resend_verification(
     return {"message": "Email de verificación reenviado"}
 
 
+#: Only these purposes are accepted, so a caller cannot mint a code for an
+#: arbitrary string and then verify it against a different flow.
+EMAIL_OTP_PURPOSES = ("login", "setup")
+
+
+def _otp_purpose(raw: Optional[str]) -> str:
+    return raw if raw in EMAIL_OTP_PURPOSES else "login"
+
+
+@router.get("/2fa/email/status")
+async def email_otp_status(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Whether this account has the emailed second factor turned on.
+
+    The security screen called this endpoint and it did not exist (404), so the
+    switch always rendered as off — including for an account that had it on.
+    """
+    from app.core.deps import get_current_user
+
+    user = await get_current_user(request, db)
+    return {
+        "enabled": bool(getattr(user, "email_otp_enabled", False)),
+        "email": user.email,
+        "totp_enabled": bool(user.is_2fa_enabled),
+    }
+
+
+@router.post("/2fa/email/setup", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+async def setup_email_otp(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Start turning on the emailed second factor: sends the confirmation code.
+
+    Nothing is enabled here. The flag is only set once the code that lands in
+    the inbox comes back to /2fa/email/verify with purpose=setup — otherwise
+    somebody could switch on a factor for a mailbox they cannot read, and lock
+    the real owner out.
+    """
+    from app.core.deps import get_current_user
+    from app.core.email_otp import create_email_otp, send_otp_email
+
+    user = await get_current_user(request, db)
+    if getattr(user, "email_otp_enabled", False):
+        return {"message": "La verificación por email ya está activa", "enabled": True}
+
+    code = await create_email_otp(db, user.id, "setup", ip_address=request.state.client_ip)
+    await send_otp_email(user.email, code, "setup")
+    return {
+        "message": f"Te enviamos un código a {user.email}. Ingresalo para activarlo.",
+        "enabled": False,
+        "pending_verification": True,
+    }
+
+
+@router.post("/2fa/email/disable")
+async def disable_email_otp(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Turn the emailed second factor off, and tell the owner it happened.
+
+    Turning a protection off is exactly what someone with a stolen session would
+    do, so the account owner gets a security notification about it. The action
+    itself only needs the session, which is what the screen has.
+    """
+    from app.core.deps import get_current_user
+
+    user = await get_current_user(request, db)
+    if not getattr(user, "email_otp_enabled", False):
+        return {"message": "La verificación por email ya estaba desactivada", "enabled": False}
+
+    user.email_otp_enabled = False
+    await db.commit()
+
+    try:
+        from app.core.security_notifications import notify_security_event
+
+        await notify_security_event(
+            db=db,
+            event="2fa_email_disabled",
+            title="Se desactivó la verificación por email",
+            description=(
+                "Alguien desactivó el segundo factor por email de tu cuenta. "
+                "Si no fuiste vos, cambiá tu contraseña y volvé a activarlo."
+            ),
+            details={
+                "ip": getattr(request.state, "client_ip", None),
+                "user_id": str(user.id),
+            },
+            # Sent to the account owner: this is the one notification that has to
+            # reach the person whose protection was just removed.
+            user_email=user.email,
+        )
+    except Exception as e:  # noqa: BLE001 -- the setting change stands either way
+        import logging
+
+        logging.getLogger(__name__).warning("2fa disable notification failed: %s", str(e)[:160])
+
+    return {"message": "Verificación por email desactivada", "enabled": False}
+
+
 @router.post("/2fa/email/send", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
 async def send_email_otp(
     request: Request,
     db: AsyncSession = Depends(get_db),
+    purpose: Optional[str] = None,
 ):
     """Envía un código OTP por email."""
     from app.core.deps import get_current_user
     from app.core.email_otp import create_email_otp, send_otp_email
 
     user = await get_current_user(request, db)
-    code = await create_email_otp(db, user.id, "login", ip_address=request.state.client_ip)
-    await send_otp_email(user.email, code, "login")
+    chosen = _otp_purpose(purpose)
+    code = await create_email_otp(db, user.id, chosen, ip_address=request.state.client_ip)
+    await send_otp_email(user.email, code, chosen)
     return {"message": "Código enviado a tu email"}
 
 
@@ -868,16 +976,28 @@ async def verify_email_otp_endpoint(
     code: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    purpose: Optional[str] = None,
 ):
-    """Verifica un código OTP por email."""
+    """Verifica un código OTP por email.
+
+    With purpose=setup a valid code is also what turns the factor on: proof that
+    the person asking actually receives mail at that address.
+    """
     from app.core.deps import get_current_user
     from app.core.email_otp import verify_email_otp
 
     user = await get_current_user(request, db)
-    valid = await verify_email_otp(db, user.id, code, "login")
+    chosen = _otp_purpose(purpose)
+    valid = await verify_email_otp(db, user.id, code, chosen)
     if not valid:
         raise HTTPException(status_code=400, detail="Código inválido o expirado")
-    return {"message": "Código verificado correctamente"}
+
+    if chosen == "setup" and not getattr(user, "email_otp_enabled", False):
+        user.email_otp_enabled = True
+        await db.commit()
+        return {"message": "Verificación por email activada", "enabled": True}
+
+    return {"message": "Código verificado correctamente", "enabled": bool(getattr(user, "email_otp_enabled", False))}
 
 
 # ============================================================
