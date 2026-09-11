@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, resolve_business_id
 from app.domains.users.models import User
 
 from app.domains.social_sellers.models import SocialSeller, SellerCustomerRelationship, SellerPerformance, UnifiedCustomer
@@ -26,6 +26,7 @@ from app.domains.social_sellers.schemas import (
 from app.domains.social_sellers.engine import SocialSellerEngine
 from app.domains.social_sellers.loyalty_engine import LoyaltyEngine
 from app.domains.social_sellers.lifetime_engine import CustomerLifetimeEngine
+from app.domains.social_sellers.lookalike import LookalikeEngine
 from app.domains.social_sellers.customer_unification import CustomerIdentityMatcher
 
 router = APIRouter(prefix="/social-sellers", tags=["social-sellers"])
@@ -225,7 +226,7 @@ async def merge_customers(
     """Fusiona dos clientes unificados."""
     matcher = CustomerIdentityMatcher(db)
     result = await matcher.merge_customers(
-        business_id=current_user.business_id if hasattr(current_user, 'business_id') else None,
+        business_id=await resolve_business_id(db, current_user) if hasattr(current_user, 'business_id') else None,
         target_id=data.target_id,
         source_id=data.source_id,
     )

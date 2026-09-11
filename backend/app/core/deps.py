@@ -153,3 +153,28 @@ async def get_current_user_ws(token: Optional[str], db: AsyncSession = Depends(g
     if user is None or not user.is_active:
         return None
     return user
+
+
+async def resolve_business_id(db: AsyncSession, user: User):
+    """The caller's own business id, looked up instead of assumed.
+
+    Nine routers read `current_user.business_id`. The User model has no such
+    column (id, email, hashed_password, full_name, is_active, email_verified,
+    …), so every one of those lines raises AttributeError and answers 500. It
+    went unnoticed because most of those routers were never mounted; mounting
+    them surfaced it immediately on /gamification/profile.
+
+    Returns the user's first active business, or their own id when they have
+    none — which is the fallback the callers already expressed with
+    `current_user.business_id or current_user.id`, so behaviour for a
+    business-less account is unchanged.
+    """
+    from app.domains.businesses.models import Business
+
+    result = await db.execute(
+        select(Business.id)
+        .where(Business.user_id == user.id, Business.is_active.is_(True))
+        .order_by(Business.name)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() or user.id

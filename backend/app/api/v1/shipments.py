@@ -27,7 +27,10 @@ async def list_carriers(
     current_user: User = Depends(get_current_active_user),
 ):
     """List all available shipping carriers with metadata."""
-    return shipment_services.get_carriers_info()
+    # get_carriers_info is async: returning it unawaited handed FastAPI a
+    # coroutine, which failed response validation as a 500. Never caught because
+    # the router was not mounted anywhere until now.
+    return await shipment_services.get_carriers_info()
 
 
 # ========== Shipment Configs ==========
