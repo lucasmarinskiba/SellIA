@@ -453,3 +453,44 @@ class ToggleDashboardStats(BaseModel):
 class ToggleDashboardResponse(BaseModel):
     by_category: List[ToggleDashboardStats]
     timestamp: datetime
+
+
+# ========== Toggle Schedule Schemas ==========
+
+class ToggleScheduleBase(BaseModel):
+    toggle_id: UUID
+    start_time: datetime
+    timezone: str = "UTC"
+    recurring: bool = False
+    recurrence_rule: Optional[str] = None
+    action: str  # "enable" | "disable"
+    reason: Optional[str] = None
+
+
+class ToggleScheduleCreate(ToggleScheduleBase):
+    pass
+
+
+class ToggleScheduleUpdate(BaseModel):
+    start_time: Optional[datetime] = None
+    timezone: Optional[str] = None
+    recurring: Optional[bool] = None
+    recurrence_rule: Optional[str] = None
+    action: Optional[str] = None
+    reason: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ToggleScheduleResponse(ToggleScheduleBase):
+    id: UUID
+    business_id: UUID
+    is_active: bool
+    last_executed_at: Optional[datetime]
+    next_execution_at: Optional[datetime]
+    execution_count: int
+    failed_count: int
+    last_error: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

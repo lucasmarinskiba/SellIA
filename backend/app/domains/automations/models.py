@@ -443,3 +443,40 @@ class ToggleAuditLog(Base):
         Index("ix_business_toggle_audit", "business_id", "toggle_id"),
         Index("ix_created_at", "created_at"),
     )
+
+
+class ToggleSchedule(Base):
+    """Schedule toggles to turn on/off at specific times."""
+    __tablename__ = "toggle_schedules"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    toggle_id = Column(UUID(as_uuid=True), ForeignKey("automation_toggles.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Schedule timing
+    start_time = Column(DateTime(timezone=True), nullable=False)  # When to execute
+    timezone = Column(String(64), default="UTC", nullable=False)
+    recurring = Column(Boolean, default=False, nullable=False)
+    recurrence_rule = Column(String(500), nullable=True)  # RFC 5545 RRULE (e.g., "FREQ=DAILY", "FREQ=WEEKLY;BYDAY=MO,WE,FR")
+
+    # Action
+    action = Column(String(20), nullable=False)  # "enable" | "disable"
+    scheduled_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reason = Column(Text, nullable=True)
+
+    # Execution tracking
+    is_active = Column(Boolean, default=True, nullable=False)
+    last_executed_at = Column(DateTime(timezone=True), nullable=True)
+    next_execution_at = Column(DateTime(timezone=True), nullable=True)
+    execution_count = Column(Integer, default=0, nullable=False)
+    failed_count = Column(Integer, default=0, nullable=False)
+    last_error = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_business_toggle_schedule", "business_id", "toggle_id"),
+        Index("ix_next_execution", "next_execution_at"),
+        Index("ix_is_active", "is_active"),
+    )

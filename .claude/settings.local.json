@@ -1891,7 +1891,17 @@
       "Bash(mkdir -p backend/app/core/middleware)",
       "Bash(touch backend/app/core/middleware/__init__.py)",
       "Bash(python -m py_compile backend/tests/test_automation_toggles.py backend/tests/test_automation_toggles_e2e.py)",
-      "Bash(python -m py_compile backend/app/api/v1/businesses.py)"
+      "Bash(python -m py_compile backend/app/api/v1/businesses.py)",
+      "Bash(bash scripts/pre-deploy-check.sh)",
+      "Bash(python -m pytest backend/tests/test_automation_toggles.py -v)",
+      "Bash(git commit -m 'docs: Automation Toggles deployment guide for production *)",
+      "Bash(curl -s \"https://sellia-production.up.railway.app/api/v1/automations/toggles/business/test-id\")",
+      "Bash(git commit -m 'config: Vercel deployment configuration for monorepo *)",
+      "Bash(curl -s -X GET \"https://sellia-production.up.railway.app/api/v1/automations/toggles/business/00000000-0000-0000-0000-000000000000\" -H \"Content-Type: application/json\")",
+      "Bash(curl -s -I \"https://sellia-brain.vercel.app/sellia-brain\")",
+      "Bash(git commit -m 'fix: User model billing_address/payment_methods type mismatch *)",
+      "Bash(git commit -m 'docs: Tier 2 production deployment status *)",
+      "Bash(git commit -m 'feat: Tier 3 - Scheduled Toggles backend foundation *)"
     ]
   }
 }
