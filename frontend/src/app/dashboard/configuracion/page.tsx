@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import SellerPreferences from '@/components/preferences/SellerPreferences'
 import { useAuth } from '@/hooks/useAuth'
 import { api } from '@/lib/api'
 import { consumoApi, type CostAttributionSummary, type QualityGateConfig, type PlanRecommendation, type OnboardingProgress, type OnboardingHelpResponse } from '@/lib/consumo'
@@ -1001,7 +1002,7 @@ function MemoriaPerfilSection() {
 
 export default function ConfiguracionPage() {
   const { user, loading: authLoading } = useAuth()
-  const [activeTab, setActiveTab] = useState<'general' | 'consumo'>('general')
+  const [activeTab, setActiveTab] = useState<'perfil' | 'general' | 'consumo'>('perfil')
 
   if (authLoading) {
     return (
@@ -1017,7 +1018,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="min-h-screen bg-[#060812]">
-      <div className="max-w-4xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <div className="p-3 rounded-xl bg-brand-orange/10">
@@ -1025,12 +1026,22 @@ export default function ConfiguracionPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Configuración</h1>
-            <p className="text-sm text-white/50">Gestiona tu cuenta, API keys y consumo</p>
+            <p className="text-sm text-white/50">Tu negocio, tus plataformas, tu voz, tu cuenta y tu consumo</p>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8">
+          <button
+            onClick={() => setActiveTab('perfil')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'perfil'
+                ? 'bg-white/[0.08] text-white'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+            }`}
+          >
+            Tu negocio
+          </button>
           <button
             onClick={() => setActiveTab('general')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -1052,6 +1063,8 @@ export default function ConfiguracionPage() {
             Consumo
           </button>
         </div>
+
+        {activeTab === 'perfil' && <SellerPreferences />}
 
         {activeTab === 'general' && (
           <div>

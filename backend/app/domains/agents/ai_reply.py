@@ -19,6 +19,37 @@ from app.domains.businesses.models import Business
 from app.core.logger import get_logger
 
 
+def _is_persistent(instance: Any) -> bool:
+    """True only for an instance that already exists as a row.
+
+    The bot tester builds a Conversation it never adds to the session, so that
+    trying a reply cannot leave a fake conversation behind. Anything in here
+    that writes has to check first.
+    """
+    from sqlalchemy import inspect as sa_inspect
+
+    try:
+        state = sa_inspect(instance)
+        return bool(state.persistent)
+    except Exception:  # noqa: BLE001 - not an ORM instance at all
+        return False
+
+
+async def _rollback(db: AsyncSession) -> None:
+    """Undo a failed statement before the next one runs.
+
+    Postgres aborts the whole transaction on the first error: without this,
+    swallowing an exception here turns every later query in the same request
+    into "current transaction is aborted, commands ignored until end of
+    transaction block" — which is exactly how a failed A/B lookup was killing
+    the reply that came after it.
+    """
+    try:
+        await db.rollback()
+    except Exception as e:  # noqa: BLE001
+        get_logger(__name__).warning(f"Rollback failed: {e}")
+
+
 async def generate_ai_response(
     db: AsyncSession,
     conversation: Conversation,
@@ -69,6 +100,7 @@ async def generate_ai_response(
             business_context.pop("voice_personality_slug", None)
     except Exception as e:
         get_logger(__name__).error(f"Context builder error: {e}")
+        await _rollback(db)
 
     # --- Funnel Stage Detection ---
     # Detect where this conversation sits in the customer journey (awareness
@@ -108,6 +140,7 @@ async def generate_ai_response(
                 voice_slug = ab_voice_slug or None
     except Exception as e:
         get_logger(__name__).warning(f"Funnel stage detection failed: {e}")
+        await _rollback(db)
 
     # Build system prompt with voice composition
     if voice_slug:
@@ -158,10 +191,17 @@ async def generate_ai_response(
                     "agent_type": personality_slug,
                 }
                 conversation.extra_data = extra_data
-                db.add(conversation)
-                await db.commit()
+                # Only persist a conversation that is really a row. The bot
+                # tester runs this whole pipeline against a throwaway
+                # Conversation that was never added to the session; adding it
+                # here tried to INSERT it, the INSERT failed, and Postgres then
+                # aborted every remaining query in the request.
+                if _is_persistent(conversation):
+                    db.add(conversation)
+                    await db.commit()
     except Exception as e:
         get_logger(__name__).warning(f"A/B test lookup failed: {e}")
+        await _rollback(db)
 
     # Inject CustomerMemory profile into the prompt
     customer_profile = ""
@@ -180,6 +220,7 @@ async def generate_ai_response(
             customer_profile = await engine.get_customer_profile_summary(customer_id)
     except Exception as e:
         get_logger(__name__).warning(f"Failed to load customer profile: {e}")
+        await _rollback(db)
 
     # --- Funnel Stage Specialist ---
     # Layer the detected stage's tactics, adapted to the business's model
@@ -233,6 +274,7 @@ async def generate_ai_response(
             system_prompt = ToneAdapter.adapt_tone(system_prompt, emotion)
         except Exception as e:
             get_logger(__name__).warning(f"Emotion detection failed: {e}")
+            await _rollback(db)
 
     # --- Negotiation Engine ---
     if latest_customer_msg:
@@ -289,6 +331,7 @@ async def generate_ai_response(
                 return reply
         except Exception as e:
             get_logger(__name__).warning(f"Negotiation engine failed: {e}")
+            await _rollback(db)
 
     # Rebuild messages list after potential system_prompt changes
     messages = [SystemMessage(content=system_prompt)]
@@ -331,6 +374,7 @@ async def generate_ai_response(
                 await mem_engine.extract_facts_from_conversation(conversation.id)
         except Exception as e:
             get_logger(__name__).warning(f"Failed to trigger fact extraction: {e}")
+            await _rollback(db)
 
     # --- Chain-of-Thought logging for complex responses ---
     is_complex = bool(
@@ -370,6 +414,7 @@ async def generate_ai_response(
                 )
         except Exception as e:
             get_logger(__name__).warning(f"Chain-of-thought logging failed: {e}")
+            await _rollback(db)
 
     return result
 
