@@ -48,14 +48,21 @@ async def _scope_order_number_to_business() -> None:
     from app.core.database import engine
 
     statements = [
-        # Postgres names a single-column unique constraint <table>_<column>_key.
+        # Two shapes to clear, because it is not obvious which one exists:
+        # `unique=True` alone would have produced the constraint
+        # orders_order_number_key, but `unique=True, index=True` — what the
+        # model actually had — makes SQLAlchemy emit
+        # `CREATE UNIQUE INDEX ix_orders_order_number` instead. The first
+        # attempt at this migration only dropped the constraint, so the unique
+        # INDEX survived and order numbers stayed globally unique in production.
         "ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_order_number_key",
-        "DROP INDEX IF EXISTS orders_order_number_key",
+        "DROP INDEX IF EXISTS ix_orders_order_number",
         """
         CREATE UNIQUE INDEX IF NOT EXISTS uq_orders_business_number
         ON orders (business_id, order_number)
         WHERE order_number IS NOT NULL
         """,
+        # Recreated without UNIQUE: lookups by number still want an index.
         "CREATE INDEX IF NOT EXISTS ix_orders_order_number ON orders (order_number)",
     ]
     for statement in statements:
