@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
+import { useBusinessSnapshot } from "@/lib/businessSnapshot"
 import { motion, useReducedMotion } from "framer-motion"
 import { Shield, MessageCircle, Clock, Moon, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,40 +20,63 @@ interface TrustStat {
 }
 
 export function TrustBuilder({ className }: TrustBuilderProps) {
-  const [stats, setStats] = useState<TrustStat[]>([
+  /**
+   * These four numbers used to be constants: "47 ventas autopilot", "99.7% de
+   * mensajes respondidos", "0 quejas", "12/15 noches tranquilas". They were
+   * displayed in the sidebar of every page to every account, including brand new
+   * ones with no data at all, which makes them the most-seen invented numbers in
+   * the product. They now come from the account's own snapshot, and a number that
+   * cannot be computed yet shows "—" instead of a flattering default.
+   */
+  const { snapshot, loading } = useBusinessSnapshot()
+
+  const conversations = snapshot?.conversations
+  const revenue = snapshot?.revenue
+  const aiReplies = (snapshot?.channels ?? []).reduce((sum, channel) => sum + (channel.ai_replies || 0), 0)
+  const waiting = Math.max(0, (conversations?.inbound ?? 0) - (conversations?.answered ?? 0))
+
+  const stats: TrustStat[] = useMemo(() => [
     {
-      id: "autopilot-sales",
-      icon: <TrendingUp className="w-4 h-4" />,
-      label: "Ventas autopilot",
-      value: "47",
-      subtext: "este mes sin tu intervención",
+      id: "ai-replies",
+      icon: <MessageCircle className="w-4 h-4" />,
+      label: "Respuestas de la IA",
+      value: snapshot ? String(aiReplies) : "—",
+      subtext: aiReplies > 0 ? "mensajes que contestó sola" : "todavía ninguna",
       color: "text-emerald-500",
     },
     {
       id: "response-rate",
-      icon: <MessageCircle className="w-4 h-4" />,
-      label: "Mensajes respondidos",
-      value: "99.7%",
-      subtext: "a tiempo, siempre",
+      icon: <TrendingUp className="w-4 h-4" />,
+      label: "Consultas respondidas",
+      // Percentage only when there is a denominator: a rate over zero questions
+      // is not 100%, it is unknown.
+      value:
+        conversations && conversations.inbound > 0
+          ? `${conversations.response_rate}%`
+          : "—",
+      subtext:
+        conversations && conversations.inbound > 0
+          ? `${conversations.answered} de ${conversations.inbound}`
+          : "sin consultas todavía",
       color: "text-sky-500",
     },
     {
-      id: "complaints",
+      id: "waiting",
       icon: <Shield className="w-4 h-4" />,
-      label: "Quejas de clientes",
-      value: "0",
-      subtext: "en los últimos 30 días",
-      color: "text-violet-500",
+      label: "Esperando respuesta",
+      value: snapshot ? String(waiting) : "—",
+      subtext: waiting > 0 ? "conversaciones sin contestar" : "nadie esperando",
+      color: waiting > 0 ? "text-amber-500" : "text-violet-500",
     },
     {
-      id: "sleep-score",
+      id: "paid-orders",
       icon: <Moon className="w-4 h-4" />,
-      label: "Noches tranquilas",
-      value: "12/15",
-      subtext: "dormiste sin preocupaciones",
+      label: "Órdenes cobradas",
+      value: revenue ? String(revenue.orders_paid) : "—",
+      subtext: revenue ? `de ${revenue.orders_total} en total` : "sin ventas todavía",
       color: "text-amber-500",
     },
-  ])
+  ], [snapshot, conversations, revenue, aiReplies, waiting])
 
   const [animatedValues, setAnimatedValues] = useState<Record<string, number>>({})
   const reducedMotion = useReducedMotion()
@@ -94,9 +118,15 @@ export function TrustBuilder({ className }: TrustBuilderProps) {
       const timer = setTimeout(() => {
         requestAnimationFrame(animate)
       }, 200)
-      return () => clearTimeout(timer)
+      if (nothingToShow) return null
+
+  return () => clearTimeout(timer)
     })
   }, [stats, reducedMotion])
+
+  // Nothing to show until the account has been read: better an absent widget
+  // than four dashes, and far better than the invented numbers this replaced.
+  const nothingToShow = loading && !snapshot
 
   function formatValue(stat: TrustStat, animated: number): string {
     if (stat.value.includes("%")) {

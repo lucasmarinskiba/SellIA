@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useBusinessSnapshot } from "@/lib/businessSnapshot"
+import { salesAnalyticsApi } from "@/lib/salesAnalytics"
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
@@ -64,7 +66,7 @@ const PLANT_CONFIG = {
   },
 }
 
-function generateGarden(salesCount: number, streakDays: number): Plant[] {
+function generateGarden(salesCount: number): Plant[] {
   const plants: Plant[] = []
   const totalPlants = Math.min(salesCount, 24)
 
@@ -108,15 +110,41 @@ function WaterDrop({ x, y, delay }: { x: number; y: number; delay: number }) {
 }
 
 export function GardenWidget({ className }: GardenWidgetProps) {
-  const [salesCount, setSalesCount] = useState(8)
-  const [streakDays, setStreakDays] = useState(3)
+  /**
+   * The garden used to grow from constants: salesCount 8 and a "racha" of 3 days,
+   * identical for a brand new account and for one with a hundred sales. It now
+   * grows from the real paid orders of the account, and the streak is the number
+   * of consecutive days with at least one sale, counted from those same orders —
+   * not a motivational number picked to look good.
+   */
+  const { snapshot } = useBusinessSnapshot()
+  const salesCount = snapshot?.revenue.orders_paid ?? 0
+  const [streakDays, setStreakDays] = useState(0)
   const [plants, setPlants] = useState<Plant[]>([])
   const [hoveredPlant, setHoveredPlant] = useState<string | null>(null)
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    setPlants(generateGarden(salesCount, streakDays))
-  }, [salesCount, streakDays])
+    setPlants(generateGarden(salesCount))
+  }, [salesCount])
+
+  useEffect(() => {
+    // The consecutive-days streak needs the dates of the orders, which the
+    // snapshot does not carry; the sales series does.
+    let cancelled = false
+    salesAnalyticsApi.get(30)
+      .then(data => {
+        if (cancelled) return
+        let streak = 0
+        for (const day of [...data.revenue_series].reverse()) {
+          if (day.orders > 0) streak += 1
+          else break
+        }
+        setStreakDays(streak)
+      })
+      .catch(() => setStreakDays(0))
+    return () => { cancelled = true }
+  }, [])
 
   return (
     <div
@@ -132,7 +160,7 @@ export function GardenWidget({ className }: GardenWidgetProps) {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Tu Jardín 🌱</h3>
           <p className="text-xs text-muted-foreground">
-            {salesCount} ventas = {plants.length} plantas
+            {salesCount} {salesCount === 1 ? 'venta cobrada' : 'ventas cobradas'} = {plants.length} {plants.length === 1 ? 'planta' : 'plantas'}
           </p>
         </div>
         {streakDays > 0 && (
