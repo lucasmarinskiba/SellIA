@@ -47,6 +47,24 @@ _try_include("app.domains.platform_commerce.api.router", "/api/v1", ["platform-c
 _try_include("app.domains.chatbots.api.router", "/api/v1", ["chatbots"])
 _try_include("app.domains.preferences.api.router", "/api/v1", ["preferences"])
 _try_include("app.domains.next_steps.api.router", "/api/v1", ["next-steps"])
+
+# ── Routers that existed and were never mounted ────────────────────────────
+# Probing the 380 paths the frontend really calls against production showed 217
+# answering 404. For these eight the backend was not missing at all: the router
+# module, its endpoints and its models were written, and nothing ever included
+# them, so whole screens (Agenda, Envíos, CRM, Objetivos, Automatizaciones,
+# Consumo, Alertas) asked and got nothing. Same failure as the orders router
+# above. Each is mounted at exactly the prefix its frontend already calls, so no
+# client changes are needed; _try_include keeps a broken import from taking the
+# service down.
+_try_include("app.api.v1.services.router", "/api/v1/services", ["services"])
+_try_include("app.api.v1.shipments.router", "/api/v1/shipments", ["shipments"])
+_try_include("app.api.v1.automations.router", "/api/v1/automations", ["automations"])
+_try_include("app.domains.crm.router.router", "/api/v1", ["crm"])
+_try_include("app.domains.objectives.router.router", "/api/v1/businesses", ["objectives"])
+_try_include("app.domains.consumo.router.router", "/api/v1", ["consumo"])
+_try_include("app.domains.alerts.router.router", "/api/v1", ["alerts"])
+_try_include("app.domains.gamification.router.router", "/api/v1", ["gamification"])
 _try_include("app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"])
 _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 # payments.py's router already declares prefix="/api/v1" internally — pass "" here to avoid doubling it
