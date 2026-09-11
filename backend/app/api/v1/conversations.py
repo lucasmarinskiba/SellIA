@@ -224,6 +224,13 @@ async def send_message(
 
             get_logger(__name__).error(f"Failed to send outbound message: {e}")
             await db.rollback()
+            # The rollback expires every loaded instance, so `conversation` has
+            # to be read again before it is touched: reading an attribute off the
+            # expired one lazy-loads inside async code and raises MissingGreenlet
+            # — which is exactly how this endpoint started answering 500.
+            conversation = await db.get(Conversation, conversation_id)
+            if conversation is None:
+                raise HTTPException(status_code=404, detail="Conversación no encontrada")
             # The send failed, but the seller's words are not thrown away: the
             # row is kept, attributed, and flagged as undelivered so the inbox
             # can show that it never reached the customer.
