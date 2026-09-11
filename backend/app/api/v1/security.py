@@ -155,10 +155,25 @@ async def get_my_login_logs(
 
 @router.get("/push/vapid-public-key")
 async def get_vapid_key():
+    """The browser needs this key to subscribe to web push.
+
+    A deployment without VAPID keys configured is not a server fault, so this
+    answers 200 with available=false and what to do about it. It used to raise a
+    500, which reads in the browser console as "the product is broken" rather
+    than "push is not set up yet", and makes the caller retry something that
+    cannot succeed until someone adds the keys.
+    """
     key = get_vapid_public_key()
     if not key:
-        raise HTTPException(status_code=500, detail="VAPID no configurado")
-    return {"public_key": key}
+        return {
+            "public_key": None,
+            "available": False,
+            "reason": (
+                "Las notificaciones push no están configuradas en este servidor "
+                "(faltan las claves VAPID)."
+            ),
+        }
+    return {"public_key": key, "available": True}
 
 
 @router.post("/push/subscribe", response_model=PushSubscriptionResponse)
