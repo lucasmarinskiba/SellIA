@@ -5,6 +5,8 @@ import { UUID } from 'crypto'
 import { AutomationToggleResponse, ToggleAuditLogResponse } from '@/lib/api/toggles'
 import { ToggleSwitch } from './ToggleSwitch'
 import { AuditPanel } from './AuditPanel'
+import { QuickStats } from './QuickStats'
+import { FeatureInfoModal } from './FeatureInfoModal'
 
 interface ControlCenterProps {
   businessId: UUID
@@ -18,6 +20,9 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
   const [auditLog, setAuditLog] = useState<ToggleAuditLogResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<UUID | null>(null)
+  const [selectedToggleForInfo, setSelectedToggleForInfo] = useState<AutomationToggleResponse | null>(
+    null
+  )
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('')
@@ -121,6 +126,9 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Quick Stats */}
+      {!loading && toggles.length > 0 && <QuickStats toggles={toggles} />}
+
       {/* Search & Filter Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -236,6 +244,7 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
                   onToggle={(enabled) => handleToggle(toggle.id, enabled)}
                   onLimitChange={(newLimit) => handleLimitChange(toggle.id, newLimit)}
                   onShowAudit={() => handleShowAudit(toggle.id)}
+                  onShowInfo={() => setSelectedToggleForInfo(toggle)}
                 />
               ))}
             </div>
@@ -246,6 +255,11 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
       {/* Audit Panel Modal */}
       {selectedToggleId && (
         <AuditPanel logs={auditLog} onClose={() => setSelectedToggleId(null)} />
+      )}
+
+      {/* Feature Info Modal */}
+      {selectedToggleForInfo && (
+        <FeatureInfoModal toggle={selectedToggleForInfo} onClose={() => setSelectedToggleForInfo(null)} />
       )}
     </div>
   )

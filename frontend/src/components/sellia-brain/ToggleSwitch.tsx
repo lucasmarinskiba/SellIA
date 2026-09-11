@@ -9,6 +9,7 @@ interface ToggleSwitchProps {
   onToggle: (enabled: boolean, reason?: string) => Promise<void>
   onLimitChange?: (newLimit: number) => Promise<void>
   onShowAudit?: () => void
+  onShowInfo?: () => void
 }
 
 export const ToggleSwitch = ({
@@ -17,6 +18,7 @@ export const ToggleSwitch = ({
   onToggle,
   onLimitChange,
   onShowAudit,
+  onShowInfo,
 }: ToggleSwitchProps) => {
   const [isChanging, setIsChanging] = useState(false)
   const [showLimitForm, setShowLimitForm] = useState(false)
@@ -144,6 +146,17 @@ export const ToggleSwitch = ({
             title="Cambiar límite mensual"
           >
             Límite
+          </button>
+        )}
+
+        {/* Info Button */}
+        {onShowInfo && (
+          <button
+            onClick={onShowInfo}
+            className="px-2 py-1 text-xs font-medium border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="Ver información del feature"
+          >
+            ℹ️
           </button>
         )}
 
