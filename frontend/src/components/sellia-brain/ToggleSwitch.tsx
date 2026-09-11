@@ -24,6 +24,13 @@ export const ToggleSwitch = ({
   const [reason, setReason] = useState('')
 
   const handleToggle = async () => {
+    // Confirm dialog
+    const action = toggle.is_enabled ? 'deshabilitar' : 'habilitar'
+    const confirmed = window.confirm(
+      `¿Estás seguro de que quieres ${action} "${toggle.display_name}"?`
+    )
+    if (!confirmed) return
+
     setIsChanging(true)
     try {
       await onToggle(!toggle.is_enabled, reason)
@@ -53,16 +60,37 @@ export const ToggleSwitch = ({
     usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-green-500'
 
   return (
-    <div className="flex items-start justify-between p-4 border rounded-lg bg-white dark:bg-slate-800 hover:shadow-md transition-shadow">
+    <div
+      className={`
+        relative flex items-start justify-between p-4 border rounded-lg hover:shadow-md transition-shadow
+        ${toggle.is_enabled ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-900/50 opacity-60'}
+      `}
+    >
+      {/* Warning Badge */}
+      {usagePercent >= 90 && toggle.monthly_limit && (
+        <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center shadow-lg" title={`${usagePercent}% del límite`}>
+          !
+        </div>
+      )}
+
       {/* Left: Icon + Name + Description */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-2xl flex-shrink-0">{toggle.icon || '⚙️'}</span>
+          <span className={`text-2xl flex-shrink-0 ${!toggle.is_enabled ? 'opacity-50' : ''}`}>
+            {toggle.icon || '⚙️'}
+          </span>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 dark:text-white truncate">
-              {toggle.display_name}
-            </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+            <div className="flex items-center gap-2">
+              <h3 className={`font-semibold truncate ${!toggle.is_enabled ? 'text-slate-600 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white'}`}>
+                {toggle.display_name}
+              </h3>
+              {!toggle.is_enabled && (
+                <span className="text-xs px-2 py-0.5 bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
+                  Deshabilitado
+                </span>
+              )}
+            </div>
+            <p className={`text-sm line-clamp-2 ${!toggle.is_enabled ? 'text-slate-500 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'}`}>
               {toggle.description}
             </p>
           </div>
