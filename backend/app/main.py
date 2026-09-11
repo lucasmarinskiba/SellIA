@@ -33,6 +33,12 @@ _try_include("app.api.v1.whatsapp_webhook.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.resend_webhook.router", "/api/v1", ["webhooks"])
 _try_include("app.api.v1.email_sequences.router", "/api/v1", ["sequences"])
 _try_include("app.api.v1.auth.router", "/api/v1/auth", ["auth"])
+# app/api/v1/security.py: 18 endpoints (active sessions and revoking them, the
+# security config, login logs, audit logs and report, web-push subscriptions with
+# their VAPID key, outbound webhooks) written and never mounted. The Seguridad
+# screen called /security/config and /security/sessions and got 404s, so it could
+# show neither where the account is logged in nor let anyone close a session.
+_try_include("app.api.v1.security.router", "/api/v1/security", ["security"])
 _try_include("app.api.v1.users.router", "/api/v1/users", ["users"])
 _try_include("app.api.v1.businesses.router", "/api/v1/businesses", ["businesses"])
 _try_include("app.domains.businesses.locations_router.router", "/api/v1", ["locations"])

@@ -149,19 +149,19 @@ export const auth = {
   },
   // Trusted Devices
   getTrustedDevices: async (): Promise<{ devices: Array<{ id: string; device_name: string | null; os: string | null; browser: string | null; ip_address: string | null; first_seen_at: string; last_seen_at: string; is_trusted: boolean; is_blocked: boolean }> }> => {
-    const res = await api.get('/auth/trusted-devices')
+    const res = await api.get('/auth/devices')
     return res.data
   },
   trustDevice: async (id: string) => {
-    const res = await api.post(`/auth/trusted-devices/${id}/trust`)
+    const res = await api.post(`/auth/devices/${id}/trust`)
     return res.data
   },
   revokeDevice: async (id: string) => {
-    const res = await api.post(`/auth/trusted-devices/${id}/revoke`)
+    const res = await api.post(`/auth/devices/${id}/revoke`)
     return res.data
   },
   blockDevice: async (id: string) => {
-    const res = await api.post(`/auth/trusted-devices/${id}/block`)
+    const res = await api.post(`/auth/devices/${id}/block`)
     return res.data
   },
   // Email OTP
@@ -179,7 +179,7 @@ export const auth = {
   },
   // Account deletion
   deleteAccount: async (password: string, reason?: string) => {
-    const res = await api.post('/auth/delete-account', { password, reason })
+    const res = await api.post('/auth/me/delete-account', { password, reason })
     return res.data
   },
 }
