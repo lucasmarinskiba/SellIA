@@ -45,6 +45,7 @@ _try_include("app.domains.integrations.api.router", "/api/v1", ["integrations-st
 _try_include("app.domains.authority.api.router", "/api/v1", ["authority-builder"])
 _try_include("app.domains.platform_commerce.api.router", "/api/v1", ["platform-commerce"])
 _try_include("app.domains.chatbots.api.router", "/api/v1", ["chatbots"])
+_try_include("app.domains.preferences.api.router", "/api/v1", ["preferences"])
 _try_include("app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"])
 _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 # payments.py's router already declares prefix="/api/v1" internally — pass "" here to avoid doubling it
