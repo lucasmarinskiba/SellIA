@@ -1208,3 +1208,53 @@ async def seed_toggles_endpoint(
             status_code=400,
             detail=f"Error al seed toggles: {str(e)}",
         )
+
+
+# ========== Toggle Schedules (Tier 3) ==========
+
+@router.post("/toggles/{toggle_id}/schedule", response_model=ToggleScheduleResponse, status_code=status.HTTP_201_CREATED)
+async def create_toggle_schedule(
+    toggle_id: UUID,
+    schedule_in: ToggleScheduleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create schedule for toggle to turn on/off at specific time."""
+    from app.domains.automations.models import ToggleSchedule
+
+    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle = toggle_result.scalar_one_or_none()
+    if not toggle:
+        raise HTTPException(status_code=404, detail="Toggle not found")
+
+    schedule = ToggleSchedule(
+        business_id=toggle.business_id,
+        toggle_id=toggle_id,
+        start_time=schedule_in.start_time,
+        timezone=schedule_in.timezone,
+        recurring=schedule_in.recurring,
+        recurrence_rule=schedule_in.recurrence_rule,
+        action=schedule_in.action,
+        reason=schedule_in.reason,
+        scheduled_by=current_user.id,
+        next_execution_at=schedule_in.start_time,
+    )
+    db.add(schedule)
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+@router.get("/toggles/{toggle_id}/schedules", response_model=list[ToggleScheduleResponse])
+async def list_toggle_schedules(
+    toggle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List all schedules for toggle."""
+    from app.domains.automations.models import ToggleSchedule
+
+    result = await db.execute(
+        select(ToggleSchedule).where(ToggleSchedule.toggle_id == toggle_id).order_by(ToggleSchedule.next_execution_at)
+    )
+    return result.scalars().all()
