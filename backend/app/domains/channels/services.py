@@ -860,6 +860,7 @@ async def send_outbound_message(
     content: str,
     content_type: str = "text",
     generated_by: str | None = None,
+    sent_by_user_id: Any = None,
 ) -> dict[str, Any]:
     """generated_by tags who actually wrote this message -- "ai" for a real
     auto-reply (see _maybe_ai_auto_reply below), None/omitted for a human
@@ -895,6 +896,12 @@ async def send_outbound_message(
     extra_data: dict[str, Any] = {"api_response": response}
     if generated_by:
         extra_data["generated_by"] = generated_by
+    # WHO typed it, not only whether a human did. The messages table has no
+    # sender column, so for a business with employees there was no way to tell
+    # which teammate answered a customer — which is why the team leaderboard
+    # could only ever rank everyone at zero.
+    if sent_by_user_id:
+        extra_data["sent_by_user_id"] = str(sent_by_user_id)
     message = Message(
         conversation_id=conversation.id,
         direction=MessageDirection.OUTBOUND,
