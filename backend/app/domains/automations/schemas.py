@@ -494,3 +494,56 @@ class ToggleScheduleResponse(ToggleScheduleBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ========== Toggle Notification Schemas ==========
+
+class ToggleNotificationRuleBase(BaseModel):
+    toggle_id: UUID
+    event_type: str  # "enabled" | "disabled" | "usage_limit_reached" | "usage_threshold" | "schedule_executed"
+    usage_threshold_pct: Optional[int] = None
+    notify_via_email: bool = True
+    notify_via_webhook: bool = False
+    notify_via_inapp: bool = True
+    email_recipients: List[str] = Field(default_factory=list)
+    webhook_url: Optional[str] = None
+    webhook_secret: Optional[str] = None
+
+
+class ToggleNotificationRuleCreate(ToggleNotificationRuleBase):
+    pass
+
+
+class ToggleNotificationRuleUpdate(BaseModel):
+    event_type: Optional[str] = None
+    usage_threshold_pct: Optional[int] = None
+    notify_via_email: Optional[bool] = None
+    notify_via_webhook: Optional[bool] = None
+    notify_via_inapp: Optional[bool] = None
+    email_recipients: Optional[List[str]] = None
+    webhook_url: Optional[str] = None
+    webhook_secret: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ToggleNotificationRuleResponse(ToggleNotificationRuleBase):
+    id: UUID
+    business_id: UUID
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ToggleNotificationLogResponse(BaseModel):
+    id: UUID
+    toggle_id: UUID
+    rule_id: UUID
+    event_type: str
+    channels_sent: List[str]
+    status: str
+    error_message: Optional[str]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -480,3 +480,74 @@ class ToggleSchedule(Base):
         Index("ix_next_execution", "next_execution_at"),
         Index("ix_is_active", "is_active"),
     )
+
+
+class ToggleNotificationEventType(str, enum.Enum):
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+    USAGE_LIMIT_REACHED = "usage_limit_reached"
+    USAGE_THRESHOLD = "usage_threshold"  # e.g., 80% of monthly limit
+    SCHEDULE_EXECUTED = "schedule_executed"
+
+
+class ToggleNotificationRule(Base):
+    """Rules for notifying when toggle events occur."""
+    __tablename__ = "toggle_notification_rules"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    toggle_id = Column(UUID(as_uuid=True), ForeignKey("automation_toggles.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Event trigger
+    event_type = Column(Enum(ToggleNotificationEventType), nullable=False)
+    usage_threshold_pct = Column(Integer, nullable=True)  # For USAGE_THRESHOLD: notify at 80%
+
+    # Notification channels
+    notify_via_email = Column(Boolean, default=True, nullable=False)
+    notify_via_webhook = Column(Boolean, default=False, nullable=False)
+    notify_via_inapp = Column(Boolean, default=True, nullable=False)
+
+    # Recipients
+    email_recipients = Column(JSONB, default=list, nullable=False)  # ["owner@example.com", "admin@example.com"]
+    webhook_url = Column(String(500), nullable=True)
+    webhook_secret = Column(String(255), nullable=True)  # For signing requests
+
+    # Control
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # Metadata
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_business_toggle_notification", "business_id", "toggle_id"),
+        Index("ix_event_type", "event_type"),
+    )
+
+
+class ToggleNotificationLog(Base):
+    """Log of sent notifications."""
+    __tablename__ = "toggle_notification_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    toggle_id = Column(UUID(as_uuid=True), ForeignKey("automation_toggles.id", ondelete="CASCADE"), nullable=False, index=True)
+    rule_id = Column(UUID(as_uuid=True), ForeignKey("toggle_notification_rules.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    event_type = Column(Enum(ToggleNotificationEventType), nullable=False)
+    channels_sent = Column(JSONB, default=list, nullable=False)  # ["email", "webhook", "inapp"]
+    email_addresses = Column(JSONB, default=list, nullable=False)
+    webhook_status = Column(String(50), nullable=True)  # "sent", "failed", "pending"
+    webhook_response = Column(Text, nullable=True)
+
+    payload = Column(JSONB, default=dict, nullable=False)  # Full event data
+    status = Column(String(50), default="sent", nullable=False)  # "sent", "failed", "pending"
+    error_message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_business_toggle_notif_log", "business_id", "toggle_id"),
+        Index("ix_created_at_notif", "created_at"),
+    )

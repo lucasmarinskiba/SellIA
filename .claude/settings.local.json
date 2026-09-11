@@ -1901,7 +1901,9 @@
       "Bash(curl -s -I \"https://sellia-brain.vercel.app/sellia-brain\")",
       "Bash(git commit -m 'fix: User model billing_address/payment_methods type mismatch *)",
       "Bash(git commit -m 'docs: Tier 2 production deployment status *)",
-      "Bash(git commit -m 'feat: Tier 3 - Scheduled Toggles backend foundation *)"
+      "Bash(git commit -m 'feat: Tier 3 - Scheduled Toggles backend foundation *)",
+      "Bash(git commit -m 'feat: Tier 3 - Celery executor for scheduled toggles *)",
+      "Bash(git commit -m 'feat: Tier 3 - Toggle Notifications system *)"
     ]
   }
 }
