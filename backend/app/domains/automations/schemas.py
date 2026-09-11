@@ -392,3 +392,64 @@ class ContentGenerationResponse(BaseModel):
     message: str
     prompt: Optional[str] = None
     preview: Optional[str] = None
+
+
+# ========== Automation Toggles Schemas ==========
+
+class AutomationToggleBase(BaseModel):
+    toggle_key: str
+    category: str  # "agent" | "automation" | "feature" | "integration"
+    display_name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+
+
+class AutomationToggleCreate(AutomationToggleBase):
+    is_enabled: bool = True
+    monthly_limit: Optional[int] = None
+
+
+class AutomationToggleUpdate(BaseModel):
+    is_enabled: Optional[bool] = None
+    monthly_limit: Optional[int] = None
+
+
+class AutomationToggleResponse(AutomationToggleBase):
+    id: UUID
+    business_id: UUID
+    is_enabled: bool
+    monthly_limit: Optional[int]
+    current_month_usage: int
+    enabled_at: Optional[datetime]
+    disabled_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ToggleAuditLogResponse(BaseModel):
+    id: UUID
+    toggle_id: UUID
+    action: str
+    old_value: Optional[Dict[str, Any]]
+    new_value: Optional[Dict[str, Any]]
+    changed_by_email: Optional[str]
+    reason: Optional[str]
+    leads_affected: Optional[int]
+    estimated_impact_pct: Optional[int]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ToggleDashboardStats(BaseModel):
+    category: str
+    total: int
+    enabled: int
+    usage: int
+
+
+class ToggleDashboardResponse(BaseModel):
+    by_category: List[ToggleDashboardStats]
+    timestamp: datetime

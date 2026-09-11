@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, Integer, cast, and_
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
@@ -15,6 +15,7 @@ from app.domains.automations.models import (
     Workflow, EmailTemplate, EmailSequence, SequenceStep, ChatbotRule,
     SequenceSubscription, SequenceEmailLog, WorkflowVariant,
     GeneratedContent, ContentCalendar,
+    AutomationToggle, ToggleAuditLog,
 )
 from app.domains.subscriptions.models import Subscription
 from app.domains.automations.schemas import (
@@ -27,6 +28,8 @@ from app.domains.automations.schemas import (
     WorkflowABTestResult,
     GeneratedContentResponse, ContentCalendarResponse, ContentCalendarCreate,
     ContentGenerationRequest, ContentGenerationResponse,
+    AutomationToggleCreate, AutomationToggleUpdate, AutomationToggleResponse,
+    ToggleAuditLogResponse, ToggleDashboardResponse,
 )
 from app.domains.automations.seed import seed_automations
 
@@ -1008,3 +1011,177 @@ async def get_content_usage(
             "by_tool": by_tool,
         },
     }
+
+
+# ========== Automation Toggles ==========
+
+@router.get("/toggles/business/{business_id}", response_model=list[AutomationToggleResponse])
+async def list_toggles_by_business(
+    business_id: UUID,
+    category: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Lista todos los toggles del negocio, opcionalmente filtrados por categoría."""
+    from sqlalchemy import and_
+
+    query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
+    if category:
+        query = query.where(AutomationToggle.category == category)
+    query = query.order_by(AutomationToggle.category, AutomationToggle.display_name)
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.post("/toggles/business/{business_id}", response_model=AutomationToggleResponse, status_code=status.HTTP_201_CREATED)
+async def create_toggle(
+    business_id: UUID,
+    data: AutomationToggleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Crear un nuevo toggle (admin solo)."""
+    toggle = AutomationToggle(
+        business_id=business_id,
+        **data.model_dump(),
+        changed_by=current_user.id,
+    )
+    db.add(toggle)
+    await db.commit()
+    await db.refresh(toggle)
+    return toggle
+
+
+@router.get("/toggles/{toggle_id}", response_model=AutomationToggleResponse)
+async def get_toggle(
+    toggle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Obtener un toggle específico."""
+    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle = result.scalar_one_or_none()
+    if not toggle:
+        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+    return toggle
+
+
+@router.patch("/toggles/{toggle_id}", response_model=AutomationToggleResponse)
+async def update_toggle(
+    toggle_id: UUID,
+    data: AutomationToggleUpdate,
+    reason: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Cambiar ON/OFF o límites de un toggle."""
+    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle = result.scalar_one_or_none()
+    if not toggle:
+        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+
+    # Capturar estado anterior para auditoría
+    old_state = {
+        "is_enabled": toggle.is_enabled,
+        "monthly_limit": toggle.monthly_limit,
+    }
+
+    # Actualizar
+    if data.is_enabled is not None:
+        toggle.is_enabled = data.is_enabled
+        toggle.enabled_at = datetime.now(timezone.utc) if data.is_enabled else toggle.enabled_at
+        toggle.disabled_at = datetime.now(timezone.utc) if not data.is_enabled else toggle.disabled_at
+
+    if data.monthly_limit is not None:
+        toggle.monthly_limit = data.monthly_limit
+
+    toggle.updated_at = datetime.now(timezone.utc)
+    toggle.changed_by = current_user.id
+
+    # Crear audit log
+    audit = ToggleAuditLog(
+        business_id=toggle.business_id,
+        toggle_id=toggle.id,
+        action="enabled" if data.is_enabled is True else "disabled" if data.is_enabled is False else "limit_changed",
+        old_value=old_state,
+        new_value=data.model_dump(exclude_unset=True),
+        changed_by_user_id=current_user.id,
+        changed_by_email=current_user.email,
+        reason=reason,
+    )
+    db.add(audit)
+
+    await db.commit()
+    await db.refresh(toggle)
+    return toggle
+
+
+@router.get("/toggles/{toggle_id}/audit", response_model=list[ToggleAuditLogResponse])
+async def get_toggle_audit_history(
+    toggle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Historial completo de cambios del toggle."""
+    result = await db.execute(
+        select(ToggleAuditLog)
+        .where(ToggleAuditLog.toggle_id == toggle_id)
+        .order_by(desc(ToggleAuditLog.created_at))
+    )
+    return result.scalars().all()
+
+
+@router.post("/toggles/{toggle_id}/reset-usage")
+async def reset_toggle_usage(
+    toggle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Reset del contador de uso mensual."""
+    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle = result.scalar_one_or_none()
+    if not toggle:
+        raise HTTPException(status_code=404, detail="Toggle no encontrado")
+
+    toggle.current_month_usage = 0
+    from datetime import date
+    toggle.last_reset_date = datetime.now(timezone.utc)
+    await db.commit()
+
+    return {"ok": True, "message": "Contador reseteado"}
+
+
+@router.get("/toggles/dashboard/{business_id}", response_model=ToggleDashboardResponse)
+async def get_toggles_dashboard(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Dashboard consolidado de toggles por categoría."""
+    result = await db.execute(
+        select(
+            AutomationToggle.category,
+            func.count().label("total"),
+            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label("enabled"),
+            func.sum(AutomationToggle.current_month_usage).label("usage"),
+        )
+        .where(AutomationToggle.business_id == business_id)
+        .group_by(AutomationToggle.category)
+    )
+
+    from sqlalchemy import Integer, cast
+    rows = result.all()
+    by_category = []
+    for row in rows:
+        by_category.append({
+            "category": str(row[0]),
+            "total": row[1] or 0,
+            "enabled": row[2] or 0,
+            "usage": row[3] or 0,
+        })
+
+    return ToggleDashboardResponse(
+        by_category=by_category,
+        timestamp=datetime.now(timezone.utc),
+    )
