@@ -125,7 +125,6 @@ async def get_model_status() -> Dict[str, Any]:
     for model_name in ["intent_classifier", "response_quality", "lead_scorer"]:
         path = f"{MODELS_DIR}/{model_name}.pkl"
         if os.path.exists(path):
-            import os.path
             mtime = os.path.getmtime(path)
             status[model_name] = {
                 "exists": True,

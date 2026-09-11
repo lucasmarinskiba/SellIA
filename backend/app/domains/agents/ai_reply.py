@@ -50,7 +50,6 @@ async def generate_ai_response(
     )
     personality = result.scalar_one_or_none()
     if not personality:
-        from app.core.logger import get_logger
         get_logger(__name__).warning(f"Personality '{personality_slug}' not found")
         return None
 
@@ -69,7 +68,6 @@ async def generate_ai_response(
         else:
             business_context.pop("voice_personality_slug", None)
     except Exception as e:
-        from app.core.logger import get_logger
         get_logger(__name__).error(f"Context builder error: {e}")
 
     # --- Funnel Stage Detection ---
