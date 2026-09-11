@@ -65,6 +65,22 @@ _try_include("app.domains.objectives.router.router", "/api/v1/businesses", ["obj
 _try_include("app.domains.consumo.router.router", "/api/v1", ["consumo"])
 _try_include("app.domains.alerts.router.router", "/api/v1", ["alerts"])
 _try_include("app.domains.gamification.router.router", "/api/v1", ["gamification"])
+# Second batch, same story: written, never included.
+# - autopilot     Autopilot 24/7 and the "Mientras Dormías" overnight report
+# - social_sellers the data the Radar screen was built on
+# - missions      the mission/playbook engine
+# - growth        Growth Engine
+# - retention     Retención (mounted under /businesses: its own prefix starts
+#                 with the business id)
+# - referrals     Referidos
+# - marketplace   the add-on catalogue
+_try_include("app.domains.autopilot.router.router", "/api/v1", ["autopilot"])
+_try_include("app.domains.social_sellers.router.router", "/api/v1", ["social-sellers"])
+_try_include("app.api.v1.missions.router", "/api/v1", ["missions"])
+_try_include("app.domains.growth.router.router", "/api/v1", ["growth"])
+_try_include("app.domains.retention.router.router", "/api/v1/businesses", ["retention"])
+_try_include("app.domains.referrals.router.router", "/api/v1", ["referrals"])
+_try_include("app.domains.marketplace.router.router", "/api/v1", ["marketplace"])
 _try_include("app.domains.agents.lead_qualifier.router.router", "/api/v1", ["lead-qualifier"])
 _try_include("app.api.v1.bookings.router", "/api/v1", ["bookings"])
 # payments.py's router already declares prefix="/api/v1" internally — pass "" here to avoid doubling it
