@@ -12,6 +12,7 @@
 import { TrendingUp, MessageSquare, Bot, Plug, Loader2 } from 'lucide-react'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
 import AnalystReadout from '@/components/analytics/AnalystReadout'
+import SalesAnalytics from '@/components/analytics/SalesAnalytics'
 
 export default function AnalyticsPage() {
   const { snapshot, loading, unavailable } = useBusinessSnapshot()
@@ -122,6 +123,12 @@ export default function AnalyticsPage() {
               </table>
             </div>
           )}
+
+          {/* Ventas: los mismos criterios, sobre las órdenes en vez de las
+              conversaciones — facturación en el tiempo, distribución de tickets,
+              embudo hasta la entrega, comparación entre plataformas, cuándo se
+              compra, recompra y concentración. */}
+          <SalesAnalytics />
 
           <p className="text-xs text-slate-500">
             La serie diaria y las comparaciones semanales de arriba se cuentan sobre las fechas reales
