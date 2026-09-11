@@ -190,6 +190,11 @@ async def send_message(
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
     now = datetime.now(timezone.utc)
+    # Taken before anything can roll back. A rollback expires every loaded
+    # instance, so reading current_user.id afterwards lazy-loads inside async
+    # code and raises MissingGreenlet — which is what it did, at the line that
+    # records who wrote the reply.
+    author_id = current_user.id
 
     # An outbound reply is written by send_outbound_message, which sends it AND
     # records the row — including who typed it. This endpoint used to create its
@@ -205,7 +210,7 @@ async def send_message(
                 db, conversation_id, message_in.content, message_in.content_type,
                 # Credits the reply to whoever is logged in, so a team can see
                 # who is actually answering customers.
-                sent_by_user_id=current_user.id,
+                sent_by_user_id=author_id,
             )
             result = await db.execute(
                 select(Message)
@@ -235,7 +240,7 @@ async def send_message(
             # row is kept, attributed, and flagged as undelivered so the inbox
             # can show that it never reached the customer.
             extra = dict(message_in.extra_data or {})
-            extra["sent_by_user_id"] = str(current_user.id)
+            extra["sent_by_user_id"] = str(author_id)
             extra["delivery_failed"] = str(e)[:300]
             message = Message(
                 conversation_id=conversation_id,
