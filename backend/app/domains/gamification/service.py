@@ -260,6 +260,15 @@ class GamificationEngine:
         xp = int(amount * 0.1) + 10  # $100 = 20 XP
         await self.add_xp(user_id, business_id, xp, "sale")
 
+        # The garden the dashboard shows says "crece con cada venta" and
+        # "cerrá tu primer deal para plantar una flor". Nothing called
+        # update_garden from here, so it never grew: the promise on screen was
+        # false for every account, forever. A sale plants its flower now.
+        try:
+            await self.update_garden(user_id, business_id, "sale")
+        except Exception as e:  # noqa: BLE001 - the sale stands regardless
+            logger.warning("garden update after sale failed: %s", str(e)[:120])
+
         # Celebration
         intensity = "small" if amount < 100 else "medium" if amount < 1000 else "big" if amount < 5000 else "epic"
         companion_msg = await self._generate_companion_sale_message(amount, was_autopilot)
