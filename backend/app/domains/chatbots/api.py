@@ -114,6 +114,39 @@ async def list_playbooks(
     }
 
 
+class CheckIn(BaseModel):
+    text: str = Field(..., min_length=1, max_length=8000)
+
+
+@router.post("/{platform}/check")
+async def check_against_playbook(
+    platform: str,
+    payload: CheckIn,
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Does this message break the platform's rules?
+
+    The same check the auto-reply runs, offered for text a person typed: the
+    rules that sanction a MercadoLibre listing do not care whether the phone
+    number was written by a bot or by the seller in a hurry. Returns what is
+    wrong and the version trimmed to the platform's budget; it never edits the
+    message itself.
+    """
+    from . import playbooks
+
+    trimmed, problems = playbooks.enforce(platform, payload.text)
+    return {
+        "platform": platform,
+        "ok": not problems,
+        "problems": problems,
+        "blocking": playbooks.blocking_problems(platform, payload.text),
+        "length": len(payload.text),
+        "max_chars": playbooks.for_platform(platform).max_chars,
+        "trimmed_preview": trimmed if trimmed != payload.text else None,
+        "playbook": playbooks.describe(platform),
+    }
+
+
 @router.post("/{platform}/test")
 async def test_bot(
     platform: str,

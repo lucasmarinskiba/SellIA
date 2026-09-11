@@ -7,6 +7,7 @@ import { businessApi, Business } from '@/lib/business'
 import { platformMeta, PLATFORM_META } from '@/lib/platformMeta'
 import { MessageSquare, Send, User, Phone, Mail, Archive, Check, CheckCheck, Clock, Bot, ChevronDown } from 'lucide-react'
 import PlatformBots from '@/components/chatbots/PlatformBots'
+import { chatbotsApi, type PolicyCheck } from '@/lib/chatbots'
 
 export function ConversacionesContent() {
   const searchParams = useSearchParams()
@@ -22,7 +23,30 @@ export function ConversacionesContent() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [platformFilter, setPlatformFilter] = useState<string>('')
+  // The platform's own rules, checked on what the seller is typing. The rules
+  // that sanction a MercadoLibre listing do not care whether the phone number
+  // came from the bot or from a person in a hurry.
+  const [policyCheck, setPolicyCheck] = useState<PolicyCheck | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const activeConversation = conversations.find(c => c.id === selectedConversation)
+  const activePlatform = activeConversation?.platform ?? ''
+
+  useEffect(() => {
+    const text = newMessage.trim()
+    if (!text || !activePlatform) {
+      setPolicyCheck(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      chatbotsApi.check(activePlatform, text)
+        .then(setPolicyCheck)
+        // A failed check must never block a person from writing: no warning is
+        // better than a warning that might be wrong.
+        .catch(() => setPolicyCheck(null))
+    }, 450)
+    return () => clearTimeout(timer)
+  }, [newMessage, activePlatform])
 
   useEffect(() => {
     loadBusinesses()
@@ -91,6 +115,7 @@ export function ConversacionesContent() {
         content: newMessage,
       })
       setNewMessage('')
+      setPolicyCheck(null)
       await loadMessages(selectedConversation)
       await loadConversations()
     } catch {
@@ -348,6 +373,24 @@ export function ConversacionesContent() {
               </div>
 
               <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100">
+                {policyCheck && policyCheck.problems.length > 0 && (
+                  <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                    <p className="font-medium">
+                      Ojo con las reglas de {policyCheck.playbook?.label || activePlatform}
+                    </p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      {policyCheck.problems.map(problem => (
+                        <li key={problem}>· Tu mensaje {problem}.</li>
+                      ))}
+                    </ul>
+                    {policyCheck.playbook?.why && (
+                      <p className="mt-1 text-[11px] text-amber-800/80">{policyCheck.playbook.why}</p>
+                    )}
+                    <p className="mt-1 text-[11px] text-amber-800/70">
+                      Se envía igual si lo decidís: esto es un aviso, no un bloqueo.
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <input
                     type="text"

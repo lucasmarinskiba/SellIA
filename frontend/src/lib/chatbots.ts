@@ -111,7 +111,24 @@ export interface TestResult {
   hours_note?: string | null
 }
 
+/** Result of checking a message against a platform's rules. */
+export interface PolicyCheck {
+  platform: string
+  ok: boolean
+  problems: string[]
+  /** The subset that would stop an automated reply from being sent. */
+  blocking: string[]
+  length: number
+  max_chars: number
+  trimmed_preview: string | null
+  playbook?: Playbook
+}
+
 export const chatbotsApi = {
+  /** Checks text (typed by a person or generated) against the platform's rules. */
+  check: (platform: string, text: string): Promise<PolicyCheck> =>
+    api.post<PolicyCheck>(`/chatbots/${platform}/check`, { text }).then(r => r.data),
+
   list: (): Promise<BotsOverview> =>
     api.get<BotsOverview>('/chatbots').then(r => r.data),
 
