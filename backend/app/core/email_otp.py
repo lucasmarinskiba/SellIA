@@ -108,9 +108,19 @@ async def invalidate_previous_otps(db: AsyncSession, user_id: uuid.UUID, purpose
     await db.commit()
 
 
-async def send_otp_email(email: str, code: str, purpose: str) -> None:
-    """Envía el OTP por email usando el servicio SMTP existente."""
-    from app.core.security_notifications import send_email
+async def send_otp_email(email: str, code: str, purpose: str) -> bool:
+    """Envía el OTP por email usando el servicio SMTP existente.
+
+    This imported `send_email` from app.core.security_notifications, where no
+    such function exists — that module exports send_security_email. The
+    ImportError was raised before the try block below, so EVERY call to this
+    function, and therefore every /auth/2fa/email/* endpoint, answered 500. The
+    whole email second factor had never worked.
+
+    Returns whether the mail was actually handed to the SMTP service, so the
+    caller can tell the user the truth instead of claiming a code was sent.
+    """
+    from app.core.email_service import send_email
 
     subject = "Tu código de verificación"
     if purpose == "login":
@@ -133,6 +143,13 @@ async def send_otp_email(email: str, code: str, purpose: str) -> None:
     """
 
     try:
-        await send_email(to=email, subject=subject, html=html)
+        # Real signature: send_email(to_email, subject, body_html, ...). The old
+        # call used to=/html=, which would have been a TypeError even if the
+        # import had resolved.
+        delivered = await send_email(to_email=email, subject=subject, body_html=html)
+        if not delivered:
+            logger.warning("OTP email for %s was not delivered by the mail service", email)
+        return bool(delivered)
     except Exception as e:
         logger.error(f"Failed to send OTP email: {e}")
+        return False

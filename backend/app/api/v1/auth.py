@@ -899,7 +899,17 @@ async def setup_email_otp(
         return {"message": "La verificación por email ya está activa", "enabled": True}
 
     code = await create_email_otp(db, user.id, "setup", ip_address=request.state.client_ip)
-    await send_otp_email(user.email, code, "setup")
+    delivered = await send_otp_email(user.email, code, "setup")
+    if not delivered:
+        # Saying "te enviamos un código" when the mail service refused it leaves
+        # the user waiting for something that will never arrive.
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "No se pudo enviar el email con el código. Revisá la configuración de correo "
+                "en Integraciones e intentá de nuevo."
+            ),
+        )
     return {
         "message": f"Te enviamos un código a {user.email}. Ingresalo para activarlo.",
         "enabled": False,
@@ -967,7 +977,12 @@ async def send_email_otp(
     user = await get_current_user(request, db)
     chosen = _otp_purpose(purpose)
     code = await create_email_otp(db, user.id, chosen, ip_address=request.state.client_ip)
-    await send_otp_email(user.email, code, chosen)
+    delivered = await send_otp_email(user.email, code, chosen)
+    if not delivered:
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo enviar el email con el código. Revisá la configuración de correo.",
+        )
     return {"message": "Código enviado a tu email"}
 
 
