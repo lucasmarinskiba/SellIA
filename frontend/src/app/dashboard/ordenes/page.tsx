@@ -8,8 +8,10 @@ import { ordersApi, Order } from '@/lib/orders'
 import { shipmentsApi } from '@/lib/shipments'
 import { servicesApi } from '@/lib/services'
 import OrdersSheet from '@/components/orders/OrdersSheet'
+import NewOrderForm from '@/components/orders/NewOrderForm'
+import { channelsApi } from '@/lib/channels'
 import {
-  ShoppingCart, Search, Loader2, Package, Truck, CheckCircle2,
+  ShoppingCart, Plus, Search, Loader2, Package, Truck, CheckCircle2,
   XCircle, Clock, CreditCard, AlertCircle, Calendar, Table2, LayoutList
 } from 'lucide-react'
 
@@ -30,6 +32,9 @@ export default function OrdenesPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [view, setView] = useState<'gestion' | 'planilla'>('gestion')
+  const [creating, setCreating] = useState(false)
+  const [platforms, setPlatforms] = useState<string[]>([])
+  const [sheetKey, setSheetKey] = useState(0)
 
   useEffect(() => {
     businessApi.list().then(data => {
@@ -37,6 +42,13 @@ export default function OrdenesPage() {
       if (data.length > 0) setSelectedBusinessId(data[0].id)
     }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!selectedBusinessId) return
+    channelsApi.list(selectedBusinessId)
+      .then(channels => setPlatforms([...new Set(channels.map(c => c.platform))]))
+      .catch(() => setPlatforms([]))
+  }, [selectedBusinessId])
 
   useEffect(() => {
     if (!selectedBusinessId || view !== 'gestion') return
@@ -141,6 +153,13 @@ export default function OrdenesPage() {
           <p className="text-sm text-white/40 mt-1">Gestiona tus ventas, pagos y envíos.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCreating(true)}
+            disabled={!selectedBusinessId}
+            className="px-3 py-2 rounded-xl bg-brand-orange/15 border border-brand-orange/30 text-brand-orange text-xs flex items-center gap-1.5 disabled:opacity-40"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nueva orden
+          </button>
           <div className="flex rounded-xl bg-white/5 border border-white/10 p-0.5">
             <button
               onClick={() => setView('gestion')}
@@ -173,7 +192,22 @@ export default function OrdenesPage() {
         </div>
       </div>
 
-      {view === 'planilla' && selectedBusinessId && <OrdersSheet businessId={selectedBusinessId} />}
+      {creating && selectedBusinessId && (
+        <NewOrderForm
+          businessId={selectedBusinessId}
+          platforms={platforms}
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            // Both views read the same rows; refresh whichever is on screen.
+            loadOrders()
+            setSheetKey(key => key + 1)
+          }}
+        />
+      )}
+
+      {view === 'planilla' && selectedBusinessId && (
+        <OrdersSheet key={sheetKey} businessId={selectedBusinessId} />
+      )}
 
       {view === 'gestion' && (
       <>
