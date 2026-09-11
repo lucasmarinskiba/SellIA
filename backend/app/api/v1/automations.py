@@ -1258,3 +1258,91 @@ async def list_toggle_schedules(
         select(ToggleSchedule).where(ToggleSchedule.toggle_id == toggle_id).order_by(ToggleSchedule.next_execution_at)
     )
     return result.scalars().all()
+
+
+# ========== Toggle Notifications (Tier 3) ==========
+
+@router.post("/toggles/{toggle_id}/notification-rule", response_model=ToggleNotificationRuleResponse, status_code=status.HTTP_201_CREATED)
+async def create_notification_rule(
+    toggle_id: UUID,
+    rule_in: ToggleNotificationRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create notification rule for toggle event."""
+    from app.domains.automations.models import ToggleNotificationRule
+
+    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle = toggle_result.scalar_one_or_none()
+    if not toggle:
+        raise HTTPException(status_code=404, detail="Toggle not found")
+
+    rule = ToggleNotificationRule(
+        business_id=toggle.business_id,
+        toggle_id=toggle_id,
+        event_type=rule_in.event_type,
+        usage_threshold_pct=rule_in.usage_threshold_pct,
+        notify_via_email=rule_in.notify_via_email,
+        notify_via_webhook=rule_in.notify_via_webhook,
+        notify_via_inapp=rule_in.notify_via_inapp,
+        email_recipients=rule_in.email_recipients,
+        webhook_url=rule_in.webhook_url,
+        webhook_secret=rule_in.webhook_secret,
+        created_by=current_user.id,
+    )
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+@router.get("/toggles/{toggle_id}/notification-rules", response_model=list[ToggleNotificationRuleResponse])
+async def list_notification_rules(
+    toggle_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List all notification rules for toggle."""
+    from app.domains.automations.models import ToggleNotificationRule
+
+    result = await db.execute(
+        select(ToggleNotificationRule).where(ToggleNotificationRule.toggle_id == toggle_id)
+    )
+    return result.scalars().all()
+
+
+@router.delete("/notification-rule/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_notification_rule(
+    rule_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Delete notification rule."""
+    from app.domains.automations.models import ToggleNotificationRule
+
+    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+
+    await db.delete(rule)
+    await db.commit()
+
+
+@router.get("/toggles/{toggle_id}/notification-logs", response_model=list[ToggleNotificationLogResponse])
+async def list_notification_logs(
+    toggle_id: UUID,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List notification send logs for toggle."""
+    from app.domains.automations.models import ToggleNotificationLog
+
+    result = await db.execute(
+        select(ToggleNotificationLog)
+        .where(ToggleNotificationLog.toggle_id == toggle_id)
+        .order_by(ToggleNotificationLog.created_at.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()

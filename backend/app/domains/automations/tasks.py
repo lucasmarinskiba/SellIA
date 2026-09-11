@@ -10,10 +10,101 @@ from dateutil.rrule import rrulestr
 import logging
 
 from app.core.config import get_settings
-from app.domains.automations.models import ToggleSchedule, AutomationToggle
+from app.domains.automations.models import (
+    ToggleSchedule,
+    AutomationToggle,
+    ToggleNotificationRule,
+    ToggleNotificationLog,
+    ToggleNotificationEventType,
+)
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+async def send_toggle_notification(
+    db: AsyncSession,
+    toggle_id: str,
+    business_id: str,
+    event_type: str,
+    toggle_name: str = "Toggle",
+):
+    """Send notifications for toggle event."""
+    from app.core.email import send_email  # Assuming email utility exists
+
+    try:
+        # Find matching notification rules
+        result = await db.execute(
+            select(ToggleNotificationRule).where(
+                (ToggleNotificationRule.toggle_id == toggle_id) &
+                (ToggleNotificationRule.event_type == event_type) &
+                (ToggleNotificationRule.is_active == True)
+            )
+        )
+        rules = result.scalars().all()
+
+        for rule in rules:
+            channels_sent = []
+            payload = {
+                "toggle_id": str(toggle_id),
+                "toggle_name": toggle_name,
+                "event_type": event_type,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+            # Email notification
+            if rule.notify_via_email and rule.email_recipients:
+                try:
+                    subject = f"Toggle Alert: {toggle_name} - {event_type.replace('_', ' ').title()}"
+                    body = f"The toggle '{toggle_name}' has {event_type.replace('_', ' ')}."
+                    for email in rule.email_recipients:
+                        # Queue email task (non-blocking)
+                        send_email.delay(to_email=email, subject=subject, body=body)
+                    channels_sent.append("email")
+                except Exception as e:
+                    logger.error(f"Failed to send email notification: {e}")
+
+            # Webhook notification
+            if rule.notify_via_webhook and rule.webhook_url:
+                try:
+                    import httpx
+                    async with httpx.AsyncClient(timeout=5) as client:
+                        headers = {}
+                        if rule.webhook_secret:
+                            import hmac
+                            import hashlib
+                            signature = hmac.new(
+                                rule.webhook_secret.encode(),
+                                str(payload).encode(),
+                                hashlib.sha256,
+                            ).hexdigest()
+                            headers["X-Signature"] = signature
+
+                        response = await client.post(
+                            rule.webhook_url,
+                            json=payload,
+                            headers=headers,
+                        )
+                        channels_sent.append("webhook")
+                except Exception as e:
+                    logger.error(f"Failed to send webhook notification: {e}")
+
+            # Log notification
+            log = ToggleNotificationLog(
+                business_id=business_id,
+                toggle_id=toggle_id,
+                rule_id=rule.id,
+                event_type=event_type,
+                channels_sent=channels_sent,
+                email_addresses=rule.email_recipients or [],
+                payload=payload,
+                status="sent" if channels_sent else "failed",
+            )
+            db.add(log)
+            await db.commit()
+
+    except Exception as e:
+        logger.error(f"Error sending toggle notification: {e}")
 
 
 @shared_task(bind=True, max_retries=3)
