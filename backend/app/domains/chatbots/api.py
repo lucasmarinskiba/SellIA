@@ -18,6 +18,20 @@ from .models import BotFocus
 router = APIRouter(prefix="/chatbots", tags=["Chatbots"])
 
 
+class ActiveHours(BaseModel):
+    """The window, in the seller's own local time with an explicit offset.
+
+    "9 to 21" means nothing without knowing whose 9, which is why the offset is
+    part of the value and not assumed from the server.
+    """
+
+    from_hour: int = Field(..., ge=0, le=23, alias="from")
+    to_hour: int = Field(..., ge=0, le=23, alias="to")
+    utc_offset: int = Field(0, ge=-12, le=14)
+
+    model_config = {"populate_by_name": True}
+
+
 class BotIn(BaseModel):
     enabled: Optional[bool] = None
     personality_slug: Optional[str] = Field(None, max_length=50)
@@ -25,6 +39,10 @@ class BotIn(BaseModel):
     custom_instructions: Optional[str] = Field(None, max_length=4000)
     handoff_keywords: Optional[list[str]] = None
     max_ai_replies: Optional[int] = Field(None, ge=1, le=50)
+    active_hours: Optional[ActiveHours] = None
+    after_hours_message: Optional[str] = Field(None, max_length=600)
+    escalate_on_frustration: Optional[bool] = None
+    hold_on_policy_violation: Optional[bool] = None
 
 
 class TestIn(BaseModel):
@@ -69,8 +87,31 @@ async def update_bot(
     changes = payload.model_dump(exclude_unset=True)
     if "focus" in changes and changes["focus"] is not None:
         changes["focus"] = changes["focus"].value
+    if "active_hours" in changes:
+        hours = changes["active_hours"]
+        changes["active_hours"] = (
+            {"from": hours["from_hour"], "to": hours["to_hour"], "utc_offset": hours["utc_offset"]}
+            if hours else None
+        )
     bot = await service.upsert_bot(db, business_ids[0], platform, changes)
     return service.serialize(bot)
+
+
+@router.get("/playbooks")
+async def list_playbooks(
+    user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """The rules each platform imposes on a reply, and why they exist.
+
+    Served from the backend so the screen cannot show a rule the reply path is
+    not actually applying.
+    """
+    from . import playbooks
+
+    return {
+        "playbooks": [playbooks.describe(platform) for platform in sorted(playbooks.PLAYBOOKS)],
+        "default": playbooks.describe("default"),
+    }
 
 
 @router.post("/{platform}/test")
