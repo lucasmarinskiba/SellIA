@@ -17,16 +17,15 @@ import { CompanionWidget } from './gamification/CompanionWidget'
 import { GardenWidget } from './gamification/GardenWidget'
 import { TrustBuilder } from './gamification/TrustBuilder'
 
-// Entries removed on purpose (not lost): Mientras Dormías, Clientes Fieles,
-// Marketplace, Ambassador, Referidos and Battlecards each called a router that
-// does not exist in this deployment — /autopilot/overnight-report, /loyalty,
-// /marketplace/items, /ambassador/*, /referrals and /battlecards all answer 404.
-// Their pages loaded, asked, and showed an empty state, which reads as "you have
-// no data" rather than "this is not wired". The navigation no longer promises
-// them; the files remain for whoever builds those backends.
+// Four of these entries came back: their routers existed all along and were
+// simply never mounted (see main.py), so Mientras Dormías (autopilot),
+// Clientes Fieles (social-sellers), Marketplace and Referidos work now.
+// Ambassador and Battlecards stay out: those two have no router in the
+// codebase at all, so the navigation does not promise them.
 const baseNavItems = [
   { href: '/dashboard/home', label: 'Inicio', icon: Home },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/mientras-dormias', label: 'Mientras Dormías', icon: Moon },
   { href: '/dashboard/radar', label: 'Cola de atención', icon: Radar },
   { href: '/dashboard/negocios', label: 'Mis Negocios', icon: Store },
   { href: '/dashboard/catalogo', label: 'Catálogo', icon: Package },
@@ -60,11 +59,13 @@ const baseNavItems = [
   { href: '/dashboard/leaderboard', label: 'Ranking de tu negocio', icon: Trophy },
   { href: '/dashboard/objetivos', label: 'Objetivos & KPIs', icon: Target },
   { href: '/dashboard/retencion', label: 'Retención', icon: Heart },
+  { href: '/dashboard/clientes-fieles', label: 'Clientes Fieles', icon: Heart },
   { href: '/dashboard/inteligencia', label: 'Inteligencia', icon: Brain },
   { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp },
   { href: '/dashboard/acquisition-engine', label: 'Motor de Adquisición', icon: Sparkles },
   { href: '/dashboard/fomo-intelligence', label: 'FOMO Intelligence', icon: Flame },
   { href: '/dashboard/transformacion', label: 'Transformación de Marca', icon: Sparkles },
+  { href: '/dashboard/marketplace', label: 'Marketplace', icon: ShoppingBag },
   { href: '/dashboard/social-growth', label: 'Social Growth', icon: Instagram },
   { href: '/dashboard/planes', label: 'Planes', icon: Crown },
   { href: '/dashboard/alertas', label: 'Alertas', icon: Bell },
@@ -74,6 +75,7 @@ const baseNavItems = [
   { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
   { href: '/soporte', label: 'Soporte', icon: Headphones },
   { href: '/feedback', label: 'Feedback', icon: MessageCircle },
+  { href: '/dashboard/referrals', label: 'Referidos', icon: Gift },
   { href: '/dashboard/coupons', label: 'Cupones', icon: Ticket },
   { href: '/dashboard/competencia', label: 'Competencia', icon: Eye },
 ]
