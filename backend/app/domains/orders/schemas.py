@@ -3,7 +3,7 @@
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_serializer, model_validator
 
 from app.domains.orders.models import OrderStatus as OrderStatusEnum
 from app.domains.orders.models import PaymentStatus as PaymentStatusEnum
@@ -11,11 +11,28 @@ from app.core.pii_masking import mask_email, mask_phone, mask_name
 
 
 class OrderItem(BaseModel):
-    name: str
+    """A line of an order, in either of the two shapes really stored.
+
+    The webhook processors (Shopify, MercadoLibre, Hotmart, Woo, Etsy) write
+    {"name", "qty", "price", "sku"}; the manual create path writes
+    {"quantity", "unit_price", "total_price"}. This model required the second
+    shape only, so a single imported order made GET /orders fail validation and
+    return 500 for the whole list. Accept both and normalise.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    name: str = ""
     sku: Optional[str] = None
-    quantity: int = 1
-    unit_price: float
-    total_price: float
+    quantity: int = Field(default=1, validation_alias=AliasChoices("quantity", "qty"))
+    unit_price: float = Field(default=0.0, validation_alias=AliasChoices("unit_price", "price"))
+    total_price: Optional[float] = None
+
+    @model_validator(mode="after")
+    def fill_total(self) -> "OrderItem":
+        if self.total_price is None:
+            self.total_price = round(self.unit_price * self.quantity, 2)
+        return self
 
 
 class OrderBase(BaseModel):

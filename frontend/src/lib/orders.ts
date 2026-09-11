@@ -68,7 +68,123 @@ export interface AttributionSummary {
   last_touch_revenue: Record<string, number>
 }
 
+/** One row of the spreadsheet. Customer fields arrive masked, as everywhere else. */
+export interface OrderRow {
+  id: string
+  order_number: string
+  created_at: string | null
+  customer_name: string | null
+  customer_email: string | null
+  customer_phone: string | null
+  items_count: number
+  units: number
+  items_label: string
+  total_amount: number
+  currency: string
+  status: string | null
+  payment_status: string | null
+  payment_method: string | null
+  external_platform: string
+  source_channel: string
+  source_campaign: string | null
+  tracking_number: string | null
+  shipping_provider: string | null
+  paid_at: string | null
+  shipped_at: string | null
+  delivered_at: string | null
+  age_days: number | null
+  hours_to_payment: number | null
+  notes: string | null
+}
+
+export interface CurrencyTotal {
+  currency: string
+  orders: number
+  revenue: number
+  paid_revenue: number
+  avg_order: number
+}
+
+export interface Facet {
+  value: string
+  count: number
+}
+
+export interface OrdersTable {
+  rows: OrderRow[]
+  total: number
+  page: number
+  page_size: number
+  pages: number
+  sort_by: string
+  sort_dir: 'asc' | 'desc'
+  /** Per currency — never summed across them. */
+  totals: CurrencyTotal[]
+  facets: Record<string, Facet[]>
+  /** What the backend could not do, said out loud (e.g. a capped search). */
+  notes: string[]
+  columns: { key: string; label: string; sortable: boolean }[]
+  transitions: Record<string, string[]>
+  generated_at: string
+}
+
+export interface OrdersTableParams {
+  search?: string
+  status_in?: string
+  payment_status?: string
+  platform?: string
+  channel?: string
+  currency?: string
+  date_from?: string
+  date_to?: string
+  amount_min?: number
+  amount_max?: number
+  has_tracking?: boolean
+  sort_by?: string
+  sort_dir?: 'asc' | 'desc'
+  page?: number
+  page_size?: number
+}
+
+export interface BulkStatusResult {
+  requested: number
+  updated: number
+  skipped: number
+  status: string
+  results: { order_id: string; changed: boolean; reason: string | null }[]
+}
+
 export const ordersApi = {
+  getTable: (businessId: string, params: OrdersTableParams): Promise<OrdersTable> =>
+    api.get<OrdersTable>('/orders/table', { params: { business_id: businessId, ...params } })
+      .then(r => r.data),
+
+  bulkStatus: (orderIds: string[], status: string): Promise<BulkStatusResult> =>
+    api.post<BulkStatusResult>('/orders/bulk-status', { order_ids: orderIds, status })
+      .then(r => r.data),
+
+  /**
+   * Downloads the filtered sheet as CSV.
+   *
+   * Goes through the axios client rather than a plain <a href>: accounts that
+   * log in via /sellia-login hold a Bearer token in localStorage and no cookie,
+   * so a top-level navigation to the endpoint would arrive unauthenticated.
+   */
+  downloadCsv: async (businessId: string, params: OrdersTableParams): Promise<void> => {
+    const response = await api.get('/orders/export.csv', {
+      params: { business_id: businessId, ...params },
+      responseType: 'blob',
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `ordenes-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
+
   getOrders: (businessId: string, params?: { status?: string; search?: string }) =>
     api.get<Order[]>('/orders', { params: { business_id: businessId, ...params } }).then(r => r.data),
 
