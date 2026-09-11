@@ -217,6 +217,17 @@ async def create_business(
     )
     db.add(business)
     await db.commit()
+
+    # Auto-seed toggles para el negocio nuevo
+    try:
+        from app.domains.automations.seed_toggles import seed_toggles_for_business
+        await seed_toggles_for_business(business.id, db)
+    except Exception as e:
+        # Log pero no fallar si seed falla
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to seed toggles for business {business.id}: {e}")
+
     return {"id": str(business.id), "name": business.name}
 
 
