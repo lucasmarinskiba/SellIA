@@ -1,522 +1,225 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@/hooks/useAuth'
-import { businessApi } from '@/lib/business'
-import {
-  leaderboardApi,
-  LeaderboardEntry,
-  UserRank,
-  NearbyUsers,
-  TeamStats,
-  LeaderboardMetric,
-  METRIC_LABELS,
-} from '@/lib/api/leaderboard'
-import {
-  Trophy,
-  Medal,
-  Crown,
-  Flame,
-  TrendingUp,
-  Users,
-  Star,
-  Zap,
-  Target,
-  ArrowUp,
-  Sparkles,
-  ChevronRight,
-} from 'lucide-react'
+/**
+ * Ranking de tu negocio — qué producto, qué cliente y qué plataforma te sostienen.
+ *
+ * Esta página era un leaderboard que comparaba la cuenta con otros usuarios de
+ * SellIA: pedía /gamification/leaderboard, /gamification/leaderboard/me y
+ * /gamification/leaderboard/nearby, y ninguna de las tres existe en este backend
+ * (404). Aun funcionando, saber que sos el puesto 47 de 300 desconocidos no
+ * vende un producto más.
+ *
+ * Lo que sí sirve es el ranking de lo propio, y eso sale de las órdenes reales:
+ * qué se vende, quién compra, dónde. Los montos van separados por moneda y cada
+ * fila lleva la cantidad de órdenes detrás, para que un primer puesto construido
+ * sobre dos ventas se lea como lo que es.
+ */
 
-/* ============================================================
-   LEADERBOARD PAGE — Social, Competitive, Supportive
-   ============================================================ */
+import React, { useCallback, useEffect, useState } from 'react'
+import { Info, Loader2, Package, Store, Trophy, Users } from 'lucide-react'
+import { logger } from '@/lib/logger'
+import { formatAmounts, nextStepsApi, type RankingResponse } from '@/lib/nextSteps'
 
-const METRICS: LeaderboardMetric[] = [
-  'total_xp',
-  'total_sales_closed',
-  'total_revenue_generated',
-  'total_referrals_generated',
-  'current_login_streak',
-  'total_achievements',
-]
+const Section = ({ title, icon: Icon, subtitle, children }: {
+  title: string
+  icon: typeof Trophy
+  subtitle: string
+  children: React.ReactNode
+}): React.JSX.Element => (
+  <div className="bg-white rounded-lg border border-slate-200 p-5">
+    <div className="flex items-center gap-2">
+      <Icon className="w-4 h-4 text-slate-400" />
+      <h2 className="font-bold text-slate-900">{title}</h2>
+    </div>
+    <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+    <div className="mt-4">{children}</div>
+  </div>
+)
 
-const METRIC_ICONS: Record<LeaderboardMetric, React.ElementType> = {
-  total_xp: Zap,
-  total_sales_closed: Target,
-  total_revenue_generated: TrendingUp,
-  total_referrals_generated: Users,
-  current_login_streak: Flame,
-  total_achievements: Star,
-}
+const medal = (index: number): string => (index === 0 ? '1º' : index === 1 ? '2º' : index === 2 ? '3º' : `${index + 1}º`)
 
-function formatMetricValue(metric: LeaderboardMetric, value: number): string {
-  if (metric === 'total_revenue_generated') {
-    return `$${value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-  }
-  return value.toLocaleString('es-AR')
-}
-
-/* ---------- Podium Card ---------- */
-function PodiumCard({
-  entry,
-  place,
-  metric,
-}: {
-  entry: LeaderboardEntry
-  place: number
-  metric: LeaderboardMetric
-}) {
-  const isFirst = place === 1
-  const isSecond = place === 2
-
-  const gradient = isFirst
-    ? 'from-yellow-400/20 via-yellow-500/10 to-transparent'
-    : isSecond
-    ? 'from-slate-300/20 via-slate-400/10 to-transparent'
-    : 'from-amber-600/20 via-amber-700/10 to-transparent'
-
-  const borderColor = isFirst
-    ? 'border-yellow-400/30'
-    : isSecond
-    ? 'border-slate-300/20'
-    : 'border-amber-600/30'
-
-  const textColor = isFirst
-    ? 'text-yellow-400'
-    : isSecond
-    ? 'text-slate-300'
-    : 'text-amber-500'
-
-  const crownSize = isFirst ? 'w-8 h-8' : 'w-6 h-6'
-  const heightClass = isFirst ? 'h-56' : 'h-44'
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: place * 0.1, type: 'spring', stiffness: 120 }}
-      className={`relative flex flex-col items-center justify-end rounded-2xl border ${borderColor} ${heightClass} p-5 overflow-hidden`}
-    >
-      <div className={`absolute inset-0 bg-gradient-to-b ${gradient}`} />
-      {isFirst && (
-        <motion.div
-          className="absolute top-4"
-          animate={{ scale: [1, 1.15, 1] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-        >
-          <Crown className={`${crownSize} ${textColor} drop-shadow-lg`} />
-        </motion.div>
-      )}
-      <div className="relative z-10 flex flex-col items-center gap-2">
-        <div
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold border-2 ${borderColor} ${textColor} bg-[#0a0e1a]`}
-        >
-          {place}
-        </div>
-        <p className="text-white font-semibold text-sm text-center leading-tight">
-          {entry.full_name}
-        </p>
-        <p className={`text-xs font-bold ${textColor}`}>
-          {formatMetricValue(metric, entry[metric] as number)}
-        </p>
-        <div className="flex items-center gap-1 text-[10px] text-white/40">
-          <Star className="w-3 h-3" />
-          Nivel {entry.level}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-/* ---------- Nearby Card ---------- */
-function NearbyCard({
-  entry,
-  metric,
-  currentUserId,
-}: {
-  entry: LeaderboardEntry
-  metric: LeaderboardMetric
-  currentUserId?: string
-}) {
-  const isMe = entry.user_id === currentUserId
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.03 }}
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-        isMe
-          ? 'bg-brand-orange/10 border-brand-orange/30'
-          : 'bg-white/[0.02] border-white/[0.06]'
-      }`}
-    >
-      <span
-        className={`text-sm font-bold w-6 text-center ${
-          entry.rank <= 3 ? 'text-yellow-400' : 'text-white/40'
-        }`}
-      >
-        #{entry.rank}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate ${isMe ? 'text-brand-orange' : 'text-white'}`}>
-          {entry.full_name} {isMe && '(Vos)'}
-        </p>
-        <p className="text-xs text-white/40">Nivel {entry.level}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-sm font-bold text-white">
-          {formatMetricValue(metric, entry[metric] as number)}
-        </p>
-      </div>
-    </motion.div>
-  )
-}
-
-/* ---------- Main Page ---------- */
-export default function LeaderboardPage() {
-  const { user } = useAuth()
-  const [businessId, setBusinessId] = useState<string>('')
-  const [metric, setMetric] = useState<LeaderboardMetric>('total_xp')
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [myRank, setMyRank] = useState<UserRank | null>(null)
-  const [nearby, setNearby] = useState<NearbyUsers | null>(null)
-  const [teamStats, setTeamStats] = useState<TeamStats | null>(null)
+export default function RankingNegocioPage(): React.JSX.Element {
+  const [data, setData] = useState<RankingResponse | null>(null)
+  const [days, setDays] = useState(90)
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
 
-  // Fetch business id on mount
-  useEffect(() => {
-    businessApi.list().then((bizs) => {
-      if (bizs.length > 0) setBusinessId(bizs[0].id)
-    })
-  }, [])
-
-  // Fetch all leaderboard data
-  useEffect(() => {
-    if (!businessId) return
+  const load = useCallback(async (): Promise<void> => {
     setLoading(true)
-    Promise.all([
-      leaderboardApi.getLeaderboard(businessId, metric),
-      leaderboardApi.getMyRank(businessId, metric),
-      leaderboardApi.getNearby(businessId, metric),
-      leaderboardApi.getTeamStats(businessId),
-    ])
-      .then(([lb, rank, near, stats]) => {
-        setLeaderboard(lb)
-        setMyRank(rank)
-        setNearby(near)
-        setTeamStats(stats)
-      })
-      .catch(() => {
-        // Silencioso: dejamos estados vacíos
-      })
-      .finally(() => setLoading(false))
-  }, [businessId, metric])
+    setFailed(false)
+    try {
+      setData(await nextStepsApi.ranking(days))
+    } catch (e) {
+      logger.error(String(e))
+      setFailed(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [days])
 
-  const topThree = useMemo(() => leaderboard.slice(0, 3), [leaderboard])
-  const rest = useMemo(() => leaderboard.slice(3), [leaderboard])
-
-  const currentUserId = user?.id
-
-  // Compute "A X de superar" message
-  const overtakeMsg = useMemo(() => {
-    if (!nearby || !myRank || myRank.rank === null || myRank.rank <= 1) return null
-    const above = nearby.nearby.find((e) => e.rank === (myRank.rank! - 1))
-    if (!above) return null
-    const myEntry = nearby.nearby.find((e) => e.user_id === currentUserId)
-    if (!myEntry) return null
-    const diff = (above[metric] as number) - (myEntry[metric] as number)
-    if (diff <= 0) return null
-    return `¡A ${formatMetricValue(metric, Math.ceil(diff))} de superar a ${above.full_name}!`
-  }, [nearby, myRank, metric, currentUserId])
-
-  if (!businessId && !loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#060812]">
-        <div className="text-center">
-          <Trophy className="w-12 h-12 text-white/20 mx-auto mb-4" />
-          <p className="text-white/60">No tenés negocios cargados todavía.</p>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => { void load() }, [load])
 
   return (
-    <div className="min-h-screen bg-[#060812] text-white pb-20">
-      {/* Header / Team Stats */}
-      <div className="border-b border-white/[0.06] bg-[#060812]/80 backdrop-blur-xl sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-brand-orange/10 border border-brand-orange/20 flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-brand-orange" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Ranking del Equipo</h1>
-              <p className="text-xs text-white/40">Estamos en esto juntos 💪</p>
-            </div>
-          </div>
-
-          {teamStats && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-3"
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900">Ranking de tu negocio</h1>
+          <p className="text-slate-600 mt-2">
+            Qué producto, qué cliente y qué plataforma te sostienen. Sale de tus órdenes, no de una
+            comparación con otros.
+          </p>
+        </div>
+        <div className="flex gap-1">
+          {[30, 90, 180, 365].map(option => (
+            <button
+              key={option}
+              onClick={() => setDays(option)}
+              className={`px-2.5 py-1 rounded-md text-xs border ${
+                days === option
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+              }`}
             >
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <div className="flex items-center gap-2 text-white/40 mb-1">
-                  <Users className="w-4 h-4" />
-                  <span className="text-xs font-medium">Miembros</span>
-                </div>
-                <p className="text-xl font-bold text-white">{teamStats.total_members}</p>
-              </div>
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <div className="flex items-center gap-2 text-white/40 mb-1">
-                  <Target className="w-4 h-4" />
-                  <span className="text-xs font-medium">Ventas</span>
-                </div>
-                <p className="text-xl font-bold text-white">{teamStats.total_sales}</p>
-              </div>
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <div className="flex items-center gap-2 text-white/40 mb-1">
-                  <Flame className="w-4 h-4" />
-                  <span className="text-xs font-medium">Racha promedio</span>
-                </div>
-                <p className="text-xl font-bold text-white">{teamStats.avg_streak} días</p>
-              </div>
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-                <div className="flex items-center gap-2 text-white/40 mb-1">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-xs font-medium">Top</span>
-                </div>
-                <p className="text-sm font-bold text-white truncate">
-                  {teamStats.top_performer_name || '—'}
-                </p>
-                <p className="text-[10px] text-white/40">{teamStats.top_performer_xp} XP</p>
-              </div>
-            </motion.div>
-          )}
+              {option === 365 ? '1 año' : `${option}d`}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 pt-6 space-y-8">
-        {/* Metric Selector */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {METRICS.map((m) => {
-            const Icon = METRIC_ICONS[m]
-            const active = m === metric
-            return (
-              <button
-                key={m}
-                onClick={() => setMetric(m)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border ${
-                  active
-                    ? 'bg-brand-orange/10 text-brand-orange border-brand-orange/30'
-                    : 'bg-white/[0.02] text-white/50 border-transparent hover:bg-white/[0.04] hover:text-white/70'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {METRIC_LABELS[m]}
-              </button>
-            )
-          })}
+      {loading && !data && (
+        <div className="flex items-center gap-3 text-slate-500 py-10">
+          <Loader2 className="w-5 h-5 animate-spin" /> Ordenando tus ventas…
         </div>
+      )}
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-orange/10 border border-brand-orange/20 flex items-center justify-center animate-pulse">
-                <Trophy className="w-5 h-5 text-brand-orange" />
-              </div>
-              <p className="text-sm text-white/40">Cargando ranking...</p>
-            </div>
-          </div>
-        )}
+      {failed && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+          <p className="font-semibold text-slate-900">No se pudo leer tu ranking.</p>
+          <p className="text-sm text-slate-600 mt-1">No se muestran posiciones de ejemplo.</p>
+        </div>
+      )}
 
-        {!loading && (
-          <>
-            {/* Podium */}
-            {topThree.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 md:gap-5 items-end max-w-lg mx-auto">
-                {/* 2nd */}
-                {topThree[1] ? (
-                  <PodiumCard entry={topThree[1]} place={2} metric={metric} />
-                ) : (
-                  <div />
-                )}
-                {/* 1st */}
-                {topThree[0] ? (
-                  <div className="relative">
-                    <motion.div
-                      className="absolute -top-6 left-1/2 -translate-x-1/2"
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                    >
-                      <Sparkles className="w-5 h-5 text-yellow-400" />
-                    </motion.div>
-                    <PodiumCard entry={topThree[0]} place={1} metric={metric} />
-                  </div>
-                ) : (
-                  <div />
-                )}
-                {/* 3rd */}
-                {topThree[2] ? (
-                  <PodiumCard entry={topThree[2]} place={3} metric={metric} />
-                ) : (
-                  <div />
-                )}
-              </div>
+      {data && !data.has_data && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6">
+          <Trophy className="w-7 h-7 text-slate-300 mb-2" />
+          <p className="text-sm text-slate-700">{data.note}</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Cuando entre la primera venta, acá aparece qué se vendió y a quién.
+          </p>
+        </div>
+      )}
+
+      {data?.note && data.has_data && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          {data.note}
+        </div>
+      )}
+
+      {data?.has_data && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Section
+            title="Lo que más se vende"
+            icon={Package}
+            subtitle={`Sobre ${data.orders_counted} órdenes de los últimos ${data.period_days} días.`}
+          >
+            {data.products.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Ninguna orden tiene productos con nombre, así que no se puede armar este ranking.
+              </p>
+            ) : (
+              <ol className="space-y-2">
+                {data.products.map((product, index) => (
+                  <li key={product.name} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="text-slate-800">
+                      <span className="text-slate-400 mr-1.5">{medal(index)}</span>
+                      {product.name}
+                      <span className="block text-[11px] text-slate-500">
+                        {product.units} unidad(es) en {product.orders} orden(es)
+                      </span>
+                    </span>
+                    <span className="text-slate-900 font-medium tabular-nums whitespace-nowrap">
+                      {formatAmounts(product.revenue)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             )}
-
-            {/* Your Position Card */}
-            {myRank && myRank.rank !== null && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="relative rounded-2xl border border-brand-orange/20 bg-gradient-to-r from-brand-orange/10 to-transparent p-5 overflow-hidden"
-              >
-                <motion.div
-                  className="absolute top-0 right-0 w-32 h-32 bg-brand-orange/10 blur-3xl rounded-full pointer-events-none"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 3 }}
-                />
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-brand-orange/20 border-2 border-brand-orange/40 flex items-center justify-center text-lg font-bold text-brand-orange">
-                      #{myRank.rank}
-                    </div>
-                    <div>
-                      <p className="text-white font-bold text-lg">{myRank.full_name}</p>
-                      <p className="text-sm text-white/60">
-                        {myRank.rank === 1
-                          ? '¡Sos el líder del equipo! 🏆'
-                          : `Sos #${myRank.rank} de ${myRank.total_members} vendedores`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex-1" />
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <p className="text-xs text-white/40">Nivel</p>
-                      <p className="text-lg font-bold text-white">{myRank.level}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-white/40">{METRIC_LABELS[metric]}</p>
-                      <p className="text-lg font-bold text-brand-orange">
-                        {formatMetricValue(metric, myRank[metric] as number)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {overtakeMsg && (
-                  <div className="relative z-10 mt-3 flex items-center gap-2 text-sm text-brand-orange">
-                    <ArrowUp className="w-4 h-4" />
-                    <span>{overtakeMsg}</span>
-                  </div>
-                )}
-              </motion.div>
+            {(data.orders_without_named_items ?? 0) > 0 && (
+              <p className="text-[11px] text-slate-400 mt-3">
+                {data.orders_without_named_items} orden(es) no tienen productos con nombre y no entran
+                en este ranking.
+              </p>
             )}
+          </Section>
 
-            {/* Nearby Competitors */}
-            {nearby && nearby.nearby.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Medal className="w-4 h-4 text-white/40" />
-                  <h3 className="text-sm font-semibold text-white/70">Cerca de vos</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  <AnimatePresence>
-                    {nearby.nearby.map((entry) => (
-                      <NearbyCard
-                        key={entry.user_id}
-                        entry={entry}
-                        metric={metric}
-                        currentUserId={currentUserId}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
+          <Section
+            title="Tus mejores clientes"
+            icon={Users}
+            subtitle="Identificados por email o teléfono; se muestran enmascarados."
+          >
+            {data.customers.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                Ninguna orden tiene email ni teléfono, así que no se puede saber quién compra.
+              </p>
+            ) : (
+              <ol className="space-y-2">
+                {data.customers.map((customer, index) => (
+                  <li key={`${customer.label}-${index}`} className="flex items-start justify-between gap-3 text-sm">
+                    <span className="text-slate-800">
+                      <span className="text-slate-400 mr-1.5">{medal(index)}</span>
+                      {customer.label}
+                      <span className="block text-[11px] text-slate-500">
+                        {customer.orders} compra(s)
+                        {customer.days_since !== null && ` · última hace ${customer.days_since} días`}
+                      </span>
+                    </span>
+                    <span className="text-slate-900 font-medium tabular-nums whitespace-nowrap">
+                      {formatAmounts(customer.revenue)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             )}
+          </Section>
 
-            {/* Full Leaderboard Table */}
-            {rest.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-white/40" />
-                  <h3 className="text-sm font-semibold text-white/70">Tabla completa</h3>
-                </div>
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.01] overflow-hidden">
-                  {rest.map((entry, idx) => {
-                    const isMe = entry.user_id === currentUserId
-                    return (
-                      <motion.div
-                        key={entry.user_id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                        className={`flex items-center gap-4 px-5 py-3.5 border-b border-white/[0.04] last:border-0 transition-colors ${
-                          isMe ? 'bg-brand-orange/5' : 'hover:bg-white/[0.02]'
-                        }`}
-                      >
-                        <span
-                          className={`text-sm font-bold w-8 text-center ${
-                            entry.rank <= 3 ? 'text-yellow-400' : 'text-white/30'
-                          }`}
-                        >
-                          {entry.rank}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-medium truncate ${
-                              isMe ? 'text-brand-orange' : 'text-white'
-                            }`}
-                          >
-                            {entry.full_name}
-                            {isMe && (
-                              <span className="ml-2 text-[10px] font-bold bg-brand-orange/20 text-brand-orange px-1.5 py-0.5 rounded-md">
-                                VOS
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-[11px] text-white/30">Nivel {entry.level}</p>
-                        </div>
-                        <div className="flex items-center gap-5 text-right">
-                          <div>
-                            <p className="text-xs text-white/40">{METRIC_LABELS[metric]}</p>
-                            <p className="text-sm font-bold text-white">
-                              {formatMetricValue(metric, entry[metric] as number)}
-                            </p>
-                          </div>
-                          <div className="hidden sm:block">
-                            <p className="text-xs text-white/40">Ventas</p>
-                            <p className="text-sm text-white/70">{entry.total_sales_closed}</p>
-                          </div>
-                          <div className="hidden sm:block">
-                            <p className="text-xs text-white/40">Racha</p>
-                            <p className="text-sm text-white/70 flex items-center gap-1">
-                              {entry.current_login_streak > 2 && (
-                                <Flame className="w-3 h-3 text-orange-400" />
-                              )}
-                              {entry.current_login_streak}d
-                            </p>
-                          </div>
-                          <div className="hidden md:block">
-                            <p className="text-xs text-white/40">Logros</p>
-                            <p className="text-sm text-white/70">{entry.total_achievements}</p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/10" />
-                        </div>
-                      </motion.div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          <Section
+            title="Dónde se vende"
+            icon={Store}
+            subtitle="Plataforma de origen de cada orden, con cuántas terminaron cobradas."
+          >
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 text-xs">
+                  <th className="text-left py-1.5">Plataforma</th>
+                  <th className="text-right py-1.5">Órdenes</th>
+                  <th className="text-right py-1.5">Cobradas</th>
+                  <th className="text-right py-1.5">Facturado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.platforms.map(platform => (
+                  <tr key={platform.platform} className="border-b border-slate-100">
+                    <td className="py-2 text-slate-800">{platform.platform}</td>
+                    <td className="py-2 text-right text-slate-600 tabular-nums">{platform.orders}</td>
+                    <td className="py-2 text-right text-slate-600 tabular-nums">{platform.paid}</td>
+                    <td className="py-2 text-right text-slate-900 tabular-nums whitespace-nowrap">
+                      {formatAmounts(platform.revenue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        </div>
+      )}
+
+      {data?.has_data && (
+        <p className="text-[11px] text-slate-400">
+          Los montos van por moneda y no se suman entre sí. Calculado el{' '}
+          {new Date(data.generated_at).toLocaleString('es-AR')}.
+        </p>
+      )}
     </div>
   )
 }
-

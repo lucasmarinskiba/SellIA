@@ -12,15 +12,22 @@ import {
   ShoppingBag, Camera as Instagram, Award, Activity, Users, Radar,
   Gift, Ticket, Swords, Moon, Eye, Crosshair, Phone, Sparkles, Flame
 } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { CompanionWidget } from './gamification/CompanionWidget'
 import { GardenWidget } from './gamification/GardenWidget'
 import { TrustBuilder } from './gamification/TrustBuilder'
 
+// Entries removed on purpose (not lost): Mientras Dormías, Clientes Fieles,
+// Marketplace, Ambassador, Referidos and Battlecards each called a router that
+// does not exist in this deployment — /autopilot/overnight-report, /loyalty,
+// /marketplace/items, /ambassador/*, /referrals and /battlecards all answer 404.
+// Their pages loaded, asked, and showed an empty state, which reads as "you have
+// no data" rather than "this is not wired". The navigation no longer promises
+// them; the files remain for whoever builds those backends.
 const baseNavItems = [
   { href: '/dashboard/home', label: 'Inicio', icon: Home },
-  { href: '/dashboard/mientras-dormias', label: 'Mientras Dormías', icon: Moon },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/radar', label: 'Radar', icon: Radar },
+  { href: '/dashboard/radar', label: 'Cola de atención', icon: Radar },
   { href: '/dashboard/negocios', label: 'Mis Negocios', icon: Store },
   { href: '/dashboard/catalogo', label: 'Catálogo', icon: Package },
   { href: '/dashboard/equipo', label: 'Mi Equipo', icon: Users },
@@ -49,18 +56,16 @@ const baseNavItems = [
   { href: '/dashboard/conversaciones', label: 'Conversaciones', icon: MessageSquare },
   { href: '/dashboard/canales', label: 'Canales', icon: Plug },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/misiones', label: 'Misiones', icon: Crosshair },
+  { href: '/dashboard/misiones', label: 'Próximos pasos', icon: Crosshair },
+  { href: '/dashboard/leaderboard', label: 'Ranking de tu negocio', icon: Trophy },
   { href: '/dashboard/objetivos', label: 'Objetivos & KPIs', icon: Target },
   { href: '/dashboard/retencion', label: 'Retención', icon: Heart },
-  { href: '/dashboard/clientes-fieles', label: 'Clientes Fieles', icon: Heart },
   { href: '/dashboard/inteligencia', label: 'Inteligencia', icon: Brain },
   { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp },
   { href: '/dashboard/acquisition-engine', label: 'Motor de Adquisición', icon: Sparkles },
   { href: '/dashboard/fomo-intelligence', label: 'FOMO Intelligence', icon: Flame },
   { href: '/dashboard/transformacion', label: 'Transformación de Marca', icon: Sparkles },
-  { href: '/dashboard/marketplace', label: 'Marketplace', icon: ShoppingBag },
   { href: '/dashboard/social-growth', label: 'Social Growth', icon: Instagram },
-  { href: '/dashboard/ambassador', label: 'Ambassador', icon: Award },
   { href: '/dashboard/planes', label: 'Planes', icon: Crown },
   { href: '/dashboard/alertas', label: 'Alertas', icon: Bell },
   { href: '/dashboard/recomendaciones', label: 'Recomendaciones', icon: Lightbulb },
@@ -69,9 +74,7 @@ const baseNavItems = [
   { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
   { href: '/soporte', label: 'Soporte', icon: Headphones },
   { href: '/feedback', label: 'Feedback', icon: MessageCircle },
-  { href: '/dashboard/referrals', label: 'Referidos', icon: Gift },
   { href: '/dashboard/coupons', label: 'Cupones', icon: Ticket },
-  { href: '/dashboard/battlecards', label: 'Battlecards', icon: Swords },
   { href: '/dashboard/competencia', label: 'Competencia', icon: Eye },
 ]
 
