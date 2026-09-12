@@ -129,6 +129,20 @@ async def toggle_enforcement_middleware(request: Request, call_next: Callable) -
             toggle.current_month_usage += 1
             await db_session.commit()
 
+            # Check if usage reached/exceeded limit and send notification
+            if toggle.current_month_usage >= toggle.monthly_limit:
+                from app.domains.automations.tasks import send_toggle_notification
+                try:
+                    await send_toggle_notification(
+                        db=db_session,
+                        toggle_id=str(toggle.id),
+                        business_id=str(business_id),
+                        event_type="usage_limit_reached",
+                        toggle_name=toggle.display_name,
+                    )
+                except Exception as e:
+                    print(f"[toggle_enforcement] Error sending notification: {e}")
+
         return response
 
     except HTTPException:

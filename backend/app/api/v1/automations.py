@@ -1114,6 +1114,20 @@ async def update_toggle(
 
     await db.commit()
     await db.refresh(toggle)
+
+    # Send notifications for toggle state changes
+    if data.is_enabled is not None:
+        from app.domains.automations.tasks import send_toggle_notification
+
+        event_type = "enabled" if data.is_enabled else "disabled"
+        await send_toggle_notification(
+            db=db,
+            toggle_id=str(toggle.id),
+            business_id=str(toggle.business_id),
+            event_type=event_type,
+            toggle_name=toggle.display_name,
+        )
+
     return toggle
 
 

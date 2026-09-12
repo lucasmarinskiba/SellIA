@@ -208,6 +208,16 @@ async def _execute_schedules():
 
                 await db.commit()
                 executed += 1
+
+                # Send notifications for scheduled toggle action
+                await send_toggle_notification(
+                    db=db,
+                    toggle_id=str(schedule.toggle_id),
+                    business_id=str(schedule.business_id),
+                    event_type="schedule_executed",
+                    toggle_name=toggle.display_name,
+                )
+
                 logger.info(f"Executed schedule {schedule.id}: {schedule.action} for toggle {schedule.toggle_id}")
 
             except Exception as e:
