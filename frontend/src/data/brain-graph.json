@@ -4876,6 +4876,20 @@
 "automation",
 "retención"
 ]
+},
+{
+"id": "automation.fomo_campaigns",
+"label": "Campañas de FOMO",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
 }
 ],
 "edges": [
@@ -5647,6 +5661,26 @@
 {
 "source": "automation.churn_alerts",
 "target": "agent.pipeline.retentor",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.cerrador",
 "rel": "orquesta"
 },
 {
@@ -6578,9 +6612,9 @@
 "counts": {
 "agents": 50,
 "skills": 210,
-"automations": 30,
+"automations": 31,
 "platforms": 47,
-"total": 337
+"total": 338
 },
-"health": 0.8571
+"health": 0.8575
 }

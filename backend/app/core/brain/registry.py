@@ -530,6 +530,7 @@ _AUTOMATIONS: list[tuple[str, str, str, str]] = [
     ("upsell_detection", "Detección Automática de Upsell", "Expansión", "Monitorea uso. Al 70%+ features → sugiere upgrade o cross-sell complemento."),
     ("retention_qbr", "QBR Trimestral Automatizada", "Retención", "Success metrics, benchmarking, innovación, programa de referral."),
     ("churn_alerts", "Alertas de Churn Automáticas", "Retención", "Detecta caída 30%+ en uso. Intervención 48h. Diagnóstico + win-back."),
+    ("fomo_campaigns", "Campañas de FOMO", "Conversión", "Urgencia y escasez real (stock, tiempo, demanda) para acelerar decisiones."),
 ]
 
 
