@@ -85,11 +85,13 @@ export default function SelliaBrainPage(): React.JSX.Element {
         </div>
 
         {/* Tab Content */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {activeTab === 'overview' && <EnterpriseCommandCenter />}
-          {activeTab === 'control' && <ControlCenter businessId={businessId} />}
-          {activeTab === 'analytics' && <ToggleAnalytics businessId={businessId} />}
-        </div>
+        {activeTab === 'overview' && <EnterpriseCommandCenter />}
+        {(activeTab === 'control' || activeTab === 'analytics') && (
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            {activeTab === 'control' && <ControlCenter businessId={businessId} />}
+            {activeTab === 'analytics' && <ToggleAnalytics businessId={businessId} />}
+          </div>
+        )}
       </main>
     </SettingsProvider>
   )
