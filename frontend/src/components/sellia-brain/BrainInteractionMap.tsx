@@ -15,15 +15,16 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
-  BackgroundVariant, MarkerType, Handle, Position,
+  BackgroundVariant, MarkerType, Handle, Position, useReactFlow,
   useNodesState, useEdgesState,
   type Node, type Edge, type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { SELLIA, GROUP_COLOR, GROUP_LABEL } from '@/lib/sellia-theme'
-import { getDisabledCapabilities, toggleCapability, reactivateAllCapabilities, syncDisabledFromServer } from '@/lib/brain-capability-toggles'
+import { getDisabledCapabilities, toggleCapability, reactivateAllCapabilities, setCapabilitiesForIds, syncDisabledFromServer } from '@/lib/brain-capability-toggles'
 
 const BRAIN_BASE = '/api/v1/brain'
 
@@ -39,18 +40,28 @@ const KIND_LABEL: Record<number, string> = { 0: 'Plataformas', 1: 'Skills / Herr
 const MAX_PER_COL = 22
 const COL_GAP = 168
 const ROW_GAP = 46
+// Fewer, bigger nodes when a category filter is active (see `filteredMode`
+// below) need more room than the dense default grid.
+const FILTERED_MAX_PER_COL = 14
+const FILTERED_COL_GAP = 280
+const FILTERED_ROW_GAP = 64
 
 type CatData = {
   label: string; group: string; health: number; kind: string; dim: boolean; hot: boolean
   disabled: boolean; onToggle: () => void
+  // true while a category filter is active -- there's far less on screen,
+  // so each node can render bigger/easier to read instead of the dense
+  // default grid's compact sizing.
+  emphasized: boolean
 }
 
 const CatNode = ({ data }: NodeProps<Node<CatData>>): React.JSX.Element => {
   const color = GROUP_COLOR[data.group] ?? SELLIA.text2
+  const big = data.emphasized
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px 5px 10px',
-      borderRadius: 8, fontFamily: SELLIA.sans, fontSize: 11, fontWeight: 600,
+      display: 'flex', alignItems: 'center', gap: big ? 9 : 7, padding: big ? '8px 12px 8px 14px' : '5px 8px 5px 10px',
+      borderRadius: big ? 10 : 8, fontFamily: SELLIA.sans, fontSize: big ? 14 : 11, fontWeight: 600,
       color: data.disabled ? SELLIA.text3 : SELLIA.text, whiteSpace: 'nowrap',
       background: data.disabled ? 'transparent' : (data.hot ? `${color}26` : SELLIA.panel),
       border: `1px solid ${data.disabled ? SELLIA.border : (data.hot ? color : SELLIA.border)}`,
@@ -60,16 +71,16 @@ const CatNode = ({ data }: NodeProps<Node<CatData>>): React.JSX.Element => {
       transition: 'opacity .15s, border-color .15s, background .15s',
     }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1 }} />
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: data.disabled ? SELLIA.text3 : color, flexShrink: 0 }} />
-      <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: data.disabled ? 'line-through' : 'none' }}>{data.label}</span>
+      <span style={{ width: big ? 10 : 8, height: big ? 10 : 8, borderRadius: '50%', background: data.disabled ? SELLIA.text3 : color, flexShrink: 0 }} />
+      <span style={{ maxWidth: big ? 240 : 120, overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: data.disabled ? 'line-through' : 'none' }}>{data.label}</span>
       <button
         type="button"
         title={data.disabled ? 'Activar esta capacidad' : 'Desactivar esta capacidad'}
         onClick={(e) => { e.stopPropagation(); data.onToggle() }}
         onMouseDown={(e) => e.stopPropagation()}
         style={{
-          cursor: 'pointer', marginLeft: 2, padding: '1px 6px', borderRadius: 100,
-          fontSize: 8, fontWeight: 700, fontFamily: SELLIA.mono, letterSpacing: '0.05em',
+          cursor: 'pointer', marginLeft: 2, padding: big ? '2px 8px' : '1px 6px', borderRadius: 100,
+          fontSize: big ? 10 : 8, fontWeight: 700, fontFamily: SELLIA.mono, letterSpacing: '0.05em',
           border: `1px solid ${data.disabled ? SELLIA.text3 : SELLIA.emerald}55`,
           color: data.disabled ? SELLIA.text3 : SELLIA.emerald,
           background: data.disabled ? 'transparent' : `${SELLIA.emerald}14`,
@@ -85,7 +96,13 @@ const CatNode = ({ data }: NodeProps<Node<CatData>>): React.JSX.Element => {
 const nodeTypes = { cat: CatNode }
 
 // layout determinista: columna por kind-layer, sub-columnas + filas ordenadas por grupo
-const computePositions = (raw: RawNode[]): Map<string, { x: number; y: number }> => {
+const computePositions = (
+  raw: RawNode[],
+  opts: { maxPerCol?: number; colGap?: number; rowGap?: number } = {},
+): Map<string, { x: number; y: number }> => {
+  const maxPerCol = opts.maxPerCol ?? MAX_PER_COL
+  const colGap = opts.colGap ?? COL_GAP
+  const rowGap = opts.rowGap ?? ROW_GAP
   const byLayer = new Map<number, RawNode[]>()
   for (const n of raw) {
     const a = byLayer.get(n.layer) ?? []; a.push(n); byLayer.set(n.layer, a)
@@ -93,13 +110,13 @@ const computePositions = (raw: RawNode[]): Map<string, { x: number; y: number }>
   const pos = new Map<string, { x: number; y: number }>()
   for (const [layer, arr] of byLayer) {
     arr.sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label))
-    const subCols = Math.max(1, Math.ceil(arr.length / MAX_PER_COL))
+    const subCols = Math.max(1, Math.ceil(arr.length / maxPerCol))
     const perCol = Math.ceil(arr.length / subCols)
     const baseX = LAYER_X[layer] ?? 0
     arr.forEach((n, i) => {
       const col = Math.floor(i / perCol)
       const row = i % perCol
-      pos.set(n.id, { x: baseX + col * COL_GAP, y: 60 + row * ROW_GAP })
+      pos.set(n.id, { x: baseX + col * colGap, y: 60 + row * rowGap })
     })
   }
   return pos
@@ -127,6 +144,21 @@ const Inner = (): React.JSX.Element => {
   const [lastEvent, setLastEvent] = useState<string>('—')
   const activityBase = useRef(BRAIN_BASE)
   const sinceSeq = useRef(0)
+
+  // ── pantalla completa: overlay CSS, sin API nativa (sin permisos, sin
+  // sorpresas entre navegadores) ──
+  const [fullscreen, setFullscreen] = useState(false)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.style.overflow = fullscreen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [fullscreen])
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setFullscreen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullscreen])
 
   // ── carga grafo real (live → bundled) ──
   useEffect(() => {
@@ -158,6 +190,10 @@ const Inner = (): React.JSX.Element => {
   const positions = useMemo(() => computePositions(raw.nodes), [raw.nodes])
   const edgeKey = (e: RawEdge): string => `${e.source}__${e.target}`
 
+  // Sólo se activa cuando el usuario elige una categoría (click en un chip),
+  // no en hover -- el hover sigue siendo el resaltado liviano de siempre.
+  const filteredMode = !!activeGroup
+
   // adyacencia para resaltar interacciones
   const adj = useMemo(() => {
     const m = new Map<string, Set<string>>()
@@ -182,6 +218,21 @@ const Inner = (): React.JSX.Element => {
     }
     return null
   }, [hovered, activeGroup, raw.nodes, adj])
+
+  // Con un filtro de categoría activo, se oculta todo lo que no matchea (en
+  // vez de sólo atenuarlo) y se recalculan posiciones SOLO para lo visible
+  // -- así lo que queda se compacta y agranda en vez de quedar disperso en
+  // sus coordenadas originales de la grilla completa.
+  const visibleRaw = useMemo(
+    () => (filteredMode && focusIds ? raw.nodes.filter(n => focusIds.has(n.id)) : raw.nodes),
+    [filteredMode, focusIds, raw.nodes],
+  )
+  const filteredPositions = useMemo(
+    () => (filteredMode
+      ? computePositions(visibleRaw, { maxPerCol: FILTERED_MAX_PER_COL, colGap: FILTERED_COL_GAP, rowGap: FILTERED_ROW_GAP })
+      : positions),
+    [filteredMode, visibleRaw, positions],
+  )
 
   // ── poll actividad real → enciende edges ──
   useEffect(() => {
@@ -210,40 +261,45 @@ const Inner = (): React.JSX.Element => {
     return () => { alive = false; window.clearInterval(iv) }
   }, [raw.nodes.length, adj])
 
-  const derivedNodes = useMemo<Node<CatData>[]>(() => raw.nodes.map(n => {
-    const p = positions.get(n.id) ?? { x: 0, y: 0 }
-    const dim = focusIds ? !focusIds.has(n.id) : false
+  const derivedNodes = useMemo<Node<CatData>[]>(() => visibleRaw.map(n => {
+    const p = filteredPositions.get(n.id) ?? { x: 0, y: 0 }
+    const dim = filteredMode ? false : (focusIds ? !focusIds.has(n.id) : false)
     const hot = hovered === n.id || (!!activeGroup && n.group === activeGroup)
     return {
       id: n.id, type: 'cat', position: p, draggable: true,
       data: {
         label: n.label, group: n.group, health: n.health, kind: n.kind, dim, hot,
         disabled: disabled.has(n.id), onToggle: () => onToggleNode(n.id),
+        emphasized: filteredMode,
       },
     }
-  }), [raw.nodes, positions, focusIds, hovered, activeGroup, disabled, onToggleNode])
+  }), [visibleRaw, filteredPositions, filteredMode, focusIds, hovered, activeGroup, disabled, onToggleNode])
 
-  const derivedEdges = useMemo<Edge[]>(() => raw.edges.map(e => {
-    const k = edgeKey(e)
-    const hot = hotEdges.has(k)
-    const focused = focusIds ? (focusIds.has(e.source) && focusIds.has(e.target)) : false
-    const broken = disabled.has(e.source) || disabled.has(e.target)
-    const show = hot || focused
-    const color = broken ? SELLIA.text3 : hot ? SELLIA.cobalt : focused ? SELLIA.text2 : SELLIA.border
-    return {
-      id: k, source: e.source, target: e.target, type: 'smoothstep',
-      animated: hot && !broken,
-      label: show ? e.rel : undefined,
-      labelStyle: { fill: SELLIA.text2, fontSize: 9, fontFamily: SELLIA.mono },
-      labelBgStyle: { fill: SELLIA.bg, fillOpacity: 0.8 },
-      style: {
-        stroke: color, strokeWidth: hot && !broken ? 1.8 : focused ? 1.1 : 0.5,
-        opacity: broken ? 0.1 : focusIds && !focused ? 0.08 : hot ? 0.95 : 0.32,
-        strokeDasharray: broken ? '3 3' : undefined,
-      },
-      markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color },
-    }
-  }), [raw.edges, hotEdges, focusIds, disabled])
+  const derivedEdges = useMemo<Edge[]>(() => {
+    const visibleIds = filteredMode ? new Set(visibleRaw.map(n => n.id)) : null
+    const source = visibleIds ? raw.edges.filter(e => visibleIds.has(e.source) && visibleIds.has(e.target)) : raw.edges
+    return source.map(e => {
+      const k = edgeKey(e)
+      const hot = hotEdges.has(k)
+      const focused = focusIds ? (focusIds.has(e.source) && focusIds.has(e.target)) : false
+      const broken = disabled.has(e.source) || disabled.has(e.target)
+      const show = hot || focused || filteredMode
+      const color = broken ? SELLIA.text3 : hot ? SELLIA.cobalt : (focused || filteredMode) ? SELLIA.text2 : SELLIA.border
+      return {
+        id: k, source: e.source, target: e.target, type: 'smoothstep',
+        animated: hot && !broken,
+        label: show ? e.rel : undefined,
+        labelStyle: { fill: SELLIA.text2, fontSize: filteredMode ? 11 : 9, fontFamily: SELLIA.mono },
+        labelBgStyle: { fill: SELLIA.bg, fillOpacity: 0.8 },
+        style: {
+          stroke: color, strokeWidth: hot && !broken ? 1.8 : (focused || filteredMode) ? 1.1 : 0.5,
+          opacity: broken ? 0.1 : filteredMode ? 0.85 : (focusIds && !focused ? 0.08 : hot ? 0.95 : 0.32),
+          strokeDasharray: broken ? '3 3' : undefined,
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color },
+      }
+    })
+  }, [raw.edges, hotEdges, focusIds, disabled, filteredMode, visibleRaw])
 
   // Estado controlado de React Flow + sync con los memos derivados (para que
   // los updates de estilo —dim/hot/labels— se reflejen tras el mount).
@@ -260,10 +316,40 @@ const Inner = (): React.JSX.Element => {
   const onNodeEnter = useCallback((_: unknown, n: Node) => setHovered(n.id), [])
   const onNodeLeave = useCallback(() => setHovered(null), [])
 
+  // Re-encuadra la cámara al subconjunto visible cada vez que cambia el
+  // filtro de categoría (o se entra/sale de pantalla completa) -- sin esto,
+  // el zoom se queda calibrado para el grafo completo aunque haya mucho
+  // menos para mostrar.
+  const { fitView } = useReactFlow()
+  useEffect(() => {
+    const id = window.setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50)
+    return () => window.clearTimeout(id)
+  }, [activeGroup, fullscreen, fitView])
+
+  const groupIds = useMemo(
+    () => (activeGroup ? raw.nodes.filter(n => n.group === activeGroup).map(n => n.id) : []),
+    [activeGroup, raw.nodes],
+  )
+  const groupLabel = activeGroup ? (GROUP_LABEL[activeGroup] ?? activeGroup) : ''
+  const onActivateGroup = useCallback(() => {
+    setCapabilitiesForIds(groupIds, true); setDisabled(getDisabledCapabilities())
+  }, [groupIds])
+  const onDeactivateGroup = useCallback(() => {
+    setCapabilitiesForIds(groupIds, false); setDisabled(getDisabledCapabilities())
+  }, [groupIds])
+
   return (
-    <div style={{ background: SELLIA.bg, borderRadius: 12, overflow: 'hidden', fontFamily: SELLIA.sans }}>
+    <div style={fullscreen
+      ? { position: 'fixed', inset: 0, zIndex: 200, background: SELLIA.bg, fontFamily: SELLIA.sans, display: 'flex', flexDirection: 'column' }
+      : { background: SELLIA.bg, borderRadius: 12, overflow: 'hidden', fontFamily: SELLIA.sans }}>
       {/* status + leyenda de categorías (chips de filtro) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${SELLIA.border}`, flexWrap: 'wrap', background: 'rgba(0,0,0,0.18)' }}>
+        <button type="button" onClick={() => setFullscreen(v => !v)}
+          title={fullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 6, color: SELLIA.text2, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
+          {fullscreen ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
+          {fullscreen ? 'Salir' : 'Pantalla completa'}
+        </button>
         <span style={{ fontFamily: SELLIA.mono, fontSize: 11, fontWeight: 600, color: hotEdges.size ? SELLIA.emerald : SELLIA.text3, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: hotEdges.size ? SELLIA.emerald : SELLIA.text3 }} />
           {hotEdges.size ? 'INTERACCIÓN REAL' : 'EN REPOSO'}
@@ -293,12 +379,24 @@ const Inner = (): React.JSX.Element => {
             )
           })}
           {activeGroup && (
-            <button type="button" onClick={() => setActiveGroup(null)} style={{ cursor: 'pointer', fontSize: 10, color: SELLIA.text3, background: 'none', border: 'none', textDecoration: 'underline' }}>limpiar</button>
+            <>
+              <button type="button" onClick={onActivateGroup}
+                title={`Activar todos los nodos de ${groupLabel}`}
+                style={{ cursor: 'pointer', fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 5, color: SELLIA.emerald, background: `${SELLIA.emerald}14`, border: `1px solid ${SELLIA.emerald}55` }}>
+                Activar todo {groupLabel}
+              </button>
+              <button type="button" onClick={onDeactivateGroup}
+                title={`Desactivar todos los nodos de ${groupLabel}`}
+                style={{ cursor: 'pointer', fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 5, color: SELLIA.text3, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
+                Desactivar todo {groupLabel}
+              </button>
+              <button type="button" onClick={() => setActiveGroup(null)} style={{ cursor: 'pointer', fontSize: 10, color: SELLIA.text3, background: 'none', border: 'none', textDecoration: 'underline' }}>limpiar</button>
+            </>
           )}
         </div>
       </div>
 
-      <div style={{ height: 460, position: 'relative' }}>
+      <div style={{ height: fullscreen ? undefined : 460, flex: fullscreen ? 1 : undefined, minHeight: 0, position: 'relative' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

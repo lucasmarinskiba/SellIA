@@ -88,6 +88,24 @@ export const reactivateAllCapabilities = (): void => {
   }
 }
 
+/** Sets every id in `ids` to the same enabled/disabled state at once, both
+ * locally and (best effort) on the server -- backs the Brain Map's "Activar
+ * todo {categoría}" / "Desactivar todo {categoría}" buttons, so a whole
+ * category can be flipped in one click instead of one node at a time. */
+export const setCapabilitiesForIds = (ids: string[], enabled: boolean): void => {
+  const current = getDisabledCapabilities()
+  for (const id of ids) {
+    if (enabled) current.delete(id)
+    else current.add(id)
+  }
+  setDisabledCapabilities(current)
+  if (getToken()) {
+    for (const id of ids) {
+      void api.post('/brain/toggles', { brain_id: id, enabled }).catch(() => {})
+    }
+  }
+}
+
 /** Pulls the server's real disabled set (per the logged-in user's business)
  * and makes it the local truth -- call this once when the Brain Map mounts
  * so a toggle made on another device/session shows up here too. No-ops

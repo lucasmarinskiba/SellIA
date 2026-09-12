@@ -1489,6 +1489,48 @@
 "rel": "orquesta"
 }
 ]
+},
+{
+"id": "flow.automation.fomo_campaigns",
+"name": "Campañas de FOMO",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.fomo_campaigns",
+"label": "Campañas de FOMO",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+}
+],
+"edges": [
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_campaigns",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+}
+]
 }
 ]
 }
