@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Brain, ChevronLeft, ChevronRight,
   Cpu, Filter, LifeBuoy, Search, Store, Target, TrendingUp, Users, Workflow,
@@ -32,6 +33,8 @@ import { type BusinessProfile, type PlannedFlow, loadProfile, isComplete, planAc
 import { getDisabledCapabilities, onCapabilitiesChanged } from '@/lib/brain-capability-toggles'
 import { getToken } from '@/lib/sellia-api'
 import { businessContextApi } from '@/lib/businessContext'
+import { assistantApi } from '@/lib/assistant'
+import { executeAssistantAction } from '@/lib/assistantActions'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
 const BrainInteractionMap = dynamic(
@@ -799,8 +802,14 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     scrollToSection(componentId)
   }, [])
 
+  const router = useRouter()
+
   // Resuelve y EJECUTA una orden de voz; retorna la respuesta hablada.
-  const handleVoiceCommand = useCallback((text: string): string => {
+  // Primero prueba comandos locales de navegación en pantalla (rápido, sin red).
+  // Si no matchea ninguno, la manda al orquestador de IA real (mismo pipeline
+  // que usa el chat) para que entienda frases sueltas/emocionales del usuario
+  // ("quiero vender 24/7", "no vendí ni mierda") y dispare la acción/agente real.
+  const handleVoiceCommand = useCallback(async (text: string): Promise<string> => {
     const t = text.toLowerCase()
     const scrollTo = (id: string, label: string): string => {
       scrollToSection(id)
@@ -820,8 +829,14 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
     if (/(detener|desactivar|para[r]?|pausa)/.test(t)) {
       setCuaMode('off'); return 'Computer Use desactivado.'
     }
-    return `No reconocí la orden: "${text}". Probá: mostrá el pipeline, abrí Computer Use, o mostrá el cerebro neuronal.`
-  }, [])
+    try {
+      const action = await assistantApi.chat({ message: text })
+      await executeAssistantAction(action, { router, personalities: [] })
+      return action.response
+    } catch {
+      return 'Perdón, no pude procesar eso. ¿Podés repetirlo?'
+    }
+  }, [router])
 
   // ── audit log stream (real — derived from computer-use audit log) ──
   const [logs, setLogs] = useState<LogLine[]>([])

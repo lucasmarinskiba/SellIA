@@ -17,7 +17,7 @@ interface UseVoiceRecognitionOptions {
 }
 
 export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
-  const { language = 'es-ES', onResult, onEnd } = options
+  const { language = 'es-AR', onResult, onEnd } = options
   const [state, setState] = useState<VoiceRecognitionState>({
     isListening: false,
     transcript: '',
@@ -28,6 +28,15 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
 
   const recognitionRef = useRef<any>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Full utterance accumulated across every `onresult` event in this
+  // listening session — `event.resultIndex` only covers the newest chunk,
+  // so without this the 2s-pause auto-send fired with just the last
+  // fragment of a longer/paused sentence instead of the whole thing.
+  const fullFinalRef = useRef('')
+  // True while the user wants to keep listening (i.e. hasn't called
+  // stopListening) — lets `onend` auto-restart if the browser/OS cuts the
+  // session on its own, instead of hands-free just going silent.
+  const shouldListenRef = useRef(false)
 
   useEffect(() => {
     const SpeechRecognition =
@@ -35,6 +44,19 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     if (SpeechRecognition) {
       setState(prev => ({ ...prev, isSupported: true }))
     }
+  }, [])
+
+  const stopListening = useCallback(() => {
+    shouldListenRef.current = false
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+    }
+    setState(prev => ({ ...prev, isListening: false, interimTranscript: '' }))
   }, [])
 
   const startListening = useCallback(() => {
@@ -47,8 +69,11 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
 
     // Clean up previous instance
     if (recognitionRef.current) {
-      recognitionRef.current.stop()
+      try { recognitionRef.current.stop() } catch { /* already stopped */ }
     }
+
+    fullFinalRef.current = ''
+    shouldListenRef.current = true
 
     const recognition = new SpeechRecognition()
     recognition.lang = language
@@ -67,29 +92,33 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     }
 
     recognition.onresult = (event: any) => {
-      let finalTranscript = ''
+      let newFinal = ''
       let interim = ''
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          finalTranscript += transcript
+          newFinal += transcript
         } else {
           interim += transcript
         }
       }
 
+      if (newFinal) fullFinalRef.current += newFinal
+
       setState(prev => ({
         ...prev,
-        transcript: prev.transcript + finalTranscript,
+        transcript: prev.transcript + newFinal,
         interimTranscript: interim,
       }))
 
-      // Auto-send after pause in speech
+      // Auto-send the FULL accumulated utterance after a pause in speech —
+      // not just this event's fragment, so longer/paused sentences arrive
+      // whole instead of truncated to their last few words.
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
       timeoutRef.current = setTimeout(() => {
-        if (finalTranscript || interim) {
-          const fullText = finalTranscript || interim
+        const fullText = (fullFinalRef.current || interim).trim()
+        if (fullText) {
           onResult?.(fullText)
           stopListening()
         }
@@ -104,14 +133,30 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
         'network': 'Error de red. Verificá tu conexión.',
         'aborted': 'Reconocimiento cancelado.',
       }
+      // A recoverable error (e.g. a transient no-speech timeout) shouldn't
+      // kill hands-free if the user is still trying to talk — only stop
+      // listening outright on errors that mean the mic itself is unusable.
+      const fatal = event.error === 'not-allowed' || event.error === 'audio-capture'
+      if (fatal) shouldListenRef.current = false
       setState(prev => ({
         ...prev,
         error: errorMap[event.error] || `Error: ${event.error}`,
-        isListening: false,
+        isListening: fatal ? false : prev.isListening,
       }))
     }
 
     recognition.onend = () => {
+      // The browser/OS can end a "continuous" session on its own (silence
+      // timeout, tab throttling, etc.). If the user never asked to stop,
+      // restart automatically so hands-free doesn't just go quiet.
+      if (shouldListenRef.current) {
+        try {
+          recognition.start()
+          return
+        } catch {
+          // fall through to reporting "not listening" below
+        }
+      }
       setState(prev => {
         if (prev.isListening) {
           onEnd?.()
@@ -121,22 +166,15 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}) {
     }
 
     recognitionRef.current = recognition
-    recognition.start()
-  }, [language, onResult, onEnd])
-
-  const stopListening = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
+    try {
+      recognition.start()
+    } catch {
+      setState(prev => ({ ...prev, error: 'No se pudo iniciar el micrófono. Probá de nuevo.' }))
     }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-      recognitionRef.current = null
-    }
-    setState(prev => ({ ...prev, isListening: false, interimTranscript: '' }))
-  }, [])
+  }, [language, onResult, onEnd, stopListening])
 
   const resetTranscript = useCallback(() => {
+    fullFinalRef.current = ''
     setState(prev => ({ ...prev, transcript: '', interimTranscript: '', error: null }))
   }, [])
 

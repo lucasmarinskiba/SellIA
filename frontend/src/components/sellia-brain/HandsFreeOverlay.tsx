@@ -17,8 +17,8 @@ import { useVoiceRecognition } from '@/hooks/useVoiceRecognition'
 interface HandsFreeOverlayProps {
   open: boolean
   onClose: () => void
-  /** Resuelve y ejecuta la orden hablada; retorna la respuesta a decir en voz alta. */
-  onCommand?: (text: string) => string
+  /** Resuelve y ejecuta la orden hablada; retorna (async) la respuesta a decir en voz alta. */
+  onCommand?: (text: string) => Promise<string>
 }
 
 
@@ -48,14 +48,31 @@ export const HandsFreeOverlay = ({ open, onClose, onCommand }: HandsFreeOverlayP
   const [phraseIdx, setPhraseIdx] = useState(0)
   const [lastCommand, setLastCommand] = useState('')
   const [reply, setReply] = useState('')
+  const [processing, setProcessing] = useState(false)
 
-  const handleResult = useCallback((text: string): void => {
+  const handleResult = useCallback(async (text: string): Promise<void> => {
     const clean = text.trim()
     if (!clean) return
     setLastCommand(clean)
-    const r = onCommand?.(clean) ?? 'No hay handler de comandos conectado.'
-    setReply(r)
-    speak(r)
+    setReply('')
+    if (!onCommand) {
+      const r = 'No hay handler de comandos conectado.'
+      setReply(r)
+      speak(r)
+      return
+    }
+    setProcessing(true)
+    try {
+      const r = await onCommand(clean)
+      setReply(r)
+      speak(r)
+    } catch {
+      const r = 'Perdón, no pude procesar eso. ¿Podés repetirlo?'
+      setReply(r)
+      speak(r)
+    } finally {
+      setProcessing(false)
+    }
   }, [onCommand])
 
   const {
@@ -102,14 +119,16 @@ export const HandsFreeOverlay = ({ open, onClose, onCommand }: HandsFreeOverlayP
         <OrbVisualizer active={isListening} />
 
         <p className="mt-10 text-[10px] font-mono tracking-[0.5em] uppercase text-pink-200/80">
-          {isListening ? 'escuchando…' : 'manos libres · listo'}
+          {processing ? 'pensando…' : isListening ? 'escuchando…' : 'manos libres · listo'}
         </p>
 
         <h2
           className="mt-4 text-[clamp(1.8rem,4.2vw,3.2rem)] font-light text-white leading-tight"
           style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', letterSpacing: '-0.015em' }}
         >
-          {isListening
+          {processing
+            ? <>Procesando tu <em className="italic font-normal bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">pedido</em>…</>
+            : isListening
             ? <>Te <em className="italic font-normal bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">escucho</em>. Dame una orden.</>
             : <>Tocá el <em className="italic font-normal bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">micrófono</em> y hablá.</>}
         </h2>
@@ -150,7 +169,7 @@ export const HandsFreeOverlay = ({ open, onClose, onCommand }: HandsFreeOverlayP
         <div className="mt-8 flex items-center justify-center gap-3">
           <button
             type="button"
-            disabled={!isSupported}
+            disabled={!isSupported || processing}
             onClick={() => { if (isListening) { stopListening() } else { resetTranscript(); setReply(''); startListening() } }}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-[14px] font-bold transition disabled:opacity-40"
             style={{
@@ -159,7 +178,9 @@ export const HandsFreeOverlay = ({ open, onClose, onCommand }: HandsFreeOverlayP
               color: isListening ? '#f9a8d4' : '#0a0512',
             }}
           >
-            {isListening ? <><Loader2 className="w-4 h-4 animate-spin" /> Detener</> : <><Mic className="w-4 h-4" /> Hablar</>}
+            {processing
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Pensando…</>
+              : isListening ? <><Loader2 className="w-4 h-4 animate-spin" /> Detener</> : <><Mic className="w-4 h-4" /> Hablar</>}
           </button>
           {isListening && (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-white/45">

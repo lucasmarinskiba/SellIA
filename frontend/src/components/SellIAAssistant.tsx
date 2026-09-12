@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { assistantApi, AssistantAction, AssistantActionType } from '@/lib/assistant'
 import { agentsApi } from '@/lib/agents'
+import { executeAssistantAction } from '@/lib/assistantActions'
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition'
 import { useTextToSpeech } from '@/hooks/useTextToSpeech'
 import {
@@ -355,82 +356,12 @@ export default function SellIAAssistant({ businessId }: { businessId?: string })
   }
 
   const handleAction = async (action: AssistantAction) => {
-    if (action.action === 'CREATE_CONVERSATION' && action.conversation_id && action.personality) {
-      router.push(`/dashboard/agentes?conversation=${action.conversation_id}`)
-      setIsOpen(false)
-    } else if (action.action === 'CREATE_CONVERSATION' && action.agent_slug) {
-      const personality = personalities.find(p => p.slug === action.agent_slug)
-      if (personality && businessId) {
-        try {
-          const conv = await agentsApi.createConversation({
-            business_id: businessId,
-            personality_id: personality.id,
-            title: `SellIA: ${personality.name}`,
-          })
-          router.push(`/dashboard/agentes?conversation=${conv.id}`)
-          setIsOpen(false)
-        } catch {
-          router.push('/dashboard/agentes')
-          setIsOpen(false)
-        }
-      } else {
-        router.push('/dashboard/agentes')
-        setIsOpen(false)
-      }
-    } else if (action.action === 'NAVIGATE' && action.target) {
-      const navMap: Record<string, string> = {
-        agentes: '/dashboard/agentes',
-        negocios: '/dashboard/negocios',
-        catalogo: '/dashboard/catalogo',
-        analytics: '/dashboard/analytics',
-        conversaciones: '/dashboard/conversaciones',
-        automatizaciones: '/dashboard/automatizaciones',
-        canales: '/dashboard/canales',
-        planes: '/dashboard/planes',
-        configuracion: '/dashboard/configuracion',
-        pipeline: '/dashboard/pipeline',
-        autonomo: '/dashboard/autonomo',
-      }
-      const target = navMap[action.target.toLowerCase()] || '/dashboard'
-      router.push(target)
-      setIsOpen(false)
-    } else if (action.action === 'ACTIVATE_PIPELINE_AGENT' && action.stage) {
-      router.push(`/dashboard/pipeline?stage=${action.stage}${action.deal_id ? `&deal=${action.deal_id}` : ''}`)
-      setIsOpen(false)
-    } else if (action.action === 'NEGOTIATE') {
-      router.push(`/dashboard/agentes?section=negotiate${action.expert ? `&expert=${action.expert}` : ''}`)
-      setIsOpen(false)
-    } else if (action.action === 'BUILD_OFFER') {
-      router.push(`/dashboard/agentes?section=offer${action.product_name ? `&product=${encodeURIComponent(action.product_name)}` : ''}`)
-      setIsOpen(false)
-    } else if (action.action === 'SYSTEM_HEALTH') {
-      router.push('/dashboard/autonomo')
-      setIsOpen(false)
-    } else if (action.action === 'SETUP_AUTOMATION') {
-      router.push('/dashboard/automatizaciones/builder')
-      setIsOpen(false)
-    } else if (action.action === 'COMPUTER_USE' && action.session_id) {
-      router.push(`/dashboard/caja-de-cristal?session=${action.session_id}`)
-      setIsOpen(false)
-    } else if (action.action === 'MULTI_AGENT_PANEL' && action.agent_slugs && businessId) {
-      // Open multiple conversations in sequence
-      for (const slug of action.agent_slugs) {
-        const personality = personalities.find(p => p.slug === slug)
-        if (personality) {
-          try {
-            await agentsApi.createConversation({
-              business_id: businessId,
-              personality_id: personality.id,
-              title: `SellIA: ${personality.name}`,
-            })
-          } catch {
-            // skip failed ones
-          }
-        }
-      }
-      router.push('/dashboard/agentes')
-      setIsOpen(false)
-    }
+    await executeAssistantAction(action, {
+      router,
+      businessId,
+      personalities,
+      onDone: () => setIsOpen(false),
+    })
   }
 
   const handleQuickOption = (option: string) => {
