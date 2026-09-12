@@ -50,6 +50,11 @@ export type VoiceState = 'idle' | 'requesting' | 'listening' | 'denied' | 'unsup
 
 interface UseVoiceWakeOpts {
   onWake?: (transcript: string) => void
+  /** Fires with the full spoken utterance after a pause in speech — every
+   * phrase said while the mic is on, not just the wake phrase. Lets the
+   * caller run it through real intent/action understanding instead of
+   * requiring "Hola SellIA" first. */
+  onCommand?: (text: string) => void
   wakePhrases?: string[]
   lang?: string
 }
@@ -65,13 +70,18 @@ interface UseVoiceWakeResult {
   isListening: boolean
 }
 
-export const useVoiceWake = ({ onWake, wakePhrases, lang = 'es-AR' }: UseVoiceWakeOpts = {}): UseVoiceWakeResult => {
+export const useVoiceWake = ({ onWake, onCommand, wakePhrases, lang = 'es-AR' }: UseVoiceWakeOpts = {}): UseVoiceWakeResult => {
   const [state, setState]            = useState<VoiceState>('idle')
   const [transcript, setTranscript]  = useState('')
   const [lastWake, setLastWake]      = useState<string | null>(null)
   const [errorMsg, setErrorMsg]      = useState<string | null>(null)
   const recogRef                     = useRef<SpeechRecognitionLike | null>(null)
   const restartRef                   = useRef(true)
+  // Accumulates the full final utterance across events, flushed to
+  // `onCommand` after a pause — same pattern as useVoiceRecognition, so a
+  // longer/paused sentence still arrives whole instead of truncated.
+  const fullFinalRef                 = useRef('')
+  const commandTimeoutRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
   const phrases = wakePhrases ?? DEFAULT_WAKE_PHRASES
 
   const detectWake = useCallback((text: string): boolean => {
@@ -119,6 +129,17 @@ export const useVoiceWake = ({ onWake, wakePhrases, lang = 'es-AR' }: UseVoiceWa
         setLastWake(combined)
         if (onWake) onWake(combined)
       }
+
+      if (finalText) fullFinalRef.current += finalText
+
+      if (onCommand) {
+        if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current)
+        commandTimeoutRef.current = setTimeout(() => {
+          const full = fullFinalRef.current.trim()
+          fullFinalRef.current = ''
+          if (full) onCommand(full)
+        }, 1600)
+      }
     }
 
     recog.onerror = (e): void => {
@@ -146,15 +167,18 @@ export const useVoiceWake = ({ onWake, wakePhrases, lang = 'es-AR' }: UseVoiceWa
 
     recogRef.current = recog
     restartRef.current = true
+    fullFinalRef.current = ''
     try {
       recog.start()
     } catch {
       // Already started — ignore
     }
-  }, [detectWake, lang, onWake])
+  }, [detectWake, lang, onWake, onCommand])
 
   const stop = useCallback((): void => {
     restartRef.current = false
+    if (commandTimeoutRef.current) { clearTimeout(commandTimeoutRef.current); commandTimeoutRef.current = null }
+    fullFinalRef.current = ''
     if (recogRef.current) {
       try { recogRef.current.stop() } catch { /* noop */ }
       recogRef.current = null
