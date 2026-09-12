@@ -245,6 +245,7 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
                   onLimitChange={(newLimit) => handleLimitChange(toggle.id, newLimit)}
                   onShowAudit={() => handleShowAudit(toggle.id)}
                   onShowInfo={() => setSelectedToggleForInfo(toggle)}
+                  businessId={businessId}
                 />
               ))}
             </div>
