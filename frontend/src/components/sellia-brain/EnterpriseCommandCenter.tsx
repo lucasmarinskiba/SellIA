@@ -1197,13 +1197,6 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
             </button>
           )
         })}
-        <div style={{ flex: 1 }} />
-        <span style={{
-          fontSize: 10, color: T.text3, fontFamily: T.mono,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
-        }}>
-          vista: {view}
-        </span>
       </nav>
 
       {/* ── CONTROL ON/OFF: resumen real + acceso directo -- el grid de
