@@ -494,7 +494,7 @@ const SideToolbar = (): React.JSX.Element => {
   return (
     <nav style={{
       position: 'fixed', top: 56, left: 0, bottom: 0, width: 64, zIndex: 30,
-      background: T.panel, borderRight: `1px solid ${T.border}`,
+      background: T.panel,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: '16px 0', gap: 8,
     }}>
@@ -1054,7 +1054,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       {/* ── TOP BAR ── */}
       <header style={{
         position: 'sticky', top: 56, zIndex: 20, background: 'rgba(10,15,26,0.85)',
-        backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}`,
+        backdropFilter: 'blur(12px)',
         padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 16,
       }}>
         <span style={{
@@ -1169,7 +1169,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       <nav style={{
         position: 'sticky', top: 56 + 70, zIndex: 19,
         background: 'rgba(10,15,26,0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${T.border}`, padding: '10px 28px',
+        padding: '10px 28px',
         display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
       }}>
         {([
