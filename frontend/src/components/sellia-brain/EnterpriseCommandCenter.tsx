@@ -1188,7 +1188,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
                 fontFamily: T.sans, fontSize: 12, fontWeight: 600,
-                border: `1px solid ${active ? T.cobalt : T.border}`,
+                border: active ? `1px solid ${T.cobalt}` : '1px solid transparent',
                 background: active ? `${T.cobalt}22` : 'transparent',
                 color: active ? T.cobalt : T.text2,
                 transition: 'background .15s, border-color .15s, color .15s',
