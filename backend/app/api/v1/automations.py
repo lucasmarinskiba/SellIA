@@ -1034,6 +1034,44 @@ async def list_toggles_by_business(
     return result.scalars().all()
 
 
+@router.get("/toggles/business/{business_id}/search", response_model=list[AutomationToggleResponse])
+async def search_toggles_advanced(
+    business_id: UUID,
+    categories: Optional[str] = None,
+    usage_min: Optional[int] = None,
+    usage_max: Optional[int] = None,
+    enabled_only: Optional[bool] = None,
+    modified_after: Optional[datetime] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Filtrado avanzado de toggles por categoría, uso, estado y fecha."""
+    query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
+
+    if categories:
+        category_list = [c.strip() for c in categories.split(",")]
+        query = query.where(AutomationToggle.category.in_(category_list))
+
+    if usage_min is not None:
+        query = query.where(AutomationToggle.current_month_usage >= usage_min)
+
+    if usage_max is not None:
+        query = query.where(AutomationToggle.current_month_usage <= usage_max)
+
+    if enabled_only is True:
+        query = query.where(AutomationToggle.is_enabled == True)
+    elif enabled_only is False:
+        query = query.where(AutomationToggle.is_enabled == False)
+
+    if modified_after:
+        query = query.where(AutomationToggle.updated_at >= modified_after)
+
+    query = query.order_by(AutomationToggle.category, AutomationToggle.display_name)
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 @router.post("/toggles/business/{business_id}", response_model=AutomationToggleResponse, status_code=status.HTTP_201_CREATED)
 async def create_toggle(
     business_id: UUID,

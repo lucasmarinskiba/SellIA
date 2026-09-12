@@ -1908,7 +1908,8 @@
       "Bash(git commit -m 'feat: add frontend scheduling UI for automation toggles *)",
       "Bash(python create_test_data.py)",
       "Bash(grep -E \"\\\\.\\(py|sql\\)$\")",
-      "Bash(git commit -m 'feat: add frontend notification rules UI for automation toggles *)"
+      "Bash(git commit -m 'feat: add frontend notification rules UI for automation toggles *)",
+      "Bash(git commit -m 'feat: add advanced toggle filtering by category, usage, status, and date *)"
     ]
   }
 }

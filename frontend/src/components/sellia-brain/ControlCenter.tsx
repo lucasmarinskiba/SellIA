@@ -7,6 +7,7 @@ import { ToggleSwitch } from './ToggleSwitch'
 import { AuditPanel } from './AuditPanel'
 import { QuickStats } from './QuickStats'
 import { FeatureInfoModal } from './FeatureInfoModal'
+import { AdvancedToggleFilter } from './AdvancedToggleFilter'
 
 interface ControlCenterProps {
   businessId: UUID
@@ -28,15 +29,19 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [advancedResults, setAdvancedResults] = useState<AutomationToggleResponse[] | null>(null)
+  const [advancedLoading, setAdvancedLoading] = useState(false)
+  const [advancedError, setAdvancedError] = useState<string | null>(null)
 
   const categories = useMemo(
     () => [...new Set(toggles.map((t) => t.category))].sort(),
     [toggles]
   )
 
-  // Filtered toggles
+  // Filtered toggles (use advanced results if available, otherwise use simple filters)
   const filteredToggles = useMemo(() => {
-    return toggles.filter((t) => {
+    const source = advancedResults ?? toggles
+    return source.filter((t) => {
       const matchesSearch = t.display_name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCategory = filterCategory === 'all' || t.category === filterCategory
       const matchesStatus =
@@ -46,7 +51,7 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
 
       return matchesSearch && matchesCategory && matchesStatus
     })
-  }, [toggles, searchTerm, filterCategory, filterStatus])
+  }, [toggles, advancedResults, searchTerm, filterCategory, filterStatus])
 
   useEffect(() => {
     loadToggles()
@@ -128,6 +133,24 @@ export const ControlCenter = ({ businessId }: ControlCenterProps) => {
     <div className="space-y-6">
       {/* Quick Stats */}
       {!loading && toggles.length > 0 && <QuickStats toggles={toggles} />}
+
+      {/* Advanced Filter */}
+      {!loading && toggles.length > 0 && (
+        <AdvancedToggleFilter
+          businessId={businessId}
+          allCategories={categories}
+          onResults={setAdvancedResults}
+          onLoading={setAdvancedLoading}
+          onError={setAdvancedError}
+        />
+      )}
+
+      {/* Error Message */}
+      {advancedError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
+          <p className="text-sm text-red-700 dark:text-red-300">{advancedError}</p>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-4">
