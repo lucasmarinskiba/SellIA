@@ -1051,11 +1051,21 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         </div>
       )}
 
-      {/* ── TOP BAR ── */}
+      {/* ── TOP BAR + VIEW NAV, one sticky block ──
+          Previously the header and the tab nav below it were two
+          INDEPENDENT sticky elements, the nav pinned at a hardcoded
+          `top: 56 + 70` that assumed the header is always exactly 70px
+          tall. Whenever the header actually rendered taller (badges
+          wrapping to 2 lines on a narrower viewport, etc.) the nav stuck
+          too high and overlapped it — the tab row "corriéndose" the user
+          reported. Sticking the OUTER wrapper instead means the nav is
+          just a normal-flow child that always sits right after the
+          header, whatever height the header ends up being. ── */}
+      <div style={{ position: 'sticky', top: 56, zIndex: 20 }}>
       <header style={{
-        position: 'sticky', top: 56, zIndex: 20, background: 'rgba(10,15,26,0.85)',
+        background: 'rgba(10,15,26,0.85)',
         backdropFilter: 'blur(12px)',
-        padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 16,
+        padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
       }}>
         <span style={{
           width: 38, height: 38, borderRadius: 9, display: 'grid', placeItems: 'center',
@@ -1167,7 +1177,6 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
       {/* ── VIEW NAV · separa cada herramienta en su propia "página" ── */}
       <nav style={{
-        position: 'sticky', top: 56 + 70, zIndex: 19,
         background: 'rgba(10,15,26,0.92)', backdropFilter: 'blur(12px)',
         padding: '10px 28px',
         display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
@@ -1198,6 +1207,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
           )
         })}
       </nav>
+      </div>
 
       {/* ── CONTROL ON/OFF: resumen real + acceso directo -- el grid de
           toggles (BrainInteractionMap) vive 2 clicks adentro (Cerebro
