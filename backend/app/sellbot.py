@@ -1423,11 +1423,6 @@ async def log_request(request: Request, call_next):
     return response
 
 
-# Toggle enforcement middleware (checks if features are enabled)
-from app.core.middleware.toggle_enforcement import toggle_enforcement_middleware
-
-app.add_middleware(BaseHTTPMiddleware, dispatch=toggle_enforcement_middleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -1435,6 +1430,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+# Toggle enforcement middleware (checks if features are enabled)
+from app.core.middleware.toggle_enforcement import toggle_enforcement_middleware
+
+app.add_middleware(BaseHTTPMiddleware, dispatch=toggle_enforcement_middleware)
 
 # Registrar routers
 # v1 routes (current stable) — each wrapped so a single broken router
