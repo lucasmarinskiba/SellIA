@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AutomationToggleResponse } from '@/lib/api/toggles'
 import { ToggleScheduleList } from './ToggleScheduleList'
+import { ToggleNotificationRuleList } from './ToggleNotificationRuleList'
 
 interface ToggleSwitchProps {
   toggle: AutomationToggleResponse
@@ -26,6 +27,7 @@ export const ToggleSwitch = ({
   const [isChanging, setIsChanging] = useState(false)
   const [showLimitForm, setShowLimitForm] = useState(false)
   const [showSchedules, setShowSchedules] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [newLimit, setNewLimit] = useState(toggle.monthly_limit || 0)
   const [reason, setReason] = useState('')
 
@@ -183,6 +185,17 @@ export const ToggleSwitch = ({
             🕐
           </button>
         )}
+
+        {/* Notifications Button */}
+        {businessId && (
+          <button
+            onClick={() => setShowNotifications(true)}
+            className="px-2 py-1 text-xs font-medium border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            title="Reglas de notificación"
+          >
+            🔔
+          </button>
+        )}
       </div>
 
       {/* Limit Form Modal */}
@@ -233,6 +246,28 @@ export const ToggleSwitch = ({
             </div>
             <div className="p-6">
               <ToggleScheduleList toggle={toggle} businessId={businessId as any} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-6">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Notificaciones: {toggle.display_name}
+              </h2>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <ToggleNotificationRuleList toggle={toggle} />
             </div>
           </div>
         </div>
