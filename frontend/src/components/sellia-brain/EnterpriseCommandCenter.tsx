@@ -1013,6 +1013,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
         user={user}
         onLogin={(u) => setUser(u)}
         onLogout={() => { clearUser(); setUser(null) }}
+        onVoiceCommand={handleVoiceCommand}
       />
       <HandsFreeOverlay open={handsFree} onClose={() => setHandsFree(false)} onCommand={handleVoiceCommand} />
       <ComputerUseLauncher open={cuaLauncherOpen} onClose={() => setCuaLauncherOpen(false)} onJump={handleJump} />

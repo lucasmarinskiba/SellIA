@@ -50,6 +50,20 @@ interface MissionControlBarProps {
   user: UserProfile | null
   onLogin: (u: UserProfile) => void
   onLogout: () => void
+  /** Sends any spoken phrase (not just the "Hola SellIA" wake word) through
+   * real intent/action understanding; returns the reply to speak back. */
+  onVoiceCommand?: (text: string) => Promise<string>
+}
+
+const speakReply = (text: string): void => {
+  try {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'es-ES'
+    u.rate = 1.05
+    window.speechSynthesis.speak(u)
+  } catch { /* ignore */ }
 }
 
 
@@ -473,6 +487,7 @@ export const MissionControlBar = ({
   cuaMode, onCuaMode,
   activeTasks, isRunning,
   user, onLogin, onLogout,
+  onVoiceCommand,
 }: MissionControlBarProps): React.JSX.Element => {
   /* ── command input ── */
   const [query,   setQuery]   = useState('')
@@ -493,6 +508,12 @@ export const MissionControlBar = ({
     onWake: (_transcript) => {
       // Wake phrase detected → open hands-free overlay if not already
       if (!handsFree) onHandsFreeToggle()
+    },
+    onCommand: (text) => {
+      // Any phrase said while the mic is on — not just the wake word —
+      // goes through real intent/action understanding and gets a spoken reply.
+      if (!onVoiceCommand) return
+      void onVoiceCommand(text).then(speakReply).catch(() => {})
     },
     lang: 'es-AR',
   })
