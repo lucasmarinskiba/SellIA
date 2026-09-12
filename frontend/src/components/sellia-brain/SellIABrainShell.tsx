@@ -6,6 +6,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { assistantApi } from '@/lib/assistant'
+import { executeAssistantAction } from '@/lib/assistantActions'
 import {
   Brain, ChevronDown, ChevronRight,
   Eye, Mic, MonitorCheck, Search, Target,
@@ -361,6 +364,7 @@ const SearchPalette = ({ open, onClose, onJump }: SearchPaletteProps): React.JSX
    MAIN SHELL
 ═══════════════════════════════════════════════════ */
 export const SellIABrainShell = (): React.JSX.Element => {
+  const router = useRouter()
   const [activeLobe, setActiveLobe] = useState<LobeId>('acquire')
   const [handsFree, setHandsFree] = useState(false)
   const [cuaOpen, setCuaOpen] = useState(false)
@@ -460,6 +464,26 @@ export const SellIABrainShell = (): React.JSX.Element => {
     return () => document.removeEventListener('keydown', fn)
   }, [])
 
+  // Manos libres: transcript -> el mismo orquestador de IA que usa el chat
+  // de SellIA (backend entiende la intención en lenguaje natural y ejecuta
+  // la acción real -- activar automatización, agente de pipeline, etc.),
+  // en vez de un handler de comandos aparte.
+  const handleVoiceCommand = useCallback(async (text: string): Promise<string> => {
+    try {
+      const businessId = localStorage.getItem('business_id') ?? undefined
+      const action = await assistantApi.chat({ message: text, business_id: businessId })
+      await executeAssistantAction(action, {
+        router,
+        businessId,
+        personalities: [],
+        onDone: () => setHandsFree(false),
+      })
+      return action.response
+    } catch {
+      return 'Perdón, no pude procesar eso. ¿Podés repetirlo?'
+    }
+  }, [router])
+
   return (
     <div style={{ minHeight:'100vh', color:C.text, fontFamily:"'Inter',ui-sans-serif,system-ui", position:'relative' }}>
       <BrainStyles />
@@ -479,7 +503,7 @@ export const SellIABrainShell = (): React.JSX.Element => {
         onLogin={(u) => setUser(u)}
         onLogout={() => { clearUser(); setUser(null) }}
       />
-      <HandsFreeOverlay open={handsFree} onClose={() => setHandsFree(false)} />
+      <HandsFreeOverlay open={handsFree} onClose={() => setHandsFree(false)} onCommand={handleVoiceCommand} />
       <ComputerUseLauncher open={cuaOpen} onClose={() => setCuaOpen(false)} onJump={expandModule} />
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} onJump={(id, lobe) => expandModule(id, lobe)} />
 
