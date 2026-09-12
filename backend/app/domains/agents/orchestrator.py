@@ -367,6 +367,15 @@ class SellIAOrchestrator:
 
         action_type = action.get("action", "")
         if action_type in executable_actions:
+            brain_id = self._resolve_action_brain_id(action_type, action)
+            if brain_id and await self._is_capability_disabled(business_id, brain_id):
+                action["response"] = (
+                    "Esa función está desactivada en el Mapa de Interacciones del Cerebro. "
+                    "Activala ahí para continuar."
+                )
+                action["execution_error"] = "capability_disabled"
+                return action
+
             executor = SellIAActionExecutor(self.db, user_id, business_id)
             execution_result = await executor.execute(action_type, action)
 
@@ -380,6 +389,48 @@ class SellIAOrchestrator:
                 action["execution_error"] = execution_result.get("error", "Error desconocido")
 
         return action
+
+    @staticmethod
+    def _resolve_action_brain_id(action_type: str, action: Dict[str, Any]) -> Optional[str]:
+        """Best-effort mapping from an about-to-execute action to a Brain
+        Interaction Map node id, so the capability gate below has something
+        to check. Only covers the cases we can name with confidence today
+        (an explicit agent_slug, and FOMO setup requests) -- everything else
+        has no matching brain id and runs ungated, same as before."""
+        agent_slug = action.get("agent_slug")
+        if agent_slug:
+            return f"agent.expert.{agent_slug}"
+
+        if action_type == "SETUP_AUTOMATION":
+            haystack = " ".join(
+                str(action.get(f, "")) for f in ("automation_name", "trigger", "content_request")
+            ).lower()
+            if "fomo" in haystack:
+                return "automation.fomo_campaigns"
+
+        return None
+
+    async def _is_capability_disabled(self, business_id: Optional[str], brain_id: str) -> bool:
+        """Checks the same AutomationToggle rows the Brain Interaction Map's
+        ON/OFF buttons write to (see app/api/v1/brain.py's /brain/toggles and
+        app/core/brain/toggle_mapping.py). No business (anonymous/demo
+        caller) -> nothing to check, never blocked."""
+        if not business_id:
+            return False
+        try:
+            from app.core.brain.toggle_mapping import brain_id_to_toggle_key
+            from app.domains.automations.models import AutomationToggle
+
+            result = await self.db.execute(
+                select(AutomationToggle.is_enabled).where(
+                    AutomationToggle.business_id == business_id,
+                    AutomationToggle.toggle_key == brain_id_to_toggle_key(brain_id),
+                )
+            )
+            is_enabled = result.scalar_one_or_none()
+            return is_enabled is False
+        except Exception:
+            return False
 
     def _should_use_react(self, action_type: str) -> bool:
         """Determine if a complex action should use the ReAct loop."""

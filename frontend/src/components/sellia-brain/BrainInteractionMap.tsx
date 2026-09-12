@@ -23,7 +23,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { SELLIA, GROUP_COLOR, GROUP_LABEL } from '@/lib/sellia-theme'
-import { getDisabledCapabilities, setDisabledCapabilities, toggleCapability } from '@/lib/brain-capability-toggles'
+import { getDisabledCapabilities, toggleCapability, reactivateAllCapabilities, syncDisabledFromServer } from '@/lib/brain-capability-toggles'
 
 const BRAIN_BASE = '/api/v1/brain'
 
@@ -116,7 +116,13 @@ const Inner = (): React.JSX.Element => {
   // login) -- ver lib/brain-capability-toggles.ts. Se leen de cero recién en
   // el mount (evita mismatch de SSR/hydration).
   const [disabled, setDisabled] = useState<Set<string>>(new Set())
-  useEffect(() => { setDisabled(getDisabledCapabilities()) }, [])
+  useEffect(() => {
+    setDisabled(getDisabledCapabilities())
+    // Reconcile with the server's real state (logged-in users only) --
+    // e.g. a toggle made on another device/session. No-op for anonymous
+    // visitors, who keep the localStorage value set just above.
+    void syncDisabledFromServer().then(server => { if (server) setDisabled(server) })
+  }, [])
   const onToggleNode = useCallback((id: string) => { setDisabled(toggleCapability(id)) }, [])
   const [lastEvent, setLastEvent] = useState<string>('—')
   const activityBase = useRef(BRAIN_BASE)
@@ -267,7 +273,7 @@ const Inner = (): React.JSX.Element => {
           {offline ? 'OFFLINE' : src === 'live' ? 'BACKEND LIVE' : 'REGISTRY SNAPSHOT'}
         </span>
         {disabled.size > 0 && (
-          <button type="button" onClick={() => { setDisabledCapabilities(new Set()); setDisabled(new Set()) }}
+          <button type="button" onClick={() => { reactivateAllCapabilities(); setDisabled(new Set()) }}
             title="Reactivar todas las capacidades desactivadas"
             style={{ cursor: 'pointer', fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 5, color: SELLIA.text3, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
             {disabled.size} desactivada{disabled.size === 1 ? '' : 's'} · reactivar todas

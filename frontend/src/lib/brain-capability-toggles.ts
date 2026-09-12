@@ -1,14 +1,24 @@
 /**
  * Brain capability ON/OFF toggles.
  *
- * /sellia-brain is a public, unauthenticated command-center demo page (no
- * per-visitor login) -- there is no server-side per-user account to persist
- * a toggle against. State lives in the visitor's own browser (localStorage)
- * and is sent with every real Computer Use dispatch
- * (POST /api/v1/brain/cua/dispatch's `disabled` field) so a capability
- * someone turned off is genuinely excluded from the plan the backend builds,
- * not just dimmed in the UI. See app/api/v1/brain.py's brain_cua_dispatch.
+ * State lives in the visitor's own browser (localStorage) so an anonymous
+ * demo visitor works exactly as before, and is sent with every real Computer
+ * Use dispatch (POST /api/v1/brain/cua/dispatch's `disabled` field) so a
+ * capability someone turned off is genuinely excluded from the plan the
+ * backend builds, not just dimmed in the UI. See app/api/v1/brain.py's
+ * brain_cua_dispatch.
+ *
+ * For a logged-in user with a real business, the toggle is ALSO persisted
+ * server-side (GET/POST /api/v1/brain/toggles), backed by the same
+ * AutomationToggle rows the FOMO middleware and the orchestrator's
+ * capability gate check before letting a real automation/agent run (see
+ * backend/app/core/brain/toggle_mapping.py) — so turning something off here
+ * actually stops it, not just hides it locally. localStorage stays the
+ * source of truth for rendering (instant, no network wait); the server call
+ * is best-effort and reconciled on next load via syncDisabledFromServer().
  */
+
+import { getToken, api } from '@/lib/sellia-api'
 
 const STORAGE_KEY = 'sellia-brain-disabled-capabilities'
 const CHANGE_EVENT = 'sellia-brain-capabilities-changed'
@@ -48,8 +58,50 @@ export const setDisabledCapabilities = (ids: Set<string>): void => {
 
 export const toggleCapability = (id: string): Set<string> => {
   const current = getDisabledCapabilities()
+  const nowDisabled = !current.has(id)
   if (current.has(id)) current.delete(id)
   else current.add(id)
   setDisabledCapabilities(current)
+
+  // Best-effort real persistence for logged-in users -- fire and forget so
+  // the UI (already updated above, optimistically) never waits on the
+  // network. If it fails (no business yet, offline, etc.) the toggle still
+  // works exactly as before: local-only for this browser.
+  if (getToken()) {
+    void api.post('/brain/toggles', { brain_id: id, enabled: !nowDisabled }).catch(() => {})
+  }
+
   return current
+}
+
+/** Re-enables every currently-disabled capability, both locally and (best
+ * effort) on the server -- used by the Brain Map's "reactivar todas"
+ * button, which used to only clear localStorage and leave any server-side
+ * AutomationToggle rows disabled. */
+export const reactivateAllCapabilities = (): void => {
+  const current = getDisabledCapabilities()
+  setDisabledCapabilities(new Set())
+  if (getToken()) {
+    for (const id of current) {
+      void api.post('/brain/toggles', { brain_id: id, enabled: true }).catch(() => {})
+    }
+  }
+}
+
+/** Pulls the server's real disabled set (per the logged-in user's business)
+ * and makes it the local truth -- call this once when the Brain Map mounts
+ * so a toggle made on another device/session shows up here too. No-ops
+ * (returns null) for anonymous visitors or a user with no business yet;
+ * callers should just keep using the localStorage-only state in that case. */
+export const syncDisabledFromServer = async (): Promise<Set<string> | null> => {
+  if (!getToken()) return null
+  try {
+    const { data } = await api.get<{ ok: boolean; disabled_brain_ids: string[] }>('/brain/toggles')
+    if (!data.ok) return null
+    const ids = new Set(data.disabled_brain_ids)
+    setDisabledCapabilities(ids)
+    return ids
+  } catch {
+    return null
+  }
 }

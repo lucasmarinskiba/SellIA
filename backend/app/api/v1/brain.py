@@ -22,6 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.brain import (
     get_brain_registry, CapabilityKind, get_activity_bus, record_activity, get_cua_store,
 )
+from app.core.brain.toggle_mapping import (
+    brain_id_to_toggle_key, toggle_key_to_brain_id, brain_id_category,
+)
 from app.core.database import get_db
 
 router = APIRouter()
@@ -38,6 +41,104 @@ async def _optional_user(request: Request, db: AsyncSession = Depends(get_db)):
     from app.core.deps import get_current_user_optional
 
     return await get_current_user_optional(request, db)
+
+
+async def _resolve_business_id(user, db: AsyncSession):
+    """First business owned by the authenticated user, or None (anonymous
+    visitor / no business yet) -- same lookup already used by
+    brain_cua_dispatch's best-effort persistence below."""
+    if user is None:
+        return None
+    from app.domains.businesses.models import Business
+    result = await db.execute(select(Business.id).where(Business.user_id == user.id).limit(1))
+    return result.scalar_one_or_none()
+
+
+class ToggleUpdate(BaseModel):
+    brain_id: str = Field(min_length=1, max_length=200)
+    enabled: bool
+
+
+async def _disabled_brain_ids(business_id, db: AsyncSession) -> list[str]:
+    from app.domains.automations.models import AutomationToggle
+    result = await db.execute(
+        select(AutomationToggle.toggle_key).where(
+            AutomationToggle.business_id == business_id,
+            AutomationToggle.is_enabled == False,  # noqa: E712
+        )
+    )
+    return [toggle_key_to_brain_id(k) for k in result.scalars().all()]
+
+
+@router.get("/brain/toggles")
+async def brain_get_toggles(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+    """Server-persisted ON/OFF state of the Brain Interaction Map for the
+    logged-in user's business. Anonymous visitors get an empty set -- the
+    frontend falls back to its existing localStorage-only behavior for them.
+    """
+    user = await _optional_user(request, db)
+    business_id = await _resolve_business_id(user, db)
+    if business_id is None:
+        return {"ok": False, "disabled_brain_ids": []}
+    return {"ok": True, "disabled_brain_ids": await _disabled_brain_ids(business_id, db)}
+
+
+@router.post("/brain/toggles")
+async def brain_set_toggle(body: ToggleUpdate, request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+    """Flip one Brain Map node ON/OFF for the logged-in user's business.
+
+    This is real enforcement, not just a UI preference: the resulting
+    AutomationToggle row is what `toggle_enforcement_middleware` and the
+    orchestrator's capability gate (SellIAOrchestrator._execute_action_if_needed)
+    check before letting the matching automation/agent actually run.
+    """
+    user = await _optional_user(request, db)
+    business_id = await _resolve_business_id(user, db)
+    if business_id is None:
+        # Not a bad request -- an anonymous visitor or a logged-in user with
+        # no business yet. Respond 200 (not 401: the frontend's axios client
+        # treats any 401 as "session expired" and redirects to login, which
+        # would be wrong here) so the caller falls back to localStorage.
+        return {"ok": False, "disabled_brain_ids": [], "hint": "Sin negocio asociado: este cambio no se guardó en el servidor."}
+
+    from app.domains.automations.models import AutomationToggle, ToggleAuditLog
+
+    toggle_key = brain_id_to_toggle_key(body.brain_id)
+    result = await db.execute(
+        select(AutomationToggle).where(
+            AutomationToggle.business_id == business_id,
+            AutomationToggle.toggle_key == toggle_key,
+        )
+    )
+    toggle = result.scalar_one_or_none()
+    old_enabled = toggle.is_enabled if toggle else True
+    now = datetime.now(timezone.utc)
+
+    if toggle is None:
+        toggle = AutomationToggle(
+            business_id=business_id, toggle_key=toggle_key,
+            category=brain_id_category(body.brain_id),
+            is_enabled=body.enabled, display_name=body.brain_id,
+            changed_by=user.id,
+        )
+        db.add(toggle)
+    else:
+        toggle.is_enabled = body.enabled
+        toggle.updated_at = now
+        toggle.changed_by = user.id
+
+    toggle.enabled_at = now if body.enabled else toggle.enabled_at
+    toggle.disabled_at = now if not body.enabled else toggle.disabled_at
+
+    await db.flush()
+    db.add(ToggleAuditLog(
+        business_id=business_id, toggle_id=toggle.id,
+        action="enabled" if body.enabled else "disabled",
+        old_value={"is_enabled": old_enabled}, new_value={"is_enabled": body.enabled},
+        changed_by_user_id=user.id, changed_by_email=getattr(user, "email", None),
+    ))
+    await db.commit()
+    return {"ok": True, "disabled_brain_ids": await _disabled_brain_ids(business_id, db)}
 
 
 @router.get("/brain/graph")

@@ -22,7 +22,11 @@ PROTECTED_ROUTES: Dict[str, str] = {
     "/api/v1/sales_agents/lead_score": "agent:lead_scorer",
     "/api/v1/sales_agents/negotiate": "agent:negotiation",
     "/api/v1/email_sequences/send": "automation:email_sequences",
-    "/api/v1/fomo": "automation:fomo_campaigns",
+    # FOMO's ~15 sub-routers are all mounted at bare "/fomo" (see
+    # backend/app/domains/fomo/router.py's prefix + main.py's include_router
+    # calls), not under "/api/v1" -- this used to point at a path that never
+    # matched, so the Brain Map's FOMO toggle never actually gated anything.
+    "/fomo": "automation:fomo_campaigns",
     "/api/v1/sms": "automation:sms_marketing",
     "/api/v1/dynamic_pricing": "feature:dynamic_pricing",
     "/api/v1/predictive": "feature:predictive_analytics",
