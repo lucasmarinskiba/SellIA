@@ -1905,7 +1905,10 @@
       "Bash(git commit -m 'feat: Tier 3 - Celery executor for scheduled toggles *)",
       "Bash(git commit -m 'feat: Tier 3 - Toggle Notifications system *)",
       "Bash(git commit -m 'fix: remove empty flex spacer and view label from tab bar *)",
-      "Bash(git commit -m 'feat: add frontend scheduling UI for automation toggles *)"
+      "Bash(git commit -m 'feat: add frontend scheduling UI for automation toggles *)",
+      "Bash(python create_test_data.py)",
+      "Bash(grep -E \"\\\\.\\(py|sql\\)$\")",
+      "Bash(git commit -m 'feat: add frontend notification rules UI for automation toggles *)"
     ]
   }
 }
