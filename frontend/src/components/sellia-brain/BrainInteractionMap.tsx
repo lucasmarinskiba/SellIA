@@ -145,9 +145,15 @@ const Inner = (): React.JSX.Element => {
   const activityBase = useRef(BRAIN_BASE)
   const sinceSeq = useRef(0)
 
-  // ── pantalla completa: overlay CSS, sin API nativa (sin permisos, sin
-  // sorpresas entre navegadores) ──
+  // ── pantalla completa: overlay CSS (cubre la VENTANA del navegador,
+  // siempre) + intento best-effort de Fullscreen API nativa (cubre el
+  // MONITOR entero, tapa la barra de pestañas/URL) -- si la ventana del
+  // navegador no está maximizada, el overlay CSS por sí solo no alcanza
+  // para "toda la pantalla", así que se pide fullscreen real también. Si
+  // el navegador la bloquea/no la soporta, el overlay CSS sigue
+  // funcionando como respaldo -- nunca se rompe por esto. ──
   const [fullscreen, setFullscreen] = useState(false)
+  const rootRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (typeof document === 'undefined') return
     document.body.style.overflow = fullscreen ? 'hidden' : ''
@@ -159,6 +165,24 @@ const Inner = (): React.JSX.Element => {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [fullscreen])
+  // Mantiene el estado en sync si el usuario sale del fullscreen nativo
+  // con el propio control del navegador (su botón/Esc), no con "Salir".
+  useEffect(() => {
+    const onFsChange = (): void => { if (!document.fullscreenElement) setFullscreen(false) }
+    document.addEventListener('fullscreenchange', onFsChange)
+    return () => document.removeEventListener('fullscreenchange', onFsChange)
+  }, [])
+  const toggleFullscreen = useCallback(() => {
+    setFullscreen(v => {
+      const next = !v
+      if (next) {
+        void rootRef.current?.requestFullscreen?.().catch(() => { /* overlay CSS sigue cubriendo la ventana igual */ })
+      } else if (document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {})
+      }
+      return next
+    })
+  }, [])
 
   // ── carga grafo real (live → bundled) ──
   useEffect(() => {
@@ -339,7 +363,7 @@ const Inner = (): React.JSX.Element => {
   }, [groupIds])
 
   return (
-    <div style={fullscreen
+    <div ref={rootRef} style={fullscreen
       // 9500: above the app's fixed top bar (MissionControlBar's <header>,
       // zIndex 9100) and its sidebar (zIndex 30) -- otherwise "fullscreen"
       // only covered the space below them instead of the whole window.
@@ -348,7 +372,7 @@ const Inner = (): React.JSX.Element => {
       : { background: SELLIA.bg, borderRadius: 12, overflow: 'hidden', fontFamily: SELLIA.sans }}>
       {/* status + leyenda de categorías (chips de filtro) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${SELLIA.border}`, flexWrap: 'wrap', background: 'rgba(0,0,0,0.18)' }}>
-        <button type="button" onClick={() => setFullscreen(v => !v)}
+        <button type="button" onClick={toggleFullscreen}
           title={fullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 6, color: SELLIA.text2, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
           {fullscreen ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
