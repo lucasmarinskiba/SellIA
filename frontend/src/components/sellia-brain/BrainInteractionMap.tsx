@@ -340,7 +340,11 @@ const Inner = (): React.JSX.Element => {
 
   return (
     <div style={fullscreen
-      ? { position: 'fixed', inset: 0, zIndex: 200, background: SELLIA.bg, fontFamily: SELLIA.sans, display: 'flex', flexDirection: 'column' }
+      // 9500: above the app's fixed top bar (MissionControlBar's <header>,
+      // zIndex 9100) and its sidebar (zIndex 30) -- otherwise "fullscreen"
+      // only covered the space below them instead of the whole window.
+      // Still below the auth modals (zIndex 9999), which should win either way.
+      ? { position: 'fixed', inset: 0, zIndex: 9500, background: SELLIA.bg, fontFamily: SELLIA.sans, display: 'flex', flexDirection: 'column' }
       : { background: SELLIA.bg, borderRadius: 12, overflow: 'hidden', fontFamily: SELLIA.sans }}>
       {/* status + leyenda de categorías (chips de filtro) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${SELLIA.border}`, flexWrap: 'wrap', background: 'rgba(0,0,0,0.18)' }}>
