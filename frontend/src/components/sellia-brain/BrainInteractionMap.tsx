@@ -64,7 +64,7 @@ const CatNode = ({ data }: NodeProps<Node<CatData>>): React.JSX.Element => {
       borderRadius: big ? 10 : 8, fontFamily: SELLIA.sans, fontSize: big ? 14 : 11, fontWeight: 600,
       color: data.disabled ? SELLIA.text3 : SELLIA.text, whiteSpace: 'nowrap',
       background: data.disabled ? 'transparent' : (data.hot ? `${color}26` : SELLIA.panel),
-      border: `1px solid ${data.disabled ? SELLIA.border : (data.hot ? color : SELLIA.border)}`,
+      borderWidth: 1, borderColor: data.disabled ? SELLIA.border : (data.hot ? color : SELLIA.border),
       borderStyle: data.disabled ? 'dashed' : 'solid',
       opacity: data.disabled ? 0.4 : (data.dim ? 0.18 : 0.45 + 0.55 * data.health),
       boxShadow: !data.disabled && data.hot ? `0 0 0 1px ${color}, 0 6px 20px -8px ${color}` : 'none',
