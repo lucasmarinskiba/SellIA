@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation'
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, Brain, ChevronLeft, ChevronRight,
   Cpu, Filter, LifeBuoy, Search, Store, Target, TrendingUp, Users, Workflow,
-  Bot, Power,
+  Bot, Power, Maximize2, Minimize2,
 } from 'lucide-react'
 import { t } from '@/lib/sellia-i18n'
 
@@ -622,6 +622,39 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
   // ── vista del cerebro: flujos (n8n) vs overview (grafo apagado) ──
   const [neuralView, setNeuralView] = useState<'flows' | 'overview'>('flows')
+  // Pantalla completa del Mapa de Interacciones del Cerebro -- vive a este
+  // nivel (no dentro de BrainInteractionMap/BrainFlowsView) para que
+  // funcione para CUALQUIER sub-vista (Flujos en vivo, que es la que carga
+  // por defecto, o Activar/Desactivar), no sólo una de las dos.
+  const [neuralFullscreen, setNeuralFullscreen] = useState(false)
+  const neuralSectionRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.style.overflow = neuralFullscreen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [neuralFullscreen])
+  useEffect(() => {
+    if (!neuralFullscreen) return
+    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setNeuralFullscreen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [neuralFullscreen])
+  useEffect(() => {
+    const onFsChange = (): void => { if (!document.fullscreenElement) setNeuralFullscreen(false) }
+    document.addEventListener('fullscreenchange', onFsChange)
+    return () => document.removeEventListener('fullscreenchange', onFsChange)
+  }, [])
+  const toggleNeuralFullscreen = useCallback(() => {
+    setNeuralFullscreen(v => {
+      const next = !v
+      if (next) {
+        void neuralSectionRef.current?.requestFullscreen?.().catch(() => {})
+      } else if (document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {})
+      }
+      return next
+    })
+  }, [])
   // Real ON/OFF count for the Dashboard-level summary card -- the toggle
   // grid itself (BrainInteractionMap) lives 2 clicks deep (Cerebro Neuronal
   // -> Vista general), which is why it went unnoticed even after being
@@ -1550,8 +1583,14 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
       {/* ── CEREBRO NEURONAL EN VIVO ── */}
       {showNeural && (
-      <section id="sec-neural" style={{ padding: '12px 28px 36px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+      <section id="sec-neural" ref={neuralSectionRef} style={neuralFullscreen
+        // 9500: por encima de la barra superior fija (MissionControlBar,
+        // zIndex 9100) y del sidebar (zIndex 30) -- si no, "pantalla
+        // completa" sólo tapaba el espacio debajo de ellos. Debajo de los
+        // modales de auth (9999), que deben ganar de todos modos.
+        ? { position: 'fixed', inset: 0, zIndex: 9500, background: T.bg, padding: '16px 28px 20px', display: 'flex', flexDirection: 'column' }
+        : { padding: '12px 28px 36px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexShrink: 0 }}>
           <span style={{
             width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center',
             background: `${T.cobalt}1A`, border: `1px solid ${T.cobalt}33`, color: T.cobalt,
@@ -1564,6 +1603,16 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
                 : 'Vista general (apagado): todo el cerebro — agentes, automatizaciones, skills, plataformas y herramientas, por categoría.'}
             </p>
           </div>
+          <button type="button" onClick={toggleNeuralFullscreen}
+            title={neuralFullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+              padding: '7px 12px', borderRadius: 9, border: `1px solid ${T.border}`,
+              background: 'transparent', color: T.text2, fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}>
+            {neuralFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {neuralFullscreen ? 'Salir' : 'Pantalla completa'}
+          </button>
           {/* toggle Flujos / Vista general */}
           <div style={{ display: 'inline-flex', borderRadius: 9, border: `1px solid ${T.border}`, overflow: 'hidden' }}>
             {(['flows', 'overview'] as const).map(v => (
@@ -1582,7 +1631,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
 
         {/* ── Panel de indicaciones Computer Use (al elegir Piloto Automático / Supervisado) ── */}
         {cuaMode !== 'off' && (
-          <div style={{ ...cardStyle, padding: 16, marginBottom: 14, borderColor: `${T.cobalt}44` }}>
+          <div style={{ ...cardStyle, padding: 16, marginBottom: 14, borderColor: `${T.cobalt}44`, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Cpu size={15} style={{ color: T.cobalt }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
@@ -1617,8 +1666,12 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
           </div>
         )}
 
-        <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-          {neuralView === 'flows' ? <BrainFlowsView extraFlows={plannedFlows} /> : <BrainInteractionMap />}
+        <div style={neuralFullscreen
+          ? { ...cardStyle, padding: 0, overflow: 'auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }
+          : { ...cardStyle, padding: 0, overflow: 'hidden' }}>
+          {neuralView === 'flows'
+            ? <BrainFlowsView extraFlows={plannedFlows} />
+            : <BrainInteractionMap heightFill={neuralFullscreen} />}
         </div>
       </section>
       )}

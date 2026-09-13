@@ -15,7 +15,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Maximize2, Minimize2 } from 'lucide-react'
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
   BackgroundVariant, MarkerType, Handle, Position, useReactFlow,
@@ -122,7 +121,17 @@ const computePositions = (
   return pos
 }
 
-const Inner = (): React.JSX.Element => {
+interface InnerProps {
+  /** True when an ancestor (EnterpriseCommandCenter's "Mapa de
+   * Interacciones del Cerebro" section) has gone fullscreen -- that section
+   * owns the fullscreen button/overlay/native Fullscreen API call (it needs
+   * to work no matter which sub-view, this one or BrainFlowsView, is
+   * active), this component just needs to stretch to fill the space it's
+   * given instead of staying pinned at its normal fixed height. */
+  heightFill?: boolean
+}
+
+const Inner = ({ heightFill = false }: InnerProps): React.JSX.Element => {
   const [raw, setRaw] = useState<{ nodes: RawNode[]; edges: RawEdge[] }>({ nodes: [], edges: [] })
   const [offline, setOffline] = useState(false)
   const [src, setSrc] = useState<'live' | 'bundled'>('live')
@@ -144,45 +153,6 @@ const Inner = (): React.JSX.Element => {
   const [lastEvent, setLastEvent] = useState<string>('—')
   const activityBase = useRef(BRAIN_BASE)
   const sinceSeq = useRef(0)
-
-  // ── pantalla completa: overlay CSS (cubre la VENTANA del navegador,
-  // siempre) + intento best-effort de Fullscreen API nativa (cubre el
-  // MONITOR entero, tapa la barra de pestañas/URL) -- si la ventana del
-  // navegador no está maximizada, el overlay CSS por sí solo no alcanza
-  // para "toda la pantalla", así que se pide fullscreen real también. Si
-  // el navegador la bloquea/no la soporta, el overlay CSS sigue
-  // funcionando como respaldo -- nunca se rompe por esto. ──
-  const [fullscreen, setFullscreen] = useState(false)
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    document.body.style.overflow = fullscreen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [fullscreen])
-  useEffect(() => {
-    if (!fullscreen) return
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setFullscreen(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreen])
-  // Mantiene el estado en sync si el usuario sale del fullscreen nativo
-  // con el propio control del navegador (su botón/Esc), no con "Salir".
-  useEffect(() => {
-    const onFsChange = (): void => { if (!document.fullscreenElement) setFullscreen(false) }
-    document.addEventListener('fullscreenchange', onFsChange)
-    return () => document.removeEventListener('fullscreenchange', onFsChange)
-  }, [])
-  const toggleFullscreen = useCallback(() => {
-    setFullscreen(v => {
-      const next = !v
-      if (next) {
-        void rootRef.current?.requestFullscreen?.().catch(() => { /* overlay CSS sigue cubriendo la ventana igual */ })
-      } else if (document.fullscreenElement) {
-        void document.exitFullscreen().catch(() => {})
-      }
-      return next
-    })
-  }, [])
 
   // ── carga grafo real (live → bundled) ──
   useEffect(() => {
@@ -348,7 +318,7 @@ const Inner = (): React.JSX.Element => {
   useEffect(() => {
     const id = window.setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 50)
     return () => window.clearTimeout(id)
-  }, [activeGroup, fullscreen, fitView])
+  }, [activeGroup, heightFill, fitView])
 
   const groupIds = useMemo(
     () => (activeGroup ? raw.nodes.filter(n => n.group === activeGroup).map(n => n.id) : []),
@@ -363,21 +333,11 @@ const Inner = (): React.JSX.Element => {
   }, [groupIds])
 
   return (
-    <div ref={rootRef} style={fullscreen
-      // 9500: above the app's fixed top bar (MissionControlBar's <header>,
-      // zIndex 9100) and its sidebar (zIndex 30) -- otherwise "fullscreen"
-      // only covered the space below them instead of the whole window.
-      // Still below the auth modals (zIndex 9999), which should win either way.
-      ? { position: 'fixed', inset: 0, zIndex: 9500, background: SELLIA.bg, fontFamily: SELLIA.sans, display: 'flex', flexDirection: 'column' }
+    <div style={heightFill
+      ? { background: SELLIA.bg, fontFamily: SELLIA.sans, height: '100%', display: 'flex', flexDirection: 'column' }
       : { background: SELLIA.bg, borderRadius: 12, overflow: 'hidden', fontFamily: SELLIA.sans }}>
       {/* status + leyenda de categorías (chips de filtro) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: `1px solid ${SELLIA.border}`, flexWrap: 'wrap', background: 'rgba(0,0,0,0.18)' }}>
-        <button type="button" onClick={toggleFullscreen}
-          title={fullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
-          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: SELLIA.mono, fontSize: 10, fontWeight: 600, padding: '3px 9px', borderRadius: 6, color: SELLIA.text2, background: 'transparent', border: `1px solid ${SELLIA.border}` }}>
-          {fullscreen ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
-          {fullscreen ? 'Salir' : 'Pantalla completa'}
-        </button>
         <span style={{ fontFamily: SELLIA.mono, fontSize: 11, fontWeight: 600, color: hotEdges.size ? SELLIA.emerald : SELLIA.text3, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: hotEdges.size ? SELLIA.emerald : SELLIA.text3 }} />
           {hotEdges.size ? 'INTERACCIÓN REAL' : 'EN REPOSO'}
@@ -424,7 +384,7 @@ const Inner = (): React.JSX.Element => {
         </div>
       </div>
 
-      <div style={{ height: fullscreen ? undefined : 460, flex: fullscreen ? 1 : undefined, minHeight: 0, position: 'relative' }}>
+      <div style={{ height: heightFill ? undefined : 460, flex: heightFill ? 1 : undefined, minHeight: 0, position: 'relative' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -459,10 +419,10 @@ const Inner = (): React.JSX.Element => {
   )
 }
 
-export default function BrainInteractionMap(): React.JSX.Element {
+export default function BrainInteractionMap({ heightFill = false }: InnerProps = {}): React.JSX.Element {
   return (
     <ReactFlowProvider>
-      <Inner />
+      <Inner heightFill={heightFill} />
     </ReactFlowProvider>
   )
 }
