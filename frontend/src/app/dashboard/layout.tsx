@@ -1,15 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug,
-  TrendingUp, Award, Store, MessageSquare,
+  TrendingUp, Award, Store, MessageSquare, Brain,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
 import { api } from '@/lib/api'
+
+// Same chat widget as /sellia-brain (dock prop = same docked-right design,
+// same conversation history) -- lazy-loaded client-side only, it touches
+// browser voice/localStorage APIs.
+const SellIAAssistant = dynamic(() => import('@/components/SellIAAssistant'), { ssr: false })
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -68,6 +74,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-4 border-b border-slate-700">
           <Link href="/dashboard" className="font-black text-xl bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">
             {sidebarOpen ? 'SellIA' : 'S'}
+          </Link>
+        </div>
+
+        {/* SellIA Brain -- distinct from the regular nav list, this is the
+            other half of the app (agentes/automatizaciones/mapa neuronal,
+            not a dashboard sub-page), so users can jump between the two
+            easily instead of hunting for a URL. */}
+        <div className="p-4 border-b border-slate-700">
+          <Link
+            href="/sellia-brain"
+            title="SellIA Brain"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-pink-500/20 border border-cyan-400/30 hover:from-cyan-500/30 hover:to-pink-500/30 transition-colors"
+          >
+            <Brain size={20} className="shrink-0 text-cyan-300" />
+            {sidebarOpen && <span className="text-sm font-semibold text-cyan-100">SellIA Brain</span>}
           </Link>
         </div>
 
@@ -134,6 +155,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-6">{children}</div>
         </div>
       </div>
+
+      <SellIAAssistant businessId={business?.id} dock />
     </div>
   )
 }
