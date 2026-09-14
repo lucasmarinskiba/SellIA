@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug,
-  TrendingUp, Award, Store, MessageSquare, Brain,
+  TrendingUp, Award, Store, MessageSquare, Brain, ChevronDown, UserPlus,
+  MapPin, CreditCard, Briefcase, Check, Loader2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
@@ -21,6 +22,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
+
+  // ── Account dropdown (Google-style: switch/add account, address, plan) ──
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!accountMenuOpen) return
+    const onDown = (e: MouseEvent): void => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) setAccountMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [accountMenuOpen])
+
+  // "+ Añadir otra cuenta": the real /dashboard session cookie is httpOnly
+  // (JS can't read/restore it), so true instant multi-account switching
+  // would need a saved-sessions store + switch endpoint on the backend --
+  // real feature, not built yet. This does what Google itself falls back
+  // to when it doesn't have the other account cached: log out, go to login.
+  const handleAddAccount = (): void => { void logout() }
+
+  // Compact inline form -- POST /business-context already supports a
+  // partial update (city/address/country) without touching the full
+  // BusinessContextWizard multi-step flow.
+  const [addressOpen, setAddressOpen] = useState(false)
+  const [addressCity, setAddressCity] = useState('')
+  const [addressStreet, setAddressStreet] = useState('')
+  const [addressSaving, setAddressSaving] = useState(false)
+  const [addressSaved, setAddressSaved] = useState(false)
+  const handleSaveAddress = async (): Promise<void> => {
+    if (!business?.id || (!addressCity.trim() && !addressStreet.trim())) return
+    setAddressSaving(true)
+    setAddressSaved(false)
+    try {
+      await api.post(`/business-context?business_id=${business.id}`, {
+        city: addressCity.trim() || undefined,
+        address: addressStreet.trim() || undefined,
+        country: 'Argentina',
+      })
+      setAddressSaved(true)
+    } catch {
+      // se muestra "Guardar" de nuevo -- el usuario puede reintentar
+    } finally {
+      setAddressSaving(false)
+    }
+  }
 
   // Real business of the signed-in account -- the header used to hardcode
   // "Juan Pérez / Tienda de Electrónica" for everyone, so every screenshot of
@@ -139,14 +185,110 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-semibold text-slate-900">{accountName || '—'}</p>
-              <p className="text-xs text-slate-500">{accountSubtitle}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-pink-400 grid place-items-center text-white font-bold">
-              {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
-            </div>
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              onClick={() => setAccountMenuOpen(v => !v)}
+              className="flex items-center gap-4 p-1.5 pr-2 rounded-full hover:bg-slate-100 transition-colors"
+              aria-expanded={accountMenuOpen}
+            >
+              <div className="text-right">
+                <p className="font-semibold text-slate-900">{accountName || '—'}</p>
+                <p className="text-xs text-slate-500">{accountSubtitle}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-pink-400 grid place-items-center text-white font-bold shrink-0">
+                {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
+              </div>
+              <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {accountMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                {/* Header: same account info Google shows at the top */}
+                <div className="p-5 flex flex-col items-center text-center border-b border-slate-100">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-pink-400 grid place-items-center text-white text-2xl font-bold mb-2">
+                    {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
+                  </div>
+                  <p className="font-semibold text-slate-900">{accountName || '—'}</p>
+                  {user?.email && <p className="text-xs text-slate-500">{user.email}</p>}
+                  {business?.name && <p className="text-xs text-slate-400 mt-0.5">{business.name}</p>}
+                </div>
+
+                <div className="p-2 border-b border-slate-100">
+                  <Link
+                    href="/dashboard/planes"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-pink-500 text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+                  >
+                    <CreditCard size={18} className="shrink-0" />
+                    Obtén un plan SellIA
+                  </Link>
+                </div>
+
+                {/* Dirección del local -- mejora resultados para público local */}
+                <div className="p-2 border-b border-slate-100">
+                  <button
+                    onClick={() => setAddressOpen(v => !v)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                  >
+                    <MapPin size={18} className="shrink-0 text-slate-400" />
+                    Establecer dirección de tu local
+                  </button>
+                  {addressOpen && (
+                    <div className="px-3 pb-2 pt-1 space-y-2">
+                      <input
+                        value={addressCity}
+                        onChange={e => { setAddressCity(e.target.value); setAddressSaved(false) }}
+                        placeholder="Ciudad"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      />
+                      <input
+                        value={addressStreet}
+                        onChange={e => { setAddressStreet(e.target.value); setAddressSaved(false) }}
+                        placeholder="Dirección"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      />
+                      <button
+                        onClick={() => { void handleSaveAddress() }}
+                        disabled={addressSaving || !business?.id}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                      >
+                        {addressSaving ? <Loader2 size={14} className="animate-spin" /> : addressSaved ? <Check size={14} /> : null}
+                        {addressSaving ? 'Guardando…' : addressSaved ? 'Guardado' : 'Guardar dirección'}
+                      </button>
+                      {!business?.id && <p className="text-[11px] text-slate-400">Configurá tu negocio primero para guardar la dirección.</p>}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-2 border-b border-slate-100">
+                  <Link href="/dashboard/negocios" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-700">
+                    <Briefcase size={18} className="shrink-0 text-slate-400" />
+                    Mi negocio
+                  </Link>
+                  <Link href="/dashboard/configuracion" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-700">
+                    <Settings size={18} className="shrink-0 text-slate-400" />
+                    Configuración
+                  </Link>
+                </div>
+
+                <div className="p-2">
+                  <button
+                    onClick={() => { setAccountMenuOpen(false); handleAddAccount() }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                  >
+                    <UserPlus size={18} className="shrink-0 text-slate-400" />
+                    + Añadir otra cuenta
+                  </button>
+                  <button
+                    onClick={() => { setAccountMenuOpen(false); void logout() }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                  >
+                    <LogOut size={18} className="shrink-0 text-slate-400" />
+                    Cerrar sesión
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
