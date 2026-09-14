@@ -193,7 +193,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <div className="text-right">
                 <p className="font-semibold text-slate-900">{accountName || '—'}</p>
-                <p className="text-xs text-slate-500">{accountSubtitle}</p>
+                {!loading && !user ? (
+                  <Link
+                    href="/login"
+                    onClick={e => e.stopPropagation()}
+                    className="text-xs text-cyan-600 font-medium hover:underline"
+                  >
+                    {accountSubtitle}
+                  </Link>
+                ) : (
+                  <p className="text-xs text-slate-500">{accountSubtitle}</p>
+                )}
               </div>
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-pink-400 grid place-items-center text-white font-bold shrink-0">
                 {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
@@ -211,6 +221,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p className="font-semibold text-slate-900">{accountName || '—'}</p>
                   {user?.email && <p className="text-xs text-slate-500">{user.email}</p>}
                   {business?.name && <p className="text-xs text-slate-400 mt-0.5">{business.name}</p>}
+                  {!loading && !user && (
+                    <Link
+                      href="/login"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="mt-3 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
+                    >
+                      Iniciar sesión
+                    </Link>
+                  )}
                 </div>
 
                 <div className="p-2 border-b border-slate-100">
