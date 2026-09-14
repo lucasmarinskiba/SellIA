@@ -35,6 +35,7 @@ import { getToken } from '@/lib/sellia-api'
 import { businessContextApi } from '@/lib/businessContext'
 import { assistantApi } from '@/lib/assistant'
 import { executeAssistantAction } from '@/lib/assistantActions'
+import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 
 // React Flow trae su CSS — lazy-load (ssr:false) para evitar bundling SSR.
 const BrainInteractionMap = dynamic(
@@ -45,6 +46,7 @@ const BrainFlowsView = dynamic(
   () => import('./BrainFlowsView'),
   { ssr: false, loading: () => <div style={{ height: 460, display: 'grid', placeItems: 'center', color: '#5C6B85', fontFamily: 'monospace', fontSize: 11 }}>cargando flujos…</div> },
 )
+const SellIAAssistant = dynamic(() => import('../SellIAAssistant'), { ssr: false })
 const BusinessProfileWizard = dynamic(() => import('./BusinessProfileWizard'), { ssr: false })
 // Real, backend-synced questionnaire (business_context) -- used for logged-in
 // users instead of the fake localStorage-only BusinessProfileWizard below.
@@ -610,6 +612,11 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [page, setPage] = useState(0)
 
+  // Real business id (or null for anonymous/demo) -- passed to the chat
+  // dock below so it can report real per-business toggle state and log
+  // conversation history against the right account.
+  const { snapshot } = useBusinessSnapshot()
+
   // ── header controls (search / voz / Computer Use) — portados del MissionControlBar ──
   const [handsFree, setHandsFree] = useState(false)
   const [cuaMode, setCuaMode] = useState<CuaMode>('off')
@@ -1050,6 +1057,7 @@ export const EnterpriseCommandCenter = (): React.JSX.Element => {
       />
       <HandsFreeOverlay open={handsFree} onClose={() => setHandsFree(false)} onCommand={handleVoiceCommand} />
       <ComputerUseLauncher open={cuaLauncherOpen} onClose={() => setCuaLauncherOpen(false)} onJump={handleJump} />
+      <SellIAAssistant businessId={snapshot?.business.id ?? undefined} dock />
 
       {/* ── SIDEBAR lateral izquierdo ── */}
       <SideToolbar />

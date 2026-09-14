@@ -21,10 +21,12 @@ from app.domains.agents.models import AgentPersonality, AgentConversation, Agent
 from app.domains.agents.services import AgentService
 from app.domains.agents.prompts import AGENT_PROMPTS
 from app.domains.agents.actions import SellIAActionExecutor
+from app.domains.agents.tool_registry import RetrieveKnowledgeTool
 from app.api.v1.computer_use import create_computer_use_from_orchestrator
 from app.domains.subscriptions.models import UserAPIKey
 from app.core.encryption import decrypt_value
 from app.core.config import get_settings
+from app.core.brain.toggle_mapping import toggle_key_to_brain_id
 
 
 SELLIA_SYSTEM_PROMPT = """You are "SellIA", the intelligent assistant for an AI agent platform called SellIA.
@@ -34,6 +36,14 @@ Your mission: help users accomplish their goals by understanding their intent, a
 ## Available Agents (by category)
 
 {agents_summary}
+
+## Real Capability Status (ON/OFF)
+
+{capability_status}
+
+## Relevant Knowledge From the Internal Library
+
+{knowledge_context}
 
 ## Your Capabilities
 
@@ -184,6 +194,8 @@ You can perform these actions by returning a JSON response:
 - For PR/communications: suggest Ryan Holiday, Tim Ferriss, or David Meerman Scott.
 - For entrepreneurship questions: suggest Elon Musk, Daymond John, or Barbara Corcoran agents.
 - NEVER make up agents that don't exist in the list.
+- If the user asks what's active/inactive, or a capability relevant to their goal is OFF per "Real Capability Status" above, tell them plainly and point them to "Mapa de Interacciones del Cerebro → Activar/Desactivar" to turn it on. Only state what that block actually says — never guess ON/OFF state.
+- When teaching a sales tactic, framework, or principle, ground your answer in "Relevant Knowledge From the Internal Library" above when it has something relevant, instead of inventing technique names from scratch.
 - ALWAYS return valid JSON."""
 
 
@@ -201,6 +213,58 @@ class SellIAOrchestrator:
             expertise = ", ".join(p.expertise[:3]) if p.expertise else "General"
             lines.append(f"- {p.slug}: {p.name} ({expertise})")
         return "\n".join(lines)
+
+    async def _build_capability_context(self, business_id: Optional[str]) -> str:
+        """Real ON/OFF state for this business, from the same AutomationToggle
+        rows the Brain Interaction Map's buttons write to (see
+        app/api/v1/brain.py's /brain/toggles and app/core/brain/toggle_mapping.py).
+        Lets the chat actually answer "what's on/off" instead of guessing."""
+        if not business_id:
+            return "No hay negocio asociado a esta conversación (demo/anónimo) -- no se puede reportar estado real de capacidades."
+        try:
+            from app.domains.automations.models import AutomationToggle
+            from app.core.brain.registry import get_brain_registry
+
+            result = await self.db.execute(
+                select(AutomationToggle.toggle_key).where(
+                    AutomationToggle.business_id == business_id,
+                    AutomationToggle.is_enabled == False,  # noqa: E712
+                )
+            )
+            disabled_keys = result.scalars().all()
+            if not disabled_keys:
+                return "Todas las capacidades del Mapa de Interacciones del Cerebro están activadas para este negocio."
+
+            names_by_id = {c.id: c.name for c in get_brain_registry().all_capabilities()}
+            disabled_names = [
+                names_by_id.get(toggle_key_to_brain_id(k), toggle_key_to_brain_id(k))
+                for k in disabled_keys
+            ]
+            return (
+                f"DESACTIVADAS ahora mismo ({len(disabled_names)}): {', '.join(disabled_names)}. "
+                "Si el usuario necesita algo de esta lista, decile que lo active en "
+                "Mapa de Interacciones del Cerebro → Activar/Desactivar."
+            )
+        except Exception:
+            return "Estado de capacidades no disponible en este momento."
+
+    async def _build_knowledge_context(self, business_id: Optional[str], user_input: str) -> str:
+        """Best-effort grounding in the real sales/negotiation/persuasion
+        library (backend/app/core/knowledge/) via the existing
+        RetrieveKnowledgeTool, instead of the LLM inventing tactics from
+        pretraining alone. Silent no-op on any failure."""
+        try:
+            tool = RetrieveKnowledgeTool()
+            result = await tool.execute(db=self.db, business_id=business_id, topic=user_input, k=3)
+            items = result.get("results", [])
+            if not items:
+                return "(sin resultados relevantes en la biblioteca para este mensaje)"
+            lines = []
+            for it in items:
+                lines.append(f"- [{it.get('category', '')}] {it.get('principle', '')}: {it.get('tactic', '')}")
+            return "\n".join(lines)
+        except Exception:
+            return "(sin resultados relevantes en la biblioteca para este mensaje)"
 
     async def _resolve_api_key(self, user_id: Any) -> Optional[str]:
         """Resolve OpenAI API key for the user."""
@@ -221,9 +285,15 @@ class SellIAOrchestrator:
         user_input: str,
         agents_summary: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
+        capability_status: str = "",
+        knowledge_context: str = "",
     ) -> List:
         """Build LangChain messages for LLM invocation."""
-        system_prompt = SELLIA_SYSTEM_PROMPT.format(agents_summary=agents_summary)
+        system_prompt = SELLIA_SYSTEM_PROMPT.format(
+            agents_summary=agents_summary,
+            capability_status=capability_status or "No disponible.",
+            knowledge_context=knowledge_context or "(sin resultados relevantes en la biblioteca para este mensaje)",
+        )
         messages = [SystemMessage(content=system_prompt)]
 
         if conversation_history:
@@ -247,8 +317,13 @@ class SellIAOrchestrator:
 
         personalities = await self.agent_service.get_personalities(active_only=True)
         agents_summary = self._build_agents_summary(personalities)
+        capability_status = await self._build_capability_context(business_id)
+        knowledge_context = await self._build_knowledge_context(business_id, user_input)
 
-        messages = self._build_llm_messages(user_input, agents_summary, conversation_history)
+        messages = self._build_llm_messages(
+            user_input, agents_summary, conversation_history,
+            capability_status=capability_status, knowledge_context=knowledge_context,
+        )
 
         try:
             from app.domains.agents.llm_provider import generate_with_fallback
@@ -298,8 +373,13 @@ class SellIAOrchestrator:
 
         personalities = await self.agent_service.get_personalities(active_only=True)
         agents_summary = self._build_agents_summary(personalities)
+        capability_status = await self._build_capability_context(business_id)
+        knowledge_context = await self._build_knowledge_context(business_id, user_input)
 
-        messages = self._build_llm_messages(user_input, agents_summary, conversation_history)
+        messages = self._build_llm_messages(
+            user_input, agents_summary, conversation_history,
+            capability_status=capability_status, knowledge_context=knowledge_context,
+        )
 
         api_key = await self._resolve_api_key(user_id)
 

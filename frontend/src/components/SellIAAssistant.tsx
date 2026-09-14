@@ -79,7 +79,18 @@ const EXPERT_LABELS: Record<string, string> = {
   'william-ury': '🌉 William Ury — Getting Past No',
 }
 
-export default function SellIAAssistant({ businessId }: { businessId?: string }) {
+interface SellIAAssistantProps {
+  businessId?: string
+  /** Docked mode: a full-height right-edge panel (used on /sellia-brain)
+   * instead of the default floating bottom-right corner popup. Floats
+   * over the dashboard -- never resizes/reflows it. z-[200] sits below
+   * the app's own fixed top bar (zIndex 9100) and the Brain Map's
+   * fullscreen overlay (9500, so fullscreening the map naturally hides
+   * the dock -- expected, that's a focus mode), above normal content. */
+  dock?: boolean
+}
+
+export default function SellIAAssistant({ businessId, dock = false }: SellIAAssistantProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showSidebar, setShowSidebar] = useState(true)
   const [messages, setMessages] = useState<Message[]>([])
@@ -590,7 +601,20 @@ export default function SellIAAssistant({ businessId }: { businessId?: string })
   }
 
   if (!isOpen) {
-    return (
+    return dock ? (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed top-1/2 right-0 -translate-y-1/2 z-[200] group flex items-center gap-1.5 pl-3 pr-2.5 py-3 rounded-l-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-r-0 border-white/10 shadow-2xl shadow-black/50 hover:pr-3.5 transition-all"
+      >
+        <span className="relative flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-brand-orange to-brand-orange-dark shrink-0">
+          <Sparkles className="w-3.5 h-3.5 text-white" />
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[#0A0E1A]" />
+        </span>
+        <span className="text-[11px] font-medium text-white/70 [writing-mode:vertical-rl] rotate-180 py-1">
+          SellIA
+        </span>
+      </button>
+    ) : (
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-50 group"
@@ -610,7 +634,9 @@ export default function SellIAAssistant({ businessId }: { businessId?: string })
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[28rem] max-w-[calc(100vw-2rem)] h-[36rem] max-h-[calc(100vh-6rem)] flex rounded-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+    <div className={dock
+      ? "fixed top-14 right-0 bottom-0 z-[200] w-[380px] max-w-[calc(100vw-1rem)] flex rounded-l-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-r-0 border-white/10 shadow-2xl shadow-black/50 overflow-hidden"
+      : "fixed bottom-6 right-6 z-50 w-[28rem] max-w-[calc(100vw-2rem)] h-[36rem] max-h-[calc(100vh-6rem)] flex rounded-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden"}>
       {/* Sidebar */}
       {showSidebar && (
         <div className="w-56 border-r border-white/5 flex flex-col bg-[#060812]/50">
