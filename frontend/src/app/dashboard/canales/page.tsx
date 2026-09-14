@@ -211,6 +211,18 @@ export default function CanalesPage() {
             <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
           </>
         )
+      case 'meta_ads':
+        return (
+          <>
+            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} placeholder="Token del System User con permiso catalog_management" />
+            <Field label="Catalog ID" value={newChannel.credentials.catalog_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, catalog_id: v } })} />
+            <Field label="App ID" value={newChannel.credentials.app_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, app_id: v } })} />
+            <Field label="App Secret" type="password" value={newChannel.credentials.app_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, app_secret: v } })} />
+            <Field label="Page ID (opcional)" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
+            <Field label="Ad Account ID (opcional)" value={newChannel.credentials.ad_account_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, ad_account_id: v } })} />
+            <p className="text-xs text-white/30">Sacá el Access Token y Catalog ID desde Meta Business Settings → Usuarios del sistema → Commerce Manager.</p>
+          </>
+        )
       case 'facebook_marketplace':
         return (
           <>
