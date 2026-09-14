@@ -635,7 +635,12 @@ export default function SellIAAssistant({ businessId, dock = false }: SellIAAssi
 
   return (
     <div className={dock
-      ? "fixed top-14 right-0 bottom-0 z-[200] w-[380px] max-w-[calc(100vw-1rem)] flex rounded-l-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-r-0 border-white/10 shadow-2xl shadow-black/50 overflow-hidden"
+      // Fixed 380px was only ever sized for the sidebar-less case -- the
+      // history sidebar (w-56 = 224px) doesn't have its own space, it eats
+      // into the chat column, so opening it crushed the chat area down to
+      // ~156px (input/messages clipped, per user report + screenshot).
+      // Grow the whole dock when the sidebar is open instead.
+      ? `fixed top-14 right-0 bottom-0 z-[200] ${showSidebar ? 'w-[620px]' : 'w-[380px]'} max-w-[calc(100vw-1rem)] flex rounded-l-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-r-0 border-white/10 shadow-2xl shadow-black/50 overflow-hidden transition-[width] duration-200`
       : "fixed bottom-6 right-6 z-50 w-[28rem] max-w-[calc(100vw-2rem)] h-[36rem] max-h-[calc(100vh-6rem)] flex rounded-2xl bg-[#0A0E1A]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden"}>
       {/* Sidebar */}
       {showSidebar && (

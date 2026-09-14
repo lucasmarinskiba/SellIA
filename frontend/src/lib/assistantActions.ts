@@ -56,20 +56,28 @@ export async function executeAssistantAction(
       onDone?.()
     }
   } else if (action.action === 'NAVIGATE' && action.target) {
-    const navMap: Record<string, string> = {
-      agentes: '/dashboard/agentes',
-      negocios: '/dashboard/negocios',
-      catalogo: '/dashboard/catalogo',
-      analytics: '/dashboard/analytics',
-      conversaciones: '/dashboard/conversaciones',
-      automatizaciones: '/dashboard/automatizaciones',
-      canales: '/dashboard/canales',
-      planes: '/dashboard/planes',
-      configuracion: '/dashboard/configuracion',
-      pipeline: '/dashboard/pipeline',
-      autonomo: '/dashboard/autonomo',
-    }
-    const target = navMap[action.target.toLowerCase()] || '/dashboard'
+    // Every real top-level section under frontend/src/app/dashboard/ (58
+    // folders, minus phase12/phase3/phase33 -- legacy/test routes -- and
+    // admin -- not something to casually route a regular business user
+    // into via chat). Kept in sync with the "System Sections for
+    // Navigation" list in backend/app/domains/agents/orchestrator.py's
+    // SELLIA_SYSTEM_PROMPT, which is what the model actually picks a
+    // `target` slug from.
+    const NAV_SECTIONS = [
+      'acquisition-engine', 'agenda', 'agente-vivo', 'agentes', 'agentes-central',
+      'alertas', 'ambassador', 'analytics', 'automatizaciones', 'autonomo',
+      'autopilot', 'battlecards', 'caja-de-cristal', 'canales', 'catalogo',
+      'clientes-fieles', 'competencia', 'configuracion', 'connections',
+      'conversaciones', 'coupons', 'crm', 'enterprise', 'envios', 'equipo',
+      'finanzas', 'fomo-intelligence', 'growth', 'home', 'inteligencia',
+      'leaderboard', 'listings', 'marketplace', 'mientras-dormias', 'misiones',
+      'negocios', 'objetivos', 'ordenes', 'orders', 'pipeline', 'planes',
+      'platforms', 'radar', 'recomendaciones', 'referrals', 'retencion',
+      'seguridad', 'sequences', 'sessions', 'settings', 'social-growth',
+      'suscripcion', 'transformacion', 'websites',
+    ]
+    const slug = action.target.toLowerCase()
+    const target = NAV_SECTIONS.includes(slug) ? `/dashboard/${slug}` : '/dashboard'
     router.push(target)
     onDone?.()
   } else if (action.action === 'ACTIVATE_PIPELINE_AGENT' && action.stage) {

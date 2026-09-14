@@ -22,6 +22,9 @@ from app.domains.agents.services import AgentService
 from app.domains.agents.prompts import AGENT_PROMPTS
 from app.domains.agents.actions import SellIAActionExecutor
 from app.domains.agents.tool_registry import RetrieveKnowledgeTool
+from app.domains.agents.prompts.business_context_adapter import (
+    get_agent_prompt_context, format_business_context_for_prompt,
+)
 from app.api.v1.computer_use import create_computer_use_from_orchestrator
 from app.domains.subscriptions.models import UserAPIKey
 from app.core.encryption import decrypt_value
@@ -40,6 +43,10 @@ Your mission: help users accomplish their goals by understanding their intent, a
 ## Real Capability Status (ON/OFF)
 
 {capability_status}
+
+## Business Context (who you're actually talking to)
+
+{business_context}
 
 ## Relevant Knowledge From the Internal Library
 
@@ -165,17 +172,61 @@ You can perform these actions by returning a JSON response:
 - meddic-framework — Enterprise deal qualification
 
 ## System Sections for Navigation
-- agentes — Agent dashboard
-- pipeline — Sales pipeline agents
-- negocios — Business management
-- catalogo — Product catalog
-- analytics — Analytics & reports
-- conversaciones — Conversations
-- automatizaciones — Automation builder
-- canales — Channel connections
-- planes — Subscription plans
-- configuracion — Settings
+Use the exact slug as `target` in NAVIGATE — every one of these is a real, existing dashboard page.
+- acquisition-engine — Motor de adquisición de clientes
+- agenda — Agenda / calendario
+- agente-vivo — Agente en vivo (demo interactivo)
+- agentes — Agentes de IA
+- agentes-central — Central de agentes
+- alertas — Alertas del sistema
+- ambassador — Programa de embajadores
+- analytics — Analytics y reportes
+- automatizaciones — Automatizaciones
 - autonomo — Sistema autónomo y salud del sistema
+- autopilot — Piloto automático
+- battlecards — Battlecards de competencia
+- caja-de-cristal — Caja de Cristal (Computer Use)
+- canales — Canales de venta
+- catalogo — Catálogo de productos
+- clientes-fieles — Clientes fieles / lealtad
+- competencia — Análisis de competencia
+- configuracion — Configuración
+- connections — Conexiones e integraciones
+- conversaciones — Conversaciones
+- coupons — Cupones de descuento
+- crm — CRM
+- enterprise — Suite enterprise
+- envios — Envíos
+- equipo — Equipo de ventas
+- finanzas — Finanzas
+- fomo-intelligence — Inteligencia de FOMO
+- growth — Crecimiento
+- home — Inicio
+- inteligencia — Inteligencia de negocio
+- leaderboard — Ranking / leaderboard
+- listings — Publicaciones y listings
+- marketplace — Marketplace
+- mientras-dormias — Reporte "mientras dormías"
+- misiones — Misiones
+- negocios — Gestión de negocios
+- objetivos — Objetivos
+- ordenes — Órdenes
+- orders — Pedidos
+- pipeline — Pipeline de ventas
+- planes — Planes y suscripción
+- platforms — Plataformas conectadas
+- radar — Radar de oportunidades
+- recomendaciones — Recomendaciones IA
+- referrals — Referidos
+- retencion — Retención de clientes
+- seguridad — Seguridad
+- sequences — Secuencias de mensajes
+- sessions — Sesiones
+- settings — Ajustes
+- social-growth — Crecimiento en redes sociales
+- suscripcion — Suscripción
+- transformacion — Transformación de marca
+- websites — Sitios web
 
 ## Routing Rules
 
@@ -196,6 +247,8 @@ You can perform these actions by returning a JSON response:
 - NEVER make up agents that don't exist in the list.
 - If the user asks what's active/inactive, or a capability relevant to their goal is OFF per "Real Capability Status" above, tell them plainly and point them to "Mapa de Interacciones del Cerebro → Activar/Desactivar" to turn it on. Only state what that block actually says — never guess ON/OFF state.
 - When teaching a sales tactic, framework, or principle, ground your answer in "Relevant Knowledge From the Internal Library" above when it has something relevant, instead of inventing technique names from scratch.
+- Tailor agent suggestions, playbooks, and advice to the business's real industry/niche/sales model from "Business Context" above when it's available — a B2B SaaS and a local fashion retailer need different agents and different advice for the same request. If Business Context is empty, ask a brief clarifying question about their business instead of assuming.
+- If the user's goal maps to a real dashboard section not covered by the other actions, use NAVIGATE with the exact slug from "System Sections for Navigation" above — never invent a target that isn't in that list.
 - ALWAYS return valid JSON."""
 
 
@@ -248,6 +301,24 @@ class SellIAOrchestrator:
         except Exception:
             return "Estado de capacidades no disponible en este momento."
 
+    async def _build_business_context(self, business_id: Optional[str]) -> str:
+        """Real business profile (industry, niche, target audience, value
+        proposition, sales model, goals, active channels, catalog preview)
+        via the same formatter 11 specialized agent services already use
+        (see app/domains/agents/prompts/business_context_adapter.py and
+        context_builder.py) -- lets the chat brain tailor advice to what
+        this specific business actually is, instead of generic answers.
+        Gracefully degrades to "" for anonymous chats or businesses with no
+        BusinessContext filled in yet (get_agent_prompt_context already
+        handles both -- this is just a thin, defensive call site)."""
+        if not business_id:
+            return ""
+        try:
+            ctx = await get_agent_prompt_context(self.db, business_id)
+            return format_business_context_for_prompt(ctx)
+        except Exception:
+            return ""
+
     async def _build_knowledge_context(self, business_id: Optional[str], user_input: str) -> str:
         """Best-effort grounding in the real sales/negotiation/persuasion
         library (backend/app/core/knowledge/) via the existing
@@ -287,12 +358,14 @@ class SellIAOrchestrator:
         conversation_history: Optional[List[Dict[str, str]]] = None,
         capability_status: str = "",
         knowledge_context: str = "",
+        business_context: str = "",
     ) -> List:
         """Build LangChain messages for LLM invocation."""
         system_prompt = SELLIA_SYSTEM_PROMPT.format(
             agents_summary=agents_summary,
             capability_status=capability_status or "No disponible.",
             knowledge_context=knowledge_context or "(sin resultados relevantes en la biblioteca para este mensaje)",
+            business_context=business_context or "(sin perfil de negocio disponible -- respondé en general o preguntá por su rubro/nicho si hace falta)",
         )
         messages = [SystemMessage(content=system_prompt)]
 
@@ -319,10 +392,12 @@ class SellIAOrchestrator:
         agents_summary = self._build_agents_summary(personalities)
         capability_status = await self._build_capability_context(business_id)
         knowledge_context = await self._build_knowledge_context(business_id, user_input)
+        business_context = await self._build_business_context(business_id)
 
         messages = self._build_llm_messages(
             user_input, agents_summary, conversation_history,
             capability_status=capability_status, knowledge_context=knowledge_context,
+            business_context=business_context,
         )
 
         try:
@@ -375,10 +450,12 @@ class SellIAOrchestrator:
         agents_summary = self._build_agents_summary(personalities)
         capability_status = await self._build_capability_context(business_id)
         knowledge_context = await self._build_knowledge_context(business_id, user_input)
+        business_context = await self._build_business_context(business_id)
 
         messages = self._build_llm_messages(
             user_input, agents_summary, conversation_history,
             capability_status=capability_status, knowledge_context=knowledge_context,
+            business_context=business_context,
         )
 
         api_key = await self._resolve_api_key(user_id)
