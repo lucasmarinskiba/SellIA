@@ -67,6 +67,15 @@ export default function CanalesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBusiness])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('connected')) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (selectedBusiness) loadChannels()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBusiness])
+
   const loadBusinesses = async () => {
     try {
       const data = await businessApi.list()
@@ -129,6 +138,18 @@ export default function CanalesPage() {
     }
   }
 
+  const [connectingML, setConnectingML] = useState(false)
+  const handleConnectMercadoLibre = async () => {
+    setConnectingML(true)
+    try {
+      const { auth_url } = await channelsApi.authUrl(selectedBusiness, 'mercadolibre' as ChannelPlatform)
+      window.location.href = auth_url
+    } catch {
+      alert('No se pudo iniciar la conexión con Mercado Libre. Probá de nuevo en un momento.')
+      setConnectingML(false)
+    }
+  }
+
   const copyWebhook = (url: string, id: string) => {
     navigator.clipboard.writeText(url)
     setCopiedId(id)
@@ -164,14 +185,7 @@ export default function CanalesPage() {
           </>
         )
       case 'mercadolibre':
-        return (
-          <>
-            <Field label="Client ID" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
-            <Field label="Client Secret" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
-            <Field label="Redirect URI" value={newChannel.credentials.redirect_uri || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, redirect_uri: v } })} placeholder="https://tudominio.com/callback" />
-            <p className="text-xs text-white/30">Después de guardar, usá el botón de OAuth para conectar.</p>
-          </>
-        )
+        return null
       case 'telegram':
         return (
           <>
@@ -380,36 +394,63 @@ export default function CanalesPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs text-white/40 mb-1 block">Nombre</label>
-                  <input
-                    type="text"
-                    value={newChannel.name}
-                    onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
-                    placeholder="Ej: WhatsApp Principal"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-white/60">Credenciales</p>
-                  {renderCredentialFields()}
-                </div>
-                <div className="flex items-center justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors"
-                  >
-                    Guardar
-                  </button>
-                </div>
+                {newChannel.platform === 'mercadolibre' ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-white/50">
+                      Sin claves ni configuración manual: hacé clic y autorizá tu cuenta de Mercado Libre.
+                    </p>
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddModal(false)}
+                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConnectMercadoLibre}
+                        disabled={connectingML}
+                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
+                      >
+                        {connectingML ? 'Conectando…' : 'Conectar con Mercado Libre'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs text-white/40 mb-1 block">Nombre</label>
+                      <input
+                        type="text"
+                        value={newChannel.name}
+                        onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/20"
+                        placeholder="Ej: WhatsApp Principal"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-white/60">Credenciales</p>
+                      {renderCredentialFields()}
+                    </div>
+                    <div className="flex items-center justify-end gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddModal(false)}
+                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </>
+                )}
               </form>
             </motion.div>
           </motion.div>
