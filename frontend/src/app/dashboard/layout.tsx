@@ -43,15 +43,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleAddAccount = (): void => { void logout() }
 
   // Compact inline form -- POST /business-context already supports a
-  // partial update (city/address/country) without touching the full
-  // BusinessContextWizard multi-step flow.
+  // partial update (city/address/country/geographic_reach/target_countries)
+  // without touching the full BusinessContextWizard multi-step flow. The
+  // "Alcance" select is what the user explicitly confirms/overrides --
+  // the assistant only ever GUESSES a reach from connected marketplaces
+  // (Mercado Libre/Amazon) when this hasn't been set, per orchestrator.py's
+  // _build_market_reach_context.
   const [addressOpen, setAddressOpen] = useState(false)
   const [addressCity, setAddressCity] = useState('')
   const [addressStreet, setAddressStreet] = useState('')
+  const [reach, setReach] = useState('')
+  const [targetCountries, setTargetCountries] = useState('')
   const [addressSaving, setAddressSaving] = useState(false)
   const [addressSaved, setAddressSaved] = useState(false)
   const handleSaveAddress = async (): Promise<void> => {
-    if (!business?.id || (!addressCity.trim() && !addressStreet.trim())) return
+    if (!business?.id || (!addressCity.trim() && !addressStreet.trim() && !reach && !targetCountries.trim())) return
     setAddressSaving(true)
     setAddressSaved(false)
     try {
@@ -59,6 +65,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         city: addressCity.trim() || undefined,
         address: addressStreet.trim() || undefined,
         country: 'Argentina',
+        geographic_reach: reach || undefined,
+        target_countries: targetCountries.trim()
+          ? targetCountries.split(',').map(c => c.trim()).filter(Boolean)
+          : undefined,
       })
       setAddressSaved(true)
     } catch {
@@ -266,6 +276,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         placeholder="Dirección"
                         className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                       />
+                      <select
+                        value={reach}
+                        onChange={e => { setReach(e.target.value); setAddressSaved(false) }}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                      >
+                        <option value="">Alcance (dejá que SellIA sugiera)</option>
+                        <option value="local">Local</option>
+                        <option value="regional">Regional</option>
+                        <option value="national">Nacional</option>
+                        <option value="cross_border">Internacional (países específicos)</option>
+                        <option value="global">Global</option>
+                      </select>
+                      {reach === 'cross_border' && (
+                        <input
+                          value={targetCountries}
+                          onChange={e => { setTargetCountries(e.target.value); setAddressSaved(false) }}
+                          placeholder="Países (separados por coma): México, Colombia"
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        />
+                      )}
                       <button
                         onClick={() => { void handleSaveAddress() }}
                         disabled={addressSaving || !business?.id}
