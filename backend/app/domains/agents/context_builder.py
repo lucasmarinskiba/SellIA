@@ -222,6 +222,15 @@ class BusinessContextBuilder:
                 parts.append(f"Sales Model: {enriched['sales_model']}")
             if enriched.get("geographic_reach"):
                 parts.append(f"Geographic Reach: {enriched['geographic_reach']}")
+            # city/state/country/target_countries were already fetched above
+            # but never made it into this string -- the model only ever saw
+            # the coarse geographic_reach enum, never WHERE the business
+            # actually is or which countries it's targeting.
+            location_bits = [b for b in (enriched.get("city"), enriched.get("state_province"), enriched.get("country")) if b]
+            if location_bits:
+                parts.append(f"Location: {', '.join(location_bits)}")
+            if enriched.get("target_countries"):
+                parts.append(f"Target Countries: {', '.join(enriched['target_countries'])}")
             if enriched.get("presence_type"):
                 parts.append(f"Presence: {enriched['presence_type']}")
             if enriched.get("primary_goal"):

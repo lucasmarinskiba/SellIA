@@ -48,6 +48,10 @@ Your mission: help users accomplish their goals by understanding their intent, a
 
 {business_context}
 
+## Market Reach (where they should be finding customers)
+
+{market_reach}
+
 ## Relevant Knowledge From the Internal Library
 
 {knowledge_context}
@@ -249,6 +253,7 @@ Use the exact slug as `target` in NAVIGATE — every one of these is a real, exi
 - When teaching a sales tactic, framework, or principle, ground your answer in "Relevant Knowledge From the Internal Library" above when it has something relevant, instead of inventing technique names from scratch.
 - Tailor agent suggestions, playbooks, and advice to the business's real industry/niche/sales model from "Business Context" above when it's available — a B2B SaaS and a local fashion retailer need different agents and different advice for the same request. If Business Context is empty, ask a brief clarifying question about their business instead of assuming.
 - If the user's goal maps to a real dashboard section not covered by the other actions, use NAVIGATE with the exact slug from "System Sections for Navigation" above — never invent a target that isn't in that list.
+- When recommending acquisition/ads/SEO tactics, scope them to "Market Reach" above. If it states a CONFIRMED reach (the user set it explicitly), follow that, never a platform guess. If it only offers a SUGGESTED reach (inferred from a connected marketplace), mention it as a suggestion in plain language and offer to confirm/change it via the account menu's address settings — never state it as settled fact.
 - ALWAYS return valid JSON."""
 
 
@@ -319,6 +324,64 @@ class SellIAOrchestrator:
         except Exception:
             return ""
 
+    # Curated, explicit platform -> reach hints -- only for the marketplaces
+    # with an obviously dominant home market. Not a big fabricated table:
+    # deliberately small, and always phrased as a suggestion (see the
+    # "Market Reach" routing rule), never asserted as fact.
+    _PLATFORM_REACH_HINTS = {
+        "mercadolibre": "probablemente alcance nacional en {country} (Mercado Libre opera por país)",
+        "amazon": "probablemente Estados Unidos, y posiblemente también México/Canadá si vende en Amazon.com.mx o Amazon.ca",
+    }
+
+    async def _build_market_reach_context(self, business_id: Optional[str]) -> str:
+        """Where this business should actually be looking for customers --
+        the user's own confirmed geographic_reach/target_countries when
+        they've set them (real signal, always wins), else a suggestion
+        inferred from which marketplaces are actually CONNECTED (real
+        ChannelConnection rows, not the separate self-reported/unsynced
+        BusinessContext.channels_configured checkbox). Gracefully degrades
+        to "" with nothing to go on."""
+        if not business_id:
+            return ""
+        try:
+            from app.domains.business_context.models import BusinessContext
+            from app.domains.channels.models import ChannelConnection, ChannelStatus
+
+            ctx_result = await self.db.execute(
+                select(BusinessContext).where(
+                    BusinessContext.business_id == business_id,
+                    BusinessContext.is_active == True,  # noqa: E712
+                )
+            )
+            ctx = ctx_result.scalar_one_or_none()
+
+            # geographic_reach defaults to "local" for every row, so it can't
+            # distinguish "never touched" from "explicitly chose local" --
+            # only treat a NON-default value as a real, confirmed signal.
+            if ctx and ctx.geographic_reach and ctx.geographic_reach.value != "local":
+                countries = f" ({', '.join(ctx.target_countries)})" if ctx.target_countries else ""
+                return f"CONFIRMADO por el usuario: alcance '{ctx.geographic_reach.value}'{countries}. Nunca sugieras otro alcance sobre esto."
+
+            country = (ctx.country if ctx and ctx.country else "tu país")
+
+            channels_result = await self.db.execute(
+                select(ChannelConnection.platform).where(
+                    ChannelConnection.business_id == business_id,
+                    ChannelConnection.status == ChannelStatus.CONNECTED,
+                )
+            )
+            connected = {p.value for p in channels_result.scalars().all()}
+            hints = [
+                self._PLATFORM_REACH_HINTS[slug].format(country=country)
+                for slug in connected
+                if slug in self._PLATFORM_REACH_HINTS
+            ]
+            if not hints:
+                return "Sin alcance geográfico confirmado ni marketplaces conectados que sugieran uno -- preguntá qué alcance busca el usuario antes de asumir."
+            return "SUGERENCIA (sin confirmar todavía) según sus marketplaces conectados: " + "; ".join(hints)
+        except Exception:
+            return ""
+
     async def _build_knowledge_context(self, business_id: Optional[str], user_input: str) -> str:
         """Best-effort grounding in the real sales/negotiation/persuasion
         library (backend/app/core/knowledge/) via the existing
@@ -359,6 +422,7 @@ class SellIAOrchestrator:
         capability_status: str = "",
         knowledge_context: str = "",
         business_context: str = "",
+        market_reach: str = "",
     ) -> List:
         """Build LangChain messages for LLM invocation."""
         system_prompt = SELLIA_SYSTEM_PROMPT.format(
@@ -366,6 +430,7 @@ class SellIAOrchestrator:
             capability_status=capability_status or "No disponible.",
             knowledge_context=knowledge_context or "(sin resultados relevantes en la biblioteca para este mensaje)",
             business_context=business_context or "(sin perfil de negocio disponible -- respondé en general o preguntá por su rubro/nicho si hace falta)",
+            market_reach=market_reach or "Sin datos de alcance geográfico -- preguntá qué mercado/región busca el usuario antes de asumir.",
         )
         messages = [SystemMessage(content=system_prompt)]
 
@@ -393,11 +458,12 @@ class SellIAOrchestrator:
         capability_status = await self._build_capability_context(business_id)
         knowledge_context = await self._build_knowledge_context(business_id, user_input)
         business_context = await self._build_business_context(business_id)
+        market_reach = await self._build_market_reach_context(business_id)
 
         messages = self._build_llm_messages(
             user_input, agents_summary, conversation_history,
             capability_status=capability_status, knowledge_context=knowledge_context,
-            business_context=business_context,
+            business_context=business_context, market_reach=market_reach,
         )
 
         try:
@@ -451,11 +517,12 @@ class SellIAOrchestrator:
         capability_status = await self._build_capability_context(business_id)
         knowledge_context = await self._build_knowledge_context(business_id, user_input)
         business_context = await self._build_business_context(business_id)
+        market_reach = await self._build_market_reach_context(business_id)
 
         messages = self._build_llm_messages(
             user_input, agents_summary, conversation_history,
             capability_status=capability_status, knowledge_context=knowledge_context,
-            business_context=business_context,
+            business_context=business_context, market_reach=market_reach,
         )
 
         api_key = await self._resolve_api_key(user_id)
