@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from uuid import UUID
@@ -225,12 +226,16 @@ async def get_oauth_url(
 ):
     """Generate OAuth authorization URL for supported platforms."""
     await _get_business_for_user(business_id, current_user, db)
-    
+
     base_callback = settings.FRONTEND_URL or "http://localhost:3000"
     redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
-    
+
     if platform == ChannelPlatform.MERCADOLIBRE:
-        # Find existing channel to get client_id
+        # App propia de SellIA (una sola, registrada una vez) -- el usuario
+        # final nunca crea ni pega client_id/secret, solo autoriza su cuenta.
+        if not settings.MERCADO_LIBRE_CLIENT_ID:
+            raise HTTPException(status_code=503, detail="Mercado Libre no está configurado en el servidor todavía")
+
         result = await db.execute(
             select(ChannelConnection).where(
                 ChannelConnection.business_id == business_id,
@@ -239,17 +244,26 @@ async def get_oauth_url(
             )
         )
         channel = result.scalar_one_or_none()
-        if not channel or not channel.credentials.get("client_id"):
-            raise HTTPException(status_code=400, detail="Configure client_id en las credenciales del canal")
-        
-        client_id = channel.credentials["client_id"]
+        if not channel:
+            channel = ChannelConnection(
+                business_id=business_id,
+                platform=ChannelPlatform.MERCADOLIBRE,
+                name="Mercado Libre",
+                credentials={},
+                status=ChannelStatus.PENDING,
+                is_active=True,
+            )
+            db.add(channel)
+            await db.flush()
+
         auth_url = "https://auth.mercadolibre.com.ar/authorization"
         params = {
             "response_type": "code",
-            "client_id": client_id,
-            "redirect_uri": redirect_uri,
+            "client_id": settings.MERCADO_LIBRE_CLIENT_ID,
+            "redirect_uri": settings.MERCADO_LIBRE_REDIRECT_URI or redirect_uri,
             "state": str(channel.id),
         }
+        await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
     
     elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
@@ -310,20 +324,18 @@ async def oauth_callback(
     redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
     
     if platform == ChannelPlatform.MERCADOLIBRE:
-        client_id = channel.credentials.get("client_id")
-        client_secret = channel.credentials.get("client_secret")
-        if not client_id or not client_secret:
-            raise HTTPException(status_code=400, detail="Faltan client_id o client_secret")
-        
+        if not settings.MERCADO_LIBRE_CLIENT_ID or not settings.MERCADO_LIBRE_CLIENT_SECRET:
+            raise HTTPException(status_code=503, detail="Mercado Libre no está configurado en el servidor todavía")
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 "https://api.mercadolibre.com/oauth/token",
                 data={
                     "grant_type": "authorization_code",
-                    "client_id": client_id,
-                    "client_secret": client_secret,
+                    "client_id": settings.MERCADO_LIBRE_CLIENT_ID,
+                    "client_secret": settings.MERCADO_LIBRE_CLIENT_SECRET,
                     "code": code,
-                    "redirect_uri": redirect_uri,
+                    "redirect_uri": settings.MERCADO_LIBRE_REDIRECT_URI or redirect_uri,
                 },
             )
             if response.status_code != 200:
@@ -335,8 +347,8 @@ async def oauth_callback(
             channel.credentials["seller_id"] = str(data.get("user_id", ""))
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
-            return {"status": "connected", "platform": platform.value}
-    
+            return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected=mercadolibre")
+
     elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
         app_id = channel.credentials.get("app_id")
         app_secret = channel.credentials.get("app_secret")

@@ -57,4 +57,8 @@ export const channelsApi = {
     const res = await api.post(`/businesses/${businessId}/channels/${channelId}/test`)
     return res.data
   },
+  authUrl: async (businessId: string, platform: ChannelPlatform): Promise<{ auth_url: string }> => {
+    const res = await api.get(`/businesses/${businessId}/channels/${platform}/auth-url`)
+    return res.data
+  },
 }
