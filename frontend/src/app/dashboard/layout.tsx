@@ -7,11 +7,12 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Menu, X, Settings, Home, ShoppingCart, Package, BarChart3, LogOut, Plug,
   TrendingUp, Award, Store, MessageSquare, Brain, ChevronDown, UserPlus,
-  MapPin, CreditCard, Briefcase, Check, Loader2,
+  MapPin, CreditCard, Briefcase, Check, Loader2, LogIn, Eye, EyeOff,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
 import { api } from '@/lib/api'
+import { auth } from '@/lib/auth'
 
 // Same chat widget as /sellia-brain (dock prop = same docked-right design,
 // same conversation history) -- lazy-loaded client-side only, it touches
@@ -21,7 +22,50 @@ const SellIAAssistant = dynamic(() => import('@/components/SellIAAssistant'), { 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const pathname = usePathname()
-  const { user, loading, logout } = useAuth()
+  const { user, loading, logout, refetch } = useAuth()
+
+  // ── Login modal (real email+password against POST /auth/login, the
+  // same cookie-setting endpoint register.tsx already uses successfully --
+  // /login the standalone page currently calls a different broken one, see
+  // spawn_task flagged separately). Opens inline instead of navigating
+  // away so the user never loses their place on /dashboard. ──
+  const [loginModalOpen, setLoginModalOpen] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginTfaCode, setLoginTfaCode] = useState('')
+  const [loginNeeds2fa, setLoginNeeds2fa] = useState(false)
+  const [loginShowPassword, setLoginShowPassword] = useState(false)
+  const [loginSubmitting, setLoginSubmitting] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const closeLoginModal = (): void => {
+    setLoginModalOpen(false)
+    setLoginEmail(''); setLoginPassword(''); setLoginTfaCode('')
+    setLoginNeeds2fa(false); setLoginError(null); setLoginShowPassword(false)
+  }
+  const handleLoginSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    setLoginSubmitting(true)
+    setLoginError(null)
+    try {
+      await auth.login({
+        email: loginEmail.trim(),
+        password: loginPassword,
+        tfaCode: loginTfaCode.trim() || undefined,
+      })
+      await refetch()
+      closeLoginModal()
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      if (detail === '2FA_REQUIRED') {
+        setLoginNeeds2fa(true)
+        setLoginError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
+      } else {
+        setLoginError(typeof detail === 'string' ? detail : 'Email o contraseña incorrectos.')
+      }
+    } finally {
+      setLoginSubmitting(false)
+    }
+  }
 
   // ── Account dropdown (Google-style: switch/add account, address, plan) ──
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
@@ -196,21 +240,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="relative" ref={accountMenuRef}>
-            <button
+            {/* A <button> can't legally contain another interactive control
+                (the "Iniciar sesión" link needs its own <button> below) --
+                div+role="button" instead of a real <button> avoids that
+                invalid-nesting/hydration error while staying keyboard/AT
+                accessible. */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setAccountMenuOpen(v => !v)}
-              className="flex items-center gap-4 p-1.5 pr-2 rounded-full hover:bg-slate-100 transition-colors"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAccountMenuOpen(v => !v) } }}
+              className="flex items-center gap-4 p-1.5 pr-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               aria-expanded={accountMenuOpen}
             >
               <div className="text-right">
                 <p className="font-semibold text-slate-900">{accountName || '—'}</p>
                 {!loading && !user ? (
-                  <Link
-                    href="/login"
-                    onClick={e => e.stopPropagation()}
+                  <button
+                    onClick={e => { e.stopPropagation(); setLoginModalOpen(true) }}
                     className="text-xs text-cyan-600 font-medium hover:underline"
                   >
                     {accountSubtitle}
-                  </Link>
+                  </button>
                 ) : (
                   <p className="text-xs text-slate-500">{accountSubtitle}</p>
                 )}
@@ -219,7 +270,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {(ownName || user?.full_name || user?.email || '?').trim().charAt(0).toUpperCase()}
               </div>
               <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
+            </div>
 
             {accountMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
@@ -232,13 +283,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {user?.email && <p className="text-xs text-slate-500">{user.email}</p>}
                   {business?.name && <p className="text-xs text-slate-400 mt-0.5">{business.name}</p>}
                   {!loading && !user && (
-                    <Link
-                      href="/login"
-                      onClick={() => setAccountMenuOpen(false)}
+                    <button
+                      onClick={() => { setAccountMenuOpen(false); setLoginModalOpen(true) }}
                       className="mt-3 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
                     >
                       Iniciar sesión
-                    </Link>
+                    </button>
                   )}
                 </div>
 
@@ -348,6 +398,80 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <SellIAAssistant businessId={business?.id} dock />
+
+      {loginModalOpen && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={closeLoginModal}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <LogIn size={18} /> Iniciar sesión
+              </h2>
+              <button onClick={closeLoginModal} className="p-1 hover:bg-slate-100 rounded-lg">
+                <X size={18} className="text-slate-400" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Entrá con el mail y contraseña de tu cuenta SellIA.</p>
+
+            <form onSubmit={e => { void handleLoginSubmit(e) }} className="space-y-3">
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+              <div className="relative">
+                <input
+                  type={loginShowPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  className="w-full px-3 py-2.5 pr-10 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLoginShowPassword(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label={loginShowPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {loginShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {loginNeeds2fa && (
+                <input
+                  value={loginTfaCode}
+                  onChange={e => setLoginTfaCode(e.target.value)}
+                  placeholder="Código 2FA"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+              )}
+              {loginError && <p className="text-xs text-red-600">{loginError}</p>}
+              <button
+                type="submit"
+                disabled={loginSubmitting}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500 to-pink-500 text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {loginSubmitting && <Loader2 size={14} className="animate-spin" />}
+                {loginSubmitting ? 'Entrando…' : 'Entrar'}
+              </button>
+            </form>
+
+            <p className="text-xs text-slate-400 mt-4 text-center">
+              ¿No tenés cuenta? <Link href="/register" onClick={closeLoginModal} className="text-cyan-600 hover:underline">Registrate</Link>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
