@@ -13,12 +13,22 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, Package, ExternalLink, RefreshCw } from 'lucide-react'
+import { Plus, Loader2, Package, ExternalLink, RefreshCw, Search, Flame } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
 import { commerceApi, type PlatformRow } from '@/lib/platformCommerce'
 
 type CatalogItemType = 'service' | 'good' | 'digital'
+
+interface CatalogItemSeo {
+  title: string
+  meta_description: string
+}
+
+interface CatalogItemFomo {
+  headline: string
+  angle: 'scarcity' | 'value'
+}
 
 interface CatalogItemRow {
   id: string
@@ -30,7 +40,7 @@ interface CatalogItemRow {
   currency: string
   stock: number | null
   is_available: boolean
-  extra_data: Record<string, unknown>
+  extra_data: Record<string, unknown> & { seo?: CatalogItemSeo; fomo?: CatalogItemFomo }
 }
 
 interface SyncPullResult {
@@ -54,6 +64,8 @@ export default function ListingsPage() {
   const [platforms, setPlatforms] = useState<PlatformRow[]>([])
   const [syncing, setSyncing] = useState(false)
   const [syncResults, setSyncResults] = useState<SyncPullResult[] | null>(null)
+  const [seoLoadingId, setSeoLoadingId] = useState<string | null>(null)
+  const [fomoLoadingId, setFomoLoadingId] = useState<string | null>(null)
 
   const businessId = snapshot?.business.id ?? null
 
@@ -93,6 +105,32 @@ export default function ListingsPage() {
       setSyncResults([{ platform: '', success: false, message: 'No se pudo sincronizar. Probá de nuevo en un momento.', items_synced: 0 }])
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleSeoOptimize = async (itemId: string): Promise<void> => {
+    if (!businessId) return
+    setSeoLoadingId(itemId)
+    try {
+      const res = await api.post<CatalogItemRow>(`/catalog/${businessId}/items/${itemId}/seo-optimize`)
+      setItems(prev => prev.map(it => it.id === itemId ? res.data : it))
+    } catch {
+      alert('No se pudo generar el SEO. Probá de nuevo en un momento.')
+    } finally {
+      setSeoLoadingId(null)
+    }
+  }
+
+  const handleFomoGenerate = async (itemId: string): Promise<void> => {
+    if (!businessId) return
+    setFomoLoadingId(itemId)
+    try {
+      const res = await api.post<CatalogItemRow>(`/catalog/${businessId}/items/${itemId}/fomo-generate`)
+      setItems(prev => prev.map(it => it.id === itemId ? res.data : it))
+    } catch {
+      alert('No se pudo generar el FOMO. Probá de nuevo en un momento.')
+    } finally {
+      setFomoLoadingId(null)
     }
   }
 
@@ -186,12 +224,25 @@ export default function ListingsPage() {
                     <th className="text-left py-2 px-2 text-slate-600 font-medium">Precio</th>
                     <th className="text-left py-2 px-2 text-slate-600 font-medium">Stock</th>
                     <th className="text-left py-2 px-2 text-slate-600 font-medium">Estado</th>
+                    <th className="text-left py-2 px-2 text-slate-600 font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map(it => (
                     <tr key={it.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-2 text-slate-900 font-medium">{it.name}</td>
+                      <td className="py-3 px-2 text-slate-900 font-medium">
+                        {it.name}
+                        {it.extra_data?.seo?.title && (
+                          <p className="text-xs text-blue-600 font-normal mt-0.5" title={it.extra_data.seo.meta_description}>
+                            SEO: {it.extra_data.seo.title}
+                          </p>
+                        )}
+                        {it.extra_data?.fomo?.headline && (
+                          <p className={`text-xs font-normal mt-0.5 ${it.extra_data.fomo.angle === 'scarcity' ? 'text-orange-600' : 'text-slate-500'}`}>
+                            {it.extra_data.fomo.angle === 'scarcity' ? '🔥 ' : '✨ '}{it.extra_data.fomo.headline}
+                          </p>
+                        )}
+                      </td>
                       <td className="py-3 px-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${TYPE_COLOR[it.type]}`}>
                           {TYPE_LABEL[it.type]}
@@ -215,6 +266,26 @@ export default function ListingsPage() {
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                           {it.is_available ? 'Disponible' : 'Pausado'}
                         </span>
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleSeoOptimize(it.id)}
+                            disabled={seoLoadingId === it.id}
+                            title="Optimizar SEO"
+                            className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 disabled:opacity-50"
+                          >
+                            {seoLoadingId === it.id ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                          </button>
+                          <button
+                            onClick={() => handleFomoGenerate(it.id)}
+                            disabled={fomoLoadingId === it.id}
+                            title="Generar FOMO"
+                            className="p-1.5 rounded-lg hover:bg-orange-50 text-slate-400 hover:text-orange-600 disabled:opacity-50"
+                          >
+                            {fomoLoadingId === it.id ? <Loader2 size={14} className="animate-spin" /> : <Flame size={14} />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

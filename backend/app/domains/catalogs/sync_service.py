@@ -16,6 +16,7 @@ from app.domains.catalogs.models import CatalogItem
 from app.domains.channels.models import ChannelConnection, ChannelPlatform
 from app.domains.channels.connectors import get_connector
 from app.domains.platform_commerce import capabilities as platform_capabilities
+from app.domains.catalogs.classifier import classify_catalog_item
 
 
 class CatalogSyncResult:
@@ -165,12 +166,33 @@ class CatalogSyncService:
 
                     fields = self._platform_product_fields(product, platform)
                     if existing:
+                        # name/type/category excluded: keep whatever the
+                        # seller edited (a manual rename, or a correction to
+                        # what the AI classifier guessed) -- price/stock/
+                        # availability/images do still refresh from the
+                        # platform on every re-sync.
                         for key, value in fields.items():
-                            if key == "name":  # keep the seller's own rename if they changed it
+                            if key in ("name", "type", "category"):
                                 continue
                             setattr(existing, key, value)
                         updated += 1
                     else:
+                        # Best-effort real classification instead of the
+                        # type="good" this always defaulted to -- a legal
+                        # service or a videogame both used to land in the
+                        # catalog labeled "good". Only run on brand-new
+                        # items (not every re-sync) to avoid re-classifying
+                        # -- and silently overriding -- something the seller
+                        # already corrected by hand.
+                        try:
+                            item_type, category, _confidence = await classify_catalog_item(
+                                self.db, business_id, fields["name"], fields.get("description", ""),
+                            )
+                            fields["type"] = item_type
+                            fields["category"] = fields.get("category") or category
+                        except Exception:
+                            pass  # keeps the platform-mapper's own fallback
+
                         item = CatalogItem(
                             business_id=business_id,
                             source_platform=platform.value,
