@@ -61,4 +61,15 @@ export const channelsApi = {
     const res = await api.get(`/businesses/${businessId}/channels/${platform}/auth-url`)
     return res.data
   },
+  whatsappEmbeddedSignupConfig: async (businessId: string): Promise<{ app_id: string }> => {
+    const res = await api.get(`/businesses/${businessId}/channels/whatsapp/embedded-signup-config`)
+    return res.data
+  },
+  whatsappEmbeddedSignup: async (
+    businessId: string,
+    data: { code: string; waba_id: string; phone_number_id: string },
+  ): Promise<{ status: string; platform: string }> => {
+    const res = await api.post(`/businesses/${businessId}/channels/whatsapp/embedded-signup`, data)
+    return res.data
+  },
 }

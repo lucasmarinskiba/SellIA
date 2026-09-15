@@ -164,6 +164,72 @@ export default function CanalesPage() {
     }
   }
 
+  // WhatsApp can't use the plain redirect flow above -- a phone_number_id
+  // only comes back through Meta's own Embedded Signup popup (Facebook JS
+  // SDK), which delivers it via postMessage rather than a query param.
+  const [connectingWhatsApp, setConnectingWhatsApp] = useState(false)
+  const loadFacebookSdk = (appId: string): Promise<any> =>
+    new Promise(resolve => {
+      const w = window as any
+      if (w.FB) { resolve(w.FB); return }
+      w.fbAsyncInit = () => {
+        w.FB.init({ appId, version: 'v18.0', xfbml: false })
+        resolve(w.FB)
+      }
+      if (!document.getElementById('facebook-jssdk')) {
+        const script = document.createElement('script')
+        script.id = 'facebook-jssdk'
+        script.src = 'https://connect.facebook.net/es_LA/sdk.js'
+        script.async = true
+        document.body.appendChild(script)
+      }
+    })
+  const handleConnectWhatsApp = async () => {
+    setConnectingWhatsApp(true)
+    try {
+      const { app_id } = await channelsApi.whatsappEmbeddedSignupConfig(selectedBusiness)
+      const FB = await loadFacebookSdk(app_id)
+
+      let wabaData: { waba_id?: string; phone_number_id?: string } = {}
+      const onMessage = (event: MessageEvent) => {
+        if (event.origin !== 'https://www.facebook.com') return
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
+            wabaData = { waba_id: data.data?.waba_id, phone_number_id: data.data?.phone_number_id }
+          }
+        } catch { /* not a WA Embedded Signup message */ }
+      }
+      window.addEventListener('message', onMessage)
+
+      FB.login((response: any) => {
+        window.removeEventListener('message', onMessage)
+        const code = response?.authResponse?.code
+        if (!code || !wabaData.waba_id || !wabaData.phone_number_id) {
+          alert('No se completó la conexión con WhatsApp. Probá de nuevo y no cierres el popup hasta el final.')
+          setConnectingWhatsApp(false)
+          return
+        }
+        channelsApi.whatsappEmbeddedSignup(selectedBusiness, {
+          code,
+          waba_id: wabaData.waba_id,
+          phone_number_id: wabaData.phone_number_id,
+        }).then(() => {
+          setShowAddModal(false)
+          loadChannels()
+        }).catch(() => {
+          alert('WhatsApp autorizó pero no se pudo guardar la conexión. Probá de nuevo en un momento.')
+        }).finally(() => setConnectingWhatsApp(false))
+      }, {
+        scope: 'whatsapp_business_management,whatsapp_business_messaging',
+        extras: { feature: 'whatsapp_embedded_signup', sessionInfoVersion: '3' },
+      })
+    } catch {
+      alert('No se pudo iniciar la conexión con WhatsApp. Probá de nuevo en un momento.')
+      setConnectingWhatsApp(false)
+    }
+  }
+
   const copyWebhook = (url: string, id: string) => {
     navigator.clipboard.writeText(url)
     setCopiedId(id)
@@ -461,7 +527,30 @@ export default function CanalesPage() {
                     ))}
                   </select>
                 </div>
-                {ONE_CLICK_PLATFORMS.includes(newChannel.platform) ? (
+                {newChannel.platform === 'whatsapp' ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-white/50">
+                      Sin claves ni configuración manual: hacé clic y elegí (o creá) tu WhatsApp Business en el popup de Meta.
+                    </p>
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddModal(false)}
+                        className="px-4 py-2 rounded-xl text-sm text-white/60 hover:text-white transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConnectWhatsApp}
+                        disabled={connectingWhatsApp}
+                        className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
+                      >
+                        {connectingWhatsApp ? 'Conectando…' : 'Conectar con WhatsApp'}
+                      </button>
+                    </div>
+                  </div>
+                ) : ONE_CLICK_PLATFORMS.includes(newChannel.platform) ? (
                   <div className="space-y-4">
                     <p className="text-sm text-white/50">
                       Sin claves ni configuración manual: hacé clic y autorizá tu cuenta de {platformConfig[newChannel.platform]?.label ?? newChannel.platform}.
