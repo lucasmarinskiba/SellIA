@@ -426,7 +426,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.slate.900)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0px_1000px_white]"
               />
               <div className="relative">
                 <input
@@ -436,7 +436,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
                   placeholder="Contraseña"
-                  className="w-full px-3 py-2.5 pr-10 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                  className="w-full px-3 py-2.5 pr-10 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 [&:-webkit-autofill]:[-webkit-text-fill-color:theme(colors.slate.900)] [&:-webkit-autofill]:[box-shadow:inset_0_0_0px_1000px_white]"
                 />
                 <button
                   type="button"
@@ -452,7 +452,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   value={loginTfaCode}
                   onChange={e => setLoginTfaCode(e.target.value)}
                   placeholder="Código 2FA"
-                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                  className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                 />
               )}
               {loginError && <p className="text-xs text-red-600">{loginError}</p>}
