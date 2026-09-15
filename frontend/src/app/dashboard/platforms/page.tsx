@@ -33,6 +33,17 @@ const PLATFORMS: PlatformCard[] = [
   { id: 'whatsapp', name: 'WhatsApp', description: 'Atención por WhatsApp Business', icon: '💬', matches: ['whatsapp'] },
   { id: 'instagram', name: 'Instagram', description: 'DMs y comentarios de Instagram', icon: '📸', matches: ['instagram'] },
   { id: 'shopify', name: 'Shopify', description: 'Tu tienda Shopify', icon: '🛍️', matches: ['shopify'] },
+  { id: 'tiktok_shop', name: 'TikTok Shop', description: 'Catálogo y pedidos de TikTok Shop', icon: '🎵', matches: ['tiktok_shop'] },
+  { id: 'meta_ads', name: 'Meta Ads', description: 'Catálogo de productos para anuncios', icon: '📢', matches: ['meta_ads'] },
+  { id: 'facebook_marketplace', name: 'Facebook Marketplace', description: 'Ventas en Marketplace', icon: '🏬', matches: ['facebook_marketplace'] },
+  { id: 'messenger', name: 'Facebook Messenger', description: 'Atención por Messenger', icon: '📩', matches: ['messenger'] },
+  { id: 'woocommerce', name: 'WooCommerce', description: 'Tu tienda WordPress', icon: '🛒', matches: ['woocommerce'] },
+  { id: 'etsy', name: 'Etsy', description: 'Productos artesanales y de diseño', icon: '💎', matches: ['etsy'] },
+  { id: 'linkedin', name: 'LinkedIn', description: 'Mensajes de LinkedIn', icon: '💼', matches: ['linkedin'] },
+  { id: 'telegram', name: 'Telegram', description: 'Bot de Telegram', icon: '✈️', matches: ['telegram'] },
+  { id: 'manychat', name: 'ManyChat', description: 'Automatizaciones de ManyChat', icon: '🔁', matches: ['manychat'] },
+  { id: 'email', name: 'Email', description: 'Consultas por email', icon: '✉️', matches: ['email'] },
+  { id: 'webchat', name: 'Chat en tu web', description: 'Chat en tu propio sitio', icon: '💻', matches: ['webchat'] },
 ]
 
 export default function PlatformsPage() {

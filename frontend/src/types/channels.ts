@@ -19,6 +19,10 @@ export type ChannelPlatform =
   | 'woocommerce'
   | 'etsy'
   | 'facebook_marketplace'
+  | 'tiktok_shop'
+  | 'manychat'
+  | 'twitter'
+  | 'threads'
 
 export type ChannelStatus = 'connected' | 'pending' | 'error' | 'disabled'
 
