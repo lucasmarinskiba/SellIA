@@ -469,6 +469,107 @@ async def oauth_callback(
     raise HTTPException(status_code=400, detail=f"OAuth no soportado para {platform.value}")
 
 
+@router.get("/{business_id}/channels/whatsapp/embedded-signup-config")
+async def get_whatsapp_embedded_signup_config(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """App ID for the frontend's Facebook JS SDK -- not a secret, just avoids
+    needing a separate NEXT_PUBLIC_ env var kept in sync with the backend's."""
+    await _get_business_for_user(business_id, current_user, db)
+    if not settings.META_APP_ID:
+        raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+    return {"app_id": settings.META_APP_ID}
+
+
+@router.post("/{business_id}/channels/whatsapp/embedded-signup")
+async def whatsapp_embedded_signup(
+    business_id: UUID,
+    payload: dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Finish WhatsApp's Embedded Signup: the frontend runs FB.login() with
+    the 'whatsapp_embedded_signup' feature (a JS SDK popup, not a redirect --
+    a plain OAuth redirect can't hand back a phone_number_id) and posts here
+    the resulting `code` plus the `waba_id`/`phone_number_id` Meta's popup
+    delivered via postMessage.
+    """
+    import httpx
+
+    await _get_business_for_user(business_id, current_user, db)
+    if not settings.META_APP_ID or not settings.META_APP_SECRET:
+        raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+
+    code = payload.get("code")
+    waba_id = payload.get("waba_id")
+    phone_number_id = payload.get("phone_number_id")
+    if not code or not waba_id or not phone_number_id:
+        raise HTTPException(status_code=400, detail="Faltan datos del popup de WhatsApp (code/waba_id/phone_number_id)")
+
+    async with httpx.AsyncClient() as client:
+        # Embedded Signup's code is exchanged the same way, but without a
+        # redirect_uri -- it never redirected anywhere, the code came back
+        # inside the JS SDK's callback.
+        token_resp = await client.get(
+            "https://graph.facebook.com/v18.0/oauth/access_token",
+            params={
+                "client_id": settings.META_APP_ID,
+                "client_secret": settings.META_APP_SECRET,
+                "code": code,
+            },
+        )
+        if token_resp.status_code != 200:
+            raise HTTPException(status_code=400, detail=f"Error de OAuth: {token_resp.text}")
+        user_token = token_resp.json().get("access_token")
+
+        long_lived_resp = await client.get(
+            "https://graph.facebook.com/v18.0/oauth/access_token",
+            params={
+                "grant_type": "fb_exchange_token",
+                "client_id": settings.META_APP_ID,
+                "client_secret": settings.META_APP_SECRET,
+                "fb_exchange_token": user_token,
+            },
+        )
+        long_lived_token = long_lived_resp.json().get("access_token", user_token) if long_lived_resp.status_code == 200 else user_token
+
+        # Subscribe SellIA's app to this WABA so incoming message webhooks
+        # actually arrive -- without this, the number is registered but mute.
+        await client.post(
+            f"https://graph.facebook.com/v18.0/{waba_id}/subscribed_apps",
+            params={"access_token": long_lived_token},
+        )
+
+    result = await db.execute(
+        select(ChannelConnection).where(
+            ChannelConnection.business_id == business_id,
+            ChannelConnection.platform == ChannelPlatform.WHATSAPP,
+            ChannelConnection.is_active == True,
+        )
+    )
+    channel = result.scalar_one_or_none()
+    if not channel:
+        channel = ChannelConnection(
+            business_id=business_id,
+            platform=ChannelPlatform.WHATSAPP,
+            name="WhatsApp",
+            credentials={},
+            status=ChannelStatus.PENDING,
+            is_active=True,
+        )
+        db.add(channel)
+        await db.flush()
+
+    channel.credentials["api_token"] = long_lived_token
+    channel.credentials["phone_number_id"] = phone_number_id
+    channel.credentials["business_account_id"] = waba_id
+    channel.status = ChannelStatus.CONNECTED
+    await db.commit()
+    return {"status": "connected", "platform": "whatsapp"}
+
+
 # ========== Webhook Verification (GET) ==========
 
 @router.get("/webhook/{platform}", status_code=status.HTTP_200_OK)
