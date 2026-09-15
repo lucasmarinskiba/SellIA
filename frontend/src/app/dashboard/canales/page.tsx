@@ -52,6 +52,7 @@ export default function CanalesPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [connectCancelledNotice, setConnectCancelledNotice] = useState(false)
   const [newChannel, setNewChannel] = useState({
     platform: 'whatsapp' as ChannelPlatform,
     name: '',
@@ -74,6 +75,10 @@ export default function CanalesPage() {
     if (params.get('connected')) {
       window.history.replaceState({}, '', window.location.pathname)
       if (selectedBusiness) loadChannels()
+    }
+    if (params.get('connect_error') === 'cancelled') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setConnectCancelledNotice(true)
     }
     const connect = params.get('connect')
     if (connect) {
@@ -125,7 +130,7 @@ export default function CanalesPage() {
   }
 
   const handleDelete = async (channelId: string) => {
-    if (!confirm('¿Eliminar este canal?')) return
+    if (!confirm('¿Desconectar esta plataforma? Vas a tener que volver a autorizarla si querés reconectarla más adelante.')) return
     try {
       await channelsApi.delete(selectedBusiness, channelId)
       await loadChannels()
@@ -389,6 +394,14 @@ export default function CanalesPage() {
 
   return (
     <div className="space-y-8 max-w-7xl">
+      {connectCancelledNotice && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+          <span>No se conectó nada: cancelaste (o no completaste) la autorización.</span>
+          <button onClick={() => setConnectCancelledNotice(false)} className="text-amber-300/60 hover:text-amber-300">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -458,7 +471,9 @@ export default function CanalesPage() {
                     </span>
                     <button
                       onClick={() => handleDelete(channel.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
+                      title="Desconectar"
+                      aria-label="Desconectar"
+                      className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
