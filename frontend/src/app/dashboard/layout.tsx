@@ -42,14 +42,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setLoginEmail(''); setLoginPassword(''); setLoginTfaCode('')
     setLoginNeeds2fa(false); setLoginError(null); setLoginShowPassword(false)
   }
-  const handleLoginSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
     setLoginSubmitting(true)
     setLoginError(null)
+    // Read the form's real DOM values instead of trusting React state: some
+    // browsers (Chrome autofill in particular) write the autofilled value
+    // straight into the input's DOM value without firing a React onChange,
+    // so loginEmail/loginPassword can silently stay stale/empty while the
+    // field visually looks filled -- every login then fails with a generic
+    // "contraseña incorrecta" even though the user typed the right one.
+    const formData = new FormData(e.currentTarget)
+    const email = (formData.get('email') as string | null)?.trim() || loginEmail.trim()
+    const password = (formData.get('password') as string | null) || loginPassword
     try {
       await auth.login({
-        email: loginEmail.trim(),
-        password: loginPassword,
+        email,
+        password,
         tfaCode: loginTfaCode.trim() || undefined,
       })
       await refetch()
@@ -421,6 +430,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <form onSubmit={e => { void handleLoginSubmit(e) }} className="space-y-3">
               <input
                 type="email"
+                name="email"
                 autoComplete="email"
                 required
                 value={loginEmail}
@@ -431,6 +441,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="relative">
                 <input
                   type={loginShowPassword ? 'text' : 'password'}
+                  name="password"
                   autoComplete="current-password"
                   required
                   value={loginPassword}
