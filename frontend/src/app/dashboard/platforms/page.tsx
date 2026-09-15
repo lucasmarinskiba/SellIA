@@ -96,7 +96,7 @@ export default function PlatformsPage() {
                     </div>
                   ) : (
                     <Link
-                      href="/dashboard/canales"
+                      href={`/dashboard/canales?connect=${p.matches[0]}`}
                       className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
                     >
                       Conectar <ExternalLink size={14} />
