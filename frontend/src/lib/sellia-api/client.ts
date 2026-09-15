@@ -96,11 +96,13 @@ api.interceptors.response.use(
 // every call through authApi.signup/login/me 422'd in production (wrong
 // field names entirely for signup/login, and a nonexistent shape for me).
 export interface AuthResponse {
-  access_token: string
+  // Absent when requires_2fa is true -- login() then needs a second call
+  // with totp_code to actually get one.
+  access_token?: string
   token_type?: string
   user_id: string
-  email: string
-  full_name: string
+  email?: string
+  full_name?: string
   requires_2fa_setup?: boolean
   requires_2fa?: boolean
 }
@@ -128,16 +130,16 @@ export const authApi = {
 
   // /auth/signin (not /auth/login -- that other endpoint takes an
   // OAuth2 form-encoded body and 403s until email verification, neither of
-  // which this JSON/instant-access flow expects). Real accounts with 2FA
-  // enabled get {requires_2fa: true, user_id} back with no access_token;
-  // this client only handles the no-2FA path today, matching every new
-  // signup's default (is_2fa_enabled=false) -- a 2FA account gets a clear
-  // "código 2FA requerido" error here rather than silently failing.
+  // which this JSON/instant-access flow expects). The backend already
+  // supports a real 2FA retry (returns {requires_2fa: true, user_id} with
+  // no access_token when totp_code is missing/wrong, and accepts a
+  // totp_code on the next call) -- this used to throw a dead-end Error
+  // instead of surfacing that shape, so every caller showed a "2FA
+  // activado" message with no way to actually enter the code and finish
+  // logging in. Callers now get the raw response and handle requires_2fa
+  // themselves (show a code input, call login again with totp_code).
   login: async (payload: { email: string; password: string; totp_code?: string }) => {
     const { data } = await api.post<AuthResponse & { requires_2fa?: boolean }>('/auth/signin', payload)
-    if (data.requires_2fa) {
-      throw new Error('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
-    }
     return data
   },
 

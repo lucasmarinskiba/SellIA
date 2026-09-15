@@ -12,13 +12,20 @@ function LoginInner() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [needs2fa, setNeeds2fa] = useState(false)
+  const [totpCode, setTotpCode] = useState('')
   const login = useLogin()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     try {
-      await login.mutateAsync({ email, password })
+      const data = await login.mutateAsync({ email, password, totp_code: needs2fa ? totpCode : undefined })
+      if (data.requires_2fa) {
+        setNeeds2fa(true)
+        setError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
+        return
+      }
       window.location.href = '/dashboard'
     } catch (err: any) {
       const hasResponse = !!err?.response
@@ -58,6 +65,21 @@ function LoginInner() {
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
             />
           </div>
+
+          {needs2fa && (
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-1 block">Código 2FA</label>
+              <input
+                type="text"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                required
+                autoFocus
+                placeholder="123456"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
+              />
+            </div>
+          )}
 
           {error && (
             <div className="text-[11px] text-red-300 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/25">
