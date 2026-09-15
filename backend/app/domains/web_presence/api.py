@@ -18,7 +18,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 
-from . import analyzer, fetcher, service
+from . import analyzer, fetcher, service, suggestions
 from .models import PLATFORM_KINDS, BusinessLink
 
 router = APIRouter(prefix="/web-presence", tags=["Web Presence"])
@@ -44,6 +44,20 @@ async def list_platforms() -> dict[str, Any]:
             for slug, (kind, label) in PLATFORM_KINDS.items()
         ]
     }
+
+
+@router.get("/suggested-links")
+async def suggested_links(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Platforms already connected in /dashboard/platforms that don't have a
+    matching link here yet -- with a real, ready-to-add URL for the ones we
+    can derive from saved credentials, or an honest notice for the rest."""
+    from app.domains.authority.service import business_ids_for
+
+    business_ids = await business_ids_for(db, user.id)
+    return {"suggestions": await suggestions.suggest_links_from_channels(db, user.id, business_ids)}
 
 
 @router.get("/links")

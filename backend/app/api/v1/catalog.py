@@ -231,6 +231,7 @@ async def debug_add_listing_columns(
         await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"))
         await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"))
         await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"))
+        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS listing_url VARCHAR(1024)"))
         await db.execute(text(
             "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
             "UNIQUE (business_id, source_platform, external_id)"

@@ -17,6 +17,7 @@ import { Plus, Loader2, Package, ExternalLink, RefreshCw, Search, Flame } from '
 import { api } from '@/lib/api'
 import { useBusinessSnapshot, formatMoney } from '@/lib/businessSnapshot'
 import { commerceApi, type PlatformRow } from '@/lib/platformCommerce'
+import { webPresenceApi, scoreColor } from '@/lib/webPresence'
 
 type CatalogItemType = 'service' | 'good' | 'digital'
 
@@ -36,6 +37,7 @@ interface CatalogItemRow {
   name: string
   category: string | null
   source_platform: string | null
+  listing_url: string | null
   price: number | string
   currency: string
   stock: number | null
@@ -66,6 +68,8 @@ export default function ListingsPage() {
   const [syncResults, setSyncResults] = useState<SyncPullResult[] | null>(null)
   const [seoLoadingId, setSeoLoadingId] = useState<string | null>(null)
   const [fomoLoadingId, setFomoLoadingId] = useState<string | null>(null)
+  const [auditLoadingId, setAuditLoadingId] = useState<string | null>(null)
+  const [auditResults, setAuditResults] = useState<Record<string, { ok: boolean; score?: number; issues?: number; error?: string }>>({})
 
   const businessId = snapshot?.business.id ?? null
 
@@ -92,6 +96,23 @@ export default function ListingsPage() {
   const connectedPlatforms = platforms.filter(p => p.connection?.connected)
   const pullable = connectedPlatforms.filter(p => p.capabilities.some(c => c.key === 'catalog_pull' && c.available))
   const notPullable = connectedPlatforms.filter(p => !p.capabilities.some(c => c.key === 'catalog_pull' && c.available))
+
+  const handleAuditReal = async (itemId: string, listingUrl: string): Promise<void> => {
+    setAuditLoadingId(itemId)
+    try {
+      const res = await webPresenceApi.analyzeUrl(listingUrl)
+      setAuditResults(prev => ({
+        ...prev,
+        [itemId]: res.ok
+          ? { ok: true, score: res.score, issues: res.audit?.issues.length ?? 0 }
+          : { ok: false, error: res.error || `HTTP ${res.http_status}` },
+      }))
+    } catch {
+      setAuditResults(prev => ({ ...prev, [itemId]: { ok: false, error: 'No se pudo auditar la publicación.' } }))
+    } finally {
+      setAuditLoadingId(null)
+    }
+  }
 
   const handleSync = async (): Promise<void> => {
     if (!businessId) return
@@ -240,6 +261,28 @@ export default function ListingsPage() {
                         {it.extra_data?.fomo?.headline && (
                           <p className={`text-xs font-normal mt-0.5 ${it.extra_data.fomo.angle === 'scarcity' ? 'text-orange-600' : 'text-slate-500'}`}>
                             {it.extra_data.fomo.angle === 'scarcity' ? '🔥 ' : '✨ '}{it.extra_data.fomo.headline}
+                          </p>
+                        )}
+                        {it.listing_url && (
+                          <p className="text-xs mt-0.5 flex items-center gap-2 flex-wrap">
+                            <a href={it.listing_url} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-700 hover:underline inline-flex items-center gap-0.5">
+                              Ver publicación <ExternalLink size={10} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleAuditReal(it.id, it.listing_url!)}
+                              disabled={auditLoadingId === it.id}
+                              className="text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                              {auditLoadingId === it.id ? 'Auditando…' : 'Auditar SEO real'}
+                            </button>
+                            {auditResults[it.id] && (
+                              auditResults[it.id].ok
+                                ? <span className={`font-semibold ${scoreColor(auditResults[it.id].score ?? null)}`}>
+                                    Score real: {auditResults[it.id].score} ({auditResults[it.id].issues} hallazgos)
+                                  </span>
+                                : <span className="text-red-600">{auditResults[it.id].error}</span>
+                            )}
                           </p>
                         )}
                       </td>

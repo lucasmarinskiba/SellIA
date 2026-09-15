@@ -45,6 +45,7 @@ class CatalogItemResponse(CatalogItemBase):
     business_id: UUID
     source_platform: str | None = None
     external_id: str | None = None
+    listing_url: str | None = None
     extra_data: dict[str, Any]
     images: list[str]
     is_active: bool

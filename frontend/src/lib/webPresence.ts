@@ -175,9 +175,19 @@ export interface AuthorityReport {
   generated_at: string
 }
 
+export interface LinkSuggestion {
+  platform: string
+  label: string
+  url: string | null
+  derivable: boolean
+}
+
 export const webPresenceApi = {
   platforms: (): Promise<PlatformOption[]> =>
     api.get<{ platforms: PlatformOption[] }>('/web-presence/platforms').then(r => r.data.platforms),
+
+  suggestedLinks: (): Promise<LinkSuggestion[]> =>
+    api.get<{ suggestions: LinkSuggestion[] }>('/web-presence/suggested-links').then(r => r.data.suggestions),
 
   listLinks: (): Promise<BusinessLink[]> =>
     api.get<{ links: BusinessLink[] }>('/web-presence/links').then(r => r.data.links),
