@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import {
   webPresenceApi, scoreColor,
-  type BusinessLink, type LinkKind, type PlatformOption,
+  type BusinessLink, type LinkKind, type PlatformOption, type LinkSuggestion,
 } from '@/lib/webPresence'
 
 const KIND_ICON: Record<LinkKind, React.ReactNode> = {
@@ -43,6 +43,8 @@ interface Props {
 export default function LinksManager({ onChanged, compact = false }: Props): React.JSX.Element {
   const [links, setLinks] = useState<BusinessLink[]>([])
   const [platforms, setPlatforms] = useState<PlatformOption[]>([])
+  const [suggestions, setSuggestions] = useState<LinkSuggestion[]>([])
+  const [addingSuggestion, setAddingSuggestion] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -61,10 +63,41 @@ export default function LinksManager({ onChanged, compact = false }: Props): Rea
     }
   }, [])
 
+  const reloadSuggestions = useCallback(async (): Promise<void> => {
+    try {
+      setSuggestions(await webPresenceApi.suggestedLinks())
+    } catch {
+      setSuggestions([])
+    }
+  }, [])
+
   useEffect(() => {
     void reload()
+    void reloadSuggestions()
     webPresenceApi.platforms().then(setPlatforms).catch(() => setPlatforms([]))
-  }, [reload])
+  }, [reload, reloadSuggestions])
+
+  const addSuggestion = async (s: LinkSuggestion): Promise<void> => {
+    if (!s.url) return
+    setAddingSuggestion(s.platform)
+    try {
+      const created = await webPresenceApi.addLink({
+        platform: s.platform,
+        url: s.url,
+        is_primary: links.length === 0,
+      })
+      await Promise.all([reload(), reloadSuggestions()])
+      onChanged?.()
+      await webPresenceApi.auditLink(created.id).catch(() => undefined)
+      await reload()
+      onChanged?.()
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(detail || 'No se pudo agregar el link sugerido.')
+    } finally {
+      setAddingSuggestion(null)
+    }
+  }
 
   const add = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -79,6 +112,7 @@ export default function LinksManager({ onChanged, compact = false }: Props): Rea
       })
       setUrl('')
       await reload()
+      void reloadSuggestions()
       onChanged?.()
       // Audit it right away: a link nobody fetched shows no real state at all.
       setBusy(created.id)
@@ -163,6 +197,35 @@ export default function LinksManager({ onChanged, compact = false }: Props): Rea
           </button>
         )}
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+            Ya conectaste estas plataformas en Canales
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map(s => s.derivable ? (
+              <button
+                key={s.platform}
+                type="button"
+                onClick={() => addSuggestion(s)}
+                disabled={addingSuggestion !== null}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 disabled:opacity-50"
+              >
+                {addingSuggestion === s.platform ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                Agregar {s.label} ({s.url})
+              </button>
+            ) : (
+              <span
+                key={s.platform}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-500 text-xs"
+              >
+                {s.label} conectada — pegá el link a mano abajo
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={add} className="p-5 flex gap-2 flex-wrap items-start border-b border-slate-100">
         <select

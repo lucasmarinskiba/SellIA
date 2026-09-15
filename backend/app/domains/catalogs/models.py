@@ -41,6 +41,12 @@ class CatalogItem(Base):
     # manually-created items (both NULL) are unaffected.
     source_platform = Column(String(50), nullable=True)
     external_id = Column(String(255), nullable=True)
+    # The item's real public URL on the platform, when the platform's API
+    # gives (or lets us construct) one -- e.g. Shopify's product handle +
+    # its own shop_domain, or Meta Ads' catalog "url" field. Lets the SEO
+    # tool audit the actual live listing instead of only an AI-guessed
+    # title. Null when no platform gave one -- never fabricated.
+    listing_url = Column(String(1024), nullable=True)
     # MutableDict/MutableList.as_mutable: without them, an in-place edit like
     # `item.extra_data["key"] = ...` never marks the column dirty, so the
     # UPDATE can silently omit it.

@@ -164,7 +164,7 @@ class CatalogSyncService:
                         )
                         existing = result.scalar_one_or_none()
 
-                    fields = self._platform_product_fields(product, platform)
+                    fields = self._platform_product_fields(product, platform, channel)
                     if existing:
                         # name/type/category excluded: keep whatever the
                         # seller edited (a manual rename, or a correction to
@@ -316,7 +316,9 @@ class CatalogSyncService:
             return str(pid) if pid is not None else None
         return None
 
-    def _platform_product_fields(self, product: dict[str, Any], platform: ChannelPlatform) -> dict[str, Any]:
+    def _platform_product_fields(
+        self, product: dict[str, Any], platform: ChannelPlatform, channel: ChannelConnection,
+    ) -> dict[str, Any]:
         """CatalogItem constructor kwargs from a platform's raw product shape
         -- every connector's pull_catalog_items() returns that platform's own
         format verbatim, there is no normalized shape to rely on."""
@@ -324,6 +326,8 @@ class CatalogSyncService:
             p = product.get("product", product)
             variant = (p.get("variants") or [{}])[0]
             tags = p.get("tags", "")
+            shop_domain = (channel.credentials or {}).get("shop_domain")
+            handle = p.get("handle")
             return dict(
                 type="good",
                 name=p.get("title", "Producto Shopify"),
@@ -336,6 +340,7 @@ class CatalogSyncService:
                 extra_data={},
                 images=[img.get("src", "") for img in (p.get("images") or [])],
                 tags=tags.split(",") if isinstance(tags, str) and tags else (tags or []),
+                listing_url=f"https://{shop_domain}/products/{handle}" if shop_domain and handle else None,
             )
 
         if platform == ChannelPlatform.AMAZON:
@@ -357,6 +362,7 @@ class CatalogSyncService:
                 extra_data={},
                 images=[],
                 tags=[],
+                listing_url=None,
             )
 
         if platform == ChannelPlatform.META_ADS:
@@ -374,6 +380,7 @@ class CatalogSyncService:
                 extra_data={},
                 images=[product["image_url"]] if product.get("image_url") else [],
                 tags=[],
+                listing_url=product.get("url") or None,
             )
 
         if platform == ChannelPlatform.BEACONS:
@@ -389,6 +396,7 @@ class CatalogSyncService:
                 extra_data={},
                 images=[product["image_url"]] if product.get("image_url") else [],
                 tags=[],
+                listing_url=None,
             )
 
         return dict(
@@ -403,4 +411,5 @@ class CatalogSyncService:
             extra_data={},
             images=[],
             tags=[],
+            listing_url=None,
         )
