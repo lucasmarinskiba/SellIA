@@ -101,8 +101,8 @@ export const auth = {
     const res = await api.get('/auth/security-status')
     return res.data
   },
-  resendVerification: async () => {
-    const res = await api.post('/auth/resend-verification')
+  resendVerification: async (email?: string): Promise<{ message: string }> => {
+    const res = await api.post('/auth/resend-verification', email ? { email } : {})
     return res.data
   },
   // 2FA
