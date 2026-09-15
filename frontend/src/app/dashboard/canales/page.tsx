@@ -9,7 +9,7 @@ import {
   MessageSquare, Mail, Camera as Instagram, ShoppingCart, Briefcase as Linkedin, Link2,
   Plus, Trash2, CheckCircle2, AlertCircle, Clock, ExternalLink,
   Phone, Plug, Zap, X, Loader2, Copy, Check,
-  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem
+  Megaphone, Globe, Search, ShoppingBag, Music, GraduationCap, Store, Gem, Bot
 } from 'lucide-react'
 
 const platformConfig: Record<string, { label: string; icon: typeof MessageSquare; color: string; description: string }> = {
@@ -33,6 +33,8 @@ const platformConfig: Record<string, { label: string; icon: typeof MessageSquare
   woocommerce: { label: 'WooCommerce', icon: Store, color: 'text-purple-500', description: 'Tienda WordPress' },
   etsy: { label: 'Etsy', icon: Gem, color: 'text-orange-500', description: 'Productos artesanales y de diseño' },
   facebook_marketplace: { label: 'Facebook Marketplace', icon: Store, color: 'text-blue-500', description: 'Ventas en Marketplace' },
+  tiktok_shop: { label: 'TikTok Shop', icon: Music, color: 'text-black', description: 'Catálogo y pedidos de TikTok Shop' },
+  manychat: { label: 'ManyChat', icon: Bot, color: 'text-teal-400', description: 'Automatizaciones de ManyChat' },
 }
 
 const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; label: string }> = {
@@ -229,6 +231,59 @@ export default function CanalesPage() {
             <Field label="API Keystring" value={newChannel.credentials.api_keystring || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_keystring: v } })} />
             <Field label="Shared Secret" type="password" value={newChannel.credentials.shared_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shared_secret: v } })} />
             <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
+          </>
+        )
+      case 'amazon':
+        return (
+          <>
+            <Field label="LWA App ID" value={newChannel.credentials.lwa_app_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, lwa_app_id: v } })} />
+            <Field label="LWA Client Secret" type="password" value={newChannel.credentials.lwa_client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, lwa_client_secret: v } })} />
+            <Field label="Refresh Token" type="password" value={newChannel.credentials.refresh_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, refresh_token: v } })} />
+            <Field label="Marketplace ID" value={newChannel.credentials.marketplace_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, marketplace_id: v } })} />
+            <Field label="Seller ID (opcional)" value={newChannel.credentials.seller_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, seller_id: v } })} />
+            <p className="text-xs text-white/30">Necesitás una app en Amazon Selling Partner API (SP-API) aprobada para tu cuenta de vendedor.</p>
+          </>
+        )
+      case 'shopify':
+        return (
+          <>
+            <Field label="Dominio de la tienda" value={newChannel.credentials.shop_domain || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_domain: v } })} placeholder="mitienda.myshopify.com" />
+            <Field label="Admin API access token" type="password" value={newChannel.credentials.admin_api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, admin_api_token: v } })} />
+            <Field label="API Key (opcional)" value={newChannel.credentials.api_key || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_key: v } })} />
+            <Field label="API Secret (opcional)" type="password" value={newChannel.credentials.api_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_secret: v } })} />
+            <Field label="Webhook Secret (opcional)" type="password" value={newChannel.credentials.webhook_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, webhook_secret: v } })} />
+            <p className="text-xs text-white/30">Admin de Shopify → Configuración → Apps y canales de venta → Desarrollar apps.</p>
+          </>
+        )
+      case 'messenger':
+        return (
+          <>
+            <Field label="Page Access Token" type="password" value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
+            <Field label="Page ID" value={newChannel.credentials.page_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, page_id: v } })} />
+          </>
+        )
+      case 'linkedin':
+        return (
+          <>
+            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
+            <Field label="URN del remitente" value={newChannel.credentials.sender_urn || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, sender_urn: v } })} />
+            <p className="text-xs text-white/30">Requiere una app aprobada en LinkedIn Developers con permisos de mensajería.</p>
+          </>
+        )
+      case 'manychat':
+        return (
+          <Field label="API Token" type="password" value={newChannel.credentials.api_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, api_token: v } })} />
+        )
+      case 'tiktok_shop':
+        return (
+          <>
+            <Field label="App Key (Client ID)" value={newChannel.credentials.client_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_id: v } })} />
+            <Field label="App Secret (Client Secret)" type="password" value={newChannel.credentials.client_secret || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, client_secret: v } })} />
+            <Field label="Access Token" type="password" value={newChannel.credentials.access_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, access_token: v } })} />
+            <Field label="Shop ID" value={newChannel.credentials.shop_id || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_id: v } })} />
+            <Field label="Shop Cipher (opcional)" value={newChannel.credentials.shop_cipher || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, shop_cipher: v } })} />
+            <Field label="Refresh Token (opcional)" type="password" value={newChannel.credentials.refresh_token || ''} onChange={v => setNewChannel({ ...newChannel, credentials: { ...newChannel.credentials, refresh_token: v } })} />
+            <p className="text-xs text-white/30">Se generan en TikTok Shop Partner Center al crear tu app.</p>
           </>
         )
       case 'meta_ads':
