@@ -37,10 +37,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loginShowPassword, setLoginShowPassword] = useState(false)
   const [loginSubmitting, setLoginSubmitting] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [loginNeedsVerification, setLoginNeedsVerification] = useState(false)
+  const [resendingVerification, setResendingVerification] = useState(false)
+  const [resendVerificationSent, setResendVerificationSent] = useState(false)
   const closeLoginModal = (): void => {
     setLoginModalOpen(false)
     setLoginEmail(''); setLoginPassword(''); setLoginTfaCode('')
     setLoginNeeds2fa(false); setLoginError(null); setLoginShowPassword(false)
+    setLoginNeedsVerification(false); setResendVerificationSent(false)
+  }
+  const handleResendVerification = async (): Promise<void> => {
+    setResendingVerification(true)
+    try {
+      await auth.resendVerification(loginEmail.trim())
+      setResendVerificationSent(true)
+    } finally {
+      setResendingVerification(false)
+    }
   }
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
@@ -55,6 +68,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const formData = new FormData(e.currentTarget)
     const email = (formData.get('email') as string | null)?.trim() || loginEmail.trim()
     const password = (formData.get('password') as string | null) || loginPassword
+    setLoginEmail(email)
+    setLoginNeedsVerification(false)
+    setResendVerificationSent(false)
     try {
       await auth.login({
         email,
@@ -68,6 +84,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (detail === '2FA_REQUIRED') {
         setLoginNeeds2fa(true)
         setLoginError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
+      } else if (detail === 'EMAIL_NOT_VERIFIED') {
+        setLoginNeedsVerification(true)
+        setLoginError('Todavía no verificaste tu email. Revisá tu bandeja de entrada (y spam) o pedí que te lo reenviemos.')
       } else {
         setLoginError(typeof detail === 'string' ? detail : 'Email o contraseña incorrectos.')
       }
@@ -467,6 +486,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
               )}
               {loginError && <p className="text-xs text-red-600">{loginError}</p>}
+              {loginNeedsVerification && (
+                resendVerificationSent ? (
+                  <p className="text-xs text-emerald-600">Listo, te reenviamos el email de verificación.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { void handleResendVerification() }}
+                    disabled={resendingVerification}
+                    className="text-xs text-cyan-600 hover:underline disabled:opacity-50"
+                  >
+                    {resendingVerification ? 'Reenviando…' : 'Reenviar email de verificación'}
+                  </button>
+                )
+              )}
               <button
                 type="submit"
                 disabled={loginSubmitting}

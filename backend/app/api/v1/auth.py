@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -834,10 +834,27 @@ async def verify_email(
 async def resend_verification(
     request: Request,
     db: AsyncSession = Depends(get_db),
+    email: str | None = Body(default=None, embed=True),
 ):
-    """Reenvía el email de verificación. Requiere autenticación."""
-    from app.core.deps import get_current_user
-    user = await get_current_user(request, db)
+    """Reenvía el email de verificación.
+
+    An unverified user has no valid session (login refuses to issue one
+    until email_verified is true), so this used to require
+    get_current_user -- making it unreachable by exactly the people who
+    need it. Now it also accepts a plain email in the body, same as any
+    "resend confirmation" flow; the response never reveals whether that
+    address has an account, to avoid leaking registered emails.
+    """
+    user = None
+    if email:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+    else:
+        from app.core.deps import get_current_user
+        user = await get_current_user(request, db)
+
+    if not user:
+        return {"message": "Si el email está registrado, te enviamos el enlace de verificación."}
     if user.email_verified:
         return {"message": "Email ya verificado"}
 
@@ -847,7 +864,7 @@ async def resend_verification(
     )
     verify_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/verify-email?token={verify_token}"
     await _send_verification_email(user.email, user.full_name, verify_url)
-    return {"message": "Email de verificación reenviado"}
+    return {"message": "Si el email está registrado, te enviamos el enlace de verificación."}
 
 
 #: Only these purposes are accepted, so a caller cannot mint a code for an
