@@ -33,13 +33,17 @@ class EmailSender:
         self.provider = provider
 
         if provider == EmailProvider.SENDGRID:
-            self.api_key = os.getenv("SENDGRID_API_KEY")
+            # .strip(): a copy-pasted env var can carry a trailing \r/\n
+            # (common pasting from Windows), which httpx then rejects with
+            # "Illegal header value" on every single send -- silently, since
+            # callers only see a generic failed status.
+            self.api_key = (os.getenv("SENDGRID_API_KEY") or "").strip() or None
             if not self.api_key:
                 logger.warning("SENDGRID_API_KEY not set, falling back to MOCK")
                 self.provider = EmailProvider.MOCK
 
         elif provider == EmailProvider.RESEND:
-            self.api_key = os.getenv("RESEND_API_KEY")
+            self.api_key = (os.getenv("RESEND_API_KEY") or "").strip() or None
             if not self.api_key:
                 logger.warning("RESEND_API_KEY not set, falling back to MOCK")
                 self.provider = EmailProvider.MOCK
