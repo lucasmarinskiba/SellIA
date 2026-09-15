@@ -105,6 +105,14 @@ export const auth = {
     const res = await api.post('/auth/resend-verification', email ? { email } : {})
     return res.data
   },
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const res = await api.post('/auth/forgot-password', { email })
+    return res.data
+  },
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    const res = await api.post('/auth/reset-password', { token, new_password: newPassword })
+    return res.data
+  },
   // 2FA
   setup2FA: async (): Promise<TwoFASetupResponse> => {
     const res = await api.post('/auth/2fa/setup')

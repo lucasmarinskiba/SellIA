@@ -805,6 +805,81 @@ Si no creaste esta cuenta, ignorá este email.
         pass
 
 
+async def _send_password_reset_email(to_email: str, full_name: str, reset_url: str):
+    """Envía email para restablecer contraseña."""
+    try:
+        from app.core.email_service import send_email
+        subject = "Restablecer tu contraseña de SellIA"
+        html = f'''<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;">
+  <h2 style="color:#4f46e5;">Restablecer contraseña</h2>
+  <p>Hola {full_name}, pediste restablecer la contraseña de tu cuenta SellIA. Hacé clic para elegir una nueva:</p>
+  <a href="{reset_url}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:4px;">Restablecer contraseña</a>
+  <p style="margin-top:16px;color:#666;font-size:12px;">El link expira en 1 hora. Si no pediste esto, ignorá este email -- tu contraseña actual sigue siendo válida.</p>
+</div>'''
+        text = f'''Hola {full_name},
+
+Pediste restablecer la contraseña de tu cuenta SellIA. Visitá este link (válido por 1 hora):
+{reset_url}
+
+Si no pediste esto, ignorá este email.
+'''
+        await send_email(to_email, subject, html, text)
+    except Exception:
+        pass
+
+
+@router.post("/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+async def forgot_password(
+    db: AsyncSession = Depends(get_db),
+    email: str = Body(..., embed=True),
+):
+    """Pide un link para restablecer contraseña. La respuesta nunca revela
+    si ese email tiene cuenta, para no filtrar emails registrados."""
+    generic_response = {"message": "Si el email está registrado, te enviamos un link para restablecer tu contraseña."}
+
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if not user:
+        return generic_response
+
+    reset_token = create_access_token(
+        data={"sub": str(user.id), "scope": "password_reset"},
+        expires_delta=timedelta(hours=1),
+    )
+    reset_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/reset-password?token={reset_token}"
+    await _send_password_reset_email(user.email, user.full_name, reset_url)
+    return generic_response
+
+
+@router.post("/reset-password")
+async def reset_password(
+    db: AsyncSession = Depends(get_db),
+    token: str = Body(..., embed=True),
+    new_password: str = Body(..., embed=True),
+):
+    """Restablece la contraseña con un token de /forgot-password."""
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
+
+    payload = decode_access_token(token)
+    if not payload or payload.get("scope") != "password_reset":
+        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Token inválido")
+
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    user.hashed_password = get_password_hash(new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    await db.commit()
+    return {"message": "Contraseña actualizada. Ya podés iniciar sesión."}
+
+
 @router.get("/verify-email")
 async def verify_email(
     token: str,
