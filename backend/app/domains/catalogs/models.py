@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Numeric, Text, Integer, Enum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -27,9 +28,12 @@ class CatalogItem(Base):
     currency = Column(String(3), default="ARS", nullable=False)
     stock = Column(Integer, nullable=True)
     is_available = Column(Boolean, default=True, nullable=False)
-    extra_data = Column(JSONB, default=dict, nullable=False)
-    images = Column(JSONB, default=list, nullable=False)
-    tags = Column(JSONB, default=list, nullable=False)
+    # MutableDict/MutableList.as_mutable: without them, an in-place edit like
+    # `item.extra_data["key"] = ...` never marks the column dirty, so the
+    # UPDATE can silently omit it.
+    extra_data = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
+    images = Column(MutableList.as_mutable(JSONB), default=list, nullable=False)
+    tags = Column(MutableList.as_mutable(JSONB), default=list, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

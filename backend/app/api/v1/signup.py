@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.config import get_settings
 from app.domains.users.models import User
+from datetime import timedelta
 import hashlib
 import base64
 import uuid
@@ -69,6 +71,24 @@ async def signup(
 
         from app.core.security import create_access_token
         access_token = create_access_token({"sub": user_id})
+
+        # This route duplicates /auth/register's account creation but used to
+        # never send a verification email -- accounts made here had
+        # email_verified=false forever, and /auth/login (the flow the
+        # dashboard actually uses) refuses to issue a session until it's
+        # true, with no email ever sent to fix it. Same email as
+        # /auth/register sends, so both signup paths behave the same way.
+        try:
+            from app.api.v1.auth import _send_verification_email
+            settings = get_settings()
+            verify_token = create_access_token(
+                data={"sub": user_id, "scope": "email_verify"},
+                expires_delta=timedelta(hours=24),
+            )
+            verify_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/verify-email?token={verify_token}"
+            await _send_verification_email(req.email, req.full_name, verify_url)
+        except Exception:
+            pass
 
         return {
             "user_id": user_id,
