@@ -588,14 +588,27 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
         db.add(user_session)
         await db.commit()
 
-    # Cookie httpOnly segura
-    cookie_secure = settings.ENVIRONMENT == "production"
+    # Cookie httpOnly segura.
+    # samesite="strict" (the old value) never gets sent on cross-site
+    # requests -- and the frontend (sellia-brain.vercel.app) calling this
+    # API (sellia-production.up.railway.app) IS cross-site, so the browser
+    # accepted this cookie on login but then silently withheld it from
+    # every subsequent request. The user would appear logged in for the
+    # single page that just called /auth/login, then look logged out on
+    # the very next request or page (e.g. /dashboard vs /sellia-brain, or
+    # even a reload of the same page) -- explains the login modal
+    # reappearing over and over this session. CORS already declares
+    # allow_credentials=True with an explicit origin allowlist
+    # (app/sellbot.py) specifically so this cookie can cross origins;
+    # SameSite=None is what that setup actually requires, and it in turn
+    # requires Secure=True unconditionally (browsers refuse
+    # SameSite=None without Secure, regardless of environment).
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=cookie_secure,
-        samesite="strict",
+        secure=True,
+        samesite="none",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
@@ -629,7 +642,7 @@ async def logout(
             session_record.is_revoked = True
             await db.commit()
 
-    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="access_token", path="/", secure=True, samesite="none")
     return {"detail": "Sesión cerrada correctamente"}
 
 
