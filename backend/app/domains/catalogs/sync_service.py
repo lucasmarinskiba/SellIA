@@ -15,6 +15,7 @@ from sqlalchemy import select
 from app.domains.catalogs.models import CatalogItem
 from app.domains.channels.models import ChannelConnection, ChannelPlatform
 from app.domains.channels.connectors import get_connector
+from app.domains.platform_commerce import capabilities as platform_capabilities
 
 
 class CatalogSyncResult:
@@ -38,12 +39,18 @@ class CatalogSyncService:
         ChannelPlatform.TIKTOK_ADS,
     }
 
-    # Platforms that support catalog/product pull
-    PULL_PLATFORMS = {
-        ChannelPlatform.SHOPIFY,
-        ChannelPlatform.MERCADOLIBRE,
-        ChannelPlatform.AMAZON,
-    }
+    # Was a hand-written set including MERCADOLIBRE (whose connector has zero
+    # catalog-pull code -- messages/webhooks only) and missing META_ADS/
+    # BEACONS (which do have it). Derived by introspection now, same
+    # single-source-of-truth principle as platform_commerce/capabilities.py:
+    # a platform is here only if its connector class really defines
+    # pull_catalog_items.
+    @staticmethod
+    def _pull_platforms() -> set:
+        return {
+            p for p in ChannelPlatform
+            if platform_capabilities.can(p.value, "catalog_pull")
+        }
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -119,7 +126,15 @@ class CatalogSyncService:
         return results
 
     async def pull_from_platform(self, business_id: UUID, platform: ChannelPlatform) -> CatalogSyncResult:
-        """Pull products from external platform into local catalog."""
+        """Pull products from external platform into local catalog.
+
+        Was checking `hasattr(connector, "get_products")` -- no connector in
+        this codebase has ever defined that method (the real one is
+        `pull_catalog_items`, per platform_commerce/capabilities.py), so this
+        always returned "no soporta importación" for every platform and the
+        endpoint that calls this (POST /{business_id}/catalog/sync-pull) was
+        completely dead despite being live and reachable.
+        """
         try:
             channels = await self.get_connected_channels(business_id, {platform})
             if not channels:
@@ -128,30 +143,58 @@ class CatalogSyncService:
             channel = channels[0]
             connector = get_connector(platform, channel.credentials, channel.settings)
 
-            if not hasattr(connector, "get_products"):
+            if not hasattr(connector, "pull_catalog_items"):
                 return CatalogSyncResult(platform.value, False, "Esta plataforma no soporta importación de productos")
 
-            products = await connector.get_products()
-            items_synced = 0
+            products = await connector.pull_catalog_items()
+            created, updated = 0, 0
 
             for product in products:
                 try:
-                    item = self._platform_product_to_item(product, platform, business_id)
-                    self.db.add(item)
-                    items_synced += 1
+                    external_id = self._external_id(product, platform)
+                    existing = None
+                    if external_id:
+                        result = await self.db.execute(
+                            select(CatalogItem).where(
+                                CatalogItem.business_id == business_id,
+                                CatalogItem.source_platform == platform.value,
+                                CatalogItem.external_id == external_id,
+                            )
+                        )
+                        existing = result.scalar_one_or_none()
+
+                    fields = self._platform_product_fields(product, platform)
+                    if existing:
+                        for key, value in fields.items():
+                            if key == "name":  # keep the seller's own rename if they changed it
+                                continue
+                            setattr(existing, key, value)
+                        updated += 1
+                    else:
+                        item = CatalogItem(
+                            business_id=business_id,
+                            source_platform=platform.value,
+                            external_id=external_id,
+                            **fields,
+                        )
+                        self.db.add(item)
+                        created += 1
                 except Exception as e:
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Error pulling product to catalog: {e}")
                     continue
 
             await self.db.commit()
-            return CatalogSyncResult(platform.value, True, f"Importación completada", items_synced)
+            detail = f"{created} nuevo(s), {updated} actualizado(s)"
+            if platform == ChannelPlatform.AMAZON and products:
+                detail += ". Amazon no devuelve precio en este endpoint -- completalo a mano."
+            return CatalogSyncResult(platform.value, True, detail, created + updated)
         except Exception as e:
             return CatalogSyncResult(platform.value, False, f"Error: {str(e)}")
 
     async def pull_all(self, business_id: UUID) -> list[CatalogSyncResult]:
-        """Pull products from all supported platforms."""
-        channels = await self.get_connected_channels(business_id, self.PULL_PLATFORMS)
+        """Pull products from all platforms whose connector really supports it."""
+        channels = await self.get_connected_channels(business_id, self._pull_platforms())
         if not channels:
             return []
 
@@ -236,68 +279,106 @@ class CatalogSyncService:
 
         return base
 
-    def _platform_product_to_item(self, product: dict[str, Any], platform: ChannelPlatform, business_id: UUID) -> CatalogItem:
-        """Convert a platform product to CatalogItem."""
+    def _external_id(self, product: dict[str, Any], platform: ChannelPlatform) -> str | None:
+        """The platform's own id for this product -- what dedup keys on."""
         if platform == ChannelPlatform.SHOPIFY:
             p = product.get("product", product)
-            variant = p.get("variants", [{}])[0]
-            return CatalogItem(
-                business_id=business_id,
+            pid = p.get("id")
+            return str(pid) if pid is not None else None
+        if platform == ChannelPlatform.AMAZON:
+            return product.get("asin") or None
+        if platform == ChannelPlatform.META_ADS:
+            return product.get("id") or None
+        if platform == ChannelPlatform.BEACONS:
+            pid = product.get("id") or product.get("sku")
+            return str(pid) if pid is not None else None
+        return None
+
+    def _platform_product_fields(self, product: dict[str, Any], platform: ChannelPlatform) -> dict[str, Any]:
+        """CatalogItem constructor kwargs from a platform's raw product shape
+        -- every connector's pull_catalog_items() returns that platform's own
+        format verbatim, there is no normalized shape to rely on."""
+        if platform == ChannelPlatform.SHOPIFY:
+            p = product.get("product", product)
+            variant = (p.get("variants") or [{}])[0]
+            tags = p.get("tags", "")
+            return dict(
                 type="good",
                 name=p.get("title", "Producto Shopify"),
-                description=p.get("body_html", ""),
-                price=variant.get("price", "0"),
+                description=p.get("body_html", "") or "",
+                category=p.get("product_type") or None,
+                price=variant.get("price", "0") or "0",
                 currency="USD",
-                stock=variant.get("inventory_quantity", 0),
+                stock=variant.get("inventory_quantity", 0) or 0,
                 is_available=p.get("status") == "active",
-                extra_data={"shopify_id": str(p.get("id", "")), "source_platform": "shopify"},
-                images=[img.get("src", "") for img in p.get("images", [])],
-                tags=p.get("tags", ",").split(",") if isinstance(p.get("tags"), str) else p.get("tags", []),
+                extra_data={},
+                images=[img.get("src", "") for img in (p.get("images") or [])],
+                tags=tags.split(",") if isinstance(tags, str) and tags else (tags or []),
             )
 
-        elif platform == ChannelPlatform.MERCADOLIBRE:
-            return CatalogItem(
-                business_id=business_id,
-                type="good",
-                name=product.get("title", "Producto ML"),
-                description=product.get("description", {}).get("plain_text", ""),
-                price=product.get("price", 0),
-                currency=product.get("currency_id", "ARS"),
-                stock=product.get("available_quantity", 0),
-                is_available=product.get("status") == "active",
-                extra_data={"ml_id": product.get("id", ""), "source_platform": "mercadolibre"},
-                images=[pic.get("url", "") for pic in product.get("pictures", [])],
-                tags=[],
-            )
-
-        elif platform == ChannelPlatform.AMAZON:
-            attrs = product.get("attributes", {})
-            name = attrs.get("item_name", [{}])[0].get("value", "Producto Amazon")
-            price_data = attrs.get("list_price", [{}])[0]
-            return CatalogItem(
-                business_id=business_id,
+        if platform == ChannelPlatform.AMAZON:
+            attrs = product.get("attributes", {}) or {}
+            summaries = (product.get("summaries") or [{}])[0]
+            name = summaries.get("itemName") or (attrs.get("item_name", [{}])[0].get("value") if attrs.get("item_name") else None) or "Producto Amazon"
+            price_list = attrs.get("list_price") or []
+            price = price_list[0].get("value", "0") if price_list else "0"
+            currency = price_list[0].get("currency", "USD") if price_list else "USD"
+            return dict(
                 type="good",
                 name=name,
-                description="\n".join([b.get("value", "") for b in attrs.get("bullet_point", [])]),
-                price=price_data.get("value", "0"),
-                currency=price_data.get("currency", "USD"),
+                description="\n".join(b.get("value", "") for b in attrs.get("bullet_point", [])),
+                category=None,
+                price=price,
+                currency=currency,
                 stock=0,
                 is_available=True,
-                extra_data={"asin": product.get("asin", ""), "source_platform": "amazon"},
+                extra_data={},
                 images=[],
                 tags=[],
             )
 
-        return CatalogItem(
-            business_id=business_id,
+        if platform == ChannelPlatform.META_ADS:
+            raw_price = product.get("price") or "0 USD"
+            amount, _, currency = str(raw_price).partition(" ")
+            return dict(
+                type="good",
+                name=product.get("name", "Producto Meta"),
+                description=product.get("description", ""),
+                category=None,
+                price=amount or "0",
+                currency=currency or "USD",
+                stock=None,
+                is_available=(product.get("availability") or "in stock") == "in stock",
+                extra_data={},
+                images=[product["image_url"]] if product.get("image_url") else [],
+                tags=[],
+            )
+
+        if platform == ChannelPlatform.BEACONS:
+            return dict(
+                type="good",
+                name=product.get("name", "Producto Beacons"),
+                description=product.get("description", ""),
+                category=None,
+                price=product.get("price", "0") or "0",
+                currency=product.get("currency", "USD"),
+                stock=None,
+                is_available=True,
+                extra_data={},
+                images=[product["image_url"]] if product.get("image_url") else [],
+                tags=[],
+            )
+
+        return dict(
             type="good",
             name="Producto importado",
             description="",
+            category=None,
             price=0,
             currency="USD",
-            stock=0,
+            stock=None,
             is_available=True,
-            extra_data={"source_platform": platform.value},
+            extra_data={},
             images=[],
             tags=[],
         )

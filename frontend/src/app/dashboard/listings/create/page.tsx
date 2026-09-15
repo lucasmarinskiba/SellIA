@@ -54,10 +54,13 @@ export default function CreateListingPage() {
         type: form.type,
         name: form.name,
         description: form.description || undefined,
+        // Was jammed into tags[0] -- category is now its own field on
+        // CatalogItem, so "Servicios jurídicos" doesn't get treated as an
+        // arbitrary tag and tags stays free for real labels.
+        category: form.category || undefined,
         price: Number(form.price) || 0,
         currency: 'ARS',
         stock: form.type === 'good' ? Number(form.stock) || 0 : undefined,
-        tags: form.category ? [form.category] : [],
         extra_data: { source_platform: form.platform },
       })
       router.push('/dashboard/listings')

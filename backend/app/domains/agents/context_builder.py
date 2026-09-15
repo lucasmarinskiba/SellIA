@@ -81,6 +81,7 @@ class BusinessContextBuilder:
             summary.append({
                 "name": item.name,
                 "type": item.type.value if item.type else "unknown",
+                "category": item.category,
                 "price": float(item.price) if item.price else 0,
                 "currency": item.currency or "ARS",
                 "description": (item.description or "")[:200],
@@ -195,7 +196,8 @@ class BusinessContextBuilder:
             lines = []
             for item in ctx["catalog_summary"][:10]:  # Max 10 items para no saturar token
                 stock_info = f" (Stock: {item['stock']})" if item['stock'] is not None else ""
-                lines.append(f"- {item['name']} ({item['type']}) — {item['currency']} {item['price']}{stock_info}: {item['description'][:100]}")
+                kind = f"{item['type']}/{item['category']}" if item.get('category') else item['type']
+                lines.append(f"- {item['name']} ({kind}) — {item['currency']} {item['price']}{stock_info}: {item['description'][:100]}")
             catalog_str = "\n".join(lines)
 
         # Extraer custom instructions del agent config

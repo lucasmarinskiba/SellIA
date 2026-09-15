@@ -11,6 +11,7 @@ class CatalogItemBase(BaseModel):
     type: CatalogItemType
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = None
+    category: str | None = Field(None, max_length=120)
     price: Decimal = Field(..., ge=0)
     currency: str = "ARS"
     stock: int | None = Field(None, ge=0)
@@ -26,6 +27,7 @@ class CatalogItemCreate(CatalogItemBase):
 class CatalogItemUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
+    category: str | None = Field(None, max_length=120)
     price: Decimal | None = Field(None, ge=0)
     currency: str | None = None
     stock: int | None = Field(None, ge=0)
@@ -41,6 +43,8 @@ class CatalogItemResponse(CatalogItemBase):
 
     id: UUID
     business_id: UUID
+    source_platform: str | None = None
+    external_id: str | None = None
     extra_data: dict[str, Any]
     images: list[str]
     is_active: bool
