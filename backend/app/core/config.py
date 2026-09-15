@@ -88,6 +88,13 @@ class Settings(BaseSettings):
     HOTMART_CLIENT_SECRET: str | None = None
     HOTMART_REDIRECT_URI: str | None = None
 
+    # OAuth - Meta (Instagram / Messenger / WhatsApp / Facebook Ads) — one app
+    # for all SellIA users, same pattern as Mercado Libre above. Needs Meta
+    # App Review to work for any user besides the app's own admins/testers.
+    META_APP_ID: str | None = None
+    META_APP_SECRET: str | None = None
+    META_REDIRECT_URI: str | None = None
+
     # WebAuthn / Passkeys
     WEBAUTHN_RP_ID: str | None = None  # e.g. sellia-brain.vercel.app (no scheme/port)
     WEBAUTHN_RP_NAME: str | None = None  # e.g. SellIA

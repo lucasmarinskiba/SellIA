@@ -267,6 +267,14 @@ async def get_oauth_url(
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
     
     elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
+        # App propia de SellIA (una sola, registrada una vez) -- mismo patrón
+        # que Mercado Libre: el usuario final no crea ni pega app_id/secret,
+        # solo autoriza su cuenta. Requiere que la app de Meta haya pasado
+        # App Review para los scopes de abajo; hasta entonces solo funciona
+        # para los admins/testers agregados en Meta Business Settings.
+        if not settings.META_APP_ID:
+            raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+
         result = await db.execute(
             select(ChannelConnection).where(
                 ChannelConnection.business_id == business_id,
@@ -275,23 +283,35 @@ async def get_oauth_url(
             )
         )
         channel = result.scalar_one_or_none()
-        if not channel or not channel.credentials.get("app_id"):
-            raise HTTPException(status_code=400, detail="Configure app_id en las credenciales del canal")
-        
-        app_id = channel.credentials["app_id"]
-        scopes = "pages_messaging,pages_read_engagement,leads_retrieval"
+        if not channel:
+            channel = ChannelConnection(
+                business_id=business_id,
+                platform=platform,
+                name=platform.value,
+                credentials={},
+                status=ChannelStatus.PENDING,
+                is_active=True,
+            )
+            db.add(channel)
+            await db.flush()
+
+        scopes = "pages_messaging,pages_read_engagement,leads_retrieval,pages_show_list"
         if platform == ChannelPlatform.WHATSAPP:
             scopes = "whatsapp_business_messaging,whatsapp_business_management"
-        
+        elif platform == ChannelPlatform.INSTAGRAM:
+            scopes = "instagram_basic,instagram_manage_messages,pages_show_list,pages_messaging"
+
         auth_url = "https://www.facebook.com/v18.0/dialog/oauth"
+        meta_redirect_uri = settings.META_REDIRECT_URI or redirect_uri
         params = {
-            "client_id": app_id,
-            "redirect_uri": redirect_uri,
+            "client_id": settings.META_APP_ID,
+            "redirect_uri": meta_redirect_uri,
             "scope": scopes,
             "state": str(channel.id),
         }
+        await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
-    
+
     raise HTTPException(status_code=400, detail=f"OAuth no soportado para {platform.value}")
 
 
@@ -350,30 +370,28 @@ async def oauth_callback(
             return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected=mercadolibre")
 
     elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
-        app_id = channel.credentials.get("app_id")
-        app_secret = channel.credentials.get("app_secret")
-        if not app_id or not app_secret:
-            raise HTTPException(status_code=400, detail="Faltan app_id o app_secret")
-        
+        if not settings.META_APP_ID or not settings.META_APP_SECRET:
+            raise HTTPException(status_code=503, detail="Meta no está configurado en el servidor todavía")
+
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://graph.facebook.com/v18.0/oauth/access_token",
                 params={
-                    "client_id": app_id,
-                    "client_secret": app_secret,
+                    "client_id": settings.META_APP_ID,
+                    "client_secret": settings.META_APP_SECRET,
                     "code": code,
-                    "redirect_uri": redirect_uri,
+                    "redirect_uri": settings.META_REDIRECT_URI or redirect_uri,
                 },
             )
             if response.status_code != 200:
                 raise HTTPException(status_code=400, detail=f"Error de OAuth: {response.text}")
-            
+
             data = response.json()
             channel.credentials["access_token"] = data.get("access_token")
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
-            return {"status": "connected", "platform": platform.value}
-    
+            return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected={platform.value}")
+
     raise HTTPException(status_code=400, detail=f"OAuth no soportado para {platform.value}")
 
 

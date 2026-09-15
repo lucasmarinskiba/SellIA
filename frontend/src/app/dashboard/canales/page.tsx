@@ -146,15 +146,21 @@ export default function CanalesPage() {
     }
   }
 
-  const [connectingML, setConnectingML] = useState(false)
-  const handleConnectMercadoLibre = async () => {
-    setConnectingML(true)
+  // Plataformas con app propia de SellIA: el usuario solo autoriza, nunca
+  // pega credenciales. Mercado Libre usa su propia app; Instagram/Messenger/
+  // Facebook Ads comparten una única app Meta (requiere que esa app haya
+  // pasado App Review para funcionar con cualquier usuario, no solo los
+  // admins/testers agregados en Meta Business Settings).
+  const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads']
+  const [connectingOAuth, setConnectingOAuth] = useState(false)
+  const handleConnectOAuth = async (platform: ChannelPlatform) => {
+    setConnectingOAuth(true)
     try {
-      const { auth_url } = await channelsApi.authUrl(selectedBusiness, 'mercadolibre' as ChannelPlatform)
+      const { auth_url } = await channelsApi.authUrl(selectedBusiness, platform)
       window.location.href = auth_url
     } catch {
-      alert('No se pudo iniciar la conexión con Mercado Libre. Probá de nuevo en un momento.')
-      setConnectingML(false)
+      alert(`No se pudo iniciar la conexión con ${platformConfig[platform]?.label ?? platform}. Probá de nuevo en un momento.`)
+      setConnectingOAuth(false)
     }
   }
 
@@ -455,10 +461,10 @@ export default function CanalesPage() {
                     ))}
                   </select>
                 </div>
-                {newChannel.platform === 'mercadolibre' ? (
+                {ONE_CLICK_PLATFORMS.includes(newChannel.platform) ? (
                   <div className="space-y-4">
                     <p className="text-sm text-white/50">
-                      Sin claves ni configuración manual: hacé clic y autorizá tu cuenta de Mercado Libre.
+                      Sin claves ni configuración manual: hacé clic y autorizá tu cuenta de {platformConfig[newChannel.platform]?.label ?? newChannel.platform}.
                     </p>
                     <div className="flex items-center justify-end gap-3 pt-2">
                       <button
@@ -470,11 +476,11 @@ export default function CanalesPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={handleConnectMercadoLibre}
-                        disabled={connectingML}
+                        onClick={() => handleConnectOAuth(newChannel.platform)}
+                        disabled={connectingOAuth}
                         className="px-4 py-2 rounded-xl bg-brand-orange text-white text-sm font-medium hover:bg-brand-orange/90 transition-colors disabled:opacity-50"
                       >
-                        {connectingML ? 'Conectando…' : 'Conectar con Mercado Libre'}
+                        {connectingOAuth ? 'Conectando…' : `Conectar con ${platformConfig[newChannel.platform]?.label ?? newChannel.platform}`}
                       </button>
                     </div>
                   </div>
