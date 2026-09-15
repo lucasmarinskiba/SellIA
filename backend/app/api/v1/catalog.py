@@ -45,6 +45,7 @@ async def create_catalog_item(
         type=item_in.type,
         name=item_in.name,
         description=item_in.description,
+        category=item_in.category,
         price=item_in.price,
         currency=item_in.currency,
         stock=item_in.stock,
@@ -208,6 +209,37 @@ async def delete_catalog_item(
     await db.commit()
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
     return None
+
+
+@router.post("/debug/add-listing-columns", tags=["debug"])
+async def debug_add_listing_columns(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Temporary: force-apply the catalog_items schema patch (category,
+    source_platform, external_id + the dedup unique constraint) immediately.
+
+    schema_bootstrap.py only creates tables that don't exist yet -- it never
+    ALTERs one that's already there, so these new columns need this same
+    superuser-gated one-shot pattern already used for businesses.type/.config
+    (backend/app/api/v1/businesses.py). Call once after deploy.
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+    from sqlalchemy import text
+    try:
+        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS category VARCHAR(120)"))
+        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS source_platform VARCHAR(50)"))
+        await db.execute(text("ALTER TABLE catalog_items ADD COLUMN IF NOT EXISTS external_id VARCHAR(255)"))
+        await db.execute(text(
+            "ALTER TABLE catalog_items ADD CONSTRAINT uq_catalog_item_external "
+            "UNIQUE (business_id, source_platform, external_id)"
+        ))
+        await db.commit()
+        return {"status": "ok"}
+    except Exception as e:
+        await db.rollback()
+        return {"status": "error", "error": str(e)}
 
 
 @router.post("/{business_id}/items/{item_id}/enhance-description", response_model=CatalogItemResponse)
