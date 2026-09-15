@@ -40,11 +40,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loginNeedsVerification, setLoginNeedsVerification] = useState(false)
   const [resendingVerification, setResendingVerification] = useState(false)
   const [resendVerificationSent, setResendVerificationSent] = useState(false)
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false)
+  const [forgotPasswordSubmitting, setForgotPasswordSubmitting] = useState(false)
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false)
   const closeLoginModal = (): void => {
     setLoginModalOpen(false)
     setLoginEmail(''); setLoginPassword(''); setLoginTfaCode('')
     setLoginNeeds2fa(false); setLoginError(null); setLoginShowPassword(false)
     setLoginNeedsVerification(false); setResendVerificationSent(false)
+    setForgotPasswordMode(false); setForgotPasswordSent(false)
+  }
+  const handleForgotPasswordSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const email = (formData.get('email') as string | null)?.trim() || loginEmail.trim()
+    setLoginEmail(email)
+    setForgotPasswordSubmitting(true)
+    try {
+      await auth.forgotPassword(email)
+      setForgotPasswordSent(true)
+    } finally {
+      setForgotPasswordSubmitting(false)
+    }
   }
   const handleResendVerification = async (): Promise<void> => {
     setResendingVerification(true)
@@ -438,12 +455,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <LogIn size={18} /> Iniciar sesión
+                <LogIn size={18} /> {forgotPasswordMode ? 'Restablecer contraseña' : 'Iniciar sesión'}
               </h2>
               <button onClick={closeLoginModal} className="p-1 hover:bg-slate-100 rounded-lg">
                 <X size={18} className="text-slate-400" />
               </button>
             </div>
+
+            {forgotPasswordMode ? (
+              <>
+                <p className="text-xs text-slate-500 mb-4">
+                  Ingresá tu email y te mandamos un link para elegir una contraseña nueva.
+                </p>
+                {forgotPasswordSent ? (
+                  <p className="text-sm text-emerald-600">
+                    Si ese email está registrado, te llegó un link para restablecer tu contraseña. Revisá tu bandeja (y spam).
+                  </p>
+                ) : (
+                  <form onSubmit={e => { void handleForgotPasswordSubmit(e) }} className="space-y-3">
+                    <input
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                      required
+                      value={loginEmail}
+                      onChange={e => setLoginEmail(e.target.value)}
+                      placeholder="Email"
+                      className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    />
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordSubmitting}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-cyan-500 to-pink-500 text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                      {forgotPasswordSubmitting && <Loader2 size={14} className="animate-spin" />}
+                      {forgotPasswordSubmitting ? 'Enviando…' : 'Enviar link'}
+                    </button>
+                  </form>
+                )}
+                <p className="text-xs text-slate-400 mt-4 text-center">
+                  <button type="button" onClick={() => { setForgotPasswordMode(false); setForgotPasswordSent(false) }} className="text-cyan-600 hover:underline">
+                    Volver a iniciar sesión
+                  </button>
+                </p>
+              </>
+            ) : (
+            <>
             <p className="text-xs text-slate-500 mb-4">Entrá con el mail y contraseña de tu cuenta SellIA.</p>
 
             <form onSubmit={e => { void handleLoginSubmit(e) }} className="space-y-3">
@@ -510,9 +567,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             </form>
 
-            <p className="text-xs text-slate-400 mt-4 text-center">
+            <p className="text-xs text-slate-400 mt-3 text-center">
+              <button type="button" onClick={() => setForgotPasswordMode(true)} className="text-cyan-600 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </button>
+            </p>
+            <p className="text-xs text-slate-400 mt-2 text-center">
               ¿No tenés cuenta? <Link href="/register" onClick={closeLoginModal} className="text-cyan-600 hover:underline">Registrate</Link>
             </p>
+            </>
+            )}
           </div>
         </div>
       )}
