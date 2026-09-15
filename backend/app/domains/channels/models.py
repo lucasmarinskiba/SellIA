@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Enum, Integer, Numeric, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -55,8 +56,13 @@ class ChannelConnection(Base):
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     platform = Column(Enum(ChannelPlatform), nullable=False)
     name = Column(String(255), nullable=False)
-    credentials = Column(JSONB, default=dict, nullable=False)
-    settings = Column(JSONB, default=dict, nullable=False)
+    # MutableDict.as_mutable: without it, in-place edits like
+    # `channel.credentials["access_token"] = ...` (exactly what the OAuth
+    # callbacks below do) never mark the column dirty, so the UPDATE can
+    # silently omit it -- the token comes back from the platform, gets
+    # written into the dict, and is gone the moment the request ends.
+    credentials = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
+    settings = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
     status = Column(Enum(ChannelStatus), default=ChannelStatus.PENDING, nullable=False)
     status_message = Column(Text, nullable=True)
     webhook_url = Column(String(512), nullable=True)

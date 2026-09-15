@@ -11,6 +11,7 @@
 import { useState } from 'react'
 import { X, ArrowRight, ArrowLeft, Check, ExternalLink, Sparkles } from 'lucide-react'
 import { SELLIA } from '@/lib/sellia-theme'
+import { api } from '@/lib/api'
 import {
   type BusinessProfile, type LinkEntry, type CustomLink, type CustomLinkType,
   GOALS, CHANNELS, emptyProfile, loadProfile, saveProfile, validateLink, isComplete,
@@ -73,6 +74,7 @@ export default function BusinessProfileWizard({ open, onClose, onSaved }: Props)
   const [step, setStep] = useState(0)
   const [p, setP] = useState<BusinessProfile>(() => loadProfile() ?? emptyProfile())
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   if (!open) return null
   const set = (patch: Partial<BusinessProfile>): void => setP(prev => ({ ...prev, ...patch }))
@@ -93,18 +95,25 @@ export default function BusinessProfileWizard({ open, onClose, onSaved }: Props)
 
   const finish = async (): Promise<void> => {
     setSaving(true)
+    setSaveError(null)
     saveProfile(p)
-    // best-effort backend (Business.config); ignora si no hay sesión/backend
+    // Persist for real via the shared api client -- a raw fetch('/api/v1/...')
+    // here hit the frontend's own Vercel origin (no such route exists there)
+    // instead of the Railway backend, and carried no Authorization header,
+    // so this silently never reached Business.config even though the modal
+    // showed "Guardando..." and closed successfully.
     try {
-      await fetch('/api/v1/businesses', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: p.industry || 'Mi negocio',
-          type: p.bizType === 'servicio' ? 'services' : p.bizType === 'producto' ? 'products' : 'hybrid',
-          description: p.productDesc, config: p,
-        }),
+      await api.post('/businesses', {
+        name: p.industry || 'Mi negocio',
+        type: p.bizType === 'servicio' ? 'services' : p.bizType === 'producto' ? 'products' : 'hybrid',
+        description: p.productDesc,
+        config: p,
       })
-    } catch { /* localStorage ya guardó */ }
+    } catch {
+      setSaveError('Se guardó localmente en este navegador, pero no se pudo sincronizar con tu cuenta. Reintentá, o cerrá y probá de nuevo más tarde.')
+      setSaving(false)
+      return
+    }
     setSaving(false)
     onSaved(p)
     onClose()
@@ -280,6 +289,9 @@ export default function BusinessProfileWizard({ open, onClose, onSaved }: Props)
         </div>
 
         {/* footer nav */}
+        {saveError && (
+          <div style={{ padding: '8px 20px 0', fontSize: 12, color: T.amber }}>{saveError}</div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderTop: `1px solid ${T.border}` }}>
           <button type="button" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 9, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2, cursor: step === 0 ? 'not-allowed' : 'pointer', opacity: step === 0 ? 0.4 : 1, fontSize: 13 }}>

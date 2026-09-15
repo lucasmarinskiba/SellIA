@@ -264,11 +264,12 @@ Responde SOLO con la descripción mejorada, sin explicaciones."""
     if not enhanced:
         raise HTTPException(status_code=500, detail="No se pudo generar la descripción mejorada")
 
+    original_description = item.description
     item.description = enhanced.strip()
     if not item.extra_data:
         item.extra_data = {}
     item.extra_data["description_enhanced_at"] = __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat()
-    item.extra_data["original_description"] = item.description
+    item.extra_data["original_description"] = original_description
     await db.commit()
     await db.refresh(item)
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
