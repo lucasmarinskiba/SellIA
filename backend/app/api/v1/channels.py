@@ -313,6 +313,14 @@ async def get_oauth_url(
             "redirect_uri": meta_redirect_uri,
             "scope": scopes,
             "state": str(channel.id),
+            # Without this, Meta silently re-grants a code with no visible
+            # dialog once the user already authorized this app for an
+            # overlapping scope (e.g. connecting Instagram, then Messenger,
+            # then Facebook Marketplace) -- it looked like "it connected
+            # without me clicking Aceptar", because for that request there
+            # genuinely was no dialog to click. Forces the real
+            # Aceptar/Cancelar screen every time, for every platform.
+            "auth_type": "rerequest",
         }
         await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
@@ -323,18 +331,29 @@ async def get_oauth_url(
 @router.get("/oauth/callback/{platform}")
 async def oauth_callback(
     platform: ChannelPlatform,
-    code: str = Query(...),
-    state: str = Query(...),
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
+    error: str | None = Query(default=None),
+    error_reason: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ):
     """OAuth callback handler for supported platforms."""
     import httpx
-    
+
+    base_callback = settings.FRONTEND_URL or "http://localhost:3000"
+
+    # The user clicked Cancelar (or closed the dialog) on ML/Meta's own
+    # consent screen -- `code` never arrives, only `error`/`error_reason`.
+    # Nothing should get connected in that case; redirect back with a
+    # clear "you didn't authorize it" message instead of a raw 400/422.
+    if error or not code or not state:
+        return RedirectResponse(url=f"{base_callback}/dashboard/canales?connect_error=cancelled")
+
     try:
         channel_id = UUID(state)
     except ValueError:
         raise HTTPException(status_code=400, detail="State inválido")
-    
+
     result = await db.execute(
         select(ChannelConnection).where(
             ChannelConnection.id == channel_id,
@@ -344,8 +363,7 @@ async def oauth_callback(
     channel = result.scalar_one_or_none()
     if not channel:
         raise HTTPException(status_code=404, detail="Canal no encontrado")
-    
-    base_callback = settings.FRONTEND_URL or "http://localhost:3000"
+
     redirect_uri = f"{base_callback}/api/v1/businesses/oauth/callback/{platform.value}"
     
     if platform == ChannelPlatform.MERCADOLIBRE:
