@@ -151,7 +151,7 @@ export default function CanalesPage() {
   // Facebook Ads comparten una única app Meta (requiere que esa app haya
   // pasado App Review para funcionar con cualquier usuario, no solo los
   // admins/testers agregados en Meta Business Settings).
-  const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads']
+  const ONE_CLICK_PLATFORMS = ['mercadolibre', 'instagram', 'messenger', 'facebook_ads', 'facebook_marketplace']
   const [connectingOAuth, setConnectingOAuth] = useState(false)
   const handleConnectOAuth = async (platform: ChannelPlatform) => {
     setConnectingOAuth(true)

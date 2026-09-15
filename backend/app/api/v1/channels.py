@@ -266,7 +266,7 @@ async def get_oauth_url(
         await db.commit()
         return {"auth_url": f"{auth_url}?{urlencode(params)}"}
     
-    elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP):
+    elif platform in (ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.WHATSAPP, ChannelPlatform.FACEBOOK_MARKETPLACE):
         # App propia de SellIA (una sola, registrada una vez) -- mismo patrón
         # que Mercado Libre: el usuario final no crea ni pega app_id/secret,
         # solo autoriza su cuenta. Requiere que la app de Meta haya pasado
@@ -300,6 +300,11 @@ async def get_oauth_url(
             scopes = "whatsapp_business_messaging,whatsapp_business_management"
         elif platform == ChannelPlatform.INSTAGRAM:
             scopes = "instagram_basic,instagram_manage_messages,pages_show_list,pages_messaging"
+        elif platform == ChannelPlatform.FACEBOOK_MARKETPLACE:
+            # catalog_management/commerce webhooks (real Marketplace order sync)
+            # need Meta Commerce Platform approval beyond standard App Review --
+            # this scope only covers buyer messages via the Page for now.
+            scopes = "pages_messaging,pages_read_engagement,pages_show_list"
 
         auth_url = "https://www.facebook.com/v18.0/dialog/oauth"
         meta_redirect_uri = settings.META_REDIRECT_URI or redirect_uri
@@ -387,7 +392,76 @@ async def oauth_callback(
                 raise HTTPException(status_code=400, detail=f"Error de OAuth: {response.text}")
 
             data = response.json()
-            channel.credentials["access_token"] = data.get("access_token")
+            user_token = data.get("access_token")
+            if not user_token:
+                raise HTTPException(status_code=400, detail="Meta no devolvió un access_token")
+
+            # The connectors (instagram.py/messenger.py) read `api_token` as a
+            # PAGE access token, not this user token -- sending messages with
+            # the user token fails with "Faltan credenciales". Exchange for a
+            # long-lived user token, then fetch the pages this user manages
+            # to get a (non-expiring) page token, and for Instagram the
+            # linked Instagram Business Account id.
+            long_lived_resp = await client.get(
+                "https://graph.facebook.com/v18.0/oauth/access_token",
+                params={
+                    "grant_type": "fb_exchange_token",
+                    "client_id": settings.META_APP_ID,
+                    "client_secret": settings.META_APP_SECRET,
+                    "fb_exchange_token": user_token,
+                },
+            )
+            long_lived_token = long_lived_resp.json().get("access_token", user_token) if long_lived_resp.status_code == 200 else user_token
+
+            pages_resp = await client.get(
+                "https://graph.facebook.com/v18.0/me/accounts",
+                params={"access_token": long_lived_token},
+            )
+            pages = pages_resp.json().get("data", []) if pages_resp.status_code == 200 else []
+
+            if platform in (ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.FACEBOOK_ADS, ChannelPlatform.FACEBOOK_MARKETPLACE) and not pages:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Tu cuenta de Facebook no administra ninguna Página. Creá una Página de Facebook primero e intentá de nuevo.",
+                )
+
+            if platform == ChannelPlatform.MESSENGER:
+                page = pages[0]
+                channel.credentials["api_token"] = page.get("access_token")
+                channel.credentials["page_id"] = page.get("id")
+
+            elif platform == ChannelPlatform.INSTAGRAM:
+                page = pages[0]
+                ig_resp = await client.get(
+                    f"https://graph.facebook.com/v18.0/{page.get('id')}",
+                    params={"fields": "instagram_business_account", "access_token": page.get("access_token")},
+                )
+                ig_account = (ig_resp.json() if ig_resp.status_code == 200 else {}).get("instagram_business_account")
+                if not ig_account:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Esa Página de Facebook no tiene una cuenta de Instagram profesional vinculada. Vinculala en la configuración de la Página e intentá de nuevo.",
+                    )
+                channel.credentials["api_token"] = page.get("access_token")
+                channel.credentials["instagram_account_id"] = ig_account.get("id")
+                channel.credentials["page_id"] = page.get("id")
+
+            elif platform == ChannelPlatform.FACEBOOK_ADS:
+                page = pages[0]
+                channel.credentials["access_token"] = page.get("access_token")
+                channel.credentials["page_id"] = page.get("id")
+
+            elif platform == ChannelPlatform.FACEBOOK_MARKETPLACE:
+                page = pages[0]
+                channel.credentials["page_access_token"] = page.get("access_token")
+                channel.credentials["page_id"] = page.get("id")
+                # catalog_id (for real order sync) still needs Meta Commerce
+                # Platform approval + manual setup -- not obtainable from this
+                # OAuth grant alone.
+
+            else:  # WHATSAPP
+                channel.credentials["access_token"] = long_lived_token
+
             channel.status = ChannelStatus.CONNECTED
             await db.commit()
             return RedirectResponse(url=f"{base_callback}/dashboard/canales?connected={platform.value}")
