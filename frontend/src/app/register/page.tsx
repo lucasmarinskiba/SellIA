@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { authApi, setToken, extractErrorMessage } from '@/lib/sellia-api'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const translations = {
@@ -77,10 +77,16 @@ export default function RegisterPage() {
     if (!form.full_name.trim()) return lang === 'es' ? 'Nombre requerido' : 'Name required'
     if (!form.email.trim()) return lang === 'es' ? 'Email requerido' : 'Email required'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return lang === 'es' ? 'Email inválido' : 'Invalid email'
-    if (form.password.length < 10) return lang === 'es' ? 'Mínimo 10 caracteres' : 'Min 10 characters'
+    if (form.password.length < 8) return lang === 'es' ? 'Mínimo 8 caracteres' : 'Min 8 characters'
     if (!/[A-Z]/.test(form.password)) return lang === 'es' ? 'Mayúscula requerida' : 'Uppercase required'
     if (!/[a-z]/.test(form.password)) return lang === 'es' ? 'Minúscula requerida' : 'Lowercase required'
     if (!/[0-9]/.test(form.password)) return lang === 'es' ? 'Número requerido' : 'Number required'
+    // Matches backend/app/api/v1/signup.py's SignupRequest validator exactly
+    // -- this page used to only check upper/lower/digit, so a password like
+    // "Password123" passed client-side validation and then 422'd against
+    // the real backend rule (needs one of @+-!#$%), with the 422's actual
+    // message shown as a generic "Error al crear cuenta" (see catch below).
+    if (!/[@+\-!#$%]/.test(form.password)) return lang === 'es' ? 'Necesita un símbolo (@+-!#$%)' : 'Needs a symbol (@+-!#$%)'
     if (form.password !== form.confirm_password) return lang === 'es' ? 'Contraseñas no coinciden' : 'Passwords do not match'
     return ''
   }
@@ -92,11 +98,17 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await auth.register({ email: form.email, password: form.password, full_name: form.full_name, honeypot: form.honeypot })
-      await auth.login({ email: form.email, password: form.password })
+      // Moved off auth.register()+auth.login() (cookie-based
+      // backend/app/api/v1/auth.py) onto authApi.signup() (Bearer token,
+      // backend/app/api/v1/signup.py's /auth/signup) -- same backend the
+      // other real login screens (/sellia-login, /sellia-brain's modal)
+      // already use, instead of a third account created under a system
+      // that couldn't share a session with the rest of the app.
+      const data = await authApi.signup({ email: form.email, password: form.password, name: form.full_name })
+      setToken(data.access_token!)
       router.push('/dashboard')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || (lang === 'es' ? 'Error al crear cuenta' : 'Creation failed'))
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, lang === 'es' ? 'Error al crear cuenta' : 'Creation failed'))
     } finally {
       setLoading(false)
     }

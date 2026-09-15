@@ -299,6 +299,8 @@ const AuthModal = ({
   const [show,  setShow]  = useState(false)
   const [err,   setErr]   = useState('')
   const [loading, setLoading] = useState(false)
+  const [needs2fa, setNeeds2fa] = useState(false)
+  const [totpCode, setTotpCode] = useState('')
 
   // Real accounts (see auth section comment above) -- password strength is
   // enforced server-side (backend/app/api/v1/signup.py's SignupRequest
@@ -313,9 +315,9 @@ const AuthModal = ({
     setLoading(true)
     try {
       const data = await authApi.signup({ email: email.toLowerCase(), password: pass, name: name.trim() })
-      setToken(data.access_token)
+      setToken(data.access_token!)
       const u: UserProfile = {
-        id: data.user_id, name: data.full_name, email: data.email,
+        id: data.user_id, name: data.full_name!, email: data.email!,
         createdAt: new Date().toISOString(),
       }
       saveUser(u)
@@ -330,12 +332,18 @@ const AuthModal = ({
   const handleLogin = async (): Promise<void> => {
     setErr('')
     if (!email || !pass) { setErr('Completá todos los campos'); return }
+    if (needs2fa && !totpCode) { setErr('Ingresá el código 2FA'); return }
     setLoading(true)
     try {
-      const data = await authApi.login({ email: email.toLowerCase(), password: pass })
-      setToken(data.access_token)
+      const data = await authApi.login({ email: email.toLowerCase(), password: pass, totp_code: needs2fa ? totpCode : undefined })
+      if (data.requires_2fa) {
+        setNeeds2fa(true)
+        setErr('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
+        return
+      }
+      setToken(data.access_token!)
       const u: UserProfile = {
-        id: data.user_id, name: data.full_name, email: data.email,
+        id: data.user_id, name: data.full_name!, email: data.email!,
         createdAt: new Date().toISOString(),
       }
       saveUser(u)
@@ -397,6 +405,15 @@ const AuthModal = ({
               </button>
             </div>
           </div>
+
+          {needs2fa && tab === 'login' && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(160,180,220,0.5)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6, fontFamily: 'monospace' }}>Código 2FA</div>
+              <input value={totpCode} onChange={e => setTotpCode(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleLogin() }}
+                placeholder="123456" autoFocus style={inp} />
+            </div>
+          )}
 
           {err && (
             <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', fontSize: 13, color: '#F87171' }}>

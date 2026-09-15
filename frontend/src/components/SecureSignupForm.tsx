@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
+import { authApi, setToken, extractErrorMessage } from '@/lib/sellia-api';
 
 interface SecureSignupFormProps {
   onSuccess: (userData: { userId: string; email: string }) => void;
@@ -56,29 +57,21 @@ export const SecureSignupForm: React.FC<SecureSignupFormProps> = ({
 
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app';
-      const response = await fetch(`${backendUrl}/api/v1/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: fullName,
-          email,
-          password,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || 'Error en el signup');
-      }
-
-      const data = await response.json();
+      // Was a raw fetch that discarded the response's access_token
+      // entirely -- the caller (app/signup/page.tsx) redirects to
+      // /dashboard right after signup (optionally after a 2FA-setup
+      // step), expecting the user to already be logged in, but no token
+      // was ever stored anywhere, so /dashboard always saw them as
+      // logged out. Now uses authApi.signup() + setToken(), same as
+      // every other real signup screen in the app.
+      const data = await authApi.signup({ email, password, name: fullName });
+      setToken(data.access_token!);
       onSuccess({
         userId: data.user_id,
-        email: data.email,
+        email: data.email!,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error desconocido';
+      const message = extractErrorMessage(err, 'Error en el signup');
       setErrors({ submit: message });
       onError?.(message);
     } finally {

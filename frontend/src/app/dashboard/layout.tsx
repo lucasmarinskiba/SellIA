@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { businessApi, type Business } from '@/lib/business'
 import { api } from '@/lib/api'
 import { auth } from '@/lib/auth'
+import { authApi, setToken, extractErrorMessage } from '@/lib/sellia-api'
 
 // Same chat widget as /sellia-brain (dock prop = same docked-right design,
 // same conversation history) -- lazy-loaded client-side only, it touches
@@ -89,23 +90,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setLoginNeedsVerification(false)
     setResendVerificationSent(false)
     try {
-      await auth.login({
+      // Moved off auth.login() (cookie-based, backend/app/api/v1/auth.py)
+      // onto authApi.login() (Bearer token in localStorage,
+      // backend/app/api/v1/signup.py's /auth/signin) -- same login screens
+      // across the app now share one real backend/session mechanism
+      // instead of two that never talked to each other. This path doesn't
+      // enforce email_verified (signin() never checks it), so that failure
+      // mode can't come back from here anymore; the branch below stays for
+      // defensiveness only. forgot-password/resend-verification keep
+      // hitting the old auth.ts endpoints on purpose -- they read/write
+      // the same `users` table either way.
+      const data = await authApi.login({
         email,
         password,
-        tfaCode: loginTfaCode.trim() || undefined,
+        totp_code: loginTfaCode.trim() || undefined,
       })
+      if (data.requires_2fa) {
+        setLoginNeeds2fa(true)
+        setLoginError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
+        return
+      }
+      setToken(data.access_token!)
       await refetch()
       closeLoginModal()
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      if (detail === '2FA_REQUIRED') {
-        setLoginNeeds2fa(true)
-        setLoginError('Esta cuenta tiene 2FA activado. Ingresá el código de tu app autenticadora.')
-      } else if (detail === 'EMAIL_NOT_VERIFIED') {
+      if (detail === 'EMAIL_NOT_VERIFIED') {
         setLoginNeedsVerification(true)
         setLoginError('Todavía no verificaste tu email. Revisá tu bandeja de entrada (y spam) o pedí que te lo reenviemos.')
       } else {
-        setLoginError(typeof detail === 'string' ? detail : 'Email o contraseña incorrectos.')
+        setLoginError(extractErrorMessage(err, 'Email o contraseña incorrectos.'))
       }
     } finally {
       setLoginSubmitting(false)

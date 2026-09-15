@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { authApi, setToken, extractErrorMessage } from '@/lib/sellia-api'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 const translations = {
@@ -79,30 +79,24 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app';
-      const response = await fetch(`${backendUrl}/api/v1/auth/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          totp_code: step === 'totp' ? totpCode : undefined,
-        }),
-      })
-
-      const data = await response.json()
-
+      // Was a raw fetch storing the token under localStorage keys
+      // 'access_token'/'user_id' -- the rest of the app (lib/api.ts's
+      // interceptor, lib/sellia-api/client.ts) only ever reads
+      // 'sellia.token', so a "successful" login here never actually
+      // carried over anywhere else in the app; every other page still saw
+      // the user as logged out. Now goes through the same authApi.login()
+      // + setToken() every other real login screen uses.
+      const data = await authApi.login({ email, password, totp_code: step === 'totp' ? totpCode : undefined })
       if (data.requires_2fa && step === 'credentials') {
         setStep('totp')
-      } else if (response.ok && data.access_token) {
-        localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('user_id', data.user_id)
+      } else if (data.access_token) {
+        setToken(data.access_token)
         router.push('/dashboard')
       } else {
-        setError(data.detail || 'Error al iniciar sesión')
+        setError('Error al iniciar sesión')
       }
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión')
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Error al iniciar sesión'))
     } finally {
       setLoading(false)
     }

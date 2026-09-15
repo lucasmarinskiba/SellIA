@@ -21,8 +21,13 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      setToken(data.access_token)
-      qc.invalidateQueries({ queryKey: ['me'] })
+      // No token yet when the account has 2FA and this call didn't include
+      // totp_code -- data.requires_2fa is true, caller shows a code input
+      // and calls login() again with it.
+      if (data.access_token) {
+        setToken(data.access_token)
+        qc.invalidateQueries({ queryKey: ['me'] })
+      }
     },
   })
 }
@@ -32,7 +37,8 @@ export const useSignup = () => {
   return useMutation({
     mutationFn: authApi.signup,
     onSuccess: (data) => {
-      setToken(data.access_token)
+      // /auth/signup always returns a token (no 2FA gate on signup itself).
+      setToken(data.access_token!)
       qc.invalidateQueries({ queryKey: ['me'] })
     },
   })
