@@ -1,31 +1,20 @@
 """
 Servicio genérico de email transaccional para SellIA.
 
-Reutiliza aiosmtplib pero sin el prefijo [ALERTA SEGURIDAD] y con
-plantillas de estilo consistente para todas las comunicaciones.
+Delega en app.core.email_sender.get_email_sender(), que resuelve al
+provider ya configurado (Resend/SendGrid) -- no requiere su propia
+configuración SMTP. Mantiene plantillas de estilo consistente para todas
+las comunicaciones (verify-email, reset-password, etc.).
 """
 
 import os
 from typing import Optional
 
-import aiosmtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-SMTP_HOST = os.getenv("SMTP_HOST", "")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "SellIA")
-
-
-def _smtp_configured() -> bool:
-    return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
 
 
 async def send_email(
@@ -38,43 +27,38 @@ async def send_email(
 ) -> bool:
     """Envía un email transaccional genérico.
 
+    This used to require raw SMTP_HOST/SMTP_USER/SMTP_PASSWORD env vars and
+    silently no-op (log a warning, return False, callers ignore it) if they
+    weren't set -- which they never were in production, so no verification
+    or password-reset email had ever actually gone out even though
+    RESEND_API_KEY was already configured for a completely separate sender
+    (app/core/email_sender.py, used elsewhere in the app). Routed through
+    that same sender so this reuses whatever provider (Resend/SendGrid) is
+    already configured, instead of needing its own SMTP setup.
+
     Args:
         to_email: Destinatario
         subject: Asunto
         body_html: Cuerpo HTML
-        body_text: Cuerpo texto plano (opcional, se genera desde HTML si no se provee)
-        from_email: Email remitente (default: SMTP_FROM)
+        body_text: Cuerpo texto plano (ignorado por el sender de Resend/SendGrid, que solo manda HTML)
+        from_email: Email remitente (default: dominio de pruebas de Resend, funciona sin verificar dominio propio)
         from_name: Nombre remitente (default: SellIA)
     """
-    if not _smtp_configured():
-        logger.warning("SMTP no configurado, email no enviado: %s", subject)
-        return False
+    from app.core.email_sender import get_email_sender
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = f"{from_name or SMTP_FROM_NAME} <{from_email or SMTP_FROM}>"
-        msg["To"] = to_email
-        msg["Subject"] = subject
-
-        text_body = body_text or _html_to_text(body_html)
-        part1 = MIMEText(text_body, "plain", "utf-8")
-        part2 = MIMEText(body_html, "html", "utf-8")
-        msg.attach(part1)
-        msg.attach(part2)
-
-        await aiosmtplib.send(
-            msg,
-            hostname=SMTP_HOST,
-            port=SMTP_PORT,
-            start_tls=True,
-            username=SMTP_USER,
-            password=SMTP_PASSWORD,
-        )
-        logger.info("Email enviado a %s: %s", to_email, subject)
+    sender = get_email_sender()
+    result = await sender.send_email(
+        to=to_email,
+        subject=subject,
+        body=body_html,
+        from_email=from_email or "onboarding@resend.dev",
+        from_name=from_name or SMTP_FROM_NAME,
+    )
+    if result.get("status") == "sent":
+        logger.info("Email enviado a %s vía %s: %s", to_email, result.get("provider"), subject)
         return True
-    except Exception as e:
-        logger.error("Error enviando email a %s: %s", to_email, e)
-        return False
+    logger.error("Error enviando email a %s vía %s: %s", to_email, result.get("provider"), result.get("error"))
+    return False
 
 
 def _html_to_text(html: str) -> str:
