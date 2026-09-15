@@ -73,6 +73,12 @@ export default function CanalesPage() {
       window.history.replaceState({}, '', window.location.pathname)
       if (selectedBusiness) loadChannels()
     }
+    const connect = params.get('connect')
+    if (connect) {
+      window.history.replaceState({}, '', window.location.pathname)
+      setNewChannel(prev => ({ ...prev, platform: connect as ChannelPlatform, credentials: {} }))
+      setShowAddModal(true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBusiness])
 
