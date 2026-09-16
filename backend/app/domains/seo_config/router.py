@@ -18,6 +18,7 @@ from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsS
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
 from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.fomo_models import ConversionEvent
+from app.domains.seo_config.fomo_abtest_service import FOMABTestService
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -138,6 +139,26 @@ class FOMAPreviewResponse(BaseModel):
     link: dict
     original: dict
     with_fomo: dict
+
+
+class CreateABTestRequest(BaseModel):
+    link_id: UUID
+    variant_a_id: UUID
+    variant_b_id: UUID
+    variant_c_id: UUID | None = None
+    min_conversions: int = 100
+
+
+class ABTestMetricsResponse(BaseModel):
+    test_id: str
+    status: str
+    min_conversions: int
+    total_conversions: int
+    variant_a: dict
+    variant_b: dict
+    variant_c: dict | None
+    winner_id: str | None
+    winner_announced_at: str | None
 
 
 # ── Global SEO Config ──
@@ -715,3 +736,99 @@ async def get_fomo_preview(
         )
 
     return preview
+
+
+# ── FOMO Phase 2: A/B Testing ──
+
+@router.post("/{business_id}/fomo-ab-tests", response_model=dict)
+async def create_ab_test(
+    business_id: UUID,
+    data: CreateABTestRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create A/B test for FOMO variants."""
+    svc = FOMABTestService(db)
+    try:
+        test = await svc.create_ab_test(
+            business_id=business_id,
+            link_id=data.link_id,
+            variant_a_id=data.variant_a_id,
+            variant_b_id=data.variant_b_id,
+            variant_c_id=data.variant_c_id,
+            min_conversions=data.min_conversions,
+        )
+        return {
+            "id": str(test.id),
+            "status": test.status,
+            "link_id": str(test.link_id),
+            "created_at": test.created_at.isoformat(),
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{business_id}/fomo-ab-tests/{test_id}", response_model=ABTestMetricsResponse)
+async def get_ab_test_metrics(
+    business_id: UUID,
+    test_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get A/B test metrics and status."""
+    svc = FOMABTestService(db)
+    metrics = await svc.get_test_metrics(test_id)
+
+    if not metrics:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    return metrics
+
+
+@router.post("/{business_id}/fomo-ab-tests/{test_id}/apply-winner", response_model=dict)
+async def apply_ab_test_winner(
+    business_id: UUID,
+    test_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Apply winning variant to publication link."""
+    svc = FOMABTestService(db)
+
+    # Check and announce winner if not done yet
+    test = await svc.check_and_announce_winner(test_id)
+    if not test or not test.winner_variant_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Test not completed or no winner yet. Minimum conversions not reached.",
+        )
+
+    # Apply winner
+    link = await svc.apply_winner_to_link(test_id)
+    if not link:
+        raise HTTPException(status_code=500, detail="Failed to apply winner")
+
+    return {
+        "test_id": str(test_id),
+        "winner_variant_id": str(test.winner_variant_id),
+        "link_id": str(link.id),
+        "status": "applied",
+    }
+
+
+@router.get("/{business_id}/fomo-ab-tests/running", response_model=list[dict])
+async def list_running_tests(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all running A/B tests for business."""
+    svc = FOMABTestService(db)
+    tests = await svc.list_running_tests(business_id)
+
+    result = []
+    for test in tests:
+        metrics = await svc.get_test_metrics(test.id)
+        result.append(metrics)
+
+    return result
