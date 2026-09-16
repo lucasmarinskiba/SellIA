@@ -1947,7 +1947,9 @@
       "Bash(git commit -m 'feat: FOMO Phase 1 - Real-time ticker + preview + urgency metrics *)",
       "Bash(git commit -m 'feat: FOMO Phase 2 - A/B Testing Framework *)",
       "Bash(git commit -m 'feat: FOMO Phase 3 - Smart Rotation + Decay Detection *)",
-      "Bash(git commit -m 'feat: FOMO Phases 4-6 - Predictive Scoring, Cross-Platform, Closed-Loop *)"
+      "Bash(git commit -m 'feat: FOMO Phases 4-6 - Predictive Scoring, Cross-Platform, Closed-Loop *)",
+      "Bash(git commit -m 'feat: Option 2 - Phase12 FOMO Integration *)",
+      "Bash(git commit -m 'feat: Option 3 - Real-time Webhooks & SSE *)"
     ]
   }
 }
