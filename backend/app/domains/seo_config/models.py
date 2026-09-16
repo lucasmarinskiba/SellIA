@@ -145,30 +145,10 @@ class PlatformSyncLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-class PublicationLinkMetrics(Base):
-    """Daily performance metrics for publication links."""
-    __tablename__ = "publication_link_metrics"
-    __table_args__ = (Index("idx_link_metrics", "link_id"), Index("idx_date_metrics", "metric_date"))
-
-    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"))
-    link_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("publication_links.id", ondelete="CASCADE"))
-    metric_date: Mapped[date] = mapped_column(Date, index=True)
-    platform_name: Mapped[str] = mapped_column(String(50))
-    impressions: Mapped[int] = mapped_column(default=0)
-    clicks: Mapped[int] = mapped_column(default=0)
-    conversions: Mapped[int] = mapped_column(default=0)
-    ctr: Mapped[float] = mapped_column(default=0.0)
-    conversion_rate: Mapped[float] = mapped_column(default=0.0)
-    revenue: Mapped[float] = mapped_column(default=0.0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-
 SEO_CONFIG_TABLES = [
     SEOConfig.__table__,
     PlatformSEOStatus.__table__,
     PublicationLink.__table__,
     PublicationLinkFOMO.__table__,
     PlatformSyncLog.__table__,
-    PublicationLinkMetrics.__table__,
 ]
