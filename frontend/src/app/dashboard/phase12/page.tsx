@@ -23,6 +23,8 @@ import { api } from '@/lib/api'
 import { businessApi, type Business } from '@/lib/business'
 import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import LinksManager from '@/components/web-presence/LinksManager'
+import { SEOPlatformsControl } from '@/components/seo/SEOPlatformsControl'
+import { PublicationLinksManager } from '@/components/seo/PublicationLinksManager'
 import {
   webPresenceApi, SEVERITY_STYLE, scoreColor, type CompareResult, type SeoReport,
 } from '@/lib/webPresence'
@@ -116,6 +118,24 @@ export default function SeoPage(): React.JSX.Element {
       </div>
 
       <div className="space-y-6">
+        {/* SEO Platforms Control */}
+        {business && (
+          <SEOPlatformsControl businessId={business.id} onChanged={loadReport} />
+        )}
+
+        {/* Publication Links Manager */}
+        {business && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="mb-4">
+              <h2 className="font-semibold text-slate-900">Publicaciones para posicionar</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                Agregá links de tus publicaciones en redes sociales o plataformas para que la IA las posicione automáticamente
+              </p>
+            </div>
+            <PublicationLinksManager businessId={business.id} onChanged={loadReport} />
+          </div>
+        )}
+
         <LinksManager onChanged={loadReport} />
 
         {loading && (
