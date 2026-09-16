@@ -2,6 +2,7 @@
 
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -10,7 +11,8 @@ from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
+from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -67,6 +69,14 @@ class FOOMGenerationResponse(BaseModel):
     links_processed: int
     fomo_generated: int
     failed: int
+
+
+class PlatformSyncResponse(BaseModel):
+    business_id: str
+    links_processed: int
+    synced: int
+    failed: int
+    skipped: int
 
 
 # ── Global SEO Config ──
@@ -272,3 +282,91 @@ async def get_link_fomo(
     generator = PublicationFOMOGenerator(db)
     fomo_entry = await generator.get_latest_fomo(link_id)
     return fomo_entry
+
+
+# ── Platform Sync ──
+@router.post("/{business_id}/sync-all", response_model=PlatformSyncResponse)
+async def sync_all_links(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Sync FOMO copy for all active publication links to their platforms."""
+    sync_service = PlatformListingSyncService(db)
+    result = await sync_service.sync_all_links(business_id)
+    return result
+
+
+@router.post("/publication-links/{link_id}/sync")
+async def sync_link(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Sync FOMO copy for a specific link to its platform."""
+    svc = PublicationLinkService(db)
+    link = await svc.get_publication_link(link_id)
+
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publication link not found",
+        )
+
+    # Get latest FOMO
+    fomo_result = await db.execute(
+        select(PublicationLinkFOMO)
+        .where(PublicationLinkFOMO.link_id == link_id)
+        .order_by(PublicationLinkFOMO.created_at.desc())
+        .limit(1)
+    )
+    fomo = fomo_result.scalar_one_or_none()
+
+    if not fomo:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No FOMO copy generated yet. Generate FOMO first.",
+        )
+
+    sync_service = PlatformListingSyncService(db)
+    log = await sync_service.sync_fomo_to_listing(business_id, link, fomo)
+
+    return {
+        "log_id": str(log.id),
+        "status": log.status,
+        "error_message": log.error_message,
+        "platform": log.platform_name,
+        "external_listing_id": log.external_listing_id,
+    }
+
+
+@router.get("/{business_id}/sync-history")
+async def get_sync_history(
+    business_id: UUID,
+    limit: int = Query(50, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get sync history for a business."""
+    result = await db.execute(
+        select(PlatformSyncLog)
+        .where(PlatformSyncLog.business_id == business_id)
+        .order_by(PlatformSyncLog.created_at.desc())
+        .limit(limit)
+    )
+    logs = result.scalars().all()
+
+    return [
+        {
+            "id": str(log.id),
+            "link_id": str(log.link_id),
+            "platform": log.platform_name,
+            "status": log.status,
+            "external_listing_id": log.external_listing_id,
+            "error_message": log.error_message,
+            "synced_at": log.synced_at.isoformat() if log.synced_at else None,
+            "created_at": log.created_at.isoformat(),
+        }
+        for log in logs
+    ]
