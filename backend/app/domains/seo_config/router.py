@@ -12,7 +12,8 @@ from app.domains.users.models import User
 from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
 from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog
+from app.domains.seo_config.bulk_import import BulkListingImporter
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog, PlatformSEOStatus
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -77,6 +78,17 @@ class PlatformSyncResponse(BaseModel):
     synced: int
     failed: int
     skipped: int
+
+
+class BulkImportListingRequest(BaseModel):
+    platform_source: str
+    listings: list[dict]  # [{url, title, product_id (opt)}]
+
+
+class BulkImportResponse(BaseModel):
+    imported: int
+    fomo_generated: int
+    failed: int
 
 
 # ── Global SEO Config ──
@@ -370,3 +382,24 @@ async def get_sync_history(
         }
         for log in logs
     ]
+
+
+# ── Bulk Operations ──
+@router.post("/{business_id}/bulk-import", response_model=BulkImportResponse)
+async def bulk_import_listings(
+    business_id: UUID,
+    data: BulkImportListingRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bulk import listings from a platform.
+
+    Creates PublicationLink for each + auto-generates FOMO copy.
+    """
+    importer = BulkListingImporter(db)
+    result = await importer.import_listings_from_platform(
+        business_id,
+        data.listings,
+        data.platform_source,
+    )
+    return result
