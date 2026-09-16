@@ -1945,7 +1945,8 @@
       "Bash(grep -E \"\\\\.py$|^[^.]*$\")",
       "Bash(grep \"\\\\.py$\")",
       "Bash(git commit -m 'feat: FOMO Phase 1 - Real-time ticker + preview + urgency metrics *)",
-      "Bash(git commit -m 'feat: FOMO Phase 2 - A/B Testing Framework *)"
+      "Bash(git commit -m 'feat: FOMO Phase 2 - A/B Testing Framework *)",
+      "Bash(git commit -m 'feat: FOMO Phase 3 - Smart Rotation + Decay Detection *)"
     ]
   }
 }
