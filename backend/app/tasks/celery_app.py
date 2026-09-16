@@ -509,6 +509,10 @@ celery_app.conf.beat_schedule = {
         "task": "seo_config.check_ab_test_winners",
         "schedule": 3600.0,  # cada 1 hora (detecta ganadores rápido)
     },
+    "monitor-fomo-decay": {
+        "task": "seo_config.monitor_fomo_decay",
+        "schedule": 86400.0,  # cada 24 horas (monitorea decay diario)
+    },
 }
 
 

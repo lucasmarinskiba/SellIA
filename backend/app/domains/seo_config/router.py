@@ -19,6 +19,7 @@ from app.domains.seo_config.analytics_models import PublicationLinkMetrics, Publ
 from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.fomo_models import ConversionEvent
 from app.domains.seo_config.fomo_abtest_service import FOMABTestService
+from app.domains.seo_config.fomo_decay_service import FOMADecayService
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -832,3 +833,46 @@ async def list_running_tests(
         result.append(metrics)
 
     return result
+
+
+# ── FOMO Phase 3: Smart Rotation + Decay Detection ──
+
+@router.get("/{business_id}/fomo-decay/detect", response_model=list[dict])
+async def detect_fomo_decay(
+    business_id: UUID,
+    decay_threshold: float = Query(30.0, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Detect FOMO copy decay (CTR drop > threshold)."""
+    svc = FOMADecayService(db)
+    decayed_links = await svc.get_links_with_decay(
+        business_id,
+        decay_threshold_pct=decay_threshold,
+    )
+    return decayed_links
+
+
+@router.get("/{business_id}/fomo-decay/history", response_model=list[dict])
+async def get_decay_history(
+    business_id: UUID,
+    limit: int = Query(50, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get decay detection history."""
+    svc = FOMADecayService(db)
+    logs = await svc.get_decay_history(business_id, limit=limit)
+
+    return [
+        {
+            "id": str(log.id),
+            "link_id": str(log.link_id),
+            "baseline_ctr": log.previous_ctr,
+            "current_ctr": log.current_ctr,
+            "decay_pct": log.decay_percentage,
+            "action": log.action,
+            "detected_at": log.created_at.isoformat(),
+        }
+        for log in logs
+    ]

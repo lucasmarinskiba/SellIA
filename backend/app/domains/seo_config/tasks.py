@@ -207,3 +207,58 @@ def check_ab_test_winners(self):
                 await engine.dispose()
 
     return asyncio.run(_check())
+
+
+@shared_task(bind=True, name="seo_config.monitor_fomo_decay")
+def monitor_fomo_decay(self):
+    """Monitor FOMO copy decay and log detected issues."""
+    import asyncio
+
+    async def _monitor():
+        engine = create_async_engine(settings.DATABASE_URL)
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as db:
+            try:
+                from app.domains.seo_config.fomo_decay_service import FOMADecayService
+                from app.domains.businesses.models import Business
+
+                # Get all active businesses
+                result = await db.execute(select(Business).where(Business.active == True))
+                businesses = result.scalars().all()
+
+                decay_svc = FOMADecayService(db)
+                total_decay_detected = 0
+
+                for business in businesses:
+                    try:
+                        # Detect decay for all links
+                        decayed = await decay_svc.get_links_with_decay(
+                            business.id,
+                            decay_threshold_pct=30.0,
+                        )
+
+                        for item in decayed:
+                            # Log decay
+                            await decay_svc.log_decay_and_regenerate(
+                                business.id,
+                                item["link"]["id"],
+                                item["baseline_ctr"],
+                                item["current_ctr"],
+                                item["decay_percentage"],
+                                action="regenerate",
+                            )
+                            total_decay_detected += 1
+                    except Exception as e:
+                        logger.error(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
+
+                logger.info(f"FOMO decay monitor complete: {total_decay_detected} decay events detected")
+                return {"decay_detected": total_decay_detected}
+
+            except Exception as e:
+                logger.error(f"Error in monitor_fomo_decay: {str(e)[:200]}")
+                raise
+            finally:
+                await engine.dispose()
+
+    return asyncio.run(_monitor())
