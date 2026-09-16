@@ -25,6 +25,7 @@ import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import LinksManager from '@/components/web-presence/LinksManager'
 import { SEOPlatformsControl } from '@/components/seo/SEOPlatformsControl'
 import { PublicationLinksManager } from '@/components/seo/PublicationLinksManager'
+import { FOMADashboard } from '@/components/fomo/FOMADashboard'
 import {
   webPresenceApi, SEVERITY_STYLE, scoreColor, type CompareResult, type SeoReport,
 } from '@/lib/webPresence'
@@ -134,6 +135,11 @@ export default function SeoPage(): React.JSX.Element {
             </div>
             <PublicationLinksManager businessId={business.id} onChanged={loadReport} />
           </div>
+        )}
+
+        {/* FOMO Dashboard */}
+        {business && (
+          <FOMADashboard businessId={business.id} />
         )}
 
         <LinksManager onChanged={loadReport} />
