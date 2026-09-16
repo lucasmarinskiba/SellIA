@@ -131,6 +131,7 @@ _modules = [
     "app.domains.agents.tasks_scoring",
     "app.domains.agents.auto_responder.tasks",
     "app.domains.training.tasks",
+    "app.domains.seo_config.tasks",
 ]
 _includes = []
 for mod in _modules:
@@ -490,6 +491,19 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.sales_funnel_tasks.daily_growth_cycle",
         "schedule": 86400.0,  # cada 24 horas (6 AM UTC)
         "args": ({"name": "SellIA Pro", "price": 499, "niche": "sales"},),
+    },
+    # === SEO Config Analytics & FOMO ===
+    "fetch-nightly-analytics": {
+        "task": "seo_config.fetch_nightly_analytics",
+        "schedule": 86400.0,  # cada 24 horas (noche)
+    },
+    "generate-fomo-cadence": {
+        "task": "seo_config.generate_fomo_cadence",
+        "schedule": 21600.0,  # cada 6 horas
+    },
+    "compute-analytics-summaries": {
+        "task": "seo_config.compute_analytics_summaries",
+        "schedule": 604800.0,  # cada 7 días (análisis semanal)
     },
 }
 

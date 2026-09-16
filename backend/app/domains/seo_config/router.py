@@ -14,6 +14,8 @@ from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
 from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
 from app.domains.seo_config.bulk_import import BulkListingImporter
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog, PlatformSEOStatus
+from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
+from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -89,6 +91,32 @@ class BulkImportResponse(BaseModel):
     imported: int
     fomo_generated: int
     failed: int
+
+
+class PublicationLinkMetricsResponse(BaseModel):
+    id: UUID
+    link_id: UUID
+    metric_date: str
+    platform_name: str
+    impressions: int
+    clicks: int
+    conversions: int
+    ctr: float
+    conversion_rate: float
+    revenue: float
+
+
+class PerformanceSummaryResponse(BaseModel):
+    id: UUID
+    link_id: UUID
+    period_start: str
+    period_end: str
+    total_impressions: int
+    total_clicks: int
+    total_conversions: int
+    total_revenue: float
+    avg_ctr: float
+    avg_conversion_rate: float
 
 
 # ── Global SEO Config ──
@@ -403,3 +431,176 @@ async def bulk_import_listings(
         data.platform_source,
     )
     return result
+
+
+# ── Analytics ──
+@router.post("/{business_id}/analytics/refresh")
+async def refresh_analytics(
+    business_id: UUID,
+    link_id: UUID | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Refresh analytics metrics from platforms.
+
+    If link_id provided: fetch metrics for one link.
+    If not: fetch for all links.
+    """
+    analytics_svc = PlatformAnalyticsService(db)
+
+    if link_id:
+        # Single link
+        svc = PublicationLinkService(db)
+        link = await svc.get_publication_link(link_id)
+        if not link:
+            raise HTTPException(status_code=404, detail="Link not found")
+
+        metrics = await analytics_svc.fetch_and_store_metrics(
+            business_id,
+            link,
+            link.url.split("/")[-1],
+            link.connection_id,
+        )
+        return {
+            "refreshed": 1 if metrics else 0,
+            "link_id": str(link_id),
+            "status": "success" if metrics else "no_data",
+        }
+    else:
+        # All links
+        svc = PublicationLinkService(db)
+        links = await svc.list_business_publication_links(business_id)
+
+        refreshed = 0
+        for link in links:
+            metrics = await analytics_svc.fetch_and_store_metrics(
+                business_id,
+                link,
+                link.url.split("/")[-1],
+                link.connection_id,
+            )
+            if metrics:
+                refreshed += 1
+
+        return {
+            "refreshed": refreshed,
+            "total": len(links),
+            "status": "success",
+        }
+
+
+@router.get("/{business_id}/analytics/{link_id}/daily", response_model=list[PublicationLinkMetricsResponse])
+async def get_link_daily_metrics(
+    business_id: UUID,
+    link_id: UUID,
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get daily metrics for a publication link (last N days)."""
+    from datetime import date, timedelta
+
+    start_date = date.today() - timedelta(days=days)
+    end_date = date.today()
+
+    result = await db.execute(
+        select(PublicationLinkMetrics)
+        .where(
+            PublicationLinkMetrics.link_id == link_id,
+            PublicationLinkMetrics.business_id == business_id,
+            PublicationLinkMetrics.metric_date >= start_date,
+            PublicationLinkMetrics.metric_date <= end_date,
+        )
+        .order_by(PublicationLinkMetrics.metric_date.desc())
+    )
+    metrics = result.scalars().all()
+
+    return [
+        {
+            "id": m.id,
+            "link_id": m.link_id,
+            "metric_date": m.metric_date.isoformat(),
+            "platform_name": m.platform_name,
+            "impressions": m.impressions,
+            "clicks": m.clicks,
+            "conversions": m.conversions,
+            "ctr": round(m.ctr, 2),
+            "conversion_rate": round(m.conversion_rate, 2),
+            "revenue": round(m.revenue, 2),
+        }
+        for m in metrics
+    ]
+
+
+@router.get("/{business_id}/analytics/{link_id}/summary", response_model=list[PerformanceSummaryResponse])
+async def get_link_performance_summary(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get aggregated performance summaries for a publication link."""
+    result = await db.execute(
+        select(PublicationLinkPerformanceSummary)
+        .where(
+            PublicationLinkPerformanceSummary.link_id == link_id,
+            PublicationLinkPerformanceSummary.business_id == business_id,
+        )
+        .order_by(PublicationLinkPerformanceSummary.period_end.desc())
+    )
+    summaries = result.scalars().all()
+
+    return [
+        {
+            "id": s.id,
+            "link_id": s.link_id,
+            "period_start": s.period_start.isoformat(),
+            "period_end": s.period_end.isoformat(),
+            "total_impressions": s.total_impressions,
+            "total_clicks": s.total_clicks,
+            "total_conversions": s.total_conversions,
+            "total_revenue": round(s.total_revenue, 2),
+            "avg_ctr": round(s.avg_ctr, 2),
+            "avg_conversion_rate": round(s.avg_conversion_rate, 2),
+        }
+        for s in summaries
+    ]
+
+
+@router.get("/{business_id}/analytics", response_model=dict)
+async def get_business_analytics_overview(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get analytics overview for all publication links (today's metrics)."""
+    from datetime import date
+
+    result = await db.execute(
+        select(PublicationLinkMetrics)
+        .where(
+            PublicationLinkMetrics.business_id == business_id,
+            PublicationLinkMetrics.metric_date == date.today(),
+        )
+    )
+    today_metrics = result.scalars().all()
+
+    total_impressions = sum(m.impressions for m in today_metrics)
+    total_clicks = sum(m.clicks for m in today_metrics)
+    total_conversions = sum(m.conversions for m in today_metrics)
+    total_revenue = sum(m.revenue for m in today_metrics)
+
+    avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
+    avg_conv_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
+
+    return {
+        "business_id": str(business_id),
+        "metric_date": date.today().isoformat(),
+        "total_impressions": total_impressions,
+        "total_clicks": total_clicks,
+        "total_conversions": total_conversions,
+        "total_revenue": round(total_revenue, 2),
+        "avg_ctr": round(avg_ctr, 2),
+        "avg_conversion_rate": round(avg_conv_rate, 2),
+        "links_tracked": len(today_metrics),
+    }
