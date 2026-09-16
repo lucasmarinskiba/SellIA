@@ -164,3 +164,46 @@ def compute_analytics_summaries(self):
                 await engine.dispose()
 
     return asyncio.run(_compute())
+
+
+@shared_task(bind=True, name="seo_config.check_ab_test_winners")
+def check_ab_test_winners(self):
+    """Check running A/B tests and announce winners when threshold reached."""
+    import asyncio
+
+    async def _check():
+        engine = create_async_engine(settings.DATABASE_URL)
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as db:
+            try:
+                from app.domains.seo_config.fomo_abtest_service import FOMABTestService
+                from app.domains.seo_config.fomo_models import FOMABTest
+
+                # Get all running tests
+                result = await db.execute(
+                    select(FOMABTest).where(FOMABTest.status == "running")
+                )
+                running_tests = result.scalars().all()
+
+                ab_svc = FOMABTestService(db)
+                winners_announced = 0
+
+                for test in running_tests:
+                    try:
+                        updated_test = await ab_svc.check_and_announce_winner(test.id)
+                        if updated_test and updated_test.status == "completed":
+                            winners_announced += 1
+                    except Exception as e:
+                        logger.error(f"Failed to check test {test.id}: {str(e)[:100]}")
+
+                logger.info(f"A/B test check complete: {winners_announced} winners announced")
+                return {"winners_announced": winners_announced}
+
+            except Exception as e:
+                logger.error(f"Error in check_ab_test_winners: {str(e)[:200]}")
+                raise
+            finally:
+                await engine.dispose()
+
+    return asyncio.run(_check())

@@ -505,6 +505,10 @@ celery_app.conf.beat_schedule = {
         "task": "seo_config.compute_analytics_summaries",
         "schedule": 604800.0,  # cada 7 días (análisis semanal)
     },
+    "check-ab-test-winners": {
+        "task": "seo_config.check_ab_test_winners",
+        "schedule": 3600.0,  # cada 1 hora (detecta ganadores rápido)
+    },
 }
 
 
