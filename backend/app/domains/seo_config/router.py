@@ -20,6 +20,9 @@ from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.fomo_models import ConversionEvent
 from app.domains.seo_config.fomo_abtest_service import FOMABTestService
 from app.domains.seo_config.fomo_decay_service import FOMADecayService
+from app.domains.seo_config.fomo_predictive import FOMAPredictor
+from app.domains.seo_config.fomo_crossplatform import FOMAPatternSynthesizer
+from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -876,3 +879,199 @@ async def get_decay_history(
         }
         for log in logs
     ]
+
+
+# ── FOMO Phase 4: Predictive Scoring ──
+
+@router.get("/{business_id}/fomo-predictions/{link_id}/{fomo_id}", response_model=dict)
+async def predict_fomo_conversion(
+    business_id: UUID,
+    link_id: UUID,
+    fomo_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Predict conversion probability for FOMO copy.
+
+    Returns: {"probability": 0-1, "confidence": 0-1, "reasoning": str}
+    """
+    predictor = FOMAPredictor(db)
+    prediction = await predictor.predict_conversion_probability(link_id, fomo_id)
+
+    return {
+        "fomo_id": str(fomo_id),
+        "link_id": str(link_id),
+        **prediction,
+    }
+
+
+@router.get("/{business_id}/fomo-score/{fomo_id}", response_model=dict)
+async def get_fomo_effectiveness_score(
+    business_id: UUID,
+    fomo_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get FOMO copy effectiveness score (0-100).
+
+    Based on: urgency, social proof, scarcity clarity, CTA strength.
+    """
+    fomo_result = await db.execute(
+        select(PublicationLinkFOMO).where(PublicationLinkFOMO.id == fomo_id)
+    )
+    fomo = fomo_result.scalar_one_or_none()
+
+    if not fomo:
+        raise HTTPException(status_code=404, detail="FOMO not found")
+
+    predictor = FOMAPredictor(db)
+    score_result = await predictor.compute_fomo_score(fomo)
+
+    return {
+        "fomo_id": str(fomo_id),
+        **score_result,
+    }
+
+
+@router.get("/{business_id}/fomo-credibility/{fomo_id}", response_model=dict)
+async def assess_fomo_credibility(
+    business_id: UUID,
+    fomo_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Assess if FOMO copy sounds credible or manipulative.
+
+    Returns: {"credibility_score": 0-100, "rating": "trustworthy|borderline|suspicious", "red_flags": []}
+    """
+    fomo_result = await db.execute(
+        select(PublicationLinkFOMO).where(PublicationLinkFOMO.id == fomo_id)
+    )
+    fomo = fomo_result.scalar_one_or_none()
+
+    if not fomo:
+        raise HTTPException(status_code=404, detail="FOMO not found")
+
+    predictor = FOMAPredictor(db)
+    credibility = await predictor.get_credibility_assessment(fomo)
+
+    return {
+        "fomo_id": str(fomo_id),
+        **credibility,
+    }
+
+
+# ── FOMO Phase 5: Cross-Platform Synthesis ──
+
+@router.get("/{business_id}/fomo-patterns/by-platform", response_model=dict)
+async def get_trigger_performance(
+    business_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get avg CTR by urgency trigger per platform."""
+    synthesizer = FOMAPatternSynthesizer(db)
+    patterns = await synthesizer.get_trigger_performance_by_platform(business_id, days)
+
+    return {
+        "business_id": str(business_id),
+        "period_days": days,
+        "patterns": patterns,
+    }
+
+
+@router.get("/{business_id}/fomo-patterns/best-triggers", response_model=dict)
+async def get_best_triggers(
+    business_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get best-performing trigger per platform."""
+    synthesizer = FOMAPatternSynthesizer(db)
+    best = await synthesizer.find_best_trigger_per_platform(business_id, days)
+
+    return {
+        "business_id": str(business_id),
+        "period_days": days,
+        "best_triggers": best,
+    }
+
+
+@router.get("/{business_id}/fomo-patterns/recommendations", response_model=list[dict])
+async def get_cross_platform_recommendations(
+    business_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get recommendations to apply winning patterns across platforms."""
+    synthesizer = FOMAPatternSynthesizer(db)
+    recommendations = await synthesizer.get_cross_platform_recommendations(business_id, days)
+
+    return recommendations
+
+
+@router.get("/{business_id}/fomo-patterns/trigger-streak/{trigger}", response_model=dict)
+async def get_trigger_streak(
+    business_id: UUID,
+    trigger: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get how well a trigger performs across all platforms."""
+    synthesizer = FOMAPatternSynthesizer(db)
+    streak = await synthesizer.get_trigger_winning_streak(business_id, trigger)
+
+    return streak
+
+
+# ── FOMO Phase 6: Closed-Loop Feedback ──
+
+@router.get("/{business_id}/fomo-learning/prediction-accuracy", response_model=dict)
+async def get_prediction_accuracy(
+    business_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get prediction accuracy (predicted vs actual conversions)."""
+    feedback_loop = FOMAFeedbackLoop(db)
+    accuracy = await feedback_loop.get_prediction_accuracy(business_id, days)
+
+    return {
+        "business_id": str(business_id),
+        **accuracy,
+    }
+
+
+@router.get("/{business_id}/fomo-learning/velocity", response_model=dict)
+async def get_learning_velocity(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get system learning velocity (how fast is it improving)."""
+    feedback_loop = FOMAFeedbackLoop(db)
+    velocity = await feedback_loop.get_learning_velocity(business_id)
+
+    return {
+        "business_id": str(business_id),
+        **velocity,
+    }
+
+
+@router.get("/{business_id}/fomo-learning/link-trend/{link_id}", response_model=dict)
+async def get_link_effectiveness_trend(
+    business_id: UUID,
+    link_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get FOMO effectiveness trend for a specific link."""
+    feedback_loop = FOMAFeedbackLoop(db)
+    trend = await feedback_loop.get_fomo_effectiveness_trend(link_id, days)
+
+    return trend
