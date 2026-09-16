@@ -83,8 +83,38 @@ class PublicationLink(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class PublicationLinkFOMO(Base):
+    """Generated FOMO copy for a publication link."""
+    __tablename__ = "publication_link_fomo"
+    __table_args__ = (
+        Index("idx_link_fomo", "link_id"),
+        Index("idx_business_fomo", "business_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    business_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
+    link_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("publication_links.id", ondelete="CASCADE"))
+
+    # Generated FOMO elements
+    urgency_trigger: Mapped[str | None] = mapped_column(String(100), nullable=True)  # limited_stock, ending_soon, best_seller
+    social_proof_element: Mapped[str | None] = mapped_column(String(255), nullable=True)  # e.g., "500+ sales this month"
+    scarcity_message: Mapped[str | None] = mapped_column(String(255), nullable=True)  # e.g., "Only 3 left in stock"
+    call_to_action: Mapped[str] = mapped_column(String(255))  # e.g., "Get it now before it's gone"
+
+    # Full generated copy for the link
+    generated_copy: Mapped[str] = mapped_column(Text)  # Complete FOMO-optimized description
+
+    # Quality metrics
+    fomo_score: Mapped[float] = mapped_column(default=0.0)  # 0-100, how strong the FOMO
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 SEO_CONFIG_TABLES = [
     SEOConfig.__table__,
     PlatformSEOStatus.__table__,
     PublicationLink.__table__,
+    PublicationLinkFOMO.__table__,
 ]

@@ -9,7 +9,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
-from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -48,6 +49,24 @@ class CreatePublicationLinkRequest(BaseModel):
     title: str
     platform_source: str
     product_id: UUID | None = None
+
+
+class PublicationLinkFOMOResponse(BaseModel):
+    id: UUID
+    link_id: UUID
+    urgency_trigger: str | None
+    social_proof_element: str | None
+    scarcity_message: str | None
+    call_to_action: str
+    generated_copy: str
+    fomo_score: float
+
+
+class FOOMGenerationResponse(BaseModel):
+    business_id: str
+    links_processed: int
+    fomo_generated: int
+    failed: int
 
 
 # ── Global SEO Config ──
@@ -198,3 +217,58 @@ async def delete_publication_link(
         )
 
     return {"message": "Publication link deleted"}
+
+
+# ── FOMO Copy Generation ──
+@router.post("/{business_id}/generate-fomo-all", response_model=FOOMGenerationResponse)
+async def generate_fomo_all(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate FOMO copy for all active publication links."""
+    generator = PublicationFOMOGenerator(db)
+    result = await generator.generate_fomo_for_business(business_id)
+    return result
+
+
+@router.post("/publication-links/{link_id}/generate-fomo", response_model=PublicationLinkFOMOResponse)
+async def generate_fomo_for_link(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate FOMO copy for a specific publication link."""
+    svc = PublicationLinkService(db)
+    link = await svc.get_publication_link(link_id)
+
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Publication link not found",
+        )
+
+    generator = PublicationFOMOGenerator(db)
+    fomo_entry = await generator.generate_fomo_for_link(business_id, link)
+
+    if not fomo_entry:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate FOMO copy. Check logs for details.",
+        )
+
+    return fomo_entry
+
+
+@router.get("/publication-links/{link_id}/fomo", response_model=PublicationLinkFOMOResponse | None)
+async def get_link_fomo(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get latest FOMO copy for a publication link."""
+    generator = PublicationFOMOGenerator(db)
+    fomo_entry = await generator.get_latest_fomo(link_id)
+    return fomo_entry
