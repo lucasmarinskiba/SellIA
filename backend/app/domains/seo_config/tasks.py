@@ -211,7 +211,7 @@ def check_ab_test_winners(self):
 
 @shared_task(bind=True, name="seo_config.monitor_fomo_decay")
 def monitor_fomo_decay(self):
-    """Monitor FOMO copy decay and log detected issues."""
+    """Monitor FOMO copy decay and auto-rotate when detected."""
     import asyncio
 
     async def _monitor():
@@ -221,6 +221,7 @@ def monitor_fomo_decay(self):
         async with async_session() as db:
             try:
                 from app.domains.seo_config.fomo_decay_service import FOMADecayService
+                from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
                 from app.domains.businesses.models import Business
 
                 # Get all active businesses
@@ -228,7 +229,9 @@ def monitor_fomo_decay(self):
                 businesses = result.scalars().all()
 
                 decay_svc = FOMADecayService(db)
+                rotator = FOMAAutoRotator(db)
                 total_decay_detected = 0
+                total_rotated = 0
 
                 for business in businesses:
                     try:
@@ -249,11 +252,19 @@ def monitor_fomo_decay(self):
                                 action="regenerate",
                             )
                             total_decay_detected += 1
+
+                        # Auto-rotate decayed links
+                        rotation_result = await rotator.auto_rotate_on_decay(business.id)
+                        total_rotated += rotation_result.get('rotated', 0)
+
                     except Exception as e:
                         logger.error(f"Failed to monitor decay for business {business.id}: {str(e)[:100]}")
 
-                logger.info(f"FOMO decay monitor complete: {total_decay_detected} decay events detected")
-                return {"decay_detected": total_decay_detected}
+                logger.info(f"FOMO decay monitor complete: {total_decay_detected} decays detected, {total_rotated} auto-rotated")
+                return {
+                    "decay_detected": total_decay_detected,
+                    "auto_rotated": total_rotated,
+                }
 
             except Exception as e:
                 logger.error(f"Error in monitor_fomo_decay: {str(e)[:200]}")

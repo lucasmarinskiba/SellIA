@@ -26,6 +26,7 @@ from app.domains.seo_config.fomo_crossplatform import FOMAPatternSynthesizer
 from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
 from app.domains.seo_config.webhook_service import WebhookService
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
+from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -1159,3 +1160,36 @@ async def stream_fomo_events(
             'Connection': 'keep-alive',
         },
     )
+
+
+# ── Smart Auto-Rotation ──
+
+@router.post("/{business_id}/fomo-auto-rotation/trigger", response_model=dict)
+async def trigger_auto_rotation(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Manually trigger smart auto-rotation (regenerate + A/B test decayed links)."""
+    rotator = FOMAAutoRotator(db)
+    result = await rotator.auto_rotate_on_decay(business_id)
+
+    return {
+        'business_id': str(business_id),
+        'rotated': result.get('rotated'),
+        'links': result.get('links'),
+    }
+
+
+@router.get("/{business_id}/fomo-auto-rotation/history", response_model=list[dict])
+async def get_rotation_history(
+    business_id: UUID,
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get recent auto-rotation history."""
+    rotator = FOMAAutoRotator(db)
+    history = await rotator.get_rotation_history(business_id, days)
+
+    return history

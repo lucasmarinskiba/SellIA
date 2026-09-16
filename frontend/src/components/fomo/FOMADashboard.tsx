@@ -8,6 +8,7 @@ import { UrgencyMetricsChart } from './UrgencyMetricsChart'
 import { ABTestStatus } from './ABTestStatus'
 import { DecayDetectionPanel } from './DecayDetectionPanel'
 import { PredictiveScoresPanel } from './PredictiveScoresPanel'
+import { AutoRotationPanel } from './AutoRotationPanel'
 import { fomaPhase1Api } from '@/lib/fomoPhase1'
 
 interface FOMADashboardProps {
@@ -15,7 +16,7 @@ interface FOMADashboardProps {
   linkId?: string
 }
 
-type TabType = 'overview' | 'ticker' | 'ab-tests' | 'decay' | 'predictions' | 'patterns'
+type TabType = 'overview' | 'ticker' | 'ab-tests' | 'decay' | 'predictions' | 'rotation'
 
 export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -40,6 +41,7 @@ export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React
     { id: 'ab-tests', label: 'A/B Tests', icon: Target },
     { id: 'decay', label: 'Decay', icon: Repeat2 },
     { id: 'predictions', label: 'Predictive', icon: Brain },
+    { id: 'rotation', label: 'Auto-Rotation', icon: Repeat2 },
   ] as const
 
   return (
@@ -154,6 +156,13 @@ export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React
         {activeTab === 'predictions' && (
           <div className="rounded-lg border border-slate-200 bg-white p-6">
             <PredictiveScoresPanel businessId={businessId} />
+          </div>
+        )}
+
+        {/* Auto-Rotation Tab */}
+        {activeTab === 'rotation' && (
+          <div className="rounded-lg border border-slate-200 bg-white p-6">
+            <AutoRotationPanel businessId={businessId} />
           </div>
         )}
       </div>
