@@ -16,6 +16,8 @@ from app.domains.seo_config.bulk_import import BulkListingImporter
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog, PlatformSEOStatus
 from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
+from app.domains.seo_config.fomo_service import FOMAConversionService
+from app.domains.seo_config.fomo_models import ConversionEvent
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -117,6 +119,25 @@ class PerformanceSummaryResponse(BaseModel):
     total_revenue: float
     avg_ctr: float
     avg_conversion_rate: float
+
+
+class ConversionEventResponse(BaseModel):
+    id: UUID
+    link_id: UUID
+    platform_name: str
+    conversion_type: str
+    conversion_value: float
+    created_at: str
+
+
+class UrgencyMetricsResponse(BaseModel):
+    triggers: list[dict]
+
+
+class FOMAPreviewResponse(BaseModel):
+    link: dict
+    original: dict
+    with_fomo: dict
 
 
 # ── Global SEO Config ──
@@ -604,3 +625,93 @@ async def get_business_analytics_overview(
         "avg_conversion_rate": round(avg_conv_rate, 2),
         "links_tracked": len(today_metrics),
     }
+
+
+# ── FOMO Phase 1: Real-time Ticker + Preview + Metrics ──
+
+@router.post("/{business_id}/conversions/track")
+async def track_conversion(
+    business_id: UUID,
+    link_id: UUID = Query(...),
+    platform_name: str = Query(...),
+    conversion_type: str = Query("purchase"),
+    conversion_value: float = Query(0.0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Track a conversion event from platform webhook."""
+    svc = FOMAConversionService(db)
+    event = await svc.log_conversion(
+        business_id=business_id,
+        link_id=link_id,
+        platform_name=platform_name,
+        conversion_type=conversion_type,
+        conversion_value=conversion_value,
+    )
+
+    return {
+        "id": str(event.id),
+        "status": "tracked",
+        "created_at": event.created_at.isoformat(),
+    }
+
+
+@router.get("/{business_id}/conversions/recent", response_model=list[ConversionEventResponse])
+async def get_recent_conversions(
+    business_id: UUID,
+    limit: int = Query(10, ge=1, le=50),
+    hours_back: int = Query(24, ge=1, le=168),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get recent conversions for real-time ticker."""
+    svc = FOMAConversionService(db)
+    conversions = await svc.get_recent_conversions(
+        business_id,
+        limit=limit,
+        hours_back=hours_back,
+    )
+
+    return [
+        {
+            "id": c.id,
+            "link_id": c.link_id,
+            "platform_name": c.platform_name,
+            "conversion_type": c.conversion_type,
+            "conversion_value": c.conversion_value,
+            "created_at": c.created_at.isoformat(),
+        }
+        for c in conversions
+    ]
+
+
+@router.get("/{business_id}/analytics/urgency-metrics", response_model=UrgencyMetricsResponse)
+async def get_urgency_metrics(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get CTR breakdown by urgency trigger type."""
+    svc = FOMAConversionService(db)
+    metrics = await svc.get_urgency_metrics(business_id)
+    return metrics
+
+
+@router.get("/publication-links/{link_id}/preview", response_model=FOMAPreviewResponse)
+async def get_fomo_preview(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get FOMO preview: original vs FOMO copy side-by-side."""
+    svc = FOMAConversionService(db)
+    preview = await svc.get_fomo_preview(link_id)
+
+    if not preview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Link not found",
+        )
+
+    return preview
