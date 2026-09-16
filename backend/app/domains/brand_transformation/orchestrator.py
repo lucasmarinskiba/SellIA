@@ -39,6 +39,7 @@ from app.domains.brand_transformation.service import (
     _profile_block,
     _stage_context_digest,
 )
+from app.domains.seo_config.agent_integration import SEOAwareAgentWrapper
 
 logger = get_logger(__name__)
 
@@ -197,15 +198,36 @@ class TransformationOrchestrator:
             artifact = await self._synthesize_roadmap(program, profile)
             artifact_id = None
         else:
-            agent_cls = _STAGE_AGENTS[stage_key]
-            agent = agent_cls(self.db)
-            context = self._gather_context(program)
-            if stage_key == "diagnosis":
-                row = await agent.run(program.business_id, profile, extra)
+            # SEO-sensitive stages: check toggles before running
+            seo_wrapper = SEOAwareAgentWrapper(self.db)
+
+            if stage_key == "positioning" and not await seo_wrapper.should_run_positioning_agent(program.business_id):
+                # Positioning skipped due to disabled SEO — return stub
+                logger.info(f"Skipping positioning stage for business {program.business_id}: SEO disabled")
+                artifact = {"note": "Positioning stage skipped — SEO positioning disabled in seo_config"}
+                artifact_id = None
+            elif stage_key == "fomo_engine" and not await seo_wrapper.should_run_fomo_engine_agent(program.business_id):
+                # FOMO skipped due to disabled SEO — return stub
+                logger.info(f"Skipping FOMO engine stage for business {program.business_id}: SEO disabled")
+                artifact = {"note": "FOMO engine stage skipped — SEO positioning disabled in seo_config"}
+                artifact_id = None
             else:
-                row = await agent.run(program.business_id, profile, context, extra)
-            artifact = _to_dict(row)
-            artifact_id = row.id
+                # Normal execution
+                agent_cls = _STAGE_AGENTS[stage_key]
+                agent = agent_cls(self.db)
+                context = self._gather_context(program)
+                if stage_key == "diagnosis":
+                    row = await agent.run(program.business_id, profile, extra)
+                else:
+                    row = await agent.run(program.business_id, profile, context, extra)
+                artifact = _to_dict(row)
+                artifact_id = row.id
+
+                # Log successful execution of SEO agents
+                if stage_key == "positioning":
+                    await seo_wrapper.log_positioning_execution(program.business_id, f"Generated positioning statement")
+                elif stage_key == "fomo_engine":
+                    await seo_wrapper.log_fomo_execution(program.business_id, None, f"Generated FOMO playbook")
 
         # advance program
         completed = list(program.completed_stages or [])
@@ -543,12 +565,24 @@ Return JSON:
             }
 
         elif automation.automation_type == "fomo_cadence":
-            row = await FOMOEngineAgent(self.db).run(
-                bid, profile, cfg.get("context"),
-                "Generate ONLY the next cycle's activation: one lead mechanism + the "
-                "ritual beat for this period + the exact copy hook. Keep it shippable this week.",
-            )
-            result = {"type": "fomo_cadence", "cadence": row.cadence, "next_activation": row.mechanisms, "ritual": row.launch_ritual, "playbook_id": str(row.id)}
+            # Check if FOMO engine is enabled before running
+            seo_wrapper = SEOAwareAgentWrapper(self.db)
+            if not await seo_wrapper.should_run_fomo_engine_agent(bid):
+                logger.info(f"Skipping fomo_cadence automation for business {bid}: SEO disabled")
+                result = {
+                    "type": "fomo_cadence",
+                    "note": "FOMO cadence automation skipped — SEO positioning disabled in seo_config",
+                    "severity": "ok",
+                    "alert": False,
+                }
+            else:
+                row = await FOMOEngineAgent(self.db).run(
+                    bid, profile, cfg.get("context"),
+                    "Generate ONLY the next cycle's activation: one lead mechanism + the "
+                    "ritual beat for this period + the exact copy hook. Keep it shippable this week.",
+                )
+                result = {"type": "fomo_cadence", "cadence": row.cadence, "next_activation": row.mechanisms, "ritual": row.launch_ritual, "playbook_id": str(row.id)}
+                await seo_wrapper.log_fomo_execution(bid, None, "Generated FOMO cadence activation")
 
             # optionally push the cycle's mechanisms straight into real fomo campaigns
             if cfg.get("auto_deploy") and cfg.get("owner_user_id"):
