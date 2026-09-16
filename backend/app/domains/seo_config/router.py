@@ -1,7 +1,8 @@
 """SEO Config API endpoints."""
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -23,6 +24,8 @@ from app.domains.seo_config.fomo_decay_service import FOMADecayService
 from app.domains.seo_config.fomo_predictive import FOMAPredictor
 from app.domains.seo_config.fomo_crossplatform import FOMAPatternSynthesizer
 from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
+from app.domains.seo_config.webhook_service import WebhookService
+from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -1075,3 +1078,84 @@ async def get_link_effectiveness_trend(
     trend = await feedback_loop.get_fomo_effectiveness_trend(link_id, days)
 
     return trend
+
+
+# ── Webhooks: Real-time Conversion Streaming ──
+
+@router.post("/{business_id}/webhooks/conversion", response_model=WebhookEventResponse)
+async def ingest_conversion_webhook(
+    business_id: UUID,
+    payload: ConversionWebhookPayload,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Ingest conversion event from any platform."""
+    webhook_service = WebhookService(db)
+    ip_address = request.client.host if request.client else None
+
+    result = await webhook_service.ingest_conversion(
+        business_id=business_id,
+        platform=payload.platform,
+        payload=payload,
+        ip_address=ip_address,
+    )
+
+    return result
+
+
+@router.post("/{business_id}/webhooks/mercado-libre", response_model=WebhookEventResponse)
+async def ingest_mercado_libre_webhook(
+    business_id: UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Ingest MercadoLibre webhook (conversation, order, etc)."""
+    webhook_service = WebhookService(db)
+    body = await request.body()
+    body_str = body.decode('utf-8')
+
+    # For ML webhooks, we track if it's a purchase/question
+    import json
+    data = json.loads(body_str)
+
+    # Extract conversion signal
+    payload = ConversionWebhookPayload(
+        platform='mercado_libre',
+        link_id=data.get('resource', '').split('/')[-1],
+        metadata=data,
+    )
+    ip_address = request.client.host if request.client else None
+
+    result = await webhook_service.ingest_conversion(
+        business_id=business_id,
+        platform='mercado_libre',
+        payload=payload,
+        ip_address=ip_address,
+    )
+
+    return result
+
+
+@router.get("/{business_id}/webhooks/events/stream")
+async def stream_fomo_events(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Server-Sent Events stream for real-time FOMO updates."""
+    webhook_service = WebhookService(db)
+
+    async def event_generator():
+        async for event in webhook_service.subscribe(business_id):
+            yield event
+
+    return StreamingResponse(
+        event_generator(),
+        media_type='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive',
+        },
+    )

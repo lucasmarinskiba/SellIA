@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { ShoppingCart, Loader2 } from 'lucide-react'
+import React, { useEffect, useState, useRef } from 'react'
+import { ShoppingCart, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { fomaPhase1Api, type ConversionEvent } from '@/lib/fomoPhase1'
+import { fomaWebhookClient, type FOMAWebhookClient } from '@/lib/fomoWebhooks'
 
 interface ConversionTickerProps {
   businessId: string
@@ -15,6 +16,8 @@ export function ConversionTicker({
 }: ConversionTickerProps): React.JSX.Element {
   const [conversions, setConversions] = useState<ConversionEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [streamConnected, setStreamConnected] = useState(false)
+  const webhookClientRef = useRef<FOMAWebhookClient | null>(null)
 
   const loadConversions = async () => {
     try {
@@ -29,10 +32,35 @@ export function ConversionTicker({
 
   useEffect(() => {
     void loadConversions()
+
+    // Connect to real-time stream
+    const client = fomaWebhookClient.create(businessId, {
+      onConversion: (event) => {
+        setConversions(prev => {
+          const newConversion: ConversionEvent = {
+            id: event.data.id,
+            platform_name: event.data.platform,
+            conversion_value: event.data.amount || 0,
+            created_at: event.data.timestamp,
+          }
+          return [newConversion, ...prev.slice(0, 9)]
+        })
+      },
+      onClose: () => setStreamConnected(false),
+    })
+
+    client.connect()
+    webhookClientRef.current = client
+    setStreamConnected(client.isConnected())
+
     const interval = setInterval(() => {
       void loadConversions()
     }, refreshInterval)
-    return () => clearInterval(interval)
+
+    return () => {
+      clearInterval(interval)
+      client.disconnect()
+    }
   }, [businessId, refreshInterval])
 
   if (loading && conversions.length === 0) {
@@ -54,8 +82,23 @@ export function ConversionTicker({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">
-        Conversiones Recientes (últimas 24h)
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+          Conversiones Recientes (últimas 24h)
+        </div>
+        <div className="flex items-center gap-1.5">
+          {streamConnected ? (
+            <>
+              <Wifi className="w-3 h-3 text-green-600" />
+              <span className="text-xs text-green-600 font-medium">En vivo</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-3 h-3 text-amber-600" />
+              <span className="text-xs text-amber-600 font-medium">Polling</span>
+            </>
+          )}
+        </div>
       </div>
       {conversions.map((conversion, idx) => (
         <div
