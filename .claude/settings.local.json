@@ -1950,7 +1950,8 @@
       "Bash(git commit -m 'feat: FOMO Phases 4-6 - Predictive Scoring, Cross-Platform, Closed-Loop *)",
       "Bash(git commit -m 'feat: Option 2 - Phase12 FOMO Integration *)",
       "Bash(git commit -m 'feat: Option 3 - Real-time Webhooks & SSE *)",
-      "Bash(git commit -m 'feat: Option 4 - Smart Auto-Rotation *)"
+      "Bash(git commit -m 'feat: Option 4 - Smart Auto-Rotation *)",
+      "Bash(git commit -m 'feat: Option 5 - Multi-language FOMA \\(ES/EN/PT\\) *)"
     ]
   }
 }

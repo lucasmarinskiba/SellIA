@@ -27,6 +27,7 @@ from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
 from app.domains.seo_config.webhook_service import WebhookService
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
 from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
+from app.domains.seo_config.fomo_language_generator import FOMALanguageGenerator
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -1193,3 +1194,76 @@ async def get_rotation_history(
     history = await rotator.get_rotation_history(business_id, days)
 
     return history
+
+
+# ── Multi-Language FOMO ──
+
+@router.post("/{business_id}/fomo-multilingual/generate", response_model=dict)
+async def generate_multilingual_fomo(
+    business_id: UUID,
+    link_id: UUID = Query(...),
+    platform: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate FOMO copy in all supported languages (ES/EN/PT)."""
+    lang_gen = FOMALanguageGenerator(db)
+    result = await lang_gen.generate_multilingual(business_id, link_id, platform)
+
+    return {
+        'business_id': str(business_id),
+        'link_id': str(link_id),
+        'platform': platform,
+        'languages': result,
+    }
+
+
+@router.post("/{business_id}/fomo-multilingual/generate-single", response_model=dict)
+async def generate_fomo_single_language(
+    business_id: UUID,
+    link_id: UUID = Query(...),
+    platform: str = Query(...),
+    language: str = Query('es', regex='^(es|en|pt)$'),
+    urgency: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate FOMO copy for a specific language."""
+    lang_gen = FOMALanguageGenerator(db)
+    result = await lang_gen.generate_for_language(
+        business_id=business_id,
+        link_id=link_id,
+        platform=platform,
+        language=language,
+        urgency=urgency,
+    )
+
+    return result
+
+
+@router.get("/{business_id}/fomo-multilingual/comparison", response_model=dict)
+async def get_language_comparison(
+    business_id: UUID,
+    link_id: UUID = Query(...),
+    platform: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get FOMO copy comparison across all languages for a link."""
+    lang_gen = FOMALanguageGenerator(db)
+    comparison = await lang_gen.get_language_comparison(business_id, link_id, platform)
+
+    return comparison
+
+
+@router.get("/{business_id}/fomo-multilingual/supported-languages", response_model=dict)
+async def get_supported_languages(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get list of supported languages for FOMO generation."""
+    return {
+        'supported_languages': FOMALanguageGenerator.SUPPORTED_LANGUAGES,
+        'language_names': FOMALanguageGenerator.LANGUAGE_NAMES,
+    }
