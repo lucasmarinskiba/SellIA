@@ -135,3 +135,82 @@ class PublicationFOMOGenerator:
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def generate_fomo_copy(
+        self,
+        business_id: UUID,
+        link_id: UUID,
+        platform: str,
+        force_urgency: str | None = None,
+        language: str = "es",
+    ) -> PublicationLinkFOMO | None:
+        """Generate FOMO copy with optional urgency override and language support."""
+        # Get link
+        result = await self.db.execute(
+            select(PublicationLink).where(PublicationLink.id == link_id)
+        )
+        link = result.scalar_one_or_none()
+        if not link:
+            return None
+
+        try:
+            agent = FOMOEngineAgent(self.db)
+            profile = {"what_they_sell": "Products and services"}
+
+            context = {
+                "url": link.url,
+                "title": link.title,
+                "platform": platform,
+                "language": language,
+            }
+
+            urgency_instruction = ""
+            if force_urgency:
+                urgency_instruction = f"\nForce urgency trigger: {force_urgency}"
+
+            language_instruction = ""
+            if language.lower() == "en":
+                language_instruction = "\nGenerate in English."
+            elif language.lower() == "pt":
+                language_instruction = "\nGenerate in Portuguese (Brazilian)."
+
+            extra = f"Generate FOMO copy for: {link.title} ({link.url}). Platform: {platform}.{urgency_instruction}{language_instruction}"
+
+            fomo_playbook = await agent.run(business_id, profile, context, extra)
+
+            fomo_score = getattr(fomo_playbook, "fomo_intensity_score", 70)
+            urgency = force_urgency or getattr(fomo_playbook, "urgency_trigger", "limited_time")
+            scarcity = None
+            social_proof = None
+            call_to_action = "Get it now before it's gone"
+
+            if hasattr(fomo_playbook, "mechanisms") and fomo_playbook.mechanisms:
+                mechanisms = fomo_playbook.mechanisms
+                if isinstance(mechanisms, dict):
+                    scarcity = mechanisms.get("scarcity_message")
+                    social_proof = mechanisms.get("social_proof")
+                    call_to_action = mechanisms.get("cta", call_to_action)
+
+            generated_copy = f"{scarcity or ''}\n{social_proof or ''}\n{call_to_action}".strip()
+
+            fomo_entry = PublicationLinkFOMO(
+                business_id=business_id,
+                link_id=link_id,
+                urgency_trigger=urgency,
+                social_proof_element=social_proof,
+                scarcity_message=scarcity,
+                call_to_action=call_to_action,
+                generated_copy=generated_copy,
+                fomo_score=float(fomo_score) if fomo_score else 70.0,
+            )
+
+            self.db.add(fomo_entry)
+            await self.db.commit()
+            await self.db.refresh(fomo_entry)
+
+            logger.info(f"Generated FOMO copy for link {link_id} [{language}] (score: {fomo_score})")
+            return fomo_entry
+
+        except Exception as e:
+            logger.error(f"Error generating FOMO for link {link_id}: {str(e)[:200]}")
+            return None

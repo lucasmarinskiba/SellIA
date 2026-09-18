@@ -9,6 +9,7 @@ import { ABTestStatus } from './ABTestStatus'
 import { DecayDetectionPanel } from './DecayDetectionPanel'
 import { PredictiveScoresPanel } from './PredictiveScoresPanel'
 import { AutoRotationPanel } from './AutoRotationPanel'
+import { MultilingualFOMAComparison } from './MultilingualFOMAComparison'
 import { fomaPhase1Api } from '@/lib/fomoPhase1'
 
 interface FOMADashboardProps {
@@ -16,7 +17,7 @@ interface FOMADashboardProps {
   linkId?: string
 }
 
-type TabType = 'overview' | 'ticker' | 'ab-tests' | 'decay' | 'predictions' | 'rotation'
+type TabType = 'overview' | 'ticker' | 'ab-tests' | 'decay' | 'predictions' | 'rotation' | 'multilingual'
 
 export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -42,6 +43,7 @@ export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React
     { id: 'decay', label: 'Decay', icon: Repeat2 },
     { id: 'predictions', label: 'Predictive', icon: Brain },
     { id: 'rotation', label: 'Auto-Rotation', icon: Repeat2 },
+    { id: 'multilingual', label: 'Multilingüe', icon: Brain },
   ] as const
 
   return (
@@ -163,6 +165,25 @@ export function FOMADashboard({ businessId, linkId }: FOMADashboardProps): React
         {activeTab === 'rotation' && (
           <div className="rounded-lg border border-slate-200 bg-white p-6">
             <AutoRotationPanel businessId={businessId} />
+          </div>
+        )}
+
+        {/* Multilingual Tab */}
+        {activeTab === 'multilingual' && linkId && (
+          <div className="rounded-lg border border-slate-200 bg-white p-6">
+            <MultilingualFOMAComparison
+              businessId={businessId}
+              linkId={linkId}
+              platform="marketplace"
+            />
+          </div>
+        )}
+        {activeTab === 'multilingual' && !linkId && (
+          <div className="text-center py-12 rounded-lg border border-slate-200 bg-white">
+            <Brain className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-600">
+              Selecciona un link específico para ver comparación multilingüe
+            </p>
           </div>
         )}
       </div>
