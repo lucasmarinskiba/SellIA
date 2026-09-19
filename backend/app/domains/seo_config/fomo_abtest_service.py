@@ -186,11 +186,13 @@ class FOMABTestService:
                 "split": test.variant_b_split,
                 **variant_data.get(test.variant_b_id, {"conversions": 0, "revenue": 0.0}),
             },
-            "variant_c": {
-                "id": str(test.variant_c_id) if test.variant_c_id else None,
-                "split": test.variant_c_split,
-                **variant_data.get(test.variant_c_id, {"conversions": 0, "revenue": 0.0}) if test.variant_c_id else {},
-            } if test.variant_c_id else None,
+            "variant_c": (
+                {
+                    "id": str(test.variant_c_id),
+                    "split": test.variant_c_split,
+                    **variant_data.get(test.variant_c_id, {"conversions": 0, "revenue": 0.0}),
+                } if test.variant_c_id else None
+            ),
             "winner_id": str(test.winner_variant_id) if test.winner_variant_id else None,
             "winner_announced_at": test.winner_announced_at.isoformat() if test.winner_announced_at else None,
         }
