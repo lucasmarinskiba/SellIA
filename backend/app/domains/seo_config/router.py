@@ -28,6 +28,8 @@ from app.domains.seo_config.webhook_service import WebhookService
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
 from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
 from app.domains.seo_config.fomo_language_generator import FOMALanguageGenerator
+from app.domains.seo_config.positioning_score_service import PositioningScoreService
+from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -321,7 +323,7 @@ async def delete_publication_link(
 
 
 # ── FOMO Copy Generation ──
-@router.post("/{business_id}/generate-fomo-all", response_model=FOOMGenerationResponse)
+@router.post("/generate-fomo-all", response_model=FOOMGenerationResponse)
 async def generate_fomo_all(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -376,7 +378,7 @@ async def get_link_fomo(
 
 
 # ── Platform Sync ──
-@router.post("/{business_id}/sync-all", response_model=PlatformSyncResponse)
+@router.post("/sync-all", response_model=PlatformSyncResponse)
 async def sync_all_links(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -432,7 +434,7 @@ async def sync_link(
     }
 
 
-@router.get("/{business_id}/sync-history")
+@router.get("/sync-history")
 async def get_sync_history(
     business_id: UUID,
     limit: int = Query(50, ge=1, le=500),
@@ -464,7 +466,7 @@ async def get_sync_history(
 
 
 # ── Bulk Operations ──
-@router.post("/{business_id}/bulk-import", response_model=BulkImportResponse)
+@router.post("/bulk-import", response_model=BulkImportResponse)
 async def bulk_import_listings(
     business_id: UUID,
     data: BulkImportListingRequest,
@@ -485,7 +487,7 @@ async def bulk_import_listings(
 
 
 # ── Analytics ──
-@router.post("/{business_id}/analytics/refresh")
+@router.post("/analytics/refresh")
 async def refresh_analytics(
     business_id: UUID,
     link_id: UUID | None = Query(None),
@@ -540,7 +542,7 @@ async def refresh_analytics(
         }
 
 
-@router.get("/{business_id}/analytics/{link_id}/daily", response_model=list[PublicationLinkMetricsResponse])
+@router.get("/analytics/{link_id}/daily", response_model=list[PublicationLinkMetricsResponse])
 async def get_link_daily_metrics(
     business_id: UUID,
     link_id: UUID,
@@ -583,7 +585,7 @@ async def get_link_daily_metrics(
     ]
 
 
-@router.get("/{business_id}/analytics/{link_id}/summary", response_model=list[PerformanceSummaryResponse])
+@router.get("/analytics/{link_id}/summary", response_model=list[PerformanceSummaryResponse])
 async def get_link_performance_summary(
     business_id: UUID,
     link_id: UUID,
@@ -618,7 +620,7 @@ async def get_link_performance_summary(
     ]
 
 
-@router.get("/{business_id}/analytics", response_model=dict)
+@router.get("/analytics", response_model=dict)
 async def get_business_analytics_overview(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -659,7 +661,7 @@ async def get_business_analytics_overview(
 
 # ── FOMO Phase 1: Real-time Ticker + Preview + Metrics ──
 
-@router.post("/{business_id}/conversions/track")
+@router.post("/conversions/track")
 async def track_conversion(
     business_id: UUID,
     link_id: UUID = Query(...),
@@ -686,7 +688,7 @@ async def track_conversion(
     }
 
 
-@router.get("/{business_id}/conversions/recent", response_model=list[ConversionEventResponse])
+@router.get("/conversions/recent", response_model=list[ConversionEventResponse])
 async def get_recent_conversions(
     business_id: UUID,
     limit: int = Query(10, ge=1, le=50),
@@ -715,7 +717,7 @@ async def get_recent_conversions(
     ]
 
 
-@router.get("/{business_id}/analytics/urgency-metrics", response_model=UrgencyMetricsResponse)
+@router.get("/analytics/urgency-metrics", response_model=UrgencyMetricsResponse)
 async def get_urgency_metrics(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -749,7 +751,7 @@ async def get_fomo_preview(
 
 # ── FOMO Phase 2: A/B Testing ──
 
-@router.post("/{business_id}/fomo-ab-tests", response_model=dict)
+@router.post("/fomo-ab-tests", response_model=dict)
 async def create_ab_test(
     business_id: UUID,
     data: CreateABTestRequest,
@@ -777,7 +779,7 @@ async def create_ab_test(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{business_id}/fomo-ab-tests/{test_id}", response_model=ABTestMetricsResponse)
+@router.get("/fomo-ab-tests/{test_id}", response_model=ABTestMetricsResponse)
 async def get_ab_test_metrics(
     business_id: UUID,
     test_id: UUID,
@@ -794,7 +796,7 @@ async def get_ab_test_metrics(
     return metrics
 
 
-@router.post("/{business_id}/fomo-ab-tests/{test_id}/apply-winner", response_model=dict)
+@router.post("/fomo-ab-tests/{test_id}/apply-winner", response_model=dict)
 async def apply_ab_test_winner(
     business_id: UUID,
     test_id: UUID,
@@ -825,7 +827,7 @@ async def apply_ab_test_winner(
     }
 
 
-@router.get("/{business_id}/fomo-ab-tests/running", response_model=list[dict])
+@router.get("/fomo-ab-tests/running", response_model=list[dict])
 async def list_running_tests(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -845,7 +847,7 @@ async def list_running_tests(
 
 # ── FOMO Phase 3: Smart Rotation + Decay Detection ──
 
-@router.get("/{business_id}/fomo-decay/detect", response_model=list[dict])
+@router.get("/fomo-decay/detect", response_model=list[dict])
 async def detect_fomo_decay(
     business_id: UUID,
     decay_threshold: float = Query(30.0, ge=1, le=100),
@@ -861,7 +863,7 @@ async def detect_fomo_decay(
     return decayed_links
 
 
-@router.get("/{business_id}/fomo-decay/history", response_model=list[dict])
+@router.get("/fomo-decay/history", response_model=list[dict])
 async def get_decay_history(
     business_id: UUID,
     limit: int = Query(50, ge=1, le=500),
@@ -888,7 +890,7 @@ async def get_decay_history(
 
 # ── FOMO Phase 4: Predictive Scoring ──
 
-@router.get("/{business_id}/fomo-predictions/{link_id}/{fomo_id}", response_model=dict)
+@router.get("/fomo-predictions/{link_id}/{fomo_id}", response_model=dict)
 async def predict_fomo_conversion(
     business_id: UUID,
     link_id: UUID,
@@ -910,7 +912,7 @@ async def predict_fomo_conversion(
     }
 
 
-@router.get("/{business_id}/fomo-score/{fomo_id}", response_model=dict)
+@router.get("/fomo-score/{fomo_id}", response_model=dict)
 async def get_fomo_effectiveness_score(
     business_id: UUID,
     fomo_id: UUID,
@@ -938,7 +940,7 @@ async def get_fomo_effectiveness_score(
     }
 
 
-@router.get("/{business_id}/fomo-credibility/{fomo_id}", response_model=dict)
+@router.get("/fomo-credibility/{fomo_id}", response_model=dict)
 async def assess_fomo_credibility(
     business_id: UUID,
     fomo_id: UUID,
@@ -968,7 +970,7 @@ async def assess_fomo_credibility(
 
 # ── FOMO Phase 5: Cross-Platform Synthesis ──
 
-@router.get("/{business_id}/fomo-patterns/by-platform", response_model=dict)
+@router.get("/fomo-patterns/by-platform", response_model=dict)
 async def get_trigger_performance(
     business_id: UUID,
     days: int = Query(30, ge=1, le=90),
@@ -986,7 +988,7 @@ async def get_trigger_performance(
     }
 
 
-@router.get("/{business_id}/fomo-patterns/best-triggers", response_model=dict)
+@router.get("/fomo-patterns/best-triggers", response_model=dict)
 async def get_best_triggers(
     business_id: UUID,
     days: int = Query(30, ge=1, le=90),
@@ -1004,7 +1006,7 @@ async def get_best_triggers(
     }
 
 
-@router.get("/{business_id}/fomo-patterns/recommendations", response_model=list[dict])
+@router.get("/fomo-patterns/recommendations", response_model=list[dict])
 async def get_cross_platform_recommendations(
     business_id: UUID,
     days: int = Query(30, ge=1, le=90),
@@ -1018,7 +1020,7 @@ async def get_cross_platform_recommendations(
     return recommendations
 
 
-@router.get("/{business_id}/fomo-patterns/trigger-streak/{trigger}", response_model=dict)
+@router.get("/fomo-patterns/trigger-streak/{trigger}", response_model=dict)
 async def get_trigger_streak(
     business_id: UUID,
     trigger: str,
@@ -1034,7 +1036,7 @@ async def get_trigger_streak(
 
 # ── FOMO Phase 6: Closed-Loop Feedback ──
 
-@router.get("/{business_id}/fomo-learning/prediction-accuracy", response_model=dict)
+@router.get("/fomo-learning/prediction-accuracy", response_model=dict)
 async def get_prediction_accuracy(
     business_id: UUID,
     days: int = Query(30, ge=1, le=90),
@@ -1051,7 +1053,7 @@ async def get_prediction_accuracy(
     }
 
 
-@router.get("/{business_id}/fomo-learning/velocity", response_model=dict)
+@router.get("/fomo-learning/velocity", response_model=dict)
 async def get_learning_velocity(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -1067,7 +1069,7 @@ async def get_learning_velocity(
     }
 
 
-@router.get("/{business_id}/fomo-learning/link-trend/{link_id}", response_model=dict)
+@router.get("/fomo-learning/link-trend/{link_id}", response_model=dict)
 async def get_link_effectiveness_trend(
     business_id: UUID,
     link_id: UUID,
@@ -1084,7 +1086,7 @@ async def get_link_effectiveness_trend(
 
 # ── Webhooks: Real-time Conversion Streaming ──
 
-@router.post("/{business_id}/webhooks/conversion", response_model=WebhookEventResponse)
+@router.post("/webhooks/conversion", response_model=WebhookEventResponse)
 async def ingest_conversion_webhook(
     business_id: UUID,
     payload: ConversionWebhookPayload,
@@ -1106,7 +1108,7 @@ async def ingest_conversion_webhook(
     return result
 
 
-@router.post("/{business_id}/webhooks/mercado-libre", response_model=WebhookEventResponse)
+@router.post("/webhooks/mercado-libre", response_model=WebhookEventResponse)
 async def ingest_mercado_libre_webhook(
     business_id: UUID,
     request: Request,
@@ -1139,7 +1141,7 @@ async def ingest_mercado_libre_webhook(
     return result
 
 
-@router.get("/{business_id}/webhooks/events/stream")
+@router.get("/webhooks/events/stream")
 async def stream_fomo_events(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -1165,7 +1167,7 @@ async def stream_fomo_events(
 
 # ── Smart Auto-Rotation ──
 
-@router.post("/{business_id}/fomo-auto-rotation/trigger", response_model=dict)
+@router.post("/fomo-auto-rotation/trigger", response_model=dict)
 async def trigger_auto_rotation(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -1182,7 +1184,7 @@ async def trigger_auto_rotation(
     }
 
 
-@router.get("/{business_id}/fomo-auto-rotation/history", response_model=list[dict])
+@router.get("/fomo-auto-rotation/history", response_model=list[dict])
 async def get_rotation_history(
     business_id: UUID,
     days: int = Query(7, ge=1, le=90),
@@ -1198,7 +1200,7 @@ async def get_rotation_history(
 
 # ── Multi-Language FOMO ──
 
-@router.post("/{business_id}/fomo-multilingual/generate", response_model=dict)
+@router.post("/fomo-multilingual/generate", response_model=dict)
 async def generate_multilingual_fomo(
     business_id: UUID,
     link_id: UUID = Query(...),
@@ -1218,7 +1220,7 @@ async def generate_multilingual_fomo(
     }
 
 
-@router.post("/{business_id}/fomo-multilingual/generate-single", response_model=dict)
+@router.post("/fomo-multilingual/generate-single", response_model=dict)
 async def generate_fomo_single_language(
     business_id: UUID,
     link_id: UUID = Query(...),
@@ -1241,7 +1243,7 @@ async def generate_fomo_single_language(
     return result
 
 
-@router.get("/{business_id}/fomo-multilingual/comparison", response_model=dict)
+@router.get("/fomo-multilingual/comparison", response_model=dict)
 async def get_language_comparison(
     business_id: UUID,
     link_id: UUID = Query(...),
@@ -1256,7 +1258,7 @@ async def get_language_comparison(
     return comparison
 
 
-@router.get("/{business_id}/fomo-multilingual/supported-languages", response_model=dict)
+@router.get("/fomo-multilingual/supported-languages", response_model=dict)
 async def get_supported_languages(
     business_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -1267,3 +1269,255 @@ async def get_supported_languages(
         'supported_languages': FOMALanguageGenerator.SUPPORTED_LANGUAGES,
         'language_names': FOMALanguageGenerator.LANGUAGE_NAMES,
     }
+
+
+# ── Platform-Algorithm Positioning Score ──
+
+@router.post("/publication-links/{link_id}/positioning/compute", response_model=dict)
+async def compute_positioning_score(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compute a fresh platform-algorithm-aware positioning score for one link."""
+    result = await db.execute(select(PublicationLink).where(PublicationLink.id == link_id))
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=404, detail="Publication link not found")
+
+    service = PositioningScoreService(db)
+    score = await service.compute_score_for_link(business_id, link, link.connection_id)
+
+    if not score:
+        return {
+            "computed": False,
+            "reason": "No ranking connector available for this platform, SEO disabled, or the fetch failed.",
+        }
+
+    recommendations = await service.get_open_recommendations(link_id)
+
+    return {
+        "computed": True,
+        "composite_score": score.composite_score,
+        "measured_signal_pct": score.measured_signal_pct,
+        "sub_scores": {
+            "reputation_score": score.reputation_score,
+            "conversion_score": score.conversion_score,
+            "price_competitiveness_score": score.price_competitiveness_score,
+            "listing_quality_score": score.listing_quality_score,
+            "logistics_score": score.logistics_score,
+            "engagement_score": score.engagement_score,
+        },
+        "raw_signals": score.raw_signals,
+        "recommendations": [
+            {
+                "id": str(r.id),
+                "signal_key": r.signal_key,
+                "severity": r.severity,
+                "message": r.message,
+                "current_value": r.current_value,
+                "target_value": r.target_value,
+            }
+            for r in recommendations
+        ],
+    }
+
+
+@router.get("/publication-links/{link_id}/positioning", response_model=dict)
+async def get_positioning_score(
+    business_id: UUID,
+    link_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get the most recently computed positioning score + open recommendations for a link."""
+    service = PositioningScoreService(db)
+    score = await service.get_latest_score(link_id)
+
+    if not score:
+        raise HTTPException(status_code=404, detail="No positioning score computed yet for this link")
+
+    recommendations = await service.get_open_recommendations(link_id)
+
+    return {
+        "link_id": str(link_id),
+        "platform_name": score.platform_name,
+        "composite_score": score.composite_score,
+        "measured_signal_pct": score.measured_signal_pct,
+        "computed_at": score.computed_at.isoformat(),
+        "sub_scores": {
+            "reputation_score": score.reputation_score,
+            "conversion_score": score.conversion_score,
+            "price_competitiveness_score": score.price_competitiveness_score,
+            "listing_quality_score": score.listing_quality_score,
+            "logistics_score": score.logistics_score,
+            "engagement_score": score.engagement_score,
+        },
+        "raw_signals": score.raw_signals,
+        "recommendations": [
+            {
+                "id": str(r.id),
+                "signal_key": r.signal_key,
+                "severity": r.severity,
+                "message": r.message,
+                "current_value": r.current_value,
+                "target_value": r.target_value,
+            }
+            for r in recommendations
+        ],
+    }
+
+
+@router.get("/publication-links/{link_id}/positioning/history", response_model=list[dict])
+async def get_positioning_history(
+    business_id: UUID,
+    link_id: UUID,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get positioning score history for a link (for trend charts)."""
+    service = PositioningScoreService(db)
+    history = await service.get_score_history(link_id, days)
+
+    return [
+        {
+            "composite_score": s.composite_score,
+            "measured_signal_pct": s.measured_signal_pct,
+            "computed_at": s.computed_at.isoformat(),
+        }
+        for s in history
+    ]
+
+
+@router.get("/positioning/summary", response_model=dict)
+async def get_positioning_summary(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Unified per-business positioning dashboard: latest score per platform link,
+    plus a generic_web overlay from the web_presence on-page audit."""
+    service = PositioningScoreService(db)
+    return await service.get_business_summary(business_id)
+
+
+@router.patch("/positioning/recommendations/{recommendation_id}/dismiss", response_model=dict)
+async def dismiss_positioning_recommendation(
+    business_id: UUID,
+    recommendation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Dismiss an open positioning recommendation."""
+    service = PositioningScoreService(db)
+    dismissed = await service.dismiss_recommendation(recommendation_id)
+
+    if not dismissed:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+
+    return {"dismissed": True, "recommendation_id": str(recommendation_id)}
+
+
+# ── Store-level (storefront / brand) positioning ──
+
+class ComputeStorePositioningRequest(BaseModel):
+    platform: str
+    connection_id: UUID  # for Amazon: the connection holding ADS API credentials, not SP-API
+    external_id: str | None = None  # brand_entity_id override if not stored in the credentials
+
+
+def _store_score_payload(score, recommendations) -> dict:
+    return {
+        "platform_name": score.platform_name,
+        "composite_score": score.composite_score,
+        "measured_signal_pct": score.measured_signal_pct,
+        "computed_at": score.computed_at.isoformat(),
+        "sub_scores": {
+            "traffic_score": score.traffic_score,
+            "engagement_score": score.engagement_score,
+            "new_visitor_score": score.new_visitor_score,
+            "content_performance_score": score.content_performance_score,
+        },
+        "raw_signals": score.raw_signals,
+        "recommendations": [
+            {
+                "id": str(r.id),
+                "signal_key": r.signal_key,
+                "severity": r.severity,
+                "message": r.message,
+                "current_value": r.current_value,
+                "target_value": r.target_value,
+            }
+            for r in recommendations
+        ],
+    }
+
+
+@router.post("/store-positioning/compute", response_model=dict)
+async def compute_store_positioning_score(
+    business_id: UUID,
+    data: ComputeStorePositioningRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compute a fresh store-level positioning score (e.g. Amazon Brand Store)."""
+    service = StorePositioningScoreService(db)
+    score = await service.compute_store_score(
+        business_id, data.platform, data.connection_id, data.external_id
+    )
+
+    if not score:
+        return {
+            "computed": False,
+            "reason": (
+                "No store connector for this platform, SEO disabled, invalid credentials "
+                "(Amazon needs Ads API credentials, not SP-API), or the fetch failed."
+            ),
+        }
+
+    recommendations = await service.get_open_store_recommendations(business_id, data.platform)
+    return {"computed": True, **_store_score_payload(score, recommendations)}
+
+
+@router.get("/store-positioning/{platform}", response_model=dict)
+async def get_store_positioning_score(
+    business_id: UUID,
+    platform: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Latest store-level score + open recommendations + declared-storefront overlay."""
+    service = StorePositioningScoreService(db)
+    score = await service.get_latest_store_score(business_id, platform)
+    storefront = await service.has_declared_storefront(business_id)
+
+    if not score:
+        raise HTTPException(status_code=404, detail="No store positioning score computed yet for this platform")
+
+    recommendations = await service.get_open_store_recommendations(business_id, platform)
+    return {**_store_score_payload(score, recommendations), "storefront": storefront}
+
+
+@router.get("/store-positioning/{platform}/history", response_model=list[dict])
+async def get_store_positioning_history(
+    business_id: UUID,
+    platform: str,
+    days: int = Query(30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Store-level score history (for trend charts)."""
+    service = StorePositioningScoreService(db)
+    history = await service.get_store_score_history(business_id, platform, days)
+
+    return [
+        {
+            "composite_score": s.composite_score,
+            "measured_signal_pct": s.measured_signal_pct,
+            "computed_at": s.computed_at.isoformat(),
+        }
+        for s in history
+    ]
+

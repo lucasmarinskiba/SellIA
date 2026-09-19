@@ -42,6 +42,13 @@ class PublicationLinkMetrics(Base):
     # Revenue (if available)
     revenue: Mapped[float] = mapped_column(default=0.0)  # Total revenue from this link this day
 
+    # Provenance flags: True when the value above is an approximation, not a real
+    # platform-reported number (e.g. Mercado Libre exposes no clicks endpoint to
+    # sellers). Never trust a metric for scoring/CTR math without checking this.
+    clicks_estimated: Mapped[bool] = mapped_column(default=False)
+    conversions_estimated: Mapped[bool] = mapped_column(default=False)
+    revenue_estimated: Mapped[bool] = mapped_column(default=False)
+
     # Metadata
     data_source: Mapped[str] = mapped_column(String(50))  # 'api', 'webhook', 'manual'
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

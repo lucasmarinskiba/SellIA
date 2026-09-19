@@ -513,6 +513,14 @@ celery_app.conf.beat_schedule = {
         "task": "seo_config.monitor_fomo_decay",
         "schedule": 86400.0,  # cada 24 horas (monitorea decay diario)
     },
+    "compute-positioning-scores": {
+        "task": "seo_config.compute_positioning_scores",
+        "schedule": 86400.0,  # cada 24 horas, mismo cadence que fetch-nightly-analytics
+    },
+    "compute-store-positioning-scores": {
+        "task": "seo_config.compute_store_positioning_scores",
+        "schedule": 86400.0,  # cada 24 horas, posicionamiento a nivel tienda (Amazon Brand Store)
+    },
 }
 
 

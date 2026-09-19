@@ -105,6 +105,9 @@ class PlatformAnalyticsService:
             clicks = metrics_data.get("clicks", 0)
             conversions = metrics_data.get("conversions", 0)
             revenue = metrics_data.get("revenue", 0)
+            clicks_estimated = metrics_data.get("clicks_estimated", False)
+            conversions_estimated = metrics_data.get("conversions_estimated", False)
+            revenue_estimated = metrics_data.get("revenue_estimated", False)
 
             ctr = (clicks / impressions * 100) if impressions > 0 else 0
             conv_rate = (conversions / clicks * 100) if clicks > 0 else 0
@@ -121,6 +124,9 @@ class PlatformAnalyticsService:
                 ctr=ctr,
                 conversion_rate=conv_rate,
                 revenue=revenue,
+                clicks_estimated=clicks_estimated,
+                conversions_estimated=conversions_estimated,
+                revenue_estimated=revenue_estimated,
                 data_source="api",
             )
 
