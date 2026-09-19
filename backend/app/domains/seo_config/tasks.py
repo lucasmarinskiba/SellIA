@@ -273,3 +273,109 @@ def monitor_fomo_decay(self):
                 await engine.dispose()
 
     return asyncio.run(_monitor())
+
+
+@shared_task(bind=True, name="seo_config.compute_positioning_scores")
+def compute_positioning_scores(self):
+    """Nightly: compute platform-algorithm-aware positioning score for every
+    active publication link that has a ranking connector available."""
+    import asyncio
+
+    async def _compute():
+        engine = create_async_engine(settings.DATABASE_URL)
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as db:
+            try:
+                from app.domains.seo_config.positioning_score_service import PositioningScoreService
+
+                result = await db.execute(
+                    select(PublicationLink).where(PublicationLink.seo_enabled == True)
+                )
+                # Snapshot ids only: after a rollback every loaded ORM instance is expired,
+                # so each link is re-fetched inside the loop instead of reused.
+                link_ids = [link.id for link in result.scalars().all()]
+
+                service = PositioningScoreService(db)
+                computed = 0
+
+                for link_id in link_ids:
+                    try:
+                        link = await db.get(PublicationLink, link_id)
+                        if not link:
+                            continue
+                        score = await service.compute_score_for_link(
+                            link.business_id, link, link.connection_id
+                        )
+                        if score:
+                            computed += 1
+                    except Exception as e:
+                        await db.rollback()
+                        logger.error(f"Failed to compute positioning for link {link_id}: {str(e)[:100]}")
+
+                logger.info(f"Positioning score compute complete: {computed}/{len(link_ids)} links")
+                return {"computed": computed, "total": len(link_ids)}
+
+            except Exception as e:
+                logger.error(f"Error in compute_positioning_scores: {str(e)[:200]}")
+                raise
+            finally:
+                await engine.dispose()
+
+    return asyncio.run(_compute())
+
+    return asyncio.run(_monitor())
+
+
+@shared_task(bind=True, name="seo_config.compute_store_positioning_scores")
+def compute_store_positioning_scores(self):
+    """Nightly: store-level positioning for every active Amazon Brand Store connection.
+
+    A connection counts as a Brand Store (Ads API) connection when its
+    auth_metadata carries `brand_entity_id` — the credential contract of
+    AmazonStoreRankingConnector. IntegrationApp has no seeded platform slug to
+    filter on, and an SP-API-only connection must not be sent to the Ads API.
+    """
+    import asyncio
+
+    async def _compute():
+        engine = create_async_engine(settings.DATABASE_URL)
+        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with async_session() as db:
+            try:
+                from app.domains.integrations.integration_models import IntegrationConnection
+                from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
+
+                result = await db.execute(
+                    select(IntegrationConnection).where(
+                        IntegrationConnection.connection_status == "active",
+                        IntegrationConnection.auth_metadata.has_key("brand_entity_id"),
+                    )
+                )
+                connections = result.scalars().all()
+                # Snapshot plain values first: a rollback inside the loop expires ORM instances.
+                targets = [(c.business_id, c.id) for c in connections]
+
+                service = StorePositioningScoreService(db)
+                computed = 0
+
+                for business_id, connection_id in targets:
+                    try:
+                        score = await service.compute_store_score(business_id, "amazon", connection_id)
+                        if score:
+                            computed += 1
+                    except Exception as e:
+                        await db.rollback()
+                        logger.error(f"Failed to compute store positioning for business {business_id}: {str(e)[:100]}")
+
+                logger.info(f"Store positioning compute complete: {computed}/{len(targets)} connections")
+                return {"computed": computed, "total": len(targets)}
+
+            except Exception as e:
+                logger.error(f"Error in compute_store_positioning_scores: {str(e)[:200]}")
+                raise
+            finally:
+                await engine.dispose()
+
+    return asyncio.run(_compute())
