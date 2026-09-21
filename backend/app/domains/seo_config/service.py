@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.seo_config.brain_toggles import SEO_POSITIONING, set_brain_capability
 from app.domains.seo_config.models import SEOConfig, PlatformSEOStatus, PublicationLink
 from app.domains.integrations.integration_models import IntegrationConnection
 
@@ -26,12 +27,30 @@ class SEOConfigService:
 
         return config
 
-    async def toggle_global_seo(self, business_id: UUID, enabled: bool) -> SEOConfig:
-        """Toggle global SEO on/off."""
+    async def toggle_global_seo(
+        self,
+        business_id: UUID,
+        enabled: bool,
+        user_id: UUID | None = None,
+        user_email: str | None = None,
+    ) -> SEOConfig:
+        """Toggle global SEO on/off, mirrored onto the Brain Map's
+        `automation.seo_positioning` node in the same transaction so the two
+        never disagree."""
         config = await self.get_or_create_seo_config(business_id)
         config.global_seo_enabled = enabled
+        await set_brain_capability(
+            self.db, business_id, SEO_POSITIONING, enabled, user_id=user_id, user_email=user_email
+        )
         await self.db.commit()
         return config
+
+    async def sync_global_from_brain(self, business_id: UUID, enabled: bool) -> None:
+        """Map -> config direction: the Brain Map node was flipped, so make the
+        global SEO switch follow. Does not commit (the Brain endpoint owns the
+        transaction) and does not write the Map node back (no ping-pong)."""
+        config = await self.get_or_create_seo_config(business_id)
+        config.global_seo_enabled = enabled
 
     async def get_platform_seo_status(self, connection_id: UUID) -> PlatformSEOStatus | None:
         """Get SEO status for a specific platform connection."""

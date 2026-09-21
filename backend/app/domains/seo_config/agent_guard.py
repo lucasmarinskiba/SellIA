@@ -6,6 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.seo_config.models import SEOConfig, PlatformSEOStatus
+from app.domains.seo_config.brain_toggles import (
+    AGENT_BRAIN_ID,
+    is_brain_capability_enabled,
+    platform_brain_id,
+)
 
 logger = get_logger(__name__)
 
@@ -27,13 +32,24 @@ class SEOAgentGuard:
         business_id: UUID,
         agent_name: str,
         platform_id: UUID | None = None,
+        platform_name: str | None = None,
     ) -> bool:
         """Check if agent can run for this business/platform.
 
+        Blocked when ANY of these is off — the seo_config switches and the
+        matching Brain Interaction Map nodes are one system, so turning
+        something off in either place stops the work:
+          - global SEO (SEOConfig.global_seo_enabled),
+          - this platform's SEO switch (PlatformSEOStatus),
+          - the agent's Map node (automation.seo_positioning / automation.fomo_publications),
+          - the platform's own Map node (platform.<slug>): an integration turned
+            off on the Map is not something SEO should keep optimizing.
+
         Args:
             business_id: The business
-            agent_name: 'positioning' or 'fomo_engine' (SEO-sensitive agents)
-            platform_id: Optional platform (if modifying platform-specific copy)
+            agent_name: 'positioning', 'store_positioning' or 'fomo_engine' (or their *_agent aliases)
+            platform_id: Optional platform connection (if modifying platform-specific copy)
+            platform_name: Optional platform name; resolved from the connection's SEO status when omitted
 
         Returns:
             True if agent can run, False if SEO is disabled.
@@ -67,6 +83,22 @@ class SEOAgentGuard:
                     f"SEO agent guard: {agent_name} BLOCKED for platform {platform_status.platform_name} (platform SEO disabled)"
                 )
                 return False
+            if platform_status and not platform_name:
+                platform_name = platform_status.platform_name
+
+        agent_node = AGENT_BRAIN_ID.get(agent_name)
+        if agent_node and not await is_brain_capability_enabled(self.db, business_id, agent_node):
+            logger.info(
+                f"SEO agent guard: {agent_name} BLOCKED for business {business_id} (Brain Map node {agent_node} is OFF)"
+            )
+            return False
+
+        platform_node = platform_brain_id(platform_name)
+        if platform_node and not await is_brain_capability_enabled(self.db, business_id, platform_node):
+            logger.info(
+                f"SEO agent guard: {agent_name} BLOCKED for business {business_id} (Brain Map node {platform_node} is OFF)"
+            )
+            return False
 
         logger.info(f"SEO agent guard: {agent_name} ALLOWED for business {business_id}")
         return True

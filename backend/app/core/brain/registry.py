@@ -531,6 +531,9 @@ _AUTOMATIONS: list[tuple[str, str, str, str]] = [
     ("retention_qbr", "QBR Trimestral Automatizada", "Retención", "Success metrics, benchmarking, innovación, programa de referral."),
     ("churn_alerts", "Alertas de Churn Automáticas", "Retención", "Detecta caída 30%+ en uso. Intervención 48h. Diagnóstico + win-back."),
     ("fomo_campaigns", "Campañas de FOMO", "Conversión", "Urgencia y escasez real (stock, tiempo, demanda) para acelerar decisiones."),
+    # ── SEO por algoritmo de plataforma (apagable desde /dashboard/phase12 o desde este mapa) ──
+    ("seo_positioning", "Posicionamiento SEO con IA", "Adquisición", "Puntúa y mejora cada publicación y tienda según el algoritmo real de cada plataforma (reputación, catálogo/Buy Box, engagement)."),
+    ("fomo_publications", "FOMO en Publicaciones", "Conversión", "Genera, prueba (A/B), rota y mide copy de urgencia/escasez para cada link publicado."),
 ]
 
 
@@ -678,6 +681,8 @@ class BrainRegistry:
             "automation.invoicing": ("arca",),
             "automation.referral_engine": ("whatsapp",),
             "automation.inventory_sync": ("mercadolibre", "shopify", "tiendanube"),
+            "automation.seo_positioning": ("mercadolibre", "amazon", "hotmart", "instagram", "shopify", "tiendanube"),
+            "automation.fomo_publications": ("mercadolibre", "amazon", "hotmart", "instagram", "shopify", "tiendanube"),
         }
         for aid, plats in auto_to_platform.items():
             for slug in plats:
@@ -802,6 +807,8 @@ class BrainRegistry:
             "automation.invoicing": ("arca",),
             "automation.referral_engine": ("whatsapp",),
             "automation.inventory_sync": ("mercadolibre", "shopify"),
+            "automation.seo_positioning": ("mercadolibre", "amazon", "hotmart", "instagram", "shopify", "tiendanube"),
+            "automation.fomo_publications": ("mercadolibre", "amazon", "hotmart", "instagram", "shopify", "tiendanube"),
         }
         auto_tool = {
             "automation.meta_ads_optimizer": "ad_creative",
@@ -816,6 +823,8 @@ class BrainRegistry:
             "automation.referral_engine": "crm_sync",
             "automation.inventory_sync": "crm_sync",
             "automation.invoicing": "crm_sync",
+            "automation.seo_positioning": "seo_audit",
+            "automation.fomo_publications": "copy_gen",
         }
 
         flows: list[dict[str, Any]] = []

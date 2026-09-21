@@ -46,10 +46,11 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
         - https://mercadolibre.com.ar/product-MLM123456789
         - https://www.mercadolibre.com.ar/items/MLM123456789
         """
-        # Pattern: MLM followed by numbers
-        match = re.search(r'ML[A-Z]?\d+', url)
+        # Listing permalinks spell the id with a hyphen (`MLA-123456789-title`)
+        # while the API id has none (`MLA123456789`): accept both, return the API form.
+        match = re.search(r'(?<![A-Za-z])(ML[A-Z]?)-?(\d{6,})', url)
         if match:
-            return match.group()
+            return f"{match.group(1)}{match.group(2)}"
         return None
 
     async def update_listing_title(self, external_id: str, title: str) -> dict[str, Any]:

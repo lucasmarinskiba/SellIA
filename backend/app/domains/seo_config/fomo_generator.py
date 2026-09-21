@@ -10,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.domains.seo_config.agent_guard import SEOAgentGuard
+from app.domains.seo_config.brain_toggles import FOMO_PUBLICATIONS, is_brain_capability_enabled
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, SEOConfig
 from app.domains.brand_transformation.service import FOMOEngineAgent
 
@@ -23,19 +25,33 @@ class PublicationFOMOGenerator:
         self.db = db
 
     async def is_fomo_generation_enabled(self, business_id: UUID) -> bool:
-        """Check if FOMO generation is enabled (SEO config global toggle)."""
+        """Check if FOMO generation is enabled: global SEO toggle AND the
+        `automation.fomo_publications` Brain Map node (either one off stops it)."""
         result = await self.db.execute(
             select(SEOConfig).where(SEOConfig.business_id == business_id)
         )
         config = result.scalar_one_or_none()
-        return config.global_seo_enabled if config else True
+        if config is not None and not config.global_seo_enabled:
+            return False
+        return await is_brain_capability_enabled(self.db, business_id, FOMO_PUBLICATIONS)
+
+    async def _may_generate(self, business_id: UUID, link: PublicationLink) -> bool:
+        """The full on/off check for generating FOMO for one link: the link's own
+        switch, global SEO, the platform's SEO switch, and the Brain Map nodes
+        (fomo_publications + the platform itself). Every generation path —
+        cadence, auto-rotation, multi-language — goes through this."""
+        if not link.seo_enabled:
+            return False
+        return await SEOAgentGuard(self.db).can_run_seo_agent(
+            business_id, "fomo_engine",
+            platform_id=link.connection_id, platform_name=link.platform_source,
+        )
 
     async def generate_fomo_for_link(
         self, business_id: UUID, link: PublicationLink
     ) -> PublicationLinkFOMO | None:
         """Generate FOMO copy for a single publication link."""
-        # Check if FOMO generation is enabled
-        if not await self.is_fomo_generation_enabled(business_id):
+        if not await self._may_generate(business_id, link):
             logger.info(f"FOMO generation skipped for link {link.id}: SEO disabled")
             return None
 
@@ -151,6 +167,9 @@ class PublicationFOMOGenerator:
         )
         link = result.scalar_one_or_none()
         if not link:
+            return None
+        if not await self._may_generate(business_id, link):
+            logger.info(f"FOMO generation skipped for link {link_id}: SEO disabled")
             return None
 
         try:

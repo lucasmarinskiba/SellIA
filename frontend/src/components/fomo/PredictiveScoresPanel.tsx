@@ -8,17 +8,34 @@ interface PredictiveScoresPanelProps {
   businessId: string
 }
 
+interface PredictionAccuracy {
+  prediction_accuracy: number
+  status: string
+  total_conversions: number
+  fomo_copies_tested: number
+  recommendation: string
+}
+
+interface LearningVelocity {
+  week_accuracy: number
+  month_accuracy: number
+  learning_velocity: number
+  conversions_this_week: number
+  conversions_this_month: number
+  trend: string
+}
+
 export function PredictiveScoresPanel({ businessId }: PredictiveScoresPanelProps): React.JSX.Element {
-  const [accuracy, setAccuracy] = useState<any>(null)
-  const [velocity, setVelocity] = useState<any>(null)
+  const [accuracy, setAccuracy] = useState<PredictionAccuracy | null>(null)
+  const [velocity, setVelocity] = useState<LearningVelocity | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadPredictiveData = async () => {
       try {
         const [accRes, velRes] = await Promise.all([
-          api.get(`/businesses/${businessId}/seo-config/fomo-learning/prediction-accuracy`),
-          api.get(`/businesses/${businessId}/seo-config/fomo-learning/velocity`),
+          api.get<PredictionAccuracy>(`/businesses/${businessId}/seo-config/fomo-learning/prediction-accuracy`),
+          api.get<LearningVelocity>(`/businesses/${businessId}/seo-config/fomo-learning/velocity`),
         ])
         setAccuracy(accRes.data)
         setVelocity(velRes.data)

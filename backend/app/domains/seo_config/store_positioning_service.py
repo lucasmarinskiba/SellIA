@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.seo_config.agent_guard import SEOAgentGuard
+from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
 from app.domains.seo_config.platform_store_ranking_amazon import AmazonStoreRankingConnector
 from app.domains.seo_config.platform_store_ranking_base import StorePositioningConnector
 from app.domains.seo_config.positioning_models import PositioningRecommendation, StorePositioningScore
@@ -44,6 +45,7 @@ class StorePositioningScoreService:
     async def get_store_connector(
         self, platform_name: str, connection_id: UUID
     ) -> StorePositioningConnector | None:
+        platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in STORE_RANKING_CONNECTORS:
             logger.warning(f"No store ranking connector for platform: {platform_name}")
             return None
@@ -80,8 +82,11 @@ class StorePositioningScoreService:
         connection_id: UUID,
         external_id: str | None = None,
     ) -> StorePositioningScore | None:
+        platform_name = canonical_platform(platform_name) or platform_name
         guard = SEOAgentGuard(self.db)
-        if not await guard.can_run_seo_agent(business_id, "store_positioning", platform_id=connection_id):
+        if not await guard.can_run_seo_agent(
+            business_id, "store_positioning", platform_id=connection_id, platform_name=platform_name
+        ):
             return None
 
         connector = await self.get_store_connector(platform_name, connection_id)
@@ -169,6 +174,7 @@ class StorePositioningScoreService:
     async def get_latest_store_score(
         self, business_id: UUID, platform_name: str
     ) -> StorePositioningScore | None:
+        platform_name = canonical_platform(platform_name) or platform_name
         result = await self.db.execute(
             select(StorePositioningScore)
             .where(
@@ -183,6 +189,7 @@ class StorePositioningScoreService:
     async def get_store_score_history(
         self, business_id: UUID, platform_name: str, days: int = 30
     ) -> list[StorePositioningScore]:
+        platform_name = canonical_platform(platform_name) or platform_name
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         result = await self.db.execute(
             select(StorePositioningScore)
@@ -198,6 +205,7 @@ class StorePositioningScoreService:
     async def get_open_store_recommendations(
         self, business_id: UUID, platform_name: str
     ) -> list[PositioningRecommendation]:
+        platform_name = canonical_platform(platform_name) or platform_name
         result = await self.db.execute(self._open_store_recommendations_query(business_id, platform_name))
         return list(result.scalars().all())
 

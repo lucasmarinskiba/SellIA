@@ -8,14 +8,21 @@ interface DecayDetectionPanelProps {
   businessId: string
 }
 
+interface DecayedLink {
+  link: { id: string; url: string; title: string }
+  baseline_ctr: number
+  current_ctr: number
+  decay_percentage: number
+}
+
 export function DecayDetectionPanel({ businessId }: DecayDetectionPanelProps): React.JSX.Element {
-  const [decayed, setDecayed] = useState<any[]>([])
+  const [decayed, setDecayed] = useState<DecayedLink[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadDecay = async () => {
       try {
-        const res = await api.get(
+        const res = await api.get<DecayedLink[]>(
           `/businesses/${businessId}/seo-config/fomo-decay/detect?decay_threshold=30`
         )
         setDecayed(res.data || [])

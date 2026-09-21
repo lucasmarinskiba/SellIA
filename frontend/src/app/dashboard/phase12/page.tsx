@@ -25,6 +25,7 @@ import { useBusinessSnapshot } from '@/lib/businessSnapshot'
 import LinksManager from '@/components/web-presence/LinksManager'
 import { SEOPlatformsControl } from '@/components/seo/SEOPlatformsControl'
 import { PublicationLinksManager } from '@/components/seo/PublicationLinksManager'
+import { AlgorithmGuidePanel } from '@/components/seo/AlgorithmGuidePanel'
 import { FOMADashboard } from '@/components/fomo/FOMADashboard'
 import {
   webPresenceApi, SEVERITY_STYLE, scoreColor, type CompareResult, type SeoReport,
@@ -134,6 +135,19 @@ export default function SeoPage(): React.JSX.Element {
               </p>
             </div>
             <PublicationLinksManager businessId={business.id} onChanged={loadReport} />
+          </div>
+        )}
+
+        {/* Algorithm guide + prioritised positioning actions */}
+        {business && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6">
+            <div className="mb-4">
+              <h2 className="font-semibold text-slate-900">Cómo te posiciona cada plataforma</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                Qué mira cada algoritmo, qué es oficial y qué es consenso de vendedores, y qué corregir primero
+              </p>
+            </div>
+            <AlgorithmGuidePanel businessId={business.id} />
           </div>
         )}
 

@@ -10,6 +10,7 @@ from app.domains.seo_config.models import PublicationLink
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
 from app.domains.seo_config.platform_analytics_mercadolibre import MercadoLibreAnalytics
 from app.domains.seo_config.platform_analytics_base import PlatformAnalyticsConnector
+from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
 
 logger = get_logger(__name__)
 
@@ -30,6 +31,7 @@ class PlatformAnalyticsService:
         self, platform_name: str, connection_id: UUID
     ) -> PlatformAnalyticsConnector | None:
         """Get analytics connector for platform."""
+        platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in ANALYTICS_CONNECTORS:
             logger.warning(f"No analytics connector for platform: {platform_name}")
             return None

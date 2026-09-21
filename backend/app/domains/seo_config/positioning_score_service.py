@@ -25,12 +25,17 @@ from app.domains.seo_config.models import PublicationLink
 from app.domains.seo_config.positioning_models import (
     PublicationLinkPositioningScore,
     PositioningRecommendation,
+    StorePositioningScore,
 )
 from app.domains.seo_config.platform_ranking_base import PlatformRankingConnector, RankingSignal
 from app.domains.seo_config.platform_ranking_mercadolibre import MercadoLibreRankingConnector
 from app.domains.seo_config.platform_ranking_instagram import InstagramRankingConnector
 from app.domains.seo_config.platform_ranking_amazon import AmazonRankingConnector
 from app.domains.seo_config.platform_ranking_hotmart import HotmartRankingConnector
+from app.domains.seo_config.platform_algorithm_knowledge import (
+    GUIDANCE_ONLY, MEASURED, OFFICIAL, WEB_AUDIT,
+    canonical_platform, coverage_for, factor_for_signal, get_profile,
+)
 from app.domains.seo_config.positioning_scoring_utils import composite_from_sub_scores, measured_pct
 from app.domains.seo_config.agent_guard import SEOAgentGuard
 
@@ -44,6 +49,37 @@ RANKING_CONNECTORS = {
 }
 
 
+SEVERITY_RANK = {"critical": 0, "warning": 1, "info": 2}
+
+_COVERAGE_NOTE = {
+    MEASURED: "Se puntúa con señales reales de la API de la plataforma.",
+    WEB_AUDIT: "Vive en un sitio propio: se audita leyendo la página real, no hay ranking de marketplace que medir.",
+    GUIDANCE_ONLY: "Todavía no hay conector ni auditoría para esta plataforma: solo se muestra la guía de su algoritmo.",
+}
+
+
+def recommendation_payload(rec: PositioningRecommendation, platform: str | None) -> dict:
+    """A recommendation as the API returns it, with the 'why it matters' taken from
+    what the platform documents (or what sellers report — the evidence level says which)."""
+    factor = factor_for_signal(platform, rec.signal_key)
+    return {
+        "id": str(rec.id),
+        "signal_key": rec.signal_key,
+        "severity": rec.severity,
+        "message": rec.message,
+        "current_value": rec.current_value,
+        "target_value": rec.target_value,
+        "why": (
+            {"factor": factor.name, "evidence": factor.evidence, "note": factor.note} if factor else None
+        ),
+    }
+
+
+def sort_recommendations(recs: list[PositioningRecommendation]) -> list[PositioningRecommendation]:
+    """Most urgent first: critical before warning before info."""
+    return sorted(recs, key=lambda r: (SEVERITY_RANK.get(r.severity, 9), r.signal_key))
+
+
 class PositioningScoreService:
     """Compute and persist platform-algorithm-aware positioning scores."""
 
@@ -55,6 +91,7 @@ class PositioningScoreService:
     ) -> PlatformRankingConnector | None:
         """Resolve a ranking connector for a platform, same credential
         resolution pattern as PlatformAnalyticsService.get_analytics_connector."""
+        platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in RANKING_CONNECTORS:
             logger.warning(f"No ranking connector for platform: {platform_name}")
             return None
@@ -96,17 +133,23 @@ class PositioningScoreService:
         """Fetch signals for one link, compute composite + sub-scores, persist
         the score snapshot and any triggered recommendations."""
 
+        # Links store whatever spelling the UI/importer used ('mercadolibre', 'mercado_libre'…);
+        # the connectors are keyed by one canonical name.
+        platform = canonical_platform(link.platform_source) or link.platform_source
+
         guard = SEOAgentGuard(self.db)
-        if not await guard.can_run_seo_agent(business_id, "positioning", platform_id=connection_id):
+        if not await guard.can_run_seo_agent(
+            business_id, "positioning", platform_id=connection_id, platform_name=platform
+        ):
             return None
 
-        if not connection_id or link.platform_source not in RANKING_CONNECTORS:
+        if not connection_id or platform not in RANKING_CONNECTORS:
             logger.info(
                 f"No ranking connector available for link {link.id} (platform={link.platform_source})"
             )
             return None
 
-        connector = await self.get_ranking_connector(link.platform_source, connection_id)
+        connector = await self.get_ranking_connector(platform, connection_id)
         if not connector:
             return None
 
@@ -117,7 +160,7 @@ class PositioningScoreService:
             logger.error(f"Failed to fetch ranking signals for link {link.id}: {str(e)[:200]}")
             return None
 
-        if link.platform_source == "instagram":
+        if platform == "instagram":
             signals.extend(await self._compute_posting_cadence(business_id, link))
 
         signal_map = {s.key: s for s in signals}
@@ -129,7 +172,7 @@ class PositioningScoreService:
         score = PublicationLinkPositioningScore(
             business_id=business_id,
             link_id=link.id,
-            platform_name=link.platform_source,
+            platform_name=platform,
             composite_score=composite,
             raw_signals={"signals": [s.as_dict() for s in signals]},
             measured_signal_pct=measured,
@@ -248,32 +291,64 @@ class PositioningScoreService:
                 PositioningRecommendation.status == "open",
             )
         )
-        return list(result.scalars().all())
+        return sort_recommendations(list(result.scalars().all()))
 
     async def get_business_summary(self, business_id: UUID) -> dict:
-        """Per-platform latest scores for the business, plus a generic_web
-        overlay from web_presence (read-only, no table merge)."""
+        """Per-platform latest scores for the business, what each platform's coverage is
+        (measured by API / web-audited / guidance only), why unscored links are unscored,
+        a prioritised action plan, and a generic_web overlay from web_presence (read-only)."""
         result = await self.db.execute(
             select(PublicationLink).where(PublicationLink.business_id == business_id)
         )
         links = result.scalars().all()
 
         per_link = []
+        unscored = []
+        overview: dict[str, dict] = {}
         for link in links:
+            platform = canonical_platform(link.platform_source) or link.platform_source
+            profile = get_profile(platform)
+            coverage = coverage_for(platform)
+            entry = overview.setdefault(platform, {
+                "platform": platform,
+                "label": profile.label if profile else link.platform_source,
+                "coverage": coverage,
+                "note": _COVERAGE_NOTE[coverage],
+                "links": 0,
+                "scored_links": 0,
+            })
+            entry["links"] += 1
+
             score = await self.get_latest_score(link.id)
             if score:
+                entry["scored_links"] += 1
                 per_link.append({
                     "link_id": str(link.id),
                     "title": link.title,
                     "platform_name": score.platform_name,
+                    "coverage": coverage,
                     "composite_score": score.composite_score,
                     "measured_signal_pct": score.measured_signal_pct,
                     "computed_at": score.computed_at.isoformat(),
+                })
+            else:
+                unscored.append({
+                    "link_id": str(link.id),
+                    "title": link.title,
+                    "platform": platform,
+                    "coverage": coverage,
+                    "reason": (
+                        "Todavía no se calculó: falta conectar la plataforma o esperar la corrida nocturna."
+                        if coverage == MEASURED else _COVERAGE_NOTE[coverage]
+                    ),
                 })
 
         summary = {
             "business_id": str(business_id),
             "platforms": per_link,
+            "platform_overview": sorted(overview.values(), key=lambda p: p["platform"]),
+            "unscored_links": unscored,
+            "top_actions": await self.get_action_plan(business_id),
             "generic_web": None,
         }
 
@@ -293,6 +368,49 @@ class PositioningScoreService:
             logger.warning(f"Could not merge web_presence data into positioning summary: {str(e)[:150]}")
 
         return summary
+
+    async def get_action_plan(self, business_id: UUID, limit: int = 10) -> list[dict]:
+        """What to fix first, across every link and store: open recommendations grouped by
+        (platform, signal), most severe first, platform-documented factors before community
+        ones, then by how many listings are affected."""
+        link_rows = await self.db.execute(
+            select(PositioningRecommendation, PublicationLink.platform_source)
+            .join(PublicationLink, PositioningRecommendation.link_id == PublicationLink.id)
+            .where(
+                PositioningRecommendation.business_id == business_id,
+                PositioningRecommendation.status == "open",
+            )
+        )
+        store_rows = await self.db.execute(
+            select(PositioningRecommendation, StorePositioningScore.platform_name)
+            .join(StorePositioningScore, PositioningRecommendation.store_score_id == StorePositioningScore.id)
+            .where(
+                PositioningRecommendation.business_id == business_id,
+                PositioningRecommendation.status == "open",
+            )
+        )
+
+        groups: dict[tuple[str, str], dict] = {}
+        for rec, raw_platform in [*link_rows.all(), *store_rows.all()]:
+            platform = canonical_platform(raw_platform) or raw_platform
+            group = groups.setdefault(
+                (platform, rec.signal_key), {"rec": rec, "platform": platform, "affected": 0}
+            )
+            group["affected"] += 1
+            if SEVERITY_RANK.get(rec.severity, 9) < SEVERITY_RANK.get(group["rec"].severity, 9):
+                group["rec"] = rec
+
+        def order(g: dict) -> tuple:
+            factor = factor_for_signal(g["platform"], g["rec"].signal_key)
+            documented = 0 if factor and factor.evidence == OFFICIAL else 1
+            return (SEVERITY_RANK.get(g["rec"].severity, 9), documented, -g["affected"], g["platform"])
+
+        plan = []
+        for group in sorted(groups.values(), key=order)[:limit]:
+            payload = recommendation_payload(group["rec"], group["platform"])
+            payload.pop("id")
+            plan.append({**payload, "platform": group["platform"], "affected": group["affected"]})
+        return plan
 
     async def dismiss_recommendation(self, recommendation_id: UUID) -> bool:
         rec = await self.db.get(PositioningRecommendation, recommendation_id)
