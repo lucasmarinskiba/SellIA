@@ -268,7 +268,7 @@ async def find_fulfillment_location(
 ) -> dict:
     """Find best location to fulfill online order."""
     try:
-        from app.domains.locations.models import Location
+        from app.domains.businesses.location_models import Location
 
         locations = db.query(Location).filter(Location.business_id == request.business_id).all()
 

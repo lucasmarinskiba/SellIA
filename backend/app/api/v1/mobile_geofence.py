@@ -7,10 +7,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.locations.geofence_service import GeofenceTriggerService
-from app.domains.locations.models import Location
+from app.domains.businesses.location_models import Location
 
 router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 
