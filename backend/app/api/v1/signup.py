@@ -57,12 +57,16 @@ async def signup(
         user_id = str(uuid.uuid4())
         password_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt(12)).decode()
 
+        # Every NOT NULL users column must be listed here: raw SQL bypasses the ORM's
+        # Python-side defaults, and a fresh database (create_all) has no DB-level
+        # default for them. Existing databases only got away with omitting
+        # email_otp_enabled because the startup ALTERs in sellbot.py add it with a DEFAULT.
         await db.execute(
             text("""
                 INSERT INTO users (id, email, hashed_password, full_name, is_active, email_verified,
-                    failed_login_attempts, is_superuser, is_2fa_enabled, country_code, preferred_currency,
+                    failed_login_attempts, is_superuser, is_2fa_enabled, email_otp_enabled, country_code, preferred_currency,
                     timezone, billing_address, payment_methods, created_at, updated_at)
-                VALUES (:id, :email, :hash, :full_name, true, false, 0, false, false, 'AR', 'ARS',
+                VALUES (:id, :email, :hash, :full_name, true, false, 0, false, false, false, 'AR', 'ARS',
                     'America/Argentina/Buenos_Aires', '{}', '[]', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """),
             {"id": user_id, "email": req.email, "hash": password_hash, "full_name": req.full_name}
