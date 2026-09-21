@@ -90,7 +90,7 @@ export function AutoRotationPanel({ businessId }: AutoRotationPanelProps): React
           <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-600">Sin rotaciones automáticas en los últimos 7 días</p>
           <p className="text-sm text-slate-500 mt-1">
-            El sistema rotará automáticamente cuando detecte decay >30% en tu FOMO copy
+            El sistema rotará automáticamente cuando detecte decay mayor al 30% en tu FOMO copy
           </p>
         </div>
       ) : (

@@ -5,6 +5,8 @@ import { ShoppingCart, Loader2, Wifi, WifiOff } from 'lucide-react'
 import { fomaPhase1Api, type ConversionEvent } from '@/lib/fomoPhase1'
 import { fomaWebhookClient, type FOMAWebhookClient } from '@/lib/fomoWebhooks'
 
+type TickerConversion = Pick<ConversionEvent, 'id' | 'platform_name' | 'conversion_value' | 'created_at'>
+
 interface ConversionTickerProps {
   businessId: string
   refreshInterval?: number
@@ -14,7 +16,7 @@ export function ConversionTicker({
   businessId,
   refreshInterval = 10000,
 }: ConversionTickerProps): React.JSX.Element {
-  const [conversions, setConversions] = useState<ConversionEvent[]>([])
+  const [conversions, setConversions] = useState<TickerConversion[]>([])
   const [loading, setLoading] = useState(true)
   const [streamConnected, setStreamConnected] = useState(false)
   const webhookClientRef = useRef<FOMAWebhookClient | null>(null)
@@ -37,7 +39,7 @@ export function ConversionTicker({
     const client = fomaWebhookClient.create(businessId, {
       onConversion: (event) => {
         setConversions(prev => {
-          const newConversion: ConversionEvent = {
+          const newConversion: TickerConversion = {
             id: event.data.id,
             platform_name: event.data.platform,
             conversion_value: event.data.amount || 0,

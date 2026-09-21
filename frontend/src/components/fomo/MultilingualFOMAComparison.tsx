@@ -16,6 +16,8 @@ interface LanguageCopy {
   language_name: string
 }
 
+const LANGUAGES = ['es', 'en', 'pt'] as const
+
 interface ComparisonData {
   es?: LanguageCopy
   en?: LanguageCopy
@@ -73,6 +75,8 @@ export function MultilingualFOMAComparison({
     )
   }
 
+  const current = comparison[selectedLang]
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
@@ -84,29 +88,29 @@ export function MultilingualFOMAComparison({
 
       {/* Language Tabs */}
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
-        {['es', 'en', 'pt'].map(lang => (
+        {LANGUAGES.map(lang => (
           <button
             key={lang}
-            onClick={() => setSelectedLang(lang as 'es' | 'en' | 'pt')}
+            onClick={() => setSelectedLang(lang)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               selectedLang === lang
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            {comparison[lang as 'es' | 'en' | 'pt']?.language_name || lang.toUpperCase()}
+            {comparison[lang]?.language_name || lang.toUpperCase()}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      {selectedLang && comparison[selectedLang] && (
+      {current && (
         <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
           {/* Urgency Trigger */}
           <div>
             <p className="text-xs text-slate-600 font-medium uppercase mb-1">Urgency Trigger</p>
             <p className="text-sm font-medium text-slate-900">
-              {comparison[selectedLang].urgency_trigger}
+              {current.urgency_trigger}
             </p>
           </div>
 
@@ -114,13 +118,13 @@ export function MultilingualFOMAComparison({
           <div>
             <p className="text-xs text-slate-600 font-medium uppercase mb-2">FOMO Copy</p>
             <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
-              {comparison[selectedLang].copy}
+              {current.copy}
             </p>
           </div>
 
           {/* Copy Button */}
           <button
-            onClick={() => copyToClipboard(comparison[selectedLang].copy, selectedLang)}
+            onClick={() => copyToClipboard(current.copy, selectedLang)}
             className="w-full px-3 py-2 rounded-lg border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-50 flex items-center justify-center gap-2"
           >
             {copied === selectedLang ? (
@@ -142,18 +146,16 @@ export function MultilingualFOMAComparison({
       <div className="mt-8 pt-8 border-t border-slate-200">
         <p className="text-xs text-slate-600 font-medium uppercase mb-4">Vista General</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['es', 'en', 'pt'].map(lang => (
-            comparison[lang as 'es' | 'en' | 'pt'] && (
+          {LANGUAGES.map(lang => {
+            const entry = comparison[lang]
+            if (!entry) return null
+            return (
               <div key={lang} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p className="font-medium text-slate-900 mb-2">
-                  {comparison[lang as 'es' | 'en' | 'pt'].language_name}
-                </p>
-                <p className="text-xs text-slate-600 line-clamp-3">
-                  {comparison[lang as 'es' | 'en' | 'pt'].copy}
-                </p>
+                <p className="font-medium text-slate-900 mb-2">{entry.language_name}</p>
+                <p className="text-xs text-slate-600 line-clamp-3">{entry.copy}</p>
               </div>
             )
-          ))}
+          })}
         </div>
       </div>
     </div>
