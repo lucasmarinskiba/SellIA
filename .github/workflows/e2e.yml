@@ -39,7 +39,19 @@ jobs:
 
       - name: Build service images
         run: |
-          cp .env.example .env || true
+          # NOT `cp .env.example .env`: docker compose substitutes ${VAR:-default}
+          # from .env, and .env.example ships placeholders that override the
+          # compose defaults and break the stack in two ways:
+          #  - SECRET_KEY=your-secret-key-here is < 32 chars, so Settings() raises
+          #    at import; the backend crashed while `uvicorn --reload` kept the
+          #    container "Up" (=> backend/health=000NO_CONN forever).
+          #  - POSTGRES_PASSWORD=secure_password_here, but "Seed test data" below
+          #    connects as postgres:postgres.
+          # These two values are all the compose file reads from .env.
+          {
+            echo "POSTGRES_PASSWORD=postgres"
+            echo "SECRET_KEY=e2e-test-secret-key-$(openssl rand -hex 16)"
+          } > .env
           # Split out from "Start services" below: that combined step's
           # only error signal was a bare "Process completed with exit code
           # 1" with no way to tell whether the cold image build, the
@@ -71,18 +83,33 @@ jobs:
           # the same stack with a plain curl retry loop and pass reliably
           # every run this session — reusing that proven mechanism here
           # instead of continuing to debug wait-on's HTTP semantics.
-          for i in $(seq 1 60); do
+          # Budget is 600s (was 300s): the backend's lifespan startup runs every
+          # bootstrap step and creates ~400 tables one transaction at a time on a
+          # fresh database, and it does not accept connections until that finishes
+          # (measured ~95s on a dev machine; a 2-vCPU runner is slower, so 300s left
+          # no margin).
+          for i in $(seq 1 120); do
             BACKEND_OK=false; FRONTEND_OK=false
-            curl -sf http://localhost:8000/health > /dev/null 2>&1 && BACKEND_OK=true
+            # Prefer /api/ready (schema bootstrap finished) when the backend exposes it:
+            # /health can answer before the tables exist, and the seed step below needs
+            # them. Backends without /api/ready (404) are ready once /health answers.
+            # `|| true`: steps run under `bash -e`, and curl exits non-zero (7) while the
+            # backend is still down, which would abort the whole step on the first poll.
+            READY_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/ready || true)
+            if [ "$READY_CODE" = "200" ]; then
+              BACKEND_OK=true
+            elif [ "$READY_CODE" = "404" ] && curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              BACKEND_OK=true
+            fi
             curl -sf http://localhost:3000 > /dev/null 2>&1 && FRONTEND_OK=true
             if $BACKEND_OK && $FRONTEND_OK; then
               echo "✅ Both services ready after $((i * 5))s"
               exit 0
             fi
-            echo "Waiting for services (backend=$BACKEND_OK frontend=$FRONTEND_OK)... ($i/60)"
+            echo "Waiting for services (backend=$BACKEND_OK frontend=$FRONTEND_OK)... ($i/120)"
             sleep 5
           done
-          echo "::error::Services did not become ready within 300s"
+          echo "::error::Services did not become ready within 600s"
           exit 1
           # (No env: block here — this step only runs `docker compose up`
           # and curl against the host-published ports; it doesn't read
@@ -106,6 +133,10 @@ jobs:
           FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || echo "NO_CONN")
           PS=$(docker compose ps --format '{{.Name}}={{.Status}}' | tr '\n' ' ')
           echo "::error::E2E startup failed | backend/health=$BACKEND_CODE frontend=$FRONTEND_CODE | $PS"
+          # Tail of the backend log as an annotation too (annotations are readable via
+          # the API; the ::group:: dumps below are not, this repo's token can't read logs).
+          BTAIL=$(docker compose logs --no-color --tail=14 backend 2>&1 | tr '\n' '|' | cut -c1-1200)
+          echo "::error::backend log tail: $BTAIL"
           echo "::group::docker compose ps (full)"
           docker compose ps
           echo "::endgroup::"
