@@ -1,0 +1,14 @@
+# Keep the build context clean. Without this, `COPY . .` in the Dockerfile's
+# builder stage overwrites the container's freshly `npm ci`'d node_modules
+# with the host's (e.g. Windows-only SWC binaries), which forces Next.js to
+# download the Linux SWC binary over the network mid-build — slow and flaky.
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+*.log
+.env
+.env.*
+!.env.example
