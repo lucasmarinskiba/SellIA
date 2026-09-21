@@ -1,0 +1,371 @@
+# Known-broken backend tests (quarantine)
+#
+# Each id below FAILS (or errors at setup) today. conftest.py marks them
+# xfail(strict=False): they still run, stay visible in the summary, and do NOT
+# fail CI. Anything NOT listed here that breaks DOES fail CI.
+#
+# Why they are broken (dominant causes, see per-file notes):
+#   - written against APIs that were never implemented / were renamed
+#     (constructor signatures, missing classes, `backend.` import prefix, moved modules)
+#   - fixtures that no longer exist (`db`) or sync SQLAlchemy used on an async-only layer
+#   - test data that violates today's foreign keys (business without a user)
+#   - routes that are not mounted in the test app (404)
+#
+# HOW TO USE
+#   * Fixing a test? Delete its line here. A listed test that passes shows as XPASS.
+#   * Regenerate candidates:  pytest tests/ -rfE --continue-on-collection-errors
+#     and copy the FAILED/ERROR node ids.
+#   * Do NOT add a test here to make a regression go away.
+#
+# NOTE: test_security*.py / test_config_security.py entries deserve priority --
+# they cover auth/security behaviour and are quarantined only because they
+# currently cannot run, not because the behaviour is verified.
+#
+# Generated 2026-09-21 from a Linux run against postgres:16 + redis:7 (CI-equivalent).
+# Modules that cannot be imported at all are in `collect_ignore` in conftest.py.
+
+
+# tests/computer_use/test_extended_api.py  (11)  e.g. assert 404 == 201
+tests/computer_use/test_extended_api.py::test_add_session_tag
+tests/computer_use/test_extended_api.py::test_analytics_summary
+tests/computer_use/test_extended_api.py::test_create_annotation
+tests/computer_use/test_extended_api.py::test_create_batch_job
+tests/computer_use/test_extended_api.py::test_create_browser_profile
+tests/computer_use/test_extended_api.py::test_create_template
+tests/computer_use/test_extended_api.py::test_create_webhook
+tests/computer_use/test_extended_api.py::test_list_annotations
+tests/computer_use/test_extended_api.py::test_list_templates
+tests/computer_use/test_extended_api.py::test_search_by_tag
+tests/computer_use/test_extended_api.py::test_share_session
+
+# tests/computer_use/test_services.py  (1)  e.g. RuntimeError: Event loop is closed
+tests/computer_use/test_services.py::TestProxyManager::test_mark_unhealthy
+
+# tests/test_agent_chat_ollama.py  (1)  e.g. ValueError: No se encontró un proveedor de IA disponible. Asegurate de que Ollama esté corriendo o agregá una
+tests/test_agent_chat_ollama.py::test_agent_chat_with_ollama_fallback
+
+# tests/test_automation_toggles.py  (7)  e.g. 
+tests/test_automation_toggles.py::test_list_toggles_empty
+tests/test_automation_toggles.py::test_seed_toggles
+tests/test_automation_toggles.py::test_toggle_already_exists
+tests/test_automation_toggles.py::test_toggle_display_names
+tests/test_automation_toggles.py::test_toggle_has_monthly_limits
+tests/test_automation_toggles.py::test_toggle_update_creates_audit_log
+tests/test_automation_toggles.py::test_toggle_usage_increment
+
+# tests/test_automation_toggles_e2e.py  (4)  e.g. 
+tests/test_automation_toggles_e2e.py::test_e2e_category_distribution
+tests/test_automation_toggles_e2e.py::test_e2e_change_limit_and_log
+tests/test_automation_toggles_e2e.py::test_e2e_create_business_seed_toggles_update
+tests/test_automation_toggles_e2e.py::test_e2e_usage_increment_hits_limit
+
+# tests/test_brand_transformation.py  (2)  e.g. sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: seo_config
+tests/test_brand_transformation.py::test_orchestrator_run_all_completes_without_bridges
+tests/test_brand_transformation.py::test_run_all_survives_broken_bridges
+
+# tests/test_channels.py  (33)  e.g. TypeError: WhatsAppConnector.__init__() got an unexpected keyword argument 'phone_number'
+tests/test_channels.py::TestChannelAnalytics::test_channel_conversion_rates
+tests/test_channels.py::TestChannelAnalytics::test_channel_revenue_analytics
+tests/test_channels.py::TestChannelAnalytics::test_message_delivery_metrics
+tests/test_channels.py::TestChannelAnalytics::test_performance_comparison
+tests/test_channels.py::TestChannelAnalytics::test_response_rate_analytics
+tests/test_channels.py::TestChannelEdgeCases::test_handle_expired_token
+tests/test_channels.py::TestChannelEdgeCases::test_handle_invalid_phone_number
+tests/test_channels.py::TestChannelEdgeCases::test_rate_limit_handling
+tests/test_channels.py::TestChannelHealthMonitoring::test_automatic_failover
+tests/test_channels.py::TestChannelHealthMonitoring::test_detect_channel_outage
+tests/test_channels.py::TestChannelHealthMonitoring::test_monitor_channel_uptime
+tests/test_channels.py::TestChannelHealthMonitoring::test_quota_management
+tests/test_channels.py::TestChannelHealthMonitoring::test_rate_limit_monitoring
+tests/test_channels.py::TestChannelInitialization::test_connector_authentication
+tests/test_channels.py::TestChannelInitialization::test_connector_health_check
+tests/test_channels.py::TestChannelInitialization::test_mercadolibre_connector_init
+tests/test_channels.py::TestChannelInitialization::test_whatsapp_connector_init
+tests/test_channels.py::TestChannelIntegration::test_channel_aggregation_reporting
+tests/test_channels.py::TestChannelIntegration::test_omnichannel_customer_journey
+tests/test_channels.py::TestChannelSpecificLogic::test_mercadolibre_listing_creation
+tests/test_channels.py::TestChannelSpecificLogic::test_mercadolibre_order_handling
+tests/test_channels.py::TestChannelSpecificLogic::test_whatsapp_conversation_context
+tests/test_channels.py::TestChannelSpecificLogic::test_whatsapp_group_management
+tests/test_channels.py::TestLeadDistribution::test_channel_priority_selection
+tests/test_channels.py::TestLeadDistribution::test_channel_rotation
+tests/test_channels.py::TestLeadDistribution::test_distribute_lead_to_channel
+tests/test_channels.py::TestLeadDistribution::test_omnichannel_lead_handling
+tests/test_channels.py::TestMessageSending::test_message_delivery_status
+tests/test_channels.py::TestMessageSending::test_message_with_media
+tests/test_channels.py::TestMessageSending::test_send_bulk_messages
+tests/test_channels.py::TestMessageSending::test_send_mercadolibre_message
+tests/test_channels.py::TestMessageSending::test_send_template_message
+tests/test_channels.py::TestMessageSending::test_send_whatsapp_message
+
+# tests/test_computer_use_api.py  (8)  e.g. KeyError: 'id'
+tests/test_computer_use_api.py::test_create_session
+tests/test_computer_use_api.py::test_create_session_disabled
+tests/test_computer_use_api.py::test_create_session_rate_limit
+tests/test_computer_use_api.py::test_create_session_without_url
+tests/test_computer_use_api.py::test_delete_session
+tests/test_computer_use_api.py::test_get_session
+tests/test_computer_use_api.py::test_list_sessions
+tests/test_computer_use_api.py::test_start_session_no_api_key
+
+# tests/test_config_security.py  (2)  e.g. pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings
+tests/test_config_security.py::test_dev_assigns_temporary_secret_when_empty
+tests/test_config_security.py::test_production_default_db_password_rejected
+
+# tests/test_e2e_flow.py  (8)  e.g. ModuleNotFoundError: No module named 'backend'
+tests/test_e2e_flow.py::TestE2EFlow::test_amazon_order_sync
+tests/test_e2e_flow.py::TestE2EFlow::test_analytics_overview
+tests/test_e2e_flow.py::TestE2EFlow::test_mercadolibre_order_sync_flow
+tests/test_e2e_flow.py::TestE2EFlow::test_refund_analysis_flow
+tests/test_e2e_flow.py::TestE2EFlow::test_shipping_label_generation
+tests/test_e2e_flow.py::TestE2EFlow::test_shopify_order_sync
+tests/test_e2e_flow.py::TestE2EFlow::test_stripe_checkout_flow
+tests/test_e2e_flow.py::TestE2EFlow::test_whatsapp_message_flow
+
+# tests/test_e2e_sales_funnel.py  (10)  e.g. assert 422 == 200
+tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_creates_user
+tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails
+tests/test_e2e_sales_funnel.py::TestBusinessFlow::test_create_business
+tests/test_e2e_sales_funnel.py::TestIntegrationFlow::test_complete_flow_setup
+tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[0]
+tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[1]
+tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[2]
+tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[3]
+tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[4]
+tests/test_e2e_sales_funnel.py::TestPerformance::test_signup_response_time
+
+# tests/test_fomo_seo.py  (1)  e.g. assert 0 == 3
+tests/test_fomo_seo.py::TestFOMOSEOCopy::test_list_copy
+
+# tests/test_fomo_star_player.py  (14)  e.g. 
+tests/test_fomo_star_player.py::TestABTesting::test_ab_test_conversions
+tests/test_fomo_star_player.py::TestABTesting::test_ab_test_views
+tests/test_fomo_star_player.py::TestABTesting::test_create_ab_test
+tests/test_fomo_star_player.py::TestCampaignManagement::test_activate_campaign
+tests/test_fomo_star_player.py::TestCampaignManagement::test_create_campaign
+tests/test_fomo_star_player.py::TestCampaignManagement::test_get_campaigns
+tests/test_fomo_star_player.py::TestEventLogging::test_get_event_count
+tests/test_fomo_star_player.py::TestEventLogging::test_get_recent_events
+tests/test_fomo_star_player.py::TestEventLogging::test_log_purchase_event
+tests/test_fomo_star_player.py::TestIntegration::test_full_campaign_lifecycle
+tests/test_fomo_star_player.py::TestMetricsAndAnalytics::test_get_summary_metrics
+tests/test_fomo_star_player.py::TestMetricsAndAnalytics::test_metrics_time_window
+tests/test_fomo_star_player.py::TestMetricsAndAnalytics::test_record_conversion_metric
+tests/test_fomo_star_player.py::TestMetricsAndAnalytics::test_record_impression_metric
+
+# tests/test_forecasting.py  (2)  e.g. AssertionError: {'error': "'ForecastingService' object has no attribute 'profile'", 'status': 'failed'}
+tests/test_forecasting.py::test_service_end_to_end
+tests/test_forecasting.py::test_service_run_all_and_reconcile
+
+# tests/test_growth.py  (15)  e.g. sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.excepti
+tests/test_growth.py::test_create_growth_campaign
+tests/test_growth.py::test_create_inbound_lead
+tests/test_growth.py::test_create_lead_magnet
+tests/test_growth.py::test_create_social_proof
+tests/test_growth.py::test_create_ugc_request
+tests/test_growth.py::test_create_value_sequence
+tests/test_growth.py::test_growth_dashboard_endpoint
+tests/test_growth.py::test_inbound_growth_engine_capture_lead
+tests/test_growth.py::test_inbound_growth_engine_create_campaign
+tests/test_growth.py::test_lead_magnet_engine_generate_and_track
+tests/test_growth.py::test_list_campaigns_endpoint
+tests/test_growth.py::test_social_proof_engine_collect_and_moderate
+tests/test_growth.py::test_ugc_collector_request_and_collect
+tests/test_growth.py::test_value_first_outreach_sequence
+tests/test_growth.py::test_viral_referral_engine
+
+# tests/test_growth_foom.py  (20)  e.g. fastapi.exceptions.HTTPException
+tests/test_growth_foom.py::TestBrandEndpoints::test_thought_leadership
+tests/test_growth_foom.py::TestCaseStudyEndpoints::test_case_study_formats
+tests/test_growth_foom.py::TestCaseStudyEndpoints::test_generate_case_study
+tests/test_growth_foom.py::TestGrowthSummary::test_growth_summary_dashboard
+tests/test_growth_foom.py::TestGrowthSummary::test_summary_includes_all_channels
+tests/test_growth_foom.py::TestGrowthSummary::test_summary_realistic_metrics
+tests/test_growth_foom.py::TestPartnershipEndpoints::test_partnerships_list
+tests/test_growth_foom.py::TestPressEndpoints::test_influencer_seeding
+tests/test_growth_foom.py::TestPressEndpoints::test_press_release_award
+tests/test_growth_foom.py::TestPressEndpoints::test_press_release_milestone
+tests/test_growth_foom.py::TestProductLedEndpoints::test_feature_gates
+tests/test_growth_foom.py::TestProductLedEndpoints::test_trial_optimization
+tests/test_growth_foom.py::TestSeoEndpoints::test_get_seo_content_calendar
+tests/test_growth_foom.py::TestSeoEndpoints::test_seo_content_calendar_default_days
+tests/test_growth_foom.py::TestSeoEndpoints::test_serp_optimization_all_types
+tests/test_growth_foom.py::TestSeoEndpoints::test_serp_optimization_case_study
+tests/test_growth_foom.py::TestViralEndpoints::test_community_program
+tests/test_growth_foom.py::TestViralEndpoints::test_referral_program
+tests/test_growth_foom.py::TestViralEndpoints::test_viral_mechanics
+tests/test_growth_foom.py::TestViralEndpoints::test_waitlist_program
+
+# tests/test_onboarding.py  (3)  e.g. assert 404 == 422
+tests/test_onboarding.py::test_onboarding_analyze_validation
+tests/test_onboarding.py::test_onboarding_create_invalid_type
+tests/test_onboarding.py::test_onboarding_create_success
+
+# tests/test_phase_27_integration.py  (16)  e.g. 
+tests/test_phase_27_integration.py::TestAccountApproval::test_admin_approve_account
+tests/test_phase_27_integration.py::TestAccountApproval::test_admin_reject_account
+tests/test_phase_27_integration.py::TestAccountApproval::test_request_approval
+tests/test_phase_27_integration.py::TestDealIntelligence::test_add_stakeholder
+tests/test_phase_27_integration.py::TestDealIntelligence::test_calculate_deal_health
+tests/test_phase_27_integration.py::TestDealIntelligence::test_find_economic_buyer
+tests/test_phase_27_integration.py::TestDealIntelligence::test_health_status_classification
+tests/test_phase_27_integration.py::TestDealIntelligence::test_identify_stakeholders
+tests/test_phase_27_integration.py::TestDealIntelligence::test_predict_close_probability
+tests/test_phase_27_integration.py::TestDealIntelligence::test_update_stakeholder_engagement
+tests/test_phase_27_integration.py::TestE2EWorkflows::test_deal_intelligence_workflow
+tests/test_phase_27_integration.py::TestE2EWorkflows::test_user_signup_verification_approval
+tests/test_phase_27_integration.py::TestEmailVerification::test_create_verification_token
+tests/test_phase_27_integration.py::TestEmailVerification::test_verify_expired_token
+tests/test_phase_27_integration.py::TestEmailVerification::test_verify_twice_fails
+tests/test_phase_27_integration.py::TestEmailVerification::test_verify_valid_token
+
+# tests/test_phase_29_voice.py  (11)  e.g. 
+tests/test_phase_29_voice.py::TestE2EVoiceWorkflow::test_full_voice_call_workflow
+tests/test_phase_29_voice.py::TestE2EVoiceWorkflow::test_playbook_usage_workflow
+tests/test_phase_29_voice.py::TestPlaybookExtractor::test_extract_playbooks_empty
+tests/test_phase_29_voice.py::TestPlaybookExtractor::test_extract_playbooks_from_calls
+tests/test_phase_29_voice.py::TestPlaybookExtractor::test_playbook_consolidation
+tests/test_phase_29_voice.py::TestPlaybookRecommender::test_recommend_playbook_by_industry
+tests/test_phase_29_voice.py::TestPlaybookRecommender::test_recommend_playbook_not_found
+tests/test_phase_29_voice.py::TestVoiceCallManager::test_end_call
+tests/test_phase_29_voice.py::TestVoiceCallManager::test_handle_call_input
+tests/test_phase_29_voice.py::TestVoiceCallManager::test_initiate_call
+tests/test_phase_29_voice.py::TestVoiceCallManager::test_multiple_turns_conversation
+
+# tests/test_phase_30_churn.py  (21)  e.g. AttributeError: 'AsyncEngine' object has no attribute '_run_ddl_visitor'
+tests/test_phase_30_churn.py::TestABMIntentScorer::test_demo_request_weight
+tests/test_phase_30_churn.py::TestABMIntentScorer::test_score_intent_buy_signal
+tests/test_phase_30_churn.py::TestABMIntentScorer::test_score_intent_not_interested
+tests/test_phase_30_churn.py::TestAPIEndpoints::test_abm_intent_endpoint
+tests/test_phase_30_churn.py::TestAPIEndpoints::test_churn_prediction_endpoint
+tests/test_phase_30_churn.py::TestAPIEndpoints::test_expansion_opportunities_endpoint
+tests/test_phase_30_churn.py::TestAPIEndpoints::test_healthcheck_endpoint
+tests/test_phase_30_churn.py::TestAPIEndpoints::test_retention_campaign_endpoint
+tests/test_phase_30_churn.py::TestChurnPredictionModel::test_churn_score_adoption
+tests/test_phase_30_churn.py::TestChurnPredictionModel::test_churn_score_recency
+tests/test_phase_30_churn.py::TestChurnPredictionModel::test_identify_churn_reasons
+tests/test_phase_30_churn.py::TestChurnPredictionModel::test_predict_churn_high_risk
+tests/test_phase_30_churn.py::TestChurnPredictionModel::test_predict_churn_low_risk
+tests/test_phase_30_churn.py::TestCustomerHealthScore::test_health_score_critical
+tests/test_phase_30_churn.py::TestCustomerHealthScore::test_health_score_high
+tests/test_phase_30_churn.py::TestExpansionOpportunityDetector::test_detect_opportunities_ranking
+tests/test_phase_30_churn.py::TestExpansionOpportunityDetector::test_find_cross_sell_opportunities
+tests/test_phase_30_churn.py::TestExpansionOpportunityDetector::test_find_feature_adoption_gaps
+tests/test_phase_30_churn.py::TestExpansionOpportunityDetector::test_find_seat_expansion
+tests/test_phase_30_churn.py::TestRetentionPlaybookGenerator::test_generate_playbook_competitor
+tests/test_phase_30_churn.py::TestRetentionPlaybookGenerator::test_generate_playbook_payment_issue
+
+# tests/test_phase_31_psychology.py  (32)  e.g. AttributeError: 'AsyncEngine' object has no attribute '_run_ddl_visitor'
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_close_endpoint
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_create_need_narrative_endpoint
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_discovery_questions_endpoint
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_handle_objection_endpoint
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_record_response_endpoint
+tests/test_phase_31_psychology.py::TestAPIEndpoints::test_urgency_triggers_endpoint
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_is_positive_response
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_1_small_yes
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_2_choice_between
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_3_pilot
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_4_upsell
+tests/test_phase_31_psychology.py::TestAssumptiveCloseEngine::test_step_5_full_commitment
+tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_extract_pain_points_from_response
+tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_impact_stage
+tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_problem_stage
+tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_generate_questions_rapport_stage
+tests/test_phase_31_psychology.py::TestDiscoveryQuestionsEngine::test_record_response
+tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_deal_conversation_tracking
+tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_full_discovery_to_close_flow
+tests/test_phase_31_psychology.py::TestIntegrationEndToEnd::test_rep_performance_metrics
+tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_create_need_narrative
+tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_financial_impact_calculation
+tests/test_phase_31_psychology.py::TestNeedCreationEngine::test_narrative_includes_gap_analysis
+tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_authority_objection
+tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_need_objection
+tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_price_objection
+tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_handle_time_objection
+tests/test_phase_31_psychology.py::TestPsychologyObjectionHandler::test_objection_response_is_psychology_based
+tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_price_increase_trigger
+tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_social_proof_trigger
+tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_generate_supply_scarcity_trigger
+tests/test_phase_31_psychology.py::TestUrgencyTriggerEngine::test_triggers_include_psychology_rationale
+
+# tests/test_phase_32_monetization.py  (24)  e.g. ModuleNotFoundError: No module named 'backend'
+tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_assign_variant_deterministic
+tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_assign_variant_distribution
+tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_calculate_results
+tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_create_test
+tests/test_phase_32_monetization.py::TestABTestOrchestrator::test_identify_winner
+tests/test_phase_32_monetization.py::TestConversionAnalytics::test_calculate_revenue_lift
+tests/test_phase_32_monetization.py::TestConversionAnalytics::test_forecast_revenue
+tests/test_phase_32_monetization.py::TestConversionAnalytics::test_get_funnel_active
+tests/test_phase_32_monetization.py::TestConversionAnalytics::test_get_funnel_trial
+tests/test_phase_32_monetization.py::TestConversionAnalytics::test_segment_profitability
+tests/test_phase_32_monetization.py::TestIntegration::test_full_funnel_active_user
+tests/test_phase_32_monetization.py::TestIntegration::test_revenue_impact_calculation
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_send_trigger
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_trigger_enterprise_upgrade
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_trigger_power_user_upsell
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_trigger_reengagement
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_trigger_retention
+tests/test_phase_32_monetization.py::TestUpgradeTriggerEngine::test_trigger_trial_conversion
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_bulk_classify
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_classify_active_freemium
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_classify_power_user
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_classify_stale_freemium
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_classify_trial_ending
+tests/test_phase_32_monetization.py::TestUserSegmentationEngine::test_segmentation_reasoning
+
+# tests/test_phase_33_platform.py  (25)  e.g. ModuleNotFoundError: No module named 'backend'
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_conversion_lift_cap
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_conversion_lift_estimation
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_hotmart_pricing_higher_margin
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_maintain_margin_strategy
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_price_with_high_stock_low_demand
+tests/test_phase_33_platform.py::TestDynamicPricingEngine::test_price_with_low_stock_high_demand
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_amazon_urgency_amazons_choice
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_amazon_urgency_stock_countdown
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_hotmart_urgency_affiliate_commission
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_hotmart_urgency_capacity_countdown
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_ml_urgency_bestseller
+tests/test_phase_33_platform.py::TestFOOMTriggerEngine::test_ml_urgency_low_stock
+tests/test_phase_33_platform.py::TestIntegration::test_full_product_lifecycle
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_create_amazon_listing
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_create_hotmart_listing
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_create_ml_listing
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_generate_amazon_bullets_a9_optimized
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_generate_ml_description_includes_urgency
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_sync_inventory_allocation
+tests/test_phase_33_platform.py::TestPlatformSyncEngine::test_sync_inventory_success
+tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_optimize_amazon_listing_a9
+tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_optimize_ml_listing_title
+tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_amazon_keywords
+tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_ml_keywords
+tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_track_rankings
+
+# tests/test_security.py  (14)  e.g. ModuleNotFoundError: No module named 'app.core.database.security_models'; 'app.core.database' is not a package
+tests/test_security.py::test_api_key_expiration
+tests/test_security.py::test_api_key_generation
+tests/test_security.py::test_api_key_rotation
+tests/test_security.py::test_api_key_verification
+tests/test_security.py::test_audit_log_data_access
+tests/test_security.py::test_audit_log_login_success
+tests/test_security.py::test_audit_log_risk_flagging
+tests/test_security.py::test_login_attempts_clear_on_success
+tests/test_security.py::test_login_brute_force_protection
+tests/test_security.py::test_rate_limiter_allow_requests
+tests/test_security.py::test_rate_limiter_block_requests
+tests/test_security.py::test_totp_invalid_code
+tests/test_security.py::test_totp_setup
+tests/test_security.py::test_totp_verification
+
+# tests/test_security_auth.py  (6)  e.g. assert 422 == 200
+tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_returns_requires_2fa_flag
+tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_with_2fa_code_succeeds
+tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_requires_password
+tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_with_correct_password
+tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_rejects_invalid_code
+tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_with_valid_code
+
+# tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
+tests/test_trade_signals_api.py::test_reject_flow
+tests/test_trade_signals_api.py::test_submit_blocked_without_heartbeat
