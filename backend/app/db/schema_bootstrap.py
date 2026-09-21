@@ -28,8 +28,12 @@ from __future__ import annotations
 
 import importlib
 import pathlib
+from typing import TYPE_CHECKING
 
 from app.core.logger import get_logger
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncEngine
 
 logger = get_logger(__name__)
 
@@ -77,10 +81,18 @@ def _import_all_models() -> int:
     return imported
 
 
-async def ensure_all_tables() -> dict[str, int]:
-    """Create anything the ORM declares and the database does not have yet."""
+async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]:
+    """Create anything the ORM declares and the database does not have yet.
+
+    ``engine`` defaults to the application's engine; the test suite passes its
+    own so it can reuse this resilient, per-table creation against the test DB.
+    """
     from app.core.database import Base as CoreBase
-    from app.core.database import engine
+
+    if engine is None:
+        from app.core.database import engine as app_engine
+
+        engine = app_engine
 
     _import_all_models()
 
