@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional, List
@@ -61,7 +62,9 @@ async def get_location_inventory(
 ) -> dict:
     """Get all inventory at location."""
     try:
-        inventory_list = LocationInventoryService.get_location_inventory(location_id, db)
+        inventory_list = await db.run_sync(
+            lambda sync_db: LocationInventoryService.get_location_inventory(location_id, sync_db)
+        )
 
         items = [
             {
@@ -98,7 +101,9 @@ async def get_product_stock(
 ) -> dict:
     """Get stock level for specific product."""
     try:
-        inventory = LocationInventoryService.get_product_at_location(location_id, product_id, db)
+        inventory = await db.run_sync(
+            lambda sync_db: LocationInventoryService.get_product_at_location(location_id, product_id, sync_db)
+        )
 
         if not inventory:
             raise HTTPException(status_code=404, detail=f"Product {product_id} not found at location")
@@ -116,6 +121,8 @@ async def get_product_stock(
             "unit_price": float(inventory.unit_price),
             "fulfillment_method": inventory.fulfillment_method.value,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -128,14 +135,16 @@ async def update_stock(
 ) -> dict:
     """Update stock level (restock, manual adjustment, demo usage)."""
     try:
-        result = LocationInventoryService.update_stock(
-            location_id=request.location_id,
-            product_id=request.product_id,
-            quantity_change=request.quantity_change,
-            movement_type=request.movement_type,
-            reason=request.reason,
-            staff_id=request.staff_id,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: LocationInventoryService.update_stock(
+                location_id=request.location_id,
+                product_id=request.product_id,
+                quantity_change=request.quantity_change,
+                movement_type=request.movement_type,
+                reason=request.reason,
+                staff_id=request.staff_id,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -150,11 +159,13 @@ async def check_demo_stock(
 ) -> dict:
     """Check if product available for demo during visitor checkin."""
     try:
-        result = LocationInventoryService.check_stock_for_demo(
-            location_id=request.location_id,
-            product_id=request.product_id,
-            checkin_id=request.checkin_id,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: LocationInventoryService.check_stock_for_demo(
+                location_id=request.location_id,
+                product_id=request.product_id,
+                checkin_id=request.checkin_id,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -170,11 +181,13 @@ async def get_stock_history(
 ) -> dict:
     """Get stock movement audit trail."""
     try:
-        movements = LocationInventoryService.get_stock_movement_history(
-            location_id=location_id,
-            product_id=product_id,
-            days=days,
-            db=db
+        movements = await db.run_sync(
+            lambda sync_db: LocationInventoryService.get_stock_movement_history(
+                location_id=location_id,
+                product_id=product_id,
+                days=days,
+                db=sync_db
+            )
         )
 
         history = [
@@ -212,12 +225,15 @@ async def get_low_stock_alerts(
     try:
         from app.domains.inventory.inventory_models import LowStockAlert
 
-        query = db.query(LowStockAlert).filter(LowStockAlert.location_id == location_id)
+        def _load(db: Session) -> list:
+            query = db.query(LowStockAlert).filter(LowStockAlert.location_id == location_id)
 
-        if acknowledged is not None:
-            query = query.filter(LowStockAlert.acknowledged == acknowledged)
+            if acknowledged is not None:
+                query = query.filter(LowStockAlert.acknowledged == acknowledged)
 
-        alerts = query.all()
+            return query.all()
+
+        alerts = await db.run_sync(_load)
 
         alert_list = [
             {
@@ -251,10 +267,12 @@ async def acknowledge_alert(
 ) -> dict:
     """Mark low-stock alert as acknowledged."""
     try:
-        result = LocationInventoryService.acknowledge_low_stock_alert(
-            alert_id=alert_id,
-            staff_id=current_user.id,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: LocationInventoryService.acknowledge_low_stock_alert(
+                alert_id=alert_id,
+                staff_id=current_user.id,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -270,16 +288,19 @@ async def find_fulfillment_location(
     try:
         from app.domains.businesses.location_models import Location
 
-        locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+        def _find(db: Session) -> dict:
+            locations = db.query(Location).filter(Location.business_id == request.business_id).all()
 
-        result = FulfillmentRoutingService.find_best_fulfillment_location(
-            business_id=request.business_id,
-            product_id=request.product_id,
-            customer_lat=request.customer_lat,
-            customer_lng=request.customer_lng,
-            locations=locations,
-            db=db
-        )
+            return FulfillmentRoutingService.find_best_fulfillment_location(
+                business_id=request.business_id,
+                product_id=request.product_id,
+                customer_lat=request.customer_lat,
+                customer_lng=request.customer_lng,
+                locations=locations,
+                db=db
+            )
+
+        result = await db.run_sync(_find)
 
         return result
     except Exception as e:
@@ -294,12 +315,14 @@ async def reserve_inventory(
 ) -> dict:
     """Reserve inventory for online order."""
     try:
-        result = FulfillmentRoutingService.reserve_inventory_for_order(
-            location_id=request.location_id,
-            product_id=request.product_id,
-            quantity=request.quantity,
-            order_id=request.order_id,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: FulfillmentRoutingService.reserve_inventory_for_order(
+                location_id=request.location_id,
+                product_id=request.product_id,
+                quantity=request.quantity,
+                order_id=request.order_id,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -316,11 +339,13 @@ async def mark_order_shipped(
 ) -> dict:
     """Mark order as shipped from location."""
     try:
-        result = FulfillmentRoutingService.mark_order_shipped(
-            location_id=location_id,
-            product_id=product_id,
-            order_id=order_id,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: FulfillmentRoutingService.mark_order_shipped(
+                location_id=location_id,
+                product_id=product_id,
+                order_id=order_id,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:

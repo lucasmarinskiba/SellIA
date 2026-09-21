@@ -1,6 +1,7 @@
 """Unified analytics dashboard API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional
@@ -11,20 +12,26 @@ from app.domains.analytics.unified_dashboard_service import UnifiedDashboardServ
 
 router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 
+# UnifiedDashboardService is sync (Session.query / commit), while get_db yields an
+# AsyncSession. Everything that touches the DB runs inside `await db.run_sync(...)`,
+# which hands the callable the underlying sync Session.
+
 
 @router.post("/locations/{location_id}/metrics/aggregate")
 async def aggregate_location_metrics(
     location_id: UUID,
     date: str = Query(...),  # YYYY-MM-DD
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Aggregate all metrics for location on given date."""
     try:
-        result = UnifiedDashboardService.aggregate_location_day(
-            location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
-            date=date,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: UnifiedDashboardService.aggregate_location_day(
+                location_id=location_id,
+                business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+                date=date,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -35,14 +42,16 @@ async def aggregate_location_metrics(
 async def generate_business_summary(
     business_id: UUID,
     date: Optional[str] = Query(None),  # YYYY-MM-DD, default today
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Generate high-level business summary."""
     try:
-        result = UnifiedDashboardService.generate_business_summary(
-            business_id=business_id,
-            date=date,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: UnifiedDashboardService.generate_business_summary(
+                business_id=business_id,
+                date=date,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -53,14 +62,16 @@ async def generate_business_summary(
 async def compare_locations(
     business_id: UUID,
     date: str = Query(...),  # YYYY-MM-DD
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Compare metrics across locations."""
     try:
-        result = UnifiedDashboardService.compare_locations(
-            business_id=business_id,
-            date=date,
-            db=db
+        result = await db.run_sync(
+            lambda sync_db: UnifiedDashboardService.compare_locations(
+                business_id=business_id,
+                date=date,
+                db=sync_db
+            )
         )
         return result
     except Exception as e:
@@ -71,7 +82,7 @@ async def compare_locations(
 async def get_location_unified_metrics(
     location_id: UUID,
     days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get unified metrics for location over time period."""
     try:
@@ -80,10 +91,13 @@ async def get_location_unified_metrics(
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
-        metrics = db.query(UnifiedLocationMetric).filter(
-            UnifiedLocationMetric.location_id == location_id,
-            UnifiedLocationMetric.date >= cutoff_str
-        ).order_by(UnifiedLocationMetric.date.desc()).all()
+        def _load(db: Session) -> list:
+            return db.query(UnifiedLocationMetric).filter(
+                UnifiedLocationMetric.location_id == location_id,
+                UnifiedLocationMetric.date >= cutoff_str
+            ).order_by(UnifiedLocationMetric.date.desc()).all()
+
+        metrics = await db.run_sync(_load)
 
         metric_data = [
             {
@@ -111,15 +125,18 @@ async def get_location_unified_metrics(
 @router.get("/businesses/{business_id}/unified-dashboard")
 async def get_business_dashboard(
     business_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get unified dashboard for entire business."""
     try:
         from app.domains.analytics.unified_dashboard_models import BusinessDashboardSummary
 
-        summary = db.query(BusinessDashboardSummary).filter(
-            BusinessDashboardSummary.business_id == business_id
-        ).first()
+        def _load(db: Session) -> BusinessDashboardSummary | None:
+            return db.query(BusinessDashboardSummary).filter(
+                BusinessDashboardSummary.business_id == business_id
+            ).first()
+
+        summary = await db.run_sync(_load)
 
         if not summary:
             return {"dashboard_available": False}
