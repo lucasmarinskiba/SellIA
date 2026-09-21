@@ -39,6 +39,14 @@ from app.domains.orders.models import Order
 from app.domains.crm.models import Pipeline, Deal
 from app.domains.agents.models import AgentPersonality, AgentConfig
 
+# The imports above cover only some models, but relationships reach others
+# (Business -> Location lives in businesses/location_models.py), and mapper
+# configuration fails on the first query unless every model module is registered.
+# The application does this at startup; do the same here.
+from app.db.schema_bootstrap import _import_all_models  # noqa: E402
+
+_import_all_models()
+
 
 # ============ SEED DATA ============
 

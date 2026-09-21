@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://sellia-brain.vercel.app';
-const API_URL = 'https://sellia-production.up.railway.app';
+// The stack under test (CI builds it and passes these). Never default to production:
+// this suite signs users up and attempts logins, so pointing it at prod writes real data.
+const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'http://localhost:8000';
+
+// Satisfies the client-side strength meter and the server's password policy
+// (8+ chars, upper, lower, digit and one of @+-!#$%).
+const VALID_PASSWORD = 'E2eTest-123!';
 
 test.describe('SellIA E2E Sales Funnel', () => {
 
@@ -15,30 +21,33 @@ test.describe('SellIA E2E Sales Funnel', () => {
       // Navigate to signup
       await page.goto(`${BASE_URL}/signup`);
 
-      // Verify signup form exists
-      const emailInput = page.locator('input[type="email"]');
-      const passwordInput = page.locator('input[type="password"]');
-      const submitButton = page.locator('button[type="submit"]');
-
-      await expect(emailInput).toBeVisible();
-      await expect(passwordInput).toBeVisible();
-      await expect(submitButton).toBeVisible();
+      // The form has name, email, password and confirm-password fields, so
+      // `input[type="password"]` matches two elements: select by placeholder.
+      await expect(page.getByPlaceholder('Juan García')).toBeVisible();
+      await expect(page.getByPlaceholder('tu@correo.com')).toBeVisible();
+      await expect(page.getByPlaceholder('MiContraseña123@')).toBeVisible();
+      await expect(page.getByPlaceholder('Repite tu contraseña')).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toBeVisible();
     });
 
     test('can signup new user', async ({ page }) => {
       await page.goto(`${BASE_URL}/signup`);
 
-      // Fill form
       const email = `user-${Date.now()}@test.local`;
-      await page.fill('input[type="email"]', email);
-      await page.fill('input[type="password"]', 'secure123');
+      await page.getByPlaceholder('Juan García').fill('E2E Test User');
+      await page.getByPlaceholder('tu@correo.com').fill(email);
+      await page.getByPlaceholder('MiContraseña123@').fill(VALID_PASSWORD);
+      await page.getByPlaceholder('Repite tu contraseña').fill(VALID_PASSWORD);
 
-      // Submit
-      await page.click('button[type="submit"]');
+      // Submit stays disabled until the password meets the strength rules.
+      const submitButton = page.locator('button[type="submit"]');
+      await expect(submitButton).toBeEnabled();
+      await submitButton.click();
 
-      // Wait for redirect or success message
-      await page.waitForURL(/dashboard|success|home/, { timeout: 5000 }).catch(() => {
-        // May timeout if endpoint not fully connected - OK for E2E
+      // On success the page moves on to the 2FA-setup step and the signup form
+      // disappears; on failure the form stays and shows the error.
+      await expect(page.getByRole('heading', { name: 'Crear cuenta segura' })).toBeHidden({
+        timeout: 15000,
       });
     });
 
@@ -110,7 +119,7 @@ test.describe('SellIA E2E Sales Funnel', () => {
       const response = await page.request.post(`${API_URL}/api/v1/auth/signup`, {
         data: {
           email: `e2e-${Date.now()}@test.local`,
-          password: 'test123secure',
+          password: VALID_PASSWORD,
           full_name: 'E2E Test User'
         }
       });
