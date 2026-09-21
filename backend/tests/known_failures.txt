@@ -21,6 +21,10 @@
 # they cover auth/security behaviour and are quarantined only because they
 # currently cannot run, not because the behaviour is verified.
 #
+# NOTE: test_security_auth.py and test_e2e_sales_funnel.py drive a LIVE server and are
+# skipped unless SELLIA_LIVE_API_URL is set (never production; see tests/live_api.py).
+# Their entries below only matter when someone runs them against a local/staging API.
+#
 # Generated 2026-09-21 from a Linux run against postgres:16 + redis:7 (CI-equivalent).
 # Modules that cannot be imported at all are in `collect_ignore` in conftest.py.
 
