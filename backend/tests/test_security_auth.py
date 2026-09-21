@@ -4,7 +4,10 @@ import pytest
 import httpx
 from uuid import uuid4
 
-BASE_URL = "https://sellia-production.up.railway.app"
+from live_api import LIVE_API_URL as BASE_URL, requires_live_api
+
+# Skipped unless SELLIA_LIVE_API_URL points at a non-production server (see live_api.py).
+pytestmark = requires_live_api
 
 
 @pytest.fixture

@@ -37,7 +37,7 @@ class TestCircuitBreaker:
 
         # Esperar timeout
         import time
-        time.sleep(1.1)
+        time.sleep(1.5)  # margin over recovery_timeout=1: can_attempt() compares wall-clock utcnow()
 
         # can_attempt() triggers the OPEN -> HALF_OPEN transition once
         # recovery_timeout has elapsed
@@ -51,7 +51,7 @@ class TestCircuitBreaker:
         assert cb.state == CircuitBreakerState.OPEN
 
         import time
-        time.sleep(1.1)
+        time.sleep(1.5)  # margin over recovery_timeout=1: can_attempt() compares wall-clock utcnow()
 
         # En HALF_OPEN (can_attempt() drives the transition)
         assert cb.can_attempt()
