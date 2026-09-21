@@ -75,7 +75,16 @@ jobs:
           # Anything NOT on those lists that breaks (including a NEW collection
           # error) fails this step, so it protects against regressions again.
           # Coverage floor lives in backend/pytest.ini (--cov-fail-under, a ratchet).
-          pytest tests/ -v --tb=short --cov=app --cov-report=xml
+          set -o pipefail
+          pytest tests/ -v --tb=short --cov=app --cov-report=xml 2>&1 | tee pytest.log
+
+      # This repo's GITHUB_TOKEN cannot read job logs (403), but ::error:: lines
+      # DO show up in the check-run annotations, so surface what actually failed
+      # instead of a bare "Process completed with exit code 1".
+      - name: Surface test failures as annotations
+        if: failure()
+        run: |
+          grep -E "^(FAILED|ERROR) |Required test coverage|^E   " pytest.log | head -25             | while IFS= read -r line; do echo "::error::${line:0:400}"; done
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
