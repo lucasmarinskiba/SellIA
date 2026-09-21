@@ -1413,7 +1413,7 @@
 "layer": 1,
 "group": "conocimiento",
 "group_label": "Conocimiento",
-"health": 0.7,
+"health": 0.82,
 "tags": [
 "conocimiento",
 "marketplace_algorithm_optimization"
@@ -4890,6 +4890,34 @@
 "automation",
 "conversión"
 ]
+},
+{
+"id": "automation.seo_positioning",
+"label": "Posicionamiento SEO con IA",
+"kind": "automation",
+"category": "Adquisición",
+"layer": 3,
+"group": "adquisicion",
+"group_label": "Adquisición",
+"health": 0.97,
+"tags": [
+"automation",
+"adquisición"
+]
+},
+{
+"id": "automation.fomo_publications",
+"label": "FOMO en Publicaciones",
+"kind": "automation",
+"category": "Conversión",
+"layer": 3,
+"group": "conversion",
+"group_label": "Conversión",
+"health": 0.97,
+"tags": [
+"automation",
+"conversión"
+]
 }
 ],
 "edges": [
@@ -5334,6 +5362,66 @@
 "rel": "opera"
 },
 {
+"source": "automation.seo_positioning",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "automation.seo_positioning",
+"target": "platform.amazon",
+"rel": "opera"
+},
+{
+"source": "automation.seo_positioning",
+"target": "platform.hotmart",
+"rel": "opera"
+},
+{
+"source": "automation.seo_positioning",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "automation.seo_positioning",
+"target": "platform.shopify",
+"rel": "opera"
+},
+{
+"source": "automation.seo_positioning",
+"target": "platform.tiendanube",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.amazon",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.hotmart",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.shopify",
+"rel": "opera"
+},
+{
+"source": "automation.fomo_publications",
+"target": "platform.tiendanube",
+"rel": "opera"
+},
+{
 "source": "automation.cart_recovery",
 "target": "agent.pipeline.onboarding",
 "rel": "orquesta"
@@ -5680,6 +5768,41 @@
 },
 {
 "source": "automation.fomo_campaigns",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "automation.seo_positioning",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.seo_positioning",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "automation.seo_positioning",
+"target": "agent.pipeline.nutridor",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_publications",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_publications",
+"target": "agent.pipeline.propuesta",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_publications",
+"target": "agent.pipeline.objeciones",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_publications",
 "target": "agent.pipeline.cerrador",
 "rel": "orquesta"
 },
@@ -6612,9 +6735,9 @@
 "counts": {
 "agents": 50,
 "skills": 210,
-"automations": 31,
+"automations": 33,
 "platforms": 47,
-"total": 338
+"total": 340
 },
-"health": 0.8575
+"health": 0.8585
 }

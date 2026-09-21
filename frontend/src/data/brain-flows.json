@@ -1531,6 +1531,268 @@
 "rel": "orquesta"
 }
 ]
+},
+{
+"id": "flow.automation.seo_positioning",
+"name": "Posicionamiento SEO con IA",
+"category": "Adquisición",
+"group": "adquisicion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.seo_positioning",
+"label": "Posicionamiento SEO con IA",
+"kind": "automation",
+"group": "adquisicion",
+"col": 0
+},
+{
+"id": "agent.pipeline.captador",
+"label": "Captador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "agent.pipeline.calificador",
+"label": "Calificador",
+"kind": "agent",
+"group": "captacion",
+"col": 1
+},
+{
+"id": "skill.tool.seo_audit",
+"label": "Seo Audit",
+"kind": "skill",
+"group": "seo",
+"col": 2
+},
+{
+"id": "platform.mercadolibre",
+"label": "Mercadolibre",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.amazon",
+"label": "Amazon",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.hotmart",
+"label": "Hotmart",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.instagram",
+"label": "Instagram",
+"kind": "platform",
+"group": "publicacion",
+"col": 3
+},
+{
+"id": "platform.shopify",
+"label": "Shopify",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.tiendanube",
+"label": "Tiendanube",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.seo_positioning",
+"target": "agent.pipeline.captador",
+"rel": "orquesta"
+},
+{
+"source": "automation.seo_positioning",
+"target": "agent.pipeline.calificador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.captador",
+"target": "skill.tool.seo_audit",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.calificador",
+"target": "skill.tool.seo_audit",
+"rel": "usa"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.amazon",
+"rel": "opera"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.hotmart",
+"rel": "opera"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.shopify",
+"rel": "opera"
+},
+{
+"source": "skill.tool.seo_audit",
+"target": "platform.tiendanube",
+"rel": "opera"
+}
+]
+},
+{
+"id": "flow.automation.fomo_publications",
+"name": "FOMO en Publicaciones",
+"category": "Conversión",
+"group": "conversion",
+"kind": "automation",
+"steps": [
+{
+"id": "automation.fomo_publications",
+"label": "FOMO en Publicaciones",
+"kind": "automation",
+"group": "conversion",
+"col": 0
+},
+{
+"id": "agent.pipeline.diagnostico",
+"label": "Diagnóstico",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "agent.pipeline.cerrador",
+"label": "Cerrador",
+"kind": "agent",
+"group": "conversion",
+"col": 1
+},
+{
+"id": "skill.tool.copy_gen",
+"label": "Copy Gen",
+"kind": "skill",
+"group": "creatividad",
+"col": 2
+},
+{
+"id": "platform.mercadolibre",
+"label": "Mercadolibre",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.amazon",
+"label": "Amazon",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.hotmart",
+"label": "Hotmart",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.instagram",
+"label": "Instagram",
+"kind": "platform",
+"group": "publicacion",
+"col": 3
+},
+{
+"id": "platform.shopify",
+"label": "Shopify",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+},
+{
+"id": "platform.tiendanube",
+"label": "Tiendanube",
+"kind": "platform",
+"group": "ventas",
+"col": 3
+}
+],
+"edges": [
+{
+"source": "automation.fomo_publications",
+"target": "agent.pipeline.diagnostico",
+"rel": "orquesta"
+},
+{
+"source": "automation.fomo_publications",
+"target": "agent.pipeline.cerrador",
+"rel": "orquesta"
+},
+{
+"source": "agent.pipeline.diagnostico",
+"target": "skill.tool.copy_gen",
+"rel": "usa"
+},
+{
+"source": "agent.pipeline.cerrador",
+"target": "skill.tool.copy_gen",
+"rel": "usa"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.mercadolibre",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.amazon",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.hotmart",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.instagram",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.shopify",
+"rel": "opera"
+},
+{
+"source": "skill.tool.copy_gen",
+"target": "platform.tiendanube",
+"rel": "opera"
+}
+]
 }
 ]
 }

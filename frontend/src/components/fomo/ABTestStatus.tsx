@@ -8,14 +8,33 @@ interface ABTestStatusProps {
   businessId: string
 }
 
+interface ABVariant {
+  id: string
+  split: number
+  conversions: number
+  revenue: number
+}
+
+interface ABTest {
+  test_id: string
+  status: string
+  min_conversions: number
+  total_conversions: number
+  variant_a: ABVariant
+  variant_b: ABVariant
+  variant_c: ABVariant | null
+  winner_id: string | null
+  winner_announced_at: string | null
+}
+
 export function ABTestStatus({ businessId }: ABTestStatusProps): React.JSX.Element {
-  const [tests, setTests] = useState<any[]>([])
+  const [tests, setTests] = useState<ABTest[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadTests = async () => {
       try {
-        const res = await api.get(
+        const res = await api.get<ABTest[]>(
           `/businesses/${businessId}/seo-config/fomo-ab-tests/running`
         )
         setTests(res.data || [])

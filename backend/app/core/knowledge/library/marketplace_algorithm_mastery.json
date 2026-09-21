@@ -2,10 +2,60 @@
   "category": "marketplace_algorithm_optimization",
   "description": "Master each marketplace algorithm to maximize visibility",
   "items": [
-    {"id": "algo_001", "name": "MercadoLibre ranking", "tactic": "Titulo SEO + keywords + price competitive + seller_stats (feedback >95%). Top 3 listings = 60% clicks."},
-    {"id": "algo_002", "name": "Amazon A9 algorithm", "tactic": "Title relevance + reviews (4.5+ stars) + conversion_rate + sales_velocity. Review quality = visibility."},
-    {"id": "algo_003", "name": "eBay Best Match", "tactic": "DSR >4.5 + shipping_cost_low + category_relevance + price_competitive. Sniping kills ranking."},
-    {"id": "algo_004", "name": "TikTok Shop algorithm", "tactic": "Video recency (1-7 days) + engagement (saves/shares > likes) + completion_rate. New = boost."},
-    {"id": "algo_005", "name": "Algorithm A/B testing", "tactic": "Test title, price, images. Track ranking + CTR. Roll out winners."}
+    {
+      "id": "algo_001",
+      "name": "Mercado Libre: cómo posiciona",
+      "tactic": "El orden de búsqueda combina reputación del vendedor, calidad de la ficha, competitividad (precio/envío) y desempeño de ventas. Para productos de catálogo, compiten los vendedores por una única oferta destacada (Buy Box). Mercado Libre nunca publicó los pesos del ranking. Documenta el sistema de reputación, el medidor de salud por publicación (Reputation Health Gauge) y la mecánica de catálogo; el resto es consenso de vendedores. Documentado por la plataforma: Reputación del vendedor; Catálogo y Buy Box; Logística (Full / Flex). Consenso de vendedores (no oficial): Calidad de la ficha; Respuesta a preguntas; Conversión visitas → ventas. Lo que no se puede medir: Precio frente a la competencia: no hay una fuente de precios de competidores conectada. Personalización del orden por comprador: Mercado Libre no la especifica. Pesos exactos del ranking: no son públicos."
+    },
+    {
+      "id": "algo_002",
+      "name": "Amazon: cómo posiciona",
+      "tactic": "Amazon privilegia listings comprables, con stock y precio competitivo, de vendedores con métricas de cuenta sanas; el Featured Offer (Buy Box) concentra las ventas. Amazon nunca publicó fórmula ni pesos: 'A9' y 'A10' son apodos de la industria. Sí documenta las métricas de salud de cuenta con umbrales y los factores generales de elegibilidad del Featured Offer. Documentado por la plataforma: Salud de la cuenta (ODR, envíos tardíos, tracking válido); Precio para el Featured Offer; Estado del listing; Stock disponible; Ranking de ventas (BSR). Consenso de vendedores (no oficial): Método de cumplimiento (FBA / FBM); Contenido del catálogo; Conversión, velocidad de ventas y reseñas. Lo que no se puede medir: Reseñas (calificación, cantidad y velocidad): no se confirmó un endpoint de la API que las entregue. Relevancia por palabras clave y tráfico externo: Amazon no publica cómo los pondera. Pesos exactos del ranking: no son públicos."
+    },
+    {
+      "id": "algo_003",
+      "name": "eBay Best Match",
+      "tactic": "DSR >4.5 + shipping_cost_low + category_relevance + price_competitive. Sniping kills ranking. (Sin verificar: hipótesis de la comunidad, no confirmada por la plataforma ni investigada por SellIA; tratala como hipótesis, no como dato.)"
+    },
+    {
+      "id": "algo_004",
+      "name": "TikTok Shop algorithm",
+      "tactic": "Video recency (1-7 days) + engagement (saves/shares > likes) + completion_rate. New = boost. (Sin verificar: hipótesis de la comunidad, no confirmada por la plataforma ni investigada por SellIA; tratala como hipótesis, no como dato.)"
+    },
+    {
+      "id": "algo_005",
+      "name": "Algorithm A/B testing",
+      "tactic": "Test title, price, images. Track ranking + CTR. Roll out winners."
+    },
+    {
+      "id": "algo_006",
+      "name": "Hotmart: cómo posiciona",
+      "tactic": "El Mercado de Afiliados filtra y ordena por Temperature (desempeño del producto) y exige un Blueprint mínimo para listarse. Hotmart no expone ninguno de los dos por API. Hotmart documenta Temperature (índice de 0 a 150 según frecuencia y recencia de ventas, tasa de reembolso y Blueprint) y Blueprint (calificación de calidad; por debajo de 60% el producto no se lista para afiliados). No publica las fórmulas. Documentado por la plataforma: Reembolsos; Frecuencia y recencia de ventas; Blueprint (calidad del producto y su página). Consenso de vendedores (no oficial): Contracargos y disputas; Finalización de la compra. Lo que no se puede medir: La Temperature y el Blueprint reales: Hotmart no los expone por ninguna API. SellIA calcula proxies con tus transacciones reales. Calificación 'Most Loved': solo visible en el panel de Hotmart. EPC (ganancia por clic): no existe en Hotmart, es un concepto de otras redes de afiliados."
+    },
+    {
+      "id": "algo_007",
+      "name": "Instagram: cómo posiciona",
+      "tactic": "Instagram pondera cuánto se mira y se comparte el contenido, no cuántos likes junta. Los Reels se rankean por tiempo de reproducción y repeticiones. Meta, por boca de su responsable de Instagram, nombró las señales principales: tiempo de reproducción, envíos por DM por alcance y likes por alcance. No publica los pesos exactos. Documentado por la plataforma: Envíos por DM por alcance; Tiempo de reproducción y repeticiones (Reels); Likes por alcance; Palabras clave en descripción, bio y texto alternativo. Consenso de vendedores (no oficial): Guardados y comentarios; Regularidad de publicación. Lo que no se puede medir: Cobertura de palabras clave objetivo en la descripción: requiere una lista de palabras clave por negocio que aún no existe. Pesos exactos de cada señal: no son públicos."
+    },
+    {
+      "id": "algo_008",
+      "name": "Etsy: cómo posiciona",
+      "tactic": "Etsy rankea por relevancia de palabras clave, calidad del listing y experiencia del cliente. Etsy divulga oficialmente sus factores de ranking en su página de transparencia, sin pesos. Documentado por la plataforma: Relevancia; Puntaje de calidad del listing; Experiencia del cliente y del mercado; Precio de envío, recencia, personalización y ubicación. Lo que no se puede medir: SellIA aún no tiene un conector que traiga estas señales de Etsy: hoy es solo guía, sin puntaje."
+    },
+    {
+      "id": "algo_009",
+      "name": "Shopify / Tienda Nube / WooCommerce: cómo posiciona",
+      "tactic": "[Shopify] Tu tienda vive en tu propio dominio: no hay un ranking de marketplace que compare vendedores. Se posiciona como cualquier sitio en Google, más la búsqueda interna de la tienda. Shopify documenta que su búsqueda interna admite grupos de sinónimos y refuerzos manuales de productos, pero no publica la fórmula de relevancia. Documentado por la plataforma: SEO del sitio (Google); Búsqueda interna de la tienda. Lo que no se puede medir: Relevancia interna de la búsqueda de la tienda: la fórmula no es pública. [Tienda Nube] Tienda propia en tu dominio: el posicionamiento es SEO web estándar orientado a Google. No se encontró evidencia de un algoritmo propietario de ranking entre vendedores; su propio contenido trata el posicionamiento como SEO web. Consenso de vendedores (no oficial): SEO del sitio (Google). [WooCommerce] Tienda propia en tu dominio: el posicionamiento es SEO web estándar orientado a Google. Al ser una tienda en tu propio dominio no hay ranking entre vendedores; rige el SEO de Google. Consenso de vendedores (no oficial): SEO del sitio (Google)."
+    },
+    {
+      "id": "algo_010",
+      "name": "Sitio web propio (Google): cómo posiciona",
+      "tactic": "Se posiciona con SEO web: contenido útil, sitio rápido y confiable, y datos estructurados. Google confirma que Core Web Vitals y E-E-A-T existen como factores, pero no publica sus pesos. Documentado por la plataforma: Core Web Vitals; Experiencia, pericia, autoridad y confianza (E-E-A-T); Datos estructurados; Rastreo e indexación. Consenso de vendedores (no oficial): Enlaces entrantes relevantes. Lo que no se puede medir: Volumen de búsqueda, dificultad de palabras clave y Core Web Vitals de laboratorio requieren APIs pagas que no están conectadas."
+    },
+    {
+      "id": "algo_011",
+      "name": "Cómo leer el positioning score de SellIA",
+      "tactic": "El puntaje (0 a 100) promedia solo los pilares que se pudieron medir; un pilar sin señal real queda vacío y no cuenta. 'measured_signal_pct' indica qué parte de las señales viene de datos reales de la plataforma: con poco porcentaje, el puntaje es orientativo. Ninguna plataforma publica sus pesos: el puntaje es una lectura de SellIA, no el ranking real de la plataforma. Los umbrales marcados como heurísticos no son reglas oficiales."
+    }
   ]
 }

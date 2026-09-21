@@ -137,6 +137,11 @@ async def brain_set_toggle(body: ToggleUpdate, request: Request, db: AsyncSessio
         old_value={"is_enabled": old_enabled}, new_value={"is_enabled": body.enabled},
         changed_by_user_id=user.id, changed_by_email=getattr(user, "email", None),
     ))
+    if body.brain_id == "automation.seo_positioning":
+        # The SEO switch on /dashboard/phase12 and this Map node are one control:
+        # keep the global SEO config in step, in the same transaction.
+        from app.domains.seo_config.service import SEOConfigService
+        await SEOConfigService(db).sync_global_from_brain(business_id, body.enabled)
     await db.commit()
     return {"ok": True, "disabled_brain_ids": await _disabled_brain_ids(business_id, db)}
 

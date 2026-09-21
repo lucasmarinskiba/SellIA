@@ -8,6 +8,7 @@ from app.core.logger import get_logger
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog
 from app.domains.seo_config.platform_sync_mercadolibre import MercadoLibreListingSync
 from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector
+from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
 
 logger = get_logger(__name__)
 
@@ -33,6 +34,7 @@ class PlatformListingSyncService:
 
         Fetches credentials from IntegrationConnection.
         """
+        platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in PLATFORM_CONNECTORS:
             logger.warning(f"No connector implemented for platform: {platform_name}")
             return None

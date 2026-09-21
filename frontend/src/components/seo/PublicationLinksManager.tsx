@@ -17,6 +17,10 @@ const PLATFORM_SOURCES = [
   { value: 'mercado-libre', label: 'Mercado Libre' },
   { value: 'amazon', label: 'Amazon' },
   { value: 'shopify', label: 'Shopify' },
+  { value: 'hotmart', label: 'Hotmart' },
+  { value: 'tiendanube', label: 'Tienda Nube' },
+  { value: 'woocommerce', label: 'WooCommerce' },
+  { value: 'etsy', label: 'Etsy' },
   { value: 'custom', label: 'Otro sitio' },
 ]
 

@@ -1,7 +1,7 @@
 """SEO Config API endpoints."""
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.core.logger import get_logger
 from app.domains.users.models import User
 from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
@@ -25,11 +26,22 @@ from app.domains.seo_config.fomo_predictive import FOMAPredictor
 from app.domains.seo_config.fomo_crossplatform import FOMAPatternSynthesizer
 from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
 from app.domains.seo_config.webhook_service import WebhookService
+from app.domains.seo_config.mercadolibre_webhook_service import (
+    NotificationRejected,
+    authenticate_channel,
+    parse_notification,
+    run_order_notification,
+)
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
 from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
 from app.domains.seo_config.fomo_language_generator import FOMALanguageGenerator
-from app.domains.seo_config.positioning_score_service import PositioningScoreService
+from app.domains.seo_config.platform_algorithm_knowledge import (
+    GUIDANCE_ONLY, MEASURED, PROFILES, canonical_platform, coverage_for, get_profile, profile_to_dict,
+)
+from app.domains.seo_config.positioning_score_service import PositioningScoreService, recommendation_payload
 from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
 
@@ -194,7 +206,10 @@ async def toggle_global_seo(
 ):
     """Toggle global SEO on/off for a business."""
     svc = SEOConfigService(db)
-    config = await svc.toggle_global_seo(business_id, enabled)
+    config = await svc.toggle_global_seo(
+        business_id, enabled,
+        user_id=current_user.id, user_email=getattr(current_user, "email", None),
+    )
     return {
         "global_seo_enabled": config.global_seo_enabled,
         "message": f"SEO {'activated' if enabled else 'deactivated'} globally",
@@ -1108,37 +1123,44 @@ async def ingest_conversion_webhook(
     return result
 
 
-@router.post("/webhooks/mercado-libre", response_model=WebhookEventResponse)
+@router.post("/webhooks/mercado-libre", response_model=dict)
 async def ingest_mercado_libre_webhook(
     business_id: UUID,
     request: Request,
+    background_tasks: BackgroundTasks,
+    token: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """Ingest MercadoLibre webhook (conversation, order, etc)."""
-    webhook_service = WebhookService(db)
-    body = await request.body()
-    body_str = body.decode('utf-8')
+    """Mercado Libre order notifications (orders_v2) -> FOMO conversions.
 
-    # For ML webhooks, we track if it's a purchase/question
-    import json
-    data = json.loads(body_str)
+    Register this URL as the notification callback with the Mercado Libre
+    channel's webhook token: `...?token=<channel.webhook_token>`. Requests are
+    authenticated by that token (bound to this business), then each order is
+    confirmed against Mercado Libre's API before anything is recorded — see
+    mercadolibre_webhook_service.py for the reasoning. The heavy part runs in
+    the background so the 200 goes back to Mercado Libre immediately.
+    """
+    channel = await authenticate_channel(db, business_id, token)
+    if not channel:
+        logger.warning(f"ML webhook rejected for business {business_id}: invalid or missing token")
+        raise HTTPException(status_code=401, detail="Token de webhook inválido")
 
-    # Extract conversion signal
-    payload = ConversionWebhookPayload(
-        platform='mercado_libre',
-        link_id=data.get('resource', '').split('/')[-1],
-        metadata=data,
-    )
-    ip_address = request.client.host if request.client else None
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Payload inválido")
 
-    result = await webhook_service.ingest_conversion(
-        business_id=business_id,
-        platform='mercado_libre',
-        payload=payload,
-        ip_address=ip_address,
-    )
+    try:
+        notification = parse_notification(payload, channel)
+    except NotificationRejected as e:
+        logger.warning(f"ML webhook rejected for business {business_id}: {e.reason}")
+        raise HTTPException(status_code=e.status_code, detail=e.reason)
 
-    return result
+    if notification is None:
+        return {"received": True, "ignored": True}
+
+    background_tasks.add_task(run_order_notification, channel.id, notification.order_id)
+    return {"received": True}
 
 
 @router.get("/webhooks/events/stream")
@@ -1290,10 +1312,15 @@ async def compute_positioning_score(
     score = await service.compute_score_for_link(business_id, link, link.connection_id)
 
     if not score:
-        return {
-            "computed": False,
-            "reason": "No ranking connector available for this platform, SEO disabled, or the fetch failed.",
+        coverage = coverage_for(link.platform_source)
+        reasons = {
+            MEASURED: "No se pudo calcular: el SEO está apagado (global, de la plataforma o en el Mapa del Cerebro), "
+                      "falta la conexión de la plataforma o la consulta a su API falló.",
+            "web_audit": "Esta plataforma vive en un sitio propio: no tiene ranking de marketplace. "
+                         "Se audita leyendo la página real en Auditoría SEO.",
+            GUIDANCE_ONLY: "Todavía no hay conector ni auditoría para esta plataforma: consultá su guía de algoritmo.",
         }
+        return {"computed": False, "coverage": coverage, "reason": reasons[coverage]}
 
     recommendations = await service.get_open_recommendations(link_id)
 
@@ -1310,17 +1337,7 @@ async def compute_positioning_score(
             "engagement_score": score.engagement_score,
         },
         "raw_signals": score.raw_signals,
-        "recommendations": [
-            {
-                "id": str(r.id),
-                "signal_key": r.signal_key,
-                "severity": r.severity,
-                "message": r.message,
-                "current_value": r.current_value,
-                "target_value": r.target_value,
-            }
-            for r in recommendations
-        ],
+        "recommendations": [recommendation_payload(r, score.platform_name) for r in recommendations],
     }
 
 
@@ -1355,17 +1372,7 @@ async def get_positioning_score(
             "engagement_score": score.engagement_score,
         },
         "raw_signals": score.raw_signals,
-        "recommendations": [
-            {
-                "id": str(r.id),
-                "signal_key": r.signal_key,
-                "severity": r.severity,
-                "message": r.message,
-                "current_value": r.current_value,
-                "target_value": r.target_value,
-            }
-            for r in recommendations
-        ],
+        "recommendations": [recommendation_payload(r, score.platform_name) for r in recommendations],
     }
 
 
@@ -1420,6 +1427,42 @@ async def dismiss_positioning_recommendation(
     return {"dismissed": True, "recommendation_id": str(recommendation_id)}
 
 
+# ── Algorithm guide: how each platform ranks you, and how sure we are ──
+
+@router.get("/positioning/algorithm-guide", response_model=dict)
+async def get_algorithm_guide(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """How each platform ranks sellers, with every factor tagged as documented by the
+    platform or reported by the seller community. Platforms this business actually
+    publishes on come first."""
+    result = await db.execute(
+        select(PublicationLink.platform_source).where(PublicationLink.business_id == business_id).distinct()
+    )
+    in_use = {canonical_platform(p) or p for (p,) in result.all()}
+    platforms = [
+        {**profile_to_dict(p), "in_use": p.key in in_use}
+        for p in PROFILES.values()
+    ]
+    platforms.sort(key=lambda p: (not p["in_use"], not p["researched"], p["label"]))
+    return {"platforms": platforms}
+
+
+@router.get("/positioning/algorithm-guide/{platform}", response_model=dict)
+async def get_platform_algorithm_guide(
+    business_id: UUID,
+    platform: str,
+    current_user: User = Depends(get_current_user),
+):
+    """One platform's algorithm guide (any spelling of the name works)."""
+    profile = get_profile(platform)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Plataforma sin guía de algoritmo")
+    return profile_to_dict(profile)
+
+
 # ── Store-level (storefront / brand) positioning ──
 
 class ComputeStorePositioningRequest(BaseModel):
@@ -1441,17 +1484,7 @@ def _store_score_payload(score, recommendations) -> dict:
             "content_performance_score": score.content_performance_score,
         },
         "raw_signals": score.raw_signals,
-        "recommendations": [
-            {
-                "id": str(r.id),
-                "signal_key": r.signal_key,
-                "severity": r.severity,
-                "message": r.message,
-                "current_value": r.current_value,
-                "target_value": r.target_value,
-            }
-            for r in recommendations
-        ],
+        "recommendations": [recommendation_payload(r, score.platform_name) for r in recommendations],
     }
 
 

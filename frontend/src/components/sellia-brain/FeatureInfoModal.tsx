@@ -28,6 +28,16 @@ const FEATURE_INFO: Record<string, { details: string; cost: string; recommendati
     cost: 'Incluido en plan • Sin costo adicional',
     recommendation: 'Mantener enabled • Aumenta conversion 15-30%',
   },
+  'automation:seo_positioning': {
+    details: 'Mide cada publicación y tu tienda con las señales que cada plataforma dice usar para rankear (reputación, Buy Box/catálogo, engagement) y te da acciones concretas. Es el mismo interruptor que Posicionamiento SEO en /dashboard/phase12.',
+    cost: 'Incluido en plan • Sin costo adicional',
+    recommendation: 'Mantener enabled • Apagarlo detiene el posicionamiento en todas las plataformas',
+  },
+  'automation:fomo_publications': {
+    details: 'Genera, prueba en A/B, rota y mide copy de urgencia/escasez para cada link publicado. Respeta el interruptor global y el de cada plataforma o link.',
+    cost: 'Incluido en plan • Sin costo adicional',
+    recommendation: 'Activar solo si la urgencia/escasez es real (stock, tiempo, demanda)',
+  },
   'automation:sms_marketing': {
     details: 'Mensajes automáticos vía WhatsApp/SMS. 98% open rate, 45% click rate.',
     cost: '$0.01 por SMS • ~5000 SMS/mes en plan Pro',

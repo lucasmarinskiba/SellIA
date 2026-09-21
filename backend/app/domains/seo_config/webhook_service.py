@@ -1,8 +1,6 @@
 """Webhook service for real-time FOMO conversion ingestion and SSE streaming."""
 
 import asyncio
-import hashlib
-import hmac
 import json
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -71,20 +69,6 @@ class WebhookService:
       'message': 'Conversion tracked',
       'event_id': str(event_id),
     }
-
-  async def validate_mercado_libre_signature(
-    self,
-    body: str,
-    signature: str,
-    secret: str,
-  ) -> bool:
-    """Validate MercadoLibre webhook signature (HMAC-SHA256)."""
-    expected = hmac.new(
-      secret.encode(),
-      body.encode(),
-      hashlib.sha256,
-    ).hexdigest()
-    return hmac.compare_digest(signature, expected)
 
   async def _broadcast_event(
     self,
