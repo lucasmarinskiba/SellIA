@@ -86,7 +86,11 @@ class ApprovalAuditLog(Base):
 class EmailTemplate(Base):
     """Email templates for notifications."""
 
-    __tablename__ = "email_templates"
+    # Not "email_templates": that name belongs to app.domains.automations.models.EmailTemplate
+    # (the live, business-scoped table). Two models on one name in the same MetaData raise
+    # "Table 'email_templates' is already defined" at import time, which crashed pytest
+    # collection and made the email_auth router fail to import.
+    __tablename__ = "auth_email_templates"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     template_name = Column(String(255), unique=True, nullable=False)
@@ -97,5 +101,5 @@ class EmailTemplate(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        Index("idx_email_templates_name", "template_name"),
+        Index("idx_auth_email_templates_name", "template_name"),
     )

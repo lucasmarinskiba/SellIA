@@ -45,7 +45,9 @@ class ConversionEvent(Base):
 
 class FOMABTest(Base):
     """A/B test for FOMO copy variants."""
-    __tablename__ = "fomo_ab_tests"
+    # Not "fomo_ab_tests": app.domains.fomo.models.FOMOABTest already owns that name, and the
+    # clash made SQLAlchemy mapper configuration fail app-wide.
+    __tablename__ = "seo_fomo_ab_tests"
     __table_args__ = (
         Index("idx_link_ab_tests", "link_id"),
         Index("idx_business_ab_tests", "business_id"),
