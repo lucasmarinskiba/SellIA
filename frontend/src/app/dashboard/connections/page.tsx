@@ -28,6 +28,10 @@ const PLATFORM_CONFIG: Record<ChannelPlatform, { label: string; color: string; o
   woocommerce: { label: 'WooCommerce', color: 'bg-purple-500', oauth: false },
   etsy: { label: 'Etsy', color: 'bg-orange-500', oauth: true },
   facebook_marketplace: { label: 'Facebook Marketplace', color: 'bg-blue-500', oauth: true },
+  tiktok_shop: { label: 'TikTok Shop', color: 'bg-black', oauth: true },
+  manychat: { label: 'ManyChat', color: 'bg-teal-500', oauth: false },
+  twitter: { label: 'X (Twitter)', color: 'bg-sky-600', oauth: true },
+  threads: { label: 'Threads', color: 'bg-neutral-800', oauth: true },
 }
 
 const STATUS_STYLES: Record<ChannelStatus, string> = {

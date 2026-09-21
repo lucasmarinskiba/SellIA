@@ -9,10 +9,10 @@ export interface AutomationToggleResponse {
   description?: string
   icon?: string
   is_enabled: boolean
-  monthly_limit?: number
+  monthly_limit?: number | null
   current_month_usage: number
-  enabled_at?: string
-  disabled_at?: string
+  enabled_at?: string | null
+  disabled_at?: string | null
   created_at: string
   updated_at: string
 }
