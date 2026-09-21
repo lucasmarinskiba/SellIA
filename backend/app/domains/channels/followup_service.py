@@ -33,11 +33,19 @@ MAX_FOLLOWUPS_PER_CONVERSATION = 2
 SCAN_BATCH_LIMIT = 200  # cap per run so one giant backlog can't block the loop for too long
 
 
-async def _find_cold_conversations(db: AsyncSession) -> list[Conversation]:
+async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
+    """(conversation_id, business_id) pairs for every cold conversation.
+
+    Plain values on purpose, not Conversation instances: the scan rolls the
+    session back when one send fails, and rollback() expires every instance
+    loaded in it. Reading an expired attribute afterwards is a lazy refresh
+    outside an `await` -> MissingGreenlet, which used to abort the whole scan
+    (and mask the real send error) as soon as a single conversation failed.
+    """
     threshold = datetime.now(timezone.utc) - timedelta(hours=COLD_THRESHOLD_HOURS)
 
     result = await db.execute(
-        select(Conversation).where(
+        select(Conversation.id, Conversation.business_id).where(
             Conversation.status == ConversationStatus.ACTIVE,
             Conversation.last_message_at.isnot(None),
             Conversation.last_message_at < threshold,
@@ -48,7 +56,7 @@ async def _find_cold_conversations(db: AsyncSession) -> list[Conversation]:
             ),
         ).limit(SCAN_BATCH_LIMIT)
     )
-    return list(result.scalars().all())
+    return [(row.id, row.business_id) for row in result.all()]
 
 
 async def _last_message_was_outbound(db: AsyncSession, conversation_id: Any) -> bool:
@@ -98,29 +106,39 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
 
     stats["scanned"] = len(cold_conversations)
 
-    for conversation in cold_conversations:
+    for conversation_id, business_id in cold_conversations:
         try:
-            if not await _last_message_was_outbound(db, conversation.id):
+            if not await _last_message_was_outbound(db, conversation_id):
                 # Customer wrote last — bot hasn't replied. Not this task's job.
                 stats["skipped_replied"] += 1
                 continue
 
-            text = await _build_followup_text(db, conversation.business_id)
+            text = await _build_followup_text(db, business_id)
 
             from app.domains.channels.services import send_outbound_message
-            await send_outbound_message(db, conversation.id, text)
+            await send_outbound_message(db, conversation_id, text)
 
+            # Awaited fetch, so it is safe whatever expired since the query
+            # (send_outbound_message commits; a default-config session expires on commit).
+            conversation = await db.get(Conversation, conversation_id)
+            if conversation is None:
+                # Deleted while the nudge was going out; nothing left to record.
+                stats["sent"] += 1
+                continue
+
+            followup_number = (conversation.followup_count or 0) + 1
             conversation.last_followup_sent_at = datetime.now(timezone.utc)
-            conversation.followup_count = (conversation.followup_count or 0) + 1
+            conversation.followup_count = followup_number
             await db.commit()
 
             stats["sent"] += 1
-            logger.info(f"Follow-up sent to conversation {conversation.id} (#{conversation.followup_count})")
+            logger.info(f"Follow-up sent to conversation {conversation_id} (#{followup_number})")
 
         except Exception as e:
+            # Only plain values below this line: rollback() expires every loaded instance.
             await db.rollback()
             stats["errors"] += 1
-            logger.error(f"Follow-up send failed for conversation {conversation.id}: {e}")
+            logger.error(f"Follow-up send failed for conversation {conversation_id}: {e}")
 
     if stats["sent"] or stats["errors"]:
         logger.info(f"Follow-up scan complete: {stats}")
