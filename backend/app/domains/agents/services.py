@@ -613,9 +613,14 @@ class AgentService:
             ("head-of-operations", "Head of Operations", "⚙️", "Director de Operaciones IA", "Optimiza los procesos operativos de la empresa virtual. Gestiona inventario, logística, fulfillment y eficiencia del equipo.", ["Operations Management", "Process Optimization", "Inventory", "Logistics", "Efficiency"], "#6366F1"),
         ]
 
-        personalities = []
+        # Same semantics as calling get_or_create_personality() per entry (rows
+        # that already exist are left untouched, the first entry for a repeated
+        # slug wins), but in two round trips instead of ~2 per personality --
+        # this runs on every boot and 506 x (SELECT + INSERT) is minutes of pure
+        # latency against a remote database.
+        wanted: Dict[str, Dict[str, Any]] = {}
         for i, (slug, name, emoji, tagline, desc, expertise, color) in enumerate(defaults):
-            p = await self.get_or_create_personality(
+            wanted.setdefault(slug, dict(
                 slug=slug,
                 name=name,
                 emoji=emoji,
@@ -625,11 +630,28 @@ class AgentService:
                 color=color,
                 display_order=i,
                 is_active=True,
-            )
-            personalities.append(p)
+            ))
 
+        existing_slugs = set((await self.db.execute(select(AgentPersonality.slug))).scalars())
+        missing = [row for slug, row in wanted.items() if slug not in existing_slugs]
+        if missing:
+            if self.db.get_bind().dialect.name == "sqlite":
+                from sqlalchemy.dialects.sqlite import insert as dialect_insert
+            else:
+                from sqlalchemy.dialects.postgresql import insert as dialect_insert
+            # ON CONFLICT DO NOTHING: another instance booting at the same time
+            # (rolling deploy) may seed the same slugs between the SELECT and here.
+            await self.db.execute(
+                dialect_insert(AgentPersonality).on_conflict_do_nothing(index_elements=["slug"]),
+                missing,
+            )
         await self.db.commit()
-        return personalities
+
+        rows = (await self.db.execute(
+            select(AgentPersonality).where(AgentPersonality.slug.in_(list(wanted)))
+        )).scalars().all()
+        by_slug = {p.slug: p for p in rows}
+        return [by_slug[slug] for slug, *_ in defaults if slug in by_slug]
 
     async def create_conversation(
         self,
