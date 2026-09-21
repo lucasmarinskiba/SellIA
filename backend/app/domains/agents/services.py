@@ -618,19 +618,19 @@ class AgentService:
         # slug wins), but in two round trips instead of ~2 per personality --
         # this runs on every boot and 506 x (SELECT + INSERT) is minutes of pure
         # latency against a remote database.
-        wanted: Dict[str, Dict[str, Any]] = {}
+        wanted: dict[str, dict[str, Any]] = {}
         for i, (slug, name, emoji, tagline, desc, expertise, color) in enumerate(defaults):
-            wanted.setdefault(slug, dict(
-                slug=slug,
-                name=name,
-                emoji=emoji,
-                tagline=tagline,
-                description=desc,
-                expertise=expertise,
-                color=color,
-                display_order=i,
-                is_active=True,
-            ))
+            wanted.setdefault(slug, {
+                "slug": slug,
+                "name": name,
+                "emoji": emoji,
+                "tagline": tagline,
+                "description": desc,
+                "expertise": expertise,
+                "color": color,
+                "display_order": i,
+                "is_active": True,
+            })
 
         existing_slugs = set((await self.db.execute(select(AgentPersonality.slug))).scalars())
         missing = [row for slug, row in wanted.items() if slug not in existing_slugs]

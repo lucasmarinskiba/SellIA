@@ -30,7 +30,6 @@ from sqlalchemy import delete, event, func, select
 from app import sellbot
 from app.core import startup_state as ss
 
-
 # ── StartupState ─────────────────────────────────────────────────────────────
 
 def test_state_lifecycle() -> None:
@@ -331,7 +330,10 @@ async def test_existing_table_names_lists_tables_and_reports_unknown_as_none(db_
 def test_every_brand_transformation_column_patch_is_recognised() -> None:
     """If the pattern stops matching a patch, it silently reverts to an
     unconditional ALTER TABLE (an ACCESS EXCLUSIVE lock) on every boot."""
-    from app.domains.brand_transformation.bootstrap import _COLUMN_PATCHES, _PATCH_TARGET
+    from app.domains.brand_transformation.bootstrap import (
+        _COLUMN_PATCHES,
+        _PATCH_TARGET,
+    )
 
     unparsed = [s for s in _COLUMN_PATCHES if not _PATCH_TARGET.match(s)]
     assert unparsed == []
@@ -339,7 +341,9 @@ def test_every_brand_transformation_column_patch_is_recognised() -> None:
 
 async def test_brand_transformation_bootstrap_takes_no_alter_locks_once_patched(db_session) -> None:
     from app.core.database import engine
-    from app.domains.brand_transformation.bootstrap import ensure_brand_transformation_tables
+    from app.domains.brand_transformation.bootstrap import (
+        ensure_brand_transformation_tables,
+    )
 
     await ensure_brand_transformation_tables()  # brings any missing column in
 
