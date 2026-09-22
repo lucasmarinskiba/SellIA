@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.logger import get_logger
 from app.domains.users.models import User
+from app.domains.businesses.models import Business
 from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
 from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
@@ -43,7 +44,36 @@ from app.domains.seo_config.store_positioning_service import StorePositioningSco
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config"])
+async def verify_business_access(
+    business_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Business:
+    """Every endpoint on `router` below takes a `business_id` straight from the
+    URL with no other proof it belongs to the caller — this was a plain IDOR:
+    any logged-in user could read or write any other business's SEO config,
+    publication links, FOMO copy, conversions and positioning data just by
+    changing the id in the path. Applied once at router level (not per-route)
+    so no endpoint can be added later without it."""
+    business = await db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    if business.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tenés acceso a este negocio")
+    return business
+
+
+router = APIRouter(
+    prefix="/{business_id}/seo-config",
+    tags=["SEO Config"],
+    dependencies=[Depends(verify_business_access)],
+)
+
+# Mercado Libre calls this one directly with its own channel token, never a user
+# session — it must stay outside the ownership check above (there's no
+# current_user to check against). Same path prefix, mounted separately in
+# main.py so it's never bundled with the authenticated routes.
+public_router = APIRouter(prefix="/{business_id}/seo-config", tags=["SEO Config Webhooks"])
 
 
 # ── Schemas ──
@@ -1123,7 +1153,7 @@ async def ingest_conversion_webhook(
     return result
 
 
-@router.post("/webhooks/mercado-libre", response_model=dict)
+@public_router.post("/webhooks/mercado-libre", response_model=dict)
 async def ingest_mercado_libre_webhook(
     business_id: UUID,
     request: Request,
