@@ -81,6 +81,31 @@ def _import_all_models() -> int:
     return imported
 
 
+async def existing_table_names(engine: AsyncEngine) -> set[str] | None:
+    """Names of the tables in the current schema, from ONE catalog query.
+
+    Callers use it to skip ``Table.create(checkfirst=True)`` for tables that are
+    already there: checkfirst costs several round trips per table on every boot
+    (``metadata.create_all(tables=[t], checkfirst=True)`` measured ~85), which
+    on a remote database is the difference between seconds and minutes.
+
+    Returns None -- not an empty set -- when the listing is unavailable (not
+    Postgres, or the query failed), so callers can tell "nothing exists" from
+    "don't know" and fall back to their own per-table check.
+    """
+    try:
+        from sqlalchemy import text
+
+        async with engine.connect() as conn:
+            result = await conn.execute(text(
+                "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
+            ))
+            return {row[0] for row in result}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("schema bootstrap: could not list existing tables: %s", str(e)[:160])
+        return None
+
+
 async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]:
     """Create anything the ORM declares and the database does not have yet.
 
@@ -106,17 +131,8 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
     # table to rediscover it. In the steady state (everything created) this
     # turns ~450 transactions per boot into a single query, which matters
     # because it runs on every start.
-    existing: set[str] = set()
-    try:
-        from sqlalchemy import text
-
-        async with engine.connect() as conn:
-            result = await conn.execute(text(
-                "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
-            ))
-            existing = {row[0] for row in result}
-    except Exception as e:  # noqa: BLE001 -- fall back to per-table checkfirst
-        logger.warning("schema bootstrap: could not list existing tables: %s", str(e)[:160])
+    # (None -> could not list: fall back to per-table checkfirst below.)
+    existing: set[str] = await existing_table_names(engine) or set()
 
     pending = [t for t in tables if t.name not in existing]
     if not pending:
