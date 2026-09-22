@@ -56,7 +56,7 @@ from app.core.database import get_db  # noqa: E402
 from app.domains.channels.models import ChannelConnection, ChannelPlatform  # noqa: E402
 from app.domains.seo_config.fomo_models import ConversionEvent  # noqa: E402
 from app.domains.seo_config.models import PublicationLink  # noqa: E402
-from app.domains.seo_config.router import router  # noqa: E402
+from app.domains.seo_config.router import public_router  # noqa: E402
 
 SELLER = "555"
 TOKEN = "s3cret-callback-token-for-tests-0123456789abcdefghij"
@@ -372,7 +372,10 @@ async def test_dead_token_without_refresh_is_unavailable_not_a_verdict(env, monk
 
 def build_client(env, monkeypatch):
     app = FastAPI()
-    app.include_router(router, prefix="/api/v1/businesses")
+    # The ML webhook lives on public_router (channel-token auth, no user
+    # session) — kept off the main `router`, which now requires business
+    # ownership via verify_business_access.
+    app.include_router(public_router, prefix="/api/v1/businesses")
 
     async def override_db():
         yield env.db

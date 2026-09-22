@@ -114,6 +114,7 @@ _try_include("app.api.v1.offline_sequences.router", "/api/v1", ["offline-sequenc
 _try_include("app.api.v1.websites.router", "/api/v1/websites", ["websites"])
 _try_include("app.api.v1.seo.router", "/api/v1/seo", ["seo"])
 _try_include("app.domains.seo_config.router.router", "/api/v1/businesses", ["seo-config"])
+_try_include("app.domains.seo_config.router.public_router", "/api/v1/businesses", ["seo-config"])
 _try_include("app.api.v1.analytics_tracking.router", "/api/v1", ["analytics"])
 _try_include("app.api.v1.products.router", "/api/v1", ["products"])
 _try_include("app.domains.webhooks.router.router", "/api/v1", ["webhooks"])

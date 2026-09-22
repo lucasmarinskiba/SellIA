@@ -52,6 +52,7 @@ import app.domains.seo_config.platform_algorithm_knowledge as kb  # noqa: E402
 from app.core.database import get_db  # noqa: E402
 from app.core.deps import get_current_user  # noqa: E402
 from app.domains.automations.models import AutomationToggle, ToggleAuditLog  # noqa: E402
+from app.domains.businesses.models import Business  # noqa: E402
 from app.domains.seo_config import positioning_score_service as pss  # noqa: E402
 from app.domains.seo_config.models import PlatformSEOStatus, PublicationLink, SEOConfig  # noqa: E402
 from app.domains.seo_config.platform_ranking_base import RankingSignal  # noqa: E402
@@ -161,9 +162,9 @@ def test_agent_knowledge_file_is_generated_from_the_module():
 async def db():
     engine = create_async_engine("sqlite+aiosqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     tables = (
-        PublicationLink.__table__, PublicationLinkPositioningScore.__table__, StorePositioningScore.__table__,
-        PositioningRecommendation.__table__, SEOConfig.__table__, PlatformSEOStatus.__table__,
-        AutomationToggle.__table__, ToggleAuditLog.__table__,
+        Business.__table__, PublicationLink.__table__, PublicationLinkPositioningScore.__table__,
+        StorePositioningScore.__table__, PositioningRecommendation.__table__, SEOConfig.__table__,
+        PlatformSEOStatus.__table__, AutomationToggle.__table__, ToggleAuditLog.__table__,
     )
     async with engine.begin() as conn:
         for t in tables:
@@ -292,7 +293,14 @@ async def test_a_link_spelled_mercadolibre_is_scored_with_the_ml_connector(db, m
 
 # ── Endpoints ──
 
-def client(db):
+async def client(db, biz):
+    """The router now gates every route on business ownership (verify_business_access
+    in seo_config/router.py) — `biz` must be a real, owned Business row, not just an
+    id typed into the URL."""
+    owner_id = uuid4()
+    db.add(Business(id=biz, user_id=owner_id, name="Test biz"))
+    await db.commit()
+
     app = FastAPI()
     app.include_router(router, prefix="/api/v1/businesses")
 
@@ -300,14 +308,14 @@ def client(db):
         yield db
 
     app.dependency_overrides[get_db] = override_db
-    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=uuid4(), email="u@example.com")
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=owner_id, email="u@example.com")
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
 
 
 async def test_guide_lists_the_platforms_in_use_first(db):
     biz = uuid4()
     await add_link(db, biz, "mercadolibre")
-    async with client(db) as c:
+    async with await client(db, biz) as c:
         resp = await c.get(f"/api/v1/businesses/{biz}/seo-config/positioning/algorithm-guide")
     assert resp.status_code == 200
     platforms = resp.json()["platforms"]
@@ -320,7 +328,7 @@ async def test_guide_lists_the_platforms_in_use_first(db):
 async def test_single_guide_accepts_any_spelling_and_404s_on_unknown(db):
     biz = uuid4()
     base = f"/api/v1/businesses/{biz}/seo-config/positioning/algorithm-guide"
-    async with client(db) as c:
+    async with await client(db, biz) as c:
         ok = await c.get(f"{base}/MercadoLibre")
         missing = await c.get(f"{base}/no-existe")
     assert ok.status_code == 200 and ok.json()["platform"] == "mercado-libre"
@@ -330,7 +338,7 @@ async def test_single_guide_accepts_any_spelling_and_404s_on_unknown(db):
 async def test_compute_explains_why_a_shopify_link_has_no_marketplace_score(db):
     biz = uuid4()
     link = await add_link(db, biz, "shopify")
-    async with client(db) as c:
+    async with await client(db, biz) as c:
         resp = await c.post(f"/api/v1/businesses/{biz}/seo-config/publication-links/{link.id}/positioning/compute")
     body = resp.json()
     assert resp.status_code == 200 and body["computed"] is False
