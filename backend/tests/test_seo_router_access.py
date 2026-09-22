@@ -56,6 +56,7 @@ from app.core.deps import get_current_user  # noqa: E402
 from app.domains.businesses.models import Business  # noqa: E402
 from app.domains.seo_config.fomo_models import ConversionEvent  # noqa: E402
 from app.domains.seo_config.models import PublicationLink  # noqa: E402
+from app.domains.seo_config.fomo_service import FOMAConversionService  # noqa: E402
 from app.domains.seo_config.router import router  # noqa: E402
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEvent  # noqa: E402
 from app.domains.seo_config.webhook_service import WebhookService  # noqa: E402
@@ -214,6 +215,66 @@ async def test_conversion_without_a_link_id_is_logged_but_not_counted(env):
     )
     assert result["received"] is True
     assert (await env.db.execute(select(ConversionEvent))).scalars().all() == []
+
+
+# ── Duplicate-webhook dedupe (DB constraint, not check-then-insert) ──
+
+async def test_same_external_event_id_is_rejected_by_the_db_not_double_counted(env):
+    """The check-then-insert race this replaces: two notifications for the same
+    order committing close together could both pass a SELECT-based "does this
+    exist?" check before either commits. Calling log_conversion twice with no
+    SELECT in between proves the unique index (not a pre-check) is what
+    actually stops the duplicate."""
+    owner = await make_user(env.db)
+    business = await make_business(env.db, owner)
+    link = await make_link(env.db, business.id)
+    # log_conversion's rollback (see below) expires every object the session
+    # has loaded, `business`/`link` included — snapshot the plain ids first
+    # rather than touching the ORM instances again afterwards.
+    # (app/db/leads_bootstrap.py and the rollback_expires_orm_instances lesson
+    # cover the same gotcha.)
+    business_id, link_id = business.id, link.id
+
+    service = FOMAConversionService(env.db)
+    first = await service.log_conversion(
+        business_id=business_id, link_id=link_id, platform_name="mercado-libre",
+        conversion_value=100.0, external_listing_id="MLA111", external_event_id="9001",
+    )
+    assert first is not None
+
+    second = await service.log_conversion(
+        business_id=business_id, link_id=link_id, platform_name="mercado-libre",
+        conversion_value=100.0, external_listing_id="MLA111", external_event_id="9001",
+    )
+    assert second is None  # rejected, not raised — caller decides what that means
+
+    events = (await env.db.execute(select(ConversionEvent))).scalars().all()
+    assert len(events) == 1
+
+    # The session must still be usable after the rollback inside log_conversion.
+    third = await service.log_conversion(
+        business_id=business_id, link_id=link_id, platform_name="mercado-libre",
+        conversion_value=50.0, external_listing_id="MLA111", external_event_id="9002",
+    )
+    assert third is not None
+    assert len((await env.db.execute(select(ConversionEvent))).scalars().all()) == 2
+
+
+async def test_conversions_without_an_external_event_id_are_never_deduped(env):
+    """Most conversion sources have no stable per-event id — external_event_id
+    stays NULL, and NULLs must not collide in the unique index."""
+    owner = await make_user(env.db)
+    business = await make_business(env.db, owner)
+    link = await make_link(env.db, business.id)
+
+    service = FOMAConversionService(env.db)
+    for _ in range(3):
+        event = await service.log_conversion(
+            business_id=business.id, link_id=link.id, platform_name="custom", conversion_value=10.0,
+        )
+        assert event is not None
+
+    assert len((await env.db.execute(select(ConversionEvent))).scalars().all()) == 3
 
 
 async def test_conversion_payload_with_a_timestamp_does_not_crash_json_serialization(env):

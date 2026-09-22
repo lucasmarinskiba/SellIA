@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, String, ForeignKey, func, Index, Float, Boolean
+from sqlalchemy import DateTime, String, ForeignKey, func, Index, Float, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,6 +20,16 @@ class ConversionEvent(Base):
         Index("idx_variant_conversions", "fomo_variant_id"),
         Index("idx_platform_conversions", "platform_name"),
         Index("idx_created_at", "created_at"),
+        # Makes duplicate-webhook ingestion (Mercado Libre resends notifications)
+        # a DB-enforced no-op instead of a check-then-insert race. Only enforced
+        # when a source actually supplies a stable per-event id — most sources
+        # (manual logs) leave external_event_id NULL and stay unconstrained.
+        # On an existing database this index is added by
+        # conversion_events_bootstrap.ensure_conversion_event_dedupe_column().
+        Index(
+            "uq_conversion_dedupe", "business_id", "platform_name", "external_listing_id", "external_event_id",
+            unique=True, postgresql_where=text("external_event_id IS NOT NULL"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -32,6 +42,10 @@ class ConversionEvent(Base):
     # Platform + external listing ID for reference
     platform_name: Mapped[str] = mapped_column(String(50))
     external_listing_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # A stable per-event id from the source (e.g. Mercado Libre's order id).
+    # Paired with (business_id, platform_name, external_listing_id) in a
+    # partial unique index so a resent webhook can't double-record a sale.
+    external_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Conversion metadata
     conversion_value: Mapped[float] = mapped_column(default=0.0)  # revenue if available

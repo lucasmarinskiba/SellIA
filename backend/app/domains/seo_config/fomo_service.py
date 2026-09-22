@@ -3,6 +3,7 @@
 from uuid import UUID
 from datetime import datetime, timedelta
 from sqlalchemy import select, func, desc
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -27,10 +28,27 @@ class FOMAConversionService:
         conversion_type: str = "purchase",
         conversion_value: float = 0.0,
         external_listing_id: str | None = None,
+        external_event_id: str | None = None,
         fomo_variant_id: UUID | None = None,
         raw_event_data: dict | None = None,
-    ) -> ConversionEvent:
-        """Log a conversion event."""
+    ) -> ConversionEvent | None:
+        """Log a conversion event.
+
+        When `external_event_id` is given (a stable per-event id from the
+        source, e.g. Mercado Libre's order id), duplicates are rejected by a
+        partial unique index on (business_id, platform_name,
+        external_listing_id, external_event_id) rather than a check-then-insert
+        race — a caller-side "does this exist?" SELECT can't see a concurrent
+        insert that hasn't committed yet, which used to let two notifications
+        for the same order both record a sale. Returns None (and rolls back)
+        when the DB rejects it as a duplicate; the caller decides whether that's
+        worth logging.
+
+        The rollback expires every ORM object this session has loaded, not
+        just this one — a caller sharing `db` across a request (the normal
+        FastAPI pattern) must re-fetch, or snapshot plain values before this
+        call, before touching any other object it already loaded.
+        """
         event = ConversionEvent(
             business_id=business_id,
             link_id=link_id,
@@ -38,11 +56,17 @@ class FOMAConversionService:
             conversion_type=conversion_type,
             conversion_value=conversion_value,
             external_listing_id=external_listing_id,
+            external_event_id=external_event_id,
             fomo_variant_id=fomo_variant_id,
             raw_event_data=raw_event_data or {},
         )
         self.db.add(event)
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            logger.info(f"Duplicate conversion ignored: {link_id} on {platform_name} ({external_event_id})")
+            return None
         await self.db.refresh(event)
 
         logger.info(f"Logged conversion: {link_id} on {platform_name}")
