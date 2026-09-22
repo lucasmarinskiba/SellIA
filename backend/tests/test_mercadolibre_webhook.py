@@ -280,6 +280,33 @@ async def test_paid_order_for_tracked_item_is_recorded_once(env, monkeypatch):
     assert calls[0][2]["headers"]["Authorization"] == "Bearer at-1"
 
 
+async def test_recorded_order_pushes_a_live_conversion_event(env, monkeypatch):
+    """The FOMO ticker/SSE stream's real source in production is this webhook,
+    not the generic /webhooks/conversion endpoint — a recorded sale must reach
+    a subscriber opened through a completely separate WebhookService instance,
+    the way router.py's GET .../events/stream actually constructs one."""
+    import asyncio
+
+    from app.domains.seo_config.webhook_service import WebhookService
+
+    biz = uuid4()
+    channel = await make_channel(env.db, biz)
+    await make_link(env.db, biz)
+    install_fake_ml(monkeypatch, serves(order()))
+
+    subscriber = WebhookService(env.db)
+    stream = subscriber.subscribe(biz)
+    first_chunk = asyncio.ensure_future(stream.__anext__())
+    await asyncio.sleep(0)  # let subscribe() register before the order is processed
+
+    outcome = await ml.process_order_notification(env.db, channel.id, "9001")
+    assert outcome["status"] == "recorded"
+
+    chunk = await asyncio.wait_for(first_chunk, timeout=1)
+    assert '"type": "conversion"' in chunk and '"amount": 100.0' in chunk
+    await stream.aclose()
+
+
 async def test_order_for_untracked_item_records_nothing(env, monkeypatch):
     biz = uuid4()
     channel = await make_channel(env.db, biz)

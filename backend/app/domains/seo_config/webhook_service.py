@@ -14,11 +14,26 @@ from app.domains.seo_config.fomo_service import FOMAConversionService
 
 
 class WebhookService:
-  """Handles webhook ingestion, validation, and event streaming."""
+  """Handles webhook ingestion, validation, and event streaming.
+
+  `_subscribers` is a CLASS attribute, deliberately not assigned in
+  __init__. Every endpoint that touches this service constructs its own
+  `WebhookService(db)` per request (see router.py), so a broadcast from the
+  instance one request creates could never reach a subscriber queue held by
+  the instance another request created — the SSE stream would silently never
+  deliver anything past its 30s heartbeats. Keeping the dict at class level
+  means every instance shares the same subscriber table regardless of which
+  one is constructed when.
+
+  This only fans events out within a single process: railway.toml runs one
+  uvicorn worker with no --workers, so that's the whole deployment today, but
+  it would need a real broker (Redis pub/sub, etc.) to survive more than one.
+  """
+
+  _subscribers: dict[str, list[asyncio.Queue]] = {}
 
   def __init__(self, db: AsyncSession):
     self.db = db
-    self._subscribers: dict[str, list[asyncio.Queue]] = {}
 
   async def ingest_conversion(
     self,
@@ -86,7 +101,7 @@ class WebhookService:
     )
 
     # Broadcast to all subscribers (real-time push)
-    await self._broadcast_event(business_id, 'conversion', {
+    await self.broadcast(business_id, 'conversion', {
       'id': str(event_id),
       'platform': platform,
       'amount': payload.amount,
@@ -100,15 +115,23 @@ class WebhookService:
       'event_id': str(event_id),
     }
 
-  async def _broadcast_event(
-    self,
+  @classmethod
+  async def broadcast(
+    cls,
     business_id: UUID,
     event_type: str,
     data: dict[str, object],
   ) -> None:
-    """Broadcast event to all subscribers for a business."""
+    """Push an event to every open SSE stream for this business.
+
+    A classmethod so it's callable without a DB session or a `WebhookService`
+    instance in hand — e.g. from the Mercado Libre webhook's background task,
+    which has its own session and no reason to construct one of these just to
+    broadcast.
+    """
     key = str(business_id)
-    if key not in self._subscribers:
+    queues = cls._subscribers.get(key)
+    if not queues:
       return
 
     event_json = json.dumps({
@@ -117,7 +140,7 @@ class WebhookService:
       'timestamp': datetime.utcnow().isoformat(),
     })
 
-    for queue in self._subscribers[key]:
+    for queue in queues:
       try:
         queue.put_nowait(event_json)
       except asyncio.QueueFull:
@@ -128,9 +151,7 @@ class WebhookService:
     key = str(business_id)
     queue: asyncio.Queue[str] = asyncio.Queue(maxsize=50)
 
-    if key not in self._subscribers:
-      self._subscribers[key] = []
-    self._subscribers[key].append(queue)
+    type(self)._subscribers.setdefault(key, []).append(queue)
 
     try:
       while True:
@@ -140,6 +161,6 @@ class WebhookService:
         except asyncio.TimeoutError:
           yield ': heartbeat\n\n'
     finally:
-      self._subscribers[key].remove(queue)
-      if not self._subscribers[key]:
-        del self._subscribers[key]
+      type(self)._subscribers[key].remove(queue)
+      if not type(self)._subscribers[key]:
+        del type(self)._subscribers[key]

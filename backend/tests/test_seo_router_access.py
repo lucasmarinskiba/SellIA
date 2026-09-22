@@ -6,6 +6,7 @@ Real SQLite tables (users, businesses, publication_links, conversion_events,
 seo_conversion_webhook_events); no Mercado Libre/network calls involved.
 """
 
+import asyncio
 import json
 import os
 import uuid
@@ -296,3 +297,33 @@ async def test_conversion_payload_with_a_timestamp_does_not_crash_json_serializa
         ),
     )
     assert result["received"] is True
+
+
+# ── SSE broadcast reaches a subscriber even across separate instances ──
+#
+# Every endpoint constructs its own WebhookService(db) per request (see
+# router.py) — a broadcast from a request's instance must still reach a
+# subscriber queue opened by an *earlier*, *different* instance's request.
+
+async def test_broadcast_reaches_a_subscriber_opened_by_a_different_instance(env):
+    owner = await make_user(env.db)
+    business = await make_business(env.db, owner)
+
+    subscriber = WebhookService(env.db)  # e.g. the GET .../events/stream request
+    stream = subscriber.subscribe(business.id)
+    first_chunk_task = asyncio.ensure_future(stream.__anext__())
+    await asyncio.sleep(0)  # let subscribe() register its queue before broadcasting
+
+    publisher = WebhookService(env.db)  # a *separate* instance, e.g. the webhook request
+    await publisher.broadcast(business.id, "conversion", {"amount": 42})
+
+    chunk = await asyncio.wait_for(first_chunk_task, timeout=1)
+    assert chunk.startswith("data: ")
+    assert '"amount": 42' in chunk
+    await stream.aclose()
+
+
+async def test_broadcast_to_a_business_with_no_subscribers_is_a_silent_noop(env):
+    owner = await make_user(env.db)
+    business = await make_business(env.db, owner)
+    await WebhookService(env.db).broadcast(business.id, "conversion", {"amount": 1})  # must not raise
