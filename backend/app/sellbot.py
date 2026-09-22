@@ -1302,6 +1302,8 @@ async def _bootstrap_database() -> None:
         await ensure_leads_owner_column()
         from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns
         await ensure_positioning_recommendation_columns()
+        from app.domains.seo_config.conversion_events_bootstrap import ensure_conversion_event_dedupe_column
+        await ensure_conversion_event_dedupe_column()
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES

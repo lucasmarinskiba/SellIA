@@ -717,6 +717,10 @@ async def track_conversion(
     current_user: User = Depends(get_current_user),
 ):
     """Track a conversion event from platform webhook."""
+    link = await db.get(PublicationLink, link_id)
+    if not link or link.business_id != business_id:
+        raise HTTPException(status_code=404, detail="Link no encontrado para este negocio")
+
     svc = FOMAConversionService(db)
     event = await svc.log_conversion(
         business_id=business_id,
@@ -725,6 +729,8 @@ async def track_conversion(
         conversion_type=conversion_type,
         conversion_value=conversion_value,
     )
+    if event is None:
+        raise HTTPException(status_code=409, detail="Conversión duplicada")
 
     return {
         "id": str(event.id),

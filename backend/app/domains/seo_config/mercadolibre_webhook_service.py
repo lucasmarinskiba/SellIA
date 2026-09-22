@@ -268,17 +268,25 @@ async def process_order_notification(db: AsyncSession, channel_id: UUID, order_i
         if not link:
             continue
         if await _already_recorded(db, business_id, link.id, order_id, item["item_id"]):
+            # Cheap pre-check to skip the common case (ML does resend
+            # notifications) without an insert attempt. Not the source of
+            # truth for correctness — that's the unique index below, which
+            # also covers the race this SELECT can't: two notifications for
+            # the same order committing close enough together that neither
+            # sees the other's row yet.
             continue
-        await service.log_conversion(
+        event = await service.log_conversion(
             business_id=business_id,
             link_id=link.id,
             platform_name=PLATFORM_NAME,
             conversion_type="purchase",
             conversion_value=item["value"],
             external_listing_id=item["item_id"],
+            external_event_id=order_id,
             raw_event_data={"source": "mercado-libre", "order_id": order_id, "verified": True},
         )
-        recorded += 1
+        if event is not None:
+            recorded += 1
 
     return {"status": "recorded" if recorded else "ignored", "conversions": recorded}
 
