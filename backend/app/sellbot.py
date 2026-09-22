@@ -115,6 +115,9 @@ from app.services.progression_service import init_progression_service
 # Cold-lead follow-up loop (Task 5)
 from app.core.followup_scheduler import run_followup_loop, stop_followup_loop
 
+# Liveness vs readiness of the background bootstrap (/api/ready)
+from app.core.startup_state import startup_state, router as startup_router
+
 scheduler = None
 processor = None
 progression_service = None
@@ -125,14 +128,21 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # STARTUP/SHUTDOWN
 # ============================================================
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    global scheduler, processor, progression_service
-    logger.info("🚀 SellIA Sellbot starting...")
+async def _bootstrap_database() -> None:
+    """Every schema bootstrap, in the order they always ran.
 
+    Runs as a background task after the lifespan yields (see `lifespan` below),
+    NOT before it: uvicorn does not bind its port until the lifespan yields, so
+    running this inline kept the app returning 502 -- /api/health included --
+    for the whole bootstrap (~13 min on Railway). Each block below is
+    self-contained and swallows its own errors, exactly as before; only *when*
+    the whole sequence runs changed. Keep any blocking (sync) work in here off
+    the event loop (asyncio.to_thread) -- it now shares the loop with live
+    requests.
+    """
     await init_db()
     logger.info("✅ Database initialized")
+    startup_state.mark("init_db")
 
     # Migrate schema for 2FA columns
     try:
@@ -779,6 +789,7 @@ async def lifespan(app: FastAPI):
             logger.warning(f"agent_personalities seed: {str(e)[:120]}")
     except Exception as e:
         logger.warning(f"agent personality tables migration: {str(e)[:120]}")
+    startup_state.mark("agent_personalities")
 
     # Computer Use domain tables (app.domains.computer_use.models +
     # models_extended): 8 real API routers for this feature (session
@@ -817,10 +828,20 @@ async def lifespan(app: FastAPI):
              ComputerUseSessionShare, ComputerUseSessionTag, ComputerUseSessionNote,
              ComputerUseSessionBookmark, ComputerUseScheduledTask],
         ]
+        # One catalog query instead of create_all(checkfirst=True) per table:
+        # that checkfirst cost ~85 round trips per table (1176 for these 14) on
+        # every boot even when every table already existed. None = could not
+        # list them, so fall back to create_all's own per-table check.
+        from app.db.schema_bootstrap import existing_table_names
+        cu_existing = await existing_table_names(engine) or set()
+
         cu_created = []
         for cu_batch in cu_batches:
             for cu_model in cu_batch:
                 cu_table = cu_model.__table__
+                if cu_table.name in cu_existing:
+                    cu_created.append(cu_table.name)
+                    continue
                 try:
                     async with engine.begin() as cu_conn:
                         await cu_conn.run_sync(Base.metadata.create_all, tables=[cu_table], checkfirst=True)
@@ -830,6 +851,7 @@ async def lifespan(app: FastAPI):
         logger.info(f"✅ Computer Use tables ensured ({len(cu_created)}/14)")
     except Exception as e:
         logger.warning(f"Computer Use tables migration: {str(e)[:120]}")
+    startup_state.mark("computer_use_tables")
 
     # Restore businesses.is_active (referenced by 15+ call sites across the
     # codebase for soft-delete filtering; a prior session's schema-drift fix
@@ -1253,6 +1275,7 @@ async def lifespan(app: FastAPI):
         await ensure_forecasting_tables()
         from app.domains.brand_transformation.bootstrap import ensure_brand_transformation_tables
         await ensure_brand_transformation_tables()
+        startup_state.mark("brand_transformation")
         from app.domains.ai_activity.bootstrap import ensure_ai_activity_tables
         await ensure_ai_activity_tables()
         from app.domains.websites.bootstrap import ensure_website_tables
@@ -1272,8 +1295,9 @@ async def lifespan(app: FastAPI):
         # are disabled here and init_db() skipped the CoreBase tables, so most
         # domain tables never existed and their absence surfaced as ordinary
         # emptiness in the UI.
-        from app.db.schema_bootstrap import ensure_all_tables
+        from app.db.schema_bootstrap import ensure_all_tables, existing_table_names
         await ensure_all_tables()
+        startup_state.mark("ensure_all_tables")
         from app.db.leads_bootstrap import ensure_leads_owner_column
         await ensure_leads_owner_column()
         from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns
@@ -1282,38 +1306,98 @@ async def lifespan(app: FastAPI):
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES
         from app.core.database import engine
-        async with engine.begin() as conn:
-            for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES:
-                await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
+        # Only open the transaction for tables that are actually missing; the
+        # checkfirst per table below stays as the safety net (and is the whole
+        # path when the catalog listing is unavailable).
+        hr_existing = await existing_table_names(engine) or set()
+        hr_missing = [t for t in HR_TABLES + LEGAL_TABLES + PROCUREMENT_TABLES if t.name not in hr_existing]
+        if hr_missing:
+            async with engine.begin() as conn:
+                for t in hr_missing:
+                    await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
     except Exception as e:
         logger.warning(f"domain tables bootstrap: {str(e)[:160]}")
+    startup_state.mark("domain_tables")
 
-    # Load Phase 33 seed data if needed (async-compatible)
+    # Load Phase 33 seed data if needed. Sync psycopg2 session, so it runs in a
+    # worker thread: on the event loop it would freeze /api/health (and every
+    # other request) for as long as the DB takes to answer, up to its 5s
+    # connect_timeout.
     try:
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker
-        import os
         from app.db.seed_phase_33 import seed_phase_33
 
         # Get sync engine from DATABASE_URL
         db_url = os.getenv("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://").replace("postgresql://", "postgresql+psycopg2://")
         if db_url:
-            sync_engine = create_engine(db_url, connect_args={"connect_timeout": 5})
-            SessionLocal = sessionmaker(bind=sync_engine)
-            db = SessionLocal()
-            try:
-                result = seed_phase_33(db)
-                if result["status"] == "success":
-                    logger.info(f"✅ Phase 33 seed loaded: {result['products_created']} products, {result['listings_created']} listings, ${result['total_gmv_monthly']:,}/mo GMV")
-                elif result["status"] == "skipped":
-                    logger.debug(f"Phase 33 seed: {result['reason']}")
-                else:
-                    logger.warning(f"Phase 33 seed error: {result.get('error', 'unknown')}")
-            finally:
-                db.close()
+            result = await asyncio.to_thread(_run_phase_33_seed, db_url, seed_phase_33)
+            if result["status"] == "success":
+                logger.info(f"✅ Phase 33 seed loaded: {result['products_created']} products, {result['listings_created']} listings, ${result['total_gmv_monthly']:,}/mo GMV")
+            elif result["status"] == "skipped":
+                logger.debug(f"Phase 33 seed: {result['reason']}")
+            else:
+                logger.warning(f"Phase 33 seed error: {result.get('error', 'unknown')}")
     except Exception as e:
         logger.debug(f"Phase 33 seed unavailable: {e}")
+    startup_state.mark("phase_33_seed")
 
+
+def _run_phase_33_seed(db_url: str, seed_phase_33) -> dict:
+    """Blocking half of the Phase 33 seed; call via asyncio.to_thread."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    sync_engine = create_engine(db_url, connect_args={"connect_timeout": 5})
+    try:
+        db = sessionmaker(bind=sync_engine)()
+        try:
+            return seed_phase_33(db)
+        finally:
+            db.close()
+    finally:
+        sync_engine.dispose()
+
+
+async def _run_background_bootstrap() -> None:
+    """Run the schema bootstrap, then start the loops that depend on it."""
+    try:
+        await _bootstrap_database()
+
+        # Only now: the processor and the follow-up loop read tables and
+        # columns the bootstrap above creates (conversations.followup_*, ...),
+        # and used to start strictly after it.
+        try:
+            asyncio.create_task(start_processor())
+            logger.info("✅ Task processor started")
+        except Exception as e:
+            logger.warning(f"Processor background start warning: {e}")
+
+        # Start cold-lead follow-up loop in background (Task 5)
+        try:
+            asyncio.create_task(run_followup_loop())
+            logger.info("✅ Follow-up scheduler started")
+        except Exception as e:
+            logger.warning(f"Follow-up scheduler background start warning: {e}")
+
+        startup_state.complete()
+        logger.info(f"✅ Startup bootstrap complete in {startup_state.elapsed_seconds}s")
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        # Every step swallows its own errors, so getting here is unexpected.
+        # The process stays alive (liveness), but /api/ready stays 503 with the
+        # error, instead of the old behaviour of crashing the whole lifespan.
+        logger.exception("❌ Startup bootstrap failed")
+        startup_state.fail(e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global scheduler, processor, progression_service
+    logger.info("🚀 SellIA Sellbot starting...")
+
+    # Redis-backed pieces first: they don't touch the schema, and the rate
+    # limiter has to exist before the first (auth) request can arrive.
     scheduler = await get_scheduler()
     logger.info("✅ Redis scheduler connected")
 
@@ -1333,24 +1417,21 @@ async def lifespan(app: FastAPI):
     progression_service = await init_progression_service(scheduler)
     logger.info("✅ Progression service initialized")
 
-    # Start processor in background
-    try:
-        asyncio.create_task(start_processor())
-        logger.info("✅ Task processor started")
-    except Exception as e:
-        logger.warning(f"Processor background start warning: {e}")
-
-    # Start cold-lead follow-up loop in background (Task 5)
-    try:
-        asyncio.create_task(run_followup_loop())
-        logger.info("✅ Follow-up scheduler started")
-    except Exception as e:
-        logger.warning(f"Follow-up scheduler background start warning: {e}")
+    # The database bootstrap runs in the background so uvicorn can start
+    # accepting connections right away; see startup_state / GET /api/ready.
+    startup_state.start()
+    bootstrap_task = asyncio.create_task(_run_background_bootstrap(), name="db-bootstrap")
 
     yield
 
     # Shutdown
     logger.info("🛑 SellIA Sellbot shutting down...")
+    if not bootstrap_task.done():
+        bootstrap_task.cancel()
+    try:
+        await bootstrap_task
+    except asyncio.CancelledError:
+        pass
     await stop_processor()
     stop_followup_loop()
     await close_db()
@@ -1363,6 +1444,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# GET /api/ready — 503 until the background schema bootstrap has finished
+app.include_router(startup_router)
 
 allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://sellia-brain.vercel.app").split(",")]
 
@@ -1404,7 +1488,7 @@ async def log_request(request: Request, call_next):
     # gave up, even though the app itself was healthy and had been for
     # minutes. Excluding health endpoints from the limiter is standard
     # practice for exactly this reason.
-    if request.url.path not in ("/health", "/api/health", "/api/v1/health") and not rate_limiter.is_allowed(client_ip):
+    if request.url.path not in ("/health", "/api/health", "/api/ready", "/api/v1/health") and not rate_limiter.is_allowed(client_ip):
         logger.warning(f"Rate limit exceeded: {client_ip} {request.method} {request.url.path}")
         return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
 
@@ -1695,11 +1779,20 @@ async def ping():
 
 @app.get("/api/health", tags=["system"])
 async def health_check(db: AsyncSession = Depends(get_db)):
-    """Detailed health check with dependency status."""
+    """Detailed health check with dependency status.
+
+    This is the *liveness* probe (Railway's healthcheck): it answers as soon as
+    the process serves, without waiting for the background schema bootstrap --
+    see ``bootstrap`` below and GET /api/ready for readiness. The DB ping is
+    bounded so a saturated pool can't hold the probe past its own timeout.
+    """
     try:
         # Check database
-        await db.execute(select(1))
+        await asyncio.wait_for(db.execute(select(1)), timeout=3)
         db_status = "ok"
+    except asyncio.TimeoutError:
+        logger.error("Database health check timed out")
+        db_status = "timeout"
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         db_status = "failed"
@@ -1732,7 +1825,10 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "database": db_status,
             "redis": redis_status,
             "processor": processor_status,
-            "scheduler": "ok" if scheduler else "not_initialized"
+            "scheduler": "ok" if scheduler else "not_initialized",
+            # pending | running | complete | failed -- informational only; it
+            # never turns this endpoint into a non-200
+            "bootstrap": startup_state.phase,
         },
         "uptime_seconds": 0  # TODO: track from startup
     }

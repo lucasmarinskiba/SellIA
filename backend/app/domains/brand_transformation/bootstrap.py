@@ -8,6 +8,8 @@ here, each in its own transaction so one failure never poisons the rest.
 
 from __future__ import annotations
 
+import re
+
 from sqlalchemy import text
 
 from app.core.logger import get_logger
@@ -128,6 +130,23 @@ _COLUMN_PATCHES: list[str] = [
 ]
 
 
+_PATCH_TARGET = re.compile(r"ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS (\w+)", re.IGNORECASE)
+
+
+async def _existing_bt_columns(engine) -> set[tuple[str, str]] | None:
+    """(table, column) pairs already present on the bt_* tables, or None if unreadable."""
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(text(
+                "SELECT table_name, column_name FROM information_schema.columns "
+                "WHERE table_schema = current_schema() AND table_name LIKE 'bt\\_%'"
+            ))
+            return {(row[0], row[1]) for row in result}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("brand_transformation bootstrap: could not read existing columns: %s", str(e)[:120])
+        return None
+
+
 async def ensure_brand_transformation_tables() -> None:
     from app.core.database import engine  # noqa: WPS433 (late import)
     from app.domains.brand_transformation.models import BRAND_TRANSFORMATION_TABLES
@@ -146,8 +165,20 @@ async def ensure_brand_transformation_tables() -> None:
                 table.name, str(e)[:160],
             )
 
+    # `ADD COLUMN IF NOT EXISTS` is a no-op on an up-to-date table, but Postgres
+    # still takes an ACCESS EXCLUSIVE lock on the table before noticing -- so
+    # every boot queued behind any transaction touching a bt_* table (and made
+    # everything else on that table queue behind it), once per patch, one
+    # transaction each. One catalog read tells us which patches are needed;
+    # None means "could not read it", and then every patch runs as before.
+    existing_columns = await _existing_bt_columns(engine)
+
     patched = 0
     for stmt in _COLUMN_PATCHES:
+        target = _PATCH_TARGET.match(stmt)
+        if existing_columns is not None and target and target.groups() in existing_columns:
+            patched += 1
+            continue
         try:
             async with engine.begin() as conn:
                 await conn.execute(text(stmt))

@@ -5,6 +5,12 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
 healthcheckPath = "/api/health"
-healthcheckTimeout = 30
+# /api/health is liveness: it answers as soon as `app.main` is imported and the
+# Redis pieces are up; the schema bootstrap runs in the background afterwards
+# (readiness is GET /api/ready, deliberately NOT what Railway waits on). The
+# import alone measured 24-29s (~130 routers + langchain/anthropic), so 30s
+# left no margin. This is only a ceiling: a healthy deploy still cuts over the
+# moment the probe passes.
+healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

@@ -130,9 +130,10 @@ jobs:
         if: failure()
         run: |
           BACKEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8000/health || echo "NO_CONN")
+          BACKEND_READY=$(curl -s --max-time 5 http://localhost:8000/api/ready | head -c 300 || echo "NO_CONN")
           FRONTEND_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3000 || echo "NO_CONN")
           PS=$(docker compose ps --format '{{.Name}}={{.Status}}' | tr '\n' ' ')
-          echo "::error::E2E startup failed | backend/health=$BACKEND_CODE frontend=$FRONTEND_CODE | $PS"
+          echo "::error::E2E startup failed | backend/health=$BACKEND_CODE backend/ready=$BACKEND_READY frontend=$FRONTEND_CODE | $PS"
           # Tail of the backend log as an annotation too (annotations are readable via
           # the API; the ::group:: dumps below are not, this repo's token can't read logs).
           BTAIL=$(docker compose logs --no-color --tail=14 backend 2>&1 | tr '\n' '|' | cut -c1-1200)
