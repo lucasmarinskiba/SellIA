@@ -46,6 +46,7 @@ from app.domains.channels.models import ChannelConnection, ChannelPlatform
 from app.domains.seo_config.fomo_models import ConversionEvent
 from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.webhook_service import WebhookService
 
 logger = get_logger(__name__)
 
@@ -287,6 +288,13 @@ async def process_order_notification(db: AsyncSession, channel_id: UUID, order_i
         )
         if event is not None:
             recorded += 1
+            await WebhookService.broadcast(business_id, 'conversion', {
+                'id': str(event.id),
+                'platform': PLATFORM_NAME,
+                'amount': item["value"],
+                'email': None,
+                'timestamp': event.created_at.isoformat(),
+            })
 
     return {"status": "recorded" if recorded else "ignored", "conversions": recorded}
 
