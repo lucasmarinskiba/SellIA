@@ -58,6 +58,9 @@ from app.domains.businesses.models import Business  # noqa: E402
 from app.domains.seo_config.fomo_models import ConversionEvent  # noqa: E402
 from app.domains.seo_config.models import PublicationLink  # noqa: E402
 from app.domains.seo_config.fomo_service import FOMAConversionService  # noqa: E402
+from app.domains.seo_config.positioning_models import (  # noqa: E402
+    PositioningRecommendation, PublicationLinkPositioningScore,
+)
 from app.domains.seo_config.router import router  # noqa: E402
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEvent  # noqa: E402
 from app.domains.seo_config.webhook_service import WebhookService  # noqa: E402
@@ -73,6 +76,7 @@ async def env():
         for t in (
             User.__table__, Business.__table__, PublicationLink.__table__,
             ConversionEvent.__table__, WebhookEvent.__table__,
+            PublicationLinkPositioningScore.__table__, PositioningRecommendation.__table__,
         ):
             await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -103,6 +107,27 @@ async def make_link(db, business_id, url="https://example.com/producto"):
     await db.commit()
     await db.refresh(link)
     return link
+
+
+async def make_score(db, business_id, link_id, platform_name="mercado-libre"):
+    score = PublicationLinkPositioningScore(
+        business_id=business_id, link_id=link_id, platform_name=platform_name, composite_score=50.0,
+    )
+    db.add(score)
+    await db.commit()
+    await db.refresh(score)
+    return score
+
+
+async def make_recommendation(db, business_id, link_id, score_id):
+    rec = PositioningRecommendation(
+        business_id=business_id, link_id=link_id, score_id=score_id,
+        signal_key="listing_completeness_pct", severity="warning", message="m", status="open",
+    )
+    db.add(rec)
+    await db.commit()
+    await db.refresh(rec)
+    return rec
 
 
 def build_client(env, current_user):
@@ -327,3 +352,70 @@ async def test_broadcast_to_a_business_with_no_subscribers_is_a_silent_noop(env)
     owner = await make_user(env.db)
     business = await make_business(env.db, owner)
     await WebhookService(env.db).broadcast(business.id, "conversion", {"amount": 1})  # must not raise
+
+
+# ── Object-level IDOR: a link_id/recommendation_id from another business ──
+#
+# verify_business_access only proves the caller owns `business_id` in the URL —
+# link_id, recommendation_id and connection_id are separate objects it never
+# checks. Before this fix, an owner of business A could pass business B's
+# link_id/recommendation_id in the path and read or dismiss B's positioning
+# data through A's own, legitimately-authorized request.
+
+async def test_positioning_score_of_a_link_from_another_business_is_not_visible(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+    await make_score(env.db, business_b.id, link_b.id)
+
+    client = build_client(env, owner_a)
+    resp = client.get(f"/api/v1/businesses/{business_a.id}/seo-config/publication-links/{link_b.id}/positioning")
+    assert resp.status_code == 404
+
+
+async def test_positioning_history_of_a_link_from_another_business_is_empty(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+    await make_score(env.db, business_b.id, link_b.id)
+
+    client = build_client(env, owner_a)
+    resp = client.get(f"/api/v1/businesses/{business_a.id}/seo-config/publication-links/{link_b.id}/positioning/history")
+    assert resp.status_code == 200 and resp.json() == []
+
+
+async def test_computing_positioning_for_a_link_from_another_business_404s(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+
+    client = build_client(env, owner_a)
+    resp = client.post(
+        f"/api/v1/businesses/{business_a.id}/seo-config/publication-links/{link_b.id}/positioning/compute"
+    )
+    assert resp.status_code == 404
+
+
+async def test_dismissing_a_recommendation_from_another_business_404s_and_leaves_it_open(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+    score_b = await make_score(env.db, business_b.id, link_b.id)
+    rec_b = await make_recommendation(env.db, business_b.id, link_b.id, score_b.id)
+
+    client = build_client(env, owner_a)
+    resp = client.patch(
+        f"/api/v1/businesses/{business_a.id}/seo-config/positioning/recommendations/{rec_b.id}/dismiss"
+    )
+    assert resp.status_code == 404
+
+    refreshed = await env.db.get(PositioningRecommendation, rec_b.id)
+    assert refreshed.status == "open"

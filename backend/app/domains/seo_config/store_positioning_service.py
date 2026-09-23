@@ -43,7 +43,7 @@ class StorePositioningScoreService:
         self.db = db
 
     async def get_store_connector(
-        self, platform_name: str, connection_id: UUID
+        self, business_id: UUID, platform_name: str, connection_id: UUID
     ) -> StorePositioningConnector | None:
         platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in STORE_RANKING_CONNECTORS:
@@ -59,6 +59,14 @@ class StorePositioningScoreService:
             connection = result.scalar_one_or_none()
             if not connection:
                 logger.error(f"Connection {connection_id} not found")
+                return None
+            # connection_id is a free-form field in the request body, not scoped by
+            # the router's business ownership check — without this, a business
+            # could point compute_store_score at another business's connection and
+            # have this service fetch and expose that business's real store
+            # credentials/analytics under its own score.
+            if connection.business_id != business_id:
+                logger.warning(f"Connection {connection_id} does not belong to business {business_id}")
                 return None
 
             credentials = dict(connection.auth_metadata or {})
@@ -89,7 +97,7 @@ class StorePositioningScoreService:
         ):
             return None
 
-        connector = await self.get_store_connector(platform_name, connection_id)
+        connector = await self.get_store_connector(business_id, platform_name, connection_id)
         if not connector:
             return None
 
