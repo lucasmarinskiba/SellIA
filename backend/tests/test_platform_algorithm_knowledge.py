@@ -252,7 +252,7 @@ async def test_recommendations_are_returned_most_urgent_first_and_explained(db):
     await add_rec(db, biz, link, score, "catalog_completeness_pct", "info")
     await add_rec(db, biz, link, score, "account_odr_pct", "critical")
 
-    recs = await pss.PositioningScoreService(db).get_open_recommendations(link.id)
+    recs = await pss.PositioningScoreService(db).get_open_recommendations(biz, link.id)
     assert [r.severity for r in recs] == ["critical", "info"]
     payload = pss.recommendation_payload(recs[0], "amazon")
     assert payload["why"]["evidence"] == kb.OFFICIAL and "Salud de la cuenta" in payload["why"]["factor"]
@@ -280,7 +280,7 @@ async def test_a_link_spelled_mercadolibre_is_scored_with_the_ml_connector(db, m
         def recommendation_rules(self, m):
             return [{"signal_key": "seller_claims_rate", "severity": "critical", "message": "reclamos altos"}]
 
-    async def fake_get_connector(self, platform_name, connection_id):
+    async def fake_get_connector(self, business_id, platform_name, connection_id):
         asked["platform"] = platform_name
         return FakeConnector()
 

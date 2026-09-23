@@ -324,8 +324,6 @@ def compute_positioning_scores(self):
 
     return asyncio.run(_compute())
 
-    return asyncio.run(_monitor())
-
 
 @shared_task(bind=True, name="seo_config.compute_store_positioning_scores")
 def compute_store_positioning_scores(self):

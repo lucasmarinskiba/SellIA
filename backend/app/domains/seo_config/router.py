@@ -1339,7 +1339,11 @@ async def compute_positioning_score(
     current_user: User = Depends(get_current_user),
 ):
     """Compute a fresh platform-algorithm-aware positioning score for one link."""
-    result = await db.execute(select(PublicationLink).where(PublicationLink.id == link_id))
+    result = await db.execute(
+        select(PublicationLink).where(
+            PublicationLink.id == link_id, PublicationLink.business_id == business_id
+        )
+    )
     link = result.scalar_one_or_none()
     if not link:
         raise HTTPException(status_code=404, detail="Publication link not found")
@@ -1358,7 +1362,7 @@ async def compute_positioning_score(
         }
         return {"computed": False, "coverage": coverage, "reason": reasons[coverage]}
 
-    recommendations = await service.get_open_recommendations(link_id)
+    recommendations = await service.get_open_recommendations(business_id, link_id)
 
     return {
         "computed": True,
@@ -1386,12 +1390,12 @@ async def get_positioning_score(
 ):
     """Get the most recently computed positioning score + open recommendations for a link."""
     service = PositioningScoreService(db)
-    score = await service.get_latest_score(link_id)
+    score = await service.get_latest_score(business_id, link_id)
 
     if not score:
         raise HTTPException(status_code=404, detail="No positioning score computed yet for this link")
 
-    recommendations = await service.get_open_recommendations(link_id)
+    recommendations = await service.get_open_recommendations(business_id, link_id)
 
     return {
         "link_id": str(link_id),
@@ -1422,7 +1426,7 @@ async def get_positioning_history(
 ):
     """Get positioning score history for a link (for trend charts)."""
     service = PositioningScoreService(db)
-    history = await service.get_score_history(link_id, days)
+    history = await service.get_score_history(business_id, link_id, days)
 
     return [
         {
@@ -1455,7 +1459,7 @@ async def dismiss_positioning_recommendation(
 ):
     """Dismiss an open positioning recommendation."""
     service = PositioningScoreService(db)
-    dismissed = await service.dismiss_recommendation(recommendation_id)
+    dismissed = await service.dismiss_recommendation(business_id, recommendation_id)
 
     if not dismissed:
         raise HTTPException(status_code=404, detail="Recommendation not found")

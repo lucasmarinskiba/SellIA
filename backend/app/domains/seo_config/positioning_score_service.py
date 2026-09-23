@@ -87,7 +87,7 @@ class PositioningScoreService:
         self.db = db
 
     async def get_ranking_connector(
-        self, platform_name: str, connection_id: UUID
+        self, business_id: UUID, platform_name: str, connection_id: UUID
     ) -> PlatformRankingConnector | None:
         """Resolve a ranking connector for a platform, same credential
         resolution pattern as PlatformAnalyticsService.get_analytics_connector."""
@@ -105,6 +105,13 @@ class PositioningScoreService:
             connection = result.scalar_one_or_none()
             if not connection:
                 logger.error(f"Connection {connection_id} not found")
+                return None
+            # connection_id ultimately comes from link.connection_id, but callers
+            # (the compute endpoint) never confirmed the link itself belongs to
+            # business_id — without this, one business's request could resolve
+            # and use another business's platform credentials.
+            if connection.business_id != business_id:
+                logger.warning(f"Connection {connection_id} does not belong to business {business_id}")
                 return None
 
             credentials = connection.auth_metadata or {}
@@ -149,7 +156,7 @@ class PositioningScoreService:
             )
             return None
 
-        connector = await self.get_ranking_connector(platform, connection_id)
+        connector = await self.get_ranking_connector(business_id, platform, connection_id)
         if not connector:
             return None
 
@@ -261,33 +268,38 @@ class PositioningScoreService:
 
         await self.db.commit()
 
-    async def get_latest_score(self, link_id: UUID) -> PublicationLinkPositioningScore | None:
+    async def get_latest_score(self, business_id: UUID, link_id: UUID) -> PublicationLinkPositioningScore | None:
         result = await self.db.execute(
             select(PublicationLinkPositioningScore)
-            .where(PublicationLinkPositioningScore.link_id == link_id)
+            .where(
+                PublicationLinkPositioningScore.link_id == link_id,
+                PublicationLinkPositioningScore.business_id == business_id,
+            )
             .order_by(PublicationLinkPositioningScore.computed_at.desc())
             .limit(1)
         )
         return result.scalar_one_or_none()
 
     async def get_score_history(
-        self, link_id: UUID, days: int = 30
+        self, business_id: UUID, link_id: UUID, days: int = 30
     ) -> list[PublicationLinkPositioningScore]:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         result = await self.db.execute(
             select(PublicationLinkPositioningScore)
             .where(
                 PublicationLinkPositioningScore.link_id == link_id,
+                PublicationLinkPositioningScore.business_id == business_id,
                 PublicationLinkPositioningScore.computed_at >= cutoff,
             )
             .order_by(PublicationLinkPositioningScore.computed_at.asc())
         )
         return list(result.scalars().all())
 
-    async def get_open_recommendations(self, link_id: UUID) -> list[PositioningRecommendation]:
+    async def get_open_recommendations(self, business_id: UUID, link_id: UUID) -> list[PositioningRecommendation]:
         result = await self.db.execute(
             select(PositioningRecommendation).where(
                 PositioningRecommendation.link_id == link_id,
+                PositioningRecommendation.business_id == business_id,
                 PositioningRecommendation.status == "open",
             )
         )
@@ -319,7 +331,7 @@ class PositioningScoreService:
             })
             entry["links"] += 1
 
-            score = await self.get_latest_score(link.id)
+            score = await self.get_latest_score(business_id, link.id)
             if score:
                 entry["scored_links"] += 1
                 per_link.append({
@@ -412,9 +424,9 @@ class PositioningScoreService:
             plan.append({**payload, "platform": group["platform"], "affected": group["affected"]})
         return plan
 
-    async def dismiss_recommendation(self, recommendation_id: UUID) -> bool:
+    async def dismiss_recommendation(self, business_id: UUID, recommendation_id: UUID) -> bool:
         rec = await self.db.get(PositioningRecommendation, recommendation_id)
-        if not rec:
+        if not rec or rec.business_id != business_id:
             return False
         rec.status = "dismissed"
         await self.db.commit()
