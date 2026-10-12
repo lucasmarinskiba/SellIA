@@ -1,12 +1,22 @@
 #!/bin/sh
-# SellIA · pre-commit — regenera el snapshot del cerebro antes de cada commit.
-#
-# Mantiene frontend/src/data/brain-graph.json al día con el registry de Python.
-# Best-effort: si falta Python o el backend, no bloquea el commit.
+# SellIA · pre-commit
+#  1. Bloquea el commit si agrega una credencial (URL con usuario:contraseña, tokens).
+#  2. Regenera el snapshot del cerebro antes de cada commit (best-effort).
 #
 # Activar (una vez):  git config core.hooksPath .githooks
 # (el `prepare` de frontend/package.json lo setea solo tras `npm install`)
 
+# ── 1. Secret guard ─────────────────────────────────────────────────────────
+# La lógica vive en scripts/check-added-secrets.sh (la misma que corre el CI).
+# Sólo mira líneas AGREGADAS. Un commit con URLs de producción con contraseña ya
+# llegó a un repo público: rotar la credencial es lo único que lo repara, por eso
+# se corta acá, antes de que exista.
+GUARD="$(git rev-parse --show-toplevel 2>/dev/null)/scripts/check-added-secrets.sh"
+if [ -f "$GUARD" ]; then
+  git diff --cached -U0 --no-color -- . ':!*.lock' ':!package-lock.json' | sh "$GUARD" || exit 1
+fi
+
+# ── 2. Brain snapshot ───────────────────────────────────────────────────────
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ -n "$ROOT" ] && [ -d "$ROOT/frontend" ] || exit 0
 
