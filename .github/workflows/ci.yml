@@ -174,21 +174,10 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
 
-  # ── Deploy backend a Render (sólo push a main, gated por CI verde) ──
-  # Render corre alembic upgrade head (preDeployCommand) + healthcheck /health.
-  # Vercel auto-deploya el frontend por su cuenta en cada push a main.
-  deploy-backend:
-    name: Deploy Backend (Render)
-    needs: [backend-tests, backend-lint, frontend-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploy
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_URL no configurado — salteo deploy."
-            exit 0
-          fi
-          curl -fsS -X POST "$HOOK" && echo "Deploy de Render disparado."
+  # ── Deploys ──────────────────────────────────────────────────────────────
+  # CI no despliega nada. Hubo un job "Deploy Backend (Render)" que llamaba a un
+  # webhook de Render, pero el secreto RENDER_DEPLOY_HOOK_URL nunca existió, así que
+  # siempre salía por la rama "no configurado" y terminaba en verde sin desplegar:
+  # un check que decía "deploy ok" sin que hubiera deploy. Se quitó para no engañar.
+  #   - Backend:  Railway, auto-deploy desde main (healthcheck: backend/railway.toml).
+  #   - Frontend: Vercel, auto-deploy desde main.
