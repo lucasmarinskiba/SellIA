@@ -13,16 +13,17 @@ import os
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["SECRET_KEY"] = "test-secret-key-32-chars-long-1234567890"
 os.environ["ENABLE_OPENAPI"] = "false"
-# Defaults target the docker-compose service hostnames (`db`, `redis`). CI and
-# any non-compose environment must point at their own services via
-# TEST_DATABASE_URL / TEST_REDIS_URL — a dedicated variable (not DATABASE_URL)
+# Defaults are a throwaway local test database with a throwaway password (the same
+# one CI's postgres service uses), so no real credential lives in the repo. Any
+# other setup (docker-compose `db`, a shared server) must point at its own services
+# via TEST_DATABASE_URL / TEST_REDIS_URL — a dedicated variable (not DATABASE_URL)
 # because the session fixture below drops and recreates the whole `public`
 # schema of this DB, so it must never inherit a real application database URL.
 os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://ia_vendedor:x-5Of06QfCskz81KLMj0iHGWkIBwVmNY@db:5432/test_ia_vendedor",
+    "postgresql+asyncpg://test:test@localhost:5432/test_db",
 )
-os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://redis:6379/1")
+os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://localhost:6379/1")
 
 import httpx
 import redis.asyncio as redis

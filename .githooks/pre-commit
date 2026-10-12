@@ -1,12 +1,29 @@
 #!/bin/sh
-# SellIA · pre-commit — regenera el snapshot del cerebro antes de cada commit.
-#
-# Mantiene frontend/src/data/brain-graph.json al día con el registry de Python.
-# Best-effort: si falta Python o el backend, no bloquea el commit.
+# SellIA · pre-commit
+#  1. Bloquea el commit si agrega una credencial (URL con usuario:contraseña, tokens).
+#  2. Regenera el snapshot del cerebro antes de cada commit (best-effort).
 #
 # Activar (una vez):  git config core.hooksPath .githooks
 # (el `prepare` de frontend/package.json lo setea solo tras `npm install`)
 
+# ── 1. Secret guard ─────────────────────────────────────────────────────────
+# Sólo líneas AGREGADAS. Placeholders conocidos (test:test, user:password, ${VAR}...)
+# pasan; cualquier otra URL con contraseña embebida, o un token con formato real, no.
+# Un commit así ya filtró dos bases de producción en un repo público: rotar la
+# credencial es lo único que lo repara, por eso se corta acá, antes de que exista.
+ADDED="$(git diff --cached -U0 --no-color -- . ':!*.lock' ':!package-lock.json' | grep -E '^\+[^+]' )"
+URL_CREDS="$(printf '%s\n' "$ADDED" | grep -E '(postgres(ql)?(\+[a-z0-9]+)?|mysql|mongodb(\+srv)?|redis|amqp)://[^:/@ "'"'"'$<{]+:[^@ "'"'"'$<{]{6,}@' \
+  | grep -viE '://(user|username|test|postgres|root|admin|sellia|ia_vendedor|u|x|app|db):(password|pass|test|postgres|secret|changeme|change-me|xxx+|your[-_a-z]*|secure_password_here|redis_password_here|[a-z_]*password[a-z_]*|dev[-_a-z0-9]*|local[-_a-z0-9]*|\*+|x|d)@')"
+TOKENS="$(printf '%s\n' "$ADDED" | grep -E 'sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|xox[bpa]-[A-Za-z0-9-]{20,}|APP_USR-[0-9a-f-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----')"
+if [ -n "$URL_CREDS$TOKENS" ]; then
+  echo "[pre-commit] ✗ posible credencial en el diff (valor oculto):" >&2
+  printf '%s\n%s\n' "$URL_CREDS" "$TOKENS" | grep -v '^$' | sed -E 's#(://[^:/@ ]+:)[^@ ]+@#\1***@#; s#(sk-[A-Za-z0-9_-]{4})[A-Za-z0-9_-]+#\1***#' | cut -c1-120 >&2
+  echo "[pre-commit] Usá una variable de entorno. Si ya la commiteaste en algún lado, rotala." >&2
+  echo "[pre-commit] Falso positivo? Agregá el placeholder a la lista del hook (no uses --no-verify)." >&2
+  exit 1
+fi
+
+# ── 2. Brain snapshot ───────────────────────────────────────────────────────
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 [ -n "$ROOT" ] && [ -d "$ROOT/frontend" ] || exit 0
 
