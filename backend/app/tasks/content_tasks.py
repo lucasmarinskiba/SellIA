@@ -613,22 +613,43 @@ def auto_generate_catalog_content_task(self, business_id: Optional[str] = None):
         raise self.retry(exc=exc)
 
 
+def _due_calendar_posts_stmt(business_id: uuid.UUID, now: datetime):
+    """Calendar entries that are due AND allowed to go out on their own.
+
+    This used to filter on ``ContentCalendar.approval_status``, a column that does not
+    exist (``approval_status`` belongs to ``GeneratedContent``), so the task raised
+    AttributeError for every business on every run. A calendar entry carries its own
+    approval state instead: ``requires_approval`` / ``approved_at``.
+
+    ``auto_publish`` is required because this is the *automatic* publisher: every seed
+    creates entries with ``auto_publish=False``, so nothing is published unless someone
+    opted that entry in. Note that "published" here only flips the status; publishing to
+    the platforms is not implemented yet (see the TODO in the manual publish endpoint,
+    api/v1/automations.py).
+    """
+    return (
+        select(ContentCalendar)
+        .where(
+            ContentCalendar.business_id == business_id,
+            ContentCalendar.status == "scheduled",
+            ContentCalendar.scheduled_at <= now,
+            ContentCalendar.auto_publish.is_(True),
+            or_(
+                ContentCalendar.requires_approval.is_(False),
+                ContentCalendar.approved_at.is_not(None),
+            ),
+        )
+        .limit(20)
+    )
+
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def schedule_content_posts_task(self, business_id: Optional[str] = None):
     """Programa publicaciones automáticas."""
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
             now = datetime.now(timezone.utc)
-            result = await db.execute(
-                select(ContentCalendar).where(
-                    and_(
-                        ContentCalendar.business_id == bid,
-                        ContentCalendar.status == "scheduled",
-                        ContentCalendar.scheduled_at <= now,
-                        ContentCalendar.approval_status == "approved",
-                    )
-                ).limit(20)
-            )
+            result = await db.execute(_due_calendar_posts_stmt(bid, now))
             posts = result.scalars().all()
 
             published = []
