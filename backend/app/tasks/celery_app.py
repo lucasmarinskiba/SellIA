@@ -8,6 +8,7 @@ import importlib
 import traceback
 import sys as _sys
 from celery import Celery
+from celery.schedules import crontab
 from app.core.config import get_settings
 
 # Import all models so SQLAlchemy mappers are configured in Celery workers.
@@ -170,7 +171,7 @@ celery_app.conf.beat_schedule = {
     # whatever the score happened to be the last time someone opened the page.
     "weekly-authority-snapshot": {
         "task": "app.tasks.authority_tasks.weekly_authority_snapshot",
-        "schedule": 604800.0,  # 7 días
+        "schedule": crontab(minute=0, hour=2, day_of_week="sun"),  # semanal: dom 02:00
     },
     "check-pending-workflows": {
         "task": "app.tasks.workflow_tasks.check_pending_workflows",
@@ -186,19 +187,19 @@ celery_app.conf.beat_schedule = {
     },
     "check-deals-stalled": {
         "task": "app.tasks.workflow_tasks.check_deals_stalled",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=2),  # cada hora, en el minuto 2
     },
     "check-hot-leads-no-deal": {
         "task": "app.tasks.workflow_tasks.check_hot_leads_no_deal",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=7, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "check-abandoned-carts": {
         "task": "app.tasks.workflow_tasks.check_abandoned_carts",
-        "schedule": 86400.0,  # cada 1 día
+        "schedule": crontab(minute=0, hour=10),  # todos los días 10:00
     },
     "check-no-reply": {
         "task": "app.tasks.workflow_tasks.check_no_reply_conversations",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=7),  # cada hora, en el minuto 7
     },
     "check-upcoming-appointments": {
         "task": "app.tasks.workflow_tasks.check_upcoming_appointments",
@@ -210,12 +211,12 @@ celery_app.conf.beat_schedule = {
     },
     "request-pending-confirmations": {
         "task": "app.tasks.workflow_tasks.request_pending_confirmations",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=12),  # cada hora, en el minuto 12
     },
     # === AI Content Generation Tasks ===
     "auto-generate-catalog-content": {
         "task": "app.tasks.content_tasks.auto_generate_catalog_content_task",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=0, hour=5),  # todos los días 05:00
     },
     "schedule-content-posts": {
         "task": "app.tasks.content_tasks.schedule_content_posts_task",
@@ -223,16 +224,16 @@ celery_app.conf.beat_schedule = {
     },
     "analyze-content-performance": {
         "task": "app.tasks.content_tasks.analyze_content_performance_task",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=30, hour=2, day_of_week="sun"),  # semanal: dom 02:30
     },
     "cleanup-old-generated-content": {
         "task": "app.tasks.content_tasks.cleanup_old_generated_content_task",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=15, hour=5),  # todos los días 05:15
     },
     # === Subscription Management Tasks ===
     "check-expiring-subscriptions": {
         "task": "app.tasks.subscription_tasks.check_expiring_subscriptions",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=13, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "process-crypto-pending-payments": {
         "task": "app.tasks.subscription_tasks.process_crypto_pending_payments",
@@ -248,53 +249,53 @@ celery_app.conf.beat_schedule = {
     },
     "generate-recurring-invoices": {
         "task": "app.tasks.subscription_tasks.generate_recurring_invoices",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=4),  # todos los días 04:30
     },
     "send-transfer-reminders": {
         "task": "app.tasks.subscription_tasks.send_transfer_reminders",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=19, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "expire-pending-transfers": {
         "task": "app.tasks.subscription_tasks.expire_pending_transfers",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=25, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "sync-mercadopago-preapprovals": {
         "task": "app.tasks.subscription_tasks.sync_mercadopago_preapprovals",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=31, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     # === SellIA Virtual Company Tasks ===
     "selia-director-daily": {
         "task": "app.tasks.selia_tasks.selia_director_daily",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=6),  # todos los días 06:30
     },
     "rfm-segmentation": {
         "task": "app.tasks.selia_tasks.rfm_segmentation",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=45, hour=2),  # todos los días 02:45
     },
     "payment-reminder-check": {
         "task": "app.tasks.selia_tasks.payment_reminder_check",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=17),  # cada hora, en el minuto 17
     },
     "bi-analytics-daily": {
         "task": "app.tasks.selia_tasks.bi_analytics_daily",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=5),  # todos los días 05:30
     },
     # === Security & Compliance Tasks ===
     "data-retention-cleanup": {
         "task": "app.tasks.security_tasks.data_retention_cleanup",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=0, hour=3, day_of_week="sun"),  # semanal: dom 03:00
     },
     "rotate-webhook-tokens": {
         "task": "app.tasks.security_tasks.rotate_webhook_tokens",
-        "schedule": 7776000.0,  # cada 90 días
+        "schedule": crontab(minute=0, hour=4, day_of_month=1, month_of_year="1,4,7,10"),  # trimestral: 1 de ene/abr/jul/oct 04:00
     },
     "security-audit-report": {
         "task": "app.tasks.security_tasks.security_audit_report",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=0, hour=6, day_of_week="mon"),  # semanal: lun 06:00
     },
     "cleanup-expired-ip-blocks": {
         "task": "app.tasks.security_tasks.cleanup_expired_ip_blocks",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=22),  # cada hora, en el minuto 22
     },
     "auto-block-high-risk-ips": {
         "task": "app.tasks.security_tasks.auto_block_high_risk_ips",
@@ -307,23 +308,23 @@ celery_app.conf.beat_schedule = {
     },
     "autopilot-daily-report-generator": {
         "task": "app.tasks.autopilot_tasks.autopilot_daily_report_generator",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=45, hour=6),  # todos los días 06:45
     },
     "fatigue-score-recalculation": {
         "task": "app.tasks.autopilot_tasks.fatigue_score_recalculation",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=27),  # cada hora, en el minuto 27
     },
     "auto-close-evaluator": {
         "task": "app.tasks.autopilot_tasks.auto_close_evaluator",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=32),  # cada hora, en el minuto 32
     },
     "health-score-recalculation": {
         "task": "app.tasks.autopilot_tasks.health_score_recalculation",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=10, hour=3),  # todos los días 03:10
     },
     "churn-prevention-activator": {
         "task": "app.tasks.autopilot_tasks.churn_prevention_activator",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=20, hour=3),  # todos los días 03:20
     },
     "cadence-engine-scheduler": {
         "task": "app.tasks.autopilot_tasks.cadence_engine_scheduler",
@@ -331,7 +332,7 @@ celery_app.conf.beat_schedule = {
     },
     "director-executive-loop": {
         "task": "app.tasks.autopilot_tasks.director_executive_loop",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=37, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     # === Autonomous Sales Loop Tasks ===
     "message-intelligence-analyzer": {
@@ -344,11 +345,11 @@ celery_app.conf.beat_schedule = {
     },
     "proactive-outreach-scheduler": {
         "task": "app.tasks.autonomous_tasks.proactive_outreach_scheduler",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=9),  # todos los días 09:30
     },
     "briefing-delivery": {
         "task": "app.tasks.autonomous_tasks.briefing_delivery",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=7),  # todos los días 07:30
     },
     "handoff-alert-sender": {
         "task": "app.tasks.autonomous_tasks.handoff_alert_sender",
@@ -356,19 +357,19 @@ celery_app.conf.beat_schedule = {
     },
     "experiment-evaluator": {
         "task": "app.tasks.autonomous_tasks.experiment_evaluator",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=0, hour=4, day_of_week="sun"),  # semanal: dom 04:00
     },
     "auto-optimizer-runner": {
         "task": "app.tasks.autonomous_tasks.auto_optimizer_runner",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=30, hour=4, day_of_week="sun"),  # semanal: dom 04:30
     },
     "ab-test-winner-applier": {
         "task": "app.tasks.autonomous_tasks.ab_test_winner_applier",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=0, hour=5, day_of_week="sun"),  # semanal: dom 05:00
     },
     "pipeline-automation-trigger-scanner": {
         "task": "app.tasks.autonomous_tasks.pipeline_automation_trigger_scanner",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=37),  # cada hora, en el minuto 37
     },
     # === Synthetic Monitoring Tasks ===
     "synthetic-checks": {
@@ -378,63 +379,63 @@ celery_app.conf.beat_schedule = {
     # === Churn Shield Tasks ===
     "churn-shield-analysis": {
         "task": "app.tasks.consumo_tasks.churn_shield_analysis_task",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=40, hour=3),  # todos los días 03:40
     },
     # === Support Auto-Resolution Tasks ===
     "auto-resolve-tickets": {
         "task": "app.tasks.support_tasks.auto_resolve_tickets_task",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=43, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "generate-support-stats": {
         "task": "app.tasks.support_tasks.generate_support_stats_task",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=45, hour=5),  # todos los días 05:45
     },
     # === Finance Autopilot Tasks ===
     "finance-auto-deliver": {
         "task": "app.tasks.finance_tasks.auto_deliver_invoices",
-        "schedule": 86400.0,  # cada 24 horas (8 AM)
+        "schedule": crontab(minute=0, hour=8),  # todos los días 08:00
     },
     "finance-dunning": {
         "task": "app.tasks.finance_tasks.dunning_sequence",
-        "schedule": 86400.0,  # cada 24 horas (9 AM)
+        "schedule": crontab(minute=0, hour=9),  # todos los días 09:00
     },
     "finance-cash-flow": {
         "task": "app.tasks.finance_tasks.cash_flow_forecast",
-        "schedule": 86400.0,  # cada 24 horas (6 AM)
+        "schedule": crontab(minute=0, hour=6),  # todos los días 06:00
     },
     "finance-reconcile": {
         "task": "app.tasks.finance_tasks.auto_reconcile_payments",
-        "schedule": 7200.0,  # cada 2 horas
+        "schedule": crontab(minute=15, hour="*/2"),  # cada 2 horas
     },
     "ledger-bank-reconciliation": {
         "task": "app.tasks.finance_tasks.ledger_bank_reconciliation",
-        "schedule": 10800.0,  # cada 3 horas
+        "schedule": crontab(minute=20, hour="*/3"),  # cada 3 horas
     },
     "ledger-month-close": {
         "task": "app.tasks.finance_tasks.ledger_month_close",
-        "schedule": 86400.0,  # diario; el task no-opera salvo período ya cerrado
+        "schedule": crontab(minute=15, hour=4),  # todos los días 04:15
     },
     "ad-budget-cycles": {
         "task": "app.tasks.ad_budget_tasks.run_budget_cycles",
-        "schedule": 86400.0,  # diario: reasigna presupuesto por ROAS
+        "schedule": crontab(minute=0, hour=4),  # todos los días 04:00
     },
     "forecasting-nightly": {
         "task": "app.tasks.forecasting_tasks.nightly_forecasts",
-        "schedule": 86400.0,  # diario: reentrena + pronostica demanda
+        "schedule": crontab(minute=0, hour=2),  # todos los días 02:00
     },
     "forecasting-accuracy-weekly": {
         "task": "app.tasks.forecasting_tasks.weekly_accuracy_eval",
-        "schedule": 604800.0,  # semanal: evalúa error realizado
+        "schedule": crontab(minute=30, hour=5, day_of_week="sun"),  # semanal: dom 05:30
     },
     # === Brand Transformation Automations ===
     "brand-transformation-automations": {
         "task": "app.tasks.brand_transformation_tasks.run_due_brand_automations",
-        "schedule": 3600.0,  # cada 1 hora; cada automation corre según su propia cadencia
+        "schedule": crontab(minute=42),  # cada hora, en el minuto 42
     },
     # === Memory & Summarization ===
     "summarize-conversations-hourly": {
         "task": "app.domains.memory.tasks.summarize_conversation_task",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=47),  # cada hora, en el minuto 47
     },
     # === Proactive Outreach Engine ===
     "detect-opportunities": {
@@ -444,7 +445,7 @@ celery_app.conf.beat_schedule = {
     # === Deal Scoring ===
     "update-deal-scores": {
         "task": "app.domains.agents.tasks_scoring.update_deal_scores_task",
-        "schedule": 3600.0,  # cada 1 hora
+        "schedule": crontab(minute=52),  # cada hora, en el minuto 52
     },
     # ═══════════════════════════════════════════════
     # === 4-Pillar Autonomous Computing System ===
@@ -462,12 +463,12 @@ celery_app.conf.beat_schedule = {
     # Optimización profunda + A/B tests
     "deep-system-optimization": {
         "task": "app.tasks.autonomous_tasks.deep_system_optimization",
-        "schedule": 86400.0,  # cada 24 horas
+        "schedule": crontab(minute=30, hour=2),  # todos los días 02:30
     },
     # Reporte ejecutivo semanal al dueño
     "weekly-executive-report": {
         "task": "app.tasks.autonomous_tasks.weekly_executive_report",
-        "schedule": 604800.0,  # cada 7 días (lunes 8 AM)
+        "schedule": crontab(minute=0, hour=8, day_of_week="mon"),  # semanal: lun 08:00
     },
     # === Auto-Responder Pilot Agent ===
     "auto-responder-check": {
@@ -477,49 +478,49 @@ celery_app.conf.beat_schedule = {
     # === Sales Funnel Automation (Fases 11-12) ===
     "send-follow-ups": {
         "task": "app.tasks.sales_funnel_tasks.send_follow_ups",
-        "schedule": 259200.0,  # cada 3 días
+        "schedule": crontab(minute=0, hour=10, day_of_week="mon,thu"),  # lunes y jueves 10:00 (cada 3-4 días)
     },
     "send-upsell-campaigns": {
         "task": "app.tasks.sales_funnel_tasks.send_upsell_campaigns",
-        "schedule": 604800.0,  # cada 7 días
+        "schedule": crontab(minute=0, hour=10, day_of_week="wed"),  # semanal: mié 10:00
     },
     "send-winback-campaigns": {
         "task": "app.tasks.sales_funnel_tasks.send_winback_campaigns",
-        "schedule": 1209600.0,  # cada 14 días
+        "schedule": crontab(minute=0, hour=11, day_of_month="1,15"),  # días 1 y 15 de cada mes 11:00 (~cada 14 días)
     },
     "daily-growth-cycle": {
         "task": "app.tasks.sales_funnel_tasks.daily_growth_cycle",
-        "schedule": 86400.0,  # cada 24 horas (6 AM UTC)
+        "schedule": crontab(minute=0, hour=3),  # todos los días 03:00
         "args": ({"name": "SellIA Pro", "price": 499, "niche": "sales"},),
     },
     # === SEO Config Analytics & FOMO ===
     "fetch-nightly-analytics": {
         "task": "seo_config.fetch_nightly_analytics",
-        "schedule": 86400.0,  # cada 24 horas (noche)
+        "schedule": crontab(minute=0, hour=1),  # todos los días 01:00
     },
     "generate-fomo-cadence": {
         "task": "seo_config.generate_fomo_cadence",
-        "schedule": 21600.0,  # cada 6 horas
+        "schedule": crontab(minute=49, hour="*/6"),  # cada 6 horas (00, 06, 12, 18)
     },
     "compute-analytics-summaries": {
         "task": "seo_config.compute_analytics_summaries",
-        "schedule": 604800.0,  # cada 7 días (análisis semanal)
+        "schedule": crontab(minute=0, hour=6, day_of_week="sun"),  # semanal: dom 06:00
     },
     "check-ab-test-winners": {
         "task": "seo_config.check_ab_test_winners",
-        "schedule": 3600.0,  # cada 1 hora (detecta ganadores rápido)
+        "schedule": crontab(minute=57),  # cada hora, en el minuto 57
     },
     "monitor-fomo-decay": {
         "task": "seo_config.monitor_fomo_decay",
-        "schedule": 86400.0,  # cada 24 horas (monitorea decay diario)
+        "schedule": crontab(minute=30, hour=1),  # todos los días 01:30
     },
     "compute-positioning-scores": {
         "task": "seo_config.compute_positioning_scores",
-        "schedule": 86400.0,  # cada 24 horas, mismo cadence que fetch-nightly-analytics
+        "schedule": crontab(minute=10, hour=1),  # todos los días 01:10
     },
     "compute-store-positioning-scores": {
         "task": "seo_config.compute_store_positioning_scores",
-        "schedule": 86400.0,  # cada 24 horas, posicionamiento a nivel tienda (Amazon Brand Store)
+        "schedule": crontab(minute=20, hour=1),  # todos los días 01:20
     },
 }
 
