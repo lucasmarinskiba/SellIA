@@ -439,31 +439,43 @@ class SelfRepairEngine:
             fault.repair_log.append(f"Error al reconectar canal: {e}")
             return False
 
+    #: A persistent fault is detected again on every cycle (and ``_active_faults`` is per instance,
+    #: rebuilt on every Celery run), so without this the owner would get the same alert each time.
+    FAULT_ALERT_REPEAT_AFTER = timedelta(hours=6)
+
     async def _notify_owner_of_fault(
         self, fault: FaultReport, business_id: Optional[uuid.UUID]
     ) -> None:
-        """Notifica al dueño del negocio sobre una falla que requiere atención."""
+        """Notifica al dueño del negocio sobre una falla que requiere atención.
+
+        This never created an alert: it used ``AlertSeverity.HIGH/MEDIUM/LOW`` (the enum has
+        INFO/WARNING/CRITICAL) and ``Alert(message=, is_read=)`` (the columns are
+        ``description`` / ``status``), and the blanket ``except`` hid it. Built through
+        app/domains/alerts/factory.py now, at most once per fault type every 6 hours.
+        """
         try:
             if not business_id:
                 return
 
-            from app.domains.alerts.models import Alert, AlertSeverity
-            severity_map = {
-                "critical": AlertSeverity.CRITICAL,
-                "high": AlertSeverity.HIGH,
-                "medium": AlertSeverity.MEDIUM,
-                "low": AlertSeverity.LOW,
-            }
+            from app.domains.alerts.factory import alert_sent_recently, build_alert
 
-            alert = Alert(
-                business_id=business_id,
-                title=f"🔧 [Auto-Repair] Falla escalada: {fault.fault_type}",
-                message=f"{fault.description}\n\nIntentos de reparación: {fault.repair_attempts}/{self.MAX_REPAIR_ATTEMPTS}\nSe requiere intervención manual.",
-                severity=severity_map.get(fault.severity, AlertSeverity.MEDIUM),
-                is_read=False,
-                created_at=datetime.now(timezone.utc),
+            if await alert_sent_recently(
+                self.db, business_id, "self_repair_fault", self.FAULT_ALERT_REPEAT_AFTER,
+                dedupe_key=fault.fault_type,
+            ):
+                return
+
+            alert = build_alert(
+                business_id,
+                f"🔧 [Auto-Repair] Falla escalada: {fault.fault_type}",
+                f"{fault.description}\n\nIntentos de reparación: {fault.repair_attempts}/{self.MAX_REPAIR_ATTEMPTS}\nSe requiere intervención manual.",
+                kind="self_repair_fault",
+                level=fault.severity,
+                dedupe_key=fault.fault_type,
             )
-            self.db.add(alert)
+            # SAVEPOINT: a failed insert must not leave the shared session's transaction aborted.
+            async with self.db.begin_nested():
+                self.db.add(alert)
             await self.db.commit()
             logger.info(f"[SelfRepair] Alerta de falla enviada al dueño: {fault.fault_type}")
         except Exception as e:
