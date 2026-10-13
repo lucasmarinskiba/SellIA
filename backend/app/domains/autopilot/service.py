@@ -366,6 +366,7 @@ class AutopilotExecutor:
         from app.domains.automations.engine import WorkflowEngine
         from app.domains.crm.models import Deal, Pipeline
         from app.domains.channels.models import Conversation
+        from app.domains.channels.handoff import mark_awaiting_human
         from app.domains.agents.ai_reply import generate_ai_response
 
         payload = recommendation.action_payload or {}
@@ -425,7 +426,7 @@ class AutopilotExecutor:
                 )
                 conv = conv_result.scalar_one_or_none()
                 if conv:
-                    conv.awaiting_human = True
+                    mark_awaiting_human(conv, "Escalado por el autopilot")
                     conv.updated_at = datetime.now(timezone.utc)
                     await self.db.commit()
             return True

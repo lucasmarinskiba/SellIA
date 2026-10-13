@@ -382,6 +382,37 @@ class AutonomousOperationsCenter:
     # REPORTES Y ALERTAS AL DUEÑO
     # ─────────────────────────────────────────────
 
+    def _build_health_alert(
+        self,
+        business_id: uuid.UUID,
+        snapshot: SystemHealthSnapshot,
+        health_emoji: str,
+        report_text: str,
+    ):
+        """The Alert row for a health report.
+
+        ``AlertSeverity`` has INFO / WARNING / CRITICAL only; this used to reach for
+        ``HIGH`` and ``LOW``, which do not exist, so building the alert raised
+        ``AttributeError: LOW`` ("[AOC] Error enviando reporte de salud: LOW"). ``Alert`` also
+        has ``description`` and ``status``, not ``message`` / ``is_read``.
+        """
+        from app.domains.alerts.models import Alert, AlertSeverity
+
+        score = snapshot.overall_health_score
+        if score < self.ALERT_THRESHOLDS["health_score_critical"]:
+            severity = AlertSeverity.CRITICAL
+        elif score < self.ALERT_THRESHOLDS["health_score_warning"]:
+            severity = AlertSeverity.WARNING
+        else:
+            severity = AlertSeverity.INFO
+        return Alert(
+            business_id=business_id,
+            title=f"{health_emoji} Reporte de Salud SellIA — Score: {score}/100",
+            description=report_text,
+            severity=severity,
+            created_at=snapshot.timestamp,
+        )
+
     async def _send_health_report(
         self,
         snapshot: SystemHealthSnapshot,
@@ -421,20 +452,7 @@ class AutonomousOperationsCenter:
         report_text = "\n".join(report_lines)
 
         try:
-            from app.domains.alerts.models import Alert, AlertSeverity
-            severity = (
-                AlertSeverity.CRITICAL if snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_critical"]
-                else AlertSeverity.HIGH if snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_warning"]
-                else AlertSeverity.LOW
-            )
-            alert = Alert(
-                business_id=business_id,
-                title=f"{health_emoji} Reporte de Salud SellIA — Score: {snapshot.overall_health_score}/100",
-                message=report_text,
-                severity=severity,
-                is_read=False,
-                created_at=snapshot.timestamp,
-            )
+            alert = self._build_health_alert(business_id, snapshot, health_emoji, report_text)
             self.db.add(alert)
             await self.db.commit()
             logger.info(f"[AOC] Reporte de salud enviado. Score: {snapshot.overall_health_score}/100")

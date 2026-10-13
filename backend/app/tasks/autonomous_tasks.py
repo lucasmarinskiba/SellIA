@@ -126,23 +126,34 @@ def briefing_delivery():
     return run_async(_run())
 
 
+async def _conversations_awaiting_human(db, since: datetime, limit: int = 50):
+    """Conversations flagged for a human and touched since ``since``.
+
+    ``awaiting_human`` is a key of ``Conversation.extra_data``, not a column (see
+    app/domains/channels/handoff.py): filtering on ``Conversation.awaiting_human``
+    raised AttributeError on every run of the alert task.
+    """
+    from app.domains.channels.handoff import awaiting_human_clause
+    from app.domains.channels.models import Conversation
+
+    result = await db.execute(
+        select(Conversation)
+        .where(awaiting_human_clause(), Conversation.updated_at >= since)
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
 @shared_task(name="app.tasks.autonomous_tasks.handoff_alert_sender")
 def handoff_alert_sender():
     """Every 5 min: send handoff alerts to human agents."""
     async def _run():
         async with AsyncSessionLocal() as db:
             service = HandoffAlertService(db)
-            from app.domains.channels.models import Conversation
 
             # Find recent handoffs (conversations awaiting human in last 5 min)
             since = datetime.now(timezone.utc) - timedelta(minutes=5)
-            result = await db.execute(
-                select(Conversation).where(
-                    Conversation.awaiting_human == True,
-                    Conversation.updated_at >= since,
-                ).limit(50)
-            )
-            conversations = result.scalars().all()
+            conversations = await _conversations_awaiting_human(db, since)
 
             sent = 0
             for conv in conversations:
