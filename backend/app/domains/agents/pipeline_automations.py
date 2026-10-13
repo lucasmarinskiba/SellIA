@@ -7,6 +7,7 @@ entre múltiples agentes. El sistema opera 24/7 sin intervención humana.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import uuid
 from typing import Any, Optional, Callable, Awaitable
 from dataclasses import dataclass, field
@@ -860,19 +861,39 @@ class PipelineAutomationEngine:
             logger.error(f"[PipelineAuto] Stage advance error: {e}")
             return {"status": "error", "error": str(e)}
 
+    #: The same pipeline condition is evaluated on every run; one alert per distinct message per hour.
+    OWNER_ALERT_REPEAT_AFTER = timedelta(hours=1)
+
     async def _send_owner_alert(self, action: dict, business_id: str) -> dict:
-        """Envía alerta al dueño del negocio."""
+        """Envía alerta al dueño del negocio.
+
+        Built with ``AlertSeverity.HIGH/MEDIUM`` (the enum has INFO/WARNING/CRITICAL) and
+        ``Alert(message=, is_read=)`` (the columns are ``description`` / ``status``), so it never
+        created one. See app/domains/alerts/factory.py.
+        """
         try:
-            from app.domains.alerts.models import Alert, AlertSeverity
-            alert = Alert(
-                business_id=uuid.UUID(business_id),
-                title=f"[SellIA Auto] {action.get('message', 'Alerta del pipeline')}",
-                message=action.get("message", ""),
-                severity=AlertSeverity.HIGH if action.get("priority") in ("critical", "high") else AlertSeverity.MEDIUM,
-                is_read=False,
-                created_at=datetime.now(timezone.utc),
+            from app.domains.alerts.factory import alert_sent_recently, build_alert
+
+            biz_id = uuid.UUID(business_id)
+            message = action.get("message", "")
+            dedupe_key = hashlib.sha1(message.encode("utf-8")).hexdigest()[:16]
+            if await alert_sent_recently(
+                self.db, biz_id, "pipeline_owner_alert", self.OWNER_ALERT_REPEAT_AFTER,
+                dedupe_key=dedupe_key,
+            ):
+                return {"status": "alert_suppressed", "reason": "already sent recently"}
+
+            alert = build_alert(
+                biz_id,
+                f"[SellIA Auto] {action.get('message', 'Alerta del pipeline')}",
+                message,
+                kind="pipeline_owner_alert",
+                level="high" if action.get("priority") in ("critical", "high") else "medium",
+                dedupe_key=dedupe_key,
             )
-            self.db.add(alert)
+            # SAVEPOINT: a failed insert must not leave the shared session's transaction aborted.
+            async with self.db.begin_nested():
+                self.db.add(alert)
             await self.db.commit()
             return {"status": "alert_created"}
         except Exception as e:

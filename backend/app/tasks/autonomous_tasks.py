@@ -447,6 +447,84 @@ def emergency_security_scan(self, business_id: str | None = None, reason: str = 
     return run_async(_run())
 
 
+WEEKLY_REPORT_KIND = "weekly_executive_report"
+
+
+async def _weekly_report_for(db, center, biz_id, biz_name: str, now: datetime) -> bool:
+    """Create the weekly executive-report alert for one business. True if one was created.
+
+    Three things were wrong here, all invisible while no alert could be built at all:
+
+    * ``AlertSeverity.LOW`` and ``Alert(message=, is_read=)`` do not exist (see
+      app/domains/alerts/factory.py);
+    * "weekly" is not weekly: ``celerybeat-schedule`` is committed, so beat starts with an
+      old last-run time and fires every periodic task on each deploy. The cadence is checked
+      against the alerts table, and before any query or LLM call, since the LLM call is the
+      expensive part and ran for every business on every deploy;
+    * the message count was not scoped to the business (``Message`` has no business_id), so
+      every owner's report showed the platform-wide total.
+    """
+    from sqlalchemy import and_, func, select
+
+    from app.domains.agents.ai_reply import generate_raw_ai_response
+    from app.domains.alerts.factory import alert_sent_recently, build_alert
+    from app.domains.channels.models import Conversation, Message
+    from app.domains.crm.models import Deal
+
+    if await alert_sent_recently(db, biz_id, WEEKLY_REPORT_KIND, timedelta(days=6)):
+        return False
+
+    week_ago = now - timedelta(days=7)
+    msg_q = await db.execute(
+        select(func.count(Message.id))
+        .join(Conversation, Conversation.id == Message.conversation_id)
+        .where(Conversation.business_id == biz_id, Message.created_at >= week_ago)
+    )
+    deals_q = await db.execute(
+        select(func.count(Deal.id)).where(and_(Deal.created_at >= week_ago, Deal.business_id == biz_id))
+    )
+    health = await center.run_quick_health_check(biz_id)
+
+    ctx = (
+        f"Negocio: {biz_name}\n"
+        f"Mensajes procesados esta semana: {msg_q.scalar() or 0}\n"
+        f"Nuevos deals: {deals_q.scalar() or 0}\n"
+        f"Health score: {health.get('health_score', 100)}/100\n"
+        f"Estado: {health.get('load_state', 'normal')}\n"
+    )
+    briefing = await generate_raw_ai_response(
+        db=db,
+        business_id=biz_id,
+        system_prompt=(
+            "Eres el Director Ejecutivo de SellIA. "
+            "Genera un reporte ejecutivo semanal conciso y accionable. "
+            "Formato: resumen ejecutivo (2 líneas), 3 logros, 3 áreas de mejora, "
+            "1 foco para la próxima semana. Usa emojis. Máximo 400 palabras."
+        ),
+        user_prompt=ctx,
+        max_tokens=600,
+        temperature=0.6,
+    )
+    if not briefing:
+        # The LLM did not answer (no credits, provider down). The old fallback sent the bare
+        # context lines as the "executive report", which now would also use up this week's slot
+        # (see the cadence check above) so the real report would not arrive even once the LLM is
+        # back. Skip; the next run retries.
+        logger.warning(f"[WeeklyReport] Sin respuesta de la IA para {biz_id}; se reintentará en la próxima ejecución")
+        return False
+    alert = build_alert(
+        biz_id,
+        f"📊 Reporte Ejecutivo Semanal — {now.strftime('%d/%m/%Y')}",
+        briefing,
+        kind=WEEKLY_REPORT_KIND,
+        level="low",
+        created_at=now,
+    )
+    db.add(alert)
+    await db.commit()
+    return True
+
+
 @shared_task(name="app.tasks.autonomous_tasks.weekly_executive_report")
 def weekly_executive_report(business_id: str | None = None):
     """
@@ -456,78 +534,33 @@ def weekly_executive_report(business_id: str | None = None):
     """
     async def _run():
         async with AsyncSessionLocal() as db:
+            from uuid import UUID
+
+            from sqlalchemy import select
+
             from app.domains.agents.autonomous.operations_center import get_operations_center
             from app.domains.businesses.models import Business
-            from app.domains.agents.ai_reply import generate_raw_ai_response
-            from app.domains.alerts.models import Alert, AlertSeverity
-            from sqlalchemy import select, func, and_
-            from uuid import UUID
 
             center = get_operations_center(db)
             now = datetime.now(timezone.utc)
-            week_ago = now - timedelta(days=7)
-
-            async def _report_for(biz_id: UUID, biz_name: str):
-                try:
-                    from app.domains.channels.models import Message
-                    from app.domains.crm.models import Deal
-
-                    msg_q = await db.execute(
-                        select(func.count(Message.id)).where(Message.created_at >= week_ago)
-                    )
-                    deals_q = await db.execute(
-                        select(func.count(Deal.id)).where(
-                            and_(Deal.created_at >= week_ago, Deal.business_id == biz_id)
-                        )
-                    )
-                    health = await center.run_quick_health_check(biz_id)
-
-                    ctx = (
-                        f"Negocio: {biz_name}\n"
-                        f"Mensajes procesados esta semana: {msg_q.scalar() or 0}\n"
-                        f"Nuevos deals: {deals_q.scalar() or 0}\n"
-                        f"Health score: {health.get('health_score', 100)}/100\n"
-                        f"Estado: {health.get('load_state', 'normal')}\n"
-                    )
-                    briefing = await generate_raw_ai_response(
-                        db=db,
-                        business_id=biz_id,
-                        system_prompt=(
-                            "Eres el Director Ejecutivo de SellIA. "
-                            "Genera un reporte ejecutivo semanal conciso y accionable. "
-                            "Formato: resumen ejecutivo (2 líneas), 3 logros, 3 áreas de mejora, "
-                            "1 foco para la próxima semana. Usa emojis. Máximo 400 palabras."
-                        ),
-                        user_prompt=ctx,
-                        max_tokens=600,
-                        temperature=0.6,
-                    )
-                    alert = Alert(
-                        business_id=biz_id,
-                        title=f"📊 Reporte Ejecutivo Semanal — {now.strftime('%d/%m/%Y')}",
-                        message=briefing or ctx,
-                        severity=AlertSeverity.LOW,
-                        is_read=False,
-                        created_at=now,
-                    )
-                    db.add(alert)
-                    await db.commit()
-                    logger.info(f"[WeeklyReport] Reporte enviado para {biz_name}")
-                except Exception as e:
-                    logger.error(f"[WeeklyReport] Error {biz_id}: {e}")
 
             if business_id:
-                biz_r = await db.execute(
-                    select(Business).where(Business.id == UUID(business_id))
-                )
+                biz_r = await db.execute(select(Business).where(Business.id == UUID(business_id)))
                 biz = biz_r.scalar_one_or_none()
-                if biz:
-                    await _report_for(biz.id, biz.name)
+                targets = [(biz.id, biz.name)] if biz else []
             else:
                 biz_r = await db.execute(select(Business).where(Business.is_active == True))
-                businesses = biz_r.scalars().all()
-                for biz in businesses:
-                    await _report_for(biz.id, biz.name)
-                logger.info(f"[WeeklyReport] {len(businesses)} reportes generados")
+                # plain tuples: a rollback below expires ORM instances, and the loop reads these
+                targets = [(b.id, b.name) for b in biz_r.scalars().all()]
+
+            created = 0
+            for biz_id, biz_name in targets:
+                try:
+                    if await _weekly_report_for(db, center, biz_id, biz_name, now):
+                        created += 1
+                except Exception as e:
+                    logger.error(f"[WeeklyReport] Error {biz_id}: {e}")
+                    await db.rollback()  # else this failure aborts the transaction for every later business
+            logger.info(f"[WeeklyReport] {created} reportes creados para {len(targets)} negocios")
 
     return run_async(_run())
