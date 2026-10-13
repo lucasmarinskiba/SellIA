@@ -4,12 +4,12 @@ Consumo Celery Tasks
 Periodic tasks for Predictive Churn Shield and onboarding progress updates.
 """
 
-import asyncio
 from celery import shared_task
 
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.consumo.service import run_churn_analysis
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -21,4 +21,4 @@ def churn_shield_analysis_task():
         async with AsyncSessionLocal() as db:
             signals = await run_churn_analysis(db)
             logger.info(f"Churn Shield: {len(signals)} risk signals detected")
-    asyncio.run(_run())
+    run_async(_run())

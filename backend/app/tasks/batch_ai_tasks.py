@@ -19,6 +19,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.provisioning import service as provisioning_service
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -26,8 +27,7 @@ logger = get_logger(__name__)
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
 def process_batch_generation(self, batch_job_id: str):
     """Process a batch of AI generation tasks in a single LLM call."""
-    import asyncio
-    asyncio.run(_process_batch_async(self, batch_job_id))
+    run_async(_process_batch_async(self, batch_job_id))
 
 
 async def _process_batch_async(task_self, batch_job_id: str):

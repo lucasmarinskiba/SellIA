@@ -4,13 +4,13 @@ Tareas de Celery para gestión de suscripciones, pagos crypto,
 recordatorios de renovación, alerts de uso, y downgrade automático.
 """
 
-import asyncio
 from datetime import datetime, timezone, timedelta
 from celery import shared_task
 
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from sqlalchemy import select, func
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -85,7 +85,7 @@ def check_expiring_subscriptions():
 
             await db.commit()
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 @shared_task
@@ -149,7 +149,7 @@ def process_crypto_pending_payments():
                 except Exception as e:
                     logger.error(f"Error checking crypto tx {tx.id}: {e}")
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 @shared_task
@@ -176,7 +176,7 @@ def cleanup_expired_crypto_payments():
 
             await db.commit()
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 @shared_task
@@ -242,7 +242,7 @@ def check_usage_alerts():
 
             await db.commit()
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 @shared_task
@@ -292,7 +292,7 @@ def generate_recurring_invoices():
                 except Exception as e:
                     logger.error(f"Error generando invoice para {user.id}: {e}")
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 
@@ -333,7 +333,7 @@ def send_transfer_reminders():
                 await send_email(user.email, subject, html, text)
                 logger.info(f"Reminder enviado: orden {order.order_number}, usuario {user.id}")
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 @shared_task
@@ -369,7 +369,7 @@ def expire_pending_transfers():
 
             await db.commit()
 
-    asyncio.run(_run())
+    run_async(_run())
 
 
 
@@ -430,4 +430,4 @@ def sync_mercadopago_preapprovals():
                 except Exception as e:
                     logger.error(f"Error sync preapproval {sub.mercadopago_preapproval_id}: {e}")
 
-    asyncio.run(_run())
+    run_async(_run())
