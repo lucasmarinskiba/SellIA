@@ -97,7 +97,7 @@ class Conversation(Base):
     last_message_at = Column(DateTime(timezone=True), nullable=True)
     last_followup_sent_at = Column(DateTime(timezone=True), nullable=True)  # cold-lead nudge dedup (Task 5)
     followup_count = Column(Integer, default=0, nullable=False)  # caps nudges per conversation
-    extra_data = Column(JSONB, default=dict, nullable=False)
+    extra_data = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
