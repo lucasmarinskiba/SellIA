@@ -8,7 +8,7 @@ import re
 import secrets
 from datetime import datetime, timezone, timedelta
 from celery import shared_task
-from sqlalchemy import select, text, func
+from sqlalchemy import String, cast, func, select, text
 
 from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
@@ -246,22 +246,43 @@ def data_retention_cleanup():
 # Webhook Token Rotation
 # ---------------------------------------------------------------------------
 
+WEBHOOK_TOKEN_MAX_AGE = timedelta(days=90)
+
+
+async def _channels_due_for_rotation(db, now: datetime) -> list[ChannelConnection]:
+    """Active channels whose webhook token is older than 90 days.
+
+    The age of a token is the time since its last successful rotation (``secret_rotation_logs``),
+    or since the channel was created if it was never rotated. It used to be the channel's
+    ``created_at`` alone, so once a channel was 90 days old EVERY run rotated it again, and each
+    rotation invalidates the webhook URL configured on the external platform.
+    """
+    last_rotation = (
+        select(
+            SecretRotationLog.target_id.label("target_id"),
+            func.max(SecretRotationLog.created_at).label("last_rotated_at"),
+        )
+        .where(SecretRotationLog.secret_type == "webhook_token", SecretRotationLog.status == "success")
+        .group_by(SecretRotationLog.target_id)
+        .subquery()
+    )
+    token_set_at = func.coalesce(last_rotation.c.last_rotated_at, ChannelConnection.created_at)
+    result = await db.execute(
+        select(ChannelConnection)
+        .outerjoin(last_rotation, last_rotation.c.target_id == cast(ChannelConnection.id, String))
+        .where(ChannelConnection.is_active.is_(True), token_set_at < now - WEBHOOK_TOKEN_MAX_AGE)
+    )
+    return list(result.scalars().all())
+
+
 @shared_task(name="app.tasks.security_tasks.rotate_webhook_tokens")
 def rotate_webhook_tokens():
-    """Rotate webhook tokens for active channels older than 90 days."""
+    """Rotate webhook tokens that were set more than 90 days ago (see ``_channels_due_for_rotation``)."""
 
     async def _run():
         async with AsyncSessionLocal() as db:
             now = datetime.now(timezone.utc)
-            cutoff = now - timedelta(days=90)
-
-            result = await db.execute(
-                select(ChannelConnection).where(
-                    ChannelConnection.created_at < cutoff,
-                    ChannelConnection.is_active == True,
-                )
-            )
-            channels = result.scalars().all()
+            channels = await _channels_due_for_rotation(db, now)
             rotated = 0
             errors = 0
 
