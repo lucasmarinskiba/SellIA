@@ -98,12 +98,15 @@ class ProactiveEngine:
         try:
             from sqlalchemy import select
             from app.domains.business_context.models import BusinessContext
-            result = await self.db.execute(
-                select(BusinessContext.business_type).where(
-                    BusinessContext.business_id == business_id,
-                    BusinessContext.is_active == True,
+            # SAVEPOINT: this lookup swallows its own failure, and a failed statement
+            # would otherwise leave the shared transaction aborted for everything after it.
+            async with self.db.begin_nested():
+                result = await self.db.execute(
+                    select(BusinessContext.business_type).where(
+                        BusinessContext.business_id == business_id,
+                        BusinessContext.is_active == True,
+                    )
                 )
-            )
             btype = result.scalar_one_or_none()
             return btype.value if btype else None
         except Exception as exc:
@@ -157,7 +160,14 @@ class ProactiveEngine:
                     continue
 
             try:
-                detected = await detector(business_id, rules_by_type)
+                # Each detector runs in its own SAVEPOINT. They all share this session's
+                # transaction, and a failed SQL statement aborts it: without the savepoint
+                # one detector's error (e.g. a missing table) made every detector after it,
+                # and every business after that in the same run, fail with
+                # InFailedSQLTransactionError. A plain rollback() would not do: it expires
+                # `rules_by_type`'s ORM objects, which the next detectors read.
+                async with self.db.begin_nested():
+                    detected = await detector(business_id, rules_by_type)
                 opportunities.extend(detected)
             except Exception as e:
                 logger.exception(f"Detector {detector.__name__} failed for business {business_id}: {e}")
