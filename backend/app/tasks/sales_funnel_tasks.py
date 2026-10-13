@@ -4,17 +4,17 @@ Ejecuta fases en background con retry automático + scheduling.
 
 NOTE: every task body below is async internally (they call async services),
 but Celery's default worker calls tasks synchronously. Each task wraps its
-logic in an inner `async def _run(): ...` invoked via `asyncio.run(...)` —
+logic in an inner `async def _run(): ...` invoked via `run_async(...)` (app.core.async_bridge) —
 this file previously used bare `await` inside plain `def` task functions,
 which is a SyntaxError and silently prevented the entire module (and every
 task in it) from being registered at all.
 """
 
-import asyncio
 import logging
 from celery import shared_task
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from app.core.async_bridge import run_async
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str,
         }
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error importing leads: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -110,7 +110,7 @@ def send_outreach_batch(
         }
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in outreach: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -233,7 +233,7 @@ def send_follow_ups(self) -> Dict[str, Any]:
         return {"status": "success", "followups_sent": sent, "skipped": skipped}
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in follow-ups: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -269,7 +269,7 @@ def send_welcome_sequences(
         return {"status": "success", "sent": sent}
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in welcome sequences: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -311,7 +311,7 @@ def send_upsell_campaigns(self) -> Dict[str, Any]:
         return {"status": "success", "upsells_sent": sent}
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in upsells: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -338,7 +338,7 @@ def send_winback_campaigns(self) -> Dict[str, Any]:
         return {"status": "success", **stats}
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in win-back: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
@@ -366,7 +366,7 @@ def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
         return result
 
     try:
-        return asyncio.run(_run())
+        return run_async(_run())
     except Exception as exc:
         logger.error(f"Error in growth cycle: {exc}")
         raise self.retry(exc=exc, countdown=3600)  # Retry en 1 hora

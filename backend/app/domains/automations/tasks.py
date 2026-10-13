@@ -17,6 +17,7 @@ from app.domains.automations.models import (
     ToggleNotificationLog,
     ToggleNotificationEventType,
 )
+from app.core.async_bridge import run_async
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -110,15 +111,7 @@ async def send_toggle_notification(
 @shared_task(bind=True, max_retries=3)
 def execute_toggle_schedules(self):
     """Celery task: Execute scheduled toggles that are due."""
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    return loop.run_until_complete(_execute_schedules())
+    return run_async(_execute_schedules())
 
 
 async def _execute_schedules():
