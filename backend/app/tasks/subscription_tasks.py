@@ -179,68 +179,87 @@ def cleanup_expired_crypto_payments():
     run_async(_run())
 
 
+def _usage_limit(value):
+    """The numeric limit of a plan entry, or None when usage cannot exceed it.
+
+    ``SubscriptionPlan.limits`` mixes quotas with other settings: counts and decimals
+    (``conversations_per_month``, ``content_daily_budget_usd``), booleans
+    (``multi_business``) and text (``content_max_image_resolution: "1024x1024"``). The
+    task compared every entry with ``<= 0``, so the text one raised ``TypeError`` on every
+    run and no usage alert was ever created; a ``True`` would also have counted as a limit
+    of 1. Only real numbers qualify; ``-1`` means unlimited and ``0`` not included.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if value > 0 else None
+
+
+async def _check_usage_alerts(db) -> None:
+    from app.domains.subscriptions.models import (
+        Subscription, SubscriptionPlan, UsageTracking, UsageAlert, SubscriptionStatus,
+    )
+    from app.domains.users.models import User
+
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+
+    result = await db.execute(
+        select(Subscription, SubscriptionPlan, User)
+        .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
+        .join(User)
+        .where(Subscription.status == SubscriptionStatus.ACTIVE)
+    )
+
+    for sub, plan, user in result.all():
+        limits = plan.limits or {}
+
+        for metric, raw_limit in limits.items():
+            limit = _usage_limit(raw_limit)
+            if limit is None:
+                continue
+
+            # Get usage
+            usage_result = await db.execute(
+                select(func.coalesce(func.sum(UsageTracking.quantity), 0))
+                .where(
+                    UsageTracking.user_id == user.id,
+                    UsageTracking.metric_type == metric,
+                    UsageTracking.period_month == current_month,
+                )
+            )
+            used = usage_result.scalar() or 0
+            percent = (used / limit) * 100
+
+            for threshold in [80, 100]:
+                if percent >= threshold:
+                    # Check if alert already sent
+                    existing = await db.execute(
+                        select(UsageAlert)
+                        .where(
+                            UsageAlert.user_id == user.id,
+                            UsageAlert.metric_type == metric,
+                            UsageAlert.threshold_percent == threshold,
+                            UsageAlert.sent_at >= datetime.now(timezone.utc) - timedelta(days=7),
+                        )
+                    )
+                    if not existing.scalar_one_or_none():
+                        alert = UsageAlert(
+                            user_id=user.id,
+                            metric_type=metric,
+                            threshold_percent=threshold,
+                        )
+                        db.add(alert)
+                        logger.info(f"Usage alert {threshold}%: {metric} para usuario {user.id}")
+                        # TODO: Enviar email/push
+
+    await db.commit()
+
+
 @shared_task
 def check_usage_alerts():
     """Verifica uso de suscripciones y envía alerts al 80% y 100%."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import (
-                Subscription, SubscriptionPlan, UsageTracking, UsageAlert, SubscriptionStatus,
-            )
-            from app.domains.users.models import User
-            from sqlalchemy import func
-
-            current_month = datetime.now(timezone.utc).strftime("%Y-%m")
-
-            result = await db.execute(
-                select(Subscription, SubscriptionPlan, User)
-                .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
-                .join(User)
-                .where(Subscription.status == SubscriptionStatus.ACTIVE)
-            )
-
-            for sub, plan, user in result.all():
-                limits = plan.limits or {}
-
-                for metric, limit in limits.items():
-                    if limit <= 0 or limit == -1:
-                        continue
-
-                    # Get usage
-                    usage_result = await db.execute(
-                        select(func.coalesce(func.sum(UsageTracking.quantity), 0))
-                        .where(
-                            UsageTracking.user_id == user.id,
-                            UsageTracking.metric_type == metric,
-                            UsageTracking.period_month == current_month,
-                        )
-                    )
-                    used = usage_result.scalar() or 0
-                    percent = (used / limit) * 100
-
-                    for threshold in [80, 100]:
-                        if percent >= threshold:
-                            # Check if alert already sent
-                            existing = await db.execute(
-                                select(UsageAlert)
-                                .where(
-                                    UsageAlert.user_id == user.id,
-                                    UsageAlert.metric_type == metric,
-                                    UsageAlert.threshold_percent == threshold,
-                                    UsageAlert.sent_at >= datetime.now(timezone.utc) - timedelta(days=7),
-                                )
-                            )
-                            if not existing.scalar_one_or_none():
-                                alert = UsageAlert(
-                                    user_id=user.id,
-                                    metric_type=metric,
-                                    threshold_percent=threshold,
-                                )
-                                db.add(alert)
-                                logger.info(f"Usage alert {threshold}%: {metric} para usuario {user.id}")
-                                # TODO: Enviar email/push
-
-            await db.commit()
+            await _check_usage_alerts(db)
 
     run_async(_run())
 
