@@ -12,10 +12,10 @@ refreshes the action list, and sends nothing to anyone.
 
 from __future__ import annotations
 
-import asyncio
 
 from app.core.logger import get_logger
 from app.tasks.celery_app import celery_app
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -55,4 +55,4 @@ async def _measure_all() -> dict[str, int]:
 @celery_app.task(name="app.tasks.authority_tasks.weekly_authority_snapshot")
 def weekly_authority_snapshot() -> dict[str, int]:
     """Measure every account's authority so the trend keeps advancing on its own."""
-    return asyncio.run(_measure_all())
+    return run_async(_measure_all())

@@ -1,12 +1,12 @@
 """Document RAG Celery Tasks"""
 
-import asyncio
 import uuid
 from celery import shared_task
 
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.documents.processor import document_processor
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -27,5 +27,5 @@ def process_document_task(document_id: str):
                 return
             await document_processor.process_document(db, doc_id, doc.file_path, doc.file_type)
 
-    asyncio.run(_run())
+    run_async(_run())
     logger.info(f"Document processing task completed for {document_id}")

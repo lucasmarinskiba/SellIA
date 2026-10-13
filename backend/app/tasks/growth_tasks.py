@@ -19,6 +19,7 @@ from sqlalchemy import select, func, desc
 
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -26,8 +27,7 @@ logger = get_logger(__name__)
 @shared_task(name="growth.inbound_content_generator")
 def inbound_content_generator():
     """Generate SEO content, social posts, and lead magnets for active campaigns."""
-    import asyncio
-    asyncio.run(_inbound_content_generator())
+    run_async(_inbound_content_generator())
 
 
 async def _inbound_content_generator():
@@ -73,8 +73,7 @@ async def _inbound_content_generator():
 @shared_task(name="growth.lead_magnet_distributor")
 def lead_magnet_distributor():
     """Deliver pending lead magnets to new inbound leads."""
-    import asyncio
-    asyncio.run(_lead_magnet_distributor())
+    run_async(_lead_magnet_distributor())
 
 
 async def _lead_magnet_distributor():
@@ -116,8 +115,7 @@ async def _lead_magnet_distributor():
 @shared_task(name="growth.cold_lead_nurturer")
 def cold_lead_nurturer():
     """Send educational content to cold leads (respects fatigue)."""
-    import asyncio
-    asyncio.run(_cold_lead_nurturer())
+    run_async(_cold_lead_nurturer())
 
 
 async def _cold_lead_nurturer():
@@ -174,8 +172,7 @@ async def _cold_lead_nurturer():
 @shared_task(name="growth.social_proof_collector")
 def social_proof_collector():
     """Send review requests to customers 3+ days post-purchase."""
-    import asyncio
-    asyncio.run(_social_proof_collector())
+    run_async(_social_proof_collector())
 
 
 async def _social_proof_collector():
@@ -226,8 +223,7 @@ async def _social_proof_collector():
 @shared_task(name="growth.ugc_request_sender")
 def ugc_request_sender():
     """Request UGC from satisfied customers."""
-    import asyncio
-    asyncio.run(_ugc_request_sender())
+    run_async(_ugc_request_sender())
 
 
 async def _ugc_request_sender():
@@ -260,8 +256,7 @@ async def _ugc_request_sender():
 @shared_task(name="growth.referral_loop_evaluator")
 def referral_loop_evaluator():
     """Calculate viral coefficient, send rewards, optimize campaigns."""
-    import asyncio
-    asyncio.run(_referral_loop_evaluator())
+    run_async(_referral_loop_evaluator())
 
 
 async def _referral_loop_evaluator():
@@ -292,8 +287,7 @@ async def _referral_loop_evaluator():
 @shared_task(name="growth.community_engagement_scanner")
 def community_engagement_scanner():
     """Scan for new comments/replies and auto-respond with value."""
-    import asyncio
-    asyncio.run(_community_engagement_scanner())
+    run_async(_community_engagement_scanner())
 
 
 async def _community_engagement_scanner():
@@ -322,8 +316,7 @@ async def _community_engagement_scanner():
 @shared_task(name="growth.growth_campaign_optimizer")
 def growth_campaign_optimizer():
     """Evaluate campaign performance, pause underperformers, scale winners."""
-    import asyncio
-    asyncio.run(_growth_campaign_optimizer())
+    run_async(_growth_campaign_optimizer())
 
 
 async def _growth_campaign_optimizer():

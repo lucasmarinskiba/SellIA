@@ -13,6 +13,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.provisioning.models import ResourceRequest
 from app.domains.provisioning import service as provisioning_service
+from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -23,8 +24,7 @@ def process_resource_request(self, request_id: str):
     Worker principal que procesa una solicitud de provisionamiento.
     Consume de la cola Celery (emula SQS) y actualiza PostgreSQL (emula DynamoDB).
     """
-    import asyncio
-    asyncio.run(_process_resource_request_async(self, request_id))
+    run_async(_process_resource_request_async(self, request_id))
 
 
 async def _process_resource_request_async(task_self, request_id: str):
