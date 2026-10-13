@@ -1300,6 +1300,8 @@ async def _bootstrap_database() -> None:
         startup_state.mark("ensure_all_tables")
         from app.db.leads_bootstrap import ensure_leads_owner_column
         await ensure_leads_owner_column()
+        from app.db.catalog_bootstrap import ensure_catalog_item_columns
+        await ensure_catalog_item_columns()
         from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns
         await ensure_positioning_recommendation_columns()
         from app.domains.seo_config.conversion_events_bootstrap import ensure_conversion_event_dedupe_column
