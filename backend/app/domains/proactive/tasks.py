@@ -41,6 +41,10 @@ def detect_opportunities_task():
                     logger.exception(
                         f"Opportunity detection failed for business {business_id}: {e}"
                     )
+                    # The error may have aborted this session's transaction; without a
+                    # rollback every remaining business fails with InFailedSQLTransactionError.
+                    # Safe here: the loop only holds plain ids, no ORM objects to expire.
+                    await db.rollback()
 
             return {"status": "ok", "businesses_scanned": len(business_ids), "opportunities_created": total_created}
 
