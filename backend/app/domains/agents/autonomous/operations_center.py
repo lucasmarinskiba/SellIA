@@ -94,6 +94,12 @@ class AutonomousOperationsCenter:
     }
 
     # Umbrales para alertas al dueño
+    #: Marker in the health-report alert's title, used to find earlier ones (see _health_report_due).
+    HEALTH_ALERT_TITLE_MARKER = "Reporte de Salud SellIA"
+    #: While the score is below the warning threshold the report may repeat sooner than the
+    #: regular cadence, but not on every 5-minute cycle.
+    HEALTH_REPORT_DEGRADED_MIN_SECONDS = 3600
+
     ALERT_THRESHOLDS = {
         "health_score_warning": 70,
         "health_score_critical": 50,
@@ -382,6 +388,40 @@ class AutonomousOperationsCenter:
     # REPORTES Y ALERTAS AL DUEÑO
     # ─────────────────────────────────────────────
 
+    async def _health_report_due(
+        self, business_id: uuid.UUID, snapshot: SystemHealthSnapshot
+    ) -> bool:
+        """Whether a new health-report alert should be created for this business.
+
+        CYCLE_INTERVALS["health_report"] asks for one report every 6 hours, but the
+        cadence lives in ``_last_cycle_times``, which is per instance and a new instance is
+        created on every Celery run, so ``last_run is None`` was always true: the report
+        was "due" on every 5-minute cycle for every business. Once the alert code worked
+        (it had never been able to create a row), that produced ~900 identical alerts an
+        hour. The cadence is checked against the alerts table instead, which survives
+        between runs. While the score is below the warning threshold the interval is
+        shorter, but never every cycle.
+        """
+        from sqlalchemy import select
+
+        from app.domains.alerts.models import Alert
+
+        degraded = snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_warning"]
+        interval = (
+            self.HEALTH_REPORT_DEGRADED_MIN_SECONDS if degraded else self.CYCLE_INTERVALS["health_report"]
+        )
+        since = datetime.now(timezone.utc) - timedelta(seconds=interval)
+        recent = await self.db.execute(
+            select(Alert.id)
+            .where(
+                Alert.business_id == business_id,
+                Alert.title.like(f"%{self.HEALTH_ALERT_TITLE_MARKER}%"),
+                Alert.created_at >= since,
+            )
+            .limit(1)
+        )
+        return recent.first() is None
+
     def _build_health_alert(
         self,
         business_id: uuid.UUID,
@@ -407,7 +447,7 @@ class AutonomousOperationsCenter:
             severity = AlertSeverity.INFO
         return Alert(
             business_id=business_id,
-            title=f"{health_emoji} Reporte de Salud SellIA — Score: {score}/100",
+            title=f"{health_emoji} {self.HEALTH_ALERT_TITLE_MARKER} — Score: {score}/100",
             description=report_text,
             severity=severity,
             created_at=snapshot.timestamp,
@@ -452,6 +492,8 @@ class AutonomousOperationsCenter:
         report_text = "\n".join(report_lines)
 
         try:
+            if not await self._health_report_due(business_id, snapshot):
+                return
             alert = self._build_health_alert(business_id, snapshot, health_emoji, report_text)
             self.db.add(alert)
             await self.db.commit()
