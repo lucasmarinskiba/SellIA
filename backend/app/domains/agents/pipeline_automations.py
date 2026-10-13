@@ -876,7 +876,8 @@ class PipelineAutomationEngine:
 
             biz_id = uuid.UUID(business_id)
             message = action.get("message", "")
-            dedupe_key = hashlib.sha1(message.encode("utf-8")).hexdigest()[:16]
+            # Only groups identical messages (not a security use); SHA-256 so no weak-hash finding either.
+            dedupe_key = hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
             if await alert_sent_recently(
                 self.db, biz_id, "pipeline_owner_alert", self.OWNER_ALERT_REPEAT_AFTER,
                 dedupe_key=dedupe_key,
