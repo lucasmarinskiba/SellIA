@@ -13,6 +13,7 @@ from app.domains.autopilot.models import AutopilotConfig
 from app.domains.intelligence.models import MessageAnalysis
 from app.domains.crm.models import Deal, LeadScore
 from app.domains.channels.models import Conversation
+from app.domains.channels.handoff import mark_awaiting_human
 from app.domains.retention.models import HealthScoreRecord
 from app.core.logger import get_logger
 from app.core.events import event_bus
@@ -217,7 +218,7 @@ class SmartActionRouter:
                 )
                 conv = conv_result.scalar_one_or_none()
                 if conv:
-                    conv.awaiting_human = True
+                    mark_awaiting_human(conv, "Escalado por el autopilot")
                     await self.db.commit()
 
                 log = await self.autopilot.log_action(
@@ -407,7 +408,7 @@ class SmartActionRouter:
             )
             conv = conv_result.scalar_one_or_none()
             if conv:
-                conv.awaiting_human = True
+                mark_awaiting_human(conv, "Escalado por el autopilot")
                 await self.db.commit()
 
             log = await self.autopilot.log_action(
