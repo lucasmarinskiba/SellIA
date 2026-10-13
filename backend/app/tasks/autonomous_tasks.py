@@ -457,9 +457,9 @@ async def _weekly_report_for(db, center, biz_id, biz_name: str, now: datetime) -
 
     * ``AlertSeverity.LOW`` and ``Alert(message=, is_read=)`` do not exist (see
       app/domains/alerts/factory.py);
-    * "weekly" is not weekly: ``celerybeat-schedule`` is committed, so beat starts with an
-      old last-run time and fires every periodic task on each deploy. The cadence is checked
-      against the alerts table, and before any query or LLM call, since the LLM call is the
+    * "weekly" was not weekly: ``celerybeat-schedule`` used to be committed, so beat started with
+      an old last-run time and fired every periodic task on each deploy. The cadence is still
+      checked against the alerts table (a manual or retried run must not repeat it), and before any query or LLM call, since the LLM call is the
       expensive part and ran for every business on every deploy;
     * the message count was not scoped to the business (``Message`` has no business_id), so
       every owner's report showed the platform-wide total.

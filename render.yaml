@@ -112,7 +112,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: starter
     region: oregon
-    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info
+    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info --schedule /tmp/celerybeat-schedule
     envVars:
       - key: ENVIRONMENT
         value: production

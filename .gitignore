@@ -50,3 +50,6 @@ Thumbs.db
 # Per-machine Claude Code settings: its allow-list records every command ever approved,
 # including ones with inline DATABASE_URLs. Was committed once and leaked prod DB passwords.
 .claude/settings.local.json
+
+# Celery beat state (it was committed once; a stale copy fires every task on each start)
+celerybeat-schedule*

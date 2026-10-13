@@ -26,4 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-CMD ["celery", "-A", "app.tasks.celery_app", "beat", "--loglevel=info"]
+# The schedule file lives in /tmp, never in the image: a stale copy (it used to be committed) made
+# beat believe every task was overdue and fire all of them on each start. Long intervals are
+# absolute crontab times in celery_app.py, so they do not depend on this file surviving a deploy.
+CMD ["celery", "-A", "app.tasks.celery_app", "beat", "--loglevel=info", "--schedule", "/tmp/celerybeat-schedule"]
