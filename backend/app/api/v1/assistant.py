@@ -4,6 +4,7 @@ Endpoints para el asistente conversacional SellIA que orquesta
 agentes y ejecuta acciones basadas en lenguaje natural.
 """
 
+import json
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional, List, Dict, Any
@@ -20,6 +21,7 @@ from app.domains.agents.orchestrator import SellIAOrchestrator
 from app.domains.agents.services import AgentService
 from app.domains.agents.schemas import AgentPersonalityResponse
 from app.domains.agents.models import SellIAConversation
+from app.domains.channels import token_rotation_chat
 
 router = APIRouter()
 
@@ -130,6 +132,51 @@ async def delete_assistant_conversation(
 # Chat endpoint
 # ───────────────────────────────────────────────
 
+
+def _previous_assistant_action(messages: list[dict]) -> Optional[str]:
+    """The ``action`` of the last assistant message of the conversation, if it recorded one."""
+    for item in reversed(messages or []):
+        if item.get("role") == "assistant":
+            return item.get("action")
+    return None
+
+
+async def _owns(db: AsyncSession, user: User, business_id: UUID) -> bool:
+    owned = await db.execute(select(Business.id).where(Business.id == business_id, Business.user_id == user.id))
+    return owned.first() is not None
+
+
+async def _rotation_reply(
+    db: AsyncSession,
+    user: User,
+    business_id: Optional[UUID],
+    message: str,
+    history: list[dict],
+) -> Optional[dict]:
+    """The deterministic answer when the owner talks about webhook-token rotation proposals."""
+    reply = await token_rotation_chat.handle(
+        db,
+        user_id=user.id,
+        business_id=business_id,
+        message=message,
+        previous_action=_previous_assistant_action(history),
+    )
+    return reply.as_result() if reply else None
+
+
+async def _stream_unless_answered(orchestrator, rotation, message, user, business_id, history):
+    """The orchestrator's stream, unless the rotation rules already answered."""
+    if rotation is not None:
+        return
+    async for event in orchestrator.process_intent_stream(
+        user_input=message,
+        user_id=user.id,
+        business_id=str(business_id) if business_id else None,
+        conversation_history=history,
+    ):
+        yield event
+
+
 @router.post("/chat", response_model=dict)
 async def assistant_chat(
     message: str,
@@ -168,12 +215,18 @@ async def assistant_chat(
     # Merge histories: persistent takes precedence
     merged_history = persistent_history if persistent_history else (conversation_history or [])
 
-    result = await orchestrator.process_intent(
-        user_input=message,
-        user_id=current_user.id,
-        business_id=str(business_id) if business_id else None,
-        conversation_history=merged_history,
-    )
+    result = await _rotation_reply(db, current_user, business_id, message, merged_history)
+    if result is None:
+        result = await orchestrator.process_intent(
+            user_input=message,
+            user_id=current_user.id,
+            business_id=str(business_id) if business_id else None,
+            conversation_history=merged_history,
+        )
+        if business_id is not None and isinstance(result, dict) and await _owns(db, current_user, business_id):
+            pending = await token_rotation_chat.count_pending(db, business_id)
+            if pending:
+                result["pending_rotations"] = pending  # so the client / assistant can mention it
 
     # If action is CREATE_CONVERSATION, actually create it
     if result.get("action") == "CREATE_CONVERSATION":
@@ -265,15 +318,21 @@ async def assistant_chat_stream(
 
     merged_history = persistent_history if persistent_history else (conversation_history or [])
 
+    rotation = await _rotation_reply(db, current_user, business_id, message, merged_history)
+
     async def event_generator():
         full_response = ""
         action_data = None
 
-        async for event in orchestrator.process_intent_stream(
-            user_input=message,
-            user_id=current_user.id,
-            business_id=str(business_id) if business_id else None,
-            conversation_history=merged_history,
+        if rotation is not None:
+            # Answered by rules, not by the model: the same SSE events the client already understands.
+            full_response = rotation["response"]
+            action_data = rotation
+            yield "event: token\ndata: " + json.dumps({"type": "token", "content": full_response}) + "\n\n"
+            yield "event: action\ndata: " + json.dumps({"type": "action", "data": rotation}) + "\n\n"
+
+        async for event in _stream_unless_answered(
+            orchestrator, rotation, message, current_user, business_id, merged_history
         ):
             data = json.loads(event)
 
