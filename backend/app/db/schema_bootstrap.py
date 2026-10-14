@@ -106,6 +106,37 @@ async def existing_table_names(engine: AsyncEngine) -> set[str] | None:
         return None
 
 
+async def ensure_vector_extension(engine: AsyncEngine) -> str:
+    """Install the pgvector extension when the server ships it and it is not installed yet.
+
+    ``customer_memories``, ``conversation_memory_chunks``, ``document_chunks`` and
+    ``semantic_cache_embeddings`` have ``vector(768)`` columns, so they could never be created
+    (``type "vector" does not exist``) and were retried and skipped on every boot. Returns
+    ``"installed"``, ``"already"``, ``"unavailable"`` (not Postgres, or the server does not ship
+    pgvector) or ``"failed"``; never raises: tables that do not need it must still be created.
+    """
+    try:
+        from sqlalchemy import text
+
+        async with engine.connect() as conn:
+            if conn.dialect.name != "postgresql":
+                return "unavailable"
+            installed = (await conn.execute(text("SELECT 1 FROM pg_extension WHERE extname = 'vector'"))).first()
+            if installed:
+                return "already"
+            available = (await conn.execute(text("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'"))).first()
+            if not available:
+                logger.info("schema bootstrap: pgvector is not available on this server; vector tables stay skipped")
+                return "unavailable"
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        logger.info("✅ schema bootstrap: pgvector extension installed")
+        return "installed"
+    except Exception as e:  # noqa: BLE001 -- e.g. the role may not be allowed to create extensions
+        logger.warning("schema bootstrap: could not install pgvector: %s", str(e)[:160])
+        return "failed"
+
+
 async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]:
     """Create anything the ORM declares and the database does not have yet.
 
@@ -138,6 +169,9 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
     if not pending:
         logger.info("✅ schema bootstrap: %s domain tables already present", len(tables))
         return {"tables": len(tables), "created": 0, "skipped": 0}
+
+    # Tables with vector columns need the extension first.
+    await ensure_vector_extension(engine)
 
     created = 0
     errors: dict[str, str] = {}
