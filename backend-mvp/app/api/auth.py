@@ -1,5 +1,5 @@
 """Auth · signup + login + refresh."""
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 
@@ -13,7 +13,6 @@ from app.core.security import (
 )
 from app.db.models import Tenant, User, UserRole
 from app.db.session import get_session
-
 
 router = APIRouter()
 

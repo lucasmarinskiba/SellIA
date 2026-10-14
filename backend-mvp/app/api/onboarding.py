@@ -9,7 +9,6 @@ from app.core.security import CurrentUser, require_role
 from app.db.models import Tenant
 from app.db.session import get_session
 
-
 router = APIRouter()
 
 SUBDOMAIN_REGEX = re.compile(r"^[a-z][a-z0-9-]{1,61}[a-z0-9]$")

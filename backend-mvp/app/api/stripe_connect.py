@@ -14,7 +14,6 @@ from app.core.security import CurrentUser, require_role
 from app.db.models import Tenant
 from app.db.session import get_session
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
 

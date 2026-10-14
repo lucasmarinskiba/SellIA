@@ -7,7 +7,6 @@ from app.core.security import CurrentUser, get_current_user, require_role
 from app.db.models import Tenant
 from app.db.session import get_session
 
-
 router = APIRouter()
 
 

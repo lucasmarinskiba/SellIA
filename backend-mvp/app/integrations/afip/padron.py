@@ -13,7 +13,6 @@ import httpx
 
 from app.integrations.afip.wsaa import AFIPClient
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -9,7 +9,6 @@ from app.core.security import CurrentUser, get_current_user
 from app.db.models import Deal, DealStage
 from app.db.session import get_session
 
-
 router = APIRouter()
 
 

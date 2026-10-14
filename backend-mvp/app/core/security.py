@@ -1,5 +1,5 @@
 """JWT + password hashing."""
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
@@ -7,7 +7,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
-
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -27,7 +26,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(user_id: str, tenant_id: str, role: str) -> str:
     """Issue JWT w/ user + tenant + role embedded."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
@@ -68,9 +67,9 @@ def get_current_user(
     try:
         payload = decode_token(creds.credentials)
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from None
 
     return CurrentUser(
         user_id=payload["sub"],

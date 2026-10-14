@@ -4,14 +4,13 @@ Run via: `python -m app.jobs.scheduler`
 """
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from rq_scheduler import Scheduler
 
 from app.core.logging import setup_logging
 from app.jobs.queue import get_queue
 from app.jobs.tasks import daily_report, stock_check
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,9 @@ logger = logging.getLogger(__name__)
 def cron_dispatch_daily_reports() -> dict:
     """Fan out daily reports to all active tenants. Runs once · enqueues per-tenant."""
     from sqlalchemy import select
-    from app.db.session import AsyncSessionLocal
+
     from app.db.models import Tenant
+    from app.db.session import AsyncSessionLocal
 
     async def _do():
         async with AsyncSessionLocal() as db:
@@ -41,8 +41,9 @@ def cron_dispatch_daily_reports() -> dict:
 def cron_stock_check_all() -> dict:
     """Every 30min · check stock thresholds + trigger auto-reorders."""
     from sqlalchemy import select
-    from app.db.session import AsyncSessionLocal
+
     from app.db.models import Tenant
+    from app.db.session import AsyncSessionLocal
 
     async def _do():
         async with AsyncSessionLocal() as db:
@@ -93,7 +94,7 @@ def main() -> None:
         )
         logger.info("cron_scheduled", extra={"cron": cron, "func": func.__name__})
 
-    logger.info("scheduler_running", extra={"jobs": len(SCHEDULE), "since": datetime.now(timezone.utc).isoformat()})
+    logger.info("scheduler_running", extra={"jobs": len(SCHEDULE), "since": datetime.now(UTC).isoformat()})
     scheduler.run()
 
 

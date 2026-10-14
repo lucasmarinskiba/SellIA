@@ -10,7 +10,6 @@ from fastapi import WebSocket
 
 from app.core.config import settings
 
-
 logger = logging.getLogger(__name__)
 
 

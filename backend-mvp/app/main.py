@@ -20,28 +20,27 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api import (
+    arca_router,
+    auth_router,
+    billing_router,
+    channels_router,
+    cua_sandbox_router,
+    deals_router,
+    extension_auth_router,
+    metrics_router,
+    onboarding_router,
+    stripe_connect_router,
+    tenants_router,
+)
+from app.billing.stripe_webhook import router as stripe_webhook_router
+from app.channels.whatsapp import router as whatsapp_router
+from app.channels.whatsapp_oauth import router as wa_oauth_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.observability import init_sentry
 from app.db.session import close_engine, init_db
-from app.api import (
-    auth_router,
-    tenants_router,
-    deals_router,
-    channels_router,
-    billing_router,
-    stripe_connect_router,
-    onboarding_router,
-    cua_sandbox_router,
-    metrics_router,
-    extension_auth_router,
-    arca_router,
-)
-from app.channels.whatsapp import whatsapp_router
-from app.channels.whatsapp_oauth import router as wa_oauth_router
-from app.billing.stripe_webhook import stripe_webhook_router
 from app.ws import ws_router
-
 
 setup_logging()
 init_sentry()

@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
-
 CANALES = ("VERDE", "NARANJA", "ROJO", "PENDIENTE")
 
 

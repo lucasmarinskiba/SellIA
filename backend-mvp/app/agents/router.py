@@ -13,12 +13,10 @@ Tier rules:
 import enum
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 import httpx
 
 from app.core.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +73,14 @@ class AIRouter:
 
     def _provider_order(self, tier: ModelTier) -> list[str]:
         match tier:
-            case ModelTier.SIMPLE:   return ["ollama:llama3.3", "groq:llama-3.3-70b", "anthropic:haiku-3.5"]
-            case ModelTier.MEDIUM:   return ["groq:llama-3.3-70b", "anthropic:haiku-3.5", "anthropic:sonnet-4.5"]
-            case ModelTier.COMPLEX:  return ["anthropic:sonnet-4.5", "anthropic:haiku-3.5"]
-            case ModelTier.CUA:      return ["anthropic:sonnet-4.5"]
+            case ModelTier.SIMPLE:
+                return ["ollama:llama3.3", "groq:llama-3.3-70b", "anthropic:haiku-3.5"]
+            case ModelTier.MEDIUM:
+                return ["groq:llama-3.3-70b", "anthropic:haiku-3.5", "anthropic:sonnet-4.5"]
+            case ModelTier.COMPLEX:
+                return ["anthropic:sonnet-4.5", "anthropic:haiku-3.5"]
+            case ModelTier.CUA:
+                return ["anthropic:sonnet-4.5"]
 
     async def _call(self, provider: str, prompt: str, system: str | None, max_tokens: int) -> CompletionResult:
         if provider == "ollama:llama3.3":

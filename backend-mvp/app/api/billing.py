@@ -6,7 +6,6 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.security import CurrentUser, require_role
 
-
 router = APIRouter()
 
 if settings.STRIPE_SECRET_KEY:
