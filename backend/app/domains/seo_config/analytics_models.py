@@ -15,9 +15,12 @@ class PublicationLinkMetrics(Base):
     """Daily/weekly performance metrics for a publication link."""
     __tablename__ = "publication_link_metrics"
     __table_args__ = (
-        Index("idx_link_metrics", "link_id"),
-        Index("idx_business_metrics", "business_id"),
-        Index("idx_date_metrics", "metric_date"),
+        # Index names are unique per schema in PostgreSQL. "idx_business_metrics" is also declared
+        # by attribution_metrics, payment_metrics and predictive_metrics, so whichever table was
+        # created second failed with DuplicateTable and this one was never created.
+        Index("ix_publication_link_metrics_link", "link_id"),
+        Index("ix_publication_link_metrics_business", "business_id"),
+        Index("ix_publication_link_metrics_date", "metric_date"),
     )
 
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
