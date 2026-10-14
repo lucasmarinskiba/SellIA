@@ -4,12 +4,15 @@ from uuid import UUID
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
+from app.domains.businesses.models import Business
 from app.domains.users.models import User
 from app.domains.alerts.service import AlertService
+from app.domains.channels.token_rotation import RotationNotPossible
 from app.domains.alerts.schemas import (
     AlertRuleCreate, AlertRuleUpdate, AlertRuleResponse,
     AlertResponse, AlertStatsResponse,
@@ -133,6 +136,22 @@ async def delete_alert(
 
 # ========== Recommendations ==========
 
+async def _require_business_owner(db: AsyncSession, business_id: UUID, user: User) -> None:
+    """404 unless ``user`` owns ``business_id``: recommendations can change things (e.g. rotate a
+    webhook token), so being logged in is not enough to read or answer someone else's."""
+    if getattr(user, "is_superuser", False):
+        return
+    owned = await db.execute(select(Business.id).where(Business.id == business_id, Business.user_id == user.id))
+    if owned.first() is None:
+        raise HTTPException(status_code=404, detail="Recomendación no encontrada")
+
+
+async def _owned_recommendation(db: AsyncSession, rec_id: UUID, user: User):
+    rec = await AlertService(db).get_recommendation(rec_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="Recomendación no encontrada")
+    await _require_business_owner(db, rec.business_id, user)
+
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def list_recommendations(
     business_id: UUID = Query(...),
@@ -141,6 +160,7 @@ async def list_recommendations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await _require_business_owner(db, business_id, current_user)
     svc = AlertService(db)
     return await svc.list_recommendations(business_id, status, limit)
 
@@ -152,8 +172,13 @@ async def apply_recommendation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await _owned_recommendation(db, rec_id, current_user)
     svc = AlertService(db)
-    rec = await svc.apply_recommendation(rec_id, req.user_id or current_user.id)
+    try:
+        # the answer is attributed to the authenticated user, never to a user_id sent in the body
+        rec = await svc.apply_recommendation(rec_id, current_user.id)
+    except RotationNotPossible as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if not rec:
         raise HTTPException(status_code=404, detail="Recomendación no encontrada")
     return rec
@@ -165,6 +190,7 @@ async def dismiss_recommendation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    await _owned_recommendation(db, rec_id, current_user)
     svc = AlertService(db)
     rec = await svc.dismiss_recommendation(rec_id)
     if not rec:

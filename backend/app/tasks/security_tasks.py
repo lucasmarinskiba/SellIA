@@ -280,43 +280,26 @@ async def _channels_due_for_rotation(db, now: datetime) -> list[ChannelConnectio
 
 @shared_task(name="app.tasks.security_tasks.rotate_webhook_tokens")
 def rotate_webhook_tokens():
-    """Rotate webhook tokens that were set more than 90 days ago (see ``_channels_due_for_rotation``)."""
+    """Propose a webhook-token rotation to the owner of every channel whose token is over 90 days old.
+
+    It does not rotate anything itself: that invalidates the webhook URL set up on the external
+    platform, so each business owner reads the proposal and accepts or rejects it (see
+    ``app.domains.channels.token_rotation``). Running it again never duplicates a proposal.
+    """
 
     async def _run():
+        from app.domains.channels.token_rotation import propose_rotation
+
         async with AsyncSessionLocal() as db:
             now = datetime.now(timezone.utc)
             channels = await _channels_due_for_rotation(db, now)
-            rotated = 0
-            errors = 0
-
+            proposed = 0
             for ch in channels:
-                old_token = ch.webhook_token or ""
-                old_hash = hashlib.sha256(old_token.encode()).hexdigest()[:16] if old_token else None
-                new_token = secrets.token_urlsafe(32)
-                new_hash = hashlib.sha256(new_token.encode()).hexdigest()[:16]
-
-                log = SecretRotationLog(
-                    business_id=ch.business_id,
-                    secret_type="webhook_token",
-                    target_id=str(ch.id),
-                    old_value_hash=old_hash,
-                    new_value_hash=new_hash,
-                    status="success",
-                )
-                db.add(log)
-
-                try:
-                    ch.webhook_token = new_token
-                    rotated += 1
-                except Exception as e:
-                    logger.error(f"Failed to rotate webhook token for channel {ch.id}: {e}")
-                    log.status = "error"
-                    log.error_message = str(e)[:500]
-                    errors += 1
-
+                if await propose_rotation(db, ch, now):
+                    proposed += 1
             await db.commit()
-            logger.info(f"Rotated {rotated} webhook tokens ({errors} errors)")
-            return {"rotated": rotated, "errors": errors}
+            logger.info(f"Webhook token rotation: {proposed} proposal(s) for {len(channels)} due channel(s)")
+            return {"due": len(channels), "proposed": proposed}
 
     return run_async(_run())
 

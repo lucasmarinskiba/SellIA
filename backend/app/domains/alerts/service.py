@@ -176,9 +176,16 @@ class AlertService:
         rec = await self.get_recommendation(rec_id)
         if not rec:
             return None
-        rec.status = RecommendationStatus.APPLIED
-        rec.applied_at = datetime.now(timezone.utc)
-        rec.applied_by_user_id = user_id
+        if rec.status != RecommendationStatus.PENDING:
+            return rec  # already answered: applying twice must not act twice
+        from app.domains.channels.token_rotation import apply_rotation, is_rotation_proposal
+
+        if is_rotation_proposal(rec):
+            await apply_rotation(self.db, rec, user_id)  # raises RotationNotPossible
+        else:
+            rec.status = RecommendationStatus.APPLIED
+            rec.applied_at = datetime.now(timezone.utc)
+            rec.applied_by_user_id = user_id
         await self.db.commit()
         await self.db.refresh(rec)
         return rec
@@ -187,6 +194,8 @@ class AlertService:
         rec = await self.get_recommendation(rec_id)
         if not rec:
             return None
+        if rec.status != RecommendationStatus.PENDING:
+            return rec
         rec.status = RecommendationStatus.DISMISSED
         await self.db.commit()
         await self.db.refresh(rec)
