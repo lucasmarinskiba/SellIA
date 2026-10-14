@@ -44,6 +44,12 @@ EXTRA_MODEL_MODULES = [
     "app.domains.agents.llm_usage_models",
     "app.domains.integrations.integration_models",
     "app.core.semantic_cache",  # lives outside app/domains, so the scan never found it
+    # seo_config keeps its tables in several modules; the scan only finds models.py, so these
+    # were never created and the scheduled seo_config tasks failed on every run (UndefinedTable).
+    # (sync_models.py redeclares platform_sync_logs from models.py and cannot be imported.)
+    "app.domains.seo_config.fomo_models",
+    "app.domains.seo_config.analytics_models",
+    "app.domains.seo_config.positioning_models",
 ]
 
 

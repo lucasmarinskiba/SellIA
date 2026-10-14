@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import date, timedelta
 import logging
 
+from app.core.async_bridge import run_async
 from app.core.config import get_settings
 from app.domains.seo_config.models import PublicationLink, SEOConfig
 from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
@@ -19,8 +20,6 @@ settings = get_settings()
 @shared_task(bind=True, name="seo_config.fetch_nightly_analytics")
 def fetch_nightly_analytics(self):
     """Fetch analytics for all publication links (nightly job)."""
-    import asyncio
-
     async def _fetch():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -61,14 +60,12 @@ def fetch_nightly_analytics(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_fetch())
+    return run_async(_fetch())
 
 
 @shared_task(bind=True, name="seo_config.generate_fomo_cadence")
 def generate_fomo_cadence(self):
     """Generate FOMO copy for all active links without recent FOMO (cadence job)."""
-    import asyncio
-
     async def _generate():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -108,14 +105,12 @@ def generate_fomo_cadence(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_generate())
+    return run_async(_generate())
 
 
 @shared_task(bind=True, name="seo_config.compute_analytics_summaries")
 def compute_analytics_summaries(self):
     """Compute 7-day and 30-day performance summaries."""
-    import asyncio
-
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -163,14 +158,12 @@ def compute_analytics_summaries(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_compute())
+    return run_async(_compute())
 
 
 @shared_task(bind=True, name="seo_config.check_ab_test_winners")
 def check_ab_test_winners(self):
     """Check running A/B tests and announce winners when threshold reached."""
-    import asyncio
-
     async def _check():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -206,14 +199,12 @@ def check_ab_test_winners(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_check())
+    return run_async(_check())
 
 
 @shared_task(bind=True, name="seo_config.monitor_fomo_decay")
 def monitor_fomo_decay(self):
     """Monitor FOMO copy decay and auto-rotate when detected."""
-    import asyncio
-
     async def _monitor():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -225,7 +216,7 @@ def monitor_fomo_decay(self):
                 from app.domains.businesses.models import Business
 
                 # Get all active businesses
-                result = await db.execute(select(Business).where(Business.active == True))
+                result = await db.execute(select(Business).where(Business.is_active.is_(True)))
                 businesses = result.scalars().all()
 
                 decay_svc = FOMADecayService(db)
@@ -272,15 +263,13 @@ def monitor_fomo_decay(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_monitor())
+    return run_async(_monitor())
 
 
 @shared_task(bind=True, name="seo_config.compute_positioning_scores")
 def compute_positioning_scores(self):
     """Nightly: compute platform-algorithm-aware positioning score for every
     active publication link that has a ranking connector available."""
-    import asyncio
-
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -322,7 +311,7 @@ def compute_positioning_scores(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_compute())
+    return run_async(_compute())
 
 
 @shared_task(bind=True, name="seo_config.compute_store_positioning_scores")
@@ -334,8 +323,6 @@ def compute_store_positioning_scores(self):
     AmazonStoreRankingConnector. IntegrationApp has no seeded platform slug to
     filter on, and an SP-API-only connection must not be sent to the Ads API.
     """
-    import asyncio
-
     async def _compute():
         engine = create_async_engine(settings.DATABASE_URL)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -376,4 +363,4 @@ def compute_store_positioning_scores(self):
             finally:
                 await engine.dispose()
 
-    return asyncio.run(_compute())
+    return run_async(_compute())
