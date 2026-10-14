@@ -64,3 +64,27 @@ async def test_each_task_runs_twice_in_a_row(db_session, name: str) -> None:
         # A worker thread has no running loop, like a Celery process; run_async refuses to be
         # called from inside one. Raises if a table or column is missing.
         await asyncio.to_thread(task.run)
+
+
+def test_seo_config_index_names_are_not_shared_with_other_tables() -> None:
+    """Index names are unique per PostgreSQL schema: a name reused by another table makes the
+    second CREATE INDEX fail with DuplicateTable and that table is silently never created
+    (publication_link_metrics lost to attribution_metrics' "idx_business_metrics")."""
+    from collections import defaultdict
+
+    from app.core.database import Base
+    from app.db.schema_bootstrap import _import_all_models
+
+    _import_all_models()
+    owners: dict[str, set[str]] = defaultdict(set)
+    for table in Base.metadata.tables.values():
+        for index in table.indexes:
+            if index.name:
+                owners[index.name].add(table.name)
+
+    seo_tables = {
+        "publication_link_metrics", "publication_link_perf_summary", "conversion_events", "seo_fomo_ab_tests",
+        "fomo_decay_logs", "publication_link_positioning_scores", "positioning_recommendations",
+    }
+    shared = {name: sorted(tables) for name, tables in owners.items() if len(tables) > 1 and tables & seo_tables}
+    assert not shared, f"index names shared with other tables: {shared}"
