@@ -13,9 +13,9 @@ Two things went wrong elsewhere, both from treating it as a column:
 * ``handoff_alert_sender`` filtered on ``Conversation.awaiting_human``, which does not
   exist, so the task raised ``AttributeError`` on every run.
 
-Reassigning the whole dict (rather than ``extra_data["x"] = ...``) matters:
-``extra_data`` is a plain JSONB column, not a ``MutableDict``, so an in-place edit of
-a non-empty dict is not detected and the UPDATE silently omits it.
+``Conversation.extra_data`` is a ``MutableDict``, so in-place edits
+(``extra_data["x"] = ...``) are persisted; this helper still reassigns a fresh dict,
+which also works for the nested values that ``MutableDict`` does not track.
 """
 
 from __future__ import annotations
