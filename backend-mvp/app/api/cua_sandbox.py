@@ -6,13 +6,12 @@ Dev fallback: returns mock VNC URL.
 import logging
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.security import CurrentUser, require_role
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -69,10 +68,10 @@ async def start_sandbox(
         urls = await _provision(provider, sandbox_id, payload)
     except Exception as e:
         logger.exception("sandbox_provision_failed", extra={"provider": provider, "error": str(e)})
-        raise HTTPException(status_code=502, detail=f"Sandbox provisioning failed: {provider}")
+        raise HTTPException(status_code=502, detail=f"Sandbox provisioning failed: {provider}") from e
 
     active.add(sandbox_id)
-    expires = datetime.now(timezone.utc) + timedelta(minutes=SANDBOX_TIMEOUT_MIN)
+    expires = datetime.now(UTC) + timedelta(minutes=SANDBOX_TIMEOUT_MIN)
 
     logger.info(
         "sandbox_started",

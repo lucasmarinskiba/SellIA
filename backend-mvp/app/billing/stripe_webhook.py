@@ -10,7 +10,6 @@ from app.core.config import settings
 from app.db.models import Tenant
 from app.db.session import get_session
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -39,9 +38,9 @@ async def stripe_webhook(
             secret=settings.STRIPE_WEBHOOK_SECRET,
         )
     except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+        raise HTTPException(status_code=400, detail="Invalid signature") from None
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid payload")
+        raise HTTPException(status_code=400, detail="Invalid payload") from None
 
     event_type = event["type"]
     data = event["data"]["object"]

@@ -1,11 +1,11 @@
 """RQ queue · sync helper to enqueue from async code."""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from redis import Redis
 from rq import Queue
 
 from app.core.config import settings
-
 
 _redis: Redis | None = None
 _queue: Queue | None = None

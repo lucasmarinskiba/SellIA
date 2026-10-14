@@ -2,7 +2,6 @@
 import hashlib
 import hmac
 import logging
-import uuid
 
 import httpx
 from fastapi import APIRouter, Header, HTTPException, Query, Request
@@ -18,7 +17,6 @@ from app.db.models import (
     MessageRole,
 )
 from app.db.session import get_session
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

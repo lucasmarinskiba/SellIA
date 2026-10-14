@@ -11,11 +11,11 @@ Playwright execution lives in app/agents/playwright_executor.py.
 import asyncio
 import base64
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Awaitable
+from typing import Any
 
 from app.core.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class CUAClient:
             )
 
             user_content = []
-            for action, result in zip(tool_uses, results):
+            for action, result in zip(tool_uses, results, strict=False):
                 if isinstance(result, Exception):
                     user_content.append({
                         "type": "tool_result",

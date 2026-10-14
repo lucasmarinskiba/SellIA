@@ -5,7 +5,6 @@ from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from app.core.config import settings
 from app.ws.manager import manager
 
-
 router = APIRouter()
 
 

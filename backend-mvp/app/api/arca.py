@@ -18,25 +18,38 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.core.security import CurrentUser, get_current_user
 from app.integrations.afip import (
-    AFIPClient, FacturaRequest, FacturaExportRequest, ItemExport,
-    consultar_padron, emit_factura, emit_factura_export,
-    sugerir_categoria, proxima_recategorizacion,
+    AFIPClient,
+    FacturaExportRequest,
+    FacturaRequest,
+    ItemExport,
+    consultar_padron,
+    emit_factura,
+    emit_factura_export,
+    proxima_recategorizacion,
+    sugerir_categoria,
 )
 from app.integrations.afip.aduana import (
-    COVERequest, COVEItem, emit_cove,
+    INCOTERMS_2020,
+    CargaManifiesto,
+    COVEItem,
+    COVERequest,
+    DJVELinea,
+    DJVERequest,
+    ManifiestoRequest,
+    emit_cove,
+    emit_djve,
     generate_origin_certificate,
-    DJVERequest, DJVELinea, emit_djve,
+    ncm_lookup,
     request_permiso_embarque,
-    ManifiestoRequest, CargaManifiesto, ContenedorManifiesto, submit_manifiesto,
-    INCOTERMS_2020, resolve_incoterm,
-    validate_ncm, ncm_lookup,
+    resolve_incoterm,
+    submit_manifiesto,
+    validate_ncm,
 )
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,8 +61,9 @@ router = APIRouter()
 async def _load_client(user: CurrentUser, service: str) -> AFIPClient:
     """Build AFIPClient from tenant settings (cert + key + cuit + prod flag)."""
     from sqlalchemy import select
-    from app.db.session import AsyncSessionLocal
+
     from app.db.models import Tenant
+    from app.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
         t = (await db.execute(select(Tenant).where(Tenant.id == user.tenant_id))).scalar_one_or_none()
@@ -160,7 +174,7 @@ async def factura_export(body: FacturaExportBody, user: CurrentUser = Depends(ge
     try:
         resolve_incoterm(body.incoterms)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     client = await _load_client(user, service="wsfex")
     items = [
@@ -307,7 +321,7 @@ async def aduana_origen(body: CertOrigenBody, user: CurrentUser = Depends(get_cu
             medios_transporte=body.medios_transporte,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return cert.__dict__
 
 
@@ -334,8 +348,8 @@ class DJVEBody(BaseModel):
 
 @router.post("/aduana/djve")
 async def aduana_djve(body: DJVEBody, user: CurrentUser = Depends(get_current_user)) -> dict[str, Any]:
-    lineas = [DJVELinea(**l.dict()) for l in body.lineas]
-    total = sum((l.cantidad * l.precio_fob_usd for l in body.lineas), Decimal(0))
+    lineas = [DJVELinea(**linea.dict()) for linea in body.lineas]
+    total = sum((linea.cantidad * linea.precio_fob_usd for linea in body.lineas), Decimal(0))
     req = DJVERequest(
         cuit_exportador=user.tenant_id,
         cuit_comprador_exterior=body.cuit_comprador_exterior,
@@ -477,7 +491,7 @@ async def aduana_ncm(code: str) -> dict:
     try:
         ncm = validate_ncm(code)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return {
         "code": ncm.code,
         "ncm_full": ncm.ncm_full,

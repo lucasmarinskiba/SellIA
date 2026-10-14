@@ -9,20 +9,17 @@ Flow:
 Token reused across calls to WSFE (factura electrónica).
 Cert + key per tenant stored encrypted in tenant.settings.afip_cert / afip_key.
 """
-import asyncio
 import base64
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
 from xml.etree import ElementTree as ET
 
 import httpx
 import redis.asyncio as aioredis
 
 from app.core.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +115,7 @@ class AFIPClient:
 
     def _build_tra(self) -> str:
         """Login Ticket Request · unique per attempt (AFIP rejects repeats within 24h)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         gen = now.strftime("%Y-%m-%dT%H:%M:%S-00:00")
         exp = (now + timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M:%S-00:00")
         unique = str(int(now.timestamp()))
@@ -161,7 +158,6 @@ class AFIPClient:
         """Parse SOAP envelope → loginCmsReturn XML → Token+Sign."""
         # Strip soap envelope · extract loginCmsReturn payload
         soap = ET.fromstring(soap_xml)
-        ns = {"soap": "http://schemas.xmlsoap.org/soap/envelope/"}
         return_node = soap.find(".//loginCmsReturn") or soap.find(".//{*}loginCmsReturn")
         if return_node is None or not return_node.text:
             raise RuntimeError(f"WSAA response missing loginCmsReturn: {soap_xml[:400]}")

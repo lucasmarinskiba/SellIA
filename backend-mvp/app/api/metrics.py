@@ -1,14 +1,11 @@
 """Prometheus-style /metrics endpoint · scrape by Grafana/Datadog."""
-import os
 import time
-from typing import Any
 
 from fastapi import APIRouter, Response
 from sqlalchemy import func, select
 
 from app.db.models import AuditLog, Deal, Tenant, User
 from app.db.session import AsyncSessionLocal
-
 
 router = APIRouter()
 

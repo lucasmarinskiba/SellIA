@@ -12,7 +12,6 @@ Para tarifa completa (DIE, DTE, reintegro, retención) integrar con base de TARI
 import re
 from dataclasses import dataclass
 
-
 NCM_PATTERN = re.compile(r"^(\d{2})\.?(\d{2})\.?(\d{2})\.?(\d{2})$")
 
 

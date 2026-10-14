@@ -1,7 +1,6 @@
 """Seed demo data · run via `python -m app.seed`."""
 import asyncio
 import logging
-import uuid
 
 from sqlalchemy import select
 
@@ -21,7 +20,6 @@ from app.db.models import (
     UserRole,
 )
 from app.db.session import AsyncSessionLocal
-
 
 logger = logging.getLogger(__name__)
 

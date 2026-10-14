@@ -11,15 +11,22 @@ Sub-módulos:
 ARCA = Agencia de Recaudación y Control Aduanero (rebrand AFIP · Oct 2024).
 Endpoints WSAA/WSFE/etc siguen apuntando a *.afip.gov.ar (transición progresiva).
 """
+from app.integrations.afip.monotributo import (
+    CATEGORIAS_BIENES,
+    CATEGORIAS_SERVICIOS,
+    CUOTA_MENSUAL,
+    RecategorizacionResult,
+    proxima_recategorizacion,
+    sugerir_categoria,
+)
+from app.integrations.afip.padron import PadronPersona, consultar_padron
 from app.integrations.afip.wsaa import AFIPClient, AFIPTokenAuth
 from app.integrations.afip.wsfe import FacturaRequest, FacturaResponse, emit_factura
 from app.integrations.afip.wsfex import (
-    FacturaExportRequest, FacturaExportResponse, ItemExport, emit_factura_export,
-)
-from app.integrations.afip.padron import PadronPersona, consultar_padron
-from app.integrations.afip.monotributo import (
-    RecategorizacionResult, sugerir_categoria, proxima_recategorizacion,
-    CATEGORIAS_SERVICIOS, CATEGORIAS_BIENES, CUOTA_MENSUAL,
+    FacturaExportRequest,
+    FacturaExportResponse,
+    ItemExport,
+    emit_factura_export,
 )
 
 # Alias semántico ARCA = AFIPClient

@@ -47,6 +47,25 @@ async def db(db_engine) -> AsyncIterator[AsyncSession]:
         await session.rollback()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_rate_limits() -> AsyncIterator[None]:
+    """Every test starts with empty rate-limit windows.
+
+    ``signup`` allows 3 per hour per client and the auth tests sign up six times from the same
+    address, so without this the later tests got 429 (and, in a shared Redis, so did the next run).
+    """
+    from app.core.ratelimit import _get_redis
+
+    try:
+        redis = _get_redis()
+        keys = [key async for key in redis.scan_iter("rl:*")]
+        if keys:
+            await redis.delete(*keys)
+    except Exception:  # noqa: BLE001 -- the limiter fails open without Redis, so the tests may too
+        pass
+    yield
+
+
 @pytest_asyncio.fixture
 async def client() -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app)
@@ -58,7 +77,7 @@ async def client() -> AsyncIterator[AsyncClient]:
 def fake_signup_payload() -> dict:
     rand = uuid.uuid4().hex[:8]
     return {
-        "email": f"test_{rand}@sellia.test",
+        "email": f"test_{rand}@example.com",
         "password": "supersecret123",
         "name": f"Test User {rand}",
         "tenant_name": f"Test Tenant {rand}",

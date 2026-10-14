@@ -18,7 +18,6 @@ from typing import Any
 
 from app.agents.cua_client import ToolAction, ToolResult
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +128,7 @@ class PlaywrightExecutor:
                .replace("alt+", "Alt+")
                .replace("shift+", "Shift+")
         )
-        for k in mapped.split("+"):
+        for _k in mapped.split("+"):
             await self._page.keyboard.press(mapped.replace("+", "+"))  # press whole chord
             break
         return ToolResult(tool_use_id=action.tool_use_id, content=f"pressed {key}")

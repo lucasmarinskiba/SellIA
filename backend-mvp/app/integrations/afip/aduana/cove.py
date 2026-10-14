@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
-
 logger = logging.getLogger(__name__)
 
 

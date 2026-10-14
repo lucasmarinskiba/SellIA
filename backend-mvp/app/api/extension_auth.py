@@ -16,7 +16,6 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.security import CurrentUser, create_access_token, get_current_user
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
 

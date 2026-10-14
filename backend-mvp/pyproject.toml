@@ -15,6 +15,19 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP", "W", "ASYNC"]
 ignore = ["E501"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependency declarations are calls in parameter defaults by design
+# (``user: User = Depends(require_role("admin"))``); they are not shared mutable defaults.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Security",
+    "app.core.security.require_role",
+]
+
 [tool.mypy]
 python_version = "3.12"
 strict = false
