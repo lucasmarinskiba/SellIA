@@ -43,6 +43,7 @@ EXTRA_MODEL_MODULES = [
     "app.domains.businesses.location_models",
     "app.domains.agents.llm_usage_models",
     "app.domains.integrations.integration_models",
+    "app.core.semantic_cache",  # lives outside app/domains, so the scan never found it
 ]
 
 
