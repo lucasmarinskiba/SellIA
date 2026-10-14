@@ -92,6 +92,11 @@ def data_retention_cleanup():
                 )
                 db.add(log_entry)
 
+                # One SAVEPOINT per table: a failed DELETE (e.g. a foreign key) aborts the whole
+                # transaction in PostgreSQL, and every later table then failed with
+                # InFailedSQLTransactionError. Rolling back only the savepoint keeps the earlier
+                # deletions, the log entries and the rest of the run.
+                savepoint = await db.begin_nested()
                 try:
                     retention_days = effective.get(tbl, effective.get(f"{tbl}:None", DEFAULT_HARD_RETENTION.get(tbl, 365)))
                     cutoff = now - timedelta(days=retention_days)
@@ -215,20 +220,18 @@ def data_retention_cleanup():
                         # shape before it ever reaches a DELETE statement.
                         if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$", tbl):
                             logger.warning(f"Skipping retention cleanup for unsafe table identifier: {tbl!r}")
+                            await savepoint.commit()
                             continue
-                        try:
-                            res = await db.execute(
-                                text(f"DELETE FROM {tbl} WHERE created_at < :cutoff"),
-                                {"cutoff": cutoff},
-                            )
-                            total_deleted[tbl] = total_deleted.get(tbl, 0) + res.rowcount
-                            log_entry.records_deleted = res.rowcount
-                        except Exception as e:
-                            logger.warning(f"Generic cleanup failed for {tbl}: {e}")
-                            log_entry.status = "error"
-                            log_entry.error_message = str(e)[:500]
+                        res = await db.execute(
+                            text(f"DELETE FROM {tbl} WHERE created_at < :cutoff"),
+                            {"cutoff": cutoff},
+                        )
+                        total_deleted[tbl] = total_deleted.get(tbl, 0) + res.rowcount
+                        log_entry.records_deleted = res.rowcount
 
+                    await savepoint.commit()
                 except Exception as e:
+                    await savepoint.rollback()
                     logger.error(f"Data retention cleanup error for {tbl}: {e}")
                     log_entry.status = "error"
                     log_entry.error_message = str(e)[:500]
