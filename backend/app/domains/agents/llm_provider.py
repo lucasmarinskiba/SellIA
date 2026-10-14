@@ -527,7 +527,7 @@ async def generate_with_fallback(
     # 1. Try semantic cache
     if use_semantic_cache:
         try:
-            cached = await semantic_cache.get(prompt_text)
+            cached = await semantic_cache.get(prompt_text, business_id=business_id)
             if cached:
                 return LLMResponse(
                     content=cached,
@@ -580,7 +580,7 @@ async def generate_with_fallback(
     # 5. Cache the response
     if response and use_semantic_cache:
         try:
-            await semantic_cache.set(prompt_text, response.content)
+            await semantic_cache.set(prompt_text, response.content, business_id=business_id)
         except Exception as e:
             logger.warning(f"Semantic cache store failed: {e}")
 
