@@ -8,7 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 
 
 revision: str = "0001_init"
@@ -33,8 +33,8 @@ def upgrade() -> None:
     )
 
     # users
-    user_role = sa.Enum("owner", "admin", "manager", "viewer", name="userrole")
-    user_role.create(op.get_bind())
+    user_role = ENUM("owner", "admin", "manager", "viewer", name="userrole", create_type=False)
+    user_role.create(op.get_bind(), checkfirst=True)
     op.create_table(
         "users",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
@@ -49,8 +49,8 @@ def upgrade() -> None:
     )
 
     # channels
-    channel_kind = sa.Enum("whatsapp", "instagram", "email", "web", "telegram", name="channelkind")
-    channel_kind.create(op.get_bind())
+    channel_kind = ENUM("whatsapp", "instagram", "email", "web", "telegram", name="channelkind", create_type=False)
+    channel_kind.create(op.get_bind(), checkfirst=True)
     op.create_table(
         "channels",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
@@ -76,8 +76,8 @@ def upgrade() -> None:
     )
 
     # deals
-    deal_stage = sa.Enum("prospect", "qualified", "negotiation", "won", "lost", name="dealstage")
-    deal_stage.create(op.get_bind())
+    deal_stage = ENUM("prospect", "qualified", "negotiation", "won", "lost", name="dealstage", create_type=False)
+    deal_stage.create(op.get_bind(), checkfirst=True)
     op.create_table(
         "deals",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
@@ -104,8 +104,8 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     )
 
-    msg_role = sa.Enum("inbound", "outbound_ai", "outbound_human", name="messagerole")
-    msg_role.create(op.get_bind())
+    msg_role = ENUM("inbound", "outbound_ai", "outbound_human", name="messagerole", create_type=False)
+    msg_role.create(op.get_bind(), checkfirst=True)
     op.create_table(
         "messages",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),

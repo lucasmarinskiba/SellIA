@@ -14,7 +14,6 @@ import logging
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-
 logger = logging.getLogger(__name__)
 
 

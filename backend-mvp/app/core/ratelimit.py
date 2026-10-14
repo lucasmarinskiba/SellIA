@@ -8,13 +8,12 @@ Usage in endpoints:
         ...
 """
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import redis.asyncio as aioredis
 from fastapi import HTTPException, Request, status
 
 from app.core.config import settings
-
 
 _redis: aioredis.Redis | None = None
 

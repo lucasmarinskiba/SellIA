@@ -23,7 +23,6 @@ VEP issuance via ARCA portal (no public WS for VEP gen as of 2026 · Computer Us
 from dataclasses import dataclass
 from datetime import date
 
-
 # Cap anual por categoría (ARS) · servicios. Bienes muebles tiene caps mayores en H-K.
 CATEGORIAS_SERVICIOS = [
     ("A", 7_813_063),

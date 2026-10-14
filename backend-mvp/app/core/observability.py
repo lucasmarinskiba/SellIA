@@ -3,7 +3,6 @@ import logging
 
 from app.core.config import settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,7 @@ def init_sentry() -> None:
             profiles_sample_rate=0.05 if settings.ENV == "prod" else 0,
             send_default_pii=False,  # privacy first
             attach_stacktrace=True,
-            release=f"sellia@0.1.0",
+            release="sellia@0.1.0",
         )
         logger.info("sentry_initialized", extra={"env": settings.ENV})
     except ImportError:

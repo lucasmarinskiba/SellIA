@@ -14,8 +14,6 @@ Regímenes soportados:
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from decimal import Decimal
-
 
 REGIMENES_ORIGEN = {
     "MERCOSUR": {"vigencia_dias": 180, "form": "Form ALADI/ACE-18"},

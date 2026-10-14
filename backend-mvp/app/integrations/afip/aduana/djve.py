@@ -76,12 +76,12 @@ async def emit_djve(req: DJVERequest, *, submit: bool = False) -> DJVEResponse:
     venc = date.today() + timedelta(days=venc_dias)
 
     # Weighted average aliquot
-    total_fob = sum((l.cantidad * l.precio_fob_usd for l in req.lineas), Decimal(0))
+    total_fob = sum((linea.cantidad * linea.precio_fob_usd for linea in req.lineas), Decimal(0))
     avg_alic = 0.0
     if total_fob > 0:
         s = sum(
-            float(l.cantidad * l.precio_fob_usd) * aliquota_for_ncm(l.ncm)
-            for l in req.lineas
+            float(linea.cantidad * linea.precio_fob_usd) * aliquota_for_ncm(linea.ncm)
+            for linea in req.lineas
         )
         avg_alic = round(s / float(total_fob), 2)
 
@@ -97,14 +97,14 @@ async def emit_djve(req: DJVERequest, *, submit: bool = False) -> DJVEResponse:
         "valorTotalFOB": str(req.valor_total_fob),
         "lineas": [
             {
-                "ncm": l.ncm,
-                "descripcion": l.descripcion,
-                "cantidad": str(l.cantidad),
-                "unidad": l.unidad,
-                "precioFOB": str(l.precio_fob_usd),
-                "retencionPct": aliquota_for_ncm(l.ncm),
+                "ncm": linea.ncm,
+                "descripcion": linea.descripcion,
+                "cantidad": str(linea.cantidad),
+                "unidad": linea.unidad,
+                "precioFOB": str(linea.precio_fob_usd),
+                "retencionPct": aliquota_for_ncm(linea.ncm),
             }
-            for l in req.lineas
+            for linea in req.lineas
         ],
     }
 

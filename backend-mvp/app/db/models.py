@@ -11,13 +11,17 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    Numeric,
     String,
     Text,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+def _enum_values(enum_cls: type[enum.Enum]) -> list[str]:
+    """Persist enum VALUES ("owner"), which is what the migrations create, not member names ("OWNER")."""
+    return [member.value for member in enum_cls]
 
 
 class Base(DeclarativeBase):
@@ -56,7 +60,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120))
     password_hash: Mapped[str] = mapped_column(String(255))
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.VIEWER)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, values_callable=_enum_values), default=UserRole.VIEWER)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -79,7 +83,7 @@ class Channel(Base):
     __tablename__ = "channels"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
-    kind: Mapped[ChannelKind] = mapped_column(Enum(ChannelKind))
+    kind: Mapped[ChannelKind] = mapped_column(Enum(ChannelKind, values_callable=_enum_values))
     external_id: Mapped[str] = mapped_column(String(255))  # phone_number_id, IG account id, etc.
     config: Mapped[dict] = mapped_column(JSONB, default=dict)  # OAuth tokens, encrypted
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -118,7 +122,7 @@ class Deal(Base):
     title: Mapped[str] = mapped_column(String(200))
     value_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     currency: Mapped[str] = mapped_column(String(3), default="USD")
-    stage: Mapped[DealStage] = mapped_column(Enum(DealStage), default=DealStage.PROSPECT)
+    stage: Mapped[DealStage] = mapped_column(Enum(DealStage, values_callable=_enum_values), default=DealStage.PROSPECT)
     probability: Mapped[int] = mapped_column(Integer, default=0)  # 0-100
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -152,7 +156,7 @@ class Message(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"))
-    role: Mapped[MessageRole] = mapped_column(Enum(MessageRole))
+    role: Mapped[MessageRole] = mapped_column(Enum(MessageRole, values_callable=_enum_values))
     body: Mapped[str] = mapped_column(Text)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

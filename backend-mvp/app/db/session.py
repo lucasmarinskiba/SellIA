@@ -1,16 +1,15 @@
 """Async SQLAlchemy engine + session factory + RLS tenant context."""
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import text
 
 from app.core.config import settings
-
 
 engine = create_async_engine(
     settings.DATABASE_URL,
