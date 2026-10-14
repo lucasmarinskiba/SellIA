@@ -27,9 +27,7 @@ _RAW_LOOP_CALLS = {"run", "get_event_loop", "new_event_loop"}
 
 #: Task modules still on the broken pattern, with the reason they are not fixed yet.
 #: The test fails if an entry here no longer needs to be, so this list can only shrink.
-KNOWN_UNMIGRATED = {
-    "domains/seo_config/tasks.py": "other sessions have uncommitted edits in seo_config/; migrate once they land",
-}
+KNOWN_UNMIGRATED: dict[str, str] = {}
 
 
 def _is_celery_module(source: str) -> bool:
