@@ -55,7 +55,9 @@ class LocationMessageExecution(Base):
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
     message_id = Column(UUID(as_uuid=True), ForeignKey("location_messages.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     phone = Column(String(20), nullable=True)
     email = Column(String(255), nullable=True)
     channel = Column(String(50), nullable=False)

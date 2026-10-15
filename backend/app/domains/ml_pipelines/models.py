@@ -10,7 +10,9 @@ class LeadScoringModel(Base):
     __tablename__ = "lead_scoring_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    lead_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, unique=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    lead_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
 
     # Raw features
     engagement_score = Column(Float, default=0)  # 0-100 based on email opens, clicks
@@ -39,7 +41,9 @@ class ChurnPredictionModel(Base):
     __tablename__ = "churn_prediction_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, unique=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
 
     # Features
     days_since_last_purchase = Column(Integer, default=0)
@@ -67,7 +71,9 @@ class CLVModel(Base):
     __tablename__ = "clv_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, unique=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
 
     # Historical data
     total_spent = Column(Float, default=0)
@@ -95,7 +101,9 @@ class ChannelRoutingModel(Base):
     __tablename__ = "channel_routing_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, unique=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
 
     # Channel affinity (0-1, sum = 1)
     email_affinity = Column(Float, default=0.3)
