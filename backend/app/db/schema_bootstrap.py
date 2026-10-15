@@ -26,6 +26,7 @@ drops an existing table.
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import pathlib
 from typing import TYPE_CHECKING
@@ -113,6 +114,56 @@ async def existing_table_names(engine: AsyncEngine) -> set[str] | None:
         return None
 
 
+def ensure_unique_index_names(metadata) -> dict[str, int]:
+    """Make every index name unique in ``metadata``, because PostgreSQL index names are per schema.
+
+    Models declare indexes by hand with generic names ("idx_business_metrics", "idx_rep_id", ...)
+    and several tables reuse the same one. ``CREATE INDEX`` of the second table then fails with
+    ``DuplicateTable`` and the whole table is silently skipped on every boot. Two things are fixed
+    in memory, before any DDL:
+
+    * a name shared by different tables gets the table name appended, in every table that uses it
+      (tables that already exist keep the index they have; only new tables are created with the new
+      names, which cannot clash with the old generic ones);
+    * a name declared twice on the same table (``index=True`` plus an explicit ``Index`` on the same
+      column) keeps one copy.
+
+    Returns ``{"renamed": n, "dropped": n}``.
+    """
+    from collections import defaultdict
+
+    owners: dict[str, list] = defaultdict(list)
+    for table in metadata.tables.values():
+        for index in list(table.indexes):
+            if index.name:
+                owners[index.name].append((table, index))
+
+    renamed = dropped = 0
+    for name, members in owners.items():
+        if len(members) < 2:
+            continue
+        tables = {table.name for table, _ in members}
+        if len(tables) == 1:
+            table = members[0][0]
+            seen: set[tuple[str, ...]] = set()
+            for _, index in members:
+                key = tuple(column.name for column in index.columns)
+                if key in seen:
+                    table.indexes.discard(index)
+                    dropped += 1
+                else:
+                    seen.add(key)
+            continue
+        for table, index in members:
+            new_name = f"{name}_{table.name}"
+            if len(new_name) > 63:  # PostgreSQL identifier limit; keep it deterministic and unique
+                digest = hashlib.sha256(new_name.encode()).hexdigest()[:8]
+                new_name = f"{new_name[:54]}_{digest}"
+            index.name = new_name
+            renamed += 1
+    return {"renamed": renamed, "dropped": dropped}
+
+
 async def ensure_vector_extension(engine: AsyncEngine) -> str:
     """Install the pgvector extension when the server ships it and it is not installed yet.
 
@@ -158,6 +209,9 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
         engine = app_engine
 
     _import_all_models()
+    fixed = ensure_unique_index_names(CoreBase.metadata)
+    if fixed["renamed"] or fixed["dropped"]:
+        logger.info("schema bootstrap: made index names unique (%s renamed, %s duplicates dropped)", fixed["renamed"], fixed["dropped"])
 
     # NOT metadata.sorted_tables: that resolves the whole foreign-key graph up
     # front and raises if any FK points at a table no model declares (there is
