@@ -34,7 +34,7 @@ jobs:
   # ---------------------------------------------------------------
   semgrep:
     name: Semgrep SAST
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container:
       image: returntocorp/semgrep
     if: (github.actor != 'dependabot[bot]')
@@ -76,7 +76,7 @@ jobs:
   # ---------------------------------------------------------------
   trivy:
     name: Trivy Dependency Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -117,7 +117,7 @@ jobs:
   # ---------------------------------------------------------------
   bandit:
     name: Bandit Python SAST
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -160,7 +160,7 @@ jobs:
   # ---------------------------------------------------------------
   pip-audit:
     name: pip-audit Dependency Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -201,7 +201,7 @@ jobs:
   # ---------------------------------------------------------------
   zap-baseline:
     name: OWASP ZAP Baseline Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -270,7 +270,7 @@ jobs:
   # ---------------------------------------------------------------
   zap-full:
     name: OWASP ZAP Full Scan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
