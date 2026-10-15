@@ -14,7 +14,7 @@ class VoiceCall(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     prospect_id = Column(String(255), nullable=False)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
 
     call_sid = Column(String(255), unique=True)  # Twilio call ID
     script_used = Column(Text)
@@ -148,7 +148,7 @@ class AICallScript(Base):
     __tablename__ = "ai_call_scripts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
 
     script_template = Column(Text)  # Base script
     personalization_level = Column(String(50))  # high, medium, low
@@ -169,7 +169,7 @@ class MeetingBooking(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     prospect_id = Column(String(255), nullable=False)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
     call_id = Column(UUID(as_uuid=True), ForeignKey("voice_calls.id"), nullable=False)
 
     scheduled_for = Column(DateTime, nullable=False)

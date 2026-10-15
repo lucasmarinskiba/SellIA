@@ -13,7 +13,7 @@ class EmailVerificationToken(Base):
     __tablename__ = "email_verification_tokens"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(String(255), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (users.id)
     email = Column(String(255), nullable=False)
     token = Column(String(255), unique=True, nullable=False)
 
@@ -37,7 +37,7 @@ class AccountApproval(Base):
     __tablename__ = "account_approvals"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(String(255), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (users.id)
 
     email = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
