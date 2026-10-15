@@ -42,7 +42,9 @@ class OrderFraudScore(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     order_id = Column(String(255), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Risk assessment
     fraud_risk_score = Column(Decimal(5, 2), default=0)  # 0-100
@@ -93,7 +95,9 @@ class AccountFraudScore(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
 
     # Risk assessment
     account_fraud_score = Column(Decimal(5, 2), default=0)  # 0-100
