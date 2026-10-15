@@ -40,13 +40,37 @@ jobs:
     if: (github.actor != 'dependabot[bot]')
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # --baseline-commit needs the base commit's history
 
+      # Diff-aware: only findings INTRODUCED by the change can fail the job.
+      # The 36 ERROR findings that exist today were triaged on 2026-10-15 and are
+      # all false positives (static DDL assembled from local constants, or
+      # identifiers already validated by an allowlist/regex), so a full-tree gate
+      # would only ever be red. Scheduled / manual runs have no base commit and stay
+      # report-only.
       - name: Run Semgrep
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+          BASE=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+          fi
+          # A new branch or a force-push reports an all-zero / unreachable "before".
+          if [ -n "$BASE" ] && ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "::notice::base commit $BASE is not reachable; running full-tree, report-only"
+            BASE=""
+          fi
+          echo "SEMGREP_BASE=$BASE" >> "$GITHUB_ENV"
+
           semgrep --config=auto \
                   --config=p/owasp-top-ten \
                   --config=p/cwe-top-25 \
                   --config=p/security-audit \
+                  ${BASE:+--baseline-commit "$BASE"} \
                   --json --output=semgrep-results.json \
                   backend/ frontend/src/ || true
 
@@ -56,19 +80,17 @@ jobs:
           name: semgrep-results
           path: semgrep-results.json
 
-      # Report-only for now: the existing codebase has ERROR-severity findings
-      # that were never triaged, so a hard gate here failed every push/nightly
-      # run (and emailed) without anyone being able to act on it. Findings stay
-      # visible as a warning annotation + the uploaded semgrep-results artifact.
-      # TODO: triage the findings, then restore `exit 1` (ideally gating only
-      # on findings newly introduced by the change).
-      - name: Report critical findings
+      - name: Fail on new critical findings
         run: |
           CRITICAL=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' semgrep-results.json)
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "::warning title=Semgrep::$CRITICAL ERROR-severity findings — see the semgrep-results artifact"
-          else
+          if [ "$CRITICAL" -eq 0 ]; then
             echo "✅ No critical Semgrep findings"
+          elif [ -n "$SEMGREP_BASE" ]; then
+            echo "::error title=Semgrep::$CRITICAL new ERROR-severity finding(s) introduced by this change"
+            jq -r '.results[] | select(.extra.severity == "ERROR") | "::error file=\(.path),line=\(.start.line),title=\(.check_id | split(".") | last)::\(.extra.message | gsub("\n"; " ") | .[0:300])"' semgrep-results.json
+            exit 1
+          else
+            echo "::warning title=Semgrep::$CRITICAL ERROR-severity findings in the full tree (report-only run; see the artifact)"
           fi
 
   # ---------------------------------------------------------------
@@ -107,7 +129,7 @@ jobs:
             trivy-frontend.sarif
 
       - name: Upload to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-backend.sarif'
           category: 'trivy-backend'
