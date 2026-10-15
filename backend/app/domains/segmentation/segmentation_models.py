@@ -47,7 +47,9 @@ class CustomerSegment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Segmentation
     rfm_segment = Column(SQLEnum(RFMSegment), nullable=True)

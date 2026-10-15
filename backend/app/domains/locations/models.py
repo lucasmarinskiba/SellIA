@@ -41,7 +41,9 @@ class ProximityEvent(Base):
     __tablename__ = "proximity_events"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
     distance_km = Column(Float, nullable=False)
     triggered_automation_id = Column(UUID(as_uuid=True), nullable=True)
@@ -54,7 +56,9 @@ class OfflineConversion(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=True)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     visit_type = Column(String(50), nullable=False)  # visit, demo, in_store_pickup, service_appointment, tour
     entry_method = Column(String(50), nullable=True)  # qr_scan, staff_log, geo_detection, manual
     phone = Column(String(20), nullable=True)  # For fuzzy matching
@@ -72,7 +76,9 @@ class LocationVisit(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
+    # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     entry_time = Column(DateTime(timezone.utc), nullable=False)
     exit_time = Column(DateTime(timezone.utc), nullable=True)
     dwell_minutes = Column(Integer, default=0)
