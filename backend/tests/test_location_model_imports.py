@@ -161,3 +161,58 @@ def test_find_best_fulfillment_location_picks_nearest_with_stock() -> None:
 
     assert result["location_name"] == "near"
     assert result["distance_km"] == pytest.approx(1.11, abs=0.02)
+
+
+def test_location_routers_are_mounted_in_main_without_collisions() -> None:
+    """mobile_geofence / unified_dashboard were never mounted; `_try_include` hides import errors."""
+    import collections
+
+    from app.main import app
+
+    mine = {
+        "app.api.v1.mobile_geofence",
+        "app.api.v1.unified_dashboard",
+        "app.api.v1.location_inventory",
+    }
+    owners: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
+    for route in app.routes:
+        for method in getattr(route, "methods", None) or ():
+            owners[(method, route.path)].append(getattr(route.endpoint, "__module__", ""))
+
+    for expected in (
+        ("POST", "/api/v1/mobile/geofence/check"),
+        ("POST", "/api/v1/mobile/locations/nearby"),
+        ("POST", "/api/v1/mobile/geofence/subscribe"),
+        ("POST", "/api/v1/locations/{location_id}/metrics/aggregate"),
+        ("GET", "/api/v1/locations/{location_id}/unified-metrics"),
+        ("GET", "/api/v1/businesses/{business_id}/unified-dashboard"),
+        ("GET", "/api/v1/locations/{location_id}/inventory"),
+    ):
+        assert expected in owners, f"{expected} is not mounted"
+
+    clashes = {key: mods for key, mods in owners.items() if len(mods) > 1 and mine & set(mods)}
+    assert not clashes, f"routes registered twice: {clashes}"
+
+
+def test_bootstrap_registers_tables_the_dashboard_endpoints_query() -> None:
+    """aggregate_location_day reads staff_tasks and pricing_transactions, but nothing imports
+    those model modules at boot -- unless the schema bootstrap lists them, the tables are
+    never created in production. Runs in a fresh interpreter: in this process app.main has
+    already imported everything, which would make the check vacuous."""
+    import subprocess
+    import sys
+
+    code = (
+        "from app.db.schema_bootstrap import _import_all_models\n"
+        "from app.core.database import Base\n"
+        "_import_all_models()\n"
+        "need = {'staff_tasks', 'pricing_transactions', 'unified_location_metrics', 'locations'}\n"
+        "print(sorted(need - set(Base.metadata.tables)))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=APP_DIR.parent, capture_output=True, text=True, timeout=120, check=False,
+    )
+
+    assert result.returncode == 0, result.stderr[-800:]
+    assert result.stdout.strip().splitlines()[-1] == "[]", f"tables not registered: {result.stdout[-300:]}"

@@ -8,10 +8,11 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 from app.core.database import get_db
+from app.core.business_access import get_owned_business, get_owned_location
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
-from app.domains.inventory.inventory_models import LocationInventory
+from app.domains.inventory.inventory_models import LocationInventory, LowStockAlert
 
 router = APIRouter(prefix="", tags=["inventory"])
 
@@ -58,9 +59,11 @@ class OrderReservationRequest(BaseModel):
 @router.get("/locations/{location_id}/inventory")
 async def get_location_inventory(
     location_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get all inventory at location."""
+    await get_owned_location(db, location_id, current_user)
     try:
         inventory_list = await db.run_sync(
             lambda sync_db: LocationInventoryService.get_location_inventory(location_id, sync_db)
@@ -97,9 +100,11 @@ async def get_location_inventory(
 async def get_product_stock(
     location_id: UUID,
     product_id: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get stock level for specific product."""
+    await get_owned_location(db, location_id, current_user)
     try:
         inventory = await db.run_sync(
             lambda sync_db: LocationInventoryService.get_product_at_location(location_id, product_id, sync_db)
@@ -134,6 +139,7 @@ async def update_stock(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update stock level (restock, manual adjustment, demo usage)."""
+    await get_owned_location(db, request.location_id, current_user)
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.update_stock(
@@ -155,9 +161,13 @@ async def update_stock(
 async def check_demo_stock(
     location_id: UUID,
     request: DemoCheckRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Check if product available for demo during visitor checkin."""
+    await get_owned_location(db, location_id, current_user)
+    if request.location_id != location_id:
+        raise HTTPException(status_code=400, detail="location_id del path y del body no coinciden")
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.check_stock_for_demo(
@@ -177,9 +187,11 @@ async def get_stock_history(
     location_id: UUID,
     product_id: Optional[str] = Query(None),
     days: int = Query(30, ge=1, le=365),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get stock movement audit trail."""
+    await get_owned_location(db, location_id, current_user)
     try:
         movements = await db.run_sync(
             lambda sync_db: LocationInventoryService.get_stock_movement_history(
@@ -219,12 +231,12 @@ async def get_stock_history(
 async def get_low_stock_alerts(
     location_id: UUID,
     acknowledged: Optional[bool] = Query(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get low-stock alerts for location."""
+    await get_owned_location(db, location_id, current_user)
     try:
-        from app.domains.inventory.inventory_models import LowStockAlert
-
         def _load(db: Session) -> list:
             query = db.query(LowStockAlert).filter(LowStockAlert.location_id == location_id)
 
@@ -266,6 +278,10 @@ async def acknowledge_alert(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Mark low-stock alert as acknowledged."""
+    alert = await db.get(LowStockAlert, alert_id)
+    if alert is None:
+        raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    await get_owned_location(db, alert.location_id, current_user)
     try:
         result = await db.run_sync(
             lambda sync_db: LocationInventoryService.acknowledge_low_stock_alert(
@@ -282,9 +298,11 @@ async def acknowledge_alert(
 @router.post("/fulfillment/find-location")
 async def find_fulfillment_location(
     request: FulfillmentRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Find best location to fulfill online order."""
+    await get_owned_business(db, request.business_id, current_user)
     try:
         from app.domains.businesses.location_models import Location
 
@@ -314,6 +332,7 @@ async def reserve_inventory(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reserve inventory for online order."""
+    await get_owned_location(db, request.location_id, current_user)
     try:
         result = await db.run_sync(
             lambda sync_db: FulfillmentRoutingService.reserve_inventory_for_order(
@@ -338,6 +357,7 @@ async def mark_order_shipped(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Mark order as shipped from location."""
+    await get_owned_location(db, location_id, current_user)
     try:
         result = await db.run_sync(
             lambda sync_db: FulfillmentRoutingService.mark_order_shipped(

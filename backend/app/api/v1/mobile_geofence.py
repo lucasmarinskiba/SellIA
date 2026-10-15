@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from typing import Optional
 
+from app.core.business_access import get_owned_business
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
@@ -43,14 +44,9 @@ async def check_geofence(
 
     Mobile app calls this periodically (every 30-60s when app in foreground).
     """
+    await get_owned_business(db, request.business_id, current_user)
+
     def _check(db: Session) -> dict:
-        # Get user's business locations
-        from app.domains.businesses.models import Business
-
-        business = db.query(Business).filter(Business.id == request.business_id).first()
-        if not business:
-            raise HTTPException(status_code=404, detail="Business not found")
-
         # Get location records (assuming locations stored in Location table)
         locations = db.query(Location).filter(Location.business_id == request.business_id).all()
 
@@ -75,8 +71,6 @@ async def check_geofence(
             "message": result.get("message"),
             "error": result.get("error")
         }
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -88,6 +82,8 @@ async def get_nearby_locations(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """List locations within 500m radius."""
+    await get_owned_business(db, request.business_id, current_user)
+
     def _load(db: Session) -> list:
         return db.query(Location).filter(Location.business_id == request.business_id).all()
 
@@ -126,6 +122,8 @@ async def subscribe_to_geofence(
 
     Returns push notification settings for mobile app to register with OS.
     """
+    await get_owned_business(db, business_id, current_user)
+
     def _load(db: Session) -> list:
         return db.query(Location).filter(Location.business_id == business_id).all()
 

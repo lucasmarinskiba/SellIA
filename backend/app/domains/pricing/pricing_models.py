@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from decimal import Decimal
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Enum as SQLEnum, Index, Float
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -46,7 +46,7 @@ class LocationPricingTier(Base):
 
     # Tier configuration
     tier = Column(SQLEnum(PricingTier), default=PricingTier.STANDARD)
-    tier_multiplier = Column(Decimal(3, 2), default=Decimal("1.00"))  # 1.2 = +20%, 0.8 = -20%
+    tier_multiplier = Column(Numeric(3, 2), default=Decimal("1.00"))  # 1.2 = +20%, 0.8 = -20%
 
     # Peak hours definition
     peak_hours_start = Column(Integer, default=12)  # Hour 0-23
@@ -54,8 +54,8 @@ class LocationPricingTier(Base):
     peak_days = Column(JSONB, default=[1, 2, 3, 4, 5])  # 0=Monday, 6=Sunday
 
     # Discount config
-    peak_discount_pct = Column(Decimal(5, 2), default=0)  # 0-100
-    off_peak_discount_pct = Column(Decimal(5, 2), default=0)
+    peak_discount_pct = Column(Numeric(5, 2), default=0)  # 0-100
+    off_peak_discount_pct = Column(Numeric(5, 2), default=0)
 
     # Flags
     is_active = Column(Boolean, default=True)
@@ -83,11 +83,11 @@ class LocationDiscountCode(Base):
 
     # Discount value
     discount_type = Column(String(20), default="percentage")  # percentage, fixed
-    discount_value = Column(Decimal(8, 2), nullable=False)  # % or $ amount
+    discount_value = Column(Numeric(8, 2), nullable=False)  # % or $ amount
 
     # Applicability
-    min_order_value = Column(Decimal(10, 2), nullable=True)
-    max_discount_cap = Column(Decimal(10, 2), nullable=True)  # Max discount amount
+    min_order_value = Column(Numeric(10, 2), nullable=True)
+    max_discount_cap = Column(Numeric(10, 2), nullable=True)  # Max discount amount
 
     # Validity
     valid_from = Column(DateTime(timezone=True), nullable=False)
@@ -124,10 +124,10 @@ class PricingABTest(Base):
     product_id = Column(String(255), nullable=True)  # NULL = all products
 
     # Variants
-    control_price = Column(Decimal(10, 2), nullable=False)
-    variant_a_price = Column(Decimal(10, 2), nullable=True)
-    variant_b_price = Column(Decimal(10, 2), nullable=True)
-    variant_c_price = Column(Decimal(10, 2), nullable=True)
+    control_price = Column(Numeric(10, 2), nullable=False)
+    variant_a_price = Column(Numeric(10, 2), nullable=True)
+    variant_b_price = Column(Numeric(10, 2), nullable=True)
+    variant_c_price = Column(Numeric(10, 2), nullable=True)
 
     # Traffic split
     control_traffic_pct = Column(Integer, default=25)
@@ -142,13 +142,13 @@ class PricingABTest(Base):
 
     # Results (auto-calculated)
     control_conversions = Column(Integer, default=0)
-    control_revenue = Column(Decimal(12, 2), default=0)
+    control_revenue = Column(Numeric(12, 2), default=0)
     variant_a_conversions = Column(Integer, default=0)
-    variant_a_revenue = Column(Decimal(12, 2), default=0)
+    variant_a_revenue = Column(Numeric(12, 2), default=0)
     variant_b_conversions = Column(Integer, default=0)
-    variant_b_revenue = Column(Decimal(12, 2), default=0)
+    variant_b_revenue = Column(Numeric(12, 2), default=0)
     variant_c_conversions = Column(Integer, default=0)
-    variant_c_revenue = Column(Decimal(12, 2), default=0)
+    variant_c_revenue = Column(Numeric(12, 2), default=0)
 
     # Winner
     winning_variant = Column(SQLEnum(TestVariant), nullable=True)
@@ -174,14 +174,14 @@ class PricingTransaction(Base):
     checkin_id = Column(UUID(as_uuid=True), nullable=True)  # If from location visit
 
     # Pricing applied
-    base_price = Column(Decimal(10, 2), nullable=False)
-    location_tier_multiplier = Column(Decimal(3, 2), default=Decimal("1.00"))
-    tier_adjusted_price = Column(Decimal(10, 2), nullable=False)
+    base_price = Column(Numeric(10, 2), nullable=False)
+    location_tier_multiplier = Column(Numeric(3, 2), default=Decimal("1.00"))
+    tier_adjusted_price = Column(Numeric(10, 2), nullable=False)
 
     # Discount applied
     discount_code = Column(String(50), nullable=True)
-    discount_amount = Column(Decimal(10, 2), default=0)
-    final_price = Column(Decimal(10, 2), nullable=False)
+    discount_amount = Column(Numeric(10, 2), default=0)
+    final_price = Column(Numeric(10, 2), nullable=False)
 
     # Context
     applied_peak_discount = Column(Boolean, default=False)
@@ -189,9 +189,9 @@ class PricingTransaction(Base):
     test_variant = Column(SQLEnum(TestVariant), nullable=True)
 
     # Revenue tracking
-    original_margin = Column(Decimal(10, 2), nullable=True)
-    final_margin = Column(Decimal(10, 2), nullable=True)
-    margin_impact = Column(Decimal(10, 2), nullable=True)
+    original_margin = Column(Numeric(10, 2), nullable=True)
+    final_margin = Column(Numeric(10, 2), nullable=True)
+    margin_impact = Column(Numeric(10, 2), nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -214,19 +214,19 @@ class LocationRevenueImpact(Base):
 
     # Volume
     transactions_count = Column(Integer, default=0)
-    avg_base_price = Column(Decimal(10, 2), default=0)
-    avg_final_price = Column(Decimal(10, 2), default=0)
+    avg_base_price = Column(Numeric(10, 2), default=0)
+    avg_final_price = Column(Numeric(10, 2), default=0)
 
     # Revenue impact
-    total_base_revenue = Column(Decimal(12, 2), default=0)
-    total_discounts_given = Column(Decimal(12, 2), default=0)
-    total_final_revenue = Column(Decimal(12, 2), default=0)
-    revenue_delta = Column(Decimal(12, 2), default=0)  # final - base
+    total_base_revenue = Column(Numeric(12, 2), default=0)
+    total_discounts_given = Column(Numeric(12, 2), default=0)
+    total_final_revenue = Column(Numeric(12, 2), default=0)
+    revenue_delta = Column(Numeric(12, 2), default=0)  # final - base
 
     # Margin impact
-    total_base_margin = Column(Decimal(12, 2), default=0)
-    total_final_margin = Column(Decimal(12, 2), default=0)
-    margin_impact = Column(Decimal(12, 2), default=0)
+    total_base_margin = Column(Numeric(12, 2), default=0)
+    total_final_margin = Column(Numeric(12, 2), default=0)
+    margin_impact = Column(Numeric(12, 2), default=0)
 
     # Discounts breakdown
     peak_hour_discounts_count = Column(Integer, default=0)
