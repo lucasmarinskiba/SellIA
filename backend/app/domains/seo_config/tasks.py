@@ -184,7 +184,7 @@ def check_ab_test_winners(self):
 
                 for test in running_tests:
                     try:
-                        updated_test = await ab_svc.check_and_announce_winner(test.id)
+                        updated_test = await ab_svc.check_and_announce_winner(test.business_id, test.id)
                         if updated_test and updated_test.status == "completed":
                             winners_announced += 1
                     except Exception as e:
