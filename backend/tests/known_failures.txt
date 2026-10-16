@@ -346,7 +346,7 @@ tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_amazon
 tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_research_ml_keywords
 tests/test_phase_33_platform.py::TestSEOOptimizationEngine::test_track_rankings
 
-# tests/test_security.py  (14)  e.g. ModuleNotFoundError: No module named 'app.core.database.security_models'; 'app.core.database' is not a package
+# tests/test_security.py  (10)  e.g. ModuleNotFoundError: No module named 'app.core.database.security_models'; 'app.core.database' is not a package
 tests/test_security.py::test_api_key_expiration
 tests/test_security.py::test_api_key_generation
 tests/test_security.py::test_api_key_rotation
@@ -354,10 +354,6 @@ tests/test_security.py::test_api_key_verification
 tests/test_security.py::test_audit_log_data_access
 tests/test_security.py::test_audit_log_login_success
 tests/test_security.py::test_audit_log_risk_flagging
-tests/test_security.py::test_login_attempts_clear_on_success
-tests/test_security.py::test_login_brute_force_protection
-tests/test_security.py::test_rate_limiter_allow_requests
-tests/test_security.py::test_rate_limiter_block_requests
 tests/test_security.py::test_totp_invalid_code
 tests/test_security.py::test_totp_setup
 tests/test_security.py::test_totp_verification
