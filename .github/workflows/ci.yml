@@ -1,3 +1,8 @@
+# Runners are pinned to ubuntu-24.04 in every workflow instead of `ubuntu-latest`:
+# GitHub moves that label to Ubuntu 26 on 2026-10-19, and an unattended image
+# change (e.g. `playwright install --with-deps` rejecting an unknown distro) is
+# exactly the kind of thing that turns every workflow red overnight. Bump the
+# pin on purpose, in one PR, and watch the first run.
 name: CI - Tests & Build
 
 on:
@@ -12,7 +17,7 @@ concurrency:
 jobs:
   backend-tests:
     name: Backend Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -110,7 +115,7 @@ jobs:
 
   backend-lint:
     name: Backend Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Advisory, not blocking: app/ has ~23k pre-existing ruff findings and
     # ~1330 files that don't match black's formatting, accumulated before
     # any lint/format check was ever enforced in CI. Auto-reformatting the
@@ -143,7 +148,7 @@ jobs:
 
   frontend-build:
     name: Frontend Build & Type Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
