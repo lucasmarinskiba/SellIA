@@ -28,7 +28,7 @@ class PlatformListingSyncService:
         self.db = db
 
     async def get_connector(
-        self, platform_name: str, connection_id: UUID
+        self, business_id: UUID, platform_name: str, connection_id: UUID | None
     ) -> PlatformListingSyncConnector | None:
         """Get appropriate connector for platform.
 
@@ -37,6 +37,9 @@ class PlatformListingSyncService:
         platform_name = canonical_platform(platform_name) or platform_name
         if platform_name not in PLATFORM_CONNECTORS:
             logger.warning(f"No connector implemented for platform: {platform_name}")
+            return None
+        if not connection_id:
+            logger.warning(f"No connection_id to sync {platform_name} listing (link has none set)")
             return None
 
         try:
@@ -52,6 +55,12 @@ class PlatformListingSyncService:
 
             if not connection:
                 logger.error(f"Integration connection {connection_id} not found")
+                return None
+            # connection_id can come from link.connection_id, set whenever the link
+            # was created/synced — never confirmed against this business before
+            # using its credentials to write to an external listing.
+            if connection.business_id != business_id:
+                logger.warning(f"Connection {connection_id} does not belong to business {business_id}")
                 return None
 
             # Parse credentials
@@ -92,8 +101,11 @@ class PlatformListingSyncService:
         )
 
         try:
-            # Extract listing ID from URL
-            connector = await self.get_connector(link.platform_source, connection_id)
+            # Neither caller (sync_link, sync_all_links) ever passed connection_id,
+            # so get_connector always got None and every sync silently no-opped as
+            # "skipped: no connector" — this feature never actually ran. The link's
+            # own connection is the only sensible default.
+            connector = await self.get_connector(business_id, link.platform_source, connection_id or link.connection_id)
             if not connector:
                 sync_log.status = "skipped"
                 sync_log.error_message = f"No connector for {link.platform_source}"

@@ -142,11 +142,12 @@ class PublicationFOMOGenerator:
             "failed": failed,
         }
 
-    async def get_latest_fomo(self, link_id: UUID) -> PublicationLinkFOMO | None:
-        """Get the most recent FOMO copy for a link."""
+    async def get_latest_fomo(self, business_id: UUID, link_id: UUID) -> PublicationLinkFOMO | None:
+        """Get the most recent FOMO copy for a link, scoped to the business
+        that owns it — link_id alone is a caller-supplied path param."""
         result = await self.db.execute(
             select(PublicationLinkFOMO)
-            .where(PublicationLinkFOMO.link_id == link_id)
+            .where(PublicationLinkFOMO.link_id == link_id, PublicationLinkFOMO.business_id == business_id)
             .order_by(PublicationLinkFOMO.created_at.desc())
             .limit(1)
         )
