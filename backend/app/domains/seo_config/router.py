@@ -274,7 +274,7 @@ async def toggle_platform_seo(
 ):
     """Toggle SEO on/off for a specific platform."""
     svc = SEOConfigService(db)
-    seo_status = await svc.toggle_platform_seo(connection_id, enabled)
+    seo_status = await svc.toggle_platform_seo(business_id, connection_id, enabled)
 
     if not seo_status:
         raise HTTPException(
@@ -331,7 +331,7 @@ async def toggle_publication_link_seo(
 ):
     """Toggle SEO for a specific publication link."""
     svc = PublicationLinkService(db)
-    link = await svc.toggle_publication_link_seo(link_id, enabled)
+    link = await svc.toggle_publication_link_seo(business_id, link_id, enabled)
 
     if not link:
         raise HTTPException(
@@ -356,7 +356,7 @@ async def delete_publication_link(
 ):
     """Delete a publication link."""
     svc = PublicationLinkService(db)
-    deleted = await svc.delete_publication_link(link_id)
+    deleted = await svc.delete_publication_link(business_id, link_id)
 
     if not deleted:
         raise HTTPException(
@@ -389,7 +389,7 @@ async def generate_fomo_for_link(
 ):
     """Generate FOMO copy for a specific publication link."""
     svc = PublicationLinkService(db)
-    link = await svc.get_publication_link(link_id)
+    link = await svc.get_publication_link(business_id, link_id)
 
     if not link:
         raise HTTPException(
@@ -418,7 +418,7 @@ async def get_link_fomo(
 ):
     """Get latest FOMO copy for a publication link."""
     generator = PublicationFOMOGenerator(db)
-    fomo_entry = await generator.get_latest_fomo(link_id)
+    fomo_entry = await generator.get_latest_fomo(business_id, link_id)
     return fomo_entry
 
 
@@ -444,7 +444,7 @@ async def sync_link(
 ):
     """Sync FOMO copy for a specific link to its platform."""
     svc = PublicationLinkService(db)
-    link = await svc.get_publication_link(link_id)
+    link = await svc.get_publication_link(business_id, link_id)
 
     if not link:
         raise HTTPException(
@@ -549,7 +549,7 @@ async def refresh_analytics(
     if link_id:
         # Single link
         svc = PublicationLinkService(db)
-        link = await svc.get_publication_link(link_id)
+        link = await svc.get_publication_link(business_id, link_id)
         if not link:
             raise HTTPException(status_code=404, detail="Link not found")
 
@@ -839,7 +839,7 @@ async def get_ab_test_metrics(
 ):
     """Get A/B test metrics and status."""
     svc = FOMABTestService(db)
-    metrics = await svc.get_test_metrics(test_id)
+    metrics = await svc.get_test_metrics(business_id, test_id)
 
     if not metrics:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -858,7 +858,7 @@ async def apply_ab_test_winner(
     svc = FOMABTestService(db)
 
     # Check and announce winner if not done yet
-    test = await svc.check_and_announce_winner(test_id)
+    test = await svc.check_and_announce_winner(business_id, test_id)
     if not test or not test.winner_variant_id:
         raise HTTPException(
             status_code=400,
@@ -866,7 +866,7 @@ async def apply_ab_test_winner(
         )
 
     # Apply winner
-    link = await svc.apply_winner_to_link(test_id)
+    link = await svc.apply_winner_to_link(business_id, test_id)
     if not link:
         raise HTTPException(status_code=500, detail="Failed to apply winner")
 
@@ -890,7 +890,7 @@ async def list_running_tests(
 
     result = []
     for test in tests:
-        metrics = await svc.get_test_metrics(test.id)
+        metrics = await svc.get_test_metrics(business_id, test.id)
         result.append(metrics)
 
     return result

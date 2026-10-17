@@ -57,11 +57,16 @@ from app.core.deps import get_current_user  # noqa: E402
 from app.domains.businesses.models import Business  # noqa: E402
 from app.domains.seo_config.fomo_models import ConversionEvent  # noqa: E402
 from app.domains.seo_config.models import PublicationLink  # noqa: E402
+from app.domains.seo_config.fomo_abtest_service import FOMABTestService  # noqa: E402
+from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator  # noqa: E402
+from app.domains.seo_config.fomo_models import FOMABTest  # noqa: E402
 from app.domains.seo_config.fomo_service import FOMAConversionService  # noqa: E402
+from app.domains.seo_config.models import PlatformSEOStatus, PublicationLinkFOMO  # noqa: E402
 from app.domains.seo_config.positioning_models import (  # noqa: E402
     PositioningRecommendation, PublicationLinkPositioningScore,
 )
 from app.domains.seo_config.router import router  # noqa: E402
+from app.domains.seo_config.service import PublicationLinkService, SEOConfigService  # noqa: E402
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEvent  # noqa: E402
 from app.domains.seo_config.webhook_service import WebhookService  # noqa: E402
 from app.domains.users.models import User  # noqa: E402
@@ -77,6 +82,7 @@ async def env():
             User.__table__, Business.__table__, PublicationLink.__table__,
             ConversionEvent.__table__, WebhookEvent.__table__,
             PublicationLinkPositioningScore.__table__, PositioningRecommendation.__table__,
+            PublicationLinkFOMO.__table__, PlatformSEOStatus.__table__, FOMABTest.__table__,
         ):
             await conn.run_sync(lambda c, t=t: t.create(bind=c, checkfirst=True))
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -419,3 +425,106 @@ async def test_dismissing_a_recommendation_from_another_business_404s_and_leaves
 
     refreshed = await env.db.get(PositioningRecommendation, rec_b.id)
     assert refreshed.status == "open"
+
+
+# ── More object-level IDOR: links, platform connections, A/B tests ──
+#
+# Same shape as the positioning fixes above, found by sweeping every
+# id-by-itself lookup in this domain: PublicationLinkService,
+# SEOConfigService, PublicationFOMOGenerator and FOMABTestService all trusted
+# a caller-supplied id with no check it belonged to business_id.
+
+async def make_fomo(db, business_id, link_id, copy="Comprá ya"):
+    fomo = PublicationLinkFOMO(
+        business_id=business_id, link_id=link_id, call_to_action="Comprá ahora",
+        generated_copy=copy, fomo_score=50.0,
+    )
+    db.add(fomo)
+    await db.commit()
+    await db.refresh(fomo)
+    return fomo
+
+
+async def test_deleting_a_link_from_another_business_is_a_404_not_a_delete(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+
+    svc = PublicationLinkService(env.db)
+    deleted = await svc.delete_publication_link(business_a.id, link_b.id)
+    assert deleted is False
+
+    still_there = await env.db.get(PublicationLink, link_b.id)
+    assert still_there is not None
+
+
+async def test_toggling_seo_on_a_link_from_another_business_does_nothing(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+
+    svc = PublicationLinkService(env.db)
+    result = await svc.toggle_publication_link_seo(business_a.id, link_b.id, False)
+    assert result is None
+
+    untouched = await env.db.get(PublicationLink, link_b.id)
+    assert untouched.seo_enabled is True
+
+
+async def test_fomo_copy_of_a_link_from_another_business_is_not_visible(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+    await make_fomo(env.db, business_b.id, link_b.id)
+
+    generator = PublicationFOMOGenerator(env.db)
+    assert await generator.get_latest_fomo(business_a.id, link_b.id) is None
+    assert await generator.get_latest_fomo(business_b.id, link_b.id) is not None
+
+
+async def test_toggling_another_businesss_platform_connection_does_nothing(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    connection_id = uuid4()
+    status_b = PlatformSEOStatus(
+        business_id=business_b.id, connection_id=connection_id, platform_name="amazon", seo_enabled=True,
+    )
+    env.db.add(status_b)
+    await env.db.commit()
+
+    svc = SEOConfigService(env.db)
+    result = await svc.toggle_platform_seo(business_a.id, connection_id, False)
+    assert result is None
+
+    untouched = await env.db.get(PlatformSEOStatus, status_b.id)
+    assert untouched.seo_enabled is True
+
+
+async def test_ab_test_from_another_business_is_invisible_to_every_operation(env):
+    owner_a = await make_user(env.db)
+    business_a = await make_business(env.db, owner_a)
+    owner_b = await make_user(env.db)
+    business_b = await make_business(env.db, owner_b)
+    link_b = await make_link(env.db, business_b.id)
+    variant_a = await make_fomo(env.db, business_b.id, link_b.id, copy="A")
+    variant_b = await make_fomo(env.db, business_b.id, link_b.id, copy="B")
+
+    ab_svc = FOMABTestService(env.db)
+    test_b = await ab_svc.create_ab_test(business_b.id, link_b.id, variant_a.id, variant_b.id)
+
+    assert await ab_svc.get_test(business_a.id, test_b.id) is None
+    assert await ab_svc.get_test_metrics(business_a.id, test_b.id) == {}
+    assert await ab_svc.apply_winner_to_link(business_a.id, test_b.id) is None
+    result = await ab_svc.check_and_announce_winner(business_a.id, test_b.id)
+    assert result is None
+
+    still_running = await env.db.get(FOMABTest, test_b.id)
+    assert still_running.status == "running"

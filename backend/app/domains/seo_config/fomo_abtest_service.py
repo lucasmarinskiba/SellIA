@@ -56,10 +56,11 @@ class FOMABTestService:
         logger.info(f"Created A/B test {test.id} for link {link_id}")
         return test
 
-    async def get_test(self, test_id: UUID) -> FOMABTest | None:
-        """Get test by ID."""
+    async def get_test(self, business_id: UUID, test_id: UUID) -> FOMABTest | None:
+        """Get test by ID, scoped to the business that owns it — test_id alone
+        is a caller-supplied path param, not proof of ownership."""
         result = await self.db.execute(
-            select(FOMABTest).where(FOMABTest.id == test_id)
+            select(FOMABTest).where(FOMABTest.id == test_id, FOMABTest.business_id == business_id)
         )
         return result.scalar_one_or_none()
 
@@ -73,9 +74,9 @@ class FOMABTestService:
         )
         return result.scalars().all()
 
-    async def check_and_announce_winner(self, test_id: UUID) -> FOMABTest | None:
+    async def check_and_announce_winner(self, business_id: UUID, test_id: UUID) -> FOMABTest | None:
         """Check if test has enough conversions to declare winner."""
-        test = await self.get_test(test_id)
+        test = await self.get_test(business_id, test_id)
         if not test or test.status != "running":
             return None
 
@@ -118,9 +119,9 @@ class FOMABTestService:
         )
         return test
 
-    async def apply_winner_to_link(self, test_id: UUID) -> PublicationLink | None:
+    async def apply_winner_to_link(self, business_id: UUID, test_id: UUID) -> PublicationLink | None:
         """Apply winning FOMO variant to the publication link."""
-        test = await self.get_test(test_id)
+        test = await self.get_test(business_id, test_id)
         if not test or not test.winner_variant_id:
             logger.warning(f"Cannot apply winner for test {test_id}: no winner")
             return None
@@ -149,9 +150,9 @@ class FOMABTestService:
 
         return link
 
-    async def get_test_metrics(self, test_id: UUID) -> dict:
+    async def get_test_metrics(self, business_id: UUID, test_id: UUID) -> dict:
         """Get detailed metrics for A/B test."""
-        test = await self.get_test(test_id)
+        test = await self.get_test(business_id, test_id)
         if not test:
             return {}
 

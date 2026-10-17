@@ -52,10 +52,15 @@ class SEOConfigService:
         config = await self.get_or_create_seo_config(business_id)
         config.global_seo_enabled = enabled
 
-    async def get_platform_seo_status(self, connection_id: UUID) -> PlatformSEOStatus | None:
-        """Get SEO status for a specific platform connection."""
+    async def get_platform_seo_status(self, business_id: UUID, connection_id: UUID) -> PlatformSEOStatus | None:
+        """Get SEO status for a specific platform connection, scoped to the
+        business that owns it — connection_id alone is a caller-supplied path
+        param, not proof of ownership."""
         result = await self.db.execute(
-            select(PlatformSEOStatus).where(PlatformSEOStatus.connection_id == connection_id)
+            select(PlatformSEOStatus).where(
+                PlatformSEOStatus.connection_id == connection_id,
+                PlatformSEOStatus.business_id == business_id,
+            )
         )
         return result.scalar_one_or_none()
 
@@ -81,9 +86,9 @@ class SEOConfigService:
 
         return status
 
-    async def toggle_platform_seo(self, connection_id: UUID, enabled: bool) -> PlatformSEOStatus | None:
+    async def toggle_platform_seo(self, business_id: UUID, connection_id: UUID, enabled: bool) -> PlatformSEOStatus | None:
         """Toggle SEO for a specific platform."""
-        status = await self.get_platform_seo_status(connection_id)
+        status = await self.get_platform_seo_status(business_id, connection_id)
         if status:
             status.seo_enabled = enabled
             await self.db.commit()
@@ -149,10 +154,17 @@ class PublicationLinkService:
         await self.db.refresh(link)
         return link
 
-    async def get_publication_link(self, link_id: UUID) -> PublicationLink | None:
-        """Get a publication link by ID."""
+    async def get_publication_link(self, business_id: UUID, link_id: UUID) -> PublicationLink | None:
+        """Get a publication link by ID, scoped to the business that owns it.
+
+        link_id is a caller-supplied path param with no other proof of
+        ownership — without this filter, one business could read, toggle,
+        delete or generate/sync FOMO copy for another business's link.
+        """
         result = await self.db.execute(
-            select(PublicationLink).where(PublicationLink.id == link_id)
+            select(PublicationLink).where(
+                PublicationLink.id == link_id, PublicationLink.business_id == business_id
+            )
         )
         return result.scalar_one_or_none()
 
@@ -165,18 +177,18 @@ class PublicationLinkService:
         )
         return result.scalars().all()
 
-    async def toggle_publication_link_seo(self, link_id: UUID, enabled: bool) -> PublicationLink | None:
+    async def toggle_publication_link_seo(self, business_id: UUID, link_id: UUID, enabled: bool) -> PublicationLink | None:
         """Toggle SEO for a specific publication link."""
-        link = await self.get_publication_link(link_id)
+        link = await self.get_publication_link(business_id, link_id)
         if link:
             link.seo_enabled = enabled
             await self.db.commit()
             await self.db.refresh(link)
         return link
 
-    async def delete_publication_link(self, link_id: UUID) -> bool:
+    async def delete_publication_link(self, business_id: UUID, link_id: UUID) -> bool:
         """Delete a publication link."""
-        link = await self.get_publication_link(link_id)
+        link = await self.get_publication_link(business_id, link_id)
         if link:
             await self.db.delete(link)
             await self.db.commit()
