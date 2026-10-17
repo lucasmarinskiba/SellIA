@@ -42,6 +42,12 @@ logger = get_logger(__name__)
 EXTRA_MODEL_MODULES = [
     "app.models.authority_building",
     "app.domains.businesses.location_models",
+    # Read/written by the mounted unified_dashboard endpoints (aggregate_location_day
+    # queries staff_tasks and pricing_transactions). Nothing imports the last two at
+    # boot, so without listing them here those tables are never created in production.
+    "app.domains.analytics.unified_dashboard_models",
+    "app.domains.staff.task_models",
+    "app.domains.pricing.pricing_models",
     "app.domains.agents.llm_usage_models",
     "app.domains.integrations.integration_models",
     "app.core.semantic_cache",  # lives outside app/domains, so the scan never found it
