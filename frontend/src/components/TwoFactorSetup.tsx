@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
+import { authApi, extractErrorMessage } from '@/lib/sellia-api';
 
 interface TwoFactorSetupProps {
-  userId: string;
   onComplete: () => void;
   onCancel: () => void;
 }
 
 type Step = 'intro' | 'setup' | 'verify' | 'backup' | 'complete';
 
+// Runs inside the signup flow, right after SecureSignupForm stored the new
+// account's access token (setToken), so every call here is authenticated as
+// that account. Identity comes from the Bearer token on the server side: this
+// component never sends a user id or a secret. The server generates and keeps
+// the TOTP secret (POST /auth/2fa/setup) and the code is checked against it
+// (POST /auth/2fa/verify?code=...).
 export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
-  userId,
   onComplete,
   onCancel,
 }) => {
   const [step, setStep] = useState<Step>('intro');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,21 +30,12 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app';
-      const response = await fetch(`${backendUrl}/api/v1/auth/2fa/enable`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
-      });
-
-      if (!response.ok) throw new Error('Failed to enable 2FA');
-
-      const data = await response.json();
+      const data = await authApi.setup2FA();
       setQrCode(data.qr_code);
       setSecret(data.secret);
       setStep('setup');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error enabling 2FA');
+      setError(extractErrorMessage(err, 'No se pudo iniciar la configuración de 2FA'));
     } finally {
       setLoading(false);
     }
@@ -53,22 +50,11 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sellia-production.up.railway.app';
-      const response = await fetch(`${backendUrl}/api/v1/auth/2fa/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          secret,
-          totp_code: verificationCode,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Código 2FA inválido');
-
+      const data = await authApi.verify2FA(verificationCode);
+      setBackupCodes(data.backup_codes ?? []);
       setStep('backup');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error verificando código');
+      setError(extractErrorMessage(err, 'Código 2FA inválido'));
     } finally {
       setLoading(false);
     }
@@ -116,6 +102,12 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               <li>✓ 2 minutos de tu tiempo</li>
             </ul>
           </div>
+
+          {error && (
+            <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-xs text-red-800">{error}</p>
+            </div>
+          )}
 
           <button
             onClick={handleEnableClick}
@@ -213,18 +205,30 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             </p>
           </div>
 
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
-            <p className="text-xs font-semibold text-orange-900 flex gap-2">
-              <span>⚠️</span>
-              <span>Guarda tu clave secreta en un lugar seguro</span>
-            </p>
-            <p className="text-xs text-orange-800">
-              Si pierdes acceso a tu app autenticadora, necesitarás esta clave para recuperar tu cuenta:
-            </p>
-            <code className="block text-xs bg-white p-2 rounded border border-orange-200 font-mono break-all text-center text-gray-900 mt-2">
-              {secret}
-            </code>
-          </div>
+          {backupCodes.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-2">
+              <p className="text-xs font-semibold text-orange-900 flex gap-2">
+                <span>⚠️</span>
+                <span>Guarda tus códigos de respaldo en un lugar seguro</span>
+              </p>
+              <p className="text-xs text-orange-800">
+                Si pierdes acceso a tu app autenticadora, cada código sirve una sola vez para entrar a tu cuenta. Solo se muestran ahora:
+              </p>
+              <ul
+                data-testid="backup-codes"
+                className="grid grid-cols-2 gap-2 mt-2"
+              >
+                {backupCodes.map((code) => (
+                  <li
+                    key={code}
+                    className="text-xs bg-white p-2 rounded border border-orange-200 font-mono text-center text-gray-900"
+                  >
+                    {code}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <button
             onClick={() => {
