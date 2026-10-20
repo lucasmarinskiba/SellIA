@@ -7,6 +7,9 @@ failed with 502 whenever Railway was redeploying. They now run only when
 SELLIA_LIVE_API_URL is set, and never against production:
 
     SELLIA_LIVE_API_URL=http://localhost:8000 pytest tests/test_security_auth.py
+
+The E2E workflow sets it to the stack it builds (http://localhost:8000) and runs both
+modules there, with `-o addopts=` to skip the unit-test coverage gate.
 """
 
 import os

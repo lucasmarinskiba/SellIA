@@ -181,6 +181,33 @@ jobs:
           BASE_URL: http://localhost:3000
           API_URL: http://localhost:8000
 
+      # The stack is already up for Playwright, so also run the API-level security suites
+      # against it: signup password policy, email validation, 2FA (setup / verify / disable /
+      # login) and a SQL-injection probe. The normal CI job skips them because they need a
+      # live server (backend/tests/live_api.py). `!cancelled()` so a Playwright failure does
+      # not hide a security regression, and vice versa. Requirements were installed by the
+      # seed step; addopts is cleared to drop the unit-test coverage gate.
+      - name: Run API security tests against the stack
+        if: ${{ !cancelled() }}
+        working-directory: backend
+        run: |
+          set +e
+          python -m pytest tests/test_security_auth.py tests/test_e2e_sales_funnel.py \
+            -o addopts= -p no:cacheprovider -ra --tb=short 2>&1 | tee security-api.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            # Annotations are readable without opening the job log.
+            grep -E "^(FAILED|ERROR) " security-api.log | head -20 | while IFS= read -r line; do
+              echo "::error::${line:0:300}"
+            done
+          fi
+          exit $status
+        env:
+          SELLIA_LIVE_API_URL: http://localhost:8000
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/sellia
+          SECRET_KEY: e2e-test-secret-32-chars-long-1234567
+          ENVIRONMENT: testing
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()

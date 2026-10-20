@@ -7,6 +7,9 @@ from uuid import uuid4
 
 from live_api import LIVE_API_URL as BASE_URL, requires_live_api
 
+# Meets the signup password policy (8+ chars, upper, lower, digit and one of @+-!#$%).
+VALID_PASSWORD = "E2eTest-123!"
+
 # Skipped unless SELLIA_LIVE_API_URL points at a non-production server (see live_api.py).
 pytestmark = requires_live_api
 
@@ -24,7 +27,7 @@ def vendor_account(api_client):
         "/api/v1/auth/signup",
         json={
             "email": email,
-            "password": "test123secure",
+            "password": VALID_PASSWORD,
             "full_name": "Test Vendor"
         }
     )
@@ -47,7 +50,7 @@ class TestAuthFlow:
             "/api/v1/auth/signup",
             json={
                 "email": email,
-                "password": "secure123",
+                "password": VALID_PASSWORD,
                 "full_name": "New User"
             }
         )
@@ -65,7 +68,7 @@ class TestAuthFlow:
             "/api/v1/auth/signup",
             json={
                 "email": vendor_account["email"],
-                "password": "newpass123",
+                "password": VALID_PASSWORD,
                 "full_name": "Duplicate"
             }
         )
@@ -195,7 +198,7 @@ class TestPerformance:
             "/api/v1/auth/signup",
             json={
                 "email": email,
-                "password": "test123",
+                "password": VALID_PASSWORD,
                 "full_name": "Perf Test"
             }
         )
@@ -228,7 +231,7 @@ class TestLoad:
             "/api/v1/auth/signup",
             json={
                 "email": email,
-                "password": "test123",
+                "password": VALID_PASSWORD,
                 "full_name": "Load Test"
             }
         )

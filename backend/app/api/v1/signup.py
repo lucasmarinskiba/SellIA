@@ -21,10 +21,26 @@ from io import BytesIO
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+# Same shape the signup form checks client-side. Deliberately not EmailStr: email-validator
+# rejects special-use domains such as .local, which the test environments (CI, Playwright
+# E2E) sign up with.
+_EMAIL_SHAPE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
 class SignupRequest(BaseModel):
     email: str
     password: str
     full_name: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_shape(cls, v: str) -> str:
+        """Reject values that are not an address: whitespace (which also covers CR/LF
+        header injection into the verification email), a missing or doubled @, or no
+        dot in the domain. Before this, any string was stored as the account's email."""
+        if len(v) > 254 or not _EMAIL_SHAPE.match(v) or any(ord(ch) < 32 for ch in v):
+            raise ValueError("Invalid email address")
+        return v
 
     @field_validator("password")
     @classmethod
