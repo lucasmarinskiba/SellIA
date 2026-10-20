@@ -10,6 +10,7 @@ already have the table with the old one. Needs PostgreSQL (the ``db_session`` fi
 """
 
 from sqlalchemy import text
+from sqlalchemy.dialects import postgresql
 
 from app.db import schema_bootstrap
 from app.db.schema_bootstrap import repair_enum_columns
@@ -31,6 +32,22 @@ async def _break(engine) -> None:
         await conn.execute(text(
             "ALTER TABLE nps_alerts ALTER COLUMN status TYPE alertstatus USING status::text::alertstatus"
         ))
+
+
+def test_the_alter_statement_is_compiled_and_quoted_by_the_dialect() -> None:
+    """No Postgres needed: the DDL is a structured element, so identifiers go through the dialect's quoting."""
+    plain = schema_bootstrap.AlterColumnEnumType("nps_alerts", "status", "nps_alert_status")
+    odd = schema_bootstrap.AlterColumnEnumType("Weird Table", 'we"ird', "Mixed Case")
+    dialect = postgresql.dialect()
+
+    assert str(plain.compile(dialect=dialect)) == (
+        "ALTER TABLE nps_alerts ALTER COLUMN status TYPE nps_alert_status "
+        "USING status::text::nps_alert_status"
+    )
+    assert str(odd.compile(dialect=dialect)) == (
+        'ALTER TABLE "Weird Table" ALTER COLUMN "we""ird" TYPE "Mixed Case" '
+        'USING "we""ird"::text::"Mixed Case"'
+    )
 
 
 def test_model_has_its_own_enum_type() -> None:
@@ -67,7 +84,7 @@ async def test_an_empty_table_on_the_wrong_type_is_repaired(db_session) -> None:
 async def test_a_table_with_rows_is_never_touched(db_session, monkeypatch) -> None:
     engine = db_session.bind
     await _break(engine)
-    monkeypatch.setattr(schema_bootstrap, "_table_has_rows", lambda sync_conn, table_name: True)
+    monkeypatch.setattr(schema_bootstrap, "_table_has_rows", lambda sync_conn, table: True)
     try:
         assert await repair_enum_columns(engine) == {KEY: "skipped-not-empty"}
         assert await _udt(engine) == "alertstatus"

@@ -31,6 +31,10 @@ import importlib
 import pathlib
 from typing import TYPE_CHECKING
 
+from sqlalchemy import exists, select
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.schema import DDLElement
+
 from app.core.logger import get_logger
 
 if TYPE_CHECKING:
@@ -102,11 +106,30 @@ def _import_all_models() -> int:
 ENUM_REPAIRS: list[tuple[str, str]] = [("nps_alerts", "status")]
 
 
-def _table_has_rows(sync_conn, table_name: str) -> bool:
-    from sqlalchemy import text
+class AlterColumnEnumType(DDLElement):
+    """``ALTER TABLE t ALTER COLUMN c TYPE <enum> USING c::text::<enum>``.
 
-    quoted = sync_conn.dialect.identifier_preparer.quote(table_name)
-    return bool(sync_conn.execute(text(f"SELECT EXISTS (SELECT 1 FROM {quoted})")).scalar())
+    A structured DDL element (identifiers are quoted by the dialect's compiler) rather than an
+    interpolated ``text()`` string, so no SQL is assembled by hand.
+    """
+
+    inherit_cache = False
+
+    def __init__(self, table_name: str, column_name: str, type_name: str) -> None:
+        self.table_name = table_name
+        self.column_name = column_name
+        self.type_name = type_name
+
+
+@compiles(AlterColumnEnumType)
+def _compile_alter_column_enum_type(element: AlterColumnEnumType, compiler, **kw) -> str:
+    quote = compiler.preparer.quote
+    column, type_name = quote(element.column_name), quote(element.type_name)
+    return f"ALTER TABLE {quote(element.table_name)} ALTER COLUMN {column} TYPE {type_name} USING {column}::text::{type_name}"
+
+
+def _table_has_rows(sync_conn, table) -> bool:
+    return bool(sync_conn.execute(select(exists().select_from(table))).scalar())
 
 
 async def repair_enum_columns(engine: AsyncEngine) -> dict[str, str]:
@@ -155,7 +178,7 @@ async def repair_enum_columns(engine: AsyncEngine) -> dict[str, str]:
                     outcome[key] = "absent"
                 elif current == wanted.name:
                     outcome[key] = "ok"
-                elif await conn.run_sync(_table_has_rows, table_name):
+                elif await conn.run_sync(_table_has_rows, table):
                     outcome[key] = "skipped-not-empty"
                     logger.warning(
                         "schema bootstrap: %s uses enum type %r but the model declares %r and the table has rows; "
@@ -163,12 +186,8 @@ async def repair_enum_columns(engine: AsyncEngine) -> dict[str, str]:
                     )
                 else:
                     def _alter(sync_conn, table_name=table_name, column_name=column_name, wanted=wanted) -> None:
-                        quote = sync_conn.dialect.identifier_preparer.quote
                         PGEnum(*wanted.enums, name=wanted.name).create(sync_conn, checkfirst=True)
-                        sync_conn.execute(text(
-                            f"ALTER TABLE {quote(table_name)} ALTER COLUMN {quote(column_name)} "
-                            f"TYPE {quote(wanted.name)} USING {quote(column_name)}::text::{quote(wanted.name)}"
-                        ))
+                        sync_conn.execute(AlterColumnEnumType(table_name, column_name, wanted.name))
 
                     await conn.run_sync(_alter)
                     outcome[key] = "repaired"
