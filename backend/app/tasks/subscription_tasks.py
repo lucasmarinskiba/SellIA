@@ -315,6 +315,11 @@ def generate_recurring_invoices():
 
 
 
+#: Pending bank transfers are reminded when they expire in (18 h, 24 h]; see send_transfer_reminders.
+TRANSFER_REMINDER_WINDOW_START = timedelta(hours=18)
+TRANSFER_REMINDER_WINDOW_END = timedelta(hours=24)
+
+
 @shared_task
 def send_transfer_reminders():
     """Envía recordatorios de transferencias pendientes que están por vencer."""
@@ -326,15 +331,19 @@ def send_transfer_reminders():
             from app.domains.subscriptions.email_templates import transfer_reminder
 
             now = datetime.now(timezone.utc)
-            reminder_threshold = now + timedelta(hours=24)
+            # Remind once. The task runs every 6 hours and there is no "reminded" column, so the
+            # window is exactly one cadence wide: an order that expires between 18 and 24 hours from
+            # now falls in it on a single run (a bare "expires within 24 h" sent up to four reminders).
+            reminder_threshold = now + TRANSFER_REMINDER_WINDOW_END
+            reminder_floor = now + TRANSFER_REMINDER_WINDOW_START
 
             result = await db.execute(
                 select(BankTransferPayment, User)
-                .join(User)
+                .join(User, BankTransferPayment.user_id == User.id)
                 .where(
                     BankTransferPayment.status == BankTransferStatus.PENDING.value,
                     BankTransferPayment.expires_at <= reminder_threshold,
-                    BankTransferPayment.expires_at > now,
+                    BankTransferPayment.expires_at > reminder_floor,
                 )
             )
 
@@ -369,7 +378,7 @@ def expire_pending_transfers():
 
             result = await db.execute(
                 select(BankTransferPayment, User)
-                .join(User)
+                .join(User, BankTransferPayment.user_id == User.id)
                 .where(
                     BankTransferPayment.status == BankTransferStatus.PENDING.value,
                     BankTransferPayment.expires_at < now,
