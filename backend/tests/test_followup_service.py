@@ -186,11 +186,16 @@ async def test_failed_send_does_not_abort_scan_or_raise_missing_greenlet(
     assert (await _reload(good_b)).followup_count == 1
 
 
-async def test_conversation_without_channel_is_counted_as_error_not_raised(
-    db_session: AsyncSession, channel: ChannelConnection, connector: _FakeConnector
+async def test_conversation_without_channel_is_ignored_and_does_not_starve_others(
+    db_session: AsyncSession,
+    channel: ChannelConnection,
+    connector: _FakeConnector,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """ON DELETE SET NULL leaves ACTIVE conversations with no channel; sending
-    raises ValueError("Conversación sin canal asociado") for them."""
+    """ON DELETE SET NULL leaves ACTIVE conversations with no channel; they can
+    never be nudged. They must not be scanned at all, otherwise with a small
+    batch limit they crowd out the conversations that can be."""
+    monkeypatch.setattr("app.domains.channels.followup_service.SCAN_BATCH_LIMIT", 1)
     orphan = await _seed_cold_conversation(db_session, channel, "orphan")
     await db_session.execute(
         Conversation.__table__.update()
@@ -198,13 +203,15 @@ async def test_conversation_without_channel_is_counted_as_error_not_raised(
         .values(channel_connection_id=None)
     )
     await db_session.commit()
+    reachable = await _seed_cold_conversation(db_session, channel, "reachable")
 
     async with AsyncSessionLocal() as db:
         stats = await scan_and_send_followups(db)
 
-    assert stats["errors"] == 1
-    assert stats["sent"] == 0
-    assert connector.sent == []
+    assert stats == {"scanned": 1, "sent": 1, "skipped_replied": 0, "errors": 0}
+    assert [recipient for recipient, _ in connector.sent] == ["reachable"]
+    assert (await _reload(reachable)).followup_count == 1
+    assert (await _reload(orphan)).followup_count == 0
 
 
 async def test_skips_when_customer_wrote_last(

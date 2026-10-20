@@ -47,6 +47,10 @@ async def _find_cold_conversations(db: AsyncSession) -> list[tuple[Any, Any]]:
     result = await db.execute(
         select(Conversation.id, Conversation.business_id).where(
             Conversation.status == ConversationStatus.ACTIVE,
+            # ON DELETE SET NULL leaves conversations with no channel; they can
+            # never be nudged, and without this they would fill the batch below
+            # (no ORDER BY) and starve the conversations that can be.
+            Conversation.channel_connection_id.isnot(None),
             Conversation.last_message_at.isnot(None),
             Conversation.last_message_at < threshold,
             Conversation.followup_count < MAX_FOLLOWUPS_PER_CONVERSATION,
