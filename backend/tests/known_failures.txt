@@ -21,9 +21,9 @@
 # they cover auth/security behaviour and are quarantined only because they
 # currently cannot run, not because the behaviour is verified.
 #
-# NOTE: test_security_auth.py and test_e2e_sales_funnel.py drive a LIVE server and are
-# skipped unless SELLIA_LIVE_API_URL is set (never production; see tests/live_api.py).
-# Their entries below only matter when someone runs them against a local/staging API.
+# NOTE: test_security_auth.py and test_e2e_sales_funnel.py drive a LIVE server: they are
+# skipped in the unit-test job and run, with no quarantine, by the E2E job against the
+# stack it builds (SELLIA_LIVE_API_URL; never production, see tests/live_api.py).
 #
 # Generated 2026-09-21 from a Linux run against postgres:16 + redis:7 (CI-equivalent).
 # Modules that cannot be imported at all are in `collect_ignore` in conftest.py.
@@ -126,17 +126,6 @@ tests/test_e2e_flow.py::TestE2EFlow::test_shopify_order_sync
 tests/test_e2e_flow.py::TestE2EFlow::test_stripe_checkout_flow
 tests/test_e2e_flow.py::TestE2EFlow::test_whatsapp_message_flow
 
-# tests/test_e2e_sales_funnel.py  (10)  e.g. assert 422 == 200
-tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_creates_user
-tests/test_e2e_sales_funnel.py::TestAuthFlow::test_signup_duplicate_email_fails
-tests/test_e2e_sales_funnel.py::TestBusinessFlow::test_create_business
-tests/test_e2e_sales_funnel.py::TestIntegrationFlow::test_complete_flow_setup
-tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[0]
-tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[1]
-tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[2]
-tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[3]
-tests/test_e2e_sales_funnel.py::TestLoad::test_concurrent_signups[4]
-tests/test_e2e_sales_funnel.py::TestPerformance::test_signup_response_time
 
 # tests/test_fomo_seo.py  (1)  e.g. assert 0 == 3
 tests/test_fomo_seo.py::TestFOMOSEOCopy::test_list_copy
@@ -358,13 +347,6 @@ tests/test_security.py::test_totp_invalid_code
 tests/test_security.py::test_totp_setup
 tests/test_security.py::test_totp_verification
 
-# tests/test_security_auth.py  (6)  e.g. assert 422 == 200
-tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_returns_requires_2fa_flag
-tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_with_2fa_code_succeeds
-tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_requires_password
-tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_with_correct_password
-tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_rejects_invalid_code
-tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_with_valid_code
 
 # tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
 tests/test_trade_signals_api.py::test_reject_flow
