@@ -48,6 +48,8 @@ EXTRA_MODEL_MODULES = [
     "app.domains.analytics.unified_dashboard_models",
     "app.domains.staff.task_models",
     "app.domains.pricing.pricing_models",
+    "app.domains.feedback.feedback_alert_models",
+    "app.domains.businesses.team_models",
     "app.domains.agents.llm_usage_models",
     "app.domains.integrations.integration_models",
     "app.core.semantic_cache",  # lives outside app/domains, so the scan never found it
@@ -93,6 +95,88 @@ def _import_all_models() -> int:
         )
     logger.info("schema bootstrap: %s model modules registered", imported)
     return imported
+
+
+#: (table, column) pairs whose Postgres enum type was shared with an unrelated model of the same Python
+#: class name, so the column points at the wrong labels. Only these are ever touched.
+ENUM_REPAIRS: list[tuple[str, str]] = [("nps_alerts", "status")]
+
+
+def _table_has_rows(sync_conn, table_name: str) -> bool:
+    from sqlalchemy import text
+
+    quoted = sync_conn.dialect.identifier_preparer.quote(table_name)
+    return bool(sync_conn.execute(text(f"SELECT EXISTS (SELECT 1 FROM {quoted})")).scalar())
+
+
+async def repair_enum_columns(engine: AsyncEngine) -> dict[str, str]:
+    """Point the columns in ``ENUM_REPAIRS`` at the enum type the model now declares.
+
+    ``Table.create(checkfirst=True)`` never alters a table that exists, so changing a model's enum type
+    name does nothing for a database that already has the table with the old, wrong type (here:
+    ``nps_alerts.status`` created against ``alertstatus`` with someone else's labels, which makes every
+    INSERT fail). This is the one place the bootstrap alters anything, so it is deliberately narrow:
+
+    * only the listed columns;
+    * only when the column's current type differs from the declared one;
+    * only when the table is EMPTY -- with rows there is nothing safe to convert, so it logs and leaves it;
+    * PostgreSQL only; one transaction per column; never raises.
+
+    Returns ``{"table.column": "ok" | "repaired" | "skipped-not-empty" | "absent" | "not-declared" | "failed"}``.
+    """
+    outcome: dict[str, str] = {}
+    if engine.dialect.name != "postgresql":
+        return outcome
+
+    from sqlalchemy import Enum as SAEnum
+    from sqlalchemy import text
+    from sqlalchemy.dialects.postgresql import ENUM as PGEnum
+
+    from app.core.database import Base as CoreBase
+
+    for table_name, column_name in ENUM_REPAIRS:
+        key = f"{table_name}.{column_name}"
+        table = CoreBase.metadata.tables.get(table_name)
+        column = table.c.get(column_name) if table is not None else None
+        if column is None or not isinstance(column.type, SAEnum) or not column.type.name:
+            outcome[key] = "not-declared"
+            continue
+        wanted = column.type
+        try:
+            async with engine.begin() as conn:
+                current = (await conn.execute(
+                    text(
+                        "SELECT udt_name FROM information_schema.columns WHERE table_schema = current_schema() "
+                        "AND table_name = :t AND column_name = :c"
+                    ),
+                    {"t": table_name, "c": column_name},
+                )).scalar_one_or_none()
+                if current is None:
+                    outcome[key] = "absent"
+                elif current == wanted.name:
+                    outcome[key] = "ok"
+                elif await conn.run_sync(_table_has_rows, table_name):
+                    outcome[key] = "skipped-not-empty"
+                    logger.warning(
+                        "schema bootstrap: %s uses enum type %r but the model declares %r and the table has rows; "
+                        "left as is (needs a manual migration)", key, current, wanted.name,
+                    )
+                else:
+                    def _alter(sync_conn, table_name=table_name, column_name=column_name, wanted=wanted) -> None:
+                        quote = sync_conn.dialect.identifier_preparer.quote
+                        PGEnum(*wanted.enums, name=wanted.name).create(sync_conn, checkfirst=True)
+                        sync_conn.execute(text(
+                            f"ALTER TABLE {quote(table_name)} ALTER COLUMN {quote(column_name)} "
+                            f"TYPE {quote(wanted.name)} USING {quote(column_name)}::text::{quote(wanted.name)}"
+                        ))
+
+                    await conn.run_sync(_alter)
+                    outcome[key] = "repaired"
+                    logger.warning("schema bootstrap: repaired %s (was enum type %r, now %r)", key, current, wanted.name)
+        except Exception as e:  # noqa: BLE001 -- a failed repair must not stop the boot
+            outcome[key] = "failed"
+            logger.warning("schema bootstrap: could not repair %s: %s", key, str(e)[:160])
+    return outcome
 
 
 async def existing_table_names(engine: AsyncEngine) -> set[str] | None:
@@ -218,6 +302,10 @@ async def ensure_all_tables(engine: AsyncEngine | None = None) -> dict[str, int]
     fixed = ensure_unique_index_names(CoreBase.metadata)
     if fixed["renamed"] or fixed["dropped"]:
         logger.info("schema bootstrap: made index names unique (%s renamed, %s duplicates dropped)", fixed["renamed"], fixed["dropped"])
+
+    # Before the early return below: the steady state (every table present) is exactly where a table
+    # that exists with a wrong enum type lives.
+    await repair_enum_columns(engine)
 
     # NOT metadata.sorted_tables: that resolves the whole foreign-key graph up
     # front and raises if any FK points at a table no model declares (there is
