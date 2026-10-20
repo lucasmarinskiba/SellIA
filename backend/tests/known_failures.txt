@@ -24,6 +24,7 @@
 # NOTE: test_security_auth.py and test_e2e_sales_funnel.py drive a LIVE server: they are
 # skipped in the unit-test job and run, with no quarantine, by the E2E job against the
 # stack it builds (SELLIA_LIVE_API_URL; never production, see tests/live_api.py).
+# The 6 entries below are the exception: see their header.
 #
 # Generated 2026-09-21 from a Linux run against postgres:16 + redis:7 (CI-equivalent).
 # Modules that cannot be imported at all are in `collect_ignore` in conftest.py.
@@ -347,6 +348,24 @@ tests/test_security.py::test_totp_invalid_code
 tests/test_security.py::test_totp_setup
 tests/test_security.py::test_totp_verification
 
+
+# tests/test_security_auth.py  (6)  unauthenticated 2FA verify/disable are shadowed by auth.py
+# These tests drive the signup-flow 2FA API (POST /auth/2fa/verify|disable with
+# {user_id, secret, totp_code}, no session). In the real app (pinned dependencies, same
+# Dockerfile as production) auth.py is mounted before signup.py, so the authenticated
+# handlers at auth.py:691 / :733 (`code` as a query param) answer first and these requests
+# get 422; the handlers at auth.py:1478 and signup.py:212 / :241 are unreachable. The
+# signup page's TwoFactorSetup.tsx sends the same body, so setting up 2FA from the signup
+# page fails in production. Do NOT make the unauthenticated handlers reachable: they enable
+# 2FA with a client-supplied secret for any user_id. Fix = move the signup step to the
+# authenticated flow (/auth/2fa/setup + /auth/2fa/verify?code=), delete the duplicates and
+# rewrite these tests. Found by PR #30 (first run of this module against a real stack).
+tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_returns_requires_2fa_flag
+tests/test_security_auth.py::TestSigninWithTwoFactor::test_signin_with_2fa_code_succeeds
+tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_requires_password
+tests/test_security_auth.py::TestTwoFactorAuth::test_disable_2fa_with_correct_password
+tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_rejects_invalid_code
+tests/test_security_auth.py::TestTwoFactorAuth::test_verify_2fa_with_valid_code
 
 # tests/test_trade_signals_api.py  (2)  e.g. RuntimeError: Event loop is closed
 tests/test_trade_signals_api.py::test_reject_flow
