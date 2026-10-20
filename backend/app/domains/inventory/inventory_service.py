@@ -274,10 +274,7 @@ class FulfillmentRoutingService:
         if not db or not locations:
             return {"error": "No locations available"}
 
-        from app.domains.locations.proximity_engine import ProximityEngine, GeoPoint
-
-        engine = ProximityEngine()
-        customer_point = GeoPoint(lat=customer_lat, lng=customer_lng)
+        from app.domains.proximity.proximity_engine import ProximityEngine
 
         candidates = []
 
@@ -294,8 +291,9 @@ class FulfillmentRoutingService:
                 continue
 
             # Calculate distance
-            loc_point = GeoPoint(lat=loc.latitude, lng=loc.longitude)
-            distance_km = engine.haversine_distance(customer_point, loc_point)
+            distance_km = ProximityEngine.haversine_distance(
+                customer_lat, customer_lng, loc.latitude, loc.longitude
+            )
 
             # Score: distance + inventory level
             score = (distance_km / 100) + (100 / (inventory.quantity_available + 1))
