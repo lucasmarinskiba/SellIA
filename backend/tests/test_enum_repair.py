@@ -94,12 +94,23 @@ async def test_a_table_with_rows_is_never_touched(db_session, monkeypatch) -> No
     assert await _udt(engine) == "nps_alert_status"
 
 
-async def test_ensure_all_tables_runs_the_repair_even_when_nothing_is_missing(db_session) -> None:
-    """The steady state returns early ('already present'); the repair has to run before that."""
+async def test_ensure_all_tables_runs_the_repair_on_the_early_return_path(db_session, monkeypatch) -> None:
+    """The steady state returns early ("already present"); the repair has to run before that.
+
+    The early return is forced instead of relying on the database's state: whether any table is pending
+    depends on what the shared test database happens to contain.
+    """
+    from app.core.database import Base
+
     engine = db_session.bind
     await _break(engine)
 
+    async def everything_exists(_engine) -> set[str]:
+        return set(Base.metadata.tables)
+
+    monkeypatch.setattr(schema_bootstrap, "existing_table_names", everything_exists)
+
     result = await schema_bootstrap.ensure_all_tables(engine)
 
-    assert result["created"] == 0
+    assert result == {"tables": len(Base.metadata.tables), "created": 0, "skipped": 0}  # it did return early
     assert await _udt(engine) == "nps_alert_status"
