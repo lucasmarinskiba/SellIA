@@ -163,7 +163,7 @@ class UnifiedDashboardService:
         if not date:
             date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-        from app.domains.locations.models import Location
+        from app.domains.businesses.location_models import Location
 
         locations = db.query(Location).filter(Location.business_id == business_id).all()
         active_locations = len([l for l in locations if l.is_active])

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Float
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
@@ -41,7 +41,7 @@ class UnifiedLocationMetric(Base):
     staff_on_shift = Column(Integer, default=0)
     tasks_assigned = Column(Integer, default=0)
     tasks_completed = Column(Integer, default=0)
-    task_completion_rate = Column(Decimal(5, 2), default=0)  # %
+    task_completion_rate = Column(Numeric(5, 2), default=0)  # %
 
     # Inventory
     stock_outs = Column(Integer, default=0)
@@ -49,16 +49,16 @@ class UnifiedLocationMetric(Base):
     demo_units_used = Column(Integer, default=0)
 
     # Feedback
-    nps_avg = Column(Decimal(3, 1), default=0)
+    nps_avg = Column(Numeric(3, 1), default=0)
     nps_detractors = Column(Integer, default=0)
-    sentiment_positive_pct = Column(Decimal(5, 2), default=0)
-    sentiment_negative_pct = Column(Decimal(5, 2), default=0)
+    sentiment_positive_pct = Column(Numeric(5, 2), default=0)
+    sentiment_negative_pct = Column(Numeric(5, 2), default=0)
 
     # Revenue
-    base_revenue = Column(Decimal(12, 2), default=0)
-    final_revenue = Column(Decimal(12, 2), default=0)
-    total_discounts = Column(Decimal(12, 2), default=0)
-    revenue_per_visitor = Column(Decimal(8, 2), default=0)
+    base_revenue = Column(Numeric(12, 2), default=0)
+    final_revenue = Column(Numeric(12, 2), default=0)
+    total_discounts = Column(Numeric(12, 2), default=0)
+    revenue_per_visitor = Column(Numeric(8, 2), default=0)
 
     # Pricing
     peak_hour_discounts_applied = Column(Integer, default=0)
@@ -67,7 +67,7 @@ class UnifiedLocationMetric(Base):
 
     # Orders linked to visits
     online_orders_from_visits = Column(Integer, default=0)
-    attributed_revenue = Column(Decimal(12, 2), default=0)
+    attributed_revenue = Column(Numeric(12, 2), default=0)
 
     # Metadata
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -97,25 +97,25 @@ class BusinessDashboardSummary(Base):
     # Visitors & traffic
     total_visitors_month = Column(Integer, default=0)
     unique_visitors_month = Column(Integer, default=0)
-    avg_visitors_per_location = Column(Decimal(8, 1), default=0)
+    avg_visitors_per_location = Column(Numeric(8, 1), default=0)
     traffic_trend = Column(String(20), default="stable")  # improving, stable, declining
 
     # Staff performance
-    avg_task_completion_rate = Column(Decimal(5, 2), default=0)
-    avg_nps_by_location = Column(Decimal(3, 1), default=0)
+    avg_task_completion_rate = Column(Numeric(5, 2), default=0)
+    avg_nps_by_location = Column(Numeric(3, 1), default=0)
 
     # Revenue
-    total_revenue_month = Column(Decimal(12, 2), default=0)
-    attributed_revenue_month = Column(Decimal(12, 2), default=0)
-    attribution_rate = Column(Decimal(5, 2), default=0)  # attributed / total %
-    revenue_per_location = Column(Decimal(10, 2), default=0)
+    total_revenue_month = Column(Numeric(12, 2), default=0)
+    attributed_revenue_month = Column(Numeric(12, 2), default=0)
+    attribution_rate = Column(Numeric(5, 2), default=0)  # attributed / total %
+    revenue_per_location = Column(Numeric(10, 2), default=0)
 
     # Pricing performance
-    avg_discount_rate = Column(Decimal(5, 2), default=0)
+    avg_discount_rate = Column(Numeric(5, 2), default=0)
     ab_test_winning_variants = Column(Integer, default=0)
 
     # Inventory
-    avg_inventory_turnover = Column(Decimal(5, 2), default=0)
+    avg_inventory_turnover = Column(Numeric(5, 2), default=0)
     total_stock_outs = Column(Integer, default=0)
 
     # Health score (0-100)
@@ -151,9 +151,9 @@ class LocationComparison(Base):
     location_id_lowest_nps = Column(UUID(as_uuid=True), nullable=True)
 
     # Variance
-    visitor_variance_pct = Column(Decimal(5, 2), default=0)
-    revenue_variance_pct = Column(Decimal(5, 2), default=0)
-    nps_variance = Column(Decimal(3, 1), default=0)
+    visitor_variance_pct = Column(Numeric(5, 2), default=0)
+    revenue_variance_pct = Column(Numeric(5, 2), default=0)
+    nps_variance = Column(Numeric(3, 1), default=0)
 
     created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
 
@@ -183,10 +183,10 @@ class FunnelStageMetric(Base):
     repeat_purchases = Column(Integer, default=0)
 
     # Conversion rates
-    lead_to_visit_rate = Column(Decimal(5, 2), default=0)
-    visit_to_order_rate = Column(Decimal(5, 2), default=0)
-    order_to_repeat_rate = Column(Decimal(5, 2), default=0)
-    overall_funnel_rate = Column(Decimal(5, 2), default=0)
+    lead_to_visit_rate = Column(Numeric(5, 2), default=0)
+    visit_to_order_rate = Column(Numeric(5, 2), default=0)
+    order_to_repeat_rate = Column(Numeric(5, 2), default=0)
+    overall_funnel_rate = Column(Numeric(5, 2), default=0)
 
     # Time metrics
     avg_days_lead_to_visit = Column(Integer, nullable=True)

@@ -81,7 +81,7 @@ class StaffTask(Base):
 
     # Metadata
     tags = Column(JSONB, default=list)  # ["urgent", "vip", "visitor_request"]
-    metadata = Column(JSONB, default=dict)
+    task_metadata = Column(JSONB, default=dict)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
@@ -113,7 +113,7 @@ class TaskNotification(Base):
     device_id = Column(String(255), nullable=True)  # For push notifications
     external_notification_id = Column(String(255), nullable=True)  # Provider's ID
 
-    metadata = Column(JSONB, default=dict)
+    notification_metadata = Column(JSONB, default=dict)
 
     __table_args__ = (
         Index("idx_staff_read", "staff_id", "read_at"),

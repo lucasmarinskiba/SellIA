@@ -6,7 +6,7 @@ from uuid import UUID
 from typing import Optional
 
 from sqlalchemy.orm import Session
-from app.domains.locations.proximity_engine import ProximityEngine, GeoPoint
+from app.domains.proximity.proximity_engine import ProximityEngine
 from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.locations.checkin_models import CheckinType
 
@@ -34,13 +34,11 @@ class GeofenceTriggerService:
         if not db or not locations:
             return {"triggered": False}
 
-        user_point = GeoPoint(lat=user_lat, lng=user_lng)
-        engine = ProximityEngine()
-
         # Find nearest location within radius
         for loc in locations:
-            loc_point = GeoPoint(lat=loc.latitude, lng=loc.longitude)
-            distance_km = engine.haversine_distance(user_point, loc_point)
+            distance_km = ProximityEngine.haversine_distance(
+                user_lat, user_lng, loc.latitude, loc.longitude
+            )
 
             if distance_km <= GeofenceTriggerService.DEFAULT_RADIUS_KM:
                 # Check if user already checked in recently (avoid duplicates)
@@ -91,13 +89,11 @@ class GeofenceTriggerService:
         radius_km: float = DEFAULT_RADIUS_KM
     ) -> list:
         """List all locations within radius."""
-        user_point = GeoPoint(lat=user_lat, lng=user_lng)
-        engine = ProximityEngine()
-
         nearby = []
         for loc in locations:
-            loc_point = GeoPoint(lat=loc.latitude, lng=loc.longitude)
-            distance_km = engine.haversine_distance(user_point, loc_point)
+            distance_km = ProximityEngine.haversine_distance(
+                user_lat, user_lng, loc.latitude, loc.longitude
+            )
 
             if distance_km <= radius_km:
                 nearby.append({
