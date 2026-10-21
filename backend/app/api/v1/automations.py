@@ -30,6 +30,9 @@ from app.domains.automations.schemas import (
     ContentGenerationRequest, ContentGenerationResponse,
     AutomationToggleCreate, AutomationToggleUpdate, AutomationToggleResponse,
     ToggleAuditLogResponse, ToggleDashboardResponse,
+    ToggleScheduleCreate, ToggleScheduleResponse,
+    ToggleNotificationRuleCreate, ToggleNotificationRuleResponse,
+    ToggleNotificationLogResponse,
 )
 from app.domains.automations.seed import seed_automations
 
@@ -1215,14 +1218,13 @@ async def get_toggles_dashboard(
         select(
             AutomationToggle.category,
             func.count().label("total"),
-            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label("enabled"),
+            func.sum(cast(AutomationToggle.is_enabled, Integer)).label("enabled"),
             func.sum(AutomationToggle.current_month_usage).label("usage"),
         )
         .where(AutomationToggle.business_id == business_id)
         .group_by(AutomationToggle.category)
     )
 
-    from sqlalchemy import Integer, cast
     rows = result.all()
     by_category = []
     for row in rows:

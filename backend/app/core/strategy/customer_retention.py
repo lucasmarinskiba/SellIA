@@ -5,6 +5,11 @@ from enum import Enum
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.strategy.business_analyzer import BusinessProfile
+
 
 logger = logging.getLogger(__name__)
 

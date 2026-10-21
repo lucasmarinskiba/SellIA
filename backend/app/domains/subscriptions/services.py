@@ -7,6 +7,11 @@ from app.domains.subscriptions.models import (
     Subscription, SubscriptionPlan, SubscriptionStatus, UsageTracking, Invoice,
     DEFAULT_PLAN_LIMITS, DEFAULT_PLAN_FEATURES
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.domains.subscriptions.models import BankTransferPayment
+
 
 
 async def get_or_create_subscription(db: AsyncSession, user_id: Any, plan_slug: str = "free") -> Subscription:
