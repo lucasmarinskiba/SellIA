@@ -17,7 +17,7 @@ historical value:
 
 from datetime import UTC, datetime
 from statistics import mean, median
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 from app.domains.fomo.ai_segmentation_agent import FOMOFatigueDetector, RFMCalculator
@@ -171,7 +171,7 @@ class PersonalizedOfferCalibrator:
     """Size the win-back offer to the customer's value relative to the batch —
     retention spend should scale with what's actually at stake."""
 
-    OFFER_TIERS = [
+    OFFER_TIERS: ClassVar[list] = [
         {"min_percentile": 0.8, "discount_percent": 30, "label": "high_value"},
         {"min_percentile": 0.5, "discount_percent": 20, "label": "mid_value"},
         {"min_percentile": 0.2, "discount_percent": 15, "label": "standard_value"},

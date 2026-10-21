@@ -99,7 +99,7 @@ async def test_retry_on_failure():
 async def test_exhaust_retries():
     """Test: Agota retries y lanza excepción."""
     engine = RetryEngine()
-    config = RetryConfig(max_retries=2)
+    RetryConfig(max_retries=2)
 
     call_count = 0
 
@@ -188,8 +188,7 @@ async def test_retry_history():
             raise ValueError("First attempt failed")
         return "success"
 
-    operation_id = None
-    result = await engine.execute_with_retry(
+    await engine.execute_with_retry(
         func_with_retry,
         policy=RetryPolicy.DEFAULT,
         operation_name="test_history",
@@ -199,7 +198,7 @@ async def test_retry_history():
     # Verificar que history fue guardada
     assert len(engine.retry_history) > 0
 
-    history = list(engine.retry_history.values())[0]
+    history = next(iter(engine.retry_history.values()))
     assert history.final_status == "success"
     assert len(history.attempts) == 2
 

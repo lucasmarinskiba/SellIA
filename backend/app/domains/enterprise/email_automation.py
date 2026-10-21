@@ -3,7 +3,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 from sqlalchemy.orm import Session
@@ -324,7 +324,7 @@ class ProposalGenerator:
 class CompetitorDetector:
     """NLP-based competitor mention detection."""
 
-    COMPETITORS = [
+    COMPETITORS: ClassVar[list] = [
         "outreach", "chorus", "salesloft", "pipedrive",
         "salesforce", "hubspot", "ringcentral", "gong",
         "microsoft teams", "slack", "zoom",

@@ -407,7 +407,7 @@ class FunnelOptimizationTool(BaseTool):
             if prev_count:
                 conv[f"{stage}_cr"] = count / prev_count if prev_count > 0 else 0
             prev_count = count
-        total_visitors = list(stages.values())[0] if stages else 0
+        total_visitors = next(iter(stages.values())) if stages else 0
         final_conversions = list(stages.values())[-1] if stages else 0
         conv["total"] = final_conversions / total_visitors if total_visitors > 0 else 0
         return conv

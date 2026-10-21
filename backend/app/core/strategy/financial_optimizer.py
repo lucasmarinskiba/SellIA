@@ -93,9 +93,9 @@ class FinancialOptimizer:
         logger.info(f"Optimizing pricing: current_price=${current_price}")
 
         # Calculate elasticity impact
-        elasticity = market_data.get("price_elasticity", -1.2)  # Typical: -1 to -2
+        market_data.get("price_elasticity", -1.2)  # Typical: -1 to -2
         competitor_prices = market_data.get("competitor_prices", [current_price])
-        avg_competitor_price = sum(competitor_prices) / len(competitor_prices)
+        sum(competitor_prices) / len(competitor_prices)
 
         # Evaluate different strategies
         strategies = {
@@ -203,7 +203,7 @@ class FinancialOptimizer:
     def improve_margins(
         self,
         business_profile: "BusinessProfile",
-        market_data: dict[str, Any] = None,
+        market_data: dict[str, Any] | None = None,
     ) -> list[MarginImprovement]:
         """
         Improve gross and net margins.

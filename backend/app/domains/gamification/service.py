@@ -330,7 +330,7 @@ class GamificationEngine:
             "new_achievements": [{"id": str(a.id), "name": a.name} for a in new_achievements],
         }
 
-    async def record_mission_completed(self, user_id: uuid.UUID, business_id: uuid.UUID, mission_platforms: list[str] = None, used_computer_use: bool = False) -> dict:
+    async def record_mission_completed(self, user_id: uuid.UUID, business_id: uuid.UUID, mission_platforms: list[str] | None = None, used_computer_use: bool = False) -> dict:
         """Record a completed mission and trigger celebrations/achievements."""
         profile = await self.get_or_create_profile(user_id, business_id)
         profile.total_missions_completed += 1
@@ -460,9 +460,9 @@ class GamificationEngine:
         event_type: str,
         event_title: str,
         event_description: str = "",
-        event_value: float = None,
+        event_value: float | None = None,
         intensity: str = "medium",
-        companion_message: str = None,
+        companion_message: str | None = None,
     ):
         """Create a celebration event."""
         event = CelebrationEvent(

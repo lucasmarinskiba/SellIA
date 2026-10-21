@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class Framework:
 class MethodologyAgent:
     """Expert in business frameworks and methodologies."""
 
-    FRAMEWORKS = {
+    FRAMEWORKS: ClassVar[dict] = {
         "jtbd": Framework(
             name="Jobs to be Done",
             description="Understand what customers are trying to accomplish and design solutions around that job.",
@@ -289,7 +289,7 @@ class MethodologyAgent:
         ),
     }
 
-    BUSINESS_TYPE_RECOMMENDATIONS = {
+    BUSINESS_TYPE_RECOMMENDATIONS: ClassVar[dict] = {
         BusinessType.B2B_SaaS: ["jtbd", "vpd", "okrs", "north_star_metric"],
         BusinessType.B2C_SaaS: ["jtbd", "vpd", "lean_startup", "north_star_metric"],
         BusinessType.MARKETPLACE: ["jtbd", "vpd", "design_thinking", "okrs"],
@@ -300,7 +300,7 @@ class MethodologyAgent:
         BusinessType.NON_PROFIT: ["design_thinking", "okrs", "jtbd"],
     }
 
-    STAGE_RECOMMENDATIONS = {
+    STAGE_RECOMMENDATIONS: ClassVar[dict] = {
         BusinessStage.IDEA: ["jtbd", "lean_startup", "business_model_canvas"],
         BusinessStage.MVP: ["vpd", "lean_startup", "business_model_canvas"],
         BusinessStage.EARLY_TRACTION: ["okrs", "vpd", "north_star_metric"],

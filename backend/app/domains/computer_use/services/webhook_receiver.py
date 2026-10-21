@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -256,7 +256,7 @@ class FacebookWebhookHandler:
 class WebhookReceiverService:
     """Unificador de webhooks — distribuidores a handlers."""
 
-    HANDLERS = {
+    HANDLERS: ClassVar[dict] = {
         "whatsapp": WhatsAppWebhookHandler,
         "instagram": InstagramWebhookHandler,
         "tiktok": TikTokWebhookHandler,

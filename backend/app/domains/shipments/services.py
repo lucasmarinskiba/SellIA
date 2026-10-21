@@ -239,7 +239,7 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
                     event_code=ev.get("event_code"),
                     event_description=ev.get("event_description"),
                     location=ev.get("location"),
-                    event_at=datetime.fromisoformat(ev["event_at"].replace("Z", "+00:00")) if isinstance(ev.get("event_at"), str) else datetime.now(UTC),
+                    event_at=datetime.fromisoformat(ev["event_at"]) if isinstance(ev.get("event_at"), str) else datetime.now(UTC),
                 )
                 db.add(event)
 
@@ -323,7 +323,7 @@ async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, An
             # Check if event already exists
             event_at = None
             if isinstance(ev_data.get("event_at"), str):
-                event_at = datetime.fromisoformat(ev_data["event_at"].replace("Z", "+00:00"))
+                event_at = datetime.fromisoformat(ev_data["event_at"])
             event_at = event_at or datetime.now(UTC)
 
             existing = await db.execute(

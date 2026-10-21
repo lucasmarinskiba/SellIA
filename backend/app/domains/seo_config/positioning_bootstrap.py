@@ -24,8 +24,8 @@ async def ensure_positioning_recommendation_columns() -> None:
     from app.db.database import engine
 
     statements = (
-        "ALTER TABLE positioning_recommendations ADD COLUMN IF NOT EXISTS store_score_id UUID "
-        "REFERENCES store_positioning_scores(id) ON DELETE SET NULL",
+        ("ALTER TABLE positioning_recommendations ADD COLUMN IF NOT EXISTS store_score_id UUID "
+        "REFERENCES store_positioning_scores(id) ON DELETE SET NULL"),
         "ALTER TABLE positioning_recommendations ALTER COLUMN link_id DROP NOT NULL",
         "CREATE INDEX IF NOT EXISTS idx_store_score_recommendation ON positioning_recommendations (store_score_id)",
     )

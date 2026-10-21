@@ -13,7 +13,7 @@ Decides WHEN to send each FOMO message, per individual customer:
 
 from datetime import UTC, datetime, timedelta
 from statistics import mean, median
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 from app.domains.fomo.ai_segmentation_agent import FOMOFatigueDetector
@@ -251,7 +251,7 @@ class AITimingOptimizerAgent:
     # Standard automation delay templates (mirrors workflow_integration.py's
     # cart_abandonment/flash_sale sequences) — the optimizer personalizes
     # these rather than hardcoding fixed minutes everywhere.
-    AUTOMATION_BASE_DELAYS = {
+    AUTOMATION_BASE_DELAYS: ClassVar[dict] = {
         "cart_abandonment": [
             {"step": 1, "delay_minutes": 5, "category": "immediate", "channel": "email"},
             {"step": 2, "delay_minutes": 120, "category": "short_followup", "channel": "email"},

@@ -119,7 +119,7 @@ class RetentionEngine:
         recommended_actions = self._generate_retention_actions(risk_level, risk_factors)
 
         # Calculate LTV if retained
-        ltv = customer_data.get("lifetime_value", 0.0)
+        customer_data.get("lifetime_value", 0.0)
         mrr = customer_data.get("monthly_revenue", 0.0)
         expected_ltv = (mrr * 36) if risk_level != ChurnRiskLevel.CRITICAL else (mrr * 12)
 

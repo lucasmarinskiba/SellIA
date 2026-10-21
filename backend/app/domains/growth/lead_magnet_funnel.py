@@ -37,7 +37,7 @@ class LeadMagnetEngine:
         topic: str,
         magnet_format: LeadMagnetFormat = LeadMagnetFormat.CHEAT_SHEET,
         target_audience: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> LeadMagnet:
         """Generate a complete lead magnet with AI."""
         # Generate content

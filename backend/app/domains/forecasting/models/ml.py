@@ -112,7 +112,7 @@ class GBMForecaster(Forecaster):
                 diagnostics={"trained": False},
             )
 
-        X, gen_index = origin_matrix(
+        X, _gen_index = origin_matrix(
             self.history, self.index, horizon, self.columns,
             self.country, self.grain, future_exog,
         )

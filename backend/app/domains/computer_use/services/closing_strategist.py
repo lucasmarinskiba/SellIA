@@ -11,7 +11,7 @@ Strategist para cerrar ventas con técnicas probadas:
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -64,7 +64,7 @@ class ClosingStrategist:
     """Strategist para cerrar ventas."""
 
     # Técnicas por personalidad de comprador
-    TECHNIQUE_BY_PERSONALITY = {
+    TECHNIQUE_BY_PERSONALITY: ClassVar[dict] = {
         BuyerPersonality.ANALYTICAL: [
             ClosingTechnique.HORMOZI_RISK_REVERSAL,  # Remove risk
             ClosingTechnique.HORMOZI_VALUE_LADDER,  # Build case
@@ -88,7 +88,7 @@ class ClosingStrategist:
     }
 
     # Template de cierre por técnica
-    CLOSING_TEMPLATES = {
+    CLOSING_TEMPLATES: ClassVar[dict] = {
         ClosingTechnique.TRUMP_DIRECT: """
 You know what? This is exactly what you need. I've seen hundreds of people in your situation.
 The ones who took action? They're killing it. The ones who waited? They're still stuck.

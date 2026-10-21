@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import ClassVar
 
 from app.core.clock import utc_now
 
@@ -37,7 +38,7 @@ class DealScore:
 
 
 class DealScorer:
-    STAGE_WEIGHTS = {
+    STAGE_WEIGHTS: ClassVar[dict] = {
         "discovery": 0.1,
         "qualified": 0.2,
         "proposal": 0.4,

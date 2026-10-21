@@ -20,11 +20,11 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         competitor_name: str,
         industry: str,
-        market_segment: str = None,
-        price_point: float = None,
-        strength_areas: list[str] = None,
-        weakness_areas: list[str] = None,
-        feature_set: list[str] = None,
+        market_segment: str | None = None,
+        price_point: float | None = None,
+        strength_areas: list[str] | None = None,
+        weakness_areas: list[str] | None = None,
+        feature_set: list[str] | None = None,
     ) -> dict:
         """Register/update competitor profile."""
         result = await db.execute(
@@ -75,7 +75,7 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         product_id: UUID,
         current_price: float,
-        competitor_prices: list[float] = None,
+        competitor_prices: list[float] | None = None,
         target_margin: float = 0.4,
         market_position: str = "competitive",
     ) -> dict:
@@ -150,7 +150,7 @@ class CompetitiveIntelligenceService:
     async def get_competitive_landscape(
         db: AsyncSession,
         business_id: UUID,
-        market_segment: str = None,
+        market_segment: str | None = None,
     ) -> dict:
         """Analyze competitive landscape for market segment."""
         # Get all competitors for business
@@ -238,9 +238,9 @@ class CompetitiveIntelligenceService:
         feed_type: str,
         competitor_name: str,
         event_title: str,
-        event_description: str = None,
+        event_description: str | None = None,
         threat_level: str = "medium",
-        source_url: str = None,
+        source_url: str | None = None,
     ) -> dict:
         """Log competitive intelligence event."""
         feed = CompetitiveIntelligenceFeed(
@@ -307,7 +307,7 @@ class CompetitiveIntelligenceService:
         critical_items = critical_count.scalar() or 0
 
         # Get price optimizations awaiting implementation
-        impl_result = await db.execute(
+        await db.execute(
             select(PriceOptimization).where(
                 (PriceOptimization.business_id == business_id)
                 & (~PriceOptimization.is_implemented)

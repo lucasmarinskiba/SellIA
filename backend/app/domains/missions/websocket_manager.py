@@ -48,7 +48,7 @@ class MissionWebSocketManager:
         mission_id: str,
         step_id: str,
         status: str,
-        data: dict[str, Any] = None,
+        data: dict[str, Any] | None = None,
     ):
         """Convenience method to broadcast mission step progress."""
         await self.broadcast(user_id, {

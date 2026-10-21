@@ -440,7 +440,7 @@ class WorkflowEngine:
         from app.domains.channels.connectors.email import EmailConnector
         connector = EmailConnector({}, {})
 
-        subject = config.get("subject", "Mensaje de {business_name}")
+        config.get("subject", "Mensaje de {business_name}")
         body = config.get("body", config.get("template", ""))
 
         try:
@@ -857,7 +857,7 @@ Instrucciones:
         # Send email notification
         try:
             connector = EmailConnector({}, {})
-            subject = config.get("subject", f"🔔 {business.name} — Alerta de Ventas")
+            config.get("subject", f"🔔 {business.name} — Alerta de Ventas")
             await connector.send_message(user.email, notification_text, "text")
             from app.core.logger import get_logger
             get_logger(__name__).info(f"Notification sent to user: {notification_text[:80]}...")
@@ -1144,7 +1144,7 @@ class WorkflowScheduler:
                 if last_action.get("status") == "waiting":
                     resume_at_str = last_action.get("resume_at")
                     if resume_at_str:
-                        resume_at = datetime.fromisoformat(resume_at_str.replace("Z", "+00:00"))
+                        resume_at = datetime.fromisoformat(resume_at_str)
                         if now >= resume_at:
                             # Resume execution via Celery
                             wf_result = await db.execute(

@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -107,7 +107,7 @@ class CustomerLoyaltyEngine:
     """Gestiona retención + upsells + loyalty."""
 
     # Email sequences predefinidas
-    WELCOME_SEQUENCE = [
+    WELCOME_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "¡Bienvenido! Aquí está tu acceso",
@@ -125,7 +125,7 @@ class CustomerLoyaltyEngine:
         },
     ]
 
-    UPSELL_SEQUENCE = [
+    UPSELL_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "Eleva tu juego: {upsell_product}",
@@ -138,7 +138,7 @@ class CustomerLoyaltyEngine:
         },
     ]
 
-    WIN_BACK_SEQUENCE = [
+    WIN_BACK_SEQUENCE: ClassVar[list] = [
         {
             "delay_days": 0,
             "subject": "Te extrañamos - 20% OFF para volver",

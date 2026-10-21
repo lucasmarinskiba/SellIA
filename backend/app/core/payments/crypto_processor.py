@@ -223,7 +223,7 @@ class CryptoProcessor:
             transaction = tx["transaction"]
 
             # Parse transaction details
-            contract_ret = transaction.get("ret", [{}])[0]
+            transaction.get("ret", [{}])[0]
             contract_params = (
                 transaction.get("raw_data", {})
                 .get("contract", [{}])[0]

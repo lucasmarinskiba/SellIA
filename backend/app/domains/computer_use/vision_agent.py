@@ -49,7 +49,7 @@ class VisionAgent:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: list[dict[str, Any]] = None,
+        history: list[dict[str, Any]] | None = None,
         user_message: str | None = None,
         page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:

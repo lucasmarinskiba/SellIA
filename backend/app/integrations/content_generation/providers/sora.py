@@ -6,6 +6,7 @@ Strengths: Photorealism, physics, narrative video
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class SoraProvider(BaseProvider):
 
     name = "Sora (OpenAI)"
     slug = "sora"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

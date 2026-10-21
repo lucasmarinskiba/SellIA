@@ -109,11 +109,11 @@ async def websocket_location_dashboard(
             message = json.loads(data)
 
             if message.get("type") == "subscribe_staff":
-                staff_id = message.get("staff_id")
+                message.get("staff_id")
                 # TODO: send staff-specific performance stream
 
             elif message.get("type") == "alert_acknowledged":
-                alert_id = message.get("alert_id")
+                message.get("alert_id")
                 # TODO: mark alert as acknowledged in DB
 
             elif message.get("type") == "disconnect":
@@ -151,7 +151,7 @@ async def broadcast_visitor_checkout(
     checkin_id: UUID,
     dwell_seconds: int,
     sections_visited: list,
-    purchase_amount: float = None,
+    purchase_amount: float | None = None,
 ):
     """Called when visitor checks out."""
     message = {
@@ -215,7 +215,7 @@ async def broadcast_feedback(
     feedback_id: UUID,
     nps_score: int,
     sentiment: str,
-    comment: str = None
+    comment: str | None = None
 ):
     """Called when feedback submitted."""
     message = {

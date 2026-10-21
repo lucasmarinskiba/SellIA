@@ -39,7 +39,7 @@ async def create_tenant(
     name: str,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    description: str = None,
+    description: str | None = None,
     tier: str = TenantTier.STARTER,
 ):
     """
@@ -146,8 +146,8 @@ async def update_tenant(
     tenant_id: str,
     tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    name: str = None,
-    description: str = None,
+    name: str | None = None,
+    description: str | None = None,
 ):
     """Update tenant settings (admin only)."""
     if tenant_context.tenant_id != tenant_id:
@@ -304,7 +304,7 @@ async def create_api_key(
     name: str,
     tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    scopes: list = None,
+    scopes: list | None = None,
     rate_limit_per_minute: int = 100,
 ):
     """Create API key (admin only)."""
@@ -451,7 +451,7 @@ async def get_audit_logs(
     tenant_id: str,
     tenant_context: Annotated[TenantContext, Depends(require_admin_access)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    action: str = None,
+    action: str | None = None,
     days_back: int = 30,
     limit: int = 100,
 ):

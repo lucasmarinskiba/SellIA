@@ -159,7 +159,7 @@ async def _find_matching_conversations(
         keywords = rule.trigger_config.get("keywords", [])
         if keywords:
             # Find conversations with recent messages containing keywords
-            keyword_patterns = [f"%{k}%" for k in keywords]
+            [f"%{k}%" for k in keywords]
             # Simplified: match any of the keywords in recent messages
             # For production, use full-text search or a more robust approach
             msg_stmt = select(Message.conversation_id).where(

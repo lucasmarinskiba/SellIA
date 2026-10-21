@@ -442,7 +442,7 @@ class InvoiceGenerator:
             # Send via SendGrid
             subject = f"Invoice {invoice_number}"
 
-            result = EmailService.send_transactional(
+            EmailService.send_transactional(
                 to_email=customer_email,
                 subject=subject,
                 html_content=html_content,

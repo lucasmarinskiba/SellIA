@@ -139,7 +139,7 @@ class BriefingDeliveryService:
 
         # Generate briefing
         director = SellIADirector(self.db)
-        briefing = await director.run_daily_briefing(business_id)
+        await director.run_daily_briefing(business_id)
 
         # Get autopilot report
         report_service = AutopilotReportService(self.db)

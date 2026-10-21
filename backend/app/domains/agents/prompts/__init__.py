@@ -53,7 +53,7 @@ from app.domains.agents.prompts.composer import compose_system_prompt
 
 
 def get_system_prompt(
-    slug: str, business_context: dict = None, custom_instructions: str = None
+    slug: str, business_context: dict | None = None, custom_instructions: str | None = None
 ) -> str:
     """Build the complete system prompt for an agent.
 

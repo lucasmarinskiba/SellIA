@@ -205,7 +205,7 @@ class VisualAutomationExecutor:
         """
         logger.info(f"Filling form with {len(form_data)} fields")
 
-        analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
+        await self.analyzer.analyze_screenshot(screenshot_bytes)
         results = {
             "success": True,
             "filled_fields": [],
@@ -356,7 +356,7 @@ class VisualAutomationExecutor:
             element_desc = description[5:].strip("the ").strip()
             return ActionType.CLICK, element_desc, None
 
-        elif desc_lower.startswith("fill") or desc_lower.startswith("type"):
+        elif desc_lower.startswith(("fill", "type")):
             # "Fill email field with user@example.com"
             # "Type password: 123456"
             parts = description.split(" with ") if " with " in description else description.split(": ")

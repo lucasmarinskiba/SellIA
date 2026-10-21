@@ -17,7 +17,7 @@ import json
 import re
 import uuid
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -176,7 +176,7 @@ class VariantScorer:
     """Score and rank copy variants — historical performance when available,
     content heuristics on cold start"""
 
-    URGENCY_KEYWORDS = [
+    URGENCY_KEYWORDS: ClassVar[list] = [
         "hoy", "ahora", "último", "última", "solo", "quedan", "termina",
         "expira", "limitado", "exclusivo", "today", "now", "last", "only",
         "expires", "limited", "exclusive",
@@ -228,16 +228,16 @@ class VariantScorer:
             return VariantScorer.score_by_heuristics(variant_text)
 
         # Find similar variants by simple feature matching (length bucket, urgency keyword overlap)
-        variant_urgency = set(
+        variant_urgency = {
             kw for kw in VariantScorer.URGENCY_KEYWORDS if kw in variant_text.lower()
-        )
+        }
 
         matches = []
         for record in historical_data:
             record_text = record.get("text", "")
-            record_urgency = set(
+            record_urgency = {
                 kw for kw in VariantScorer.URGENCY_KEYWORDS if kw in record_text.lower()
-            )
+            }
             overlap = len(variant_urgency & record_urgency)
             if overlap > 0 or abs(len(record_text) - len(variant_text)) < 10:
                 matches.append(record)

@@ -191,7 +191,7 @@ class PerformanceOptimizationService:
         cache_type: str = "redis",
         ttl_seconds: int = 3600,
         max_size_mb: float = 256,
-        cache_patterns: list[str] = None,
+        cache_patterns: list[str] | None = None,
     ) -> dict:
         """Configure caching strategy."""
         result = await db.execute(

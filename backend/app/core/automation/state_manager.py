@@ -210,14 +210,14 @@ class StateManager:
             return {
                 "timestamp": utc_now().isoformat(),
                 "jobs_total": len(self.jobs),
-                "status_distribution": dict(
-                    (status, len(job_ids))
+                "status_distribution": {
+                    status: len(job_ids)
                     for status, job_ids in self.job_status_index.items()
-                ),
-                "type_distribution": dict(
-                    (job_type, len(job_ids))
+                },
+                "type_distribution": {
+                    job_type: len(job_ids)
                     for job_type, job_ids in self.job_type_index.items()
-                ),
+                },
                 "recent_stats": stats,
             }
 

@@ -21,6 +21,7 @@ Pricing varies by model:
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -59,7 +60,7 @@ class FalAggregatorProvider(BaseProvider):
 
     name = "fal.ai"
     slug = "fal_aggregator"
-    supports = [ContentType.IMAGE, ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.IMAGE, ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

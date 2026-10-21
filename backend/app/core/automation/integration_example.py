@@ -93,7 +93,7 @@ async def handle_send_email(payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         template = payload.get("template", "welcome")
-        batch = payload.get("batch", True)
+        payload.get("batch", True)
 
         # TODO: Query pending emails
         # emails = await db.query("SELECT * FROM email_queue WHERE template = %s AND sent = false", [template])

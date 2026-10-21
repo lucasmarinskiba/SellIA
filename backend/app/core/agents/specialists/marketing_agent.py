@@ -11,7 +11,7 @@ Specialties:
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class MarketingAgent:
     """Expert in marketing strategy and execution."""
 
     # STP Framework
-    STP_FRAMEWORK = {
+    STP_FRAMEWORK: ClassVar[dict] = {
         "segmentation": {
             "description": "Divide market into distinct customer groups",
             "segmentation_variables": [
@@ -102,7 +102,7 @@ class MarketingAgent:
     }
 
     # 4Ps Marketing Mix
-    FOUR_PS = {
+    FOUR_PS: ClassVar[dict] = {
         "product": {
             "description": "What you offer",
             "elements": [
@@ -170,7 +170,7 @@ class MarketingAgent:
     }
 
     # Content Marketing Framework
-    CONTENT_MARKETING = {
+    CONTENT_MARKETING: ClassVar[dict] = {
         "pillars": [
             {
                 "name": "Problem Education",
@@ -232,7 +232,7 @@ class MarketingAgent:
     }
 
     # Growth Loops
-    GROWTH_LOOPS = {
+    GROWTH_LOOPS: ClassVar[dict] = {
         "viral_loop": {
             "name": "Viral Loop",
             "description": "Users invite others to use product",
@@ -285,7 +285,7 @@ class MarketingAgent:
     }
 
     # Customer Journey Stages
-    CUSTOMER_JOURNEY = {
+    CUSTOMER_JOURNEY: ClassVar[dict] = {
         "awareness": {
             "goal": "Target audience knows you exist",
             "channels": [MarketingChannel.CONTENT, MarketingChannel.SOCIAL, MarketingChannel.PAID_ADS],

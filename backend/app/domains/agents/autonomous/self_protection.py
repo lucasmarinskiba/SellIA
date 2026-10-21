@@ -11,7 +11,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,7 +60,7 @@ class ThreatEvent:
 class SelfProtectionEngine:
     """Motor de auto-protección de SellIA con detección activa de amenazas."""
 
-    THRESHOLDS = {
+    THRESHOLDS: ClassVar[dict] = {
         "failed_logins_5min": 5,         # intentos fallidos en 5 min
         "api_calls_per_minute": 120,     # llamadas API por minuto
         "message_burst_rate": 50,        # mensajes por minuto (spam)

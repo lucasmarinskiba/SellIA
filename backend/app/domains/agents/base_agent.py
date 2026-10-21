@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
@@ -52,7 +52,7 @@ class AgentContext(BaseModel):
     updated_at: datetime = None
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "lead_id": "lead_123",
                 "company": "TechCorp Inc",

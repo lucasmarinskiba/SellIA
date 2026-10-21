@@ -196,10 +196,10 @@ class LoyaltyEngine:
         if not rels:
             return []
 
-        total_revenue = sum(float(r.total_revenue or 0) for r in rels)
+        sum(float(r.total_revenue or 0) for r in rels)
         total_purchases = sum(r.deals_closed for r in rels)
-        last_contact = max((r.last_contact_at for r in rels if r.last_contact_at), default=None)
-        first_contact = min((r.first_contact_at for r in rels if r.first_contact_at), default=None)
+        max((r.last_contact_at for r in rels if r.last_contact_at), default=None)
+        min((r.first_contact_at for r in rels if r.first_contact_at), default=None)
 
         # Obtener ordenes para criterios adicionales
         order_result = await self.db.execute(

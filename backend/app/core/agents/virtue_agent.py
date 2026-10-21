@@ -11,7 +11,7 @@ Principios:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class VirtueAgent:
     """Enforces ethical sales practices."""
 
     # Prohibited phrases (outright lies)
-    PROHIBITED_CLAIMS = [
+    PROHIBITED_CLAIMS: ClassVar[list] = [
         "guaranteed results",
         "100% success",
         "risk-free",
@@ -48,14 +48,14 @@ class VirtueAgent:
     ]
 
     # High-risk exaggerations to flag
-    EXAGGERATION_PATTERNS = [
+    EXAGGERATION_PATTERNS: ClassVar[list] = [
         ("will", "could", "might"),  # Replace certainty with possibility
         ("always", "often", "sometimes"),  # Temper absolute claims
         ("everyone", "many people", "some people"),  # Reduce universality
     ]
 
     # Required transparency statements
-    REQUIRED_TRANSPARENCY = {
+    REQUIRED_TRANSPARENCY: ClassVar[dict] = {
         "trial": "Must disclose trial period end date",
         "pricing": "Must show full pricing breakdown",
         "limitations": "Must disclose product limitations",

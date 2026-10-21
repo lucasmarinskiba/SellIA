@@ -67,7 +67,7 @@ def sync_inventory_task(self, product_id: str):
 
 
 @shared_task(bind=True, max_retries=2)
-def reprice_products_task(self, platform: str = None):
+def reprice_products_task(self, platform: str | None = None):
     """
     Reprice all products based on competitor prices.
     Runs every 2-4 hours to optimize prices dynamically.
@@ -81,7 +81,7 @@ def reprice_products_task(self, platform: str = None):
             else [Platform.MERCADO_LIBRE, Platform.AMAZON, Platform.HOTMART]
         )
 
-        pricing_engine = DynamicPricingEngine(db)
+        DynamicPricingEngine(db)
         results = {}
 
         for plat in platforms:

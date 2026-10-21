@@ -44,7 +44,7 @@ class OllamaVisionProvider(ComputerUseProvider):
     provider_name = "ollama"
     supports_vision = True
 
-    def __init__(self, base_url: str = None, model: str = "llava"):
+    def __init__(self, base_url: str | None = None, model: str = "llava"):
         self.base_url = (base_url or get_settings().OLLAMA_BASE_URL).rstrip("/")
         self.model = model
         self.settings = get_settings()
@@ -168,7 +168,7 @@ class OllamaVisionProvider(ComputerUseProvider):
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: list[dict[str, Any]] = None,
+        history: list[dict[str, Any]] | None = None,
         user_message: str | None = None,
         page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:

@@ -5,7 +5,7 @@ tomar decisiones más precisas: botones, links, inputs, y su estado.
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 
@@ -29,8 +29,8 @@ class DOMElement:
 class DOMInspector:
     """Inspector del DOM para Computer Use."""
 
-    INTERACTIVE_TAGS = {"button", "a", "input", "select", "textarea", "label"}
-    INTERACTIVE_ROLES = {"button", "link", "textbox", "checkbox", "radio", "menuitem"}
+    INTERACTIVE_TAGS: ClassVar[set] = {"button", "a", "input", "select", "textarea", "label"}
+    INTERACTIVE_ROLES: ClassVar[set] = {"button", "link", "textbox", "checkbox", "radio", "menuitem"}
 
     async def extract_interactive_elements(self, page) -> list[DOMElement]:
         """Extrae todos los elementos interactivos de la página."""

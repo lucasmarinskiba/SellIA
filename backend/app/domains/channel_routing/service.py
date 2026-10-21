@@ -19,7 +19,7 @@ class ChannelRoutingService:
         business_id: UUID,
         customer_id: UUID,
         message_template_id: UUID,
-        force_channel: str = None,
+        force_channel: str | None = None,
     ) -> dict:
         """Route message to optimal channel based on customer affinity."""
         # Get customer affinity profile
@@ -111,7 +111,7 @@ class ChannelRoutingService:
         was_delivered: bool,
         was_opened: bool = False,
         was_clicked: bool = False,
-        response_time_seconds: int = None,
+        response_time_seconds: int | None = None,
     ) -> ChannelAffinityModel:
         """Update channel affinity based on message performance."""
         result = await db.execute(

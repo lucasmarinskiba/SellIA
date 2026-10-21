@@ -271,7 +271,7 @@ class BrowserAutomationUtils:
         """
         try:
             # Captura pantalla actual
-            screenshot = await self.screenshot_and_analyze()
+            await self.screenshot_and_analyze()
 
             # Busca coordenadas
             coords = await self.vision_engine.find_element_by_description(
@@ -301,7 +301,7 @@ class BrowserAutomationUtils:
         """
         try:
             # Busca campo por label/placeholder/name
-            screenshot = await self.screenshot_and_analyze()
+            await self.screenshot_and_analyze()
 
             # En producción, usaría visión para encontrar el campo
             logger.info(f"Typing '{text[:20]}...' into field '{field_name}'")
@@ -486,7 +486,7 @@ class MercadoLibreHandler(PlatformHandler):
         """
         try:
             email = credentials.get("email")
-            password = credentials.get("password")
+            credentials.get("password")
 
             # Navega a login
             await self.browser_utils.screenshot_and_analyze()
@@ -515,7 +515,7 @@ class MercadoLibreHandler(PlatformHandler):
         try:
             logger.info(f"Posting product: {product.get('name')}")
 
-            actions = [
+            [
                 Action(
                     type=ActionType.NAVIGATE,
                     params={"url": "https://www.mercadolibre.com.ar/vender"},
@@ -610,7 +610,7 @@ class ShopifyHandler(PlatformHandler):
         """Login a Shopify."""
         try:
             store_url = credentials.get("store_url")
-            api_key = credentials.get("api_key")
+            credentials.get("api_key")
 
             logger.info(f"Authenticating to Shopify: {store_url}")
 

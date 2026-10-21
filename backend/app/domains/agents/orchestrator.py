@@ -13,7 +13,7 @@ Soporta:
 import json
 import logging
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, ClassVar
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -333,7 +333,7 @@ class SellIAOrchestrator:
     # with an obviously dominant home market. Not a big fabricated table:
     # deliberately small, and always phrased as a suggestion (see the
     # "Market Reach" routing rule), never asserted as fact.
-    _PLATFORM_REACH_HINTS = {
+    _PLATFORM_REACH_HINTS: ClassVar[dict] = {
         "mercadolibre": "probablemente alcance nacional en {country} (Mercado Libre opera por país)",
         "amazon": "probablemente Estados Unidos, y posiblemente también México/Canadá si vende en Amazon.com.mx o Amazon.ca",
     }

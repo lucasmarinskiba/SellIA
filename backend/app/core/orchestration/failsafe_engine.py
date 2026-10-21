@@ -7,7 +7,7 @@ Multi-channel redundancy. Escalation automática. Guaranteed delivery.
 import asyncio
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class FailsafeEngine:
     """Asegura cierre venta con multi-channel failover."""
 
     # Configuración retry + escalación
-    CHANNEL_FALLBACK_ORDER = [
+    CHANNEL_FALLBACK_ORDER: ClassVar[list] = [
         Channel.WHATSAPP,
         Channel.EMAIL,
         Channel.SMS,
@@ -34,7 +34,7 @@ class FailsafeEngine:
         Channel.LINKEDIN,
     ]
 
-    RETRY_CONFIG = {
+    RETRY_CONFIG: ClassVar[dict] = {
         Channel.WHATSAPP: {"max_retries": 3, "delay_seconds": 300},
         Channel.EMAIL: {"max_retries": 2, "delay_seconds": 3600},
         Channel.SMS: {"max_retries": 3, "delay_seconds": 600},

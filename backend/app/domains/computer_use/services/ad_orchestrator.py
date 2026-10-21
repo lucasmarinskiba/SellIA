@@ -9,7 +9,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 from app.core.config import get_settings
@@ -117,7 +117,7 @@ class AdCampaign:
 class AdCopyGenerator:
     """Genera variantes de ad copy."""
 
-    COPY_TEMPLATES = {
+    COPY_TEMPLATES: ClassVar[dict] = {
         CopyTone.URGENT: {
             "headlines": [
                 "⏰ Last {count} spots available",
@@ -474,7 +474,7 @@ class AdOrchestrator:
     async def _launch_meta_campaign(self, campaign: AdCampaign) -> bool:
         """Lanza en Meta Ads (Facebook/Instagram)."""
         try:
-            budget_micros = int(campaign.daily_budget * 100 * 1000)  # Convertir a microdólares
+            int(campaign.daily_budget * 100 * 1000)  # Convertir a microdólares
 
             success, campaign_id = await self.meta_ads_connector.create_campaign(
                 campaign_name=campaign.name,
@@ -498,7 +498,7 @@ class AdOrchestrator:
 
             # Crear ads
             for copy in campaign.copies[:3]:  # Max 3 ads por adset
-                ad_success, ad_id = await self.meta_ads_connector.create_ad(
+                ad_success, _ad_id = await self.meta_ads_connector.create_ad(
                     adset_id=adset_id,
                     ad_name=f"{campaign.name} - v{copy.version}",
                     creative_id=None,  # O usar creative upload
@@ -545,7 +545,7 @@ class AdOrchestrator:
 
             # Crear ads
             for copy in campaign.copies[:3]:
-                ad_success, ad_id = await self.google_ads_connector.create_text_ad(
+                ad_success, _ad_id = await self.google_ads_connector.create_text_ad(
                     ad_group_id=adgroup_id,
                     headline1=copy.headline,
                     headline2=f"v{copy.version}",

@@ -362,11 +362,11 @@ class PerformanceReporter:
         - Errores y distribución
         - Recomendaciones
         """
-        cutoff_time = datetime.now() - timedelta(minutes=minutes)
+        datetime.now() - timedelta(minutes=minutes)
 
         # Recolectar métricas
         relevant_metrics = [
-            name for name in self.metrics.timers.keys()
+            name for name in self.metrics.timers
             if not platform or platform in name
         ]
 
@@ -382,7 +382,6 @@ class PerformanceReporter:
 
         # Métricas de timing
         total_actions = 0
-        successful_actions = 0
 
         for metric_name in relevant_metrics:
             stats = self.metrics.get_metric_stats(metric_name)

@@ -94,7 +94,7 @@ class OvernightStoryEngine:
 
         messages_sent = [l for l in logs if l.action_type == "send_followup"]
         deals_closed = [l for l in logs if l.action_type == "close_deal"]
-        problems_fixed = [l for l in logs if l.status == AutopilotActionStatus.EXECUTED and l.error_message is None]
+        [l for l in logs if l.status == AutopilotActionStatus.EXECUTED and l.error_message is None]
         # Filter 'problems' to recovery/reconnection type actions for narrative
         repair_logs = [l for l in logs if l.action_type in ("activate_recovery_workflow", "escalate_to_human") or "reconnect" in (l.reason or "").lower()]
         if not repair_logs:

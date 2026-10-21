@@ -23,7 +23,7 @@ class EmailConnector(BaseChannelConnector):
         self.smtp_password = credentials.get("smtp_password")
         self.from_address = credentials.get("from_address") or self.smtp_user
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text", subject: str = None) -> dict[str, Any]:
+    async def send_message(self, recipient_id: str, content: str, content_type: str = "text", subject: str | None = None) -> dict[str, Any]:
         if not self.smtp_user or not self.smtp_password:
             raise ValueError("Faltan credenciales SMTP")
 

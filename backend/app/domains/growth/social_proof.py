@@ -114,9 +114,9 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         business_id: uuid.UUID,
         conversation_id: uuid.UUID,
         content: str,
-        order_id: uuid.UUID = None,
-        customer_name: str = None,
-        media_urls: list[str] = None,
+        order_id: uuid.UUID | None = None,
+        customer_name: str | None = None,
+        media_urls: list[str] | None = None,
     ) -> SocialProofItem:
         """Collect and analyze a customer testimonial/review."""
         # Analyze sentiment
@@ -216,7 +216,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
 
     # ========== Moderation ==========
 
-    async def approve_item(self, item_id: uuid.UUID, approved_by: uuid.UUID = None) -> SocialProofItem:
+    async def approve_item(self, item_id: uuid.UUID, approved_by: uuid.UUID | None = None) -> SocialProofItem:
         """Manually approve a social proof item."""
         item = await self.db.get(SocialProofItem, item_id)
         if not item:
@@ -254,7 +254,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         business_id: uuid.UUID,
         item_type: SocialProofType = None,
         count: int = 10,
-        min_rating: int = None,
+        min_rating: int | None = None,
     ) -> list[SocialProofItem]:
         """Get approved social proof items for display."""
         query = select(SocialProofItem).where(

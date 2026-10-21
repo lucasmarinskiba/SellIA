@@ -67,7 +67,7 @@ class MercadoLibreConnector(BaseChannelConnector):
             # Message notification
             message_data = data.get("message", {})
             from_data = message_data.get("from", {})
-            to_data = message_data.get("to", {})
+            message_data.get("to", {})
             
             # Determine if this is inbound (from buyer to seller)
             from_user_id = str(from_data.get("user_id", ""))

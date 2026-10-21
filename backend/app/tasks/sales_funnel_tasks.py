@@ -97,7 +97,7 @@ def send_outreach_batch(
         contacted = 0
         for lead in imported:
             if lead.quality.value == "hot":
-                success, msg_id = await outreach.send_outreach(
+                success, _msg_id = await outreach.send_outreach(
                     campaign=campaign,
                     lead=lead,
                     sender_name="SellIA Bot",
@@ -269,7 +269,7 @@ def send_welcome_sequences(
 
         sent = 0
         for customer in customers:
-            success, seq_id = await loyalty.trigger_welcome_sequence(
+            success, _seq_id = await loyalty.trigger_welcome_sequence(
                 customer_id=customer.get("id", ""),
                 customer_name=customer.get("name", ""),
                 customer_email=customer.get("email", ""),

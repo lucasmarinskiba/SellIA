@@ -5,7 +5,7 @@ Predicts: conversion, churn, LTV, optimal pricing, best channel, timing.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class PredictiveLeadScoring:
     """ML-based lead scoring (predicts conversion before contact)."""
 
-    FEATURE_WEIGHTS = {
+    FEATURE_WEIGHTS: ClassVar[dict] = {
         "company_size": 0.15,  # Larger = higher conversion
         "industry_fit": 0.20,  # Perfect fit = highest
         "job_title": 0.10,  # Decision-makers convert more
@@ -167,7 +167,7 @@ class ChurnPredictionModel:
 class OptimalChannelSelector:
     """Selecciona mejor canal por buyer profile + historical performance."""
 
-    CHANNEL_PERFORMANCE = {
+    CHANNEL_PERFORMANCE: ClassVar[dict] = {
         "email": {"conversion_rate": 0.03, "cost_per_click": 0.05, "volume": "high"},
         "phone": {"conversion_rate": 0.15, "cost_per_click": 5.0, "volume": "low"},
         "whatsapp": {"conversion_rate": 0.08, "cost_per_click": 0.10, "volume": "high"},
@@ -250,12 +250,12 @@ class AdaptiveSalesStrategy:
         # Extract pattern
         avg_closing_price = sum(d.get("closed_price", 0) for d in winning_approaches) / len(winning_approaches) if winning_approaches else 0
         most_used_guarantee = max(
-            set(d.get("guarantee_type") for d in winning_approaches),
+            {d.get("guarantee_type") for d in winning_approaches},
             key=lambda x: sum(1 for d in winning_approaches if d.get("guarantee_type") == x),
             default="money_back",
         )
         best_channel = max(
-            set(d.get("channel") for d in winning_approaches),
+            {d.get("channel") for d in winning_approaches},
             key=lambda x: sum(1 for d in winning_approaches if d.get("channel") == x),
             default="email",
         )

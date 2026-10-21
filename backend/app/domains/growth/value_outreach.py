@@ -41,7 +41,7 @@ class ValueFirstOutreach:
         message_count: int = 3,
         total_duration_days: int = 7,
         target_segment: str = "cold",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> ValueSequence:
         """Create an AI-generated educational value sequence."""
         messages = await self._generate_sequence_messages(
@@ -163,7 +163,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         self,
         sequence_id: uuid.UUID,
         conversation_id: uuid.UUID,
-        inbound_lead_id: uuid.UUID = None,
+        inbound_lead_id: uuid.UUID | None = None,
     ) -> ValueSequenceEnrollment:
         """Enroll a lead in a value sequence."""
         sequence = await self._get_sequence(sequence_id)

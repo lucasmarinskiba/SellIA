@@ -349,7 +349,7 @@ class EmailService:
         products: list[dict[str, Any]],
         total_amount: float,
         currency: str = "USD",
-        shipping_address: dict[str, str] = None,
+        shipping_address: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Envía confirmación de orden."""
 
@@ -389,7 +389,7 @@ class EmailService:
         carrier_name: str,
         estimated_delivery: str,
         products: list[dict[str, Any]],
-        tracking_url: str = None,
+        tracking_url: str | None = None,
     ) -> dict[str, Any]:
         """Envía notificación de envío."""
 
@@ -425,7 +425,7 @@ class EmailService:
         amount: float,
         currency: str,
         failure_reason: str,
-        retry_url: str = None,
+        retry_url: str | None = None,
     ) -> dict[str, Any]:
         """Envía alerta de pago rechazado."""
 

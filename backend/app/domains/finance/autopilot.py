@@ -195,10 +195,7 @@ class FinanceAutopilotEngine:
             ).order_by(desc(PaymentReminder.sent_at)).limit(1)
         )
         last = last_reminder.scalar_one_or_none()
-        if last and last.reminder_level >= level:
-            return False
-
-        return True
+        return not (last and last.reminder_level >= level)
 
     async def generate_dunning_message(self, invoice: SalesInvoice, level: int, channel: str = 'whatsapp') -> str:
         templates = DUNNING_MESSAGES.get(level, DUNNING_MESSAGES[1])

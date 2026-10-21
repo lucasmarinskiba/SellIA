@@ -113,7 +113,7 @@ async def list_products(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    status: Annotated[str, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
     skip: Annotated[int, Query()] = 0,
     limit: Annotated[int, Query()] = 50,
 ):
@@ -443,8 +443,8 @@ async def list_orders(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    status: Annotated[str, Query()] = None,
-    payment_status: Annotated[str, Query()] = None,
+    status: Annotated[str | None, Query()] = None,
+    payment_status: Annotated[str | None, Query()] = None,
     skip: Annotated[int, Query()] = 0,
     limit: Annotated[int, Query()] = 50,
 ):

@@ -1,7 +1,7 @@
 """Fase G: AI Predictive Churn-to-FOMO Agent — API routes"""
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query
 
@@ -10,15 +10,16 @@ from app.domains.fomo.ai_churn_prevention_agent import (
     AIChurnPreventionAgent,
     WinBackTriggerEngine,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo/ai/churn", tags=["fomo-ai-churn"])
 
 
 @router.post("/score")
 async def score_customer(
-    purchases: list[dict[str, Any]] = Body(..., description='[{"date": iso8601, "amount": float}]'),
-    send_history: list[dict[str, Any]] | None = Body(None),
-    current_user=Depends(get_current_user),
+    purchases: Annotated[list[dict[str, Any]], Body(description='[{"date": iso8601, "amount": float}]')],
+    current_user: Annotated[User, Depends(get_current_user)],
+    send_history: Annotated[list[dict[str, Any]] | None, Body()] = None,
 ):
     """Score one customer's churn risk (heuristic — no labeled training data needed)"""
     parsed_purchases = _parse_dates(purchases, "date")
@@ -28,12 +29,12 @@ async def score_customer(
 
 @router.post("/evaluate-and-trigger")
 async def evaluate_and_trigger(
-    customer_id: str = Query(...),
-    purchases: list[dict[str, Any]] = Body(...),
-    batch_monetary_values: list[float] = Body(...),
-    send_history: list[dict[str, Any]] | None = Body(None),
-    threshold: float = Query(WinBackTriggerEngine.DEFAULT_THRESHOLD, ge=0.0, le=1.0),
-    current_user=Depends(get_current_user),
+    customer_id: Annotated[str, Query()],
+    purchases: Annotated[list[dict[str, Any]], Body()],
+    batch_monetary_values: Annotated[list[float], Body()],
+    current_user: Annotated[User, Depends(get_current_user)],
+    send_history: Annotated[list[dict[str, Any]] | None, Body()] = None,
+    threshold: Annotated[float, Query(ge=0.0, le=1.0)] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
 ):
     """Score risk, decide win-back trigger, size a personalized offer if triggered"""
     parsed_purchases = _parse_dates(purchases, "date")
@@ -49,12 +50,10 @@ async def evaluate_and_trigger(
 
 @router.post("/batch-evaluate")
 async def batch_evaluate(
-    customers: list[dict[str, Any]] = Body(
-        ..., description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
-    ),
-    fatigue_data: dict[str, list[dict[str, Any]]] | None = Body(None),
-    threshold: float = Query(WinBackTriggerEngine.DEFAULT_THRESHOLD, ge=0.0, le=1.0),
-    current_user=Depends(get_current_user),
+    customers: Annotated[list[dict[str, Any]], Body(description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]')],
+    current_user: Annotated[User, Depends(get_current_user)],
+    fatigue_data: Annotated[dict[str, list[dict[str, Any]]] | None, Body()] = None,
+    threshold: Annotated[float, Query(ge=0.0, le=1.0)] = WinBackTriggerEngine.DEFAULT_THRESHOLD,
 ):
     """Batch churn-risk scoring + win-back trigger across all customers"""
     parsed_customers = []
@@ -81,6 +80,6 @@ def _parse_dates(records: list[dict[str, Any]], key: str) -> list[dict[str, Any]
         item = dict(r)
         val = item.get(key)
         if isinstance(val, str):
-            item[key] = datetime.fromisoformat(val.replace("Z", "+00:00"))
+            item[key] = datetime.fromisoformat(val)
         parsed.append(item)
     return parsed

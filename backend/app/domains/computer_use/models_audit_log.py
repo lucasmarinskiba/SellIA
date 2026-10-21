@@ -85,12 +85,12 @@ class ComputerUseAuditLogSearchFilter:
     def __init__(
         self,
         user_id: str,
-        platform: str = None,
-        action_type: str = None,
-        agent_name: str = None,
-        status: str = None,
-        date_from: datetime = None,
-        date_to: datetime = None,
+        platform: str | None = None,
+        action_type: str | None = None,
+        agent_name: str | None = None,
+        status: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
     ):

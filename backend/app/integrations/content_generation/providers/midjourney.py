@@ -6,6 +6,7 @@ Strengths: Aesthetic quality, artistic style, community trends
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -27,7 +28,7 @@ class MidjourneyProvider(BaseProvider):
 
     name = "Midjourney"
     slug = "midjourney"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

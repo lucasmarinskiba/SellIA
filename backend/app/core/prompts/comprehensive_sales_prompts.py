@@ -151,7 +151,7 @@ COMPREHENSIVE_PROMPTS = {
     "weakness_012": {"title": "Address Geographic Limitation", "focus": "Expand to new regions", "tactics": ["partnerships", "hiring", "investment", "localization"]},
     "weakness_013": {"title": "Overcome Regulatory Barrier", "focus": "Navigate compliance", "tactics": ["legal", "partnerships", "lobbying", "adaptation"]},
     "weakness_014": {"title": "Build Strategic Partnerships", "focus": "Leverage partner strengths", "tactics": ["partner identification", "negotiation", "integration", "support"]},
-    "weakness_015": {"title": "Improve Customer Experience", "focus": "Close experience gap", "focus": "Close experience gap", "tactics": ["design", "support", "feedback", "iteration"]},
+    "weakness_015": {"title": "Improve Customer Experience", "focus": "Close experience gap", "tactics": ["design", "support", "feedback", "iteration"]},
     "weakness_016": {"title": "Address Scalability Issues", "focus": "Enable growth", "tactics": ["infrastructure", "process", "team", "outsourcing"]},
     "weakness_017": {"title": "Build Data Infrastructure", "focus": "Leverage data advantage", "tactics": ["analytics", "database", "ML", "hiring"]},
     "weakness_018": {"title": "Improve Operational Efficiency", "focus": "Reduce friction", "tactics": ["process", "automation", "outsourcing", "optimization"]},

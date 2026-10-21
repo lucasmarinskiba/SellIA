@@ -41,7 +41,7 @@ def setup_datadog():
         return False
 
 
-def track_metric(metric_name: str, value: float, tags: list = None):
+def track_metric(metric_name: str, value: float, tags: list | None = None):
     """
     Envía métrica a Datadog.
 
@@ -87,7 +87,7 @@ def setup_sentry():
         return False
 
 
-def track_exception(exc: Exception, extra: dict = None):
+def track_exception(exc: Exception, extra: dict | None = None):
     """
     Reporta excepción a Sentry.
 
@@ -179,7 +179,7 @@ def monitor_performance(func: Callable) -> Callable:
 class AlertManager:
     """Maneja alertas via Slack + PagerDuty."""
 
-    def __init__(self, slack_webhook: str = None, pagerduty_token: str = None):
+    def __init__(self, slack_webhook: str | None = None, pagerduty_token: str | None = None):
         self.slack_webhook = slack_webhook
         self.pagerduty_token = pagerduty_token
 

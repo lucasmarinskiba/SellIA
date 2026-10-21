@@ -6,6 +6,7 @@ Strengths: Artistic quality, Alchemy, photo-real, fine-tuned models
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -39,7 +40,7 @@ class LeonardoProvider(BaseProvider):
 
     name = "Leonardo.ai"
     slug = "leonardo"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

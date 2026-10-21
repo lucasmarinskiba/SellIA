@@ -1,7 +1,7 @@
 """Query Optimizer — Index strategy, query rewriting, materialized views."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class QueryOptimizer:
     """Optimize database queries for speed."""
 
     # Index strategy recommendations
-    INDEX_STRATEGIES = {
+    INDEX_STRATEGIES: ClassVar[dict] = {
         "user_id_lookup": {
             "columns": ["user_id"],
             "type": "B-tree",

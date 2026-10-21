@@ -7,6 +7,7 @@ Strengths: 256K context, Spanish-native, OpenAI-compatible API,
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -22,7 +23,7 @@ class KimiProvider(BaseProvider):
 
     name = "Kimi (Moonshot AI)"
     slug = "kimi"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:

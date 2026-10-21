@@ -270,7 +270,7 @@ async def get_content_cluster(
 
 @router.post("/bulk-embed")
 async def bulk_embed_content(
-    content_list: list[dict[str, str]] = None,
+    content_list: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """
     Batch embed multiple content items

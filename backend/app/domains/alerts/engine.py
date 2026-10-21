@@ -463,10 +463,7 @@ class AlertEngine:
                 Alert.created_at >= day_since,
             )
         )
-        if result.scalar() >= rule.max_alerts_per_day:
-            return True
-
-        return False
+        return result.scalar() >= rule.max_alerts_per_day
 
     # ========== Helpers ==========
 

@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -68,48 +68,48 @@ class EmpathyLayer:
     """Detects and responds to buyer emotions with empathy."""
 
     # EMOTION DETECTION SIGNALS
-    CONFIDENCE_SIGNALS = {
+    CONFIDENCE_SIGNALS: ClassVar[dict] = {
         "en": ["ready to buy", "let's do it", "when can you", "how much", "sign me up"],
         "es": ["listo para comprar", "vamos", "cuándo puedes", "cuánto cuesta", "inscríbeme"],
     }
 
-    CURIOUS_SIGNALS = {
+    CURIOUS_SIGNALS: ClassVar[dict] = {
         "en": ["tell me more", "how does it", "what about", "can you explain", "interested"],
         "es": ["cuéntame más", "cómo funciona", "qué tal si", "puedes explicar", "interesado"],
     }
 
-    HESITANT_SIGNALS = {
+    HESITANT_SIGNALS: ClassVar[dict] = {
         "en": ["not sure", "let me think", "i need to", "maybe later", "still considering"],
         "es": ["no estoy seguro", "déjame pensar", "necesito", "quizás después", "aún considerando"],
     }
 
-    FRUSTRATED_SIGNALS = {
+    FRUSTRATED_SIGNALS: ClassVar[dict] = {
         "en": ["frustrated", "annoyed", "fed up", "tired of", "doesn't work", "problem"],
         "es": ["frustrado", "molesto", "harto", "cansado de", "no funciona", "problema"],
     }
 
-    SKEPTICAL_SIGNALS = {
+    SKEPTICAL_SIGNALS: ClassVar[dict] = {
         "en": ["sounds too good", "don't believe", "seems fake", "proof", "guarantee"],
         "es": ["suena demasiado bien", "no creo", "parece falso", "prueba", "garantía"],
     }
 
-    OBJECTION_SIGNALS = {
+    OBJECTION_SIGNALS: ClassVar[dict] = {
         "en": ["but", "however", "problem is", "concern", "issue", "won't work"],
         "es": ["pero", "sin embargo", "el problema es", "preocupación", "problema", "no funcionará"],
     }
 
-    URGENT_SIGNALS = {
+    URGENT_SIGNALS: ClassVar[dict] = {
         "en": ["asap", "urgent", "today", "today only", "limited time", "last chance"],
         "es": ["lo antes posible", "urgente", "hoy", "solo hoy", "tiempo limitado", "última oportunidad"],
     }
 
-    OVERWHELMED_SIGNALS = {
+    OVERWHELMED_SIGNALS: ClassVar[dict] = {
         "en": ["too much", "options", "confused", "hard to choose", "information overload"],
         "es": ["demasiado", "opciones", "confundido", "difícil elegir", "sobrecarga de información"],
     }
 
     # EMPATHETIC RESPONSE TEMPLATES
-    VALIDATION_TEMPLATES = {
+    VALIDATION_TEMPLATES: ClassVar[dict] = {
         "en": [
             "I totally get that feeling.",
             "That's a completely valid concern.",
@@ -126,7 +126,7 @@ class EmpathyLayer:
         ],
     }
 
-    REASSURANCE_TEMPLATES = {
+    REASSURANCE_TEMPLATES: ClassVar[dict] = {
         "en": [
             "Here's what puts most people at ease...",
             "Let me show you how we've solved this for others...",
@@ -143,7 +143,7 @@ class EmpathyLayer:
         ],
     }
 
-    CLARIFICATION_TEMPLATES = {
+    CLARIFICATION_TEMPLATES: ClassVar[dict] = {
         "en": [
             "Help me understand what's most important to you...",
             "To better address your concern, can you tell me...",
@@ -160,7 +160,7 @@ class EmpathyLayer:
         ],
     }
 
-    TRUST_BUILDING_TEMPLATES = {
+    TRUST_BUILDING_TEMPLATES: ClassVar[dict] = {
         "en": [
             "We've helped over {number} customers with similar concerns.",
             "Here are {count} case studies from businesses like yours...",
@@ -178,7 +178,7 @@ class EmpathyLayer:
     }
 
     # Solution offering templates
-    SOLUTION_TEMPLATES = {
+    SOLUTION_TEMPLATES: ClassVar[dict] = {
         "en": [
             "Here's exactly how we'd solve this...",
             "What if we approached it this way...",
@@ -196,7 +196,7 @@ class EmpathyLayer:
     }
 
     # Lighten the mood templates
-    LIGHTEN_TEMPLATES = {
+    LIGHTEN_TEMPLATES: ClassVar[dict] = {
         "en": [
             "Don't worry, we make this super easy.",
             "Here's the good news — we handle all the hard part.",

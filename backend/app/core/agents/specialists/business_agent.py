@@ -11,7 +11,7 @@ Specialties:
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class UnitEconomics:
 class BusinessAgent:
     """Expert in business model design and scaling."""
 
-    REVENUE_MODELS = {
+    REVENUE_MODELS: ClassVar[dict] = {
         RevenueModel.SUBSCRIPTION: {
             "name": "Subscription",
             "description": "Recurring revenue from customers paying regularly",
@@ -146,7 +146,7 @@ class BusinessAgent:
         },
     }
 
-    FINANCIAL_METRICS = {
+    FINANCIAL_METRICS: ClassVar[dict] = {
         "gross_margin": {
             "definition": "(Revenue - COGS) / Revenue",
             "benchmarks": {
@@ -175,7 +175,7 @@ class BusinessAgent:
         },
     }
 
-    CAC_LTV_FRAMEWORK = {
+    CAC_LTV_FRAMEWORK: ClassVar[dict] = {
         "customer_acquisition_cost": {
             "definition": "Total sales & marketing spend / New customers",
             "calculation_steps": [
@@ -220,7 +220,7 @@ class BusinessAgent:
         },
     }
 
-    SCALING_PRINCIPLES = {
+    SCALING_PRINCIPLES: ClassVar[dict] = {
         "unit_economics_first": {
             "principle": "Ensure positive unit economics before scaling",
             "checklist": [
@@ -258,7 +258,7 @@ class BusinessAgent:
         },
     }
 
-    COMPETITIVE_POSITIONING = {
+    COMPETITIVE_POSITIONING: ClassVar[dict] = {
         "analysis_framework": {
             "direct_competitors": "Same solution, same market",
             "indirect_competitors": "Different solution, same job to be done",

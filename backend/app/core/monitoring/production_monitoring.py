@@ -117,7 +117,7 @@ class ProductionMonitoring:
         """Check FeedIA content generation."""
         return {"status": "healthy", "pending_content": 4, "publish_queue": "ok"}
 
-    async def track_metric(self, metric_name: str, value: float, tags: dict[str, str] = None):
+    async def track_metric(self, metric_name: str, value: float, tags: dict[str, str] | None = None):
         """Send metric to Datadog."""
         if self.datadog_enabled:
             try:
@@ -126,7 +126,7 @@ class ProductionMonitoring:
             except Exception:
                 logger.exception("Failed to track metric")
 
-    async def report_error(self, error: Exception, context: dict[str, Any] = None):
+    async def report_error(self, error: Exception, context: dict[str, Any] | None = None):
         """Report error to Sentry."""
         if self.sentry_enabled:
             try:

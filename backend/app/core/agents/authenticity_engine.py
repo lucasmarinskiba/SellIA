@@ -11,7 +11,7 @@ Checks:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class AuthenticityEngine:
     """Ensures authentic, human communication."""
 
     # Corporate/robotic phrases to avoid
-    CORPORATE_PHRASES = [
+    CORPORATE_PHRASES: ClassVar[list] = [
         "synergize", "leverage", "optimize", "paradigm shift",
         "circle back", "move the needle", "drill down",
         "at the end of the day", "it goes without saying",
@@ -39,7 +39,7 @@ class AuthenticityEngine:
     ]
 
     # Authentic language patterns
-    AUTHENTIC_PATTERNS = {
+    AUTHENTIC_PATTERNS: ClassVar[dict] = {
         "personal": ["I", "we", "my", "our", "personally", "honestly"],
         "specific": ["specifically", "for example", "actually", "realistically"],
         "vulnerable": ["struggle", "mistake", "challenge", "difficult", "learned"],
@@ -47,7 +47,7 @@ class AuthenticityEngine:
     }
 
     # Personality archetype definitions
-    PERSONALITY_ARCHETYPES = {
+    PERSONALITY_ARCHETYPES: ClassVar[dict] = {
         "founder": {
             "traits": ["entrepreneurial", "risk-taker", "visionary", "hardworking"],
             "phrases": ["we built", "we learned", "our journey", "we failed"],
@@ -232,7 +232,7 @@ class AuthenticityEngine:
 
         # Count authentic language
         authentic_count = 0
-        for pattern_type, keywords in AuthenticityEngine.AUTHENTIC_PATTERNS.items():
+        for keywords in AuthenticityEngine.AUTHENTIC_PATTERNS.values():
             authentic_count += sum(1 for kw in keywords if kw in message.lower())
 
         total_phrases = corporate_count + authentic_count
@@ -483,7 +483,7 @@ class AuthenticityEngine:
         message: str,
         personality: dict[str, Any],
         historical_messages: list[str],
-        story: dict[str, Any] = None,
+        story: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Overall authenticity score (0-100).

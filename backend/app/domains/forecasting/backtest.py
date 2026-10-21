@@ -111,7 +111,7 @@ class RollingOriginBacktester:
                 continue
             avg[name] = float(np.mean(m))
         if not avg:
-            return {list(report.per_model)[0]: 1.0}
+            return {next(iter(report.per_model)): 1.0}
 
         best = min(avg.values())
         # keep only models within 2x of the best, then top-K

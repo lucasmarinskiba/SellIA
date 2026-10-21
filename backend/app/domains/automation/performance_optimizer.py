@@ -43,7 +43,7 @@ class PerformanceOptimizer:
 
         roi = seller_metrics.get("roi", 1.0)
         growth_rate = seller_metrics.get("growth_rate", 0.0)
-        market_position = seller_metrics.get("market_position", "competitive")
+        seller_metrics.get("market_position", "competitive")
 
         if roi > 3.0 and growth_rate > 0.20:
             return OptimizationStrategy.AGGRESSIVE
@@ -117,7 +117,7 @@ class PerformanceOptimizer:
         strategy = self.analyze_performance(current_metrics)
         allocations = self.optimize_channel_spend(seller_id, total_budget, strategy)
 
-        total_expected_leads = sum(a.expected_leads for a in allocations)
+        sum(a.expected_leads for a in allocations)
         total_expected_revenue = sum(a.expected_revenue for a in allocations)
         expected_roi = total_expected_revenue / total_budget if total_budget > 0 else 0
 

@@ -3,7 +3,7 @@ Personality Injector — Brand voice consistency, variation, authenticity.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class PersonalityInjector:
     """Maintains and injects personality into responses."""
 
-    BRAND_VOICE_PROFILES = {
+    BRAND_VOICE_PROFILES: ClassVar[dict] = {
         "founder": {
             "opening": ["We built this because", "I struggled with", "Our team discovered"],
             "signature": ["Feel free to reach out", "Happy to help", "Love your thinking"],

@@ -6,6 +6,7 @@ Strengths: Auto-layout, smart templates, professional decks
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class BeautifulAIProvider(BaseProvider):
 
     name = "Beautiful.ai"
     slug = "beautifulai"
-    supports = [ContentType.COPY]  # Genera presentaciones, pero usamos COPY como proxy
+    supports: ClassVar[list] = [ContentType.COPY]  # Genera presentaciones, pero usamos COPY como proxy
 
     @property
     def is_available(self) -> bool:

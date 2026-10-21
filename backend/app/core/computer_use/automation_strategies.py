@@ -139,7 +139,7 @@ class NegotiationAutomationStrategy:
         """Automáticamente negocia usando tácticas Trump + Belfort."""
 
         buyer_type = buyer.get("type", "default")
-        budget = buyer.get("budget", 0)
+        buyer.get("budget", 0)
         objections = buyer.get("objections", [])
 
         strategy = {}

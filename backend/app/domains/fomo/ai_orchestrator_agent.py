@@ -17,7 +17,7 @@ of their logic:
 """
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.logger import get_logger
 
@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 class AgentCatalog:
     """Static registry of the 7 FOMO agents this orchestrator coordinates"""
 
-    AGENTS = [
+    AGENTS: ClassVar[list] = [
         {
             "id": "copywriter",
             "fase": "A",
@@ -162,7 +162,7 @@ class ConflictResolver:
 
     # Lower number = higher priority. Losing a customer (churn) outranks
     # reacting to a competitor or a general campaign touch.
-    AGENT_PRIORITY = {
+    AGENT_PRIORITY: ClassVar[dict] = {
         "churn_prevention": 1,
         "autonomous_campaign": 2,
         "competitor_monitor": 2,

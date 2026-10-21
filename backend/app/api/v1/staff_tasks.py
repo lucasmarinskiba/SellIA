@@ -50,7 +50,7 @@ async def assign_task(
 ) -> dict:
     """Assign task to staff member."""
     try:
-        due_date = datetime.fromisoformat(request.due_date.replace('Z', '+00:00'))
+        due_date = datetime.fromisoformat(request.due_date)
 
         result = StaffTaskService.assign_task(
             location_id=request.location_id,
@@ -216,7 +216,7 @@ async def auto_assign_shift_tasks(
 ) -> dict:
     """Auto-assign pending tasks to staff for shift."""
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace('Z', '+00:00'))
+        shift_start_dt = datetime.fromisoformat(shift_start)
 
         result = StaffTaskService.auto_assign_tasks_to_shift(
             location_id=location_id,
@@ -290,10 +290,10 @@ async def get_shift_readiness_report(
 ) -> dict:
     """Generate shift readiness report."""
     try:
-        shift_start_dt = datetime.fromisoformat(shift_start.replace('Z', '+00:00'))
+        shift_start_dt = datetime.fromisoformat(shift_start)
         shift_end_dt = None
         if shift_end:
-            shift_end_dt = datetime.fromisoformat(shift_end.replace('Z', '+00:00'))
+            shift_end_dt = datetime.fromisoformat(shift_end)
 
         result = ShiftReadinessService.generate_shift_report(
             location_id=location_id,

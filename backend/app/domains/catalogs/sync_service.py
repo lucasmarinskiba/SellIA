@@ -6,7 +6,7 @@ Synchronizes catalog items between SellIA and external platforms
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 from uuid import UUID
 
 from sqlalchemy import select
@@ -34,7 +34,7 @@ class CatalogSyncService:
     """Service for syncing catalog items across connected platforms."""
 
     # Platforms that support catalog/product push
-    PUSH_PLATFORMS = {
+    PUSH_PLATFORMS: ClassVar[set] = {
         ChannelPlatform.SHOPIFY,
         ChannelPlatform.MERCADOLIBRE,
         ChannelPlatform.AMAZON,
@@ -335,20 +335,20 @@ class CatalogSyncService:
             tags = p.get("tags", "")
             shop_domain = (channel.credentials or {}).get("shop_domain")
             handle = p.get("handle")
-            return dict(
-                type="good",
-                name=p.get("title", "Producto Shopify"),
-                description=p.get("body_html", "") or "",
-                category=p.get("product_type") or None,
-                price=variant.get("price", "0") or "0",
-                currency="USD",
-                stock=variant.get("inventory_quantity", 0) or 0,
-                is_available=p.get("status") == "active",
-                extra_data={},
-                images=[img.get("src", "") for img in (p.get("images") or [])],
-                tags=tags.split(",") if isinstance(tags, str) and tags else (tags or []),
-                listing_url=f"https://{shop_domain}/products/{handle}" if shop_domain and handle else None,
-            )
+            return {
+                "type": "good",
+                "name": p.get("title", "Producto Shopify"),
+                "description": p.get("body_html", "") or "",
+                "category": p.get("product_type") or None,
+                "price": variant.get("price", "0") or "0",
+                "currency": "USD",
+                "stock": variant.get("inventory_quantity", 0) or 0,
+                "is_available": p.get("status") == "active",
+                "extra_data": {},
+                "images": [img.get("src", "") for img in (p.get("images") or [])],
+                "tags": tags.split(",") if isinstance(tags, str) and tags else (tags or []),
+                "listing_url": f"https://{shop_domain}/products/{handle}" if shop_domain and handle else None,
+            }
 
         if platform == ChannelPlatform.AMAZON:
             attrs = product.get("attributes", {}) or {}
@@ -357,66 +357,66 @@ class CatalogSyncService:
             price_list = attrs.get("list_price") or []
             price = price_list[0].get("value", "0") if price_list else "0"
             currency = price_list[0].get("currency", "USD") if price_list else "USD"
-            return dict(
-                type="good",
-                name=name,
-                description="\n".join(b.get("value", "") for b in attrs.get("bullet_point", [])),
-                category=None,
-                price=price,
-                currency=currency,
-                stock=0,
-                is_available=True,
-                extra_data={},
-                images=[],
-                tags=[],
-                listing_url=None,
-            )
+            return {
+                "type": "good",
+                "name": name,
+                "description": "\n".join(b.get("value", "") for b in attrs.get("bullet_point", [])),
+                "category": None,
+                "price": price,
+                "currency": currency,
+                "stock": 0,
+                "is_available": True,
+                "extra_data": {},
+                "images": [],
+                "tags": [],
+                "listing_url": None,
+            }
 
         if platform == ChannelPlatform.META_ADS:
             raw_price = product.get("price") or "0 USD"
             amount, _, currency = str(raw_price).partition(" ")
-            return dict(
-                type="good",
-                name=product.get("name", "Producto Meta"),
-                description=product.get("description", ""),
-                category=None,
-                price=amount or "0",
-                currency=currency or "USD",
-                stock=None,
-                is_available=(product.get("availability") or "in stock") == "in stock",
-                extra_data={},
-                images=[product["image_url"]] if product.get("image_url") else [],
-                tags=[],
-                listing_url=product.get("url") or None,
-            )
+            return {
+                "type": "good",
+                "name": product.get("name", "Producto Meta"),
+                "description": product.get("description", ""),
+                "category": None,
+                "price": amount or "0",
+                "currency": currency or "USD",
+                "stock": None,
+                "is_available": (product.get("availability") or "in stock") == "in stock",
+                "extra_data": {},
+                "images": [product["image_url"]] if product.get("image_url") else [],
+                "tags": [],
+                "listing_url": product.get("url") or None,
+            }
 
         if platform == ChannelPlatform.BEACONS:
-            return dict(
-                type="good",
-                name=product.get("name", "Producto Beacons"),
-                description=product.get("description", ""),
-                category=None,
-                price=product.get("price", "0") or "0",
-                currency=product.get("currency", "USD"),
-                stock=None,
-                is_available=True,
-                extra_data={},
-                images=[product["image_url"]] if product.get("image_url") else [],
-                tags=[],
-                listing_url=None,
-            )
+            return {
+                "type": "good",
+                "name": product.get("name", "Producto Beacons"),
+                "description": product.get("description", ""),
+                "category": None,
+                "price": product.get("price", "0") or "0",
+                "currency": product.get("currency", "USD"),
+                "stock": None,
+                "is_available": True,
+                "extra_data": {},
+                "images": [product["image_url"]] if product.get("image_url") else [],
+                "tags": [],
+                "listing_url": None,
+            }
 
-        return dict(
-            type="good",
-            name="Producto importado",
-            description="",
-            category=None,
-            price=0,
-            currency="USD",
-            stock=None,
-            is_available=True,
-            extra_data={},
-            images=[],
-            tags=[],
-            listing_url=None,
-        )
+        return {
+            "type": "good",
+            "name": "Producto importado",
+            "description": "",
+            "category": None,
+            "price": 0,
+            "currency": "USD",
+            "stock": None,
+            "is_available": True,
+            "extra_data": {},
+            "images": [],
+            "tags": [],
+            "listing_url": None,
+        }

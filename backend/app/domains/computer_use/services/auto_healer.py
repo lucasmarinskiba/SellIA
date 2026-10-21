@@ -33,7 +33,6 @@ class AutoHealer:
         expected_text: str | None = None,
     ) -> HealResult:
         """Intenta recuperar un click fallido."""
-        strategies = []
 
         # Strategy 1: Find element by expected text near coordinates
         if expected_text:
@@ -139,7 +138,7 @@ class AutoHealer:
         # Try www. prefix
         if not original_url.startswith("www.") and "//" in original_url:
             parts = original_url.split("//", 1)
-            new_url = f"{parts[0]}//www.{parts[1]}"
+            f"{parts[0]}//www.{parts[1]}"
             return HealResult(
                 success=True,
                 new_selector=None,
@@ -150,7 +149,7 @@ class AutoHealer:
 
         # Try http vs https
         if original_url.startswith("https://"):
-            new_url = original_url.replace("https://", "http://", 1)
+            original_url.replace("https://", "http://", 1)
             return HealResult(
                 success=True,
                 new_selector=None,
@@ -167,6 +166,6 @@ class AutoHealer:
         return {
             "total_attempts": len(heals),
             "successful": len(successful),
-            "strategies_used": list(set(h.strategy for h in successful)),
+            "strategies_used": list({h.strategy for h in successful}),
             "avg_confidence": sum(h.confidence for h in successful) / len(successful) if successful else 0,
         }

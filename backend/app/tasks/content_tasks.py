@@ -319,7 +319,7 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
             if not item:
                 return {"error": "CatalogItem not found"}
 
-            plan_tier = await _get_business_plan_tier(db, uuid.UUID(business_id))
+            await _get_business_plan_tier(db, uuid.UUID(business_id))
             cache = ContentCache()
 
             generated = []
@@ -765,7 +765,7 @@ def analyze_content_performance_task(self, business_id: str | None = None):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=3600)
-def cleanup_old_generated_content_task(self, business_id: str = None):
+def cleanup_old_generated_content_task(self, business_id: str | None = None):
     """Limpia contenido generado antiguo para reducir costos de DB.
 
     Política:
@@ -827,8 +827,6 @@ def cleanup_old_generated_content_task(self, business_id: str = None):
 
 def _build_image_prompt(item: CatalogItem, image_type: str, business) -> str:
     product = item.name
-    desc = item.description or ""
-    brand = business.name if business else ""
 
     base = f"Photorealistic product photography of {product}"
 

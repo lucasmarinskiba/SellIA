@@ -6,6 +6,7 @@ Strengths: Typography, text rendering, logos, posters
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -27,7 +28,7 @@ class IdeogramProvider(BaseProvider):
 
     name = "Ideogram 2.0"
     slug = "ideogram"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

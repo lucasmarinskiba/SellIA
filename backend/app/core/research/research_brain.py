@@ -1563,7 +1563,7 @@ class ResearchBrain:
 
     async def generate_competitor_alerts(self, context: dict[str, Any]) -> list[CompetitorSignal]:
         """Generate real-time competitor alerts"""
-        competitor_agents = [aid for aid in self.agents.keys() if "competitor" in aid]
+        competitor_agents = [aid for aid in self.agents if "competitor" in aid]
         signals = await self.research("competitor_tracking", context, competitor_agents)
 
         alerts = []
@@ -1580,7 +1580,7 @@ class ResearchBrain:
 
     async def generate_trend_alerts(self, context: dict[str, Any]) -> list[TrendAlert]:
         """Generate trend detection alerts"""
-        trend_agents = [aid for aid in self.agents.keys() if "trend" in aid]
+        trend_agents = [aid for aid in self.agents if "trend" in aid]
         signals = await self.research("trend_analysis", context, trend_agents)
 
         alerts = []

@@ -6,7 +6,7 @@ OAuth2 flow para usuarios.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 from google.api_core.exceptions import GoogleAPIError
 from google.oauth2.credentials import Credentials
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class GoogleCalendarConnector:
     """Conector real de Google Calendar API."""
 
-    SCOPES = ["https://www.googleapis.com/auth/calendar"]
+    SCOPES: ClassVar[list] = ["https://www.googleapis.com/auth/calendar"]
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class GoogleCalendarConnector:
         )
 
         flow.redirect_uri = self.redirect_uri
-        auth_url, state = flow.authorization_url(access_type="offline", prompt="consent")
+        auth_url, _state = flow.authorization_url(access_type="offline", prompt="consent")
 
         return auth_url
 

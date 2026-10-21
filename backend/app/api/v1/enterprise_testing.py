@@ -167,7 +167,7 @@ async def list_tests(
     business_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    status: Annotated[str, Query(description="draft, running, paused, completed, auto_promoted")] = None,
+    status: Annotated[str | None, Query(description="draft, running, paused, completed, auto_promoted")] = None,
 ):
     """List A/B tests for this business."""
     await _get_business_for_user(business_id, current_user, db)

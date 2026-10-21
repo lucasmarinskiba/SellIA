@@ -28,7 +28,7 @@ class WebhookService:
         business_id: UUID,
         url: str,
         subscribed_events: list[str],
-        description: str = None,
+        description: str | None = None,
         db: Session = None
     ) -> dict:
         """Register webhook endpoint."""
@@ -231,7 +231,7 @@ class WebhookService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(UTC) - timedelta(days=days)
+        datetime.now(UTC) - timedelta(days=days)
 
         webhooks = db.query(WebhookEndpoint).filter(
             WebhookEndpoint.business_id == business_id

@@ -128,7 +128,7 @@ class SalesExecutor:
     def _phase_close(strategy: dict[str, Any]) -> dict[str, Any]:
         """Fase 3: Cierre (Semanas 6-8)."""
 
-        segment = strategy.get("segment", "growth")
+        strategy.get("segment", "growth")
 
         return {
             "phase": "Close (Weeks 6-8)",

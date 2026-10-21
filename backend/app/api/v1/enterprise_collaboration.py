@@ -54,7 +54,7 @@ async def add_comment(
     content: Annotated[str, Body()],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    mentions: Annotated[list[str], Body()] = None,
+    mentions: Annotated[list[str] | None, Body()] = None,
 ):
     """Add comment to deal."""
     await _verify_deal_access(deal_id, current_user, db)
@@ -150,7 +150,7 @@ async def approve_action(
     decision: Annotated[str, Query(description="approved or rejected")],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    rejection_reason: Annotated[str, Query()] = None,
+    rejection_reason: Annotated[str | None, Query()] = None,
 ):
     """Approve or reject action. Only someone actually listed as an approver
     on this action can decide it -- collab_manager.approve_action raises if

@@ -201,7 +201,7 @@ class CausalGraph:
     def get_causes(self, effect: str) -> list[CausalEdge]:
         """¿Qué causa 'effect'?"""
         causes = []
-        for source, edges in self.edges.items():
+        for edges in self.edges.values():
             for edge in edges:
                 if edge.target == effect:
                     causes.append(edge)

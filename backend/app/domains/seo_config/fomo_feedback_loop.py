@@ -120,8 +120,8 @@ class FOMAFeedbackLoop:
 
         Compares prediction accuracy over time windows.
         """
-        week_ago = (utc_now() - timedelta(days=7)).date()
-        month_ago = (utc_now() - timedelta(days=30)).date()
+        (utc_now() - timedelta(days=7)).date()
+        (utc_now() - timedelta(days=30)).date()
 
         week_accuracy = await self.get_prediction_accuracy(business_id, days=7)
         month_accuracy = await self.get_prediction_accuracy(business_id, days=30)

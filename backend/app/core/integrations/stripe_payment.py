@@ -252,7 +252,7 @@ class StripeWebhookHandler:
         """Charge refunded."""
 
         refund = event["data"]["object"]
-        payment_intent_id = refund.get("payment_intent")
+        refund.get("payment_intent")
         amount = refund.get("amount", 0) / 100
 
         logger.info(f"Refund processed: {refund.id} (${amount})")

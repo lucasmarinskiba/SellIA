@@ -1,7 +1,7 @@
 """Retention Flywheel — Onboarding, activation, habit loops, win-backs."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class RetentionFlywheel:
     """Maximize retention through flywheel."""
 
     # Onboarding stages
-    ONBOARDING_STAGES = {
+    ONBOARDING_STAGES: ClassVar[dict] = {
         "welcome": {"duration_hours": 1, "goal": "First impression"},
         "setup": {"duration_hours": 2, "goal": "Configure basics"},
         "first_action": {"duration_hours": 1, "goal": "First win"},
@@ -18,7 +18,7 @@ class RetentionFlywheel:
     }
 
     # Activation triggers
-    ACTIVATION_TRIGGERS = {
+    ACTIVATION_TRIGGERS: ClassVar[dict] = {
         "first_successful_outcome": 0.3,  # 30% conversion
         "shared_with_friend": 0.25,  # 25% conversion
         "customized_settings": 0.4,  # 40% conversion

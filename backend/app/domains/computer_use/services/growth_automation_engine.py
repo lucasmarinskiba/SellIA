@@ -107,7 +107,7 @@ class GrowthAutomationEngine:
             publish_results = []
 
             for post_data in posts_to_publish:
-                success, message_id = await self._publish_post(
+                success, _message_id = await self._publish_post(
                     platform=platform,
                     post=post_data["post"],
                 )
@@ -221,9 +221,9 @@ class GrowthAutomationEngine:
         try:
             # Usar platform automation para publicar
             if platform == "instagram":
-                platform_type = PlatformAutomationType.INSTAGRAM_DM  # placeholder
+                pass  # placeholder
             elif platform == "tiktok":
-                platform_type = PlatformAutomationType.TIKTOK_DM  # placeholder
+                pass  # placeholder
             else:
                 return False, None
 

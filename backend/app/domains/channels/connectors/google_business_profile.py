@@ -164,7 +164,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
     async def get_location_insights(
         self,
         location: Location,
-        metric_types: list[str] = None
+        metric_types: list[str] | None = None
     ) -> dict[str, Any]:
         """Get location performance metrics (views, actions, etc).
 

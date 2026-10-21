@@ -351,7 +351,7 @@ class MercadoLibreAutomationEnhanced:
             local_inventory = {}  # {product_id: quantity}
 
             # TODO: Obtener inventario de ML
-            ml_inventory = await self._fetch_inventory()
+            await self._fetch_inventory()
 
             # Comparar y actualizar donde sea necesario
             # ...
@@ -419,8 +419,8 @@ class MercadoLibreAutomationEnhanced:
 
         try:
             # Extraer info
-            buyer = order_details.get("buyer", {})
-            shipping = order_details.get("shipping", {})
+            order_details.get("buyer", {})
+            order_details.get("shipping", {})
 
             # Generar label
             response = await self.http_client.post(
@@ -471,7 +471,7 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             logger.info(f"Tracking updated for {order_id}: {status}")
 
-            return {"status": "success", "order_id": order_id, "status": status}
+            return {"order_id": order_id, "status": status}
 
         except Exception as e:
             logger.exception("Failed to update tracking")

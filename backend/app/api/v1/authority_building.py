@@ -93,7 +93,7 @@ async def list_awards(
     return {
         "count": len(awards),
         "awards": awards,
-        "categories": list(set(a.category for a in awards)),
+        "categories": list({a.category for a in awards}),
     }
 
 
@@ -101,7 +101,7 @@ async def list_awards(
 async def get_seller_reviews(
     seller_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-    platform: Annotated[str, Query()] = None,
+    platform: Annotated[str | None, Query()] = None,
     min_rating: Annotated[int, Query()] = 1,
 ):
     """Aggregated reviews across platforms."""

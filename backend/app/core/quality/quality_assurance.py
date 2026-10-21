@@ -5,7 +5,7 @@ Checklist: producto real, buyer legítimo, oferta legal, términos claros.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class QualityAssuranceFramework:
     """Garantiza ventas legales, reales, verificables."""
 
     # Checklist pre-venta
-    PRE_SALE_CHECKLIST = {
+    PRE_SALE_CHECKLIST: ClassVar[dict] = {
         "product_validation": {
             "product_exists": "Producto real (no fake)",
             "price_reasonable": "Precio lógico (no $0.01)",
@@ -177,7 +177,7 @@ privacy@company.com for questions.
 class SupportChatbot:
     """AI chatbot responde objections comunes automáticamente."""
 
-    COMMON_OBJECTIONS = {
+    COMMON_OBJECTIONS: ClassVar[dict] = {
         "how_does_it_work": "Envía nuestro demo video. Link: demo.com/product",
         "is_it_safe": "Sí, 256-bit encryption + GDPR compliant. See privacy policy.",
         "no_credit_card": "Ofrecemos: transfer bancario, PayPal, crypto (Bitcoin, Ethereum).",

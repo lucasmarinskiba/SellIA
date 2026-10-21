@@ -10,7 +10,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 from app.domains.computer_use.services.calendar_integration import (
@@ -62,17 +62,17 @@ class SchedulingOrchestrator:
     """Orquestador de scheduling vía mensajes."""
 
     # Keywords para detectar intención
-    SCHEDULE_KEYWORDS = {
+    SCHEDULE_KEYWORDS: ClassVar[dict] = {
         "es": ["agendar", "cita", "horario", "fecha", "hora", "reunión", "llamada", "reservar"],
         "en": ["schedule", "appointment", "time", "date", "meeting", "call", "book"],
     }
 
-    CONFIRM_KEYWORDS = {
+    CONFIRM_KEYWORDS: ClassVar[dict] = {
         "es": ["sí", "si", "perfecto", "ok", "dale", "excelente", "genial", "confirmo"],
         "en": ["yes", "ok", "perfect", "great", "confirm", "sounds good"],
     }
 
-    CANCEL_KEYWORDS = {
+    CANCEL_KEYWORDS: ClassVar[dict] = {
         "es": ["cancelar", "no puedo", "no", "después", "otro día"],
         "en": ["cancel", "no", "can't", "later", "another day"],
     }

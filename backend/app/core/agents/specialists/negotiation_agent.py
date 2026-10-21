@@ -11,7 +11,7 @@ Specialties:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class NegotiationPhase(str, Enum):
 class NegotiationAgent:
     """Expert in negotiation strategy and tactics."""
 
-    NEGOTIATION_FRAMEWORKS = {
+    NEGOTIATION_FRAMEWORKS: ClassVar[dict] = {
         "batna": {
             "name": "BATNA (Best Alternative to Negotiated Agreement)",
             "description": "Your best option if negotiation fails",
@@ -131,7 +131,7 @@ class NegotiationAgent:
         },
     }
 
-    NEGOTIATION_TACTICS = {
+    NEGOTIATION_TACTICS: ClassVar[dict] = {
         "information_gathering": {
             "description": "Understand other party's position",
             "questions": [
@@ -215,7 +215,7 @@ class NegotiationAgent:
         },
     }
 
-    NEGOTIATION_SCENARIOS = {
+    NEGOTIATION_SCENARIOS: ClassVar[dict] = {
         NegotiationType.CUSTOMER_SALES: {
             "goal": "Close deal at best price/terms",
             "key_variables": [
@@ -311,7 +311,7 @@ class NegotiationAgent:
         },
     }
 
-    DEAL_STRUCTURES = {
+    DEAL_STRUCTURES: ClassVar[dict] = {
         "straight_transaction": {
             "description": "Simple buy/sell agreement",
             "terms": [

@@ -46,7 +46,7 @@ async def _process_batch_async(task_self, batch_job_id: str):
         try:
             items = job.result.get("items", [])
             task_type = job.result.get("task_type", "content_generation")
-            business_id = job.result.get("business_id")
+            job.result.get("business_id")
 
             if not items:
                 raise ValueError("No items to process in batch")

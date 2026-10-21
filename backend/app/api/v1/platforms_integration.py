@@ -117,7 +117,7 @@ async def facebook_shop_webhook_orders(
         logger.info(f"[{correlation_id}] Facebook Shop webhook received")
 
         # Get raw body for signature verification
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify signature
         # TODO: Parse payload
@@ -262,7 +262,7 @@ async def instagram_shop_webhook_orders(
     try:
         logger.info(f"[{correlation_id}] Instagram Shop webhook received")
 
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify signature
         # TODO: Parse and process webhook
@@ -345,7 +345,7 @@ async def tiktok_shop_webhook_orders(
     try:
         logger.info(f"[{correlation_id}] TikTok Shop webhook received")
 
-        body = await request.body()
+        await request.body()
 
         # TODO: Verify TikTok signature
         # TODO: Parse and process webhook
@@ -545,7 +545,7 @@ async def slack_command_handler(
         logger.info(f"[{correlation_id}] Slack command received")
 
         # Parse request body
-        body = await request.form()
+        await request.form()
 
         # TODO: Verify token
         # TODO: Parse command and arguments
@@ -620,7 +620,7 @@ async def telegram_webhook_updates(
     try:
         logger.info(f"[{correlation_id}] Telegram update received")
 
-        payload = await request.json()
+        await request.json()
 
         # TODO: Call TelegramAutomation.handle_update()
         # TODO: Process message/command/callback

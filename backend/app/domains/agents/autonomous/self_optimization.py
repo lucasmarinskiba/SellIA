@@ -10,7 +10,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +38,7 @@ class SelfOptimizationEngine:
     """Motor de auto-optimización continua del sistema SellIA."""
 
     # Benchmarks objetivo del sistema
-    BENCHMARKS = {
+    BENCHMARKS: ClassVar[dict] = {
         "response_time_seconds": 30,        # tiempo de respuesta máximo al lead
         "deal_conversion_rate": 0.20,       # 20% de deals calificados deben cerrar
         "nurture_engagement_rate": 0.35,    # 35% de leads en nurturing deben responder
@@ -168,7 +168,7 @@ class SelfOptimizationEngine:
         insights = []
         try:
             from app.domains.crm.models import Deal
-            threshold = datetime.now(UTC) - timedelta(days=30)
+            datetime.now(UTC) - timedelta(days=30)
 
             stage_counts_q = select(
                 Deal.pipeline_stage,

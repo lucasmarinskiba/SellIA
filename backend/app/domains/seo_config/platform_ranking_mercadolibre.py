@@ -219,8 +219,8 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
             for q in answered:
                 try:
                     from datetime import datetime
-                    asked = datetime.fromisoformat(q["date_created"].replace("Z", "+00:00"))
-                    replied = datetime.fromisoformat(q["answer"]["date_created"].replace("Z", "+00:00"))
+                    asked = datetime.fromisoformat(q["date_created"])
+                    replied = datetime.fromisoformat(q["answer"]["date_created"])
                     latencies.append((replied - asked).total_seconds() / 60)
                 except Exception:
                     logger.exception("_question_signals: error inesperado")
@@ -270,7 +270,7 @@ class MercadoLibreRankingConnector(PlatformRankingConnector):
 
             required_attr_ids = {
                 a["id"] for a in resp.json()
-                if any(tag == "required" for tag in (a.get("tags") or {}).keys())
+                if any(tag == "required" for tag in (a.get("tags") or {}))
             }
             if not required_attr_ids:
                 return [RankingSignal(

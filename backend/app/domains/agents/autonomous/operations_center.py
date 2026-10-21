@@ -24,7 +24,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -85,7 +85,7 @@ class AutonomousOperationsCenter:
     """Centro de Operaciones Autónomas — coordinador maestro del sistema SellIA."""
 
     # Ciclos de ejecución (en segundos)
-    CYCLE_INTERVALS = {
+    CYCLE_INTERVALS: ClassVar[dict] = {
         "protection": 300,       # cada 5 minutos — escaneo de amenazas
         "repair": 600,           # cada 10 minutos — detección y reparación de fallas
         "config": 1800,          # cada 30 minutos — reconfiguración adaptativa
@@ -100,7 +100,7 @@ class AutonomousOperationsCenter:
     #: regular cadence, but not on every 5-minute cycle.
     HEALTH_REPORT_DEGRADED_MIN_SECONDS = 3600
 
-    ALERT_THRESHOLDS = {
+    ALERT_THRESHOLDS: ClassVar[dict] = {
         "health_score_warning": 70,
         "health_score_critical": 50,
         "threat_score_warning": 30,

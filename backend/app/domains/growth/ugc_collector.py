@@ -42,7 +42,7 @@ class UGCCollector:
         conversation_id: uuid.UUID,
         content_type: str = "lifestyle_photo",  # unboxing, before_after, testimonial_video, lifestyle_photo, story
         incentive: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> UgcRequest:
         """Send a UGC request to a customer."""
         # Check if already requested for this order
@@ -219,7 +219,7 @@ Ejemplo para lifestyle photo:
         theme: str,
         content_type: str = "lifestyle_photo",
         incentive: str = "",
-        campaign_id: uuid.UUID = None,
+        campaign_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         """Create a themed UGC challenge/campaign."""
         # Generate campaign message
@@ -270,7 +270,7 @@ Responde en JSON:
     async def get_ugc_gallery(
         self,
         business_id: uuid.UUID,
-        content_type: str = None,
+        content_type: str | None = None,
         limit: int = 50,
     ) -> list[dict]:
         """Get approved UGC items for gallery display."""

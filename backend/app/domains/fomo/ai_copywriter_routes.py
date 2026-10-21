@@ -1,7 +1,7 @@
 """Fase A: AI FOMO Copywriter Agent — API routes"""
 
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,7 @@ from app.domains.fomo.ai_copywriter_agent import (
     CopyTone,
     SupportedLanguage,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo/ai/copywriter", tags=["fomo-ai-copywriter"])
 
@@ -24,16 +25,16 @@ async def get_db():
 
 @router.post("/generate")
 async def generate_campaign_copy(
-    business_id: uuid.UUID = Query(...),
-    campaign_type: str = Query(..., description="e.g. flash_sale, cart_abandonment, countdown"),
-    product_name: str = Query(...),
-    product_description: str = Query(...),
-    audience: str = Query("general"),
-    tone: CopyTone = Query(CopyTone.URGENT),
-    language: SupportedLanguage = Query(SupportedLanguage.ES),
-    variant_count: int = Query(5, ge=1, le=10),
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    business_id: Annotated[uuid.UUID, Query()],
+    campaign_type: Annotated[str, Query(description="e.g. flash_sale, cart_abandonment, countdown")],
+    product_name: Annotated[str, Query()],
+    product_description: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    audience: Annotated[str, Query()] = "general",
+    tone: Annotated[CopyTone, Query()] = CopyTone.URGENT,
+    language: Annotated[SupportedLanguage, Query()] = SupportedLanguage.ES,
+    variant_count: Annotated[int, Query(ge=1, le=10)] = 5,
 ):
     """Generate FOMO copy variants (subject lines, urgency messages, CTAs, SMS) via AI"""
     result = await AICopywriterAgent.generate_campaign_copy(
@@ -52,17 +53,17 @@ async def generate_campaign_copy(
 
 @router.post("/generate-and-rank")
 async def generate_and_rank_copy(
-    business_id: uuid.UUID = Query(...),
-    campaign_type: str = Query(...),
-    product_name: str = Query(...),
-    product_description: str = Query(...),
-    audience: str = Query("general"),
-    tone: CopyTone = Query(CopyTone.URGENT),
-    language: SupportedLanguage = Query(SupportedLanguage.ES),
-    variant_count: int = Query(5, ge=1, le=10),
-    historical_data: dict[str, list[dict[str, Any]]] | None = Body(None),
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    business_id: Annotated[uuid.UUID, Query()],
+    campaign_type: Annotated[str, Query()],
+    product_name: Annotated[str, Query()],
+    product_description: Annotated[str, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    audience: Annotated[str, Query()] = "general",
+    tone: Annotated[CopyTone, Query()] = CopyTone.URGENT,
+    language: Annotated[SupportedLanguage, Query()] = SupportedLanguage.ES,
+    variant_count: Annotated[int, Query(ge=1, le=10)] = 5,
+    historical_data: Annotated[dict[str, list[dict[str, Any]]] | None, Body()] = None,
 ):
     """Generate copy AND auto-rank variants by predicted performance
     (uses historical open/click rate data when provided, heuristics otherwise)"""
@@ -83,11 +84,11 @@ async def generate_and_rank_copy(
 
 @router.post("/translate")
 async def translate_campaign_copy(
-    business_id: uuid.UUID = Query(...),
-    target_language: SupportedLanguage = Query(...),
-    content: dict[str, Any] = Body(...),
-    db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    business_id: Annotated[uuid.UUID, Query()],
+    target_language: Annotated[SupportedLanguage, Query()],
+    content: Annotated[dict[str, Any], Body()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Translate existing FOMO copy to another language, preserving persuasive intent"""
     result = await AICopywriterAgent.translate_copy(

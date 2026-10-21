@@ -78,7 +78,7 @@ class MultiTenantManager:
     def upgrade_tenant(self, tenant_id: str, new_tier: str) -> dict[str, Any]:
         """Upgrade tenant tier"""
 
-        new_config = self._get_tier_config(new_tier)
+        self._get_tier_config(new_tier)
 
         return {
             "status": "success",

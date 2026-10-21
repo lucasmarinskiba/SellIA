@@ -52,7 +52,7 @@ class MockDecisionContext:
     def add_signal(self, name: str, value: Any) -> None:
         self.signals[name] = {"value": value, "weight": 1.0}
 
-    def add_history(self, event: str, outcome: bool = None) -> None:
+    def add_history(self, event: str, outcome: bool | None = None) -> None:
         self.history.append({
             "event": event,
             "outcome": outcome,

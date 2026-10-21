@@ -335,7 +335,7 @@ class SelliasNeuralBrain:
 
             # Get retention recommendations
             tone_recs = self.tone_recommender.recommend(customer_data)
-            channel_recs = self.channel_recommender.recommend(customer_data)
+            self.channel_recommender.recommend(customer_data)
 
             insight = ComprehensiveInsight(
                 insight_type="churn",
@@ -376,7 +376,7 @@ class SelliasNeuralBrain:
             budget_alloc = budget_opts[0]
 
             # Get pricing recommendation
-            pricing_recs = self.pricing_recommender.recommend(market_data)
+            self.pricing_recommender.recommend(market_data)
 
             insight = ComprehensiveInsight(
                 insight_type="strategy",

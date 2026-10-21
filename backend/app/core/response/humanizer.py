@@ -14,7 +14,7 @@ import random
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 
 class Tone(str, Enum):
@@ -93,7 +93,7 @@ class ToneAnalyzer:
 class EmojiSelector:
     """Context-aware emoji selection"""
 
-    SENTIMENT_EMOJIS = {
+    SENTIMENT_EMOJIS: ClassVar[dict] = {
         "positive": ["😊", "🎉", "✨", "💪", "👏", "🔥", "💯"],
         "negative": ["😞", "😕", "😤", "⚠️", "🚫"],
         "question": ["🤔", "❓", "🤷"],
@@ -130,18 +130,18 @@ class EmojiSelector:
 class SentenceVariator:
     """Avoid repetition through sentence variation"""
 
-    SENTENCE_STARTERS = [
+    SENTENCE_STARTERS: ClassVar[list] = [
         "I think", "From what I understand", "Based on this",
         "It seems", "You know", "I'd say", "Check this out",
         "Here's the thing", "Consider this", "Think about it"
     ]
 
-    AGREEMENT_PHRASES = [
+    AGREEMENT_PHRASES: ClassVar[list] = [
         "Absolutely", "For sure", "Yeah", "Totally", "Definitely",
         "No doubt", "You're right", "Exactly", "Spot on", "No cap"
     ]
 
-    TRANSITION_WORDS = [
+    TRANSITION_WORDS: ClassVar[list] = [
         "Plus", "Also", "Moreover", "Additionally", "On top of that",
         "By the way", "Speaking of which", "That said", "Anyway", "So"
     ]
@@ -174,7 +174,7 @@ class SentenceVariator:
 class FillerWordInjector:
     """Add natural filler words"""
 
-    FILLER_WORDS = {
+    FILLER_WORDS: ClassVar[dict] = {
         "light": ["uh", "um", "you know", "like"],
         "medium": ["actually", "honestly", "basically", "kinda", "sorta"],
         "heavy": ["literally", "obviously", "I mean", "for real", "no cap"]
@@ -207,7 +207,7 @@ class FillerWordInjector:
 class TypoInjector:
     """Intentional typo injection for authenticity (2% rate)"""
 
-    COMMON_TYPOS = {
+    COMMON_TYPOS: ClassVar[dict] = {
         "the": ["teh", "th"],
         "that": ["taht", "that"],
         "and": ["adn", "abd"],

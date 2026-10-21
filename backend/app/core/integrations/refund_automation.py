@@ -186,7 +186,6 @@ class RefundAutomation:
     async def _notify_buyer_refund(self, order_id: str, amount: float, reason: str) -> None:
         """Notifica buyer vía WhatsApp."""
 
-        message = f"✅ Refund procesado: ${amount}. Retornarán en 3-5 días hábiles. Motivo: {reason}."
 
         # TODO: WhatsApp notification integration
         logger.info(f"Refund notification sent for {order_id}")

@@ -3,6 +3,7 @@
 import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import ClassVar
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -23,7 +24,7 @@ class RateLimitService:
     """Manage API rate limiting and caching."""
 
     # Rate limit defaults (requests per hour)
-    RATE_LIMITS = {
+    RATE_LIMITS: ClassVar[dict] = {
         RateLimitTier.FREE: 100,
         RateLimitTier.STARTER: 1000,
         RateLimitTier.PRO: 10000,
@@ -79,8 +80,8 @@ class RateLimitService:
         endpoint: str,
         method: str,
         business_id: UUID,
-        ip_address: str = None,
-        user_agent: str = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         db: Session = None
     ) -> tuple[bool, str | None]:
         """Check if request is rate limited."""
@@ -180,7 +181,7 @@ class RateLimitService:
         business_id: UUID,
         endpoint_path: str,
         ttl_seconds: int = 300,
-        cache_by: str = None,
+        cache_by: str | None = None,
         db: Session = None
     ) -> dict:
         """Set cache policy for endpoint."""
@@ -244,7 +245,7 @@ class RateLimitService:
     @staticmethod
     def get_api_metrics(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Get API performance metrics."""

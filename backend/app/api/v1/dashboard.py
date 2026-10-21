@@ -93,7 +93,7 @@ async def get_user_settings(user_id: str = Query(...)):
 
 
 @router.put("/user/settings")
-async def update_user_settings(user_id: str = Query(...), seller_name: str = None, business_name: str = None):
+async def update_user_settings(user_id: str = Query(...), seller_name: str | None = None, business_name: str | None = None):
     """Update user profile settings."""
     return {
         "user_id": user_id,

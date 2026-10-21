@@ -6,6 +6,7 @@ Detects customer emotions from messages and adapts AI tone accordingly.
 import hashlib
 import json
 import uuid
+from typing import ClassVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -169,7 +170,7 @@ class EmotionDetector:
 class ToneAdapter:
     """Adapts system prompt tone based on detected emotion."""
 
-    _TONE_INSTRUCTIONS = {
+    _TONE_INSTRUCTIONS: ClassVar[dict] = {
         "angry": (
             "Sé calmado, empático, reconoce su frustración, "
             "ofrece solución concreta inmediata."

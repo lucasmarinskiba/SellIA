@@ -323,7 +323,7 @@ class CommissionTracker:
         # Calculate LTV
         ltv_values = []
         repeat_customers = 0
-        for customer_id, customer_sales in by_customer.items():
+        for customer_sales in by_customer.values():
             approved = [s for s in customer_sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
             if len(approved) > 0:
                 ltv = sum(s.commission_earned for s in approved)

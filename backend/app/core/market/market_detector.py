@@ -4,7 +4,7 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class MarketProfile:
 class MarketDetector:
     """Auto-detect market type from vendor inputs."""
 
-    INDUSTRY_KEYWORDS = {
+    INDUSTRY_KEYWORDS: ClassVar[dict] = {
         Industry.REAL_ESTATE: ["propiedad", "inmueble", "casa", "apartamento", "terreno", "alquiler", "venta inmobiliaria", "agente"],
         Industry.COMMERCE: ["producto", "venta", "tienda", "ecommerce", "mercado"],
         Industry.SERVICES: ["servicio", "consultoría", "asesoría", "coaching"],
@@ -62,7 +62,7 @@ class MarketDetector:
         Industry.DIGITAL_PRODUCTS: ["software", "app", "SaaS", "curso", "membresía"],
     }
 
-    BUSINESS_MODEL_KEYWORDS = {
+    BUSINESS_MODEL_KEYWORDS: ClassVar[dict] = {
         BusinessModel.PHYSICAL: ["producto físico", "envío", "inventario"],
         BusinessModel.DIGITAL: ["descargable", "acceso instantáneo", "software"],
         BusinessModel.SERVICE: ["servicio", "consultoría", "por hora"],
@@ -70,7 +70,7 @@ class MarketDetector:
         BusinessModel.MARKETPLACE: ["marketplace", "plataforma", "comisión"],
     }
 
-    MOTIVATION_KEYWORDS = {
+    MOTIVATION_KEYWORDS: ClassVar[dict] = {
         BuyerMotivation.NEED: ["esencial", "necesario", "urgente", "problema"],
         BuyerMotivation.DESIRE: ["quiero", "me gustaría", "interesante"],
         BuyerMotivation.LUXURY: ["premium", "exclusivo", "lujo"],

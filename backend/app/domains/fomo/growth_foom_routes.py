@@ -184,8 +184,8 @@ async def get_growth_summary():
 
     seo_plan = await SeoFOOMService.generate_seo_content_calendar()
     referral = await ViralLoopsService.create_referral_program()
-    community = await ViralLoopsService.create_community_program()
-    trial = await ProductLedGrowthService.optimize_free_trial_foom()
+    await ViralLoopsService.create_community_program()
+    await ProductLedGrowthService.optimize_free_trial_foom()
     partnerships = await PartnershipFOOMService.create_partnerships()
     viral = await ViralMechanicsService.create_viral_mechanics()
     brand = await BrandBuildingService.create_thought_leadership()

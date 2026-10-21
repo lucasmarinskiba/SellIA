@@ -79,7 +79,7 @@ async def end_offline_visit(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     purchased: Annotated[bool, Query()] = False,
-    purchase_amount: Annotated[float, Query()] = None,
+    purchase_amount: Annotated[float | None, Query()] = None,
 ) -> OfflineConversionResponse:
     """Mark end of visit or update purchase info."""
 

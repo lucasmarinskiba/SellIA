@@ -109,7 +109,6 @@ class KnowledgeContextProvider:
     def _detect_categories(self, message: str) -> list[str]:
         """Detecta qué categorías son relevantes para el mensaje."""
         msg_lower = message.lower()
-        categories = []
 
         keyword_map = {
             "sales": ["precio", "costo", "comprar", "venta", "vender", "presupuesto", "descuento", "oferta", "cierre", "objecion", "prospecto", "lead", "cliente"],
@@ -173,7 +172,7 @@ class KnowledgeContextProvider:
 
     def _get_framework_for_context(self, message: str) -> str | None:
         """Obtiene un framework general relevante."""
-        msg_lower = message.lower()
+        message.lower()
 
         frameworks = [
             ("sales", "IRA", "Investigar la objeción → Reforzar valor → Asumir el cierre"),

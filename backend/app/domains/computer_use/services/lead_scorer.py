@@ -12,7 +12,7 @@ Scoring factors:
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -97,17 +97,17 @@ class LeadScoringService:
     LOW_ENGAGEMENT = 0  # 0-1 messages
 
     # Intent keywords by strength
-    STRONG_INTENT_KEYWORDS = {
+    STRONG_INTENT_KEYWORDS: ClassVar[dict] = {
         "es": ["compramos", "cuando entran", "confirmen", "facturación", "contrato", "cierre"],
         "en": ["when do we", "confirm the order", "invoice", "contract", "close"],
     }
 
-    MEDIUM_INTENT_KEYWORDS = {
+    MEDIUM_INTENT_KEYWORDS: ClassVar[dict] = {
         "es": ["interesa", "podríamos", "cuándo", "precio", "detalles"],
         "en": ["interested", "how much", "when", "details", "next steps"],
     }
 
-    WEAK_INTENT_KEYWORDS = {
+    WEAK_INTENT_KEYWORDS: ClassVar[dict] = {
         "es": ["qué es", "cómo funciona", "información"],
         "en": ["what is", "how does", "more info", "tell me about"],
     }

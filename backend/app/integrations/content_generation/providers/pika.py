@@ -6,6 +6,7 @@ Strengths: Anime, effects, style transfer, creative video
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class PikaProvider(BaseProvider):
 
     name = "Pika Labs"
     slug = "pika"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

@@ -6,6 +6,7 @@ Strengths: Interactive docs, landing pages, guides, presentations
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class GammaProvider(BaseProvider):
 
     name = "Gamma"
     slug = "gamma"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:

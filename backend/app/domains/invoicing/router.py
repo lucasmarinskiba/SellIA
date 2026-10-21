@@ -38,7 +38,7 @@ async def create_invoice(
 ):
     """Create invoice."""
     svc = InvoicingService(db)
-    total = body.amount_aed + body.tax_aed
+    body.amount_aed + body.tax_aed
     return await svc.create_invoice(
         business_id,
         body.customer_id,

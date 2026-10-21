@@ -38,7 +38,7 @@ class TaskStatus(str, Enum):
 class EmailScheduler:
     """Redis-based task scheduler for emails."""
 
-    def __init__(self, redis_url: str = None):
+    def __init__(self, redis_url: str | None = None):
         self.redis_url = redis_url or os.getenv(
             "REDIS_URL",
             "redis://localhost:6379/0"

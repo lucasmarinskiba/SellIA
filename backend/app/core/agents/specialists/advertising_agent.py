@@ -10,7 +10,7 @@ Specialties:
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class BidStrategy(str, Enum):
 class AdvertisingAgent:
     """Expert in paid advertising and campaign optimization."""
 
-    PLATFORM_SPECS = {
+    PLATFORM_SPECS: ClassVar[dict] = {
         AdPlatform.GOOGLE_SEARCH: {
             "best_for": "High-intent keywords, immediate conversion",
             "audience_size": "Billions of searches/month",
@@ -91,7 +91,7 @@ class AdvertisingAgent:
         },
     }
 
-    TARGETING_STRATEGIES = {
+    TARGETING_STRATEGIES: ClassVar[dict] = {
         "demographic": {
             "description": "Target by user characteristics",
             "variables": [
@@ -148,7 +148,7 @@ class AdvertisingAgent:
         },
     }
 
-    CREATIVE_TESTING_FRAMEWORK = {
+    CREATIVE_TESTING_FRAMEWORK: ClassVar[dict] = {
         "headlines": {
             "description": "Test different value propositions",
             "best_practices": [
@@ -213,7 +213,7 @@ class AdvertisingAgent:
         },
     }
 
-    BUDGET_ALLOCATION_MODELS = {
+    BUDGET_ALLOCATION_MODELS: ClassVar[dict] = {
         "experiment_model": {
             "name": "Experiment (30/40/30)",
             "description": "Allocate budget to test, optimize, scale",
@@ -243,7 +243,7 @@ class AdvertisingAgent:
         },
     }
 
-    ROAS_OPTIMIZATION = {
+    ROAS_OPTIMIZATION: ClassVar[dict] = {
         "definition": "Revenue from ad spend / ad spend",
         "targets_by_industry": {
             "SaaS": "3:1 to 5:1",
@@ -283,7 +283,7 @@ class AdvertisingAgent:
         },
     }
 
-    BID_STRATEGY_GUIDE = {
+    BID_STRATEGY_GUIDE: ClassVar[dict] = {
         BidStrategy.MANUAL_CPC: {
             "description": "You set cost per click bids manually",
             "best_for": "Campaigns with clear ROAS targets, large budgets",

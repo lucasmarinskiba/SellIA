@@ -181,7 +181,7 @@ class MercadoLibrePlatformHandler:
             url = f"{self.metadata.base_url}/items/{item_id}"
             start_time = time.time()
 
-            response = await self._navigate_with_retry(url)
+            await self._navigate_with_retry(url)
             load_time = int((time.time() - start_time) * 1000)
 
             # Extraer información estructurada

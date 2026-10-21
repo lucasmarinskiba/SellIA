@@ -6,6 +6,7 @@ Strengths: SEO optimization, ad scoring, landing pages, blog posts
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class WritesonicProvider(BaseProvider):
 
     name = "Writesonic"
     slug = "writesonic"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:

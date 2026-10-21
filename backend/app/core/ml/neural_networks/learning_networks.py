@@ -245,7 +245,7 @@ class MetaLearningEngine:
         # Start with best performing model
         if self.task_models:
             best_task = max(self.task_performance.items(), key=lambda x: x[1])[0]
-            base_model = self.task_models[best_task]
+            self.task_models[best_task]
 
             # Fine-tune for new task
             X_scaled = self.scaler.fit_transform(X)

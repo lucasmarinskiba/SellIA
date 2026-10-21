@@ -13,6 +13,7 @@ Gen-4 Standard para producción.
 
 import asyncio
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -58,7 +59,7 @@ class RunwayProvider(BaseProvider):
 
     name = "Runway ML"
     slug = "runway"
-    supports = [ContentType.VIDEO, ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.VIDEO, ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

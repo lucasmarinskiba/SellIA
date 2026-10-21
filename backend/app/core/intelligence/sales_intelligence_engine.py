@@ -23,7 +23,7 @@ class SalesIntelligenceEngine:
         self,
         base_price: float,
         platform_commission: float,
-        competitor_price: float = None,
+        competitor_price: float | None = None,
         inventory_level: int = 100,
         demand_factor: float = 1.0,
     ) -> dict[str, Any]:

@@ -13,6 +13,7 @@ fixable problem, and it is visible without any external service.
 
 from __future__ import annotations
 
+import itertools
 import re
 import unicodedata
 from collections import Counter
@@ -81,7 +82,7 @@ def _tokens(text: str) -> list[str]:
 
 
 def _bigrams(tokens: list[str]) -> list[str]:
-    return [f"{a} {b}" for a, b in zip(tokens, tokens[1:])]
+    return [f"{a} {b}" for a, b in itertools.pairwise(tokens)]
 
 
 def extract(

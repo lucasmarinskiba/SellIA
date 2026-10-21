@@ -1,7 +1,7 @@
 """Growth Catalyst — Actionable tactics, experimentation, hacks."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class GrowthCatalyst:
     """Provides actionable growth tactics."""
 
     # Growth hacks database (250+ tactics)
-    GROWTH_HACKS = {
+    GROWTH_HACKS: ClassVar[dict] = {
         "early_stage": [
             {"hack": "Ship 10x faster", "mechanism": "Reduce time-to-market", "impact": "High"},
             {"hack": "Reach out to 100 people", "mechanism": "Direct personal outreach", "impact": "High"},

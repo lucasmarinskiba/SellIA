@@ -12,6 +12,7 @@ Nuestro proveedor premium de video. Se usa cuando la calidad es prioridad.
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -50,7 +51,7 @@ class SeedanceProvider(BaseProvider):
 
     name = "Seedance 2.0"
     slug = "seedance"
-    supports = [ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

@@ -230,7 +230,7 @@ class PromptOrchestrator:
         failed = [e for e in self.execution_history if not e.success]
 
         avg_duration = sum(e.duration_ms for e in self.execution_history) / len(self.execution_history)
-        unique_prompts = len(set(e.prompt_id for e in self.execution_history))
+        unique_prompts = len({e.prompt_id for e in self.execution_history})
 
         return {
             'total_executions': len(self.execution_history),

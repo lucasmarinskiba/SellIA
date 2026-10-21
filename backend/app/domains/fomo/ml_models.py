@@ -45,7 +45,7 @@ class FOOMMLModels:
 
         # Simple model: monthly revenue * months active * growth factor
         monthly_revenue = features[0]
-        months_active = features[1]
+        features[1]
         growth_rate = 1 + (features[2] / 100)  # Convert % to factor
 
         ltv = monthly_revenue * 12 * growth_rate

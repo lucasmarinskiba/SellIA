@@ -1,7 +1,7 @@
 """Viral Mechanics — Referral loops, network effects, organic amplification."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class ViralMechanics:
     """Viral growth mechanics."""
 
     # Referral incentive models
-    REFERRAL_MODELS = {
+    REFERRAL_MODELS: ClassVar[dict] = {
         "both_benefit": {"referrer": "reward", "referee": "discount"},
         "referrer_only": {"referrer": "cash", "referee": None},
         "tiered": {"referrer": "tiered_rewards", "referee": "escalating_discount"},
@@ -35,7 +35,7 @@ class ViralMechanics:
 
         # Incentive calculation
         customer_lifetime_value = unit_economics.get("customer_ltv", 500)
-        acquisition_cost_without_referral = unit_economics.get("acquisition_cost", 50)
+        unit_economics.get("acquisition_cost", 50)
 
         # Referral incentive budget (can't exceed 50% of LTV)
         max_referral_budget = customer_lifetime_value * 0.5

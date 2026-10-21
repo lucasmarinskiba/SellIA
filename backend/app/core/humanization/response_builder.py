@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 from random import choice
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ResponseBuilder:
     """Builds human-sounding responses from components"""
 
     # Soft CTAs (low pressure)
-    SOFT_CTAS = {
+    SOFT_CTAS: ClassVar[dict] = {
         "en": [
             "What do you think?",
             "How does that sound?",
@@ -63,7 +63,7 @@ class ResponseBuilder:
     }
 
     # Direct CTAs (action-oriented)
-    DIRECT_CTAS = {
+    DIRECT_CTAS: ClassVar[dict] = {
         "en": [
             "Let's set up a quick call.",
             "Click below to get started.",
@@ -81,7 +81,7 @@ class ResponseBuilder:
     }
 
     # Scarcity CTAs (time-limited)
-    SCARCITY_CTAS = {
+    SCARCITY_CTAS: ClassVar[dict] = {
         "en": [
             "Only 2 spots left this month.",
             "This rate only lasts until {date}.",
@@ -99,7 +99,7 @@ class ResponseBuilder:
     }
 
     # Benefit CTAs (value-focused)
-    BENEFIT_CTAS = {
+    BENEFIT_CTAS: ClassVar[dict] = {
         "en": [
             "See how you can save 10 hours/week.",
             "Discover how other teams did it.",
@@ -117,7 +117,7 @@ class ResponseBuilder:
     }
 
     # FOMO CTAs (fear of missing out)
-    FOMO_CTAS = {
+    FOMO_CTAS: ClassVar[dict] = {
         "en": [
             "See what {count} companies discovered.",
             "Check out the results others got.",
@@ -135,7 +135,7 @@ class ResponseBuilder:
     }
 
     # Curiosity CTAs (question-based)
-    CURIOSITY_CTAS = {
+    CURIOSITY_CTAS: ClassVar[dict] = {
         "en": [
             "Wondering if this applies to you?",
             "Want to know if you qualify?",
@@ -153,7 +153,7 @@ class ResponseBuilder:
     }
 
     # Social proof templates
-    SOCIAL_PROOF = {
+    SOCIAL_PROOF: ClassVar[dict] = {
         "en": [
             "Join {count}+ {industry} leaders using this.",
             "{percent}% of {audience} see results in {timeframe}.",
@@ -171,7 +171,7 @@ class ResponseBuilder:
     }
 
     # Closings by tone
-    CLOSINGS = {
+    CLOSINGS: ClassVar[dict] = {
         "professional": {
             "en": ["Best regards,", "Sincerely,", "Kind regards,"],
             "es": ["Saludos cordiales,", "Atentamente,", "Con respeto,"],

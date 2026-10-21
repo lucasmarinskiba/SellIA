@@ -41,7 +41,7 @@ class ServiceHealthTracker:
 health_tracker = ServiceHealthTracker()
 
 
-async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwargs: dict = None, max_retries: int = 3, initial_delay: float = 1.0, is_idempotent: bool = True) -> Any:
+async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwargs: dict | None = None, max_retries: int = 3, initial_delay: float = 1.0, is_idempotent: bool = True) -> Any:
     if kwargs is None:
         kwargs = {}
     if not is_idempotent:

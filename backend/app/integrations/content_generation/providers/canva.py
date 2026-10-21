@@ -6,6 +6,7 @@ Strengths: Templates, brand kits, social graphics, quick designs
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class CanvaProvider(BaseProvider):
 
     name = "Canva AI"
     slug = "canva"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

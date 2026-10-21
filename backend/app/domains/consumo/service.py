@@ -199,7 +199,7 @@ async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> dict[
     if not row:
         return {"recommendation": "no_active_subscription", "reason": "No hay suscripción activa"}
 
-    sub, plan = row
+    _sub, plan = row
     plan_limits = plan.limits or {}
     ai_limit = plan_limits.get("ai_messages_monthly", 0)
 

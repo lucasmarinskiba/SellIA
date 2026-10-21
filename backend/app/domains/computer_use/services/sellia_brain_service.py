@@ -10,7 +10,7 @@ Conecta: BrainIntegrationLayer → Computer Use Sessions
 
 import logging
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -112,7 +112,7 @@ class SellIABrainService:
     """Servicio que expone SellIA Brain para Computer Use."""
 
     # Estrategias por etapa (placeholder — se cargan desde prompts/)
-    _STAGE_STRATEGIES = {
+    _STAGE_STRATEGIES: ClassVar[dict] = {
         SalesStage.AWARENESS: [
             "attention_grabber",
             "value_prop_teaser",

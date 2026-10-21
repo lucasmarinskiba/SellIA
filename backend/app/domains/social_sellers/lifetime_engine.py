@@ -56,7 +56,7 @@ class CustomerLifetimeEngine:
     async def detect_buying_moments(self, business_id: uuid.UUID, lookback_hours: int = 24) -> list[dict[str, Any]]:
         """Encuentra clientes con alta probabilidad de compra próxima."""
         opportunities = []
-        cutoff = datetime.now(UTC) - timedelta(hours=lookback_hours)
+        datetime.now(UTC) - timedelta(hours=lookback_hours)
 
         # Obtener conversaciones activas del negocio
         conv_result = await self.db.execute(
@@ -240,7 +240,7 @@ class CustomerLifetimeEngine:
             return None
 
         name = conv.lead_name or 'Hola'
-        predicted = await self.predict_next_purchase(seller.business_id, conversation_id)
+        await self.predict_next_purchase(seller.business_id, conversation_id)
 
         templates = {
             'hot': (
@@ -284,8 +284,8 @@ class CustomerLifetimeEngine:
         )
 
         # Top oportunidades por categoría
-        top_hot = sorted(buckets['hot'], key=lambda x: x['score'], reverse=True)[:3]
-        top_warm = sorted(buckets['warm'], key=lambda x: x['score'], reverse=True)[:3]
+        sorted(buckets['hot'], key=lambda x: x['score'], reverse=True)[:3]
+        sorted(buckets['warm'], key=lambda x: x['score'], reverse=True)[:3]
 
         return {
             'business_id': str(business_id),

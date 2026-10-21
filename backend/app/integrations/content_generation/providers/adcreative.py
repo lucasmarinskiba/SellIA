@@ -6,6 +6,7 @@ Strengths: Meta Ads, Google Ads, TikTok Ads optimized creatives
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -27,7 +28,7 @@ class AdCreativeProvider(BaseProvider):
 
     name = "AdCreative.ai"
     slug = "adcreative"
-    supports = [ContentType.IMAGE]
+    supports: ClassVar[list] = [ContentType.IMAGE]
 
     @property
     def is_available(self) -> bool:

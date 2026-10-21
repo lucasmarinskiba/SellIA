@@ -424,7 +424,7 @@ class AgentSwarm:
     def _build_reasoning(self, history: list[dict[str, Any]]) -> str:
         """Build a reasoning trace from the swarm discussion."""
         lines: list[str] = []
-        rounds = sorted(set(m["round"] for m in history))
+        rounds = sorted({m["round"] for m in history})
         for r in rounds:
             lines.append(f"Round {r}:")
             for m in history:

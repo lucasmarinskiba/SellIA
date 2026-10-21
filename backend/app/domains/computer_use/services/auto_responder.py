@@ -221,17 +221,14 @@ class AutoResponderService:
             # 9. Decidir acción
             if confidence >= CONFIDENCE_THRESHOLD_AUTO:
                 status = "success"
-                action_desc = "Auto-responder enviado"
             elif confidence >= CONFIDENCE_THRESHOLD_ESCALATE:
                 status = "pending_approval"
-                action_desc = "Pendiente aprobación del usuario"
             else:
                 status = "escalated"
-                action_desc = "Escalado a supervisor (confianza baja)"
 
             # 10. ENVIAR respuesta si status=success
             if status == "success" and response_text:
-                send_success, send_msg_id = await self._send_response(
+                send_success, _send_msg_id = await self._send_response(
                     platform=platform,
                     recipient_id=message.customer_id,
                     response_text=response_text,

@@ -72,7 +72,7 @@ def normalize_order(platform: str, raw: dict[str, Any]) -> dict[str, Any]:
             created_at = None
     elif isinstance(created_raw, str):
         try:
-            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+            created_at = datetime.fromisoformat(created_raw)
         except ValueError:
             created_at = None
 

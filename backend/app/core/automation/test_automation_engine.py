@@ -459,7 +459,7 @@ class TestEscalationHandler:
             max_retries=3,
         )
 
-        should_escalate, severity, reason = EscalationPolicy.should_escalate(
+        should_escalate, severity, _reason = EscalationPolicy.should_escalate(
             job,
             "payment_failed",
         )
@@ -607,7 +607,7 @@ class TestWorkflowBuilder:
             trigger=WorkflowTrigger.SCHEDULE,
         )
 
-        step1_id = builder.add_step(workflow.id, "Step 1", "post_product", {})
+        builder.add_step(workflow.id, "Step 1", "post_product", {})
         step2_id = builder.add_step(workflow.id, "Step 2", "send_email", {})
 
         builder.add_condition(

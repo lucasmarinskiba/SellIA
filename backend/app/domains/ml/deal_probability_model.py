@@ -4,6 +4,7 @@ import logging
 import pickle
 from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 
@@ -23,7 +24,7 @@ FEATURES_PATH = Path(__file__).parent / "models" / "feature_names.pkl"
 class DealProbabilityModel:
     """XGBoost model for predicting deal close probability."""
 
-    FEATURES = [
+    FEATURES: ClassVar[list] = [
         "days_in_stage",
         "engagement_velocity",
         "stakeholder_count",
@@ -212,7 +213,7 @@ class DealProbabilityModel:
             probability = float(self.model.predict_proba(features)[0][1] * 100)
 
             try:
-                predict_leaf_index = self.model.predict(
+                self.model.predict(
                     features, pred_leaf=True
                 )
                 confidence = float(

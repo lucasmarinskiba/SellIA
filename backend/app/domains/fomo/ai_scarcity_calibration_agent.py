@@ -117,7 +117,7 @@ class DiscountElasticityCalibrator:
         Returns (slope, intercept) of a simple least-squares linear fit, or
         None if there isn't enough distinct data to fit a line."""
         points = [(d["discount_percent"], d["conversion_rate"]) for d in historical_data]
-        distinct_x = set(p[0] for p in points)
+        distinct_x = {p[0] for p in points}
         if len(points) < 2 or len(distinct_x) < 2:
             return None
 

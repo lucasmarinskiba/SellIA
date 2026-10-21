@@ -15,7 +15,7 @@ class SequenceType(str, Enum):
 
 
 class EmailSequence:
-    SEQUENCES = {
+    SEQUENCES: ClassVar[dict] = {
         "cart_abandoned_1": {
             "subject": "😱 Olvidaste tu carrito...",
             "delay_hours": 0,
@@ -214,3 +214,4 @@ class EmailSequence:
 
 
 import asyncio
+from typing import ClassVar

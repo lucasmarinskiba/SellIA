@@ -122,7 +122,7 @@ def _build_nextjs_page(copy: dict[str, Any], product_data: dict[str, Any], varia
     """Construye una página Next.js + Tailwind básica a partir del copy."""
     cs = copy.get("color_scheme", {})
     primary = cs.get("primary", "#3B82F6")
-    secondary = cs.get("secondary", "#10B981")
+    cs.get("secondary", "#10B981")
     bg = cs.get("background", "#F9FAFB")
     text = cs.get("text", "#111827")
 

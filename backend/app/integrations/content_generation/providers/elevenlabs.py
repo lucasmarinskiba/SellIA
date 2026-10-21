@@ -10,6 +10,7 @@ Usado para voiceovers en videos y audio para Reels/ads.
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -47,7 +48,7 @@ class ElevenLabsProvider(BaseProvider):
 
     name = "ElevenLabs"
     slug = "elevenlabs"
-    supports = [ContentType.AUDIO]
+    supports: ClassVar[list] = [ContentType.AUDIO]
 
     @property
     def is_available(self) -> bool:

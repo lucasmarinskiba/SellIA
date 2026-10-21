@@ -124,7 +124,7 @@ async def project_revenue(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     days_ahead: Annotated[int, Query(ge=1, le=365)] = 30,
-    target_revenue: Annotated[float, Query()] = None,
+    target_revenue: Annotated[float | None, Query()] = None,
 ):
     """Project revenue for period ahead."""
     await _get_business_for_user(business_id, current_user, db)

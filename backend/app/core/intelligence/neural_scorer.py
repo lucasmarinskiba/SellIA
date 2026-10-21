@@ -68,7 +68,6 @@ class NeuralScorer:
 
         Factors: demand, competition, inventory, urgency.
         """
-        price = base_price
         multiplier = 1.0
 
         # Demand factor (0.8x - 1.3x)
@@ -80,7 +79,7 @@ class NeuralScorer:
         multiplier *= demand_multiplier
 
         # Competitor factor (0.95x - 1.05x)
-        comp_price = factors.get("competitor_price", base_price)
+        factors.get("competitor_price", base_price)
         our_quality = factors.get("our_quality_score", 5)  # 1-10
         comp_quality = factors.get("competitor_quality", 5)
         if comp_quality > 0:

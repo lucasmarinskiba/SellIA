@@ -192,7 +192,7 @@ class BillingService:
         next_end = next_start + timedelta(days=30)
 
         # Create new billing record for next period
-        new_billing = TenantBilling(
+        TenantBilling(
             tenant_id=tenant_id,
             billing_period_start=next_start,
             billing_period_end=next_end,

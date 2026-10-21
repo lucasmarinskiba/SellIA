@@ -13,14 +13,14 @@ import path keeps working unchanged.
 """
 
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 
 class InputValidator:
     """Valida y sanitiza inputs. Rechaza ruido, quarantines dudoso."""
 
     # Reglas de validación
-    RULES = {
+    RULES: ClassVar[dict] = {
         "product_name": {
             "min_length": 3,
             "max_length": 200,
@@ -71,14 +71,12 @@ class InputValidator:
             if len(str(value)) < rules["min_length"]:
                 return False, f"{field_name} too short (min {rules['min_length']})", "reject"
 
-        if "max_length" in rules:
-            if len(str(value)) > rules["max_length"]:
-                return False, f"{field_name} too long (max {rules['max_length']})", "reject"
+        if "max_length" in rules and len(str(value)) > rules["max_length"]:
+            return False, f"{field_name} too long (max {rules['max_length']})", "reject"
 
         # Verificar patrón regex
-        if "pattern" in rules:
-            if not re.match(rules["pattern"], str(value)):
-                return False, f"{field_name} format invalid", "reject"
+        if "pattern" in rules and not re.match(rules["pattern"], str(value)):
+            return False, f"{field_name} format invalid", "reject"
 
         # Verificar reject patterns (spam)
         if "reject_patterns" in rules:

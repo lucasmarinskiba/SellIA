@@ -109,11 +109,9 @@ class CashFlowService:
                 min_date = target_date
 
             # Confidence intervals scale from forecast quantiles
-            inflow_q10 = prior_revenue  # same regardless
             ocf_q10 = q10 - cogs - opex
             balance_q10 = cumul_balance + (ocf_q10 - ocf)
 
-            inflow_q90 = prior_revenue
             ocf_q90 = q90 - cogs - opex
             balance_q90 = cumul_balance + (ocf_q90 - ocf)
 

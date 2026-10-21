@@ -61,7 +61,7 @@ class CalendlyAutomation:
         self,
         webhook_url: str,
         user_uri: str,
-        scope: list[str] = None,
+        scope: list[str] | None = None,
     ) -> str | None:
         """
         Register webhook subscription for user events.
@@ -340,7 +340,7 @@ class CalendlyAutomation:
                 return False
 
             # Calculate reminder time
-            event_datetime = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+            event_datetime = datetime.fromisoformat(start_time)
             reminder_time = event_datetime - timedelta(minutes=reminder_minutes_before)
 
             # Schedule task (implementation depends on task queue - Celery, APScheduler, etc)

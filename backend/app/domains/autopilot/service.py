@@ -117,7 +117,7 @@ class AutopilotEngine:
                 AutopilotActionLog.created_at >= today_start,
             )
         )
-        total_today = result.scalar() or 0
+        result.scalar() or 0
 
         # Global message limit
         if action_type in (

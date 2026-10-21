@@ -6,6 +6,7 @@ Strengths: Ads, headlines, social captions, quick marketing copy
 
 
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -21,7 +22,7 @@ class CopyAIProvider(BaseProvider):
 
     name = "Copy.ai"
     slug = "copyai"
-    supports = [ContentType.COPY]
+    supports: ClassVar[list] = [ContentType.COPY]
 
     @property
     def is_available(self) -> bool:

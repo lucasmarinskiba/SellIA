@@ -5,7 +5,7 @@ Estrategias: health scoring, churn prediction, win-back, referral loops, upsell 
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class CustomerLoyaltyFramework:
     """Maximiza retención + referrals + LTV."""
 
     # Health scoring thresholds
-    HEALTH_SIGNALS = {
+    HEALTH_SIGNALS: ClassVar[dict] = {
         "healthy": {"usage_trend": "up", "engagement": "high", "support_tickets": "low"},
         "at_risk": {"usage_trend": "flat", "engagement": "medium", "support_tickets": "medium"},
         "churn_risk": {"usage_trend": "down", "engagement": "low", "support_tickets": "high"},

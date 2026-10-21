@@ -82,7 +82,7 @@ async def receive_booking_webhook(
     scheduled_at = None
     if scheduled_at_raw:
         try:
-            scheduled_at = datetime.fromisoformat(str(scheduled_at_raw).replace("Z", "+00:00"))
+            scheduled_at = datetime.fromisoformat(str(scheduled_at_raw))
         except Exception:
             logger.exception("receive_booking_webhook: error inesperado")
             scheduled_at = None

@@ -31,8 +31,8 @@ class SecretsManager:
     def __init__(
         self,
         backend: str = "vault",  # vault, aws, env
-        vault_addr: str = None,
-        vault_token: str = None,
+        vault_addr: str | None = None,
+        vault_token: str | None = None,
         vault_path: str = "secret",
     ):
         self.backend = backend
@@ -47,7 +47,7 @@ class SecretsManager:
             )
 
     @lru_cache(maxsize=256)
-    def get_secret(self, path: str, key: str = None) -> str:
+    def get_secret(self, path: str, key: str | None = None) -> str:
         """
         Get secret by path.
 
@@ -66,7 +66,7 @@ class SecretsManager:
         else:  # env
             return self._get_from_env(path, key)
 
-    def _get_from_vault(self, path: str, key: str = None) -> str:
+    def _get_from_vault(self, path: str, key: str | None = None) -> str:
         """Get secret from Vault."""
         try:
             full_path = f"{self.vault_path}/data/{path}"
@@ -84,7 +84,7 @@ class SecretsManager:
             logger.error(f"Failed to get secret from Vault: {e}")
             raise
 
-    def _get_from_aws(self, path: str, key: str = None) -> str:
+    def _get_from_aws(self, path: str, key: str | None = None) -> str:
         """Get secret from AWS Secrets Manager."""
         import boto3
 
@@ -102,7 +102,7 @@ class SecretsManager:
             logger.error(f"Failed to get secret from AWS: {e}")
             raise
 
-    def _get_from_env(self, path: str, key: str = None) -> str:
+    def _get_from_env(self, path: str, key: str | None = None) -> str:
         """Get secret from environment (dev only)."""
         env_key = f"{path.upper()}_{key.upper()}" if key else path.upper()
         value = os.getenv(env_key)
@@ -217,13 +217,13 @@ def example_usage():
     secrets = get_secrets_manager()
 
     # Get database credentials
-    db_password = secrets.get_secret("database", "password")
-    db_host = secrets.get_secret("database", "host")
+    secrets.get_secret("database", "password")
+    secrets.get_secret("database", "host")
 
     # Get API keys
-    salesforce_api_key = secrets.get_secret("integrations/salesforce", "api_key")
-    stripe_secret_key = secrets.get_secret("integrations/stripe", "secret_key")
-    twilio_auth_token = secrets.get_secret("integrations/twilio", "auth_token")
+    secrets.get_secret("integrations/salesforce", "api_key")
+    secrets.get_secret("integrations/stripe", "secret_key")
+    secrets.get_secret("integrations/twilio", "auth_token")
 
     # Store new secret
     secrets.set_secret("integrations/slack", {

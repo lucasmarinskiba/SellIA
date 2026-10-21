@@ -56,31 +56,31 @@ from .tone_engine import (
 )
 
 __all__ = [
-    # Tone Engine
-    "ToneEngine",
-    "ToneType",
-    "Market",
-    "Industry",
-    "ToneProfile",
+    "ABTest",
+    # A/B Testing
+    "ABTestingEngine",
+    "BuyerProfile",
+    "CTAType",
+    "EmotionalState",
     # Empathy Layer
     "EmpathyLayer",
-    "EmotionalState",
     "EmpathyResponse",
     "EmpathySignal",
+    "ExperimentType",
+    "Industry",
+    "Market",
+    "PersonalizationContext",
     # Personalization
     "PersonalizationEngine",
-    "BuyerProfile",
-    "PersonalizationContext",
     "PersonalizationLevel",
     # Response Builder
     "ResponseBuilder",
-    "CTAType",
     "ResponseTemplate",
-    # A/B Testing
-    "ABTestingEngine",
-    "ABTest",
+    # Tone Engine
+    "ToneEngine",
+    "ToneProfile",
+    "ToneType",
     "Variant",
-    "ExperimentType",
 ]
 
 
@@ -157,10 +157,10 @@ class HumanizationOrchestrator:
         )
 
         # Get tone profile
-        tone_profile = self.tone_engine.get_tone_profile(tone_type, market, industry)
+        self.tone_engine.get_tone_profile(tone_type, market, industry)
 
         # Generate empathetic response
-        empathy_response = self.empathy_layer.generate_empathetic_response(
+        self.empathy_layer.generate_empathetic_response(
             emotion,
             language,
             {"tone": tone_type.value},

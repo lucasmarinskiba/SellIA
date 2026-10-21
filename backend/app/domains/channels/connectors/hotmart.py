@@ -155,7 +155,7 @@ class HotmartConnector(BaseChannelConnector):
 
         if event in _ABANDONED_EVENTS:
             content_type = "abandoned_cart"
-        elif event in _REFUND_EVENTS or event in _CANCEL_EVENTS or event.startswith("PURCHASE") or event.startswith("SUBSCRIPTION"):
+        elif event in _REFUND_EVENTS or event in _CANCEL_EVENTS or event.startswith(("PURCHASE", "SUBSCRIPTION")):
             content_type = "order"
         else:
             content_type = "system"

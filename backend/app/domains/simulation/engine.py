@@ -7,7 +7,7 @@ evaluates performance, and maintains leaderboards.
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +26,7 @@ class SimulationEngine:
     """Runs sales simulations and evaluates agent performance."""
 
     MAX_TURNS = 20
-    _CLOSING_KEYWORDS = [
+    _CLOSING_KEYWORDS: ClassVar[list] = [
         "adiós", "adios", "chau", "nos vemos", "hasta luego",
         "compra confirmada", "pedido realizado", "orden confirmada",
         "listo, te envío", "gracias por tu compra", "quedamos así",

@@ -96,7 +96,7 @@ class AffiliateSalesEngine:
         logger.info(f"Starting affiliate program for niche: {niche}")
 
         # Step 1: Analyze opportunity
-        opportunity = self.analyze_opportunity(niche, budget)
+        self.analyze_opportunity(niche, budget)
 
         # Step 2: Select strategy
         strategy = self.strategy_engine.generate_full_strategy(niche, budget, 5000)

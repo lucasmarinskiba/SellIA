@@ -73,8 +73,8 @@ class TikTokAdsConnector(BaseChannelConnector):
         city = lead_data.get("city", "")
         state = lead_data.get("state", "")
         country = lead_data.get("country", "")
-        zip_code = lead_data.get("zip_code", "")
-        street_address = lead_data.get("street_address", "")
+        lead_data.get("zip_code", "")
+        lead_data.get("street_address", "")
         company = lead_data.get("company", "")
 
         content_parts = ["Nuevo lead desde TikTok Ads"]

@@ -179,41 +179,71 @@ class ExpertVoiceManager:
 
 # Public API exports
 __all__ = [
-    # Expert prompt collections
-    "TRUMP_PROMPTS", "BELFORT_PROMPTS", "BUFFETT_PROMPTS", "KIYOSAKI_PROMPTS",
-    "HORMOZI_PROMPTS", "CARDONE_PROMPTS", "ROBBINS_PROMPTS", "GARYVEE_PROMPTS",
-    "DALIO_PROMPTS", "MINER_PROMPTS", "ELLIOTT_PROMPTS", "LOIDI_PROMPTS",
-    "RIBAS_PROMPTS", "GALPERIN_PROMPTS", "ROCCA_PROMPTS", "GALUCCIO_PROMPTS",
-    "RAVIKANT_PROMPTS", "TALEB_PROMPTS", "GRAHAM_PROMPTS", "BENIOFF_PROMPTS",
-    "TRACY_PROMPTS", "HILL_PROMPTS",
-
-    # Prompt data structures
-    "TrumpPrompt", "BelfortPrompt", "BuffettPrompt", "KiyosakiPrompt",
-    "HormoziCardonePrompt", "ExpertPrompt", "TracyHillPrompt",
-
-    # Registries and metadata
-    "ExpertType", "SalesContext", "ExpertMetadata",
-    "EXPERT_METADATA", "PROMPT_INVENTORY", "TOTAL_PROMPTS",
-    "CONTEXT_RECOMMENDATIONS",
-
-    # Registry functions
-    "get_expert_metadata", "get_best_experts_for_context",
-    "get_all_expert_types", "get_prompt_distribution",
-
-    # Selection and execution
-    "ExpertSelector", "SalesScenario", "ExpertSelection",
-    "ExpertOrchestrator", "PromptExecutionContext", "PromptExecutionResult",
-    "PromptExecutionMode", "PromptExecutionError",
-
     # Consolidated data
-    "ALL_EXPERT_PROMPTS", "FLAT_PROMPT_LIST",
-
+    "ALL_EXPERT_PROMPTS",
+    "BELFORT_PROMPTS",
+    "BENIOFF_PROMPTS",
+    "BUFFETT_PROMPTS",
+    "CARDONE_PROMPTS",
+    "CONTEXT_RECOMMENDATIONS",
+    "DALIO_PROMPTS",
+    "ELLIOTT_PROMPTS",
+    "EXPERT_COUNT",
+    "EXPERT_METADATA",
+    "FLAT_PROMPT_LIST",
+    "GALPERIN_PROMPTS",
+    "GALUCCIO_PROMPTS",
+    "GARYVEE_PROMPTS",
+    "GRAHAM_PROMPTS",
+    "HILL_PROMPTS",
+    "HORMOZI_PROMPTS",
+    "KIYOSAKI_PROMPTS",
+    "LOIDI_PROMPTS",
+    "MINER_PROMPTS",
+    "PROMPT_COUNT",
+    "PROMPT_INVENTORY",
+    "RAVIKANT_PROMPTS",
+    "RIBAS_PROMPTS",
+    "ROBBINS_PROMPTS",
+    "ROCCA_PROMPTS",
+    "TALEB_PROMPTS",
+    "TOTAL_PROMPTS",
+    "TRACY_PROMPTS",
+    # Expert prompt collections
+    "TRUMP_PROMPTS",
+    "BelfortPrompt",
+    "BuffettPrompt",
+    "ExpertMetadata",
+    "ExpertOrchestrator",
+    "ExpertPrompt",
+    "ExpertSelection",
+    # Selection and execution
+    "ExpertSelector",
+    # Registries and metadata
+    "ExpertType",
     # Main interface
     "ExpertVoiceManager",
-
+    "HormoziCardonePrompt",
+    "KiyosakiPrompt",
+    "PromptExecutionContext",
+    "PromptExecutionError",
+    "PromptExecutionMode",
+    "PromptExecutionResult",
+    "SalesContext",
+    "SalesScenario",
+    "TracyHillPrompt",
+    # Prompt data structures
+    "TrumpPrompt",
+    "__author__",
+    "__description__",
+    "__title__",
     # Module metadata
-    "__version__", "__title__", "__description__", "__author__",
-    "EXPERT_COUNT", "PROMPT_COUNT"
+    "__version__",
+    "get_all_expert_types",
+    "get_best_experts_for_context",
+    # Registry functions
+    "get_expert_metadata",
+    "get_prompt_distribution"
 ]
 
 
@@ -231,7 +261,7 @@ def get_expert_voice_manager():
 # Quick helper functions
 def select_expert_for_context(context: SalesContext):
     """Quick helper to select expert for context"""
-    manager = get_expert_voice_manager()
+    get_expert_voice_manager()
     recommended = CONTEXT_RECOMMENDATIONS.get(context, [])
     if recommended:
         return EXPERT_METADATA[recommended[0]]

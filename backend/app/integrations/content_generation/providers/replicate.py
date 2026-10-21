@@ -12,6 +12,7 @@ Este es nuestro proveedor de bajo costo para drafts y alta volumetría.
 import asyncio
 import io
 import logging
+from typing import ClassVar
 
 from app.core.config import get_settings
 
@@ -64,7 +65,7 @@ class ReplicateProvider(BaseProvider):
 
     name = "Replicate"
     slug = "replicate"
-    supports = [ContentType.IMAGE, ContentType.VIDEO]
+    supports: ClassVar[list] = [ContentType.IMAGE, ContentType.VIDEO]
 
     @property
     def is_available(self) -> bool:

@@ -155,7 +155,7 @@ class UnifiedDashboardService:
     @staticmethod
     def generate_business_summary(
         business_id: UUID,
-        date: str = None,
+        date: str | None = None,
         db: Session = None
     ) -> dict:
         """Generate high-level business summary."""

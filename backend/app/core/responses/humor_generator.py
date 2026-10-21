@@ -14,7 +14,7 @@ Generates:
 import logging
 from enum import Enum
 from random import choice, randint
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class HumorGenerator:
     """Generates context-aware humor."""
 
     # Pun templates (product/industry agnostic)
-    PUN_TEMPLATES = [
+    PUN_TEMPLATES: ClassVar[list] = [
         "Honestly, this comment deserves {adjective} applause",
         "You could say this is {adjective}... core",
         "That's a pretty {adjective} take on things",
@@ -50,7 +50,7 @@ class HumorGenerator:
     ]
 
     # Witty observations
-    WITTY_TEMPLATES = [
+    WITTY_TEMPLATES: ClassVar[list] = [
         "You know what they say: {observation}",
         "Fun fact: {observation}",
         "Takes one to know one: {observation}",
@@ -58,7 +58,7 @@ class HumorGenerator:
     ]
 
     # Relatable humor patterns
-    RELATABLE_PATTERNS = {
+    RELATABLE_PATTERNS: ClassVar[dict] = {
         "coffee": [
             "Spoken like someone who hasn't had enough coffee yet",
             "This hits different before the first coffee",
@@ -77,7 +77,7 @@ class HumorGenerator:
     }
 
     # Self-deprecating templates
-    SELF_DEPRECATING_TEMPLATES = [
+    SELF_DEPRECATING_TEMPLATES: ClassVar[list] = [
         "I mean... we're not perfect, but this is a good reminder why",
         "Bold of you to assume we haven't thought of this",
         "Us actually delivering that? {outcome}",
@@ -85,14 +85,14 @@ class HumorGenerator:
     ]
 
     # Dad jokes (safe for all audiences)
-    DAD_JOKES = [
+    DAD_JOKES: ClassVar[list] = [
         "Why did the {thing} go to {place}? To have a {outcome}!",
         "You could say this comment is pretty... {adjective} {thing}",
         "I {action}, therefore I {result}",
     ]
 
     # Reaction emojis (context-aware)
-    REACTION_EMOJIS = {
+    REACTION_EMOJIS: ClassVar[dict] = {
         "approval": ["👏", "🙌", "✨", "🔥"],
         "laugh": ["😂", "🤣", "😆"],
         "thinking": ["🤔", "💭", "🧠"],
@@ -197,7 +197,7 @@ class HumorGenerator:
         """
 
         # Detect relatable trigger
-        timestamp = context.get("timestamp", "")
+        context.get("timestamp", "")
         comment_text = context.get("text", "").lower()
 
         trigger = None
@@ -381,7 +381,7 @@ class HumorGenerator:
         comment_intent: str,
         comment_text: str,
         audience_type: str,
-        preferred_style: str = None,
+        preferred_style: str | None = None,
     ) -> dict[str, Any]:
         """
         Generate complete humor-based response.

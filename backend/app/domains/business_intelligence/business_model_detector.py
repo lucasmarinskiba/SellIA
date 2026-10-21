@@ -99,7 +99,7 @@ class BusinessModelDetector:
         }
 
     def detect_model(
-        self, business_description: str, website: str = "", socials: dict = None
+        self, business_description: str, website: str = "", socials: dict | None = None
     ) -> BusinessProfile:
         """Detecta modelo de negocio"""
 

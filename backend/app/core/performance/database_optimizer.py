@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,7 +80,7 @@ class DatabaseOptimizer:
     """Optimize database performance through indexes, query analysis, and tuning."""
 
     # Query time thresholds (milliseconds)
-    QUERY_THRESHOLDS = {
+    QUERY_THRESHOLDS: ClassVar[dict] = {
         QueryPriority.CRITICAL: 50,
         QueryPriority.HIGH: 200,
         QueryPriority.NORMAL: 1000,

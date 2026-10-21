@@ -6,7 +6,7 @@ Envía primer mensaje frío → sigue si no responde → personaliza por lead.
 import logging
 import uuid
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.clock import utc_now
 
@@ -65,7 +65,7 @@ class OutreachOrchestrator:
     """Orquesta outreach a múltiples leads."""
 
     # Message templates por quality
-    TEMPLATES = {
+    TEMPLATES: ClassVar[dict] = {
         "hot": {
             "subject": "Quick question about {company}",
             "body": """Hi {name},

@@ -231,8 +231,8 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
     )
 
     gaps: list[str] = [
-        "La facturación no se reparte por persona: las órdenes guardan la conversación, "
-        "no quién la cerró. Repartir plata entre integrantes sería inventarlo.",
+        ("La facturación no se reparte por persona: las órdenes guardan la conversación, "
+        "no quién la cerró. Repartir plata entre integrantes sería inventarlo."),
     ]
     if unattributed_replies:
         gaps.append(

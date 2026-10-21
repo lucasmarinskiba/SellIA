@@ -14,7 +14,7 @@ Cada plataforma: comisiones, límites, audiencia, API, shipping, conversion rate
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Platform:
 class PlatformIntelligence:
     """Motor de inteligencia de plataformas."""
 
-    PLATFORMS = {
+    PLATFORMS: ClassVar[dict] = {
         "mercado_libre": Platform(
             name="Mercado Libre",
             commission_rate=0.10,
