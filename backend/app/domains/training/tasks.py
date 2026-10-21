@@ -4,11 +4,12 @@ Async Celery task to run simulations in the background.
 """
 
 import uuid
-from celery import shared_task
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC
 
-from app.core.database import AsyncSessionLocal
+from celery import shared_task
+
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.training.service import execute_simulation
 
@@ -42,9 +43,11 @@ def run_simulation_task(scenario_id: str, agent_type: str, run_id: str):
                 logger.exception(f"Simulation task failed for run {run_id}: {exc}")
                 # Attempt to mark run as failed
                 try:
+                    from datetime import datetime
+
                     from sqlalchemy import select
+
                     from app.domains.training.models import TrainingRun
-                    from datetime import datetime, timezone
 
                     result = await db.execute(
                         select(TrainingRun).where(TrainingRun.id == uuid.UUID(run_id))
@@ -53,7 +56,7 @@ def run_simulation_task(scenario_id: str, agent_type: str, run_id: str):
                     if run:
                         run.status = "failed"
                         run.feedback = f"Task error: {str(exc)[:500]}"
-                        run.completed_at = datetime.now(timezone.utc)
+                        run.completed_at = datetime.now(UTC)
                         await db.commit()
                 except Exception as inner_exc:
                     logger.error(f"Failed to mark run as failed: {inner_exc}")

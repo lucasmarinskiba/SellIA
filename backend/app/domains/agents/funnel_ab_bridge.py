@@ -17,14 +17,13 @@ context + funnel tactics layering. Only the voice choice is what's tested.
 """
 
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.core.prompts.funnel_specialists import FunnelStage, get_recommended_voice_slugs
 from app.domains.agents.ab_service import ABTestEngine
 from app.domains.channels.models import Conversation
-from app.core.prompts.funnel_specialists import FunnelStage, get_recommended_voice_slugs
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -73,7 +72,7 @@ async def get_stage_voice_slug(
     db: AsyncSession,
     stage: FunnelStage,
     conversation: Conversation,
-) -> Tuple[Optional[str], Optional[uuid.UUID], Optional[str]]:
+) -> tuple[str | None, uuid.UUID | None, str | None]:
     """Pick the voice slug to use for this stage, running an A/B test when
     the stage has multiple recommended voices.
 

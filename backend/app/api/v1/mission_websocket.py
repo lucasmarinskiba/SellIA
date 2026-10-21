@@ -1,7 +1,7 @@
 """Mission WebSocket Endpoint"""
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from typing import Optional
+
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from app.core.deps import get_current_user_ws
 from app.domains.missions.websocket_manager import mission_ws_manager
@@ -12,7 +12,7 @@ router = APIRouter(tags=["Mission WebSocket"])
 @router.websocket("/ws/missions")
 async def mission_websocket(
     websocket: WebSocket,
-    token: Optional[str] = Query(None),
+    token: str | None = Query(None),
 ):
     """WebSocket for real-time mission progress updates.
     
@@ -54,8 +54,8 @@ async def mission_websocket(
                 step_id = data.get("step_id")
                 # Import here to avoid circular dependencies
                 from app.core.database import AsyncSessionLocal
-                from app.domains.missions.services import MissionService
                 from app.domains.missions.schemas import MissionStepUpdate
+                from app.domains.missions.services import MissionService
                 async with AsyncSessionLocal() as db:
                     service = MissionService(db)
                     await service.update_step(

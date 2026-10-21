@@ -1,11 +1,11 @@
 """Proactive Outreach Engine Celery Tasks"""
 
 import uuid
-from celery import shared_task
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal
+from celery import shared_task
+
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.proactive.engine import ProactiveEngine
 from app.domains.proactive.service import ProactiveService
@@ -19,8 +19,9 @@ def detect_opportunities_task():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.businesses.models import Business
             from sqlalchemy import select
+
+            from app.domains.businesses.models import Business
 
             # Find all active businesses
             result = await db.execute(

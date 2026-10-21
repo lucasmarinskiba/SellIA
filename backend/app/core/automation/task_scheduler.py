@@ -16,11 +16,12 @@ Built-in schedules:
 - Weekly report: Monday 8am
 """
 
-import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-from croniter import croniter
 import asyncio
+import logging
+from datetime import datetime
+from typing import Any
+
+from croniter import croniter
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,8 @@ class TaskScheduler:
     """Programa tareas: cuándo ejecutar qué."""
 
     def __init__(self):
-        self.tasks: Dict[str, Any] = {}  # task_id → Task
-        self.task_list: List[Any] = []
+        self.tasks: dict[str, Any] = {}  # task_id → Task
+        self.task_list: list[Any] = []
         self.lock = asyncio.Lock()
 
     async def add_task(self, task: Any) -> None:
@@ -48,7 +49,7 @@ class TaskScheduler:
 
             logger.info(f"Task added: {task.name} (id: {task.id})")
 
-    async def get_tasks_for_now(self) -> List[Any]:
+    async def get_tasks_for_now(self) -> list[Any]:
         """Obtiene tasks que deben ejecutarse ahora."""
         now = datetime.utcnow()
         tasks_due = []
@@ -84,7 +85,7 @@ class TaskScheduler:
                 self.tasks[task_id].enabled = True
                 logger.info(f"Task enabled: {task_id}")
 
-    async def list_tasks(self) -> List[Dict[str, Any]]:
+    async def list_tasks(self) -> list[dict[str, Any]]:
         """Lista todas las tareas."""
         async with self.lock:
             return [
@@ -112,7 +113,7 @@ class TaskScheduler:
             return True
 
     @staticmethod
-    def _calculate_next_run(schedule: str) -> Optional[datetime]:
+    def _calculate_next_run(schedule: str) -> datetime | None:
         """Calcula próxima ejecución basado en cron expression."""
         try:
             # Validar y obtener próxima ejecución
@@ -120,7 +121,7 @@ class TaskScheduler:
             next_run = cron.get_next(datetime)
             return next_run
         except Exception as e:
-            logger.error(f"Invalid cron expression '{schedule}': {str(e)}")
+            logger.error(f"Invalid cron expression '{schedule}': {e!s}")
             return None
 
     async def record_execution(self, task_id: str) -> None:
@@ -131,7 +132,7 @@ class TaskScheduler:
 
 
 # Built-in task definitions
-def get_default_tasks() -> List[Dict[str, Any]]:
+def get_default_tasks() -> list[dict[str, Any]]:
     """Retorna tareas por defecto (recetas automáticas)."""
     return [
         # ========== VENTAS ==========
@@ -229,14 +230,14 @@ class SmartScheduler:
 
     def __init__(self, scheduler: TaskScheduler):
         self.scheduler = scheduler
-        self.performance_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.performance_history: dict[str, list[dict[str, Any]]] = {}
 
     async def record_performance(
         self,
         task_name: str,
         execution_time: float,
         success: bool,
-        engagement_metric: Optional[float] = None,
+        engagement_metric: float | None = None,
     ) -> None:
         """Registra performance de tarea para optimizar timing."""
         if task_name not in self.performance_history:
@@ -279,7 +280,7 @@ class SmartScheduler:
             return "0 9 * * *"  # Default
 
         # Find time slot with best performance
-        times_by_hour: Dict[int, List[float]] = {}
+        times_by_hour: dict[int, list[float]] = {}
         for record in history:
             hour = record["timestamp"].hour
             engagement = record.get("engagement", 0)

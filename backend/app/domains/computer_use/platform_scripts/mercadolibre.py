@@ -1,6 +1,7 @@
 """MercadoLibre Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class MercadoLibreScript(PlatformScript):
     login_url = "https://www.mercadolibre.com/jms/mla/lgz/login"
     dashboard_url = "https://www.mercadolibre.com.ar/resumen"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "create_listing":
             return self._create_listing(params)
         elif task_type == "respond_questions":
@@ -19,7 +20,7 @@ class MercadoLibreScript(PlatformScript):
             return self._manage_orders(params)
         return super().get_task_steps(task_type, params)
 
-    def _create_listing(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_listing(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://www.mercadolibre.com.ar/publicar", description="Navigate to publish page"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -31,14 +32,14 @@ class MercadoLibreScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify listing created"),
         ]
 
-    def _respond_questions(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _respond_questions(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://www.mercadolibre.com.ar/preguntas", description="Navigate to questions"),
             ScriptStep(action="wait", wait_ms=3000),
             ScriptStep(action="screenshot", description="Check unanswered questions"),
         ]
 
-    def _manage_orders(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _manage_orders(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://www.mercadolibre.com.ar/ventas", description="Navigate to sales/orders"),
             ScriptStep(action="wait", wait_ms=3000),

@@ -3,17 +3,25 @@
 Tracks sales orders, payments, and revenue attribution.
 """
 
+import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 from app.core.encrypted_types import EncryptedString
-import enum
 
 
 class OrderStatus(str, enum.Enum):
@@ -99,8 +107,8 @@ class Order(Base):
     extra_data = Column(JSONB, default=dict, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class RevenueEvent(Base):
@@ -124,7 +132,7 @@ class RevenueEvent(Base):
     # Touchpoint data
     touchpoint_data = Column(JSONB, default=dict, nullable=False)  # {"first_touch": {...}, "last_touch": {...}, "interactions": [...]}
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class PaymentIntegration(Base):
@@ -143,5 +151,5 @@ class PaymentIntegration(Base):
     credentials_encrypted = Column(Text, nullable=True)
     settings = Column(JSONB, default=dict, nullable=False)  # {"webhook_url": "...", "sandbox": false}
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

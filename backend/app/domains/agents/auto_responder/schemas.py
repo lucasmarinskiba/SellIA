@@ -1,15 +1,16 @@
 """Auto-Responder Pilot Agent Schemas"""
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AutoResponderRuleBase(BaseModel):
     rule_name: str
     trigger_type: str  # time_of_day | day_of_week | keyword | inactivity
-    trigger_config: Dict[str, Any] = Field(default_factory=dict)
+    trigger_config: dict[str, Any] = Field(default_factory=dict)
     response_template: str
     is_active: bool = True
     priority: int = Field(default=0, ge=0, le=100)
@@ -20,12 +21,12 @@ class AutoResponderRuleCreate(AutoResponderRuleBase):
 
 
 class AutoResponderRuleUpdate(BaseModel):
-    rule_name: Optional[str] = None
-    trigger_type: Optional[str] = None
-    trigger_config: Optional[Dict[str, Any]] = None
-    response_template: Optional[str] = None
-    is_active: Optional[bool] = None
-    priority: Optional[int] = Field(default=None, ge=0, le=100)
+    rule_name: str | None = None
+    trigger_type: str | None = None
+    trigger_config: dict[str, Any] | None = None
+    response_template: str | None = None
+    is_active: bool | None = None
+    priority: int | None = Field(default=None, ge=0, le=100)
 
 
 class AutoResponderRuleOut(AutoResponderRuleBase):
@@ -38,11 +39,11 @@ class AutoResponderRuleOut(AutoResponderRuleBase):
 
 
 class AutoResponseLogBase(BaseModel):
-    conversation_id: Optional[UUID] = None
+    conversation_id: UUID | None = None
     trigger_fired: str
     response_sent: str
     customer_replied: bool = False
-    outcome: Optional[str] = None
+    outcome: str | None = None
 
 
 class AutoResponseLogOut(AutoResponseLogBase):
@@ -58,5 +59,5 @@ class AutoResponderStatsOut(BaseModel):
     total_sent: int
     total_replied: int
     conversion_rate: float
-    by_rule: List[Dict[str, Any]] = Field(default_factory=list)
+    by_rule: list[dict[str, Any]] = Field(default_factory=list)
     period_days: int

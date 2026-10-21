@@ -1,18 +1,18 @@
 """OAuth endpoints for platform integrations."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.core.oauth_connectors import (
-    MercadoLibreOAuth,
     AmazonSPAPI,
     HotmartOAuth,
-    store_platform_credential,
+    MercadoLibreOAuth,
     get_platform_credential,
+    store_platform_credential,
 )
-from app.core.config import get_settings
-from app.core.deps import get_current_user
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
@@ -51,7 +51,7 @@ async def mercado_libre_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/amazon/auth-url")
@@ -83,7 +83,7 @@ async def amazon_callback(
         )
         return {"status": "connected", "platform": "amazon"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/hotmart/auth-url")
@@ -118,7 +118,7 @@ async def hotmart_callback(
             "seller_username": cred.seller_username,
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {e!s}")
 
 
 @router.get("/platforms/status/{seller_id}")

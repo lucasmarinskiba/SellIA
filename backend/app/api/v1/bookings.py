@@ -14,20 +14,20 @@ tool's webhook config.
 
 import hashlib
 import hmac
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.channels.models import BookingEvent, Conversation
 from app.domains.agents.lead_qualifier.models import LeadQualification
+from app.domains.channels.models import BookingEvent, Conversation
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 

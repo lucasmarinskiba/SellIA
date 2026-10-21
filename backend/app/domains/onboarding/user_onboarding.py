@@ -1,10 +1,10 @@
 """Phase 19: User Onboarding & Setup Wizard."""
 
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class UserOnboardingSession:
     first_leads_generated: bool = False
     estimated_monthly_leads: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
 
 
 @dataclass
@@ -52,7 +52,7 @@ class OnboardingAnswers:
     geographic_scope: str
 
     # Step 4: Channels
-    preferred_channels: List[str]
+    preferred_channels: list[str]
 
     # Step 5: Goals
     monthly_lead_goal: int
@@ -67,7 +67,7 @@ class OnboardingEngine:
         session_id = f"onb_{user_id}_{datetime.utcnow().timestamp()}"
         return UserOnboardingSession(user_id=user_id, session_id=session_id)
 
-    def get_step_content(self, step: OnboardingStep) -> Dict[str, Any]:
+    def get_step_content(self, step: OnboardingStep) -> dict[str, Any]:
         """Get questions/content for step"""
 
         if step == OnboardingStep.PROFILE:
@@ -133,7 +133,7 @@ class OnboardingEngine:
         return {}
 
     def complete_step(
-        self, session: OnboardingSession, step: OnboardingStep, answers: Dict
+        self, session: OnboardingSession, step: OnboardingStep, answers: dict
     ) -> OnboardingSession:
         """Mark step complete"""
 
@@ -152,7 +152,7 @@ class OnboardingEngine:
         logger.info(f"Onboarding step complete: {step} for {session.user_id}")
         return session
 
-    def finish_onboarding(self, session: OnboardingSession) -> Dict[str, Any]:
+    def finish_onboarding(self, session: OnboardingSession) -> dict[str, Any]:
         """Complete onboarding"""
 
         session.current_step = OnboardingStep.COMPLETE
@@ -170,7 +170,7 @@ class OnboardingEngine:
             "first_leads_in": "1-2 hours"
         }
 
-    def get_onboarding_progress(self, session: OnboardingSession) -> Dict[str, Any]:
+    def get_onboarding_progress(self, session: OnboardingSession) -> dict[str, Any]:
         """Get progress"""
 
         steps = [OnboardingStep.PROFILE, OnboardingStep.PRODUCT, OnboardingStep.TARGET,

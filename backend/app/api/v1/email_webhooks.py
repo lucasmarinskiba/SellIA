@@ -4,17 +4,19 @@ Email Webhook Handlers
 - Open/click/bounce/unsubscribe tracking
 - Lead scoring updates on engagement
 """
-from fastapi import APIRouter, Request, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from app.db.models import WorkflowExecution, EmailLog, WebhookEvent, Lead
-from app.db.database import AsyncSessionLocal
-from datetime import datetime
+import base64
+import hashlib
+import hmac
 import logging
 import os
-import hmac
-import hashlib
-import base64
+from datetime import datetime
+
+from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.database import AsyncSessionLocal
+from app.db.models import Lead, WebhookEvent, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])

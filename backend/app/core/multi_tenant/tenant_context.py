@@ -3,15 +3,16 @@ TenantContext: Request context middleware, dependency injection.
 250 lines: Injects tenant info into every request for isolation.
 """
 
-from typing import Optional
 from contextvars import ContextVar
+from typing import Optional
 
-from fastapi import Request, Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
+from app.core.logger import get_logger
+
 from .tenant_isolation import TenantIsolation
 
 logger = get_logger(__name__)
@@ -37,7 +38,7 @@ class TenantContext:
         tenant_id: str,
         user_id: str,
         role: str = "member",
-        permissions: Optional[dict] = None,
+        permissions: dict | None = None,
     ):
         self.tenant_id = tenant_id
         self.user_id = user_id
@@ -62,7 +63,7 @@ class TenantContext:
         return f"TenantContext(tenant={self.tenant_id[:8]}..., user={self.user_id[:8]}..., role={self.role})"
 
 
-async def get_tenant_context() -> Optional[TenantContext]:
+async def get_tenant_context() -> TenantContext | None:
     """
     Dependency: get current tenant context.
     Injected by middleware, available in all handlers.
@@ -121,7 +122,7 @@ async def require_owner_access() -> TenantContext:
     return context
 
 
-def extract_tenant_from_request(request: Request) -> Optional[str]:
+def extract_tenant_from_request(request: Request) -> str | None:
     """
     Extract tenant_id from request:
     1. Path param: /api/tenants/{tenant_id}/...
@@ -227,7 +228,7 @@ class TenantContextMiddleware:
 async def inject_tenant_context(
     request: Request,
     db: AsyncSession = Depends(get_db),
-) -> Optional[TenantContext]:
+) -> TenantContext | None:
     """
     Dependency: load tenant context if needed.
     Used in endpoint handlers that explicitly need it.

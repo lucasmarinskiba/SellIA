@@ -1,9 +1,11 @@
 """GDPR/CCPA compliance models."""
 
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -18,12 +20,12 @@ class ConsentRecord(Base):
     consented = Column(Boolean, default=False)
     
     consent_version = Column(String(50), default="v1")
-    consent_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    consent_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     consent_metadata = Column(JSONB, nullable=True)  # ip, user_agent, etc
     
-    revoked_at = Column(DateTime(timezone.utc), nullable=True)
+    revoked_at = Column(DateTime(UTC), nullable=True)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class DataDeletionRequest(Base):
@@ -36,9 +38,9 @@ class DataDeletionRequest(Base):
     request_status = Column(String(50), default="pending")  # pending, approved, processing, completed, rejected
     deletion_type = Column(String(50), nullable=False)  # full, anonymize
     
-    requested_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    approved_at = Column(DateTime(timezone.utc), nullable=True)
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    requested_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    approved_at = Column(DateTime(UTC), nullable=True)
+    completed_at = Column(DateTime(UTC), nullable=True)
     
     deletion_metadata = Column(JSONB, nullable=True)  # what was deleted
 
@@ -53,9 +55,9 @@ class DataExportRequest(Base):
     request_status = Column(String(50), default="pending")  # pending, processing, ready, expired
     export_format = Column(String(20), default="json")  # json, csv
     
-    requested_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    generated_at = Column(DateTime(timezone.utc), nullable=True)
-    expires_at = Column(DateTime(timezone.utc), nullable=True)
+    requested_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    generated_at = Column(DateTime(UTC), nullable=True)
+    expires_at = Column(DateTime(UTC), nullable=True)
     
     export_url = Column(String(500), nullable=True)
     file_size_bytes = Column(String(50), nullable=True)
@@ -92,7 +94,7 @@ class AuditLog(Base):
     
     details = Column(JSONB, nullable=True)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class PrivacyPolicy(Base):
@@ -104,10 +106,10 @@ class PrivacyPolicy(Base):
     policy_version = Column(String(50), default="v1")
     policy_text = Column(Text, nullable=False)
     
-    effective_date = Column(DateTime(timezone.utc), nullable=False)
+    effective_date = Column(DateTime(UTC), nullable=False)
     
     contains_gdpr = Column(Boolean, default=True)
     contains_ccpa = Column(Boolean, default=False)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))

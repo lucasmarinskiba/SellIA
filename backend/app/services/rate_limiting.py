@@ -1,12 +1,10 @@
 """Rate limiting + request deduplication for API resilience."""
 
-from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime, timedelta
-from enum import Enum
 import hashlib
 import logging
-
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +44,7 @@ class RequestSignature:
     method: str
     payload_hash: str
     created_at: datetime
-    response: Optional[dict] = None
+    response: dict | None = None
     response_time_ms: int = 0
 
 
@@ -174,7 +172,7 @@ class RequestDeduplicator:
         endpoint: str,
         method: str,
         payload: dict,
-    ) -> tuple[bool, Optional[RequestSignature]]:
+    ) -> tuple[bool, RequestSignature | None]:
         """
         Check if request is duplicate.
 
@@ -276,8 +274,8 @@ class CircuitBreaker:
         self.failure_count = 0
         self.failure_threshold = failure_threshold
         self.timeout_seconds = timeout_seconds
-        self.last_failure_at: Optional[datetime] = None
-        self.last_success_at: Optional[datetime] = None
+        self.last_failure_at: datetime | None = None
+        self.last_success_at: datetime | None = None
 
     def call(self, func, *args, **kwargs):
         """
@@ -298,7 +296,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 
@@ -337,7 +335,6 @@ class CircuitBreaker:
 class CircuitBreakerOpen(Exception):
     """Circuit breaker is open."""
 
-    pass
 
 
 # Singleton instances

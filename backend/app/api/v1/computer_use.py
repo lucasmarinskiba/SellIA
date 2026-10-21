@@ -4,36 +4,47 @@ Endpoints REST para gestión de sesiones + WebSocket bidireccional
 para streaming en tiempo real de screenshots y acciones.
 """
 
+import asyncio
 import json
 import os
-from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.core.security import decode_access_token
-from app.core.config import get_settings
-import asyncio
-
 from app.core.logger import get_logger
-from app.domains.users.models import User
+from app.core.security import decode_access_token
 from app.domains.businesses.models import Business
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+from app.domains.computer_use.models import (
+    ComputerUseMessage,
+    ComputerUseSession,
+    ComputerUseStep,
+)
 from app.domains.computer_use.schemas import (
-    ComputerUseSessionCreate,
-    ComputerUseSessionResponse,
-    ComputerUseSessionListResponse,
-    ComputerUseStepResponse,
     ComputerUseMessageResponse,
     ComputerUseOrchestratorResult,
+    ComputerUseSessionCreate,
+    ComputerUseSessionListResponse,
+    ComputerUseSessionResponse,
+    ComputerUseStepResponse,
 )
-from app.domains.computer_use.session_manager import ComputerUseSessionManager, get_session_manager, remove_session_manager
+from app.domains.computer_use.session_manager import (
+    get_session_manager,
+)
 from app.domains.computer_use.ws_manager import ws_manager
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -55,7 +66,7 @@ async def _get_session_or_404(db: AsyncSession, session_id: UUID, user_id: UUID)
     return session
 
 
-async def _auth_ws_token(token: str) -> Optional[dict]:
+async def _auth_ws_token(token: str) -> dict | None:
     """Valida token JWT para WebSocket."""
     if not token:
         return None
@@ -222,8 +233,8 @@ async def start_session(
     provider = "openai"
 
     # Try to get user's API key
-    from app.domains.subscriptions.models import UserAPIKey
     from app.core.encryption import decrypt_value
+    from app.domains.subscriptions.models import UserAPIKey
 
     for prov in ["openai", "anthropic"]:
         result = await db.execute(
@@ -255,7 +266,6 @@ async def start_session(
 
     # Create session manager (V2 with all enhancements)
     from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManagerV2
-    from app.domains.computer_use.services.browser_pool import get_browser_pool
 
     # Load profile if set
     profile = None
@@ -280,8 +290,8 @@ async def start_session(
     # Load proxy if set
     proxy = None
     if session.proxy_config_id:
-        from app.domains.computer_use.models_extended import ComputerUseProxyConfig
         from app.core.encryption import decrypt_value
+        from app.domains.computer_use.models_extended import ComputerUseProxyConfig
         proxy_result = await db.execute(
             select(ComputerUseProxyConfig).where(ComputerUseProxyConfig.id == session.proxy_config_id)
         )
@@ -346,9 +356,9 @@ async def start_session(
 async def create_computer_use_from_orchestrator(
     db: AsyncSession,
     user_id: UUID,
-    business_id: Optional[UUID],
+    business_id: UUID | None,
     task: str,
-    start_url: Optional[str] = None,
+    start_url: str | None = None,
 ) -> ComputerUseOrchestratorResult:
     """Crea una sesión de Computer Use desde el orchestrator y devuelve datos de conexión."""
     session = ComputerUseSession(
@@ -377,6 +387,7 @@ async def create_computer_use_from_orchestrator(
 # ========== Screenshot Serving ==========
 
 from fastapi.responses import FileResponse
+
 
 @router.get("/sessions/{session_id}/screenshots/{step_number}")
 async def get_screenshot(
@@ -455,7 +466,7 @@ async def computer_use_websocket(
                         break
             except Exception as e:
                 logger.error(f"Auto-start failed: {e}")
-                await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {str(e)}"}})
+                await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}})
                 await ws_manager.disconnect(str(session_id))
                 await websocket.close()
                 return

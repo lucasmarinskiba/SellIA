@@ -5,23 +5,26 @@ AutopilotExecutor — executes concrete actions.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Optional, Any
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.alerts.models import (
+    Recommendation,
+    RecommendationActionType,
+    RecommendationStatus,
+)
 from app.domains.autopilot.models import (
-    AutopilotConfig,
     AutopilotActionLog,
     AutopilotActionStatus,
     AutopilotActionType,
+    AutopilotConfig,
     AutopilotDailyReport,
 )
-from app.domains.autopilot.schemas import AutopilotConfigCreate, AutopilotConfigUpdate
-from app.domains.alerts.models import Recommendation, RecommendationActionType, RecommendationStatus
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -90,7 +93,7 @@ class AutopilotEngine:
             return False, f"Action '{action_type.value}' is not enabled for autopilot."
 
         # Check amount threshold for orders/deals
-        amount = context.get("amount", Decimal("0"))
+        amount = context.get("amount", Decimal(0))
         if action_type in (AutopilotActionType.CREATE_ORDER, AutopilotActionType.CLOSE_DEAL):
             if amount > config.approval_threshold_amount:
                 return False, (
@@ -104,7 +107,7 @@ class AutopilotEngine:
         self, config: AutopilotConfig, action_type: AutopilotActionType
     ) -> tuple[bool, str]:
         """Check if daily limits would be exceeded."""
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
         # Count today's executed actions
         result = await self.db.execute(
@@ -197,7 +200,7 @@ class AutopilotEngine:
             error_message=error_message,
             requires_approval=requires_approval,
             revenue_impact=revenue_impact,
-            executed_at=datetime.now(timezone.utc) if status == AutopilotActionStatus.EXECUTED else None,
+            executed_at=datetime.now(UTC) if status == AutopilotActionStatus.EXECUTED else None,
         )
         self.db.add(log)
         await self.db.commit()
@@ -208,7 +211,7 @@ class AutopilotEngine:
         )
         return log
 
-    async def approve_action(self, action_log_id: uuid.UUID, user_id: uuid.UUID, reason: str | None = None) -> Optional[AutopilotActionLog]:
+    async def approve_action(self, action_log_id: uuid.UUID, user_id: uuid.UUID, reason: str | None = None) -> AutopilotActionLog | None:
         """Manually approve a pending action."""
         result = await self.db.execute(
             select(AutopilotActionLog).where(AutopilotActionLog.id == action_log_id)
@@ -218,9 +221,9 @@ class AutopilotEngine:
             return None
 
         log.status = AutopilotActionStatus.EXECUTED
-        log.approved_at = datetime.now(timezone.utc)
+        log.approved_at = datetime.now(UTC)
         log.approved_by_user_id = user_id
-        log.executed_at = datetime.now(timezone.utc)
+        log.executed_at = datetime.now(UTC)
         log.reason = f"{log.reason} | Approved by user: {reason or 'No reason given.'}"
         await self.db.commit()
         await self.db.refresh(log)
@@ -231,7 +234,7 @@ class AutopilotEngine:
 
         return log
 
-    async def reject_action(self, action_log_id: uuid.UUID, reason: str) -> Optional[AutopilotActionLog]:
+    async def reject_action(self, action_log_id: uuid.UUID, reason: str) -> AutopilotActionLog | None:
         """Manually reject a pending action."""
         result = await self.db.execute(
             select(AutopilotActionLog).where(AutopilotActionLog.id == action_log_id)
@@ -241,7 +244,7 @@ class AutopilotEngine:
             return None
 
         log.status = AutopilotActionStatus.REJECTED
-        log.rejected_at = datetime.now(timezone.utc)
+        log.rejected_at = datetime.now(UTC)
         log.rejected_reason = reason
         await self.db.commit()
         await self.db.refresh(log)
@@ -249,7 +252,7 @@ class AutopilotEngine:
 
     async def get_today_counts(self, business_id: uuid.UUID) -> dict[str, int]:
         """Get today's action counts for a business."""
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         result = await self.db.execute(
             select(
                 AutopilotActionLog.status,
@@ -268,7 +271,7 @@ class AutopilotEngine:
             "failed": counts.get("failed", 0),
         }
 
-    async def get_last_action(self, business_id: uuid.UUID) -> Optional[datetime]:
+    async def get_last_action(self, business_id: uuid.UUID) -> datetime | None:
         result = await self.db.execute(
             select(AutopilotActionLog.created_at).where(
                 AutopilotActionLog.business_id == business_id,
@@ -286,9 +289,6 @@ class AutopilotExecutor:
 
     async def execute_recommendation(self, recommendation: Recommendation) -> bool:
         """Execute a recommendation if autopilot allows it."""
-        from app.domains.automations.engine import WorkflowEngine
-        from app.domains.crm.models import Deal
-        from app.domains.channels.models import Conversation
 
         engine = AutopilotEngine(self.db)
         rec_action = recommendation.action_type
@@ -307,7 +307,7 @@ class AutopilotExecutor:
         if autopilot_action is None:
             # Dismiss = mark as applied, no action needed
             recommendation.status = RecommendationStatus.APPLIED
-            recommendation.applied_at = datetime.now(timezone.utc)
+            recommendation.applied_at = datetime.now(UTC)
             await self.db.commit()
             return True
 
@@ -344,7 +344,7 @@ class AutopilotExecutor:
             )
             if success:
                 recommendation.status = RecommendationStatus.APPLIED
-                recommendation.applied_at = datetime.now(timezone.utc)
+                recommendation.applied_at = datetime.now(UTC)
                 await self.db.commit()
             return success
         except Exception as e:
@@ -354,7 +354,7 @@ class AutopilotExecutor:
                 action_type=autopilot_action,
                 entity_type="recommendation",
                 entity_id=recommendation.id,
-                reason=f"Execution failed: {str(e)}",
+                reason=f"Execution failed: {e!s}",
                 status=AutopilotActionStatus.FAILED,
                 error_message=str(e),
                 context_data={"recommendation_id": str(recommendation.id)},
@@ -363,11 +363,10 @@ class AutopilotExecutor:
 
     async def _execute_mapped_action(self, recommendation: Recommendation) -> bool:
         """Execute the concrete action based on recommendation type."""
-        from app.domains.automations.engine import WorkflowEngine
-        from app.domains.crm.models import Deal, Pipeline
-        from app.domains.channels.models import Conversation
-        from app.domains.channels.handoff import mark_awaiting_human
         from app.domains.agents.ai_reply import generate_ai_response
+        from app.domains.channels.handoff import mark_awaiting_human
+        from app.domains.channels.models import Conversation
+        from app.domains.crm.models import Deal
 
         payload = recommendation.action_payload or {}
         business_id = recommendation.business_id
@@ -414,7 +413,7 @@ class AutopilotExecutor:
                 deal = deal_result.scalar_one_or_none()
                 if deal:
                     deal.stage = stage
-                    deal.updated_at = datetime.now(timezone.utc)
+                    deal.updated_at = datetime.now(UTC)
                     await self.db.commit()
             return True
 
@@ -427,7 +426,7 @@ class AutopilotExecutor:
                 conv = conv_result.scalar_one_or_none()
                 if conv:
                     mark_awaiting_human(conv, "Escalado por el autopilot")
-                    conv.updated_at = datetime.now(timezone.utc)
+                    conv.updated_at = datetime.now(UTC)
                     await self.db.commit()
             return True
 
@@ -459,7 +458,7 @@ class AutopilotReportService:
     async def generate_daily_report(self, business_id: uuid.UUID, report_date: datetime | None = None) -> AutopilotDailyReport:
         """Generate a daily report for a business."""
         if report_date is None:
-            report_date = datetime.now(timezone.utc)
+            report_date = datetime.now(UTC)
 
         day_start = report_date.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
@@ -486,7 +485,7 @@ class AutopilotReportService:
             "messages_sent": 0,
             "sequences_started": 0,
             "workflows_activated": 0,
-            "revenue_generated": Decimal("0"),
+            "revenue_generated": Decimal(0),
             "actions_escalated": 0,
             "actions_pending_approval": 0,
             "actions_rejected": 0,
@@ -518,7 +517,7 @@ class AutopilotReportService:
                 stats["actions_rejected"] += count
 
         # Calculate deals value closed
-        deals_value = Decimal("0")
+        deals_value = Decimal(0)
         from app.domains.crm.models import Deal
         deals_result = await self.db.execute(
             select(func.sum(Deal.value)).where(
@@ -528,7 +527,7 @@ class AutopilotReportService:
                 Deal.actual_close_date < day_end,
             )
         )
-        deals_value = deals_result.scalar() or Decimal("0")
+        deals_value = deals_result.scalar() or Decimal(0)
 
         report = AutopilotDailyReport(
             business_id=business_id,
@@ -576,7 +575,7 @@ class AutopilotReportService:
 
         return "Hoy SellIA " + ", ".join(parts) + "."
 
-    async def get_latest_report(self, business_id: uuid.UUID) -> Optional[AutopilotDailyReport]:
+    async def get_latest_report(self, business_id: uuid.UUID) -> AutopilotDailyReport | None:
         result = await self.db.execute(
             select(AutopilotDailyReport).where(
                 AutopilotDailyReport.business_id == business_id,

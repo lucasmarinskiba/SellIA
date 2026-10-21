@@ -1,11 +1,12 @@
 """Business Context Schemas"""
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
+
 from pydantic import BaseModel, Field
 
-from .models import BusinessType, SalesModel, GeographicReach, PresenceType
+from .models import BusinessType, GeographicReach, PresenceType, SalesModel
 
 
 class BusinessContextBase(BaseModel):
@@ -13,69 +14,69 @@ class BusinessContextBase(BaseModel):
     sales_model: SalesModel = SalesModel.B2C
     geographic_reach: GeographicReach = GeographicReach.LOCAL
     presence_type: PresenceType = PresenceType.ONLINE_ONLY
-    industry: Optional[str] = None
-    target_audience: Optional[str] = None
-    value_proposition: Optional[str] = None
-    price_range: Optional[str] = None
-    average_ticket: Optional[int] = None
-    city: Optional[str] = None
-    state_province: Optional[str] = None
+    industry: str | None = None
+    target_audience: str | None = None
+    value_proposition: str | None = None
+    price_range: str | None = None
+    average_ticket: int | None = None
+    city: str | None = None
+    state_province: str | None = None
     country: str = "Argentina"
-    address: Optional[str] = None
+    address: str | None = None
     has_physical_location: bool = False
     serves_home_office: bool = False
     does_delivery: bool = False
     does_pickup: bool = False
-    shipping_radius_km: Optional[int] = None
-    channels_configured: Dict[str, bool] = Field(default_factory=dict)
-    ads_configured: Dict[str, bool] = Field(default_factory=dict)
-    shipping_configured: Dict[str, bool] = Field(default_factory=dict)
+    shipping_radius_km: int | None = None
+    channels_configured: dict[str, bool] = Field(default_factory=dict)
+    ads_configured: dict[str, bool] = Field(default_factory=dict)
+    shipping_configured: dict[str, bool] = Field(default_factory=dict)
     website_configured: bool = False
     seo_configured: bool = False
     email_marketing_configured: bool = False
-    primary_goal: Optional[str] = None
-    monthly_revenue_goal: Optional[int] = None
-    monthly_leads_goal: Optional[int] = None
-    target_countries: List[str] = Field(default_factory=list)
-    scheduling_link: Optional[str] = None
-    llm_daily_call_limit: Optional[int] = None  # None = unlimited
+    primary_goal: str | None = None
+    monthly_revenue_goal: int | None = None
+    monthly_leads_goal: int | None = None
+    target_countries: list[str] = Field(default_factory=list)
+    scheduling_link: str | None = None
+    llm_daily_call_limit: int | None = None  # None = unlimited
 
 
 class BusinessContextCreate(BusinessContextBase):
-    business_id: Optional[UUID] = None
+    business_id: UUID | None = None
 
 
 class BusinessContextUpdate(BaseModel):
-    business_type: Optional[BusinessType] = None
-    sales_model: Optional[SalesModel] = None
-    geographic_reach: Optional[GeographicReach] = None
-    presence_type: Optional[PresenceType] = None
-    industry: Optional[str] = None
-    target_audience: Optional[str] = None
-    value_proposition: Optional[str] = None
-    price_range: Optional[str] = None
-    average_ticket: Optional[int] = None
-    city: Optional[str] = None
-    state_province: Optional[str] = None
-    country: Optional[str] = None
-    address: Optional[str] = None
-    has_physical_location: Optional[bool] = None
-    serves_home_office: Optional[bool] = None
-    does_delivery: Optional[bool] = None
-    does_pickup: Optional[bool] = None
-    shipping_radius_km: Optional[int] = None
-    channels_configured: Optional[Dict[str, bool]] = None
-    ads_configured: Optional[Dict[str, bool]] = None
-    shipping_configured: Optional[Dict[str, bool]] = None
-    website_configured: Optional[bool] = None
-    seo_configured: Optional[bool] = None
-    email_marketing_configured: Optional[bool] = None
-    primary_goal: Optional[str] = None
-    monthly_revenue_goal: Optional[int] = None
-    monthly_leads_goal: Optional[int] = None
-    target_countries: Optional[List[str]] = None
-    scheduling_link: Optional[str] = None
-    llm_daily_call_limit: Optional[int] = None
+    business_type: BusinessType | None = None
+    sales_model: SalesModel | None = None
+    geographic_reach: GeographicReach | None = None
+    presence_type: PresenceType | None = None
+    industry: str | None = None
+    target_audience: str | None = None
+    value_proposition: str | None = None
+    price_range: str | None = None
+    average_ticket: int | None = None
+    city: str | None = None
+    state_province: str | None = None
+    country: str | None = None
+    address: str | None = None
+    has_physical_location: bool | None = None
+    serves_home_office: bool | None = None
+    does_delivery: bool | None = None
+    does_pickup: bool | None = None
+    shipping_radius_km: int | None = None
+    channels_configured: dict[str, bool] | None = None
+    ads_configured: dict[str, bool] | None = None
+    shipping_configured: dict[str, bool] | None = None
+    website_configured: bool | None = None
+    seo_configured: bool | None = None
+    email_marketing_configured: bool | None = None
+    primary_goal: str | None = None
+    monthly_revenue_goal: int | None = None
+    monthly_leads_goal: int | None = None
+    target_countries: list[str] | None = None
+    scheduling_link: str | None = None
+    llm_daily_call_limit: int | None = None
 
 
 class CommunicationAngle(BaseModel):
@@ -88,13 +89,13 @@ class CommunicationAngle(BaseModel):
 class BusinessContextRead(BusinessContextBase):
     id: UUID
     user_id: UUID
-    business_id: Optional[UUID] = None
-    ai_recommended_playbooks: List[str] = Field(default_factory=list)
-    ai_priority_actions: List[Dict[str, Any]] = Field(default_factory=list)
-    ai_brand_voice: Optional[str] = None
-    communication_angles: List[CommunicationAngle] = Field(default_factory=list)
-    winning_offer_summary: Optional[str] = None
-    llm_daily_call_limit: Optional[int] = None
+    business_id: UUID | None = None
+    ai_recommended_playbooks: list[str] = Field(default_factory=list)
+    ai_priority_actions: list[dict[str, Any]] = Field(default_factory=list)
+    ai_brand_voice: str | None = None
+    communication_angles: list[CommunicationAngle] = Field(default_factory=list)
+    winning_offer_summary: str | None = None
+    llm_daily_call_limit: int | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -107,14 +108,14 @@ class BusinessContextWizardStep(BaseModel):
     step: int
     title: str
     description: str
-    fields: List[Dict[str, Any]]
+    fields: list[dict[str, Any]]
     is_completed: bool
 
 
 class BusinessContextWizardState(BaseModel):
     current_step: int
     total_steps: int = 5
-    steps: List[BusinessContextWizardStep]
+    steps: list[BusinessContextWizardStep]
     context: BusinessContextRead
 
 
@@ -123,8 +124,8 @@ class ReachAnalysis(BaseModel):
     recommended_reach: str
     local_seo_priority: bool
     cross_border_opportunity: bool
-    shipping_recommendations: List[str]
-    platform_recommendations: List[str]
+    shipping_recommendations: list[str]
+    platform_recommendations: list[str]
     estimated_addressable_market: str
 
 
@@ -134,4 +135,4 @@ class ChannelGapAnalysis(BaseModel):
     priority: str  # critical, high, medium, low
     impact_estimate: str
     setup_difficulty: str
-    recommended_playbook: Optional[str] = None
+    recommended_playbook: str | None = None

@@ -1,14 +1,23 @@
 """Customer FOMO Campaign Models"""
 
+import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from decimal import Decimal
 from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, Integer, Float, Text, DateTime, Boolean, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
-import uuid
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 
 class CampaignType(str, Enum):
@@ -42,15 +51,15 @@ class AutomationType(str, Enum):
 class CustomerFOMOCampaignConfig(BaseModel):
     campaign_type: CampaignType
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     start_date: datetime = Field(default_factory=datetime.utcnow)
-    end_date: Optional[datetime] = None
-    target_pages: List[str] = []
-    target_products: List[str] = []
-    messaging: Dict[str, str] = {}
-    color_scheme: Dict[str, str] = {"primary": "#FF6B6B", "secondary": "#4ECDC4"}
-    enabled_widgets: List[WidgetType] = []
-    automations: List[AutomationType] = []
+    end_date: datetime | None = None
+    target_pages: list[str] = []
+    target_products: list[str] = []
+    messaging: dict[str, str] = {}
+    color_scheme: dict[str, str] = {"primary": "#FF6B6B", "secondary": "#4ECDC4"}
+    enabled_widgets: list[WidgetType] = []
+    automations: list[AutomationType] = []
 
 
 class CustomerFOMOWidgetConfig(BaseModel):
@@ -59,8 +68,8 @@ class CustomerFOMOWidgetConfig(BaseModel):
     size: str = "medium"
     animation: str = "slide-in"
     update_frequency_seconds: int = 10
-    colors: Dict[str, str] = {}
-    text_overrides: Dict[str, str] = {}
+    colors: dict[str, str] = {}
+    text_overrides: dict[str, str] = {}
     tracking_enabled: bool = True
 
 
@@ -68,8 +77,8 @@ class CustomerFOMOAutomationConfig(BaseModel):
     automation_type: AutomationType
     trigger: str
     delay_minutes: int = 0
-    channels: List[str] = ["email", "sms"]
-    message_templates: Dict[str, str] = {}
+    channels: list[str] = ["email", "sms"]
+    message_templates: dict[str, str] = {}
     max_frequency_per_user: int = 3
     exclude_returning_customers: bool = False
 
@@ -91,7 +100,7 @@ class CustomerFOMOCampaignResponse(BaseModel):
     name: str
     campaign_type: CampaignType
     status: str
-    performance: Dict[str, Any] = {}
+    performance: dict[str, Any] = {}
     widgets_count: int = 0
     automations_count: int = 0
     created_at: datetime
@@ -103,10 +112,10 @@ class CustomerFOMOCampaignResponse(BaseModel):
 
 class CustomerFOMOEventData(BaseModel):
     event_type: str
-    user_id: Optional[str] = None
-    product_id: Optional[str] = None
-    value: Optional[float] = None
-    metadata: Dict[str, Any] = {}
+    user_id: str | None = None
+    product_id: str | None = None
+    value: float | None = None
+    metadata: dict[str, Any] = {}
 
 
 class FOMOCampaignTemplate(BaseModel):
@@ -114,8 +123,8 @@ class FOMOCampaignTemplate(BaseModel):
     description: str
     campaign_type: CampaignType
     preset_config: CustomerFOMOCampaignConfig
-    widgets: List[CustomerFOMOWidgetConfig]
-    automations: List[CustomerFOMOAutomationConfig]
+    widgets: list[CustomerFOMOWidgetConfig]
+    automations: list[CustomerFOMOAutomationConfig]
     expected_conversion_lift: float
     setup_time_minutes: int
 

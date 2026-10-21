@@ -1,12 +1,22 @@
 """Customer segmentation models — RFM + behavioral segmentation."""
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -82,8 +92,8 @@ class CustomerSegment(Base):
     tags = Column(JSONB, default=list)  # ["vip", "seasonal", "price_sensitive"]
 
     # Metadata
-    segment_created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    segment_updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), index=True)
+    segment_created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    segment_updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC), index=True)
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
@@ -134,7 +144,7 @@ class SegmentationMetrics(Base):
     at_risk_revenue = Column(Decimal(12, 2), default=0)  # CLV of at-risk customers
     churn_risk_count = Column(Integer, default=0)  # High + critical
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -169,8 +179,8 @@ class SegmentationStrategy(Base):
     is_active = Column(Boolean, default=True)
     target_outcome = Column(String(100), nullable=True)  # "increase_repeat_purchase", "reduce_churn"
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_rfm_strategy", "business_id", "rfm_segment"),

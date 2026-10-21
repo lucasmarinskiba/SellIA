@@ -18,15 +18,15 @@ orchestrates the agents from Fases A/B/C. It does not do competitor scraping
 (that's Fase F's job); it only accepts a competitor signal as input.
 """
 
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from app.core.logger import get_logger
 from app.domains.fomo.ai_scarcity_calibration_agent import (
-    StockDisplayCalibrator,
     DiscountElasticityCalibrator,
+    StockDisplayCalibrator,
 )
-from app.domains.fomo.ai_timing_optimizer_agent import SendTimePredictor, COLD_START_WINDOWS
+from app.domains.fomo.ai_timing_optimizer_agent import COLD_START_WINDOWS
 
 logger = get_logger(__name__)
 
@@ -52,8 +52,8 @@ class OpportunityDetector:
     @staticmethod
     def detect_stock_opportunity(
         real_stock: int,
-        product_id: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        product_id: str | None = None,
+    ) -> dict[str, Any] | None:
         tier = StockDisplayCalibrator.compute_display_tier(real_stock)
         if tier["tier"] not in ("low", "critical"):
             return None
@@ -69,10 +69,10 @@ class OpportunityDetector:
 
     @staticmethod
     def detect_seasonal_opportunity(
-        reference_date: Optional[datetime] = None,
+        reference_date: datetime | None = None,
         lead_time_days: int = 14,
-    ) -> Optional[Dict[str, Any]]:
-        reference_date = reference_date or datetime.now(timezone.utc)
+    ) -> dict[str, Any] | None:
+        reference_date = reference_date or datetime.now(UTC)
 
         closest = None
         closest_days = None
@@ -109,8 +109,8 @@ class OpportunityDetector:
 
     @staticmethod
     def detect_competitor_opportunity(
-        competitor_signal: Optional[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+        competitor_signal: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
         """competitor_signal (produced elsewhere, e.g. Fase F when built):
         {"competitor_name": str, "discount_percent": float, "detected_at": datetime}"""
         if not competitor_signal:
@@ -130,12 +130,12 @@ class OpportunityDetector:
 
     @staticmethod
     def detect_all(
-        real_stock: Optional[int] = None,
-        product_id: Optional[str] = None,
-        reference_date: Optional[datetime] = None,
-        competitor_signal: Optional[Dict[str, Any]] = None,
+        real_stock: int | None = None,
+        product_id: str | None = None,
+        reference_date: datetime | None = None,
+        competitor_signal: dict[str, Any] | None = None,
         seasonal_lead_time_days: int = 14,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         opportunities = []
 
         if real_stock is not None:
@@ -163,10 +163,10 @@ class CampaignAutoBuilder:
 
     @staticmethod
     def build_campaign_plan(
-        opportunity: Dict[str, Any],
-        discount_historical_data: Optional[List[Dict[str, float]]] = None,
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        opportunity: dict[str, Any],
+        discount_historical_data: list[dict[str, float]] | None = None,
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         template_type = opportunity["suggested_template_type"]
 
         discount = DiscountElasticityCalibrator.recommend_optimal_discount(
@@ -188,7 +188,7 @@ class CampaignAutoBuilder:
             "recommended_discount_percent": discount["recommended_discount_percent"],
             "discount_confidence": discount["confidence"],
             "send_window": best_cold_start,
-            "created_at": (reference_date or datetime.now(timezone.utc)).isoformat(),
+            "created_at": (reference_date or datetime.now(UTC)).isoformat(),
             "status": "planned",
         }
 
@@ -206,7 +206,7 @@ class PerformanceMonitor:
         return (revenue - cost) / cost
 
     @staticmethod
-    def evaluate_campaign_health(metrics: Dict[str, float]) -> Dict[str, Any]:
+    def evaluate_campaign_health(metrics: dict[str, float]) -> dict[str, Any]:
         """metrics: {"impressions", "conversions", "revenue", "cost"}"""
         revenue = metrics.get("revenue", 0.0)
         cost = metrics.get("cost", 0.0)
@@ -232,7 +232,7 @@ class PerformanceMonitor:
         }
 
     @staticmethod
-    def detect_roi_trend(metrics_history: List[Dict[str, float]]) -> Dict[str, Any]:
+    def detect_roi_trend(metrics_history: list[dict[str, float]]) -> dict[str, Any]:
         """metrics_history: daily [{"revenue", "cost"}, ...] ordered oldest to newest"""
         if len(metrics_history) < 2:
             return {"trend": "insufficient_data", "days_evaluated": len(metrics_history)}
@@ -264,10 +264,10 @@ class AutoScaler:
 
     @staticmethod
     def decide_action(
-        health: Dict[str, Any],
-        trend: Optional[Dict[str, Any]] = None,
-        current_budget: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        health: dict[str, Any],
+        trend: dict[str, Any] | None = None,
+        current_budget: float | None = None,
+    ) -> dict[str, Any]:
         if health["status"] == "negative_roi":
             return {
                 "action": "auto_pause",
@@ -301,12 +301,12 @@ class DailyReportGenerator:
     @staticmethod
     def generate_daily_report(
         campaign_id: str,
-        today_metrics: Dict[str, float],
-        health: Dict[str, Any],
-        action: Dict[str, Any],
-        report_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
-        report_date = report_date or datetime.now(timezone.utc)
+        today_metrics: dict[str, float],
+        health: dict[str, Any],
+        action: dict[str, Any],
+        report_date: datetime | None = None,
+    ) -> dict[str, Any]:
+        report_date = report_date or datetime.now(UTC)
 
         return {
             "campaign_id": campaign_id,
@@ -324,7 +324,7 @@ class DailyReportGenerator:
         }
 
     @staticmethod
-    def _headline(health: Dict[str, Any], action: Dict[str, Any]) -> str:
+    def _headline(health: dict[str, Any], action: dict[str, Any]) -> str:
         if action["action"] == "auto_pause":
             return f"⏸️ Campaña pausada automáticamente — ROI {health['roi']:.1%}"
         if action["action"] == "auto_scale":
@@ -338,11 +338,11 @@ class AIAutonomousCampaignManager:
 
     @staticmethod
     def scan_for_opportunities(
-        real_stock: Optional[int] = None,
-        product_id: Optional[str] = None,
-        reference_date: Optional[datetime] = None,
-        competitor_signal: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        real_stock: int | None = None,
+        product_id: str | None = None,
+        reference_date: datetime | None = None,
+        competitor_signal: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         opportunities = OpportunityDetector.detect_all(
             real_stock, product_id, reference_date, competitor_signal
         )
@@ -350,20 +350,20 @@ class AIAutonomousCampaignManager:
 
     @staticmethod
     def create_campaign_from_opportunity(
-        opportunity: Dict[str, Any],
-        discount_historical_data: Optional[List[Dict[str, float]]] = None,
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        opportunity: dict[str, Any],
+        discount_historical_data: list[dict[str, float]] | None = None,
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         return CampaignAutoBuilder.build_campaign_plan(
             opportunity, discount_historical_data, reference_date
         )
 
     @staticmethod
     def monitor_and_decide(
-        today_metrics: Dict[str, float],
-        metrics_history: Optional[List[Dict[str, float]]] = None,
-        current_budget: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        today_metrics: dict[str, float],
+        metrics_history: list[dict[str, float]] | None = None,
+        current_budget: float | None = None,
+    ) -> dict[str, Any]:
         health = PerformanceMonitor.evaluate_campaign_health(today_metrics)
         trend = PerformanceMonitor.detect_roi_trend(metrics_history or [])
         action = AutoScaler.decide_action(health, trend, current_budget)
@@ -373,11 +373,11 @@ class AIAutonomousCampaignManager:
     @staticmethod
     def run_daily_cycle(
         campaign_id: str,
-        today_metrics: Dict[str, float],
-        metrics_history: Optional[List[Dict[str, float]]] = None,
-        current_budget: Optional[float] = None,
-        report_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        today_metrics: dict[str, float],
+        metrics_history: list[dict[str, float]] | None = None,
+        current_budget: float | None = None,
+        report_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Full daily cycle for an ALREADY-RUNNING campaign: monitor -> decide -> report"""
         decision = AIAutonomousCampaignManager.monitor_and_decide(
             today_metrics, metrics_history, current_budget
@@ -389,12 +389,12 @@ class AIAutonomousCampaignManager:
 
     @staticmethod
     def full_autonomous_cycle(
-        real_stock: Optional[int] = None,
-        product_id: Optional[str] = None,
-        reference_date: Optional[datetime] = None,
-        competitor_signal: Optional[Dict[str, Any]] = None,
-        discount_historical_data: Optional[List[Dict[str, float]]] = None,
-    ) -> Dict[str, Any]:
+        real_stock: int | None = None,
+        product_id: str | None = None,
+        reference_date: datetime | None = None,
+        competitor_signal: dict[str, Any] | None = None,
+        discount_historical_data: list[dict[str, float]] | None = None,
+    ) -> dict[str, Any]:
         """Scan -> plan for the single highest-priority opportunity (a NEW
         campaign, no metrics history yet — monitoring starts once it sends)"""
         scan = AIAutonomousCampaignManager.scan_for_opportunities(

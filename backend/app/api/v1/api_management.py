@@ -1,10 +1,9 @@
 """API management — rate limiting, caching, metrics."""
 
-from uuid import UUID
-from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -17,14 +16,14 @@ router = APIRouter(prefix="/api/v1", tags=["api-management"])
 class CreateApiKeyRequest(BaseModel):
     key_name: str
     tier: str = "starter"  # free, starter, pro, enterprise
-    custom_limit: Optional[int] = None
-    expires_at: Optional[str] = None  # ISO datetime
+    custom_limit: int | None = None
+    expires_at: str | None = None  # ISO datetime
 
 
 class SetCachePolicyRequest(BaseModel):
     endpoint_path: str
     ttl_seconds: int = 300
-    cache_by: Optional[str] = None  # user_id, business_id, etc
+    cache_by: str | None = None  # user_id, business_id, etc
 
 
 @router.post("/businesses/{business_id}/api-keys")
@@ -79,7 +78,7 @@ def set_cache_policy(
 @router.get("/businesses/{business_id}/api-metrics")
 def get_api_metrics(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get API performance metrics."""

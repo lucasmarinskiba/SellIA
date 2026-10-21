@@ -1,22 +1,23 @@
 """Intelligence API Router."""
 
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.intelligence.models import MessageAnalysis, ConversationIntelligence
+from app.domains.intelligence.models import MessageAnalysis
 from app.domains.intelligence.schemas import (
-    MessageAnalysisResponse,
     ConversationIntelligenceResponse,
-    ConversationIntelligenceFilter,
+    MessageAnalysisResponse,
 )
-from app.domains.intelligence.service import MessageIntelligenceService, ConversationIntelligenceService
+from app.domains.intelligence.service import (
+    ConversationIntelligenceService,
+    MessageIntelligenceService,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
 

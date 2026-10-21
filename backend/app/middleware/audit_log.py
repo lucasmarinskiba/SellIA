@@ -4,7 +4,7 @@ Logs access to sensitive data endpoints for compliance and forensics.
 """
 
 import uuid
-from datetime import datetime, timezone
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 

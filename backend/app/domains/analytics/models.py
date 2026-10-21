@@ -1,9 +1,21 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Float, Numeric, Text, Enum as SQLEnum, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -43,7 +55,7 @@ class AnalyticsEvent(Base):
     duration_ms = Column(Integer, nullable=True)
     scroll_depth = Column(Float, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     website = relationship("Website", foreign_keys=[website_id])
 
@@ -69,7 +81,7 @@ class Conversion(Base):
 
     event_metadata = Column("metadata", JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     website = relationship("Website", foreign_keys=[website_id])
 
@@ -110,7 +122,7 @@ class FunnelMetric(Base):
     revenue_total = Column(Numeric(14, 2), default=0, nullable=False)
     avg_order_value = Column(Numeric(14, 2), default=0, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index('idx_funnel_metrics_business_created', 'business_id', 'created_at'),
@@ -130,7 +142,7 @@ class CohortMetric(Base):
     revenue = Column(Numeric(14, 2), default=0, nullable=False)
     retention_rate = Column(Numeric(6, 4), default=0, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index('idx_cohort_metrics_business_month', 'business_id', 'cohort_month'),
@@ -152,7 +164,7 @@ class ChurnPrediction(Base):
     model_version = Column(String(50), nullable=False, default="v1")
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
 
 class LtvPrediction(Base):
@@ -170,7 +182,7 @@ class LtvPrediction(Base):
     model_version = Column(String(50), nullable=False, default="v1")
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
 
 class InsightAlert(Base):
@@ -190,7 +202,7 @@ class InsightAlert(Base):
     action_result = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index('idx_insight_alerts_business_active', 'business_id', 'is_active'),

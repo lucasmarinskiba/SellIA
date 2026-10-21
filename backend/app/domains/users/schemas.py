@@ -1,7 +1,9 @@
 import re
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, field_serializer
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer, field_validator
+
 from app.core.pii_masking import mask_email, mask_name
 
 

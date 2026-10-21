@@ -3,11 +3,12 @@
 Maneja fallos transitorios sin intervención humana.
 """
 
-import logging
 import asyncio
-from typing import Callable, Any, TypeVar, Optional, Dict
+import logging
+from collections.abc import Callable
+from datetime import datetime
 from functools import wraps
-from datetime import datetime, timedelta
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class RetryPolicy:
 
 
 def retry_with_backoff(
-    policy: Optional[RetryPolicy] = None,
+    policy: RetryPolicy | None = None,
     retryable_exceptions: tuple = (Exception,),
 ) -> Callable:
     """Decorator para reintentos automáticos con backoff."""
@@ -117,8 +118,8 @@ class RetryableTask:
         task_id: str,
         func: Callable,
         args: tuple = (),
-        kwargs: Optional[Dict[str, Any]] = None,
-        policy: Optional[RetryPolicy] = None,
+        kwargs: dict[str, Any] | None = None,
+        policy: RetryPolicy | None = None,
     ):
         self.task_id = task_id
         self.func = func
@@ -127,11 +128,11 @@ class RetryableTask:
         self.policy = policy or RetryPolicy()
 
         self.attempts = 0
-        self.last_error: Optional[str] = None
-        self.result: Optional[Any] = None
+        self.last_error: str | None = None
+        self.result: Any | None = None
         self.status = "pending"  # pending, running, success, failed
         self.created_at = datetime.utcnow()
-        self.completed_at: Optional[datetime] = None
+        self.completed_at: datetime | None = None
 
     async def execute(self) -> bool:
         """Ejecuta tarea con reintentos."""
@@ -168,7 +169,7 @@ class RetryableTask:
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convierte a dict para logging/storage."""
         return {
             "task_id": self.task_id,

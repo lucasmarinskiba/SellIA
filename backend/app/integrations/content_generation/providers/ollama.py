@@ -5,10 +5,10 @@ Requires Ollama server running locally (default: http://localhost:11434).
 Recommended models: llama3.1, mistral, qwen2.5, phi4
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -23,7 +23,6 @@ class OllamaProvider(BaseProvider):
     @property
     def is_available(self) -> bool:
         """Check if Ollama server is reachable."""
-        import aiohttp
         base_url = settings.OLLAMA_BASE_URL.rstrip("/")
         try:
             # Use a simple sync check for property; async check is done in router
@@ -34,7 +33,7 @@ class OllamaProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.0  # Completely free
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "copy_generation": 0.0,
             "note": "Runs locally — only electricity/CPU cost",
@@ -66,19 +65,18 @@ class OllamaProvider(BaseProvider):
                 },
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{base_url}/api/chat",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=120),
-                ) as resp:
-                    if resp.status != 200:
-                        text = await resp.text()
-                        return GenerationResult(
-                            success=False,
-                            error_message=f"Ollama returned {resp.status}: {text}",
-                        )
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                f"{base_url}/api/chat",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    return GenerationResult(
+                        success=False,
+                        error_message=f"Ollama returned {resp.status}: {text}",
+                    )
+                data = await resp.json()
 
             text = data.get("message", {}).get("content", "")
             if not text:

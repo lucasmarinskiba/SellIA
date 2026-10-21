@@ -13,7 +13,7 @@ import path keeps working unchanged.
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class InputValidator:
@@ -48,7 +48,7 @@ class InputValidator:
     }
 
     @classmethod
-    def validate(cls, field_name: str, value: Any) -> tuple[bool, Optional[str], Optional[str]]:
+    def validate(cls, field_name: str, value: Any) -> tuple[bool, str | None, str | None]:
         """
         Valida field.
 
@@ -100,7 +100,7 @@ class InputValidator:
         return True, None, None
 
     @classmethod
-    def validate_batch(cls, data: Dict[str, Any], fields_to_check: list[str]) -> Dict[str, Any]:
+    def validate_batch(cls, data: dict[str, Any], fields_to_check: list[str]) -> dict[str, Any]:
         """
         Valida múltiples fields.
 

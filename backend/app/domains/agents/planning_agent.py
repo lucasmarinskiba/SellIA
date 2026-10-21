@@ -6,10 +6,10 @@ via the ReAct orchestrator.
 
 import json
 import uuid
-from typing import Dict, Any, List, Optional
+from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.core.logger import get_logger
 from app.domains.agents.llm_provider import generate_with_fallback
@@ -45,12 +45,12 @@ Do not add markdown or explanations outside the JSON."""
 class PlanStep(BaseModel):
     id: str
     description: str
-    required_tools: List[str] = Field(default_factory=list)
-    dependencies: List[str] = Field(default_factory=list)
+    required_tools: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
 
 
 class Plan(BaseModel):
-    sub_tasks: List[PlanStep]
+    sub_tasks: list[PlanStep]
 
 
 class PlanningAgent:
@@ -60,7 +60,7 @@ class PlanningAgent:
         self,
         db,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
     ):
         self.db = db
         self.user_id = user_id
@@ -69,7 +69,7 @@ class PlanningAgent:
     async def create_plan(
         self,
         task_description: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> Plan:
         """Create a plan from a high-level task description."""
         messages = [
@@ -137,9 +137,9 @@ class PlanningAgent:
         self,
         plan: Plan,
         react_orchestrator: ReActOrchestrator,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute each sub-task in the plan using ReAct."""
-        completed_steps: Dict[str, Any] = {}
+        completed_steps: dict[str, Any] = {}
         results = []
 
         for step in plan.sub_tasks:

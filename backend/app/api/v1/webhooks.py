@@ -1,9 +1,8 @@
 """Webhook API — event delivery & streaming."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -15,13 +14,13 @@ router = APIRouter(prefix="/api/v1", tags=["webhooks"])
 
 class RegisterWebhookRequest(BaseModel):
     url: str
-    subscribed_events: List[str]
-    description: Optional[str] = None
+    subscribed_events: list[str]
+    description: str | None = None
 
 
 class TriggerEventRequest(BaseModel):
     event_type: str
-    event_data: Dict
+    event_data: dict
 
 
 @router.post("/businesses/{business_id}/webhooks")

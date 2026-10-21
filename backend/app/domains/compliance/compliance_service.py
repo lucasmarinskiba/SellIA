@@ -2,9 +2,16 @@
 
 import logging
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.domains.compliance.compliance_models import ConsentRecord, DataDeletionRequest, DataExportRequest, AuditLog
+
+from app.domains.compliance.compliance_models import (
+    AuditLog,
+    ConsentRecord,
+    DataDeletionRequest,
+    DataExportRequest,
+)
 
 logger = logging.getLogger(__name__)
 

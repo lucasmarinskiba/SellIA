@@ -14,23 +14,27 @@ Arquitectura:
 3. Monitoring → Dashboard (conversiones/objeciones/leads por hora)
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
+import json
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
-import logging
-import json
+from typing import Any
 
-from app.core.resilience import InputValidator, health_tracker, retry_with_exponential_backoff
-from app.core.intelligence.market_analyzer import MarketAnalyzer
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
+from pydantic import BaseModel
+
 from app.core.intelligence.strategy_generator import StrategyGenerator
+from app.core.resilience import (
+    InputValidator,
+    health_tracker,
+    retry_with_exponential_backoff,
+)
 
 router = APIRouter(prefix="/api/v1/autonomous", tags=["autonomous"])
 logger = logging.getLogger(__name__)
 
 # Cache de estrategias por producto (product_id -> strategy)
-_STRATEGY_CACHE: Dict[str, Dict[str, Any]] = {}
+_STRATEGY_CACHE: dict[str, dict[str, Any]] = {}
 
 
 class EventType(str, Enum):
@@ -58,10 +62,10 @@ class AutonomousEvent(BaseModel):
     event_type: EventType
     contact_id: str
     contact_name: str
-    contact_phone: Optional[str] = None
-    contact_email: Optional[str] = None
-    message: Optional[str] = None
-    context: Dict[str, Any]  # producto, negocio, etapa, historial previo
+    contact_phone: str | None = None
+    contact_email: str | None = None
+    message: str | None = None
+    context: dict[str, Any]  # producto, negocio, etapa, historial previo
     timestamp: datetime = None
 
     def __post_init__(self):
@@ -76,7 +80,7 @@ class SalesResponse(BaseModel):
     channel: str  # whatsapp, instagram, email
     strategy_used: str  # master_seller, spin, assumptive_close, etc
     confidence: float  # 0-1, confianza en la respuesta
-    next_action: Optional[str] = None  # follow_up en X horas, cierre en 48h, etc
+    next_action: str | None = None  # follow_up en X horas, cierre en 48h, etc
     logged_at: datetime = None
 
 
@@ -84,7 +88,7 @@ class StrategySelector:
     """Selecciona estrategia basada en producto + contexto."""
 
     @staticmethod
-    def get_or_generate_strategy(account_id: str, product_info: Dict[str, Any]) -> Dict[str, Any]:
+    def get_or_generate_strategy(account_id: str, product_info: dict[str, Any]) -> dict[str, Any]:
         """Obtiene estrategia del cache o genera nueva."""
 
         product_id = product_info.get("id", "default")
@@ -115,7 +119,7 @@ class StrategySelector:
             return strategy
 
         except Exception as e:
-            logger.error(f"Error generando estrategia: {str(e)}")
+            logger.error(f"Error generando estrategia: {e!s}")
             # Fallback a estrategia genérica
             return {"segment": "growth", "recommended_channels": {"primary": "email"}}
 
@@ -124,7 +128,7 @@ class AgentSelector:
     """Selecciona agente óptimo según evento + estrategia."""
 
     @staticmethod
-    def select(event: AutonomousEvent, strategy: Optional[Dict[str, Any]] = None) -> str:
+    def select(event: AutonomousEvent, strategy: dict[str, Any] | None = None) -> str:
         """Retorna ID del agente a usar, basado en estrategia si disponible."""
 
         event_type = event.event_type
@@ -192,7 +196,7 @@ class FlowExecutor:
             channel=event.context.get("channel", "whatsapp"),
             strategy_used=agent_id,
             confidence=0.95,
-            next_action=f"follow_up en 24h" if agent_id == "cardone_agent" else None,
+            next_action="follow_up en 24h" if agent_id == "cardone_agent" else None,
             logged_at=datetime.utcnow()
         )
 
@@ -201,7 +205,7 @@ class EventLogger:
     """Loguea eventos de venta para análisis + optimización."""
 
     @staticmethod
-    def log_event(event: AutonomousEvent, response: SalesResponse, result: str = "sent") -> Dict[str, Any]:
+    def log_event(event: AutonomousEvent, response: SalesResponse, result: str = "sent") -> dict[str, Any]:
         """
         Loguea evento completo.
 
@@ -235,8 +239,8 @@ class EventLogger:
 
 @router.post("/webhook/whatsapp", tags=["webhooks"])
 async def webhook_whatsapp(
-    payload: Dict[str, Any],
-    x_hub_signature: Optional[str] = Header(None),
+    payload: dict[str, Any],
+    x_hub_signature: str | None = Header(None),
     background_tasks: BackgroundTasks = None
 ):
     """
@@ -292,7 +296,7 @@ async def webhook_whatsapp(
                 messages_processed += 1
 
             except Exception as msg_error:
-                logger.error(f"Error procesando mensaje individual: {str(msg_error)}")
+                logger.error(f"Error procesando mensaje individual: {msg_error!s}")
                 messages_rejected += 1
                 # Continuar con siguiente mensaje, no fallar
 
@@ -305,14 +309,14 @@ async def webhook_whatsapp(
         }
 
     except Exception as e:
-        logger.error(f"Error en webhook WhatsApp: {str(e)}", exc_info=True)
+        logger.error(f"Error en webhook WhatsApp: {e!s}", exc_info=True)
         # Retorna 200 aunque haya error: webhook no debe reintentar
         return {"status": "ok", "warning": "error_processing_webhook"}
 
 
 @router.post("/webhook/instagram", tags=["webhooks"])
 async def webhook_instagram(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     background_tasks: BackgroundTasks = None
 ):
     """
@@ -345,7 +349,7 @@ async def webhook_instagram(
         return {"status": "received", "dms_count": len(dms)}
 
     except Exception as e:
-        logger.error(f"Error en webhook Instagram: {str(e)}")
+        logger.error(f"Error en webhook Instagram: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -416,7 +420,7 @@ async def process_autonomous_event(event: AutonomousEvent):
 
         except Exception as agent_error:
             # Falla la ejecución: degrade a fallback ultra básico
-            logger.error(f"[{account_id}] Agente falló: {str(agent_error)}")
+            logger.error(f"[{account_id}] Agente falló: {agent_error!s}")
             health_tracker.record_failure(agent_id)
             response = SalesResponse(
                 contact_id=event.contact_id,
@@ -434,7 +438,7 @@ async def process_autonomous_event(event: AutonomousEvent):
             # TODO: send_by_channel(channel, event.contact_phone, response.message)
             logger.info(f"[{account_id}] Respuesta enviada por {channel}: {response.message[:100]}...")
         except Exception as send_error:
-            logger.error(f"[{account_id}] Error enviando respuesta por {channel}: {str(send_error)}")
+            logger.error(f"[{account_id}] Error enviando respuesta por {channel}: {send_error!s}")
             # No hacer falla aquí: respuesta ya se preparó, si falla envío es problema de canal, no de agente
             EventLogger.log_event(event, response, result="prepared_not_sent")
             return
@@ -444,13 +448,13 @@ async def process_autonomous_event(event: AutonomousEvent):
         logger.info(f"[{account_id}] Evento procesado exitosamente con estrategia {strategy.get('segment')}")
 
     except Exception as e:
-        logger.error(f"[{account_id}] Excepción no capturada procesando evento: {str(e)}", exc_info=True)
+        logger.error(f"[{account_id}] Excepción no capturada procesando evento: {e!s}", exc_info=True)
         # Notificar a admin: hay bug que requiere investigación
         # TODO: send_admin_alert(account_id, "autonomous_event_error", str(e))
 
 
 @router.get("/status", tags=["monitoring"])
-async def status_autonomous(account_id: Optional[str] = None):
+async def status_autonomous(account_id: str | None = None):
     """
     Status del vendedor autónomo.
 
@@ -515,7 +519,7 @@ async def cron_lead_scoring():
 async def crm_sync_contact(
     account_id: str,
     contact_id: str,
-    contact_data: Dict[str, Any]
+    contact_data: dict[str, Any]
 ):
     """
     Sincroniza contacto con CRM (Salesforce, HubSpot, Pipedrive).
@@ -571,7 +575,7 @@ async def crm_sync_contact(
 
     except Exception as e:
         # Falla CRM: log + queue local, no falla completamente
-        logger.error(f"[{account_id}] CRM sync falló: {str(e)}", exc_info=True)
+        logger.error(f"[{account_id}] CRM sync falló: {e!s}", exc_info=True)
         health_tracker.record_failure(crm_name)
 
         # Degradation: guardar en queue local para retry después
@@ -581,13 +585,13 @@ async def crm_sync_contact(
         return {
             "status": "queued",
             "contact_id": contact_id,
-            "reason": f"crm_error: {str(e)}",
+            "reason": f"crm_error: {e!s}",
             "retry_at": (datetime.utcnow() + timedelta(minutes=30)).isoformat(),
             "timestamp": datetime.utcnow().isoformat(),
         }
 
 
-async def _sync_to_crm_internal(account_id: str, contact_id: str, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+async def _sync_to_crm_internal(account_id: str, contact_id: str, contact_data: dict[str, Any]) -> dict[str, Any]:
     """Lógica interna de sync a CRM (reintentable)."""
 
     # TODO: Conectar a CRM API real
@@ -612,7 +616,7 @@ async def _sync_to_crm_internal(account_id: str, contact_id: str, contact_data: 
 async def smart_follow_up_schedule(
     contact_id: str,
     account_id: str,
-    context: Dict[str, Any]
+    context: dict[str, Any]
 ):
     """
     Agenda follow-up inteligente basado en:
@@ -648,7 +652,7 @@ async def smart_follow_up_schedule(
         }
 
     except Exception as e:
-        logger.error(f"Error en smart scheduling: {str(e)}")
+        logger.error(f"Error en smart scheduling: {e!s}")
         return {"status": "error", "detail": str(e)}
 
 
@@ -656,7 +660,7 @@ async def smart_follow_up_schedule(
 async def ab_test_variants(
     account_id: str,
     contact_segment: str,
-    variants: List[str]
+    variants: list[str]
 ):
     """
     A/B test de mensajes/scripts para optimizar conversión.
@@ -692,5 +696,5 @@ async def ab_test_variants(
         }
 
     except Exception as e:
-        logger.error(f"Error en A/B test: {str(e)}")
+        logger.error(f"Error en A/B test: {e!s}")
         return {"status": "error", "detail": str(e)}

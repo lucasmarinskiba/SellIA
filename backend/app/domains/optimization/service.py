@@ -3,19 +3,18 @@
 Runs experiments, evaluates results, and auto-adjusts parameters.
 """
 
-import uuid
 import math
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.crm.models import Deal
 from app.domains.optimization.models import OptimizationExperiment, OptimizationResult
 from app.domains.outreach.models import OutreachLog
-from app.domains.crm.models import Deal
-from app.domains.channels.models import Conversation
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -66,7 +65,7 @@ class ExperimentRunner:
 
         return outcomes
 
-    async def _evaluate_experiment(self, exp: OptimizationExperiment) -> Optional[dict[str, Any]]:
+    async def _evaluate_experiment(self, exp: OptimizationExperiment) -> dict[str, Any] | None:
         """Evaluate a single experiment for statistical significance."""
         # Gather data based on target metric
         if exp.target_metric == "response_rate":
@@ -117,7 +116,7 @@ class ExperimentRunner:
         # Check if we have enough sample size
         if a_total + b_total >= exp.sample_size_target or is_significant:
             exp.status = "completed"
-            exp.completed_at = datetime.now(timezone.utc)
+            exp.completed_at = datetime.now(UTC)
 
             if is_significant and b_rate > a_rate:
                 exp.winner_variant = "b"
@@ -199,18 +198,18 @@ class AutoOptimizer:
 
         return optimizations
 
-    async def _optimize_outreach_timing(self, business_id: uuid.UUID) -> Optional[dict[str, Any]]:
+    async def _optimize_outreach_timing(self, business_id: uuid.UUID) -> dict[str, Any] | None:
         """Find optimal send hours based on response rates."""
         # In production, would analyze response rate by hour
         # For now, placeholder
         return {"type": "timing", "recommendation": "Send follow-ups between 10-12h and 16-18h", "confidence": 0.7}
 
-    async def _optimize_personality(self, business_id: uuid.UUID) -> Optional[dict[str, Any]]:
+    async def _optimize_personality(self, business_id: uuid.UUID) -> dict[str, Any] | None:
         """Find best-performing agent personality."""
         # In production, would compare close rates by personality
         return {"type": "personality", "recommendation": "Hormozi voice shows 15% higher close rate", "confidence": 0.65}
 
-    async def _optimize_channel_priority(self, business_id: uuid.UUID) -> Optional[dict[str, Any]]:
+    async def _optimize_channel_priority(self, business_id: uuid.UUID) -> dict[str, Any] | None:
         """Find best-performing channel."""
         return {"type": "channel", "recommendation": "WhatsApp has 2.3x better response rate than email", "confidence": 0.8}
 

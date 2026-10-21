@@ -3,11 +3,10 @@ Computer Use Intelligence Layer for SellIA
 Automates browser/UI interactions with reasoning (plan → execute → validate)
 """
 
-from typing import Optional, Dict, Any
+import logging
 from dataclasses import dataclass
 from enum import Enum
-from datetime import datetime
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +34,11 @@ class BrowserContext(Enum):
 @dataclass
 class ComputerUseAction:
     action_type: ActionType
-    selector: Optional[str] = None
-    text: Optional[str] = None
-    url: Optional[str] = None
-    wait_time: Optional[int] = None
-    expect_text: Optional[str] = None
+    selector: str | None = None
+    text: str | None = None
+    url: str | None = None
+    wait_time: int | None = None
+    expect_text: str | None = None
 
 @dataclass
 class ComputerUsePlan:
@@ -53,9 +52,9 @@ class ComputerUsePlan:
 class ExecutionResult:
     success: bool
     actions_executed: int
-    screenshot_final: Optional[str] = None
-    extracted_data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    screenshot_final: str | None = None
+    extracted_data: dict[str, Any] | None = None
+    error: str | None = None
     validation_passed: bool = False
 
 # ── Computer Use Planner ──────────────────────────────
@@ -134,7 +133,7 @@ class ComputerUseExecutor:
         logger.info(f"[SellIA Computer Use] Executing plan: {plan.goal}")
 
         actions_executed = 0
-        extracted_data: Dict[str, Any] = {}
+        extracted_data: dict[str, Any] = {}
 
         try:
             for step in plan.steps:
@@ -177,7 +176,7 @@ class ComputerUseExecutor:
             )
 
         except Exception as e:
-            logger.error(f"[SellIA] Execution failed: {str(e)}")
+            logger.error(f"[SellIA] Execution failed: {e!s}")
             return ExecutionResult(
                 success=False,
                 actions_executed=actions_executed,
@@ -186,7 +185,7 @@ class ComputerUseExecutor:
             )
 
     @staticmethod
-    def _validate_execution(plan: ComputerUsePlan, data: Dict[str, Any]) -> bool:
+    def _validate_execution(plan: ComputerUsePlan, data: dict[str, Any]) -> bool:
         """Validate execution against expected outcomes"""
         # Check if expected_outcome keywords present in extracted data
         expected_keywords = plan.expected_outcome.lower().split()
@@ -205,7 +204,7 @@ class ComputerUseWorkflow:
         self.executor = ComputerUseExecutor()
         self.workflow_history: list[ExecutionResult] = []
 
-    async def list_and_promote_product(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def list_and_promote_product(self, product: dict[str, Any]) -> dict[str, Any]:
         """Workflow: List product → Promote to similar customers"""
 
         # Step 1: List product
@@ -236,7 +235,7 @@ class ComputerUseWorkflow:
             "customers_contacted": sum(1 for r in self.workflow_history[1:] if r.success)
         }
 
-    async def process_orders_batch(self, order_ids: list[str]) -> Dict[str, Any]:
+    async def process_orders_batch(self, order_ids: list[str]) -> dict[str, Any]:
         """Workflow: Process multiple orders for fulfillment"""
 
         results = []
@@ -255,7 +254,7 @@ class ComputerUseWorkflow:
 
 # ── Public API ─────────────────────────────────────
 
-async def automate_product_listing(product: Dict[str, Any]) -> ExecutionResult:
+async def automate_product_listing(product: dict[str, Any]) -> ExecutionResult:
     """Entry point: Automate product listing"""
     planner = ComputerUsePlanner()
     executor = ComputerUseExecutor()
@@ -268,7 +267,7 @@ async def automate_product_listing(product: Dict[str, Any]) -> ExecutionResult:
 
     return await executor.execute_plan(plan)
 
-async def automate_customer_outreach(customer: Dict[str, Any], product: Dict[str, Any]) -> ExecutionResult:
+async def automate_customer_outreach(customer: dict[str, Any], product: dict[str, Any]) -> ExecutionResult:
     """Entry point: Automate customer outreach"""
     planner = ComputerUsePlanner()
     executor = ComputerUseExecutor()

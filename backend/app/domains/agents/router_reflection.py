@@ -4,17 +4,16 @@ Endpoints for viewing and triggering self-reflections and chain-of-thought logs.
 """
 
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.agents.reflection import SelfReflection, ChainOfThought
 from app.domains.agents.models_reflection import AgentReflection, ChainOfThoughtLog
+from app.domains.agents.reflection import SelfReflection
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/reflections", tags=["reflection"])
 

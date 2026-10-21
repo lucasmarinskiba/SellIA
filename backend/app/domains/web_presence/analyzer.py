@@ -19,7 +19,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from . import terms
@@ -33,11 +33,11 @@ DESC_MIN, DESC_MAX = 70, 160
 
 @dataclass
 class PageAudit:
-    title: Optional[str] = None
-    meta_description: Optional[str] = None
-    canonical: Optional[str] = None
-    robots: Optional[str] = None
-    lang: Optional[str] = None
+    title: str | None = None
+    meta_description: str | None = None
+    canonical: str | None = None
+    robots: str | None = None
+    lang: str | None = None
     has_viewport: bool = False
     h1: list[str] = field(default_factory=list)
     h2_count: int = 0
@@ -99,7 +99,7 @@ class _PageParser(HTMLParser):
         self._in_title = False
         self._in_ld_json = False
         self._ld_buffer: list[str] = []
-        self._heading: Optional[str] = None
+        self._heading: str | None = None
         self._text_parts: list[str] = []
         self.raw_links: list[str] = []
         #: H2/H3 text, kept (not just counted) so the term profile can weight
@@ -107,7 +107,7 @@ class _PageParser(HTMLParser):
         self.subheadings: list[str] = []
 
     # ── tags ──
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, Optional[str]]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         a = {k.lower(): (v or "") for k, v in attrs}
 
         if tag in ("script", "style", "noscript"):
@@ -368,7 +368,7 @@ def _find_issues(a: PageAudit) -> list[dict[str, str]]:
     return issues
 
 
-def score_page(audit: PageAudit, response_ms: Optional[int] = None) -> float:
+def score_page(audit: PageAudit, response_ms: int | None = None) -> float:
     """0-100 from the real findings. Deductions are fixed per issue severity, so
     the same page always scores the same — this is a checklist result, not a
     simulation of what a ranking tool would say."""

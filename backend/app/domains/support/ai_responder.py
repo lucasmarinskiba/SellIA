@@ -6,14 +6,12 @@ Si la confianza es baja, sugiere escalar a humano.
 """
 
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.support.service import SupportService
-from app.domains.support.kb_search import search_kb_and_faq
 from app.domains.agents.ai_reply import generate_raw_ai_response
-
+from app.domains.support.kb_search import search_kb_and_faq
+from app.domains.support.service import SupportService
 
 CONFIDENCE_THRESHOLD = 0.75
 MAX_AI_MESSAGES_BEFORE_ESCALATE = 2
@@ -25,8 +23,8 @@ async def generate_ai_response(
     ticket_title: str,
     ticket_description: str,
     conversation_history: list[dict],
-    user_id: Optional[uuid.UUID] = None,
-) -> Tuple[Optional[str], float]:
+    user_id: uuid.UUID | None = None,
+) -> tuple[str | None, float]:
     """
     Genera una respuesta AI para un ticket de soporte.
 
@@ -98,7 +96,9 @@ Provide a helpful response. If you cannot help, respond with exactly "ESCALATE".
         # Quality Gate check
         if user_id:
             try:
-                from app.domains.consumo.service import get_or_create_quality_gate_config
+                from app.domains.consumo.service import (
+                    get_or_create_quality_gate_config,
+                )
                 qg = await get_or_create_quality_gate_config(db, user_id)
                 if qg.enabled and confidence < qg.min_confidence_threshold:
                     # Store as draft suggestion but don't send to user

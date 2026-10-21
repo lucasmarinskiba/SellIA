@@ -1,6 +1,8 @@
 """Sales Coaching service."""
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 
 class SalesCoachingService:
     @staticmethod

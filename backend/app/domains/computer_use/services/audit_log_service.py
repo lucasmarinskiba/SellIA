@@ -6,12 +6,16 @@ Usado por: webhooks, auto-responders, sales closers, etc.
 
 import logging
 import uuid
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from datetime import UTC, datetime
+from typing import Any
 
-from app.domains.computer_use.models_audit_log import ComputerUseAuditLog, ComputerUseAuditLogSearchFilter
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.computer_use.models_audit_log import (
+    ComputerUseAuditLog,
+    ComputerUseAuditLogSearchFilter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +29,21 @@ class AuditLogEntry:
         self.platform = platform
         self.action_type = action_type
 
-        self.session_id: Optional[str] = None
-        self.agent_name: Optional[str] = None
-        self.strategy_name: Optional[str] = None
-        self.tactics: Optional[List[str]] = None
+        self.session_id: str | None = None
+        self.agent_name: str | None = None
+        self.strategy_name: str | None = None
+        self.tactics: list[str] | None = None
         self.confidence_score: float = 0.0
-        self.input_data: Optional[str] = None
-        self.output_data: Optional[str] = None
+        self.input_data: str | None = None
+        self.output_data: str | None = None
         self.status: str = "pending"
-        self.error_message: Optional[str] = None
-        self.metadata: Optional[Dict[str, Any]] = None
+        self.error_message: str | None = None
+        self.metadata: dict[str, Any] | None = None
 
-        self.executed_at: Optional[datetime] = None
+        self.executed_at: datetime | None = None
         self.duration_ms: int = 0
 
-        self._start_time = datetime.now(timezone.utc)
+        self._start_time = datetime.now(UTC)
 
     def with_session(self, session_id: str) -> "AuditLogEntry":
         self.session_id = session_id
@@ -49,7 +53,7 @@ class AuditLogEntry:
         self.agent_name = agent_name
         return self
 
-    def with_strategy(self, strategy_name: str, tactics: Optional[List[str]] = None) -> "AuditLogEntry":
+    def with_strategy(self, strategy_name: str, tactics: list[str] | None = None) -> "AuditLogEntry":
         self.strategy_name = strategy_name
         self.tactics = tactics or []
         return self
@@ -68,7 +72,7 @@ class AuditLogEntry:
         self.output_data = data[:5000] if data else None
         return self
 
-    def success(self, output: Optional[str] = None) -> "AuditLogEntry":
+    def success(self, output: str | None = None) -> "AuditLogEntry":
         self.status = "success"
         if output:
             self.with_output(output)
@@ -88,14 +92,14 @@ class AuditLogEntry:
         self.error_message = reason[:500]
         return self
 
-    def with_metadata(self, data: Dict[str, Any]) -> "AuditLogEntry":
+    def with_metadata(self, data: dict[str, Any]) -> "AuditLogEntry":
         self.metadata = data
         return self
 
     def build(self) -> ComputerUseAuditLog:
         """Build DB model from this entry."""
-        elapsed = (datetime.now(timezone.utc) - self._start_time).total_seconds() * 1000
-        self.executed_at = datetime.now(timezone.utc)
+        elapsed = (datetime.now(UTC) - self._start_time).total_seconds() * 1000
+        self.executed_at = datetime.now(UTC)
         self.duration_ms = int(elapsed)
 
         return ComputerUseAuditLog(
@@ -143,14 +147,14 @@ class AuditLogService:
 
         return model
 
-    async def get_by_id(self, log_id: str) -> Optional[ComputerUseAuditLog]:
+    async def get_by_id(self, log_id: str) -> ComputerUseAuditLog | None:
         """Obtiene log por ID."""
         result = await self.db.execute(
             select(ComputerUseAuditLog).where(ComputerUseAuditLog.id == log_id)
         )
         return result.scalar_one_or_none()
 
-    async def search(self, filter: ComputerUseAuditLogSearchFilter) -> tuple[List[ComputerUseAuditLog], int]:
+    async def search(self, filter: ComputerUseAuditLogSearchFilter) -> tuple[list[ComputerUseAuditLog], int]:
         """
         Busca logs con filtros.
 
@@ -196,7 +200,7 @@ class AuditLogService:
 
         return logs, total
 
-    async def get_recent(self, user_id: str, limit: int = 50) -> List[ComputerUseAuditLog]:
+    async def get_recent(self, user_id: str, limit: int = 50) -> list[ComputerUseAuditLog]:
         """Últimas acciones del usuario."""
         result = await self.db.execute(
             select(ComputerUseAuditLog)
@@ -206,7 +210,7 @@ class AuditLogService:
         )
         return result.scalars().all()
 
-    async def get_pending_approvals(self, user_id: str) -> List[ComputerUseAuditLog]:
+    async def get_pending_approvals(self, user_id: str) -> list[ComputerUseAuditLog]:
         """Acciones esperando aprobación del usuario."""
         result = await self.db.execute(
             select(ComputerUseAuditLog).where(
@@ -219,14 +223,14 @@ class AuditLogService:
         )
         return result.scalars().all()
 
-    async def approve(self, log_id: str, approved_by_user_id: str) -> Optional[ComputerUseAuditLog]:
+    async def approve(self, log_id: str, approved_by_user_id: str) -> ComputerUseAuditLog | None:
         """Aprueba una acción pendiente."""
         log = await self.get_by_id(log_id)
         if not log:
             return None
 
         log.user_approved = True
-        log.approval_at = datetime.now(timezone.utc)
+        log.approval_at = datetime.now(UTC)
         log.approved_by_user_id = approved_by_user_id
         log.status = "success"
 
@@ -235,14 +239,14 @@ class AuditLogService:
 
         return log
 
-    async def reject(self, log_id: str, rejected_by_user_id: str, reason: str = None) -> Optional[ComputerUseAuditLog]:
+    async def reject(self, log_id: str, rejected_by_user_id: str, reason: str = None) -> ComputerUseAuditLog | None:
         """Rechaza una acción pendiente."""
         log = await self.get_by_id(log_id)
         if not log:
             return None
 
         log.user_approved = False
-        log.approval_at = datetime.now(timezone.utc)
+        log.approval_at = datetime.now(UTC)
         log.approved_by_user_id = rejected_by_user_id
         log.status = "failed"
         if reason:
@@ -253,16 +257,17 @@ class AuditLogService:
 
         return log
 
-    async def get_summary(self, user_id: str, days: int = 7) -> Dict[str, Any]:
+    async def get_summary(self, user_id: str, days: int = 7) -> dict[str, Any]:
         """
         Resumen de actividad últimos N días.
 
         Retorna: stats por platform/action_type/status
         """
-        from sqlalchemy import func
         from datetime import timedelta
 
-        date_from = datetime.now(timezone.utc) - timedelta(days=days)
+        from sqlalchemy import func
+
+        date_from = datetime.now(UTC) - timedelta(days=days)
 
         result = await self.db.execute(
             select(

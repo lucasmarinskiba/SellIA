@@ -2,11 +2,16 @@
 
 import logging
 from uuid import UUID
-from typing import List, Dict
-from sqlalchemy import select, desc
+
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.journeys.journey_models import (
-    CustomerJourney, JourneyVariant, JourneyExecution, JourneyMetrics, ABTestResult
+    ABTestResult,
+    CustomerJourney,
+    JourneyExecution,
+    JourneyMetrics,
+    JourneyVariant,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,7 +31,7 @@ class JourneyService:
     """
 
     @staticmethod
-    async def create_journey(business_id: UUID, name: str, nodes: Dict, edges: Dict, db: AsyncSession = None) -> dict:
+    async def create_journey(business_id: UUID, name: str, nodes: dict, edges: dict, db: AsyncSession = None) -> dict:
         if not db:
             raise ValueError("Database session required")
 
@@ -37,7 +42,7 @@ class JourneyService:
         return {"journey_id": str(journey.id), "name": name}
 
     @staticmethod
-    async def create_variant(journey_id: UUID, business_id: UUID, variant_name: str, config: Dict, traffic_allocation: float = 50.0, db: AsyncSession = None) -> dict:
+    async def create_variant(journey_id: UUID, business_id: UUID, variant_name: str, config: dict, traffic_allocation: float = 50.0, db: AsyncSession = None) -> dict:
         if not db:
             raise ValueError("Database session required")
 
@@ -59,7 +64,7 @@ class JourneyService:
         return {"execution_id": str(execution.id), "status": "active"}
 
     @staticmethod
-    async def get_journey_executions(journey_id: UUID, business_id: UUID, limit: int = 50, db: AsyncSession = None) -> List[dict]:
+    async def get_journey_executions(journey_id: UUID, business_id: UUID, limit: int = 50, db: AsyncSession = None) -> list[dict]:
         if not db:
             raise ValueError("Database session required")
 

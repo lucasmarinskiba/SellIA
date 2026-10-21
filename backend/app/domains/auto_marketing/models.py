@@ -1,9 +1,20 @@
 """Phase X8: Auto-Marketing & Growth Agent - SellIA Self-Promotion System."""
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
-from app.db.models import Base
 import enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
+from app.db.models import Base
 
 
 class MarketingChannel(str, enum.Enum):
@@ -81,7 +92,7 @@ class AutoMarketingContent(Base):
     engagement_rate = Column(Float, default=0)  # engagement / impressions
     conversion_rate = Column(Float, default=0)  # conversions / clicks
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class CustomerSuccessStory(Base):
@@ -111,7 +122,7 @@ class CustomerSuccessStory(Base):
     total_impressions = Column(Integer, default=0)
     total_conversions = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class GrowthHackingExperiment(Base):
@@ -141,7 +152,7 @@ class GrowthHackingExperiment(Base):
     conversion_lift = Column(Float)  # % improvement
     statistical_significance = Column(Float)  # Confidence level
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class InfluencerCollaboration(Base):
@@ -168,7 +179,7 @@ class InfluencerCollaboration(Base):
     conversions = Column(Integer, default=0)
     roi = Column(Float, default=0)  # Revenue / investment
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class GrowthMetrics(Base):
@@ -197,4 +208,4 @@ class GrowthMetrics(Base):
     trend_vs_yesterday = Column(Float)  # % change
     trend_vs_week_ago = Column(Float)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

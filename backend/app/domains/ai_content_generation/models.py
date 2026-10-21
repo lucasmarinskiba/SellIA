@@ -1,8 +1,19 @@
 """Phase 51: AI Content Generation & Auto-Optimization."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+
 from app.core.database import Base
 
 
@@ -15,7 +26,7 @@ class ContentTemplate(Base):
     platform = Column(String(50), nullable=True)  # amazon, mercado_libre, instagram, etc
     template_prompt = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class GeneratedContent(Base):
@@ -32,8 +43,8 @@ class GeneratedContent(Base):
     engagement_score = Column(Float, default=0)
     is_approved = Column(Boolean, default=False)
     is_published = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    published_at = Column(DateTime(timezone.utc), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    published_at = Column(DateTime(UTC), nullable=True)
 
 
 class ContentPerformance(Base):
@@ -50,7 +61,7 @@ class ContentPerformance(Base):
     engagement_rate = Column(Float, default=0)
     ctr = Column(Float, default=0)
     conversion_rate = Column(Float, default=0)
-    tracked_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tracked_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class BulkContentGeneration(Base):
@@ -67,8 +78,8 @@ class BulkContentGeneration(Base):
     published_count = Column(Integer, default=0)
     status = Column(String(50), default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
-    started_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)
 
 
 class ContentVariant(Base):
@@ -82,4 +93,4 @@ class ContentVariant(Base):
     seo_score = Column(Float, default=0)
     engagement_score = Column(Float, default=0)
     is_selected = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

@@ -1,7 +1,7 @@
+import os
+
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse
-import os
-from typing import Optional
 
 
 class TwilioVoiceService:
@@ -52,7 +52,7 @@ class TwilioVoiceService:
         response = VoiceResponse()
 
         response.say(
-            f'Hello, connecting you to our AI agent.',
+            'Hello, connecting you to our AI agent.',
             voice='alice',
             language='en-US',
         )

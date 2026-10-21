@@ -1,9 +1,11 @@
 """Integration marketplace models."""
 
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Boolean, Integer
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -23,7 +25,7 @@ class IntegrationApp(Base):
     
     is_active = Column(Boolean, default=True)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class IntegrationConnection(Base):
@@ -38,10 +40,10 @@ class IntegrationConnection(Base):
     auth_token = Column(String(1000), nullable=True)
     auth_metadata = Column(JSONB, nullable=True)
     
-    last_sync_at = Column(DateTime(timezone.utc), nullable=True)
+    last_sync_at = Column(DateTime(UTC), nullable=True)
     last_error = Column(String(500), nullable=True)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class IntegrationEvent(Base):
@@ -57,5 +59,5 @@ class IntegrationEvent(Base):
     sync_status = Column(String(50), default="pending")  # pending, synced, failed
     retry_count = Column(Integer, default=0)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    synced_at = Column(DateTime(timezone.utc), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    synced_at = Column(DateTime(UTC), nullable=True)

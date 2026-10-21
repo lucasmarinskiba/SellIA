@@ -11,9 +11,17 @@ Registra TODA actividad:
 """
 
 from datetime import datetime
-from uuid import UUID
-from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base

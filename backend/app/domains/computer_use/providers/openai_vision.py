@@ -6,14 +6,18 @@ y devolver acciones en formato JSON.
 
 import json
 import re
-from typing import List, Dict, Any, Optional
+from typing import Any
 
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.domains.computer_use.prompts import (
+    COMPUTER_USE_SUMMARY_PROMPT,
+    COMPUTER_USE_SYSTEM_PROMPT,
+)
 from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.prompts import COMPUTER_USE_SYSTEM_PROMPT, COMPUTER_USE_SUMMARY_PROMPT
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -34,10 +38,10 @@ class OpenAIVisionProvider(ComputerUseProvider):
         self,
         screenshot_base64: str,
         task: str,
-        history: List[Dict[str, Any]],
-        user_message: Optional[str],
-        page_info: Optional[Dict[str, str]],
-    ) -> List:
+        history: list[dict[str, Any]],
+        user_message: str | None,
+        page_info: dict[str, str] | None,
+    ) -> list:
         """Construye mensajes para GPT-4o con visión."""
         messages = [SystemMessage(content=COMPUTER_USE_SYSTEM_PROMPT)]
 
@@ -144,9 +148,9 @@ Previous actions:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         if history is None:
             history = []
@@ -172,7 +176,7 @@ Previous actions:
                 reason="OpenAI API error",
             )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         actions_text = "\n".join(
             f"Step {a.get('step_number', i+1)}: {a.get('action_type')} — {a.get('reason', '')}"
             for i, a in enumerate(actions_log)

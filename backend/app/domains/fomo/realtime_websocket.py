@@ -1,10 +1,9 @@
 """Real-time WebSocket Manager - Live FOMO widget updates"""
 
-from datetime import datetime
-from typing import Dict, List, Set, Optional, Any
 import asyncio
-import json
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 
 class WebSocketEventType(str, Enum):
@@ -23,15 +22,15 @@ class WebSocketConnectionPool:
     """Manage WebSocket connections for real-time updates"""
 
     def __init__(self):
-        self.connections: Dict[str, Set[Any]] = {}  # campaign_id -> set of connections
-        self.user_subscriptions: Dict[str, Set[str]] = {}  # user_id -> set of campaign_ids
+        self.connections: dict[str, set[Any]] = {}  # campaign_id -> set of connections
+        self.user_subscriptions: dict[str, set[str]] = {}  # user_id -> set of campaign_ids
 
     async def register_connection(
         self,
         campaign_id: str,
         user_id: str,
         connection: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Register new WebSocket connection"""
         if campaign_id not in self.connections:
             self.connections[campaign_id] = set()
@@ -65,7 +64,7 @@ class WebSocketConnectionPool:
     async def broadcast_to_campaign(
         self,
         campaign_id: str,
-        event: Dict[str, Any]
+        event: dict[str, Any]
     ):
         """Broadcast event to all connections for a campaign"""
         if campaign_id not in self.connections:
@@ -95,7 +94,7 @@ class RealtimeDataStreamer:
         campaign_id: str,
         visitor_count: int,
         trend: str = "up"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create visitor count update"""
         return {
             "type": WebSocketEventType.VISITOR_COUNT_UPDATED.value,
@@ -115,7 +114,7 @@ class RealtimeDataStreamer:
         product_name: str,
         price: float,
         minutes_ago: int = 0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create purchase notification"""
         return {
             "type": WebSocketEventType.PURCHASE_NOTIFICATION.value,
@@ -135,7 +134,7 @@ class RealtimeDataStreamer:
         campaign_id: str,
         time_remaining_seconds: int,
         stage: str  # "active" | "warning" | "critical"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create countdown timer tick"""
         hours = time_remaining_seconds // 3600
         minutes = (time_remaining_seconds % 3600) // 60
@@ -158,7 +157,7 @@ class RealtimeDataStreamer:
         campaign_id: str,
         current_stock: int,
         original_stock: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create stock level update"""
         percentage_sold = ((original_stock - current_stock) / original_stock) * 100
         stage = "plenty" if current_stock > 20 else ("medium" if current_stock > 5 else "critical")
@@ -185,7 +184,7 @@ class RealtimeDataStreamer:
         campaign_id: str,
         milestone_number: int,
         total_revenue: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create conversion milestone alert"""
         return {
             "type": WebSocketEventType.CONVERSION_MILESTONE.value,
@@ -202,8 +201,8 @@ class RealtimeDataStreamer:
     @staticmethod
     def create_analytics_sync(
         campaign_id: str,
-        analytics_snapshot: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        analytics_snapshot: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create analytics snapshot for sync"""
         return {
             "type": WebSocketEventType.ANALYTICS_SYNC.value,
@@ -230,7 +229,7 @@ class RealtimeMetricsAggregator:
         clicks: int,
         conversions: int,
         revenue: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate live performance metrics"""
         return {
             "impressions": impressions,
@@ -247,8 +246,8 @@ class RealtimeMetricsAggregator:
     @staticmethod
     def create_hourly_summary(
         hour: str,  # "2026-08-28T14:00:00Z"
-        metrics: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create hourly performance summary"""
         return {
             "hour": hour,
@@ -263,11 +262,11 @@ class RealtimeMetricsAggregator:
     @staticmethod
     def create_live_dashboard_update(
         campaign_id: str,
-        current_hour_metrics: Dict[str, Any],
-        top_products: List[Dict[str, Any]],
-        top_locations: List[Dict[str, Any]],
-        referral_sources: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        current_hour_metrics: dict[str, Any],
+        top_products: list[dict[str, Any]],
+        top_locations: list[dict[str, Any]],
+        referral_sources: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Create comprehensive live dashboard update"""
         return {
             "type": "dashboard_update",
@@ -374,7 +373,7 @@ class WebSocketBroadcaster:
     async def broadcast_analytics_update(
         self,
         campaign_id: str,
-        analytics: Dict[str, Any]
+        analytics: dict[str, Any]
     ):
         """Broadcast analytics snapshot"""
         event = RealtimeDataStreamer.create_analytics_sync(campaign_id, analytics)

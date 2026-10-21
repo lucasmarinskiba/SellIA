@@ -11,12 +11,10 @@ Implementa:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable, Tuple
-from enum import Enum
 import json
+from dataclasses import dataclass, field
 from datetime import datetime
-
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────
 # BAYESIAN NETWORKS
@@ -27,18 +25,18 @@ from datetime import datetime
 class ConditionalProbabilityTable:
     """Tabla de probabilidad condicional: P(node | parents)."""
     node_name: str
-    parent_names: List[str] = field(default_factory=list)
-    probabilities: Dict[Tuple[Any, ...], Dict[str, float]] = field(
+    parent_names: list[str] = field(default_factory=list)
+    probabilities: dict[tuple[Any, ...], dict[str, float]] = field(
         default_factory=dict
     )
 
-    def get_probability(self, parent_values: Tuple[Any, ...],
+    def get_probability(self, parent_values: tuple[Any, ...],
                        node_value: str) -> float:
         """Obtiene P(node=node_value | parents=parent_values)."""
         key = parent_values if parent_values else ()
         return self.probabilities.get(key, {}).get(node_value, 0.5)
 
-    def set_probability(self, parent_values: Tuple[Any, ...],
+    def set_probability(self, parent_values: tuple[Any, ...],
                        node_value: str, prob: float) -> None:
         """Establece probabilidad."""
         key = parent_values if parent_values else ()
@@ -51,10 +49,10 @@ class ConditionalProbabilityTable:
 class BayesianNode:
     """Nodo en red Bayesiana."""
     name: str
-    possible_values: List[str]
+    possible_values: list[str]
     cpt: ConditionalProbabilityTable
-    parents: List[BayesianNode] = field(default_factory=list)
-    children: List[BayesianNode] = field(default_factory=list)
+    parents: list[BayesianNode] = field(default_factory=list)
+    children: list[BayesianNode] = field(default_factory=list)
 
     def add_parent(self, parent: BayesianNode) -> None:
         if parent not in self.parents:
@@ -72,9 +70,9 @@ class BayesianNetwork:
 
     def __init__(self, name: str):
         self.name = name
-        self.nodes: Dict[str, BayesianNode] = {}
-        self.evidence: Dict[str, str] = {}
-        self.posterior: Dict[str, Dict[str, float]] = {}
+        self.nodes: dict[str, BayesianNode] = {}
+        self.evidence: dict[str, str] = {}
+        self.posterior: dict[str, dict[str, float]] = {}
 
     def add_node(self, node: BayesianNode) -> None:
         """Agrega nodo a la red."""
@@ -90,7 +88,7 @@ class BayesianNetwork:
         if node_name in self.nodes:
             self.evidence[node_name] = value
 
-    def infer(self, target_node: str) -> Dict[str, float]:
+    def infer(self, target_node: str) -> dict[str, float]:
         """Inferencia: P(target | evidence) usando variable elimination."""
         if target_node not in self.nodes:
             return {}
@@ -99,7 +97,7 @@ class BayesianNetwork:
         self.posterior[target_node] = posteriors
         return posteriors
 
-    def _variable_elimination(self, target: str) -> Dict[str, float]:
+    def _variable_elimination(self, target: str) -> dict[str, float]:
         """Variable elimination algorithm."""
         # Simplified: usa forward-backward
         node = self.nodes[target]
@@ -144,7 +142,7 @@ class BayesianNetwork:
         return prob
 
     def _get_parent_value_combinations(self,
-                                       parents: List[BayesianNode]) -> List[Tuple[str, ...]]:
+                                       parents: list[BayesianNode]) -> list[tuple[str, ...]]:
         """Genera todas las combinaciones de valores de parents."""
         if not parents:
             return [()]
@@ -156,8 +154,8 @@ class BayesianNetwork:
                 result.append((value,) + combo)
         return result
 
-    def _compute_parent_joint_prob(self, parent_values: Tuple[str, ...],
-                                   parent_names: List[str]) -> float:
+    def _compute_parent_joint_prob(self, parent_values: tuple[str, ...],
+                                   parent_names: list[str]) -> float:
         """Computa P(parent1=v1, parent2=v2, ...) recursivamente."""
         if not parent_names:
             return 1.0
@@ -180,7 +178,7 @@ class CausalEdge:
     target: str
     strength: float = 0.7  # 0–1, confianza
     mechanism: str = ""    # Cómo causa X a Y?
-    conditions: List[str] = field(default_factory=list)  # Cuándo aplica?
+    conditions: list[str] = field(default_factory=list)  # Cuándo aplica?
 
 
 class CausalGraph:
@@ -188,7 +186,7 @@ class CausalGraph:
 
     def __init__(self, name: str):
         self.name = name
-        self.edges: Dict[str, List[CausalEdge]] = {}
+        self.edges: dict[str, list[CausalEdge]] = {}
         self.nodes: set[str] = set()
 
     def add_edge(self, edge: CausalEdge) -> None:
@@ -199,7 +197,7 @@ class CausalGraph:
             self.edges[edge.source] = []
         self.edges[edge.source].append(edge)
 
-    def get_causes(self, effect: str) -> List[CausalEdge]:
+    def get_causes(self, effect: str) -> list[CausalEdge]:
         """¿Qué causa 'effect'?"""
         causes = []
         for source, edges in self.edges.items():
@@ -208,12 +206,12 @@ class CausalGraph:
                     causes.append(edge)
         return causes
 
-    def get_effects(self, cause: str) -> List[CausalEdge]:
+    def get_effects(self, cause: str) -> list[CausalEdge]:
         """¿Qué causa 'cause'?"""
         return self.edges.get(cause, [])
 
-    def counterfactual_inference(self, intervention: Dict[str, Any],
-                                 target: str) -> Dict[str, Any]:
+    def counterfactual_inference(self, intervention: dict[str, Any],
+                                 target: str) -> dict[str, Any]:
         """Inferencia contrafáctica: ¿Qué pasaría si hacemos X?"""
         # If we set 'source' to value, what happens to target?
         result = {}
@@ -223,7 +221,7 @@ class CausalGraph:
         return result
 
     def _trace_effects(self, source: str, value: Any, target: str,
-                      depth: int) -> Dict[str, Any]:
+                      depth: int) -> dict[str, Any]:
         """Traza efectos de intervención."""
         if depth == 0 or source not in self.edges:
             return {}
@@ -252,7 +250,7 @@ class CausalGraph:
 @dataclass
 class State:
     """Estado: vector de features."""
-    features: Dict[str, float]
+    features: dict[str, float]
     timestamp: str = ""
 
     def __post_init__(self):
@@ -270,7 +268,7 @@ class State:
 class Action:
     """Acción: cambio en el estado."""
     name: str
-    params: Dict[str, Any] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -291,8 +289,8 @@ class ReinforcementLearner:
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.exploration_rate = exploration_rate
-        self.q_table: Dict[str, Dict[str, float]] = {}
-        self.transitions: List[Transition] = []
+        self.q_table: dict[str, dict[str, float]] = {}
+        self.transitions: list[Transition] = []
 
     def record_transition(self, transition: Transition) -> None:
         """Registra transición para aprender."""
@@ -317,7 +315,7 @@ class ReinforcementLearner:
             return "explore"
         return max(self.q_table[state_key].items(), key=lambda x: x[1])[0]
 
-    def get_policy(self, state_key: str) -> Dict[str, float]:
+    def get_policy(self, state_key: str) -> dict[str, float]:
         """Retorna política π(a|s)."""
         if state_key not in self.q_table:
             return {}
@@ -398,7 +396,7 @@ class SalesClosurePathway:
         self.network.add_edge("deal_value", "closure_probability")
         self.network.add_edge("buyer_authority", "closure_probability")
 
-    def predict_closure(self, deal_value: str, buyer_authority: str) -> Dict[str, float]:
+    def predict_closure(self, deal_value: str, buyer_authority: str) -> dict[str, float]:
         """Predice probabilidad de cierre."""
         self.network.set_evidence("deal_value", deal_value)
         self.network.set_evidence("buyer_authority", buyer_authority)
@@ -446,7 +444,7 @@ class ChurnPreventionPathway:
             mechanism="Alineamiento + revisión de ROI"
         ))
 
-    def predict_churn_and_intervene(self, indicators: Dict[str, bool]) -> Dict[str, Any]:
+    def predict_churn_and_intervene(self, indicators: dict[str, bool]) -> dict[str, Any]:
         """Predice churn + recomienda intervención."""
         churn_causes = []
         if indicators.get("inactivity"):
@@ -470,7 +468,7 @@ class RevenueOptimizationPathway:
     def __init__(self):
         self.learner = ReinforcementLearner(learning_rate=0.15)
 
-    def optimize_pricing(self, current_state: State, possible_actions: List[Action]) -> Action:
+    def optimize_pricing(self, current_state: State, possible_actions: list[Action]) -> Action:
         """Escoge mejor action para maximizar revenue."""
         state_key = json.dumps(current_state.features, sort_keys=True)
         policy = self.learner.get_policy(state_key)
@@ -482,7 +480,7 @@ class RevenueOptimizationPathway:
             # Explorar
             return possible_actions[0] if possible_actions else Action("hold_price")
 
-    def learn_from_pricing_experiment(self, transitions: List[Transition]) -> None:
+    def learn_from_pricing_experiment(self, transitions: list[Transition]) -> None:
         """Aprende de experimentos de pricing."""
         for t in transitions:
             self.learner.record_transition(t)
@@ -498,7 +496,7 @@ class NeuralPathwayRegistry:
     """Registry de pathways neurales."""
 
     def __init__(self):
-        self.pathways: Dict[str, Any] = {
+        self.pathways: dict[str, Any] = {
             "sales_closure": SalesClosurePathway(),
             "churn_prevention": ChurnPreventionPathway(),
             "revenue_optimization": RevenueOptimizationPathway(),
@@ -508,7 +506,7 @@ class NeuralPathwayRegistry:
         """Obtiene pathway por nombre."""
         return self.pathways.get(pathway_name)
 
-    def infer(self, pathway_name: str, **inputs) -> Dict[str, Any]:
+    def infer(self, pathway_name: str, **inputs) -> dict[str, Any]:
         """Ejecuta inferencia en pathway."""
         pathway = self.get_pathway(pathway_name)
         if not pathway:
@@ -530,10 +528,17 @@ class NeuralPathwayRegistry:
 
 # Export
 __all__ = [
-    "ConditionalProbabilityTable", "BayesianNode", "BayesianNetwork",
-    "CausalEdge", "CausalGraph",
-    "State", "Action", "Transition", "ReinforcementLearner",
-    "SalesClosurePathway", "ChurnPreventionPathway",
-    "RevenueOptimizationPathway",
+    "Action",
+    "BayesianNetwork",
+    "BayesianNode",
+    "CausalEdge",
+    "CausalGraph",
+    "ChurnPreventionPathway",
+    "ConditionalProbabilityTable",
     "NeuralPathwayRegistry",
+    "ReinforcementLearner",
+    "RevenueOptimizationPathway",
+    "SalesClosurePathway",
+    "State",
+    "Transition",
 ]

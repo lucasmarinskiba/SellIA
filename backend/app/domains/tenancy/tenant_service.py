@@ -1,16 +1,18 @@
 """Multi-tenant isolation service — data boundaries, audit, compliance."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.tenancy.tenant_models import (
-    TenantIsolationPolicy, AuditLog, TenantUser, DataAccessLog, ComplianceReport,
-    AuditActionType, DataClassification
+    AuditActionType,
+    AuditLog,
+    ComplianceReport,
+    DataAccessLog,
+    TenantIsolationPolicy,
+    TenantUser,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,14 +70,14 @@ class TenantIsolationService:
         business_id: UUID,
         action: str,
         resource_type: str,
-        resource_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        user_ip: Optional[str] = None,
-        change_details: Optional[Dict] = None,
-        api_key_id: Optional[str] = None,
-        endpoint: Optional[str] = None,
+        resource_id: str | None = None,
+        user_id: str | None = None,
+        user_ip: str | None = None,
+        change_details: dict | None = None,
+        api_key_id: str | None = None,
+        endpoint: str | None = None,
         action_status: str = "success",
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
         db: Session = None
     ) -> dict:
         """Log user action for audit trail."""
@@ -127,7 +129,7 @@ class TenantIsolationService:
         business_id: UUID,
         email: str,
         role: str = "member",
-        permissions: List[str] = None,
+        permissions: list[str] = None,
         db: Session = None
     ) -> dict:
         """Add user to business tenant."""
@@ -160,8 +162,8 @@ class TenantIsolationService:
         access_type: str,
         data_type: str,
         user_email: str,
-        user_ip: Optional[str] = None,
-        rows_accessed: Optional[int] = None,
+        user_ip: str | None = None,
+        rows_accessed: int | None = None,
         pii_included: bool = False,
         db: Session = None
     ) -> dict:
@@ -198,15 +200,15 @@ class TenantIsolationService:
     def get_audit_trail(
         business_id: UUID,
         days: int = 30,
-        action_filter: Optional[str] = None,
-        user_filter: Optional[str] = None,
+        action_filter: str | None = None,
+        user_filter: str | None = None,
         db: Session = None
     ) -> dict:
         """Get audit trail for tenant."""
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(AuditLog).filter(
             AuditLog.business_id == business_id,
@@ -257,9 +259,9 @@ class TenantIsolationService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         period_start = cutoff.strftime("%Y-%m-%d")
-        period_end = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        period_end = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Collect metrics
         if report_type == "audit_trail":
@@ -321,7 +323,7 @@ class TenantIsolationService:
         business_id: UUID,
         request_business_id: UUID,
         db: Session = None
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> Tuple[bool, str | None]:
         """Verify request is not accessing another tenant's data."""
         if not db:
             raise ValueError("Database session required")

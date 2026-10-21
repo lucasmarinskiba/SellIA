@@ -9,10 +9,9 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
-from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -311,7 +310,7 @@ class BusinessAgent:
         unit_economics: UnitEconomics,
         runway_months: int,
         team_size: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Assess readiness to scale."""
         readiness = {
             "ready_to_scale": True,
@@ -363,7 +362,7 @@ class BusinessAgent:
         business_type: str,
         target_market: str,
         competitive_positioning: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design complete business model."""
         return {
             "business_type": business_type,
@@ -389,10 +388,10 @@ class BusinessAgent:
 
     @staticmethod
     def model_financial_scenarios(
-        base_case: Dict[str, Any],
-        optimistic_case: Dict[str, Any],
-        pessimistic_case: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        base_case: dict[str, Any],
+        optimistic_case: dict[str, Any],
+        pessimistic_case: dict[str, Any]
+    ) -> dict[str, Any]:
         """Model financial scenarios."""
         return {
             "base_case": base_case,
@@ -410,9 +409,9 @@ class BusinessAgent:
     @staticmethod
     def analyze_competitive_position(
         company_positioning: str,
-        competitors: List[str],
-        market_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        competitors: list[str],
+        market_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze competitive positioning."""
         return {
             "positioning": company_positioning,
@@ -438,7 +437,7 @@ class BusinessAgent:
         current_revenue: float,
         growth_rate_percent: float,
         timeline_years: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Forecast revenue growth."""
         forecast = {
             "current_revenue": current_revenue,
@@ -460,7 +459,7 @@ class BusinessAgent:
         return forecast
 
     @staticmethod
-    def get_revenue_model_guidance(business_type: str) -> Dict[str, Any]:
+    def get_revenue_model_guidance(business_type: str) -> dict[str, Any]:
         """Get revenue model recommendations."""
         recommendations = {
             "business_type": business_type,
@@ -476,7 +475,7 @@ class BusinessAgent:
         current_price: float,
         elasticity: float,
         cost_to_serve: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Optimize pricing strategy."""
         return {
             "current_price": current_price,

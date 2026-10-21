@@ -23,7 +23,7 @@ except Exception:  # noqa: BLE001
 class ETSStatsmodelsForecaster(Forecaster):
     name = "ets_sm"
 
-    def fit(self, ts: TimeSeries) -> "ETSStatsmodelsForecaster":
+    def fit(self, ts: TimeSeries) -> ETSStatsmodelsForecaster:
         y = pd.Series(ts.values.astype(float))
         m = ts.seasonal_period if ts.n >= 2 * ts.seasonal_period + 4 else None
         pos = bool((y > 0).all())
@@ -60,7 +60,7 @@ class ETSStatsmodelsForecaster(Forecaster):
 class SarimaForecaster(Forecaster):
     name = "sarima"
 
-    def fit(self, ts: TimeSeries) -> "SarimaForecaster":
+    def fit(self, ts: TimeSeries) -> SarimaForecaster:
         y = pd.Series(ts.values.astype(float))
         m = ts.seasonal_period if ts.n >= 2 * ts.seasonal_period + 8 else 0
         candidates = [

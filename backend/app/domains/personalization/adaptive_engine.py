@@ -1,10 +1,9 @@
 """Phase 24: Adaptive Backend Architecture - personalizes responses per user."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,17 +44,17 @@ class AdaptiveResponse:
     content_type: str
     urgency_level: str
     recommended_next_action: str
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 class AdaptiveEngine:
     """Backend that adapts responses based on user profile"""
 
     def __init__(self):
-        self.user_profiles: Dict[str, UserContext] = {}
+        self.user_profiles: dict[str, UserContext] = {}
         self.segment_configs = self._build_segment_configs()
 
-    def analyze_user(self, user_id: str, business_metrics: Dict[str, Any]) -> UserContext:
+    def analyze_user(self, user_id: str, business_metrics: dict[str, Any]) -> UserContext:
         """Analyze user and determine segment + needs"""
 
         days_active = business_metrics.get("days_in_business", 0)
@@ -99,9 +98,7 @@ class AdaptiveEngine:
         # Determine urgency
         if segment == UserSegment.ULTRA_EARLY:
             urgency = "critical"
-        elif segment == UserSegment.DORMANT:
-            urgency = "high"
-        elif days_active < 14 and deals == 0:
+        elif segment == UserSegment.DORMANT or days_active < 14 and deals == 0:
             urgency = "high"
         elif segment == UserSegment.EARLY:
             urgency = "medium"
@@ -134,7 +131,7 @@ class AdaptiveEngine:
         }
         return preferences.get(segment, "text")
 
-    def _build_segment_configs(self) -> Dict[str, Dict[str, Any]]:
+    def _build_segment_configs(self) -> dict[str, dict[str, Any]]:
         """Build configs for each segment"""
         return {
             UserSegment.ULTRA_EARLY.value: {
@@ -176,7 +173,7 @@ class AdaptiveEngine:
         }
 
     def adapt_endpoint_response(
-        self, user_id: str, endpoint_name: str, base_response: Dict[str, Any]
+        self, user_id: str, endpoint_name: str, base_response: dict[str, Any]
     ) -> AdaptiveResponse:
         """Adapt endpoint response based on user context"""
 
@@ -209,8 +206,8 @@ class AdaptiveEngine:
         )
 
     def _adapt_by_segment(
-        self, context: UserContext, endpoint: str, response: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, context: UserContext, endpoint: str, response: dict[str, Any]
+    ) -> dict[str, Any]:
         """Adapt response content by user segment"""
 
         if context.segment == UserSegment.ULTRA_EARLY:
@@ -222,7 +219,7 @@ class AdaptiveEngine:
         else:
             return response
 
-    def _simplify_for_beginner(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _simplify_for_beginner(self, response: dict[str, Any]) -> dict[str, Any]:
         """Simplify response for beginners"""
         # Remove advanced metrics, focus on actions
         return {
@@ -231,7 +228,7 @@ class AdaptiveEngine:
             "focus": "action_items"
         }
 
-    def _enrich_for_power_user(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _enrich_for_power_user(self, response: dict[str, Any]) -> dict[str, Any]:
         """Enrich response for power users"""
         # Add advanced analytics, API details
         return {
@@ -242,7 +239,7 @@ class AdaptiveEngine:
             "batch_operations": True
         }
 
-    def _motivate_dormant_user(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def _motivate_dormant_user(self, response: dict[str, Any]) -> dict[str, Any]:
         """Add motivation for dormant users"""
         return {
             **response,
@@ -268,7 +265,7 @@ class AdaptiveEngine:
             "Continue with your goals"
         )
 
-    def get_personalization_summary(self, user_id: str) -> Dict[str, Any]:
+    def get_personalization_summary(self, user_id: str) -> dict[str, Any]:
         """Get full personalization summary"""
 
         if user_id not in self.user_profiles:

@@ -2,14 +2,15 @@
 
 from datetime import datetime, timedelta
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
 
-from app.domains.seo_config.fomo_decay_service import FOMADecayService
-from app.domains.seo_config.fomo_service import FOMAConversionService
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.seo_config.fomo_abtest_service import FOMABTestService
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
+from app.domains.seo_config.fomo_decay_service import FOMADecayService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.fomo_service import FOMAConversionService
+from app.domains.seo_config.models import PublicationLinkFOMO
 
 
 class FOMAAutoRotator:

@@ -1,11 +1,23 @@
 """Offline conversion tracking models — visits, demos, pickups, service calls."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, ForeignKey, Text, Enum as SQLEnum, Index, DECIMAL
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    DECIMAL,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -58,7 +70,7 @@ class OfflineConversion(Base):
     confidence_score = Column(DECIMAL(3, 2), default=0, nullable=False)  # 0-1.0 confidence this is the right person
 
     # Visit timeline
-    entry_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    entry_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
     exit_time = Column(DateTime(timezone=True), nullable=True)
     dwell_minutes = Column(Integer, nullable=True)
 
@@ -75,8 +87,8 @@ class OfflineConversion(Base):
     staff_notes = Column(Text, nullable=True)
     visit_metadata = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     # NOTE: no ORM relationship for order_id — several unrelated modules each
@@ -122,7 +134,7 @@ class GeoProximityEvent(Base):
     automation_triggered = Column(Boolean, default=False, nullable=False)
     automation_executed_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     # Relationships
     location = relationship("Location", foreign_keys=[location_id])
@@ -163,7 +175,7 @@ class LocationVisitMetric(Base):
     # Foot traffic by hour (heatmap data)
     hourly_visits_json = Column(JSONB, default=dict, nullable=False)  # {"09": 5, "10": 8, ...}
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 

@@ -5,18 +5,14 @@ behavior, intent signals, and recency.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import LeadScore, LeadActivity
 from app.domains.channels.models import Conversation, Message
-from app.domains.crm.models import LeadStage
-from app.domains.subscriptions.models import UserAPIKey
-from app.core.encryption import decrypt_value
-
+from app.domains.crm.models import LeadActivity, LeadScore
 
 # Score rules
 SCORE_RULES = {
@@ -138,7 +134,7 @@ class LeadScoringEngine:
         else:
             lead_score.classification = "cold"
 
-        lead_score.last_calculated_at = datetime.now(timezone.utc)
+        lead_score.last_calculated_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(lead_score)
 
@@ -275,7 +271,7 @@ class LeadScoringEngine:
         if not messages:
             return score
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         last_message = max(m.created_at for m in messages if m.created_at)
 
         days_since_last = (now - last_message).days
@@ -306,12 +302,13 @@ class LeadScoringEngine:
         demographic: int,
         behavioral: int,
         recency: int,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate an AI expert commentary explaining the score change."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        from app.domains.agents.llm_provider import generate_with_fallback
         from app.domains.agents.prompts import compose_system_prompt
         from app.domains.businesses.models import Business
-        from app.domains.agents.llm_provider import generate_with_fallback
-        from langchain_core.messages import SystemMessage, HumanMessage
 
         # Get business info
         result = await self.db.execute(
@@ -332,7 +329,7 @@ class LeadScoringEngine:
         )
 
         # Override system prompt for scoring commentary
-        system_prompt = f"""You are a Lead Scoring Analyst AI. You analyze sales lead behavior and explain score changes in clear, actionable language.
+        system_prompt = """You are a Lead Scoring Analyst AI. You analyze sales lead behavior and explain score changes in clear, actionable language.
 
 YOUR STYLE:
 - Concise, insightful, no fluff. One or two sentences max.
@@ -379,7 +376,7 @@ Write a brief commentary (1-2 sentences) explaining this score change to the sal
         activity_type: str,
         points: int = 0,
         description: str = "",
-        meta_data: Optional[Dict[str, Any]] = None,
+        meta_data: dict[str, Any] | None = None,
     ) -> LeadActivity:
         """Record a lead activity and trigger score recalculation."""
         activity = LeadActivity(

@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import and_, desc, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.seo_optimization.models import (
+    ContentOptimization,
+    MetaOptimization,
     OptimizationTask,
     TitleOptimization,
-    MetaOptimization,
-    ContentOptimization,
 )
 
 logger = get_logger(__name__)
@@ -32,7 +31,7 @@ class TitleOptimizationService:
         page_url: str,
         current_title: str,
         keyword_target: str,
-        modifiers: Optional[list[str]] = None,
+        modifiers: list[str] | None = None,
     ) -> TitleOptimization:
         """Generate title tag variants."""
         modifiers = modifiers or ["2024", "Guide", "Best"]
@@ -189,8 +188,8 @@ class OptimizationTaskService:
         page_url: str,
         task_type: str,
         priority: str,
-        proposed_title: Optional[str] = None,
-        proposed_meta: Optional[str] = None,
+        proposed_title: str | None = None,
+        proposed_meta: str | None = None,
         estimated_impact: str = "medium",
         impact_pct: float = 0.0,
     ) -> OptimizationTask:
@@ -225,7 +224,7 @@ class OptimizationTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = "in_progress"
-        task.applied_at = datetime.now(timezone.utc)
+        task.applied_at = datetime.now(UTC)
         task.applied_by = applied_by
         task.applied = True
         await self.db.commit()
@@ -253,7 +252,7 @@ class OptimizationTaskService:
         task.rank_improvement = pre_rank - post_rank  # positive = better
         task.traffic_change_pct = traffic_change
         task.status = "completed"
-        task.executed_at = datetime.now(timezone.utc)
+        task.executed_at = datetime.now(UTC)
         await self.db.commit()
         logger.info(f"Task results tracked: rank improvement={task.rank_improvement}, traffic={traffic_change}%")
         return task
@@ -261,7 +260,7 @@ class OptimizationTaskService:
     async def list_pending_tasks(
         self,
         business_id: uuid.UUID,
-        priority: Optional[str] = None,
+        priority: str | None = None,
     ) -> list[OptimizationTask]:
         """List pending optimization tasks."""
         query = select(OptimizationTask).where(

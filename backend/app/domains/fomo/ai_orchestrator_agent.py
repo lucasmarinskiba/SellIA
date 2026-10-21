@@ -16,9 +16,8 @@ of their logic:
   into one summary view, grouped by agent and by action taken
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Optional
 from collections import defaultdict
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -81,11 +80,11 @@ class AgentCatalog:
     ]
 
     @staticmethod
-    def list_agents() -> List[Dict[str, str]]:
+    def list_agents() -> list[dict[str, str]]:
         return AgentCatalog.AGENTS
 
     @staticmethod
-    def get_agent(agent_id: str) -> Optional[Dict[str, str]]:
+    def get_agent(agent_id: str) -> dict[str, str] | None:
         return next((a for a in AgentCatalog.AGENTS if a["id"] == agent_id), None)
 
 
@@ -93,7 +92,7 @@ class ContextRouter:
     """Route a business event to the agent(s) that should handle it"""
 
     # event_type -> ordered list of (agent_id, reason)
-    EVENT_AGENT_MAP: Dict[str, List[Dict[str, str]]] = {
+    EVENT_AGENT_MAP: dict[str, list[dict[str, str]]] = {
         "new_visitor": [
             {"agent": "segmentation", "reason": "Classify the visitor into a segment for personalization"},
             {"agent": "copywriter", "reason": "Generate soft, non-pushy live-visitor widget copy"},
@@ -133,7 +132,7 @@ class ContextRouter:
     }
 
     @staticmethod
-    def route_event(event_type: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def route_event(event_type: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Decide which agents should handle this event, in order"""
         plan = ContextRouter.EVENT_AGENT_MAP.get(event_type)
 
@@ -154,7 +153,7 @@ class ContextRouter:
         }
 
     @staticmethod
-    def list_known_events() -> List[str]:
+    def list_known_events() -> list[str]:
         return list(ContextRouter.EVENT_AGENT_MAP.keys())
 
 
@@ -177,15 +176,15 @@ class ConflictResolver:
 
     @staticmethod
     def resolve(
-        proposals: List[Dict[str, Any]],
+        proposals: list[dict[str, Any]],
         max_per_day: int = DEFAULT_MAX_PER_DAY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """proposals: [{"agent": str, "channel": str, "urgency": float (0-1, optional)}]
         all targeting the SAME customer on the SAME day."""
         if not proposals:
             return {"winners": [], "deferred": []}
 
-        def sort_key(p: Dict[str, Any]) -> tuple:
+        def sort_key(p: dict[str, Any]) -> tuple:
             priority = ConflictResolver.AGENT_PRIORITY.get(p["agent"], 99)
             urgency = -(p.get("urgency") or 0.0)  # higher urgency sorts first
             return (priority, urgency)
@@ -212,9 +211,9 @@ class ConflictResolver:
 
     @staticmethod
     def resolve_batch(
-        proposals_by_customer: Dict[str, List[Dict[str, Any]]],
+        proposals_by_customer: dict[str, list[dict[str, Any]]],
         max_per_day: int = DEFAULT_MAX_PER_DAY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Resolve conflicts across a batch of customers at once"""
         results = {}
         total_deferred = 0
@@ -236,13 +235,13 @@ class UnifiedDashboard:
 
     @staticmethod
     def build_dashboard(
-        agent_decisions: List[Dict[str, Any]],
-        conflict_results: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        agent_decisions: list[dict[str, Any]],
+        conflict_results: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """agent_decisions: [{"agent": str, "customer_id": Optional[str],
         "action": str, "timestamp": iso8601, "reason": Optional[str]}, ...]"""
-        by_agent: Dict[str, int] = defaultdict(int)
-        by_action: Dict[str, int] = defaultdict(int)
+        by_agent: dict[str, int] = defaultdict(int)
+        by_action: dict[str, int] = defaultdict(int)
 
         for decision in agent_decisions:
             by_agent[decision["agent"]] += 1
@@ -274,46 +273,46 @@ class AIOrchestratorAgent:
     unified dashboard. Does not re-implement any of the 7 agents' logic."""
 
     @staticmethod
-    def get_agent_catalog() -> List[Dict[str, str]]:
+    def get_agent_catalog() -> list[dict[str, str]]:
         return AgentCatalog.list_agents()
 
     @staticmethod
-    def route_event(event_type: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def route_event(event_type: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         return ContextRouter.route_event(event_type, context)
 
     @staticmethod
-    def list_known_events() -> List[str]:
+    def list_known_events() -> list[str]:
         return ContextRouter.list_known_events()
 
     @staticmethod
     def resolve_conflicts(
-        proposals: List[Dict[str, Any]],
+        proposals: list[dict[str, Any]],
         max_per_day: int = ConflictResolver.DEFAULT_MAX_PER_DAY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return ConflictResolver.resolve(proposals, max_per_day)
 
     @staticmethod
     def resolve_conflicts_batch(
-        proposals_by_customer: Dict[str, List[Dict[str, Any]]],
+        proposals_by_customer: dict[str, list[dict[str, Any]]],
         max_per_day: int = ConflictResolver.DEFAULT_MAX_PER_DAY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return ConflictResolver.resolve_batch(proposals_by_customer, max_per_day)
 
     @staticmethod
     def build_dashboard(
-        agent_decisions: List[Dict[str, Any]],
-        conflict_results: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        agent_decisions: list[dict[str, Any]],
+        conflict_results: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return UnifiedDashboard.build_dashboard(agent_decisions, conflict_results)
 
     @staticmethod
     def handle_event_with_conflict_check(
         event_type: str,
         customer_id: str,
-        context: Optional[Dict[str, Any]] = None,
-        existing_proposals_today: Optional[List[Dict[str, Any]]] = None,
+        context: dict[str, Any] | None = None,
+        existing_proposals_today: list[dict[str, Any]] | None = None,
         max_per_day: int = ConflictResolver.DEFAULT_MAX_PER_DAY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Route the event, then check whether the agents it would trigger
         conflict with anything already proposed for this customer today."""
         routing = ContextRouter.route_event(event_type, context)

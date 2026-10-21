@@ -15,25 +15,32 @@ Companion to service.py, which reads conversations. Same discipline:
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
-from .stats import MIN_FOR_TREND, MIN_TO_READ, Proportion, describe_change, median, quartiles
+from .stats import (
+    MIN_FOR_TREND,
+    MIN_TO_READ,
+    Proportion,
+    describe_change,
+    median,
+    quartiles,
+)
 
 logger = get_logger(__name__)
 
 WEEKDAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
 
-def _aware(value: Optional[datetime]) -> Optional[datetime]:
+def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str, Any]:
@@ -41,7 +48,7 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
     from app.domains.businesses.models import Business
     from app.domains.orders.models import Order, OrderStatus, PaymentStatus
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
 
     biz_result = await db.execute(select(Business.id).where(Business.user_id == user.id))
@@ -234,7 +241,7 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
     }
 
 
-def _pct(part: int, whole: int) -> Optional[float]:
+def _pct(part: int, whole: int) -> float | None:
     return round(100 * part / whole, 1) if whole else None
 
 
@@ -301,7 +308,7 @@ def _repeat_customers(orders: list[Any]) -> dict[str, Any]:
     }
 
 
-def _concentration(orders: list[Any], currency: str) -> Optional[dict[str, Any]]:
+def _concentration(orders: list[Any], currency: str) -> dict[str, Any] | None:
     """Share of revenue held by the top buyers — a risk number, not a vanity one."""
     per_customer: dict[str, float] = defaultdict(float)
     for order in orders:

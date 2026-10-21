@@ -3,14 +3,23 @@
 Referrals, loyalty programs, NPS campaigns, and customer segmentation.
 """
 
-import uuid
 import enum
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
 
@@ -53,8 +62,8 @@ class LoyaltyProgram(Base):
     referral_bonus = Column(Integer, default=50, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class ReferralProgram(Base):
@@ -72,8 +81,8 @@ class ReferralProgram(Base):
     expiry_days = Column(Integer, default=30, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class ReferralCode(Base):
@@ -95,7 +104,7 @@ class ReferralCode(Base):
 
     expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_referral_codes_business', 'business_id', 'code'),
@@ -116,7 +125,7 @@ class ReferralUse(Base):
     converted_order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True)
     reward_given = Column(Boolean, default=False, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     converted_at = Column(DateTime(timezone=True), nullable=True)
 
 
@@ -136,8 +145,8 @@ class NpsCampaign(Base):
     thank_you_message = Column(String(500), default="¡Gracias por tu feedback!", nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class NpsResponse(Base):
@@ -154,7 +163,7 @@ class NpsResponse(Base):
     feedback_text = Column(Text, nullable=True)
     category = Column(String(20), nullable=True)  # promoter, passive, detractor
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_nps_responses_business_score', 'business_id', 'score'),
@@ -180,7 +189,7 @@ class CustomerSegment(Base):
     total_revenue = Column(Numeric(14, 2), default=0, nullable=False)
     avg_order_value = Column(Numeric(14, 2), default=0, nullable=False)
 
-    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True, nullable=False)
 
     __table_args__ = (
@@ -207,8 +216,8 @@ class HealthScoreRecord(Base):
     nps_score = Column(Integer, nullable=True)
     support_ticket_count = Column(Integer, default=0, nullable=False)
 
-    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_health_scores_business_risk', 'business_id', 'churn_risk_level'),
@@ -227,7 +236,7 @@ class HealthScoreHistory(Base):
     trend = Column(String(20), default="stable", nullable=False)
     churn_risk_level = Column(String(20), default="none", nullable=False)
 
-    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    calculated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_health_histories_conv_date', 'conversation_id', 'calculated_at'),

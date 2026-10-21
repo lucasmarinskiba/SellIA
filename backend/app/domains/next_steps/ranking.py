@@ -14,8 +14,8 @@ with the denominator. A ranking over two orders says so instead of crowning a
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,10 +28,10 @@ logger = get_logger(__name__)
 MIN_FOR_RANKING = 5
 
 
-def _aware(value: Optional[datetime]) -> Optional[datetime]:
+def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 def _item_lines(items: Any) -> list[tuple[str, int, float]]:
@@ -69,7 +69,7 @@ async def business_ranking(
     from app.domains.businesses.models import Business
     from app.domains.orders.models import Order, PaymentStatus
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
 
     biz = await db.execute(select(Business.id).where(Business.user_id == user.id))
@@ -227,11 +227,14 @@ async def attention_queue(db: AsyncSession, user: Any, limit: int = 25) -> dict[
     """
     from app.domains.businesses.models import Business
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.orders.models import Order
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     biz = await db.execute(select(Business.id).where(Business.user_id == user.id))
     business_ids = [row[0] for row in biz.all()]
     if not business_ids:

@@ -1,14 +1,13 @@
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.ad_copywriter.service import AdCopywriterService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/ad-copywriter", tags=["ad-copywriter"])
 
@@ -17,7 +16,7 @@ class AdCampaignCreate(BaseModel):
     product_id: UUID
     platform: str = Field(..., description="meta, google o tiktok")
     budget: float = Field(..., gt=0)
-    campaign_name: Optional[str] = None
+    campaign_name: str | None = None
 
 
 @router.post("/campaigns", status_code=status.HTTP_201_CREATED)

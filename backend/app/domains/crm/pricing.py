@@ -5,23 +5,23 @@ optimal pricing, discounts, and packaging strategies using expert voices.
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation, Message
-from app.domains.catalogs.models import CatalogItem
 from app.domains.agents.ai_reply import generate_ai_response
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal, LeadStage
 
 
 async def generate_pricing_recommendation(
     db: AsyncSession,
     deal: Deal,
     business_id: uuid.UUID,
-    voice_slug: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    voice_slug: str | None = None,
+) -> dict[str, Any] | None:
     """Generate a pricing strategy recommendation for a deal.
 
     Analyzes:

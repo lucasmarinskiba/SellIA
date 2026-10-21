@@ -5,16 +5,13 @@ Automatically closes tickets that were resolved by AI without
 human intervention, reducing support backlog.
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.logger import get_logger
 from app.domains.support.models import SupportTicket, TicketStatus
-from app.domains.support.ai_responder import generate_ai_response
 
 logger = get_logger(__name__)
 
@@ -31,7 +28,7 @@ async def auto_resolve_tickets(db: AsyncSession):
     Periodic task (Celery Beat) that auto-closes resolved tickets.
     Should run every 6 hours.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # 1. Close tickets where AI responded with high confidence and user said "thanks"
     result = await db.execute(
@@ -74,7 +71,7 @@ async def auto_resolve_tickets(db: AsyncSession):
 
 async def get_auto_resolution_stats(db: AsyncSession, days: int = 30) -> dict:
     """Return metrics on auto-resolved tickets."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     from sqlalchemy import func
 
     total = await db.execute(

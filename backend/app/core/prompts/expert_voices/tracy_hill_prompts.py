@@ -8,15 +8,15 @@ associated with these authors' bodies of work — not excerpted or paraphrased
 book text. No copyrighted material from any book is reproduced here.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, Any, Callable
 
 
 @dataclass
 class TracyHillPrompt:
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str
@@ -493,4 +493,4 @@ HILL_PROMPTS = [
 
 ALL_TRACY_HILL_PROMPTS = TRACY_PROMPTS + HILL_PROMPTS
 
-__all__ = ["TRACY_PROMPTS", "HILL_PROMPTS", "ALL_TRACY_HILL_PROMPTS", "TracyHillPrompt"]
+__all__ = ["ALL_TRACY_HILL_PROMPTS", "HILL_PROMPTS", "TRACY_PROMPTS", "TracyHillPrompt"]

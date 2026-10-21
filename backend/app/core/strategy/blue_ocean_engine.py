@@ -1,8 +1,8 @@
 """Blue Ocean Engine — Estrategias océano azul."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
 import logging
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ValueInnovationAnalysis:
     """Blue Ocean Value Innovation analysis."""
-    eliminate_factors: List[Dict[str, str]]  # [{"factor": "...", "reason": "..."}]
-    reduce_factors: List[Dict[str, Any]]  # [{"factor": "...", "target_level": "..."}]
-    raise_factors: List[Dict[str, str]]  # [{"factor": "...", "target": "..."}]
-    create_factors: List[Dict[str, str]]  # [{"factor": "...", "benefit": "..."}]
+    eliminate_factors: list[dict[str, str]]  # [{"factor": "...", "reason": "..."}]
+    reduce_factors: list[dict[str, Any]]  # [{"factor": "...", "target_level": "..."}]
+    raise_factors: list[dict[str, str]]  # [{"factor": "...", "target": "..."}]
+    create_factors: list[dict[str, str]]  # [{"factor": "...", "benefit": "..."}]
     strategic_reach: str  # "all_customers" or "niche"
     timing_strategy: str  # "pioneer", "follower", "fast_mover"
     expected_market_shift: str
@@ -25,13 +25,12 @@ class BlueOceanEngine:
 
     def __init__(self):
         """Initialize Blue Ocean engine."""
-        pass
 
     def eliminate_factors(
         self,
         industry: str,
         business_profile: "BusinessProfile",
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         What factors in the industry DON'T need to exist?
 
@@ -64,7 +63,7 @@ class BlueOceanEngine:
         self,
         industry: str,
         business_profile: "BusinessProfile",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         What factors should be REDUCED vs industry norm?
 
@@ -100,7 +99,7 @@ class BlueOceanEngine:
         self,
         industry: str,
         business_profile: "BusinessProfile",
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         What factors should be RAISED vs competitors?
 
@@ -131,7 +130,7 @@ class BlueOceanEngine:
             if self._customer_values(factor, business_profile):
                 raise_list.append({
                     "factor": factor,
-                    "target": f"Top 10% vs competitors",
+                    "target": "Top 10% vs competitors",
                     "benefit": benefit,
                     "implementation": self._implementation_steps(factor),
                 })
@@ -141,8 +140,8 @@ class BlueOceanEngine:
     def create_factors(
         self,
         industry: str,
-        market_data: Dict[str, Any],
-    ) -> List[Dict[str, str]]:
+        market_data: dict[str, Any],
+    ) -> list[dict[str, str]]:
         """
         What create FACTORS the industry doesn't offer?
 
@@ -171,7 +170,7 @@ class BlueOceanEngine:
         # Add category creation factor
         if not create_list:
             create_list.append({
-                "factor": f"Category: Simple [Industry] for [Target Customer]",
+                "factor": "Category: Simple [Industry] for [Target Customer]",
                 "benefit": "Own new market category",
                 "target_customers": "Early adopters seeking simplicity",
                 "competitive_advantage": "Category leadership",
@@ -182,7 +181,7 @@ class BlueOceanEngine:
     def evaluate_strategic_reach(
         self,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
     ) -> str:
         """
         Should strategy target ALL customers or NICHE?
@@ -210,7 +209,7 @@ class BlueOceanEngine:
         self,
         industry: str,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
     ) -> str:
         """
         Market timing: when to pioneer, follow, or move fast?
@@ -242,7 +241,7 @@ class BlueOceanEngine:
         self,
         industry: str,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
     ) -> ValueInnovationAnalysis:
         """
         Full Blue Ocean value innovation analysis (ERRC).
@@ -287,7 +286,7 @@ class BlueOceanEngine:
 
     # Private helper methods
 
-    def _get_industry_factors(self, industry: str) -> List[str]:
+    def _get_industry_factors(self, industry: str) -> list[str]:
         """Get typical industry competitive factors."""
         industry_factors_map = {
             "commerce": [
@@ -388,7 +387,7 @@ class BlueOceanEngine:
         return factor in str(business_profile.customer_pain_points).lower() or \
                factor in str(business_profile.competitive_advantages).lower()
 
-    def _implementation_steps(self, factor: str) -> List[str]:
+    def _implementation_steps(self, factor: str) -> list[str]:
         """Steps to improve factor."""
         return [
             f"Assess current {factor} performance",

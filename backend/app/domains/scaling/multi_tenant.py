@@ -1,8 +1,8 @@
 """Phase 21: Multi-Tenancy & Advanced Scaling."""
 
-from dataclasses import dataclass
-from typing import Dict, Any, List
 import logging
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class MultiTenantManager:
         logger.info(f"Tenant created: {tenant.tenant_id}")
         return tenant
 
-    def _get_tier_config(self, tier: str) -> Dict[str, Any]:
+    def _get_tier_config(self, tier: str) -> dict[str, Any]:
         """Get tier configuration"""
 
         configs = {
@@ -75,7 +75,7 @@ class MultiTenantManager:
 
         return configs.get(tier, configs["pro"])
 
-    def upgrade_tenant(self, tenant_id: str, new_tier: str) -> Dict[str, Any]:
+    def upgrade_tenant(self, tenant_id: str, new_tier: str) -> dict[str, Any]:
         """Upgrade tenant tier"""
 
         new_config = self._get_tier_config(new_tier)
@@ -88,7 +88,7 @@ class MultiTenantManager:
             "effective_immediately": True
         }
 
-    def _get_new_features(self, tier: str) -> List[str]:
+    def _get_new_features(self, tier: str) -> list[str]:
         """Get new features from upgrade"""
 
         if tier == "pro":
@@ -97,7 +97,7 @@ class MultiTenantManager:
             return ["SSO", "Dedicated support", "Custom integrations", "White-label option"]
         return []
 
-    def get_tenant_usage(self, tenant_id: str) -> Dict[str, Any]:
+    def get_tenant_usage(self, tenant_id: str) -> dict[str, Any]:
         """Get tenant usage stats"""
 
         return {
@@ -113,7 +113,7 @@ class MultiTenantManager:
             "usage_percent": 45
         }
 
-    def get_billing_summary(self, tenant_id: str) -> Dict[str, Any]:
+    def get_billing_summary(self, tenant_id: str) -> dict[str, Any]:
         """Get billing summary"""
 
         return {

@@ -1,12 +1,13 @@
 """Async Jobs — Celery for long-running tasks, background jobs, scheduling."""
 
-import logging
 import asyncio
-from typing import Any, Dict, Optional, Callable, List, Coroutine
+import logging
+import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import uuid
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,25 +39,25 @@ class Job:
     name: str
     task: Callable
     args: tuple = field(default_factory=tuple)
-    kwargs: Dict[str, Any] = field(default_factory=dict)
+    kwargs: dict[str, Any] = field(default_factory=dict)
     priority: JobPriority = JobPriority.NORMAL
     status: JobStatus = JobStatus.PENDING
     result: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     retries: int = 0
     max_retries: int = 3
-    timeout_seconds: Optional[int] = None
-    scheduled_for: Optional[datetime] = None
+    timeout_seconds: int | None = None
+    scheduled_for: datetime | None = None
 
     def __post_init__(self):
         """Set defaults."""
         if not self.id:
             self.id = str(uuid.uuid4())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert job to dictionary."""
         return {
             "id": self.id,
@@ -84,10 +85,10 @@ class AsyncJobQueue:
         """Initialize job queue."""
         self.worker_count = worker_count
         self.max_queue_size = max_queue_size
-        self.queue: List[Job] = []
-        self.running_jobs: Dict[str, Job] = {}
-        self.completed_jobs: Dict[str, Job] = {}
-        self.failed_jobs: Dict[str, Job] = {}
+        self.queue: list[Job] = []
+        self.running_jobs: dict[str, Job] = {}
+        self.completed_jobs: dict[str, Job] = {}
+        self.failed_jobs: dict[str, Job] = {}
         self.workers_active = False
         self.stats = {
             "total_jobs": 0,
@@ -101,10 +102,10 @@ class AsyncJobQueue:
         task: Callable,
         name: str,
         args: tuple = (),
-        kwargs: Optional[Dict[str, Any]] = None,
+        kwargs: dict[str, Any] | None = None,
         priority: JobPriority = JobPriority.NORMAL,
-        timeout_seconds: Optional[int] = None,
-        scheduled_for: Optional[datetime] = None,
+        timeout_seconds: int | None = None,
+        scheduled_for: datetime | None = None,
     ) -> Job:
         """Enqueue a job."""
 
@@ -157,7 +158,7 @@ class AsyncJobQueue:
 
             logger.info(f"Job completed: {job.id} ({job.name})")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             job.error = f"Job timed out after {job.timeout_seconds} seconds"
             job.status = JobStatus.FAILED
             self._handle_job_failure(job)
@@ -241,7 +242,7 @@ class AsyncJobQueue:
                 # No jobs available, wait a bit
                 await asyncio.sleep(0.1)
 
-    def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job_status(self, job_id: str) -> dict[str, Any] | None:
         """Get job status."""
         # Check all job maps
         for jobs_dict in [self.running_jobs, self.completed_jobs, self.failed_jobs]:
@@ -250,7 +251,7 @@ class AsyncJobQueue:
 
         return None
 
-    def get_queue_status(self) -> Dict[str, Any]:
+    def get_queue_status(self) -> dict[str, Any]:
         """Get queue status."""
         return {
             "queue_size": len(self.queue),
@@ -261,7 +262,7 @@ class AsyncJobQueue:
             "worker_count": self.worker_count,
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get queue statistics."""
         total = self.stats["completed"] + self.stats["failed"]
         success_rate = (

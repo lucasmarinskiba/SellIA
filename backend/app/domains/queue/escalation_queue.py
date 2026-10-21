@@ -1,10 +1,10 @@
 """Human escalation queue system for leads requiring human intervention."""
 
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
-from enum import Enum
-from datetime import datetime, timedelta
 import logging
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +41,9 @@ class EscalationTicket:
     deal_size: float
     agent_notes: str
     created_at: datetime
-    assigned_to: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    resolution_notes: Optional[str] = None
+    assigned_to: str | None = None
+    resolved_at: datetime | None = None
+    resolution_notes: str | None = None
     status: str = "pending"  # pending, in_progress, resolved
 
 
@@ -51,8 +51,8 @@ class EscalationQueue:
     """Queue for managing human escalations."""
 
     def __init__(self):
-        self.tickets: Dict[str, EscalationTicket] = {}
-        self.reps: Dict[str, Dict[str, Any]] = {
+        self.tickets: dict[str, EscalationTicket] = {}
+        self.reps: dict[str, dict[str, Any]] = {
             "rep_001": {"name": "Alice Johnson", "queue": [], "capacity": 10, "current_load": 0},
             "rep_002": {"name": "Bob Smith", "queue": [], "capacity": 10, "current_load": 0},
             "rep_003": {"name": "Carol White", "queue": [], "capacity": 8, "current_load": 0},
@@ -103,7 +103,7 @@ class EscalationQueue:
         logger.info(f"Escalation created: {ticket_id} for {lead_name} (priority={priority.value})")
         return ticket
 
-    def _find_best_rep(self, priority: EscalationPriority) -> Optional[str]:
+    def _find_best_rep(self, priority: EscalationPriority) -> str | None:
         """Find best sales rep based on priority and capacity."""
         # Get available reps
         available = [
@@ -120,7 +120,7 @@ class EscalationQueue:
         available.sort(key=lambda x: x[1]["current_load"])
         return available[0][0]
 
-    async def get_queue(self, rep_id: Optional[str] = None) -> List[EscalationTicket]:
+    async def get_queue(self, rep_id: str | None = None) -> list[EscalationTicket]:
         """Get escalation queue."""
         if rep_id:
             ticket_ids = self.reps[rep_id]["queue"]
@@ -160,7 +160,7 @@ class EscalationQueue:
         logger.info(f"Ticket {ticket_id} resolved: {outcome}")
         return True
 
-    async def sla_check(self) -> Dict[str, Any]:
+    async def sla_check(self) -> dict[str, Any]:
         """Check SLA compliance (response time, resolution time)."""
         sla_targets = {
             EscalationPriority.CRITICAL: 1,  # 1 hour

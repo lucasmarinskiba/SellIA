@@ -1,15 +1,15 @@
 """Phase 5: Performance Optimization Service - Query, Cache, Index Strategy."""
-from typing import List, Dict, Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.domains.performance_optimization.models import (
+    CacheStrategy,
+    IndexRecommendation,
     PerformanceMetrics,
     SlowQuery,
-    IndexRecommendation,
-    CacheStrategy,
-    QueryOptimization,
 )
 
 
@@ -103,7 +103,7 @@ class PerformanceOptimizationService:
             slow_query.total_execution_time_ms += avg_execution_time_ms * execution_count
             slow_query.avg_execution_time_ms = slow_query.total_execution_time_ms / slow_query.execution_count
             slow_query.max_execution_time_ms = max(slow_query.max_execution_time_ms, max_execution_time_ms)
-            slow_query.last_seen_at = datetime.now(timezone.utc)
+            slow_query.last_seen_at = datetime.now(UTC)
 
         # Auto-suggest optimization if query is > 1 second
         if avg_execution_time_ms > 1000:
@@ -131,7 +131,7 @@ class PerformanceOptimizationService:
         db: AsyncSession,
         business_id: UUID,
         table_name: str,
-        column_names: List[str],
+        column_names: list[str],
         estimated_queries_improved: int = 0,
         estimated_improvement_percent: float = 0,
     ) -> dict:
@@ -191,7 +191,7 @@ class PerformanceOptimizationService:
         cache_type: str = "redis",
         ttl_seconds: int = 3600,
         max_size_mb: float = 256,
-        cache_patterns: List[str] = None,
+        cache_patterns: list[str] = None,
     ) -> dict:
         """Configure caching strategy."""
         result = await db.execute(

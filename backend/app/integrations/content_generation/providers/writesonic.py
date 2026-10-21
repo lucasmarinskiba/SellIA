@@ -4,10 +4,10 @@ Pricing: ~$0.008/generation
 Strengths: SEO optimization, ad scoring, landing pages, blog posts
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -26,7 +26,7 @@ class WritesonicProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.008
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"writesonic-generation": 0.008}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -46,13 +46,12 @@ class WritesonicProvider(BaseProvider):
                 "language": config.extra_params.get("language", "es"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.writesonic.com/v1/business/content/chat-generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.writesonic.com/v1/business/content/chat-generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             text = data.get("message")
             if not text:

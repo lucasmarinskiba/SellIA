@@ -1,6 +1,7 @@
 """Multi-language FOMO copy generation (ES, EN, PT)."""
 
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator

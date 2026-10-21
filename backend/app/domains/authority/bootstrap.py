@@ -21,7 +21,11 @@ async def ensure_authority_tables() -> None:
     # get created here.
     try:
         from app.models.authority_building import (
-            Award, Review, SellerBio, Testimonial, TrustScore,
+            Award,
+            Review,
+            SellerBio,
+            Testimonial,
+            TrustScore,
         )
         tables += [
             Testimonial.__table__, Award.__table__, Review.__table__,

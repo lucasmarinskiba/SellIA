@@ -7,14 +7,18 @@ Endpoints:
 - POST /optimize-strategy: Optimiza según performance
 """
 
+import logging
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
-import logging
 
-from app.core.intelligence.market_analyzer import MarketAnalyzer, MarketAnalysis
-from app.core.intelligence.strategy_generator import StrategyGenerator, StrategyOptimizer
+from app.core.intelligence.market_analyzer import MarketAnalyzer
+from app.core.intelligence.strategy_generator import (
+    StrategyGenerator,
+    StrategyOptimizer,
+)
 
 router = APIRouter(prefix="/api/v1/intelligence", tags=["intelligence"])
 logger = logging.getLogger(__name__)
@@ -25,7 +29,7 @@ class ProductInput(BaseModel):
     product_name: str
     product_description: str
     price: float
-    business_goals: Optional[List[str]] = None
+    business_goals: list[str] | None = None
 
 
 class PerformanceInput(BaseModel):
@@ -33,16 +37,16 @@ class PerformanceInput(BaseModel):
     conversion_rate: float
     mrr: float
     reviews_avg: float
-    channel_performance: Dict[str, float]
-    customer_feedback: Optional[str] = None
+    channel_performance: dict[str, float]
+    customer_feedback: str | None = None
 
 
 class IntelligenceReport(BaseModel):
     """Reporte completo inteligencia."""
-    market_analysis: Dict[str, Any]
-    strategy: Dict[str, Any]
-    recommendations: List[str]
-    next_actions: List[str]
+    market_analysis: dict[str, Any]
+    strategy: dict[str, Any]
+    recommendations: list[str]
+    next_actions: list[str]
 
 
 @router.post("/analyze-market", tags=["market"])
@@ -89,7 +93,7 @@ async def analyze_market(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error analizando mercado: {str(e)}")
+        logger.error(f"Error analizando mercado: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -156,14 +160,14 @@ async def generate_strategy(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error generando estrategia: {str(e)}")
+        logger.error(f"Error generando estrategia: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/optimize-strategy", tags=["optimization"])
 async def optimize_strategy(
     product_name: str,
-    current_strategy: Dict[str, Any],
+    current_strategy: dict[str, Any],
     performance: PerformanceInput,
     iteration: int = 1,
 ):
@@ -217,7 +221,7 @@ async def optimize_strategy(
         }
 
     except Exception as e:
-        logger.error(f"Error optimizando estrategia: {str(e)}")
+        logger.error(f"Error optimizando estrategia: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -295,5 +299,5 @@ async def generate_full_report(product: ProductInput):
         }
 
     except Exception as e:
-        logger.error(f"Error generando reporte: {str(e)}")
+        logger.error(f"Error generando reporte: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))

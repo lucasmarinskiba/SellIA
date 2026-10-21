@@ -14,9 +14,9 @@ from app.domains.forecasting.models.statistical import (
 
 try:
     from app.domains.forecasting.models.optional_backends import (
+        _HAS_STATSMODELS,
         ETSStatsmodelsForecaster,
         SarimaForecaster,
-        _HAS_STATSMODELS,
     )
 except Exception:  # noqa: BLE001
     ETSStatsmodelsForecaster = None
@@ -53,12 +53,12 @@ def default_model_pool(intermittent: bool, light_gbm: bool = False) -> list[Fore
 
 
 __all__ = [
+    "CrostonForecaster",
+    "EnsembleForecaster",
     "Forecaster",
+    "GBMForecaster",
+    "HoltWintersForecaster",
     "SeasonalNaiveForecaster",
     "ThetaForecaster",
-    "HoltWintersForecaster",
-    "CrostonForecaster",
-    "GBMForecaster",
-    "EnsembleForecaster",
     "default_model_pool",
 ]

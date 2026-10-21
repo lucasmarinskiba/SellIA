@@ -1,8 +1,9 @@
 """User model for seller accounts."""
 
-from sqlalchemy import Column, String, DateTime, Boolean
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, String
 
 from app.database import Base
 

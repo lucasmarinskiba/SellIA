@@ -8,8 +8,7 @@ Maps each of the 11 business types to:
 - Dashboard KPI priorities
 """
 
-from typing import Dict, List, Any, Optional
-from decimal import Decimal
+from typing import Any
 
 from app.domains.business_context.models import BusinessType
 
@@ -17,7 +16,7 @@ from app.domains.business_context.models import BusinessType
 class FunnelAdapter:
     """Returns business-type-specific funnel definitions."""
 
-    STAGES: Dict[BusinessType, List[Dict[str, Any]]] = {
+    STAGES: dict[BusinessType, list[dict[str, Any]]] = {
         BusinessType.SOFTWARE: [
             {"key": "trial_signup", "label": "Trial Signup", "order": 1},
             {"key": "activation", "label": "Activation", "order": 2},
@@ -98,14 +97,14 @@ class FunnelAdapter:
     }
 
     @classmethod
-    def get_stages(cls, business_type: Optional[BusinessType]) -> List[Dict[str, Any]]:
+    def get_stages(cls, business_type: BusinessType | None) -> list[dict[str, Any]]:
         return cls.STAGES.get(business_type, cls.STAGES[BusinessType.OTHER])
 
 
 class ChurnAdapter:
     """Returns business-type-specific churn risk logic."""
 
-    THRESHOLDS: Dict[BusinessType, Dict[str, int]] = {
+    THRESHOLDS: dict[BusinessType, dict[str, int]] = {
         BusinessType.SOFTWARE: {
             "inactive_days_critical": 14,
             "inactive_days_warning": 7,
@@ -174,7 +173,7 @@ class ChurnAdapter:
         },
     }
 
-    ACTIONS: Dict[BusinessType, str] = {
+    ACTIONS: dict[BusinessType, str] = {
         BusinessType.SOFTWARE: "Ofrecer onboarding personalizado o descuento en renovación anual",
         BusinessType.CONSULTING: "Enviar case study o invitar a webinar exclusivo",
         BusinessType.SERVICES: "Ofrecer descuento en próximo servicio o paquete",
@@ -189,18 +188,18 @@ class ChurnAdapter:
     }
 
     @classmethod
-    def get_thresholds(cls, business_type: Optional[BusinessType]) -> Dict[str, int]:
+    def get_thresholds(cls, business_type: BusinessType | None) -> dict[str, int]:
         return cls.THRESHOLDS.get(business_type, cls.THRESHOLDS[BusinessType.OTHER])
 
     @classmethod
-    def get_recommended_action(cls, business_type: Optional[BusinessType]) -> str:
+    def get_recommended_action(cls, business_type: BusinessType | None) -> str:
         return cls.ACTIONS.get(business_type, cls.ACTIONS[BusinessType.OTHER])
 
 
 class LtvAdapter:
     """Returns business-type-specific LTV prediction adjustments."""
 
-    MULTIPLIERS: Dict[BusinessType, Dict[str, float]] = {
+    MULTIPLIERS: dict[BusinessType, dict[str, float]] = {
         BusinessType.SOFTWARE: {"predicted_orders_multiplier": 1.5, "confidence_boost": 0.1},
         BusinessType.CONSULTING: {"predicted_orders_multiplier": 0.8, "confidence_boost": 0.05},
         BusinessType.SERVICES: {"predicted_orders_multiplier": 1.0, "confidence_boost": 0.0},
@@ -215,14 +214,14 @@ class LtvAdapter:
     }
 
     @classmethod
-    def get_multipliers(cls, business_type: Optional[BusinessType]) -> Dict[str, float]:
+    def get_multipliers(cls, business_type: BusinessType | None) -> dict[str, float]:
         return cls.MULTIPLIERS.get(business_type, cls.MULTIPLIERS[BusinessType.OTHER])
 
 
 class AlertAdapter:
     """Returns business-type-specific anomaly detection thresholds."""
 
-    REVENUE_THRESHOLDS: Dict[BusinessType, Dict[str, float]] = {
+    REVENUE_THRESHOLDS: dict[BusinessType, dict[str, float]] = {
         BusinessType.SOFTWARE: {"drop_critical": -15.0, "growth_opportunity": 30.0},
         BusinessType.CONSULTING: {"drop_critical": -25.0, "growth_opportunity": 40.0},
         BusinessType.SERVICES: {"drop_critical": -20.0, "growth_opportunity": 35.0},
@@ -236,7 +235,7 @@ class AlertAdapter:
         BusinessType.OTHER: {"drop_critical": -20.0, "growth_opportunity": 50.0},
     }
 
-    RECOMMENDATIONS: Dict[BusinessType, Dict[str, str]] = {
+    RECOMMENDATIONS: dict[BusinessType, dict[str, str]] = {
         BusinessType.SOFTWARE: {
             "drop": "Revisar churn de usuarios activos y ofrecer descuento en renovación anual",
             "growth": "Aumentar presupuesto de ads y lanzar programa de referrals",
@@ -284,18 +283,18 @@ class AlertAdapter:
     }
 
     @classmethod
-    def get_revenue_thresholds(cls, business_type: Optional[BusinessType]) -> Dict[str, float]:
+    def get_revenue_thresholds(cls, business_type: BusinessType | None) -> dict[str, float]:
         return cls.REVENUE_THRESHOLDS.get(business_type, cls.REVENUE_THRESHOLDS[BusinessType.OTHER])
 
     @classmethod
-    def get_recommendations(cls, business_type: Optional[BusinessType]) -> Dict[str, str]:
+    def get_recommendations(cls, business_type: BusinessType | None) -> dict[str, str]:
         return cls.RECOMMENDATIONS.get(business_type, cls.RECOMMENDATIONS[BusinessType.OTHER])
 
 
 class DashboardKPIAdapter:
     """Returns prioritized KPIs for the dashboard summary."""
 
-    KPIs: Dict[BusinessType, List[Dict[str, Any]]] = {
+    KPIs: dict[BusinessType, list[dict[str, Any]]] = {
         BusinessType.SOFTWARE: [
             {"key": "mrr", "label": "MRR", "priority": 1},
             {"key": "active_users", "label": "Usuarios Activos", "priority": 2},
@@ -376,5 +375,5 @@ class DashboardKPIAdapter:
     }
 
     @classmethod
-    def get_kpis(cls, business_type: Optional[BusinessType]) -> List[Dict[str, Any]]:
+    def get_kpis(cls, business_type: BusinessType | None) -> list[dict[str, Any]]:
         return cls.KPIs.get(business_type, cls.KPIs[BusinessType.OTHER])

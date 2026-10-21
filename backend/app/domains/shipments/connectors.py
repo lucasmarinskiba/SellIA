@@ -6,21 +6,21 @@ Cada conector implementa: create_shipment, get_tracking, get_label, cancel_shipm
 Los conectores pueden operar en modo DEMO (sin credenciales reales) para testing.
 """
 
-import uuid
 import base64
-import httpx
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+import uuid
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from app.domains.shipments.schemas import Address, Package
-from app.domains.shipments.models import ShipmentStatus, CarrierType, ServiceType
+import httpx
+
+from app.domains.shipments.models import CarrierType, ShipmentStatus
 
 
 class CarrierConnector(ABC):
     """Base class for all carrier connectors."""
 
-    def __init__(self, credentials: Dict[str, Any], test_mode: bool = False):
+    def __init__(self, credentials: dict[str, Any], test_mode: bool = False):
         self.credentials = credentials
         self.test_mode = test_mode
 
@@ -32,21 +32,19 @@ class CarrierConnector(ABC):
     @abstractmethod
     async def create_shipment(
         self,
-        from_address: Dict[str, Any],
-        to_address: Dict[str, Any],
-        package: Dict[str, Any],
+        from_address: dict[str, Any],
+        to_address: dict[str, Any],
+        package: dict[str, Any],
         service_type: str,
-        reference: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        reference: str | None = None,
+    ) -> dict[str, Any]:
         """Create a shipment and return carrier response with tracking_number, label_url, etc."""
-        pass
 
     @abstractmethod
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         """Get tracking info from carrier. Returns {status, events, estimated_delivery}."""
-        pass
 
-    async def get_label(self, tracking_number: str) -> Optional[str]:
+    async def get_label(self, tracking_number: str) -> str | None:
         """Get label PDF as base64 string. Optional — not all carriers support this."""
         return None
 
@@ -56,10 +54,10 @@ class CarrierConnector(ABC):
 
     async def get_rates(
         self,
-        from_address: Dict[str, Any],
-        to_address: Dict[str, Any],
-        package: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        from_address: dict[str, Any],
+        to_address: dict[str, Any],
+        package: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Get shipping rates. Returns list of {service_type, cost, estimated_days}."""
         return []
 
@@ -83,12 +81,12 @@ class AndreaniConnector(CarrierConnector):
 
     async def create_shipment(
         self,
-        from_address: Dict[str, Any],
-        to_address: Dict[str, Any],
-        package: Dict[str, Any],
+        from_address: dict[str, Any],
+        to_address: dict[str, Any],
+        package: dict[str, Any],
         service_type: str,
-        reference: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        reference: str | None = None,
+    ) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("username"):
             return self._demo_create(from_address, to_address, package, service_type, reference)
 
@@ -112,7 +110,7 @@ class AndreaniConnector(CarrierConnector):
             "status": ShipmentStatus.LABEL_CREATED,
         }
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("username"):
             return self._demo_tracking(tracking_number)
 
@@ -139,7 +137,7 @@ class AndreaniConnector(CarrierConnector):
             "estimated_delivery": data.get("fechaDeEntrega"),
         }
 
-    async def get_label(self, tracking_number: str) -> Optional[str]:
+    async def get_label(self, tracking_number: str) -> str | None:
         if self.test_mode:
             return self._demo_label()
         url = f"{self.BASE_URL if not self.test_mode else self.BASE_URL_TEST}/v1/envios/{tracking_number}/etiqueta"
@@ -181,7 +179,7 @@ class AndreaniConnector(CarrierConnector):
             "servicio": svc_map.get(service_type, "ESTANDAR"),
         }
 
-    def _map_status(self, raw: Optional[str]) -> str:
+    def _map_status(self, raw: str | None) -> str:
         mapping = {
             "pendiente": ShipmentStatus.PENDING,
             "en sucursal de origen": ShipmentStatus.LABEL_CREATED,
@@ -200,14 +198,14 @@ class AndreaniConnector(CarrierConnector):
             "status": ShipmentStatus.LABEL_CREATED,
         }
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
         return {
             "status": ShipmentStatus.IN_TRANSIT,
             "events": [
-                {"event_code": "PICKUP", "event_description": "Retirado por carrier", "location": "Buenos Aires", "event_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()},
-                {"event_code": "TRANSIT", "event_description": "En tránsito", "location": "Córdoba", "event_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()},
+                {"event_code": "PICKUP", "event_description": "Retirado por carrier", "location": "Buenos Aires", "event_at": (datetime.now(UTC) - timedelta(days=2)).isoformat()},
+                {"event_code": "TRANSIT", "event_description": "En tránsito", "location": "Córdoba", "event_at": (datetime.now(UTC) - timedelta(days=1)).isoformat()},
             ],
-            "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            "estimated_delivery": (datetime.now(UTC) + timedelta(days=1)).isoformat(),
         }
 
     def _demo_label(self) -> str:
@@ -252,7 +250,7 @@ class CorreoArgentinoConnector(CarrierConnector):
             "status": ShipmentStatus.LABEL_CREATED,
         }
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("api_key"):
             return self._demo_tracking(tracking_number)
 
@@ -271,14 +269,14 @@ class CorreoArgentinoConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("CA"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
         return {
             "status": ShipmentStatus.IN_TRANSIT,
             "events": [
-                {"event_description": "Ingresado a Centro de Distribución", "location": "Palermo", "event_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()},
-                {"event_description": "En tránsito", "location": "Centro Logístico", "event_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()},
+                {"event_description": "Ingresado a Centro de Distribución", "location": "Palermo", "event_at": (datetime.now(UTC) - timedelta(days=2)).isoformat()},
+                {"event_description": "En tránsito", "location": "Centro Logístico", "event_at": (datetime.now(UTC) - timedelta(days=1)).isoformat()},
             ],
-            "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=2)).isoformat(),
+            "estimated_delivery": (datetime.now(UTC) + timedelta(days=2)).isoformat(),
         }
 
 
@@ -300,7 +298,7 @@ class OcaConnector(CarrierConnector):
             return self._demo_create(from_address, to_address, package, service_type, reference)
         return {"tracking_number": self._demo_tracking_number("OCA"), "label_url": None, "carrier_response": {"demo": False}, "status": ShipmentStatus.LABEL_CREATED}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("cuit"):
             return self._demo_tracking(tracking_number)
         return {"status": ShipmentStatus.IN_TRANSIT, "events": [], "estimated_delivery": None}
@@ -308,14 +306,14 @@ class OcaConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("OCA"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
         return {
             "status": ShipmentStatus.OUT_FOR_DELIVERY,
             "events": [
-                {"event_description": "Ingreso al centro de distribución OCA", "location": "Buenos Aires", "event_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()},
-                {"event_description": "En reparto", "location": "Rosario", "event_at": (datetime.now(timezone.utc) - timedelta(hours=4)).isoformat()},
+                {"event_description": "Ingreso al centro de distribución OCA", "location": "Buenos Aires", "event_at": (datetime.now(UTC) - timedelta(days=1)).isoformat()},
+                {"event_description": "En reparto", "location": "Rosario", "event_at": (datetime.now(UTC) - timedelta(hours=4)).isoformat()},
             ],
-            "estimated_delivery": (datetime.now(timezone.utc) + timedelta(hours=4)).isoformat(),
+            "estimated_delivery": (datetime.now(UTC) + timedelta(hours=4)).isoformat(),
         }
 
 
@@ -335,7 +333,7 @@ class MercadoEnviosConnector(CarrierConnector):
             return self._demo_create(from_address, to_address, package, service_type, reference)
         return {"tracking_number": self._demo_tracking_number("ME"), "label_url": None, "carrier_response": {"integration": "mercadolibre_shipping"}, "status": ShipmentStatus.PENDING}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode:
             return self._demo_tracking(tracking_number)
         return {"status": ShipmentStatus.IN_TRANSIT, "events": [], "estimated_delivery": None}
@@ -343,8 +341,8 @@ class MercadoEnviosConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("ME"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "En centro de distribución MercadoLibre", "location": "CABA", "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()}
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
+        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "En centro de distribución MercadoLibre", "location": "CABA", "event_at": datetime.now(UTC).isoformat()}], "estimated_delivery": (datetime.now(UTC) + timedelta(days=1)).isoformat()}
 
 
 # ============================================================
@@ -365,7 +363,7 @@ class DhlConnector(CarrierConnector):
             return self._demo_create(from_address, to_address, package, service_type, reference)
         return {"tracking_number": self._demo_tracking_number("DHL"), "label_url": None, "carrier_response": {}, "status": ShipmentStatus.LABEL_CREATED}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("api_key"):
             return self._demo_tracking(tracking_number)
         headers = {"DHL-API-Key": self.credentials["api_key"]}
@@ -387,8 +385,8 @@ class DhlConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("DHL"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Shipment information received", "location": "Frankfurt", "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()}
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
+        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Shipment information received", "location": "Frankfurt", "event_at": datetime.now(UTC).isoformat()}], "estimated_delivery": (datetime.now(UTC) + timedelta(days=3)).isoformat()}
 
 
 # ============================================================
@@ -407,7 +405,7 @@ class FedexConnector(CarrierConnector):
             return self._demo_create(from_address, to_address, package, service_type, reference)
         return {"tracking_number": self._demo_tracking_number("FED"), "label_url": None, "carrier_response": {}, "status": ShipmentStatus.LABEL_CREATED}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("api_key"):
             return self._demo_tracking(tracking_number)
         return {"status": ShipmentStatus.IN_TRANSIT, "events": [], "estimated_delivery": None}
@@ -415,8 +413,8 @@ class FedexConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("FED"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.DELIVERED, "events": [{"event_description": "Delivered", "location": "Miami, FL", "event_at": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()}], "estimated_delivery": datetime.now(timezone.utc).isoformat()}
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
+        return {"status": ShipmentStatus.DELIVERED, "events": [{"event_description": "Delivered", "location": "Miami, FL", "event_at": (datetime.now(UTC) - timedelta(hours=2)).isoformat()}], "estimated_delivery": datetime.now(UTC).isoformat()}
 
 
 # ============================================================
@@ -435,7 +433,7 @@ class UpsConnector(CarrierConnector):
             return self._demo_create(from_address, to_address, package, service_type, reference)
         return {"tracking_number": self._demo_tracking_number("UPS"), "label_url": None, "carrier_response": {}, "status": ShipmentStatus.LABEL_CREATED}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         if self.test_mode or not self.credentials.get("api_key"):
             return self._demo_tracking(tracking_number)
         return {"status": ShipmentStatus.IN_TRANSIT, "events": [], "estimated_delivery": None}
@@ -443,8 +441,8 @@ class UpsConnector(CarrierConnector):
     def _demo_create(self, from_addr, to_addr, package, service_type, reference):
         return {"tracking_number": self._demo_tracking_number("UPS"), "label_url": None, "carrier_response": {"demo": True}, "status": ShipmentStatus.LABEL_CREATED}
 
-    def _demo_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Departed Facility", "location": "Louisville, KY", "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()}
+    def _demo_tracking(self, tracking_number: str) -> dict[str, Any]:
+        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Departed Facility", "location": "Louisville, KY", "event_at": datetime.now(UTC).isoformat()}], "estimated_delivery": (datetime.now(UTC) + timedelta(days=2)).isoformat()}
 
 
 # ============================================================
@@ -461,8 +459,8 @@ class LocalConnector(CarrierConnector):
     async def create_shipment(self, from_address, to_address, package, service_type, reference=None):
         return {"tracking_number": self._demo_tracking_number("LOC"), "label_url": None, "carrier_response": {"manual": True}, "status": ShipmentStatus.PENDING}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
-        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Enviado por mensajería interna", "location": to_address.get("city", ""), "event_at": datetime.now(timezone.utc).isoformat()}], "estimated_delivery": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()}
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
+        return {"status": ShipmentStatus.IN_TRANSIT, "events": [{"event_description": "Enviado por mensajería interna", "location": to_address.get("city", ""), "event_at": datetime.now(UTC).isoformat()}], "estimated_delivery": (datetime.now(UTC) + timedelta(days=1)).isoformat()}
 
 
 class OtherConnector(CarrierConnector):
@@ -475,7 +473,7 @@ class OtherConnector(CarrierConnector):
     async def create_shipment(self, from_address, to_address, package, service_type, reference=None):
         return {"tracking_number": reference or self._demo_tracking_number("OTR"), "label_url": None, "carrier_response": {"manual": True}, "status": ShipmentStatus.PENDING}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         return {"status": ShipmentStatus.IN_TRANSIT, "events": [], "estimated_delivery": None}
 
 
@@ -496,7 +494,7 @@ CONNECTOR_MAP = {
 }
 
 
-def get_connector(carrier: str, credentials: Dict[str, Any], test_mode: bool = False) -> CarrierConnector:
+def get_connector(carrier: str, credentials: dict[str, Any], test_mode: bool = False) -> CarrierConnector:
     """Factory to get the right connector for a carrier."""
     try:
         carrier_type = CarrierType(carrier)
@@ -596,5 +594,5 @@ CARRIER_METADATA = [
 ]
 
 
-def get_carrier_metadata() -> List[Dict[str, Any]]:
+def get_carrier_metadata() -> list[dict[str, Any]]:
     return CARRIER_METADATA

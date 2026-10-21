@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -325,7 +325,7 @@ FORMATTING_HINTS = {
 }
 
 
-def prompt_fragment(platform: str, *, language: Optional[str] = None) -> str:
+def prompt_fragment(platform: str, *, language: str | None = None) -> str:
     """The platform's rules, written as instructions for the reply model."""
     book = for_platform(platform)
     lines = [

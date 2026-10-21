@@ -5,16 +5,15 @@ then schedules them for publication and tracks performance.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import GrowthCampaign, GrowthCampaignType
-from app.domains.automations.models import GeneratedContent, ContentCalendar
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.automations.models import ContentCalendar, GeneratedContent
 
 logger = get_logger(__name__)
 
@@ -266,7 +265,7 @@ Responde en JSON:
         self,
         business_id: uuid.UUID,
         platform: str = None,
-    ) -> List[ContentCalendar]:
+    ) -> list[ContentCalendar]:
         """Get scheduled content."""
         query = select(ContentCalendar).where(
             ContentCalendar.business_id == business_id,
@@ -308,9 +307,9 @@ Responde en JSON:
     async def generate_content_batch(
         self,
         business_id: uuid.UUID,
-        keywords: List[str],
+        keywords: list[str],
         campaign_id: uuid.UUID = None,
-    ) -> List[GeneratedContent]:
+    ) -> list[GeneratedContent]:
         """Generate multiple pieces of SEO content."""
         contents = []
         for keyword in keywords:

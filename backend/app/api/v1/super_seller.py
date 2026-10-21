@@ -7,16 +7,16 @@ Endpoints:
 - POST /execute-now: Comienza a vender HOY
 """
 
+import logging
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
-import logging
 
 from app.core.intelligence.market_analyzer import MarketAnalyzer
-from app.core.intelligence.strategy_generator import StrategyGenerator
 from app.core.intelligence.problem_detector import ProblemDetector, ProblemSolver
 from app.core.intelligence.sales_executor import SalesExecutor
+from app.core.intelligence.strategy_generator import StrategyGenerator
 
 router = APIRouter(prefix="/api/v1/super-seller", tags=["super_seller"])
 logger = logging.getLogger(__name__)
@@ -27,10 +27,10 @@ class ProductDiagnosis(BaseModel):
     product_name: str
     product_description: str
     price: float
-    current_conversion_rate: Optional[float] = None
-    current_mrr: Optional[float] = None
-    current_reviews_count: Optional[int] = 0
-    current_email_sequences: Optional[int] = 0
+    current_conversion_rate: float | None = None
+    current_mrr: float | None = None
+    current_reviews_count: int | None = 0
+    current_email_sequences: int | None = 0
 
 
 @router.post("/diagnose", tags=["diagnosis"])
@@ -118,7 +118,7 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error en diagnóstico: {str(e)}")
+        logger.error(f"Error en diagnóstico: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -222,7 +222,7 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error generando plan: {str(e)}")
+        logger.error(f"Error generando plan: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -275,7 +275,7 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
             ],
         }
 
-        logger.info(f"Plan de ejecución inmediata generado")
+        logger.info("Plan de ejecución inmediata generado")
 
         return {
             "status": "execution_ready",
@@ -304,5 +304,5 @@ async def execute_immediately(diagnosis: ProductDiagnosis):
         }
 
     except Exception as e:
-        logger.error(f"Error en ejecución: {str(e)}")
+        logger.error(f"Error en ejecución: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))

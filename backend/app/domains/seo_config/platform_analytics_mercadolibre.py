@@ -1,7 +1,8 @@
 """Mercado Libre analytics connector."""
 
+from datetime import date
 from typing import Any
-from datetime import date, datetime, timedelta
+
 import httpx
 
 from app.core.logger import get_logger

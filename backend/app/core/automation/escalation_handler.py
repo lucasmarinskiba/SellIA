@@ -13,11 +13,11 @@ Triggers para escalación:
 Notificación: email, SMS, Slack, dashboard
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 import asyncio
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +31,11 @@ class Escalation:
     severity: str  # critical, high, medium, low
     reason: str
     created_at: datetime
-    assigned_to: Optional[str] = None
+    assigned_to: str | None = None
     resolved: bool = False
-    resolution: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    notifications_sent: List[str] = None
+    resolution: str | None = None
+    resolved_at: datetime | None = None
+    notifications_sent: list[str] = None
 
     def __post_init__(self):
         if self.notifications_sent is None:
@@ -47,8 +47,8 @@ class EscalationHandler:
 
     def __init__(self, notification_service=None):
         self.notification_service = notification_service
-        self.escalations: Dict[str, Escalation] = {}
-        self.escalation_queue: List[Escalation] = []
+        self.escalations: dict[str, Escalation] = {}
+        self.escalation_queue: list[Escalation] = []
         self.lock = asyncio.Lock()
 
     async def escalate(
@@ -56,7 +56,7 @@ class EscalationHandler:
         job: Any,
         reason: str,
         severity: str = "high",
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """
         Escalates job a revisión humana.
@@ -97,7 +97,7 @@ class EscalationHandler:
     async def notify_human(
         self,
         escalation: Escalation,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         """Notifica humano sobre escalación."""
         message = self._build_notification_message(escalation, context)
@@ -114,14 +114,14 @@ class EscalationHandler:
                 )
                 notifications.append("email")
             except Exception as e:
-                logger.error(f"Failed to send escalation email: {str(e)}")
+                logger.error(f"Failed to send escalation email: {e!s}")
 
         # Slack (if configured)
         try:
             await self._send_slack_alert(escalation, message)
             notifications.append("slack")
         except Exception as e:
-            logger.debug(f"Slack notification not available: {str(e)}")
+            logger.debug(f"Slack notification not available: {e!s}")
 
         # SMS for critical
         if escalation.severity == "critical" and self.notification_service:
@@ -132,7 +132,7 @@ class EscalationHandler:
                 )
                 notifications.append("sms")
             except Exception as e:
-                logger.debug(f"SMS notification failed: {str(e)}")
+                logger.debug(f"SMS notification failed: {e!s}")
 
         escalation.notifications_sent = notifications
         logger.info(f"Escalation notified via: {', '.join(notifications)}")
@@ -141,7 +141,7 @@ class EscalationHandler:
         self,
         escalation_id: str,
         resolution: str,
-        assigned_to: Optional[str] = None,
+        assigned_to: str | None = None,
     ) -> bool:
         """Marca escalación como resuelta."""
         async with self.lock:
@@ -157,12 +157,12 @@ class EscalationHandler:
             logger.info(f"Escalation resolved: {escalation_id}")
             return True
 
-    async def get_escalation(self, escalation_id: str) -> Optional[Escalation]:
+    async def get_escalation(self, escalation_id: str) -> Escalation | None:
         """Obtiene detalles de escalación."""
         async with self.lock:
             return self.escalations.get(escalation_id)
 
-    async def get_pending_escalations(self, limit: int = 50) -> List[Escalation]:
+    async def get_pending_escalations(self, limit: int = 50) -> list[Escalation]:
         """Obtiene escalaciones pendientes."""
         async with self.lock:
             pending = [e for e in self.escalation_queue if not e.resolved]
@@ -176,7 +176,7 @@ class EscalationHandler:
             )
             return pending[:limit]
 
-    async def get_escalation_stats(self, hours: int = 24) -> Dict[str, Any]:
+    async def get_escalation_stats(self, hours: int = 24) -> dict[str, Any]:
         """Estadísticas de escalaciones."""
         async with self.lock:
             cutoff = datetime.utcnow() - timedelta(hours=hours)
@@ -211,7 +211,7 @@ class EscalationHandler:
     def _build_notification_message(
         self,
         escalation: Escalation,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Construye mensaje de notificación."""
         message = f"""
@@ -240,7 +240,7 @@ ACTION REQUIRED: Review and resolve this escalation in the dashboard.
         logger.debug("Slack alert would be sent here")
 
     @staticmethod
-    def _calculate_avg_resolution_time(escalations: List[Escalation]) -> Optional[float]:
+    def _calculate_avg_resolution_time(escalations: list[Escalation]) -> float | None:
         """Calcula tiempo promedio de resolución."""
         resolved = [e for e in escalations if e.resolved and e.resolved_at]
         if not resolved:

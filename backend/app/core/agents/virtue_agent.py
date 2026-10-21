@@ -10,9 +10,8 @@ Principios:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class VirtueAgent:
     }
 
     @staticmethod
-    def validate_honesty(claim: str, product_data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def validate_honesty(claim: str, product_data: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """
         Validate if a claim is honest and not misleading.
 
@@ -90,7 +89,7 @@ class VirtueAgent:
                     "severity": HonestySeverity.CRITICAL,
                     "claim": prohibited,
                     "reason": f"'{prohibited}' is a prohibited absolute claim",
-                    "suggestion": f"Reframe as 'often helps', 'works for many', 'typically', etc.",
+                    "suggestion": "Reframe as 'often helps', 'works for many', 'typically', etc.",
                 })
                 details["is_honest"] = False
 
@@ -104,7 +103,7 @@ class VirtueAgent:
                         "severity": HonestySeverity.HIGH,
                         "claim": word,
                         "reason": f"'{word}' not verified in product data",
-                        "suggestion": f"Use 'among the', 'typically', or remove superlative",
+                        "suggestion": "Use 'among the', 'typically', or remove superlative",
                     })
 
         # Check 3: Certainty language (should use possibility)
@@ -135,9 +134,9 @@ class VirtueAgent:
     @staticmethod
     def check_integrity(
         promise: str,
-        delivery: Dict[str, Any],
-        timeline: Dict[str, Any],
-    ) -> Tuple[bool, Dict[str, Any]]:
+        delivery: dict[str, Any],
+        timeline: dict[str, Any],
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if promise matches actual delivery.
 
@@ -220,10 +219,10 @@ class VirtueAgent:
 
     @staticmethod
     def enforce_respect_framework(
-        audience: Dict[str, Any],
+        audience: dict[str, Any],
         message: str,
         intent: str,
-    ) -> Tuple[bool, Dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if message is respectful and not manipulative.
 
@@ -293,9 +292,9 @@ class VirtueAgent:
     @staticmethod
     def check_transparency(
         message: str,
-        product: Dict[str, Any],
-        must_disclose: List[str],
-    ) -> Tuple[bool, Dict[str, Any]]:
+        product: dict[str, Any],
+        must_disclose: list[str],
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if message includes required transparency.
 
@@ -331,7 +330,7 @@ class VirtueAgent:
                 elif item == "trial_length":
                     details["suggestions"].append({
                         "type": "missing_trial",
-                        "message": f"Trial ends on [DATE]. Disclose cancellation terms.",
+                        "message": "Trial ends on [DATE]. Disclose cancellation terms.",
                     })
                 elif item == "refund_policy":
                     details["suggestions"].append({
@@ -344,10 +343,10 @@ class VirtueAgent:
     @staticmethod
     def score_virtue(
         claim: str,
-        product: Dict[str, Any],
-        delivery: Dict[str, Any],
-        audience: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        delivery: dict[str, Any],
+        audience: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Overall virtue score (0-100).
 

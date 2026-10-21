@@ -3,8 +3,11 @@
 componentes usan el cliente axios con baseURL = NEXT_PUBLIC_API_URL directo.
 """
 from fastapi import APIRouter, HTTPException, Query
-from app.domains.arca_compliance.service import ARCAComplianceService, CUITValidationError
 
+from app.domains.arca_compliance.service import (
+    ARCAComplianceService,
+    CUITValidationError,
+)
 
 router = APIRouter(prefix="/arca", tags=["arca-compliance"])
 

@@ -5,22 +5,21 @@ CadenceEngine — orchestrates smart follow-up sequences.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.crm.models import LeadScore
 from app.domains.outreach.models import (
     ContactFatigueScore,
+    FatigueLevel,
     OutreachCadenceRule,
     OutreachLog,
     OutreachLogStatus,
-    FatigueLevel,
 )
-from app.domains.channels.models import Conversation, Message
-from app.domains.crm.models import LeadScore
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -89,8 +88,8 @@ class FatigueScoringService:
             }
 
         # Check cooldown
-        if score.recommended_cooldown_until and datetime.now(timezone.utc) < score.recommended_cooldown_until:
-            hours_left = int((score.recommended_cooldown_until - datetime.now(timezone.utc)).total_seconds() / 3600)
+        if score.recommended_cooldown_until and datetime.now(UTC) < score.recommended_cooldown_until:
+            hours_left = int((score.recommended_cooldown_until - datetime.now(UTC)).total_seconds() / 3600)
             return {
                 "can_contact": False,
                 "reason": f"Lead is in cooldown. Wait {hours_left} more hours.",
@@ -113,7 +112,7 @@ class FatigueScoringService:
                 "recommended_wait_hours": 48,
                 "fatigue_level": FatigueLevel.EXHAUSTED,
                 "contacts_this_week": score.total_contacts_last_7d,
-                "ai_recommendation": f"Límite semanal alcanzado. Esperar hasta la próxima semana.",
+                "ai_recommendation": "Límite semanal alcanzado. Esperar hasta la próxima semana.",
             }
 
         # Check channel-specific limit
@@ -135,7 +134,7 @@ class FatigueScoringService:
 
         # Check minimum hours between contacts
         if score.last_contact_at:
-            hours_since = (datetime.now(timezone.utc) - score.last_contact_at).total_seconds() / 3600
+            hours_since = (datetime.now(UTC) - score.last_contact_at).total_seconds() / 3600
             if hours_since < rule.min_hours_between_contacts:
                 wait_hours = int(rule.min_hours_between_contacts - hours_since)
                 return {
@@ -150,7 +149,7 @@ class FatigueScoringService:
 
         # Check business hours
         if rule.respect_local_hours:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             # Simplified: use UTC for now, in production would use lead's timezone
             current_hour = now.hour
             if not (rule.allowed_hours_start <= current_hour < rule.allowed_hours_end):
@@ -166,7 +165,7 @@ class FatigueScoringService:
 
         # Check weekend avoidance
         if rule.avoid_weekends:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             if now.weekday() >= 5:  # Saturday=5, Sunday=6
                 return {
                     "can_contact": False,
@@ -214,7 +213,7 @@ class FatigueScoringService:
 
         # Update fatigue score
         score = await self.get_or_create_score(business_id, conversation_id)
-        score.last_contact_at = datetime.now(timezone.utc)
+        score.last_contact_at = datetime.now(UTC)
 
         # Recalculate weekly counts
         await self._recalculate_counts(score)
@@ -230,7 +229,7 @@ class FatigueScoringService:
         # Set cooldown if needed
         rule = await self.get_or_create_rule(business_id)
         if score.consecutive_no_replies >= rule.cooldown_after_no_reply_count:
-            score.recommended_cooldown_until = datetime.now(timezone.utc) + timedelta(days=rule.long_cooldown_days)
+            score.recommended_cooldown_until = datetime.now(UTC) + timedelta(days=rule.long_cooldown_days)
             score.ai_recommendation = f"Lead no responde tras {score.consecutive_no_replies} intentos. Pausar {rule.long_cooldown_days} días."
         else:
             score.recommended_cooldown_until = None
@@ -254,7 +253,7 @@ class FatigueScoringService:
         if not score:
             return
 
-        score.last_response_at = datetime.now(timezone.utc)
+        score.last_response_at = datetime.now(UTC)
         score.consecutive_no_replies = 0
         score.recommended_cooldown_until = None
         score.ai_recommendation = None
@@ -268,7 +267,7 @@ class FatigueScoringService:
         log = log_result.scalar_one_or_none()
         if log:
             log.status = OutreachLogStatus.RESPONDED
-            log.responded_at = datetime.now(timezone.utc)
+            log.responded_at = datetime.now(UTC)
             log.response_type = response_type
             log.response_content = response_content[:500] if response_content else None
 
@@ -276,7 +275,7 @@ class FatigueScoringService:
 
     async def _recalculate_counts(self, score: ContactFatigueScore) -> None:
         """Recalculate 7d and 30d contact counts from logs."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
 

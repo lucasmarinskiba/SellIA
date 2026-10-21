@@ -2,8 +2,10 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, UUID as SQLUUID, Float, JSON, func
+
 from pydantic import BaseModel
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, String, func
+from sqlalchemy import UUID as SQLUUID
 
 from app.core.database import Base
 

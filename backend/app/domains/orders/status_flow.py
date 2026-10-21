@@ -8,8 +8,8 @@ fire the service-paid automation. One function, used by both paths.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +34,7 @@ ALLOWED_TRANSITIONS: dict[str, list[str]] = {
 }
 
 
-def parse_status(raw: Any) -> Optional[OrderStatus]:
+def parse_status(raw: Any) -> OrderStatus | None:
     if isinstance(raw, OrderStatus):
         return raw
     if not raw:
@@ -48,7 +48,7 @@ def parse_status(raw: Any) -> Optional[OrderStatus]:
 
 def status_updates(order: Order, new_status: OrderStatus) -> dict[str, Any]:
     """The side fields a status change implies. No DB writes here."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     updates: dict[str, Any] = {"status": new_status}
 
     if new_status == OrderStatus.PAID:

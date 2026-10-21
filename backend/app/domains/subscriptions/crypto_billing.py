@@ -7,7 +7,7 @@ USDT transactions on Tron (TRC-20) and Binance Smart Chain (BEP-20).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -60,7 +60,7 @@ def generate_crypto_payment(
     normalized = _normalize_network(network)
     wallet_address = _get_creator_address(normalized)
     payment_id = str(uuid.uuid4())
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=PAYMENT_EXPIRATION_MINUTES)
+    expires_at = datetime.now(UTC) + timedelta(minutes=PAYMENT_EXPIRATION_MINUTES)
 
     return {
         "transaction_id": payment_id,

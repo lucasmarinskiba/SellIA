@@ -20,16 +20,16 @@ Características:
 Líneas: 400+ código
 """
 
-import logging
 import asyncio
-import time
-import random
-from typing import Dict, Any, Optional, Callable, List, Tuple, Set
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
-import threading
+import logging
 import queue
+import random
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,13 @@ class CircuitBreaker:
     CLOSED → OPEN → HALF_OPEN → CLOSED
     """
 
-    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self.half_open_calls = 0
         self.metrics = {
             "total_calls": 0,
@@ -82,7 +82,7 @@ class CircuitBreaker:
         func: Callable,
         *args,
         **kwargs
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
         """
         Ejecutar función a través de circuit breaker.
 
@@ -181,7 +181,7 @@ class BulkheadPartition:
         self.name = name
         self.max_concurrent = max_concurrent
         self.queue = asyncio.Queue(maxsize=queue_size)
-        self.active_tasks: Set[asyncio.Task] = set()
+        self.active_tasks: set[asyncio.Task] = set()
         self.metrics = {
             "total_requests": 0,
             "accepted": 0,
@@ -195,7 +195,7 @@ class BulkheadPartition:
         func: Callable,
         *args,
         **kwargs
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
         """
         Enviar trabajo al bulkhead.
 
@@ -220,7 +220,7 @@ class BulkheadPartition:
 
             return (True, "Queued")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.metrics["rejected"] += 1
             return (False, Exception("Timeout enqueuing work"))
 
@@ -245,16 +245,16 @@ class BulkheadPartition:
                     await func(*args, **kwargs)
                     self.metrics["completed"] += 1
                 except Exception as e:
-                    logger.error(f"Bulkhead {self.name} task failed: {str(e)}")
+                    logger.error(f"Bulkhead {self.name} task failed: {e!s}")
                     self.metrics["failed"] += 1
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
             except Exception as e:
-                logger.error(f"Bulkhead {self.name} worker error: {str(e)}")
+                logger.error(f"Bulkhead {self.name} worker error: {e!s}")
                 break
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Obtener métricas."""
         return {
             **self.metrics,
@@ -267,7 +267,7 @@ class BulkheadManager:
     """Gestor de bulkheads (aislamiento de recursos)."""
 
     def __init__(self):
-        self.partitions: Dict[str, BulkheadPartition] = {}
+        self.partitions: dict[str, BulkheadPartition] = {}
 
     def get_partition(
         self,
@@ -290,7 +290,7 @@ class BulkheadManager:
         func: Callable,
         *args,
         **kwargs
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
         """Enviar trabajo a partición."""
         partition = self.get_partition(partition_name)
         return await partition.submit(func, *args, **kwargs)
@@ -304,14 +304,14 @@ class FallbackStrategy:
     """Estrategia de fallback."""
 
     def __init__(self):
-        self.strategies: List[Callable] = []
+        self.strategies: list[Callable] = []
 
     def add_strategy(self, func: Callable) -> "FallbackStrategy":
         """Agregar estrategia de fallback."""
         self.strategies.append(func)
         return self
 
-    async def execute(self, *args, **kwargs) -> Tuple[bool, Any]:
+    async def execute(self, *args, **kwargs) -> tuple[bool, Any]:
         """
         Intentar estrategias en orden.
 
@@ -325,7 +325,7 @@ class FallbackStrategy:
                 return (True, result)
 
             except Exception as e:
-                logger.warning(f"Strategy {idx+1} failed: {str(e)}")
+                logger.warning(f"Strategy {idx+1} failed: {e!s}")
                 if idx == len(self.strategies) - 1:
                     logger.error(f"All {len(self.strategies)} strategies failed")
                     return (False, e)
@@ -343,7 +343,7 @@ class TimeoutPolicy:
     def __init__(
         self,
         timeout_ms: int,
-        on_timeout: Optional[Callable] = None
+        on_timeout: Callable | None = None
     ):
         self.timeout_ms = timeout_ms
         self.on_timeout = on_timeout
@@ -353,7 +353,7 @@ class TimeoutPolicy:
         func: Callable,
         *args,
         **kwargs
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
         """
         Ejecutar con timeout.
 
@@ -366,14 +366,14 @@ class TimeoutPolicy:
             )
             return (True, result)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Timeout after {self.timeout_ms}ms")
 
             if self.on_timeout:
                 try:
                     await self.on_timeout()
                 except Exception as e:
-                    logger.error(f"Timeout handler failed: {str(e)}")
+                    logger.error(f"Timeout handler failed: {e!s}")
 
             return (False, TimeoutError(f"Timeout after {self.timeout_ms}ms"))
 
@@ -399,7 +399,7 @@ class ThrottlingPolicy:
         self.last_request_time = 0
         self.requests_in_current_minute = 0
 
-    async def acquire(self) -> Tuple[bool, Optional[float]]:
+    async def acquire(self) -> tuple[bool, float | None]:
         """
         Adquirir slot de rate limiting.
 
@@ -496,7 +496,7 @@ class ResilienceCoordinator:
     """Coordinador central de patrones de resiliencia."""
 
     def __init__(self):
-        self.circuit_breakers: Dict[str, CircuitBreaker] = {}
+        self.circuit_breakers: dict[str, CircuitBreaker] = {}
         self.bulkhead_manager = BulkheadManager()
         self.chaos_monkey = ChaosMonkey(enabled=False)
         self.metrics = {
@@ -509,7 +509,7 @@ class ResilienceCoordinator:
     def get_circuit_breaker(
         self,
         name: str,
-        config: Optional[CircuitBreakerConfig] = None
+        config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """Obtener o crear circuit breaker."""
         if name not in self.circuit_breakers:
@@ -520,12 +520,12 @@ class ResilienceCoordinator:
         self,
         func: Callable,
         *args,
-        circuit_breaker_name: Optional[str] = None,
-        bulkhead_name: Optional[str] = None,
-        timeout_ms: Optional[int] = None,
-        fallback_strategies: Optional[List[Callable]] = None,
+        circuit_breaker_name: str | None = None,
+        bulkhead_name: str | None = None,
+        timeout_ms: int | None = None,
+        fallback_strategies: list[Callable] | None = None,
         **kwargs
-    ) -> Tuple[bool, Any]:
+    ) -> tuple[bool, Any]:
         """
         Ejecutar función con máxima resiliencia.
 
@@ -594,19 +594,19 @@ class ResilienceCoordinator:
                     return (True, result)
 
             self.metrics["failures"] += 1
-            logger.error(f"Resilient execution failed: {str(e)}")
+            logger.error(f"Resilient execution failed: {e!s}")
             return (False, e)
 
 
 __all__ = [
+    "BulkheadManager",
+    "BulkheadPartition",
+    "ChaosMonkey",
     "CircuitBreaker",
     "CircuitBreakerConfig",
     "CircuitBreakerState",
-    "BulkheadManager",
-    "BulkheadPartition",
     "FallbackStrategy",
-    "TimeoutPolicy",
-    "ThrottlingPolicy",
-    "ChaosMonkey",
     "ResilienceCoordinator",
+    "ThrottlingPolicy",
+    "TimeoutPolicy",
 ]

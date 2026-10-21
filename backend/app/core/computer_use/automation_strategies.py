@@ -5,7 +5,7 @@ Cada estrategia sabe CÓMO actuar automáticamente en su dominio (inventory, pri
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class InventoryAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_manage_inventory(self, inventory_state: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_manage_inventory(self, inventory_state: dict[str, Any]) -> dict[str, Any]:
         """Maneja inventory automáticamente según knowledge."""
         recommendations = []
 
@@ -55,7 +55,7 @@ class PricingAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_optimize_pricing(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_optimize_pricing(self, market_data: dict[str, Any]) -> dict[str, Any]:
         """Optimiza precio automáticamente según mercado."""
 
         current_price = market_data.get("current_price", 100)
@@ -94,7 +94,7 @@ class ContentAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_optimize_content(self, content_performance: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_optimize_content(self, content_performance: dict[str, Any]) -> dict[str, Any]:
         """Optimiza contenido automáticamente según performance."""
 
         ctr = content_performance.get("ctr", 0)
@@ -135,7 +135,7 @@ class NegotiationAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_negotiate(self, buyer: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_negotiate(self, buyer: dict[str, Any], product: dict[str, Any]) -> dict[str, Any]:
         """Automáticamente negocia usando tácticas Trump + Belfort."""
 
         buyer_type = buyer.get("type", "default")
@@ -187,7 +187,7 @@ class LeadQualificationAutomationStrategy:
         self.agent = intelligent_agent
         self.brain = brain_layer
 
-    async def auto_qualify_lead(self, lead: Dict[str, Any]) -> Dict[str, Any]:
+    async def auto_qualify_lead(self, lead: dict[str, Any]) -> dict[str, Any]:
         """Automáticamente califica lead (hot/warm/cold)."""
 
         score = 0

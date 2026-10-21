@@ -1,18 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from uuid import UUID
 import re
+from datetime import UTC
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.websites.models import Website, Domain, WebsiteStatus
+from app.domains.users.models import User
+from app.domains.websites.models import Domain, Website, WebsiteStatus
 from app.domains.websites.schemas import (
-    WebsiteCreate, WebsiteUpdate, WebsiteResponse,
-    DomainCreate, DomainUpdate, DomainResponse,
-    OnboardingCompleteRequest
+    DomainResponse,
+    DomainUpdate,
+    OnboardingCompleteRequest,
+    WebsiteCreate,
+    WebsiteResponse,
+    WebsiteUpdate,
 )
 
 router = APIRouter()
@@ -235,8 +240,8 @@ async def update_website(
         setattr(website, field, value)
 
     if req.status == WebsiteStatus.PUBLISHED:
-        from datetime import datetime, timezone
-        website.published_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        website.published_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(website)
@@ -259,9 +264,9 @@ async def publish_website(
     if not website:
         raise HTTPException(status_code=404, detail="Website no encontrado")
 
-    from datetime import datetime, timezone
+    from datetime import datetime
     website.status = WebsiteStatus.PUBLISHED
-    website.published_at = datetime.now(timezone.utc)
+    website.published_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(website)

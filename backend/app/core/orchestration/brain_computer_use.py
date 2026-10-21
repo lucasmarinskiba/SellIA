@@ -5,9 +5,9 @@ Brain decide. Computer Use ejecuta.
 Loop infinito: Analyze → Decide → Execute → Monitor → Learn → Repeat.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
 import asyncio
+import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,10 @@ class BrainComputerUseCoordinator:
         """
         self.brain = brain_engine
         self.computer_use = computer_use_agent
-        self.execution_history: List[Dict[str, Any]] = []
-        self.learning_log: List[Dict[str, Any]] = []
+        self.execution_history: list[dict[str, Any]] = []
+        self.learning_log: list[dict[str, Any]] = []
 
-    async def run_sales_cycle(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_sales_cycle(self, product: dict[str, Any]) -> dict[str, Any]:
         """
         Ciclo de venta automático end-to-end.
 
@@ -116,7 +116,7 @@ class BrainComputerUseCoordinator:
             "learning_feedback": learning_feedback,
         }
 
-    async def _execute_brain_action(self, brain_action: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_brain_action(self, brain_action: dict[str, Any], product: dict[str, Any]) -> dict[str, Any]:
         """
         Ejecuta acción ordenada por Brain vía Computer Use.
 
@@ -181,10 +181,10 @@ class BrainComputerUseCoordinator:
             return result
 
         except Exception as e:
-            logger.error(f"Error executing action {action_type}: {str(e)}")
+            logger.error(f"Error executing action {action_type}: {e!s}")
             return {"status": "error", "action": action_type, "error": str(e)}
 
-    async def _monitor_execution(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _monitor_execution(self, results: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Monitorea resultados ejecución.
 
@@ -251,12 +251,12 @@ class BrainComputerUseCoordinator:
                 })
 
             except Exception as e:
-                logger.error(f"Error in optimization iteration {iteration}: {str(e)}")
+                logger.error(f"Error in optimization iteration {iteration}: {e!s}")
 
             # Esperar próxima iteración
             await asyncio.sleep(interval_hours * 3600)
 
-    def get_learning_summary(self) -> Dict[str, Any]:
+    def get_learning_summary(self) -> dict[str, Any]:
         """Retorna resumen de learnings acumulados."""
 
         return {

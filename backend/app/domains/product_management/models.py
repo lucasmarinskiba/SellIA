@@ -1,9 +1,21 @@
 """Phase 45: Product Management & Inventory."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+
 from app.core.database import Base
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -21,7 +33,7 @@ class Product(Base):
     seo_title = Column(String(255), nullable=True)
     seo_description = Column(String(500), nullable=True)
     seo_keywords = Column(ARRAY(String), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -35,7 +47,7 @@ class Inventory(Base):
     reorder_point = Column(Integer, default=10)
     reorder_quantity = Column(Integer, default=50)
     stockout_alert = Column(Boolean, default=False)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
@@ -47,7 +59,7 @@ class ProductVariant(Base):
     attributes = Column(JSONB, nullable=True)  # size, color, etc
     price_modifier = Column(Float, default=0)
     stock_quantity = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ContentTemplate(Base):
     __tablename__ = "content_templates"
@@ -58,7 +70,7 @@ class ContentTemplate(Base):
     template_name = Column(String(255), nullable=False)
     content_template = Column(Text, nullable=False)
     variables = Column(ARRAY(String), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ProductPerformance(Base):
     __tablename__ = "product_performance"
@@ -74,4 +86,4 @@ class ProductPerformance(Base):
     rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
     rank_in_category = Column(Integer, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))

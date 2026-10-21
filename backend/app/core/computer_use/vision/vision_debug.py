@@ -9,13 +9,11 @@ Responsibilities:
 Debug toolkit for vision-based automation.
 """
 
-import logging
-import base64
 import json
-import asyncio
-from typing import Dict, List, Any, Optional
+import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +24,8 @@ class VisionDebugAnnotator:
     @staticmethod
     def annotate_with_buttons(
         screenshot_bytes: bytes,
-        buttons: List[Dict[str, Any]],
-        output_path: Optional[str] = None
+        buttons: list[dict[str, Any]],
+        output_path: str | None = None
     ) -> bytes:
         """Anota screenshot mostrando botones detectados.
 
@@ -40,8 +38,9 @@ class VisionDebugAnnotator:
             Imagen con anotaciones
         """
         try:
-            from PIL import Image, ImageDraw
             import io
+
+            from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
             draw = ImageDraw.Draw(image, 'RGBA')
@@ -82,13 +81,14 @@ class VisionDebugAnnotator:
     @staticmethod
     def annotate_with_form_fields(
         screenshot_bytes: bytes,
-        fields: List[Dict[str, Any]],
-        output_path: Optional[str] = None
+        fields: list[dict[str, Any]],
+        output_path: str | None = None
     ) -> bytes:
         """Anota campos de formulario."""
         try:
-            from PIL import Image, ImageDraw
             import io
+
+            from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
             draw = ImageDraw.Draw(image, 'RGBA')
@@ -139,13 +139,14 @@ class VisionDebugAnnotator:
     @staticmethod
     def annotate_with_all_elements(
         screenshot_bytes: bytes,
-        analysis: Dict[str, Any],
-        output_path: Optional[str] = None
+        analysis: dict[str, Any],
+        output_path: str | None = None
     ) -> bytes:
         """Anota con TODOS los elementos detectados."""
         try:
-            from PIL import Image, ImageDraw, ImageFont
             import io
+
+            from PIL import Image, ImageDraw
 
             image = Image.open(io.BytesIO(screenshot_bytes))
             draw = ImageDraw.Draw(image, 'RGBA')
@@ -198,12 +199,13 @@ class VisionDebugAnnotator:
     def create_comparison_image(
         before_bytes: bytes,
         after_bytes: bytes,
-        output_path: Optional[str] = None
+        output_path: str | None = None
     ) -> bytes:
         """Crea imagen comparativa before/after."""
         try:
-            from PIL import Image
             import io
+
+            from PIL import Image
 
             before_img = Image.open(io.BytesIO(before_bytes))
             after_img = Image.open(io.BytesIO(after_bytes))
@@ -248,7 +250,7 @@ class VisionDebugAnnotator:
 class VisionDebugLogger:
     """Log detallado de decisiones visuales."""
 
-    def __init__(self, session_id: str, output_dir: Optional[str] = None):
+    def __init__(self, session_id: str, output_dir: str | None = None):
         self.session_id = session_id
         self.output_dir = Path(output_dir or f"./vision_debug/{session_id}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -258,9 +260,9 @@ class VisionDebugLogger:
     def log_analysis(
         self,
         step: int,
-        screenshot_path: Optional[str],
-        analysis: Dict[str, Any],
-        action_taken: Optional[str] = None
+        screenshot_path: str | None,
+        analysis: dict[str, Any],
+        action_taken: str | None = None
     ) -> None:
         """Registra análisis de screenshot."""
         entry = {
@@ -284,7 +286,7 @@ class VisionDebugLogger:
         self,
         step: int,
         search_query: str,
-        found_element: Optional[Dict[str, Any]] = None,
+        found_element: dict[str, Any] | None = None,
         confidence: float = 0.0
     ) -> None:
         """Registra búsqueda de elemento."""
@@ -305,9 +307,9 @@ class VisionDebugLogger:
         self,
         step: int,
         action: str,
-        target: Optional[str],
+        target: str | None,
         result: str,
-        error: Optional[str] = None
+        error: str | None = None
     ) -> None:
         """Registra ejecución de acción."""
         entry = {
@@ -328,7 +330,7 @@ class VisionDebugLogger:
         step: int,
         action: str,
         confirmation_result: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ) -> None:
         """Registra confirmación de acción."""
         entry = {
@@ -343,7 +345,7 @@ class VisionDebugLogger:
 
         self._write_log_entry(entry)
 
-    def _write_log_entry(self, entry: Dict[str, Any]) -> None:
+    def _write_log_entry(self, entry: dict[str, Any]) -> None:
         """Escribe entrada en log."""
         try:
             with open(self.log_file, 'a') as f:
@@ -354,10 +356,10 @@ class VisionDebugLogger:
     def generate_report(self) -> str:
         """Genera reporte de debug."""
         lines = [
-            f"Vision Debug Report",
+            "Vision Debug Report",
             f"Session: {self.session_id}",
             f"Debug Dir: {self.output_dir}",
-            f"",
+            "",
         ]
 
         # Leer y resumir logs
@@ -380,14 +382,14 @@ class VisionDebugLogger:
                     by_type[event_type] = 0
                 by_type[event_type] += 1
 
-            lines.append(f"\nEvents by Type:")
+            lines.append("\nEvents by Type:")
             for event_type, count in by_type.items():
                 lines.append(f"  {event_type}: {count}")
 
             # Último estado
             if entries:
                 last = entries[-1]
-                lines.append(f"\nLast Event:")
+                lines.append("\nLast Event:")
                 lines.append(f"  Time: {last.get('timestamp')}")
                 lines.append(f"  Type: {last.get('event_type')}")
                 if 'action' in last:
@@ -397,7 +399,7 @@ class VisionDebugLogger:
 
         return "\n".join(lines)
 
-    def save_report(self, output_file: Optional[str] = None) -> str:
+    def save_report(self, output_file: str | None = None) -> str:
         """Guarda reporte a archivo."""
         report = self.generate_report()
 
@@ -413,9 +415,9 @@ class VisionComparator:
 
     @staticmethod
     def compare_analyses(
-        analysis1: Dict[str, Any],
-        analysis2: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        analysis1: dict[str, Any],
+        analysis2: dict[str, Any]
+    ) -> dict[str, Any]:
         """Compara dos análisis."""
         return {
             "page_type_changed": (
@@ -436,7 +438,7 @@ class VisionComparator:
         }
 
     @staticmethod
-    def print_comparison(comparison: Dict[str, Any]) -> str:
+    def print_comparison(comparison: dict[str, Any]) -> str:
         """Retorna comparación en formato legible."""
         lines = ["ANALYSIS COMPARISON:"]
 

@@ -4,11 +4,16 @@ Pricing: ~$0.02/image
 Strengths: Background removal, product photography, batch editing
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -27,7 +32,7 @@ class PhotoroomProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.02 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"photoroom-generate": 0.02, "photoroom-remove-bg": 0.01}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -45,13 +50,12 @@ class PhotoroomProvider(BaseProvider):
                 "num_images": config.num_variations,
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://sdk.photoroom.com/v1/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://sdk.photoroom.com/v1/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             image_url = data.get("image", {}).get("url") if isinstance(data.get("image"), dict) else data.get("images", [{}])[0].get("url")
             if not image_url:

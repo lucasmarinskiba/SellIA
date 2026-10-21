@@ -24,8 +24,8 @@ prepara" -- we generate the exact code and the user pastes it.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -99,13 +99,16 @@ async def review_campaign_recipients(
     request to make sense, and which was not already asked.
     """
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     if not business_ids:
         return []
 
-    since = datetime.now(timezone.utc) - timedelta(days=REVIEW_WINDOW_DAYS)
+    since = datetime.now(UTC) - timedelta(days=REVIEW_WINDOW_DAYS)
     result = await db.execute(
         select(
             Conversation.id,
@@ -165,7 +168,7 @@ async def send_review_campaign(
     db: AsyncSession,
     business_ids: list[uuid.UUID],
     script: str,
-    conversation_ids: Optional[list[str]] = None,
+    conversation_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Send the review request to the selected real conversations.
 
@@ -187,7 +190,7 @@ async def send_review_campaign(
         )
 
     sent, failed = 0, 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
     for recipient in recipients:
         try:
             message = script.replace("{nombre}", recipient["name"])
@@ -201,7 +204,7 @@ async def send_review_campaign(
             conv = await db.get(Conversation, uuid.UUID(recipient["conversation_id"]))
             if conv is not None:
                 extra = dict(conv.extra_data or {})
-                extra[REVIEW_CAMPAIGN_TAG] = datetime.now(timezone.utc).isoformat()
+                extra[REVIEW_CAMPAIGN_TAG] = datetime.now(UTC).isoformat()
                 conv.extra_data = extra
             sent += 1
         except Exception as e:  # noqa: BLE001 -- one bad recipient must not sink the batch

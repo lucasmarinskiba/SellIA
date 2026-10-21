@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
-import pandas as pd
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -33,7 +32,7 @@ _HBUCKETS = [("1-7", 1, 7), ("8-14", 8, 14), ("15-28", 15, 28), ("29+", 29, 10_0
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _spec_from_row(row: ForecastSeries) -> SeriesSpec:
@@ -110,7 +109,7 @@ class ForecastingService:
 
         try:
             out = ForecastPipeline(horizon=horizon, profile=self.profile).run(ts)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.exception("forecast pipeline failed for %s", spec.series_key)
             if persist:
                 run = ForecastRun(
@@ -226,7 +225,7 @@ class ForecastingService:
 
     async def _reconcile_revenue_hierarchy(
         self, business_id: uuid.UUID, horizon: int
-    ) -> Optional[dict]:
+    ) -> dict | None:
         total_row = await self._find_series(business_id, level="total", target="revenue")
         channel_rows = await self._find_series_many(business_id, level="channel", target="revenue")
         if not channel_rows:
@@ -286,7 +285,7 @@ class ForecastingService:
             p.q50 = Decimal(str(round(float(v), 4)))
 
     # ------------------------------------------------------------------
-    async def _find_series(self, business_id, level, target) -> Optional[ForecastSeries]:
+    async def _find_series(self, business_id, level, target) -> ForecastSeries | None:
         rows = await self._find_series_many(business_id, level, target)
         return rows[0] if rows else None
 
@@ -304,7 +303,7 @@ class ForecastingService:
             ).scalars().all()
         )
 
-    async def _latest_run(self, series_row: ForecastSeries) -> Optional[ForecastRun]:
+    async def _latest_run(self, series_row: ForecastSeries) -> ForecastRun | None:
         if series_row is None:
             return None
         return (
@@ -316,7 +315,7 @@ class ForecastingService:
             )
         ).scalar_one_or_none()
 
-    async def _latest_path(self, series_row) -> tuple[Optional[ForecastRun], Optional[np.ndarray]]:
+    async def _latest_path(self, series_row) -> tuple[ForecastRun | None, np.ndarray | None]:
         run = await self._latest_run(series_row)
         if not run:
             return None, None
@@ -332,8 +331,8 @@ class ForecastingService:
 
     # ------------------------------------------------------------------
     async def get_forecast(
-        self, business_id: uuid.UUID, series_key: str, horizon: Optional[int] = None
-    ) -> Optional[dict]:
+        self, business_id: uuid.UUID, series_key: str, horizon: int | None = None
+    ) -> dict | None:
         row = (
             await self.db.execute(
                 select(ForecastSeries).where(
@@ -501,7 +500,7 @@ class ForecastingService:
         }
 
 
-def _num(v) -> Optional[Decimal]:
+def _num(v) -> Decimal | None:
     if v is None:
         return None
     try:

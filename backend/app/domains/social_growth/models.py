@@ -5,10 +5,17 @@ Helps users grow their Instagram, TikTok, and other social profiles.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Boolean, Numeric
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -39,7 +46,7 @@ class SocialProfileAudit(Base):
     recommendations = Column(JSONB, default=list, nullable=False)
     # [{"action": "Add Linktree", "expected_impact": "+15% click-through"}]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class ContentCalendarSlot(Base):
@@ -62,7 +69,7 @@ class ContentCalendarSlot(Base):
     posted_at = Column(DateTime(timezone=True), nullable=True)
     performance_notes = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class CompetitorTracking(Base):
@@ -89,4 +96,4 @@ class CompetitorTracking(Base):
     gap_analysis = Column(Text, nullable=True)
 
     last_synced_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

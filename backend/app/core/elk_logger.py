@@ -15,11 +15,9 @@ Configuration via environment variables:
     ELK_LOG_PATH=/var/log/sellia/security.json
 """
 
-import os
 import json
-import asyncio
-from datetime import datetime, timezone
-from typing import Optional, Any
+import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 try:
@@ -45,11 +43,11 @@ def format_elk_document(
     event_type: str,
     message: str,
     level: str = "info",
-    user_id: Optional[str] = None,
-    email: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    country: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    email: str | None = None,
+    ip_address: str | None = None,
+    country: str | None = None,
+    extra: dict | None = None,
 ) -> dict:
     """
     Format a security event as an Elasticsearch-compatible JSON document.
@@ -57,7 +55,7 @@ def format_elk_document(
     Uses ECS (Elastic Common Schema) fields where applicable.
     """
     doc = {
-        "@timestamp": datetime.now(timezone.utc).isoformat(),
+        "@timestamp": datetime.now(UTC).isoformat(),
         "event": {
             "kind": "event",
             "category": ["authentication" if "login" in event_type else "security"],
@@ -145,11 +143,11 @@ async def log_security_event(
     event_type: str,
     message: str,
     level: str = "info",
-    user_id: Optional[str] = None,
-    email: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    country: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    email: str | None = None,
+    ip_address: str | None = None,
+    country: str | None = None,
+    extra: dict | None = None,
 ) -> bool:
     """
     Log a security event to ELK.
@@ -182,10 +180,10 @@ async def log_security_event(
 async def log_login(
     email: str,
     ip: str,
-    country: Optional[str] = None,
+    country: str | None = None,
     success: bool = True,
-    user_id: Optional[str] = None,
-    extra: Optional[dict] = None,
+    user_id: str | None = None,
+    extra: dict | None = None,
 ):
     """Log a login event."""
     await log_security_event(
@@ -203,9 +201,9 @@ async def log_login(
 async def log_new_device(
     email: str,
     ip: str,
-    country: Optional[str] = None,
-    user_id: Optional[str] = None,
-    device_info: Optional[str] = None,
+    country: str | None = None,
+    user_id: str | None = None,
+    device_info: str | None = None,
 ):
     """Log a new device detection."""
     await log_security_event(
@@ -224,8 +222,8 @@ async def log_geofence_violation(
     email: str,
     ip: str,
     distance_km: float,
-    country: Optional[str] = None,
-    user_id: Optional[str] = None,
+    country: str | None = None,
+    user_id: str | None = None,
 ):
     """Log a geofencing violation."""
     await log_security_event(
@@ -244,7 +242,7 @@ async def log_breach_detected(
     email: str,
     breach_count: int,
     breach_names: list[str],
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ):
     """Log a HIBP breach detection."""
     await log_security_event(

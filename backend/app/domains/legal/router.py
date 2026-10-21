@@ -13,12 +13,16 @@ from app.domains.legal.schemas import (
     ComplianceChecklistItemOut,
     ComplianceChecklistItemUpdate,
     ComplianceStatusResponse,
-    ContractRenderRequest,
     ContractRenderOut,
+    ContractRenderRequest,
     ContractTemplateCreate,
     ContractTemplateOut,
 )
-from app.domains.legal.service import AuditLogService, ComplianceService, ContractService
+from app.domains.legal.service import (
+    AuditLogService,
+    ComplianceService,
+    ContractService,
+)
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/legal", tags=["Legal"])

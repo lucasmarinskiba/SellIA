@@ -1,11 +1,11 @@
 """XGBoost model for deal close probability prediction."""
 
-import pickle
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
 import logging
+import pickle
+from datetime import datetime
 from pathlib import Path
+
+import numpy as np
 
 try:
     import xgboost as xgb
@@ -39,7 +39,7 @@ class DealProbabilityModel:
         "deal_size_normalized",
     ]
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         """Initialize model. Load from disk or create new."""
         self.model = None
         self.model_version = "1.0.0"
@@ -112,7 +112,7 @@ class DealProbabilityModel:
             logger.warning("XGBoost not installed. Model predictions will be random.")
             self.model = None
 
-    def extract_features(self, deal_data: Dict) -> np.ndarray:
+    def extract_features(self, deal_data: dict) -> np.ndarray:
         """Extract feature vector from deal data."""
         features = []
 
@@ -190,7 +190,7 @@ class DealProbabilityModel:
 
         return np.array(features, dtype=np.float32).reshape(1, -1)
 
-    def predict(self, deal_data: Dict) -> Tuple[float, float, float, float]:
+    def predict(self, deal_data: dict) -> tuple[float, float, float, float]:
         """Predict close probability for deal.
 
         Returns: (probability, confidence, probability_low_90, probability_high_90)
@@ -242,11 +242,11 @@ class DealProbabilityModel:
 
     def train(
         self,
-        training_data: List[Dict],
-        training_labels: List[int],
-        validation_data: Optional[List[Dict]] = None,
-        validation_labels: Optional[List[int]] = None,
-    ) -> Dict:
+        training_data: list[dict],
+        training_labels: list[int],
+        validation_data: list[dict] | None = None,
+        validation_labels: list[int] | None = None,
+    ) -> dict:
         """Train model on historical deal data.
 
         Args:
@@ -313,7 +313,7 @@ class DealProbabilityModel:
             logger.error(f"Error training model: {e}")
             return {"error": str(e)}
 
-    def get_feature_importance(self) -> Dict[str, float]:
+    def get_feature_importance(self) -> dict[str, float]:
         """Get feature importance scores from trained model."""
         if self.model is None:
             return {}

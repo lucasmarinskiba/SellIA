@@ -10,13 +10,14 @@ Usage:
 """
 
 from typing import Any
+
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
+from app.domains.subscriptions.services import check_subscription_limit
 from app.domains.users.models import User
-from app.domains.subscriptions.services import check_subscription_limit, track_usage
 
 
 def require_limit(metric_type: str, quantity: int = 1, track_after: bool = True):

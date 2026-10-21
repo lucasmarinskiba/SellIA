@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.acquisition_strategist import service as acq_service
 from app.domains.agents.acquisition_strategist.schemas import (
     AcquisitionStrategyCreate,
     AcquisitionStrategyOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/acquisition-strategist", tags=["acquisition-strategist"])
 
@@ -31,6 +31,7 @@ async def create_strategy(
 ):
     """Diseña una nueva estrategia de adquisición de clientes."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
@@ -56,6 +57,7 @@ async def list_strategies(
 ):
     """Lista las estrategias de adquisición del negocio."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)

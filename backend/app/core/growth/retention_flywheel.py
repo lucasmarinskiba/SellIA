@@ -1,8 +1,7 @@
 """Retention Flywheel — Onboarding, activation, habit loops, win-backs."""
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class RetentionFlywheel:
     @staticmethod
     def design_onboarding_flow(
         product_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design optimal onboarding sequence."""
 
         flows = {
@@ -51,8 +50,8 @@ class RetentionFlywheel:
 
     @staticmethod
     def identify_activation_moment(
-        user_actions: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        user_actions: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Identify when user becomes activated."""
 
         activation_actions = [
@@ -84,7 +83,7 @@ class RetentionFlywheel:
         trigger: str,
         action: str,
         reward: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design habit loop (from Nir Eyal's Hooked)."""
 
         return {
@@ -106,7 +105,7 @@ class RetentionFlywheel:
     def predict_churn_risk(
         days_since_last_action: int,
         engagement_score: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Predict if user is at risk of churning."""
 
         churn_risk = 0
@@ -135,7 +134,7 @@ class RetentionFlywheel:
     @staticmethod
     def design_winback_campaign(
         inactive_users: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design win-back campaign for inactive users."""
 
         return {
@@ -166,7 +165,7 @@ class RetentionFlywheel:
     def calculate_lifetime_value(
         monthly_revenue_per_user: float,
         monthly_churn_rate: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate customer LTV."""
 
         months = 1 / monthly_churn_rate if monthly_churn_rate > 0 else 120
@@ -187,7 +186,7 @@ class RetentionFlywheel:
         retained_week_1: int,
         retained_week_4: int,
         retention_improvement: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Measure effectiveness of retention initiatives."""
 
         return {

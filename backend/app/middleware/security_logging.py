@@ -1,9 +1,8 @@
 import json
-import re
 import logging
-import hmac
-import secrets
-from datetime import datetime, timezone
+import re
+from datetime import UTC, datetime
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -96,7 +95,7 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         client_ip = get_client_ip(request)
         user_id = None
         suspicious_triggers: list[str] = []
@@ -118,7 +117,7 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
         if hasattr(request.state, "user") and request.state.user:
             user_id = str(request.state.user.id)
 
-        duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+        duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
         # Info de Cloudflare si está disponible
         cf_info = getattr(request.state, "cloudflare_info", {})
@@ -146,10 +145,7 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
         }
 
         # Alertas específicas de seguridad
-        if response.status_code in (401, 403):
-            log_entry["level"] = "warning"
-            security_logger.warning(json.dumps(log_entry, ensure_ascii=False))
-        elif suspicious_triggers:
+        if response.status_code in (401, 403) or suspicious_triggers:
             log_entry["level"] = "warning"
             security_logger.warning(json.dumps(log_entry, ensure_ascii=False))
         elif request.url.path in ("/docs", "/redoc", "/openapi.json"):

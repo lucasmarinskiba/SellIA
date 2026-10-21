@@ -1,12 +1,20 @@
 """Customer 360 & unified data platform models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Float, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -47,7 +55,7 @@ class CustomerProfile(Base):
 
     # Lifecycle
     lifecycle_stage = Column(String(50), default=LifecycleStage.PROSPECT.value)
-    lifecycle_stage_updated_at = Column(DateTime(timezone.utc), nullable=True)
+    lifecycle_stage_updated_at = Column(DateTime(UTC), nullable=True)
 
     # Preferences
     preferences = Column(JSONB, nullable=True)  # Language, timezone, notification prefs, etc.
@@ -60,10 +68,10 @@ class CustomerProfile(Base):
     data_export_requested = Column(Boolean, default=False)
 
     # Timestamps
-    first_seen_at = Column(DateTime(timezone.utc), nullable=True)
-    last_seen_at = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    first_seen_at = Column(DateTime(UTC), nullable=True)
+    last_seen_at = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_customer", "business_id", "customer_id"),
@@ -104,11 +112,11 @@ class CustomerScores(Base):
     next_best_channel = Column(String(50), nullable=True)  # Recommended channel
 
     # Score Metadata
-    scores_calculated_at = Column(DateTime(timezone.utc), nullable=True)
+    scores_calculated_at = Column(DateTime(UTC), nullable=True)
     scores_confidence = Column(Integer, default=0)  # Confidence % based on data volume
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_customer_score", "business_id", "customer_id"),
@@ -130,9 +138,9 @@ class CustomerSegmentMembership(Base):
     segment_type = Column(String(50), nullable=False)  # "rfm", "behavioral", "predictive", "manual"
 
     # Membership
-    joined_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    joined_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     is_active = Column(Boolean, default=True)
-    left_at = Column(DateTime(timezone.utc), nullable=True)
+    left_at = Column(DateTime(UTC), nullable=True)
 
     # Scoring
     segment_score = Column(Integer, nullable=True)  # Score within segment
@@ -165,12 +173,12 @@ class CustomerInsights(Base):
 
     # Status
     is_actioned = Column(Boolean, default=False)
-    actioned_at = Column(DateTime(timezone.utc), nullable=True)
+    actioned_at = Column(DateTime(UTC), nullable=True)
     is_dismissed = Column(Boolean, default=False)
 
     # Metadata
     ai_model = Column(String(100), nullable=True)  # Model that generated insight
-    generated_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    generated_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_customer_insight", "customer_id", "generated_at"),
@@ -200,15 +208,15 @@ class Customer360Metadata(Base):
     enrichment_sources = Column(JSONB, default=list)  # ["clearbit", "apollo", ...]
 
     # Computation
-    last_360_computed_at = Column(DateTime(timezone.utc), nullable=True)
+    last_360_computed_at = Column(DateTime(UTC), nullable=True)
     compute_time_ms = Column(Integer, nullable=True)  # How long computation took
 
     # Data Quality
     data_quality_score = Column(Integer, default=0)  # 0-100
     duplicate_risk = Column(Boolean, default=False)  # Likely duplicate
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_customer_360", "business_id", "customer_id"),

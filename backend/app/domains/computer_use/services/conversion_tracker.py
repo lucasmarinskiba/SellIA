@@ -9,17 +9,18 @@ Pipeline:
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.domains.computer_use.integrations import (
-    StripeConnector,
     get_stripe_connector,
 )
-from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
-from app.domains.computer_use.services.webhook_receiver import IncomingMessage
-from app.core.config import get_settings
+from app.domains.computer_use.services.audit_log_service import (
+    AuditLogEntry,
+    AuditLogService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +52,11 @@ class ConversionTracker:
         customer_id: str,
         customer_email: str,
         customer_name: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         amount_cents: int,
         success_url: str = "https://yoursite.com/success",
         cancel_url: str = "https://yoursite.com/cancel",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Crea checkout session en Stripe → envía link al cliente.
 
@@ -116,7 +117,7 @@ class ConversionTracker:
             )
             return False, None
 
-    async def verify_payment_status(self, session_id: str) -> Dict[str, Any]:
+    async def verify_payment_status(self, session_id: str) -> dict[str, Any]:
         """Verifica status de pago en Stripe."""
         if not self.stripe_connector:
             return {}
@@ -131,7 +132,7 @@ class ConversionTracker:
         self,
         user_id: str,
         event_type: str,  # checkout.session.completed, payment_intent.succeeded
-        event_data: Dict[str, Any],
+        event_data: dict[str, Any],
     ) -> None:
         """Maneja webhooks de Stripe."""
         try:
@@ -175,7 +176,7 @@ class ConversionTracker:
         user_id: str,
         action: str,
         error_msg: str,
-        customer_id: Optional[str] = None,
+        customer_id: str | None = None,
     ) -> None:
         """Log error to audit trail."""
         try:

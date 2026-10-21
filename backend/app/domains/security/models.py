@@ -1,7 +1,17 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, Float, Index
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
@@ -22,7 +32,7 @@ class UserLoginLog(Base):
     longitude = Column(Float, nullable=True)
     city = Column(String(100), nullable=True)
     success = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SecurityWebhook(Base):
@@ -36,8 +46,8 @@ class SecurityWebhook(Base):
     secret = Column(String(255), nullable=True)  # para firmar payloads
     is_active = Column(Boolean, default=True, nullable=False)
     events = Column(Text, nullable=True)  # lista separada por comas: login, malware, brute_force
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class SecurityConfig(Base):
@@ -57,7 +67,7 @@ class SecurityConfig(Base):
     # Have I Been Pwned
     hibp_api_key = Column(String(255), nullable=True)
     alert_on_breach = Column(Boolean, default=True, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PushSubscription(Base):
@@ -71,7 +81,7 @@ class PushSubscription(Base):
     auth = Column(String(255), nullable=False)
     user_agent = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class UserSession(Base):
@@ -86,10 +96,10 @@ class UserSession(Base):
     ip_address = Column(String(45), nullable=False)
     user_agent = Column(Text, nullable=True)
     country = Column(String(10), nullable=True)
-    last_active_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_active_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_revoked = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class TwoFABackupCode(Base):
@@ -101,7 +111,7 @@ class TwoFABackupCode(Base):
     code_hash = Column(String(255), nullable=False)
     is_used = Column(Boolean, default=False, nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class BreachCheckLog(Base):
@@ -113,7 +123,7 @@ class BreachCheckLog(Base):
     email = Column(String(255), nullable=False)
     breaches_found = Column(Integer, default=0, nullable=False)
     breach_names = Column(Text, nullable=True)  # nombres de breaches separados por coma
-    checked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    checked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -132,7 +142,7 @@ class SubscriptionAccessLog(Base):
     response_size = Column(Integer, nullable=True)
     duration_ms = Column(Integer, nullable=True)
     success = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class ChargebackAlert(Base):
@@ -148,7 +158,7 @@ class ChargebackAlert(Base):
     reason = Column(Text, nullable=True)
     evidence_json = Column(Text, nullable=True)  # JSON con evidencia de uso
     status = Column(String(20), default="open", nullable=False)  # open, contested, won, lost
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -167,7 +177,7 @@ class EmailOTP(Base):
     is_used = Column(Boolean, default=False, nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True)
     ip_address = Column(String(45), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class WebAuthnCredential(Base):
@@ -182,7 +192,7 @@ class WebAuthnCredential(Base):
     device_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SecurityKey(Base):
@@ -196,7 +206,7 @@ class SecurityKey(Base):
     nickname = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -215,8 +225,8 @@ class TrustedDevice(Base):
     browser = Column(String(100), nullable=True)
     ip_address = Column(String(45), nullable=True)
     country = Column(String(10), nullable=True)
-    first_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    first_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    last_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     is_trusted = Column(Boolean, default=False, nullable=False)
     is_blocked = Column(Boolean, default=False, nullable=False)
     remember_days = Column(Integer, default=30, nullable=True)
@@ -229,8 +239,8 @@ class SessionNonce(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_hash = Column(String(255), nullable=False, unique=True, index=True)
     nonce = Column(String(64), nullable=False)
-    rotated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    rotated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -246,7 +256,7 @@ class IPAllowlist(Base):
     ip_address = Column(String(45), nullable=False)
     label = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class LoginAnomaly(Base):
@@ -262,7 +272,7 @@ class LoginAnomaly(Base):
     device_fingerprint = Column(String(64), nullable=True)
     country = Column(String(10), nullable=True)
     is_resolved = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -286,7 +296,7 @@ class DataAccessLog(Base):
     user_agent = Column(Text, nullable=True)
     request_path = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_data_access_logs_user_business", "user_id", "business_id"),
@@ -316,7 +326,7 @@ class RolePermission(Base):
     resource = Column(String(100), nullable=False)  # conversations, orders, finance, objectives, etc.
     action = Column(String(20), nullable=False)  # read, write, delete, admin
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_role_permissions_role_resource", "role", "resource"),
@@ -333,8 +343,8 @@ class BusinessUserRole(Base):
     role = Column(String(50), nullable=False, default=UserRole.VIEWER)
     invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_business_user_roles_user_business", "user_id", "business_id", unique=True),
@@ -354,8 +364,8 @@ class DataRetentionPolicy(Base):
     table_name = Column(String(100), nullable=False)
     retention_days = Column(Integer, nullable=False, default=365)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_data_retention_policies_business_table", "business_id", "table_name"),
@@ -370,7 +380,7 @@ class DataRetentionLog(Base):
     policy_id = Column(UUID(as_uuid=True), ForeignKey("data_retention_policies.id", ondelete="SET NULL"), nullable=True)
     table_name = Column(String(100), nullable=False)
     records_deleted = Column(Integer, default=0, nullable=False)
-    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(20), default="success", nullable=False)  # success, error, skipped
     error_message = Column(Text, nullable=True)
@@ -393,7 +403,7 @@ class SecretRotationLog(Base):
     rotated_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     status = Column(String(20), default="success", nullable=False)  # success, error
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -408,7 +418,7 @@ class BlockedIP(Base):
     ip_address = Column(String(45), nullable=False, unique=True, index=True)
     reason = Column(String(100), nullable=False)  # brute_force, threat_intel, admin
     blocked_until = Column(DateTime(timezone=True), nullable=True)  # null = permanente
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ============================================================
@@ -423,7 +433,7 @@ class IdempotencyKey(Base):
     key = Column(String(64), nullable=False, unique=True, index=True)
     resource = Column(String(50), nullable=False)  # order, payment, invoice
     response_body = Column(Text, nullable=True)  # JSON string
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_idempotency_keys_resource_created", "resource", "created_at"),
@@ -442,7 +452,7 @@ class WebhookEventLog(Base):
     provider = Column(String(20), nullable=False)  # stripe, mercadopago, shopify, whatsapp
     event_id = Column(String(100), nullable=False, index=True)  # ID único del evento del provider
     event_type = Column(String(50), nullable=False)
-    processed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    processed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_webhook_event_logs_provider_event", "provider", "event_id", unique=True),

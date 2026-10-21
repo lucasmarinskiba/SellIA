@@ -1,31 +1,33 @@
 """Autopilot Engine API Router."""
 
-from typing import Any
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
-from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.autopilot.models import AutopilotConfig, AutopilotActionLog, AutopilotDailyReport, AutopilotActionStatus
+from app.domains.autopilot.models import (
+    AutopilotActionLog,
+    AutopilotActionStatus,
+    AutopilotDailyReport,
+)
+from app.domains.autopilot.overnight_story import OvernightStoryEngine
 from app.domains.autopilot.schemas import (
+    AutopilotActionApproveRequest,
+    AutopilotActionLogResponse,
+    AutopilotActionRejectRequest,
     AutopilotConfigResponse,
     AutopilotConfigUpdate,
-    AutopilotActionLogResponse,
-    AutopilotActionLogFilter,
-    AutopilotActionApproveRequest,
-    AutopilotActionRejectRequest,
     AutopilotDailyReportResponse,
-    AutopilotStatusResponse,
     AutopilotOverviewResponse,
+    AutopilotStatusResponse,
     OvernightReportResponse,
 )
 from app.domains.autopilot.service import AutopilotEngine, AutopilotReportService
-from app.domains.autopilot.overnight_story import OvernightStoryEngine
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/autopilot", tags=["Autopilot"])
 
@@ -79,7 +81,7 @@ async def get_autopilot_status(
     last_action = await engine.get_last_action(business_id)
 
     # Get today's revenue
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     from sqlalchemy import func as sa_func
     revenue_result = await db.execute(
         select(sa_func.sum(AutopilotActionLog.revenue_impact)).where(
@@ -125,7 +127,7 @@ async def get_autopilot_overview(
     pending_actions = pending_result.scalars().all()
 
     # Escalations (last 24h)
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
     escalated_result = await db.execute(
         select(AutopilotActionLog).where(
             AutopilotActionLog.business_id == business_id,
@@ -232,7 +234,7 @@ async def pause_autopilot(
     config = await engine.get_or_create_config(business_id)
     config.is_paused = True
     config.paused_reason = reason
-    config.paused_at = datetime.now(timezone.utc)
+    config.paused_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(config)
     return AutopilotConfigResponse.model_validate(config)

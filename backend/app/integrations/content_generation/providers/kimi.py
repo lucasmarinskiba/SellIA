@@ -5,10 +5,10 @@ Strengths: 256K context, Spanish-native, OpenAI-compatible API,
            automatic context caching (up to 75% savings)
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -34,7 +34,7 @@ class KimiProvider(BaseProvider):
         cost = (estimated_input_tokens * 0.60 + estimated_output_tokens * 2.50) / 1_000_000
         return max(cost, 0.0001)
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "input_tokens_per_1m": 0.60,
             "output_tokens_per_1m": 2.50,
@@ -49,8 +49,8 @@ class KimiProvider(BaseProvider):
             )
 
         try:
-            from langchain_openai import ChatOpenAI
             from langchain_core.messages import HumanMessage, SystemMessage
+            from langchain_openai import ChatOpenAI
 
             model = config.extra_params.get("model", "kimi-k2-5")
             temperature = config.extra_params.get("temperature", 0.7)

@@ -11,8 +11,8 @@ and never gets rounded up into a pass.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy import select
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 BOT_WALLED = {"instagram", "facebook", "linkedin", "amazon", "tiktok", "threads", "twitter"}
 
 
-def _host(url: Optional[str]) -> str:
+def _host(url: str | None) -> str:
     if not url:
         return ""
     return (urlparse(url).hostname or "").lower().removeprefix("www.")
@@ -71,9 +71,9 @@ async def upsert_link(
     *,
     platform: str,
     url: str,
-    label: Optional[str] = None,
+    label: str | None = None,
     is_primary: bool = False,
-    business_id: Optional[uuid.UUID] = None,
+    business_id: uuid.UUID | None = None,
 ) -> BusinessLink:
     """Add or update one real link. The URL is normalized (and rejected if it is
     not a fetchable public http(s) URL) before it is ever stored, so the audit
@@ -139,7 +139,7 @@ async def audit_link(db: AsyncSession, link: BusinessLink) -> BusinessLink:
     """Fetch this exact URL and store what the page really contains."""
     result = await fetcher.fetch(link.url)
 
-    link.last_checked_at = datetime.now(timezone.utc)
+    link.last_checked_at = datetime.now(UTC)
     link.http_status = result.status
     link.final_url = result.final_url
     link.response_ms = result.elapsed_ms
@@ -187,7 +187,7 @@ def _record_history(db: AsyncSession, link: BusinessLink) -> None:
     db.add(BusinessLinkAudit(
         link_id=link.id,
         user_id=link.user_id,
-        checked_at=link.last_checked_at or datetime.now(timezone.utc),
+        checked_at=link.last_checked_at or datetime.now(UTC),
         http_status=link.http_status,
         response_ms=link.response_ms,
         seo_score=link.seo_score,
@@ -206,7 +206,7 @@ async def audit_all(db: AsyncSession, user_id: uuid.UUID) -> list[BusinessLink]:
     return await list_links(db, user_id)
 
 
-def _unverifiable(link: BusinessLink) -> Optional[str]:
+def _unverifiable(link: BusinessLink) -> str | None:
     """Why this link's page could not be read, if it could not be read."""
     if link.last_checked_at is None:
         return "Todavía no se analizó."
@@ -277,7 +277,7 @@ async def seo_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
         "priorities": priorities[:12],
         "duplicates": _find_duplicates(links),
         "history": await _score_history(db, user_id),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -450,7 +450,7 @@ async def authority_report(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
         "profiles": profiles,
         "checks": checks,
         "score": round(passed / len(checks) * 100) if checks else 0,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -459,9 +459,9 @@ def build_structured_data(
     business_name: str,
     site_url: str,
     profile_urls: list[str],
-    description: Optional[str] = None,
-    city: Optional[str] = None,
-    country: Optional[str] = None,
+    description: str | None = None,
+    city: str | None = None,
+    country: str | None = None,
     has_physical_location: bool = False,
 ) -> dict[str, Any]:
     """The JSON-LD this account should actually paste into its site.

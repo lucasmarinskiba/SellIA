@@ -7,41 +7,61 @@ Fully integrated orchestration, selection, and execution pipeline
 """
 
 # Import all expert prompt collections
-from trump_prompts import TRUMP_PROMPTS, TrumpPrompt
 from belfort_prompts import BELFORT_PROMPTS, BelfortPrompt
 from buffett_prompts import BUFFETT_PROMPTS, BuffettPrompt
-from kiyosaki_prompts import KIYOSAKI_PROMPTS, KiyosakiPrompt
+from expert_orchestrator import (
+    ExpertOrchestrator,
+    PromptExecutionContext,
+    PromptExecutionError,
+    PromptExecutionMode,
+    PromptExecutionResult,
+)
+from expert_selector import ExpertSelection, ExpertSelector, SalesScenario
 from hormozi_cardone_prompts import (
-    HORMOZI_PROMPTS, CARDONE_PROMPTS,
-    HormoziCardonePrompt
+    CARDONE_PROMPTS,
+    HORMOZI_PROMPTS,
+    HormoziCardonePrompt,
 )
+from kiyosaki_prompts import KIYOSAKI_PROMPTS, KiyosakiPrompt
 from other_experts_prompts import (
-    ROBBINS_PROMPTS, GARYVEE_PROMPTS, DALIO_PROMPTS, MINER_PROMPTS,
-    ELLIOTT_PROMPTS, LOIDI_PROMPTS, RIBAS_PROMPTS, GALPERIN_PROMPTS,
-    ROCCA_PROMPTS, GALUCCIO_PROMPTS, RAVIKANT_PROMPTS, TALEB_PROMPTS,
-    GRAHAM_PROMPTS, BENIOFF_PROMPTS, ExpertPrompt
-)
-from tracy_hill_prompts import (
-    TRACY_PROMPTS, HILL_PROMPTS, ALL_TRACY_HILL_PROMPTS, TracyHillPrompt
+    BENIOFF_PROMPTS,
+    DALIO_PROMPTS,
+    ELLIOTT_PROMPTS,
+    GALPERIN_PROMPTS,
+    GALUCCIO_PROMPTS,
+    GARYVEE_PROMPTS,
+    GRAHAM_PROMPTS,
+    LOIDI_PROMPTS,
+    MINER_PROMPTS,
+    RAVIKANT_PROMPTS,
+    RIBAS_PROMPTS,
+    ROBBINS_PROMPTS,
+    ROCCA_PROMPTS,
+    TALEB_PROMPTS,
+    ExpertPrompt,
 )
 
 # Import orchestration and selection systems
 from prompt_registry import (
-    ExpertType, SalesContext, ExpertMetadata,
-    EXPERT_METADATA, PROMPT_INVENTORY, TOTAL_PROMPTS,
     CONTEXT_RECOMMENDATIONS,
-    get_expert_metadata, get_best_experts_for_context,
-    get_all_expert_types, get_prompt_distribution
+    EXPERT_METADATA,
+    PROMPT_INVENTORY,
+    TOTAL_PROMPTS,
+    ExpertMetadata,
+    ExpertType,
+    SalesContext,
+    get_all_expert_types,
+    get_best_experts_for_context,
+    get_expert_metadata,
+    get_prompt_distribution,
 )
-
-from expert_selector import (
-    ExpertSelector, SalesScenario, ExpertSelection
+from tracy_hill_prompts import (
+    ALL_TRACY_HILL_PROMPTS,
+    HILL_PROMPTS,
+    TRACY_PROMPTS,
+    TracyHillPrompt,
 )
-
-from expert_orchestrator import (
-    ExpertOrchestrator, PromptExecutionContext, PromptExecutionResult,
-    PromptExecutionMode, PromptExecutionError
-)
+from trump_prompts import TRUMP_PROMPTS, TrumpPrompt
 
 # Consolidated prompt repository
 ALL_EXPERT_PROMPTS = {

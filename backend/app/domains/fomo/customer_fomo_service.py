@@ -1,15 +1,19 @@
 """Customer FOMO Campaign Service - Core business logic"""
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from decimal import Decimal
 import json
 import uuid
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
 from app.domains.fomo.customer_fomo_models import (
-    CampaignType, WidgetType, AutomationType,
-    CustomerFOMOCampaignConfig, CustomerFOMOWidgetConfig,
-    CustomerFOMOAutomationConfig, FOMOCampaignTemplate
+    AutomationType,
+    CampaignType,
+    CustomerFOMOAutomationConfig,
+    CustomerFOMOCampaignConfig,
+    CustomerFOMOWidgetConfig,
+    FOMOCampaignTemplate,
+    WidgetType,
 )
 
 
@@ -218,8 +222,8 @@ class CustomerFOMOCampaignService:
         user_id: str,
         business_id: str,
         template_type: str,
-        custom_config: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+        custom_config: dict | None = None,
+    ) -> dict[str, Any]:
         """Create FOMO campaign from template"""
         templates = {
             "live_visitor": CustomerFOMOTemplates.get_live_visitor_count_template(),
@@ -273,7 +277,7 @@ class CustomerFOMOCampaignService:
         return script.strip()
 
     @staticmethod
-    async def activate_campaign(campaign_id: str) -> Dict[str, Any]:
+    async def activate_campaign(campaign_id: str) -> dict[str, Any]:
         """Activate campaign and start tracking"""
         return {
             "campaign_id": campaign_id,
@@ -286,7 +290,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_campaign_performance(campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_performance(campaign_id: str) -> dict[str, Any]:
         """Get real-time performance metrics"""
         return {
             "campaign_id": campaign_id,
@@ -310,9 +314,9 @@ class CustomerFOMOCampaignService:
     async def create_automation_sequence(
         campaign_id: str,
         automation_type: str,
-        channels: List[str],
-        messages: Dict[str, str],
-    ) -> Dict[str, Any]:
+        channels: list[str],
+        messages: dict[str, str],
+    ) -> dict[str, Any]:
         """Create multi-step automation sequence"""
         sequences = {
             "cart_abandonment": [
@@ -342,7 +346,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_widget_embedding_guide(widget_type: str) -> Dict[str, Any]:
+    async def get_widget_embedding_guide(widget_type: str) -> dict[str, Any]:
         """Get instructions for embedding widget"""
         guides = {
             "visitor_counter": {
@@ -379,7 +383,7 @@ class CustomerFOMOCampaignService:
         revenue: float,
         cost: float,
         baseline_conversion: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate campaign ROI and lift"""
         lift = (revenue - (baseline_conversion * 100)) / (baseline_conversion * 100) if baseline_conversion > 0 else 0
         roi = ((revenue - cost) / cost * 100) if cost > 0 else 0
@@ -396,7 +400,7 @@ class CustomerFOMOCampaignService:
         }
 
     @staticmethod
-    async def get_competitor_benchmarks(industry: str) -> Dict[str, Any]:
+    async def get_competitor_benchmarks(industry: str) -> dict[str, Any]:
         """Get benchmarks for industry"""
         benchmarks = {
             "ecommerce": {

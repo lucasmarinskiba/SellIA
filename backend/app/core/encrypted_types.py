@@ -7,10 +7,9 @@ column-level encryption at rest.
 import json
 from typing import Any
 
-from sqlalchemy import TypeDecorator, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Text, TypeDecorator
 
-from app.core.encryption import encrypt_value, decrypt_value
+from app.core.encryption import decrypt_value, encrypt_value
 
 
 class EncryptedString(TypeDecorator):

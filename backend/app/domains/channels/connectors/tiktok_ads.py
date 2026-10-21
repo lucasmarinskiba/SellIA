@@ -4,13 +4,13 @@ Captures leads from TikTok Lead Ads and manages TikTok Shop orders.
 Docs: https://ads.tiktok.com/marketing_api/docs
 """
 
-import hmac
 import hashlib
+import hmac
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class TikTokAdsConnector(BaseChannelConnector):
@@ -149,8 +149,8 @@ class TikTokAdsConnector(BaseChannelConnector):
         Raises:
             Exception if API call fails
         """
+
         import httpx
-        import json
 
         url = f"{self.BASE_URL}/campaign/update/"
         headers = {"Access-Token": self.access_token}

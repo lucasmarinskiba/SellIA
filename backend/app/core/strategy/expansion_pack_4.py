@@ -1,8 +1,8 @@
 """Expansion Pack 4: 30 Customer Acquisition Methods - Content, Ads, Referral, Viral with Real Metrics."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class AcquisitionMethod(str, Enum):
@@ -57,14 +57,14 @@ class AcquisitionMethodDetail:
     category: str  # content, paid, referral, community, growth
 
     # Real Case Studies
-    case_study_1: Dict[str, Any]
-    case_study_2: Dict[str, Any]
-    case_study_3: Dict[str, Any]
+    case_study_1: dict[str, Any]
+    case_study_2: dict[str, Any]
+    case_study_3: dict[str, Any]
 
     # Acquisition Funnel
     top_of_funnel_reach: str  # How many impressions/reach
     conversion_rate_typical: float  # % to customer
-    customer_cost: Dict[str, str]  # CAC range
+    customer_cost: dict[str, str]  # CAC range
     customer_quality: str  # Retention, LTV characteristics
 
     # Performance Metrics
@@ -74,13 +74,13 @@ class AcquisitionMethodDetail:
     required_budget: str  # Investment needed
 
     # Implementation
-    implementation_steps: List[str]
-    required_skills: List[str]
-    required_tools: List[str]
-    resource_investment: Dict[str, str]  # time, budget, people
+    implementation_steps: list[str]
+    required_skills: list[str]
+    required_tools: list[str]
+    resource_investment: dict[str, str]  # time, budget, people
 
     # Real Companies Using
-    companies_using: List[str]  # Companies successfully using this
+    companies_using: list[str]  # Companies successfully using this
 
     # Metrics & ROI
     typical_cac: str  # Customer acquisition cost range
@@ -90,8 +90,8 @@ class AcquisitionMethodDetail:
     typical_roi: float  # Expected ROI %
 
     # Applicability
-    best_for_industries: List[str]
-    best_for_business_models: List[str]
+    best_for_industries: list[str]
+    best_for_business_models: list[str]
     best_for_stage: str  # startup, growth, scale
     best_for_budget: str  # small, medium, large
     best_for_geography: str  # domestic, international, global
@@ -1300,40 +1300,40 @@ class AcquisitionExpansionPack4:
     """Customer acquisition methods expansion pack 4: 30 proven acquisition strategies."""
 
     @staticmethod
-    def get_all_methods() -> Dict[AcquisitionMethod, AcquisitionMethodDetail]:
+    def get_all_methods() -> dict[AcquisitionMethod, AcquisitionMethodDetail]:
         """Get all acquisition methods."""
         return ACQUISITION_METHODS
 
     @staticmethod
-    def get_by_category(category: str) -> List[AcquisitionMethodDetail]:
+    def get_by_category(category: str) -> list[AcquisitionMethodDetail]:
         """Get methods by category."""
         return [m for m in ACQUISITION_METHODS.values() if m.category == category]
 
     @staticmethod
-    def get_lowest_cac() -> List[AcquisitionMethodDetail]:
+    def get_lowest_cac() -> list[AcquisitionMethodDetail]:
         """Get methods with lowest typical CAC."""
         return sorted([m for m in ACQUISITION_METHODS.values()],
                       key=lambda m: float(m.typical_cac.split('-')[0].replace('$', '')))
 
     @staticmethod
-    def get_fastest_time_to_customer() -> List[AcquisitionMethodDetail]:
+    def get_fastest_time_to_customer() -> list[AcquisitionMethodDetail]:
         """Get methods with fastest time to first customer."""
         speed_order = ["Days", "1-2 weeks", "2-4 weeks", "1-3 months", "3-6 months", "6-12 months"]
         return sorted([m for m in ACQUISITION_METHODS.values()],
                       key=lambda m: speed_order.index(m.time_to_first_customer) if m.time_to_first_customer in speed_order else 999)
 
     @staticmethod
-    def get_best_roi() -> List[AcquisitionMethodDetail]:
+    def get_best_roi() -> list[AcquisitionMethodDetail]:
         """Get methods with highest typical ROI."""
         return sorted([m for m in ACQUISITION_METHODS.values()],
                       key=lambda m: m.typical_roi, reverse=True)
 
     @staticmethod
-    def get_for_stage(stage: str) -> List[AcquisitionMethodDetail]:
+    def get_for_stage(stage: str) -> list[AcquisitionMethodDetail]:
         """Get methods suitable for business stage."""
         return [m for m in ACQUISITION_METHODS.values() if stage in m.best_for_stage]
 
     @staticmethod
-    def get_scalable() -> List[AcquisitionMethodDetail]:
+    def get_scalable() -> list[AcquisitionMethodDetail]:
         """Get highly scalable acquisition methods."""
         return [m for m in ACQUISITION_METHODS.values() if m.scalability == "highly scalable"]

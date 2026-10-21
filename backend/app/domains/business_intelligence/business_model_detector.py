@@ -1,9 +1,9 @@
 """Phase 10: Business model detection and adaptation."""
 
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,23 +43,23 @@ class BusinessProfile:
     name: str
     description: str
     model: BusinessModel
-    primary_location: Optional[str] = None
-    service_radius_km: Optional[int] = None
+    primary_location: str | None = None
+    service_radius_km: int | None = None
     is_b2b: bool = False
     is_b2c: bool = True
     target_audience: str = ""
-    channels: List[Channel] = field(default_factory=list)
-    primary_channel: Optional[Channel] = None
+    channels: list[Channel] = field(default_factory=list)
+    primary_channel: Channel | None = None
     revenue_model: str = "one_time"  # one_time, subscription, hybrid
-    average_ticket_size: Optional[float] = None
-    avg_sales_cycle_days: Optional[int] = None
+    average_ticket_size: float | None = None
+    avg_sales_cycle_days: int | None = None
     has_physical_location: bool = False
     has_online_presence: bool = False
-    languages: List[str] = field(default_factory=lambda: ["es"])
+    languages: list[str] = field(default_factory=lambda: ["es"])
     competitor_count: int = 0
     market_size_estimate: str = "unknown"
     growth_potential: str = "medium"  # low, medium, high
-    custom_attributes: Dict[str, Any] = field(default_factory=dict)
+    custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -99,13 +99,13 @@ class BusinessModelDetector:
         }
 
     def detect_model(
-        self, business_description: str, website: str = "", socials: Dict = None
+        self, business_description: str, website: str = "", socials: dict = None
     ) -> BusinessProfile:
         """Detecta modelo de negocio"""
 
         combined_text = f"{business_description} {website}".lower()
         if socials:
-            combined_text += f" {str(socials)}".lower()
+            combined_text += f" {socials!s}".lower()
 
         model = self._match_model(combined_text)
 
@@ -154,7 +154,7 @@ class BusinessModelDetector:
 
     def _determine_channels(
         self, model: BusinessModel, description: str
-    ) -> List[Channel]:
+    ) -> list[Channel]:
         """Determina canales de venta por modelo"""
 
         channels_by_model = {
@@ -223,7 +223,7 @@ class BusinessModelDetector:
 
         return channels_by_model.get(model, [Channel.GOOGLE_SEARCH, Channel.INSTAGRAM])
 
-    def _extract_location(self, description: str) -> Optional[str]:
+    def _extract_location(self, description: str) -> str | None:
         """Extrae ubicación de descripción"""
         # Simple extraction - en producción usar geocoding
         keywords = ["en ", "de ", "en la ciudad de ", "ubicado en"]
@@ -235,7 +235,7 @@ class BusinessModelDetector:
                     return location
         return None
 
-    def _estimate_service_radius(self, model: BusinessModel, location: str) -> Optional[int]:
+    def _estimate_service_radius(self, model: BusinessModel, location: str) -> int | None:
         """Estima radio de servicio por modelo"""
         if model == BusinessModel.SERVICE_AT_HOME:
             return 10  # km
@@ -251,7 +251,7 @@ class BusinessModelDetector:
                         "soluciones empresariales", "corporativo", "business"]
         return any(kw in text for kw in b2b_keywords)
 
-    def get_relevant_channels(self, profile: BusinessProfile) -> List[LeadSource]:
+    def get_relevant_channels(self, profile: BusinessProfile) -> list[LeadSource]:
         """Retorna lead sources relevantes"""
         sources = []
 

@@ -1,8 +1,7 @@
 """Momentum Tracker — DAU/WAU/MAU, velocity, retention, churn."""
 
 import logging
-from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +15,7 @@ class MomentumTracker:
         active_day_1: int,
         active_day_7: int,
         active_day_30: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate engagement funnel metrics."""
 
         dau = active_day_1
@@ -38,8 +37,8 @@ class MomentumTracker:
     def track_cohort_retention(
         cohort_name: str,
         cohort_size: int,
-        retention_by_week: List[int],
-    ) -> Dict[str, Any]:
+        retention_by_week: list[int],
+    ) -> dict[str, Any]:
         """Track retention by cohort."""
 
         if not retention_by_week:
@@ -61,7 +60,7 @@ class MomentumTracker:
     def predict_churn(
         current_engagement_score: float,
         engagement_trend: str,  # "increasing", "stable", "decreasing"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Predict churn risk."""
 
         churn_risk = 0.1  # Base 10% churn
@@ -86,9 +85,9 @@ class MomentumTracker:
 
     @staticmethod
     def calculate_growth_rate(
-        metric_history: List[Dict[str, Any]],
+        metric_history: list[dict[str, Any]],
         metric_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate MoM growth rate."""
 
         if len(metric_history) < 2:
@@ -111,7 +110,7 @@ class MomentumTracker:
         current_users: int,
         monthly_growth_rate: float,  # e.g., 0.15 for 15%
         months: int = 12,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Forecast user growth."""
 
         forecast = []

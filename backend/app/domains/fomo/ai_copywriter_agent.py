@@ -16,14 +16,14 @@ Responsibilities:
 import json
 import re
 import uuid
-from typing import Dict, List, Any, Optional
 from enum import Enum
+from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy.ext.asyncio import AsyncSession
-from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.domains.agents.llm_provider import generate_with_fallback
 from app.core.logger import get_logger
+from app.domains.agents.llm_provider import generate_with_fallback
 
 logger = get_logger(__name__)
 
@@ -69,7 +69,7 @@ class AICopywriterPromptBuilder:
         tone: CopyTone,
         language: SupportedLanguage,
         variant_count: int,
-    ) -> List[Any]:
+    ) -> list[Any]:
         system = SystemMessage(content=(
             "Eres un copywriter senior especializado en marketing FOMO (Fear Of Missing Out) "
             "para e-commerce y SaaS. Generas copy persuasivo, ético y de alta conversión. "
@@ -112,9 +112,9 @@ Responde ÚNICAMENTE con este JSON (sin texto adicional, sin ```json):
 
     @staticmethod
     def build_translation_prompt(
-        content: Dict[str, Any],
+        content: dict[str, Any],
         target_language: SupportedLanguage,
-    ) -> List[Any]:
+    ) -> list[Any]:
         system = SystemMessage(content=(
             "Eres un traductor especializado en copy de marketing. Traduces manteniendo "
             "el tono persuasivo y la intención FOMO original. Respondes SOLO con JSON válido."
@@ -134,7 +134,7 @@ class LLMResponseParser:
     """Safely parse LLM JSON output, with repair fallback"""
 
     @staticmethod
-    def parse_json_response(raw_content: str) -> Optional[Dict[str, Any]]:
+    def parse_json_response(raw_content: str) -> dict[str, Any] | None:
         """Extract and parse JSON from LLM response, tolerant of markdown fences"""
         if not raw_content:
             return None
@@ -161,7 +161,7 @@ class LLMResponseParser:
         return None
 
     @staticmethod
-    def validate_campaign_copy_schema(data: Dict[str, Any]) -> bool:
+    def validate_campaign_copy_schema(data: dict[str, Any]) -> bool:
         """Verify the parsed response has the expected structure"""
         required_keys = {
             "subject_lines", "preview_texts", "urgency_messages",
@@ -220,7 +220,7 @@ class VariantScorer:
     @staticmethod
     def score_by_historical_performance(
         variant_text: str,
-        historical_data: List[Dict[str, Any]],
+        historical_data: list[dict[str, Any]],
     ) -> float:
         """Score using historical open_rate/click_rate of similar variants.
         Falls back to heuristic score if no matching history."""
@@ -256,9 +256,9 @@ class VariantScorer:
 
     @staticmethod
     def rank_variants(
-        variants: List[str],
-        historical_data: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[Dict[str, Any]]:
+        variants: list[str],
+        historical_data: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]]:
         """Rank variants best-to-worst with scores"""
         scored = []
         for variant in variants:
@@ -285,7 +285,7 @@ class AICopywriterAgent:
         tone: CopyTone = CopyTone.URGENT,
         language: SupportedLanguage = SupportedLanguage.ES,
         variant_count: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate full set of FOMO copy variants for a campaign"""
         messages = AICopywriterPromptBuilder.build_campaign_copy_prompt(
             campaign_type=campaign_type,
@@ -342,8 +342,8 @@ class AICopywriterAgent:
         tone: CopyTone = CopyTone.URGENT,
         language: SupportedLanguage = SupportedLanguage.ES,
         variant_count: int = 5,
-        historical_data: Optional[Dict[str, List[Dict[str, Any]]]] = None,
-    ) -> Dict[str, Any]:
+        historical_data: dict[str, list[dict[str, Any]]] | None = None,
+    ) -> dict[str, Any]:
         """Generate copy AND rank each content type by predicted performance"""
         result = await AICopywriterAgent.generate_campaign_copy(
             db=db,
@@ -374,9 +374,9 @@ class AICopywriterAgent:
     async def translate_copy(
         db: AsyncSession,
         business_id: uuid.UUID,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         target_language: SupportedLanguage,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Translate existing copy to another language, preserving persuasive intent"""
         messages = AICopywriterPromptBuilder.build_translation_prompt(
             content, target_language
@@ -408,7 +408,7 @@ class AICopywriterAgent:
         campaign_type: str,
         product_name: str,
         variant_count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Deterministic fallback when LLM is unavailable or returns bad output"""
         base_subjects = [
             f"{product_name} - Oferta especial hoy",
@@ -429,7 +429,7 @@ class AICopywriterAgent:
             f"{product_name}: oferta especial disponible ahora. No te la pierdas.",
         ]
 
-        def cycle(items: List[str], n: int) -> List[str]:
+        def cycle(items: list[str], n: int) -> list[str]:
             return [items[i % len(items)] for i in range(n)]
 
         return {

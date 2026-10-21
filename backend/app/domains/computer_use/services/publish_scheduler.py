@@ -5,9 +5,9 @@ Decide cuándo + dónde + qué publicar basado en analytics.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ class ScheduledPost:
         self.priority = priority
         self.status = "scheduled"  # scheduled, publishing, published, failed
         self.created_at = datetime.utcnow()
-        self.published_at: Optional[datetime] = None
+        self.published_at: datetime | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "post_id": self.post_id,
             "platform": self.platform,
@@ -65,7 +65,7 @@ class PublishScheduler:
 
     def __init__(self):
         self.logger = logger
-        self.scheduled_posts: Dict[str, ScheduledPost] = {}
+        self.scheduled_posts: dict[str, ScheduledPost] = {}
 
     async def schedule_post(
         self,
@@ -73,7 +73,7 @@ class PublishScheduler:
         caption: str,
         image_url: str,
         strategy: PublishingStrategy,
-        custom_time: Optional[datetime] = None,
+        custom_time: datetime | None = None,
     ) -> ScheduledPost:
         """Programa post para publicar."""
         try:
@@ -153,7 +153,7 @@ class PublishScheduler:
         """Calcula mejor hora para publicar."""
         return await self.get_next_publishing_time(platform, strategy)
 
-    async def get_publishing_queue(self, limit: int = 10) -> List[ScheduledPost]:
+    async def get_publishing_queue(self, limit: int = 10) -> list[ScheduledPost]:
         """Obtiene posts próximos a publicar."""
         now = datetime.utcnow()
 
@@ -187,7 +187,7 @@ class PublishScheduler:
 
         return True
 
-    def get_posting_frequency_recommendation(self, platform: str) -> Dict[str, Any]:
+    def get_posting_frequency_recommendation(self, platform: str) -> dict[str, Any]:
         """Recomienda frecuencia óptima de posting."""
         recommendations = {
             "tiktok": {

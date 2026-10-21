@@ -1,9 +1,10 @@
 """Onboarding Mágico — Schemas"""
 
-from uuid import UUID
-from typing import Any
-from pydantic import BaseModel, Field
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class ScrapedProduct(BaseModel):

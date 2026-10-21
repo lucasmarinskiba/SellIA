@@ -10,9 +10,9 @@ Priority order for the numbers:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,11 +26,11 @@ from app.domains.ad_budget.models import (
 
 logger = get_logger(__name__)
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _roas(revenue: Decimal, spend: Decimal) -> Decimal:
@@ -65,7 +65,7 @@ class AdPerformanceService:
     # ------------------------------------------------------------------
     async def _from_connector(
         self, channel: AdChannel, start: datetime, end: datetime, recent_start: datetime
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         if not channel.channel_connection_id or not channel.campaign_refs:
             return None
         try:
@@ -227,7 +227,7 @@ class AdPerformanceService:
 
     async def latest_snapshot(
         self, channel_id: uuid.UUID
-    ) -> Optional[AdPerformanceSnapshot]:
+    ) -> AdPerformanceSnapshot | None:
         res = await self.db.execute(
             select(AdPerformanceSnapshot)
             .where(AdPerformanceSnapshot.ad_channel_id == channel_id)

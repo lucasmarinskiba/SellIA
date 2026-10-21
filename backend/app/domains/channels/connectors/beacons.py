@@ -7,8 +7,8 @@ Docs: https://beacons.ai/developers
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class BeaconsConnector(BaseChannelConnector):
@@ -61,7 +61,7 @@ class BeaconsConnector(BaseChannelConnector):
                 sender_id=fan_id,
                 sender_name=name,
                 sender_email=email,
-                content=message or f"Nuevo mensaje desde formulario de contacto Beacons",
+                content=message or "Nuevo mensaje desde formulario de contacto Beacons",
                 content_type="text",
                 extra_data=raw_payload,
             )
@@ -109,8 +109,8 @@ class BeaconsConnector(BaseChannelConnector):
         """Verify Beacons webhook signature using webhook_secret."""
         if not self.webhook_secret:
             return True
-        import hmac
         import hashlib
+        import hmac
         expected = hmac.new(self.webhook_secret.encode(), raw_body, hashlib.sha256).hexdigest()
         return hmac.compare_digest(expected, signature)
 

@@ -1,7 +1,7 @@
 """Acquisition Strategist Schemas"""
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -10,9 +10,9 @@ from pydantic import BaseModel, ConfigDict
 class ChannelRecommendation(BaseModel):
     channel: str
     budget_pct: float
-    expected_cac: Optional[float] = None
-    expected_volume: Optional[int] = None
-    tactics: List[str] = []
+    expected_cac: float | None = None
+    expected_volume: int | None = None
+    tactics: list[str] = []
 
 
 class AcquisitionStrategyBase(BaseModel):
@@ -20,8 +20,8 @@ class AcquisitionStrategyBase(BaseModel):
 
 
 class AcquisitionStrategyCreate(AcquisitionStrategyBase):
-    goals: Dict[str, Any] = {}  # {target_customers, timeline, market, ...}
-    budget: Optional[float] = None
+    goals: dict[str, Any] = {}  # {target_customers, timeline, market, ...}
+    budget: float | None = None
 
 
 class AcquisitionStrategyOut(BaseModel):
@@ -30,12 +30,12 @@ class AcquisitionStrategyOut(BaseModel):
     id: UUID
     business_id: UUID
     strategy_name: str
-    channels: List[Dict[str, Any]] = []
-    funnel_stages: List[Dict[str, Any]] = []
-    cac_target: Optional[float] = None
-    ltv_target: Optional[float] = None
-    sequences: List[Dict[str, Any]] = []
-    budget_allocation: Dict[str, Any] = {}
-    expected_results: Dict[str, Any] = {}
+    channels: list[dict[str, Any]] = []
+    funnel_stages: list[dict[str, Any]] = []
+    cac_target: float | None = None
+    ltv_target: float | None = None
+    sequences: list[dict[str, Any]] = []
+    budget_allocation: dict[str, Any] = {}
+    expected_results: dict[str, Any] = {}
     created_at: datetime
     updated_at: datetime

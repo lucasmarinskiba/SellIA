@@ -1,15 +1,15 @@
 """Closed-loop FOMO feedback system."""
 
-from uuid import UUID
 from datetime import datetime, timedelta
-from sqlalchemy import select, func
+from uuid import UUID
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from collections import defaultdict
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
-from app.domains.seo_config.fomo_models import ConversionEvent, FOMABTest
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.fomo_models import ConversionEvent
+from app.domains.seo_config.models import PublicationLinkFOMO
 
 logger = get_logger(__name__)
 

@@ -1,21 +1,20 @@
 """Phase 33 Multi-Platform Seller API (12 endpoints)."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.domains.enterprise.platform_integration import (
-    PlatformSyncEngine,
+    CompetitorPrice,
     DynamicPricingEngine,
     FOOMTriggerEngine,
-    SEOOptimizationEngine,
     Platform,
+    PlatformSyncEngine,
     Product,
-    PlatformListing,
-    CompetitorPrice,
+    SEOOptimizationEngine,
 )
 
 router = APIRouter(prefix="/api/v1/platforms", tags=["platforms"])
@@ -28,10 +27,10 @@ class ProductRequest(BaseModel):
     category: str
     cost: float
     price_base: float
-    images: List[str]
+    images: list[str]
     brand: str
     stock_total: int
-    platforms: List[str]  # ['mercado_libre', 'amazon', 'hotmart']
+    platforms: list[str]  # ['mercado_libre', 'amazon', 'hotmart']
 
 
 class ProductResponse(BaseModel):
@@ -39,7 +38,7 @@ class ProductResponse(BaseModel):
     sku: str
     title: str
     status: str
-    platforms: List[str]
+    platforms: list[str]
     created_at: str
 
 
@@ -74,8 +73,8 @@ class PricingRecommendationResponse(BaseModel):
 class URGENCYResponse(BaseModel):
     platform: str
     urgency_badge: str
-    scarcity_message: Optional[str]
-    social_proof: Optional[str]
+    scarcity_message: str | None
+    social_proof: str | None
     call_to_action: str
 
 
@@ -251,7 +250,7 @@ def reprice_all_products(platform: str, db: Session = Depends(get_db)):
 # ============================================================================
 @router.get("/foom/triggers/{product_id}/{platform}", response_model=URGENCYResponse)
 def get_foom_triggers(
-    product_id: str, platform: str, inventory: int = 10, sales_velocity: float = 30, rank: Optional[int] = 1, db: Session = Depends(get_db)
+    product_id: str, platform: str, inventory: int = 10, sales_velocity: float = 30, rank: int | None = 1, db: Session = Depends(get_db)
 ):
     """Get platform-specific urgency/FOOM messages."""
     try:
@@ -304,7 +303,7 @@ def research_keywords(category: str, platform: str, db: Session = Depends(get_db
 # ENDPOINT 7: Optimize Listing
 # ============================================================================
 @router.post("/seo/optimize/{product_id}/{platform}")
-def optimize_listing(product_id: str, platform: str, keywords: List[str], db: Session = Depends(get_db)):
+def optimize_listing(product_id: str, platform: str, keywords: list[str], db: Session = Depends(get_db)):
     """Generate optimized title, bullets, description."""
     try:
         platform_enum = Platform(platform.lower())
@@ -352,7 +351,7 @@ def track_rankings(product_id: str, platform: str, db: Session = Depends(get_db)
 @router.get("/dashboard/overview")
 def get_dashboard_overview(db: Session = Depends(get_db)):
     """High-level overview: all platforms, all products (real data from DB)."""
-    from app.models.platform_integration import SellerMetrics, Order, PlatformListing
+    from app.models.platform_integration import Order, PlatformListing, SellerMetrics
 
     # Get seller metrics for each platform
     metrics = db.query(SellerMetrics).filter(

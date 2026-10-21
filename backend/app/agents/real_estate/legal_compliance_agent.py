@@ -2,8 +2,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +14,11 @@ class ComplianceCheckResult:
     property_id: str
     compliant: bool
     severity_level: str  # low, medium, high, critical
-    issues: List[Dict[str, Any]] = field(default_factory=list)
-    missing_documents: List[str] = field(default_factory=list)
-    required_disclosures: List[str] = field(default_factory=list)
+    issues: list[dict[str, Any]] = field(default_factory=list)
+    missing_documents: list[str] = field(default_factory=list)
+    required_disclosures: list[str] = field(default_factory=list)
     estimated_remediation_days: int = 0
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 class LegalComplianceAgent:
@@ -27,9 +26,9 @@ class LegalComplianceAgent:
 
     def __init__(self, region: str = "Argentina"):
         self.region = region
-        self.compliance_checks: Dict[str, ComplianceCheckResult] = {}
+        self.compliance_checks: dict[str, ComplianceCheckResult] = {}
 
-    def perform_compliance_check(self, property_data: Dict[str, Any]) -> ComplianceCheckResult:
+    def perform_compliance_check(self, property_data: dict[str, Any]) -> ComplianceCheckResult:
         """Comprehensive legal compliance check."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -103,7 +102,7 @@ class LegalComplianceAgent:
 
         return result
 
-    def _get_required_documents(self, region: str) -> List[str]:
+    def _get_required_documents(self, region: str) -> list[str]:
         """Get region-specific required documents."""
         if region.lower() == "argentina":
             return [
@@ -126,7 +125,7 @@ class LegalComplianceAgent:
         else:
             return ["title_deed", "property_survey", "property_tax_records"]
 
-    def _get_required_disclosures(self, region: str, property_data: Dict[str, Any]) -> List[str]:
+    def _get_required_disclosures(self, region: str, property_data: dict[str, Any]) -> list[str]:
         """Get region-specific required disclosures."""
         disclosures = [
             "property_condition",
@@ -146,7 +145,7 @@ class LegalComplianceAgent:
 
         return disclosures
 
-    def _generate_compliance_recommendations(self, issues: List[Dict[str, Any]], missing_docs: List[str]) -> List[str]:
+    def _generate_compliance_recommendations(self, issues: list[dict[str, Any]], missing_docs: list[str]) -> list[str]:
         """Generate recommendations to achieve compliance."""
         recommendations = []
 
@@ -166,7 +165,7 @@ class LegalComplianceAgent:
 
         return recommendations
 
-    def check_disclosure_compliance(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def check_disclosure_compliance(self, property_id: str) -> dict[str, Any] | None:
         """Detailed disclosure compliance check."""
         if property_id not in self.compliance_checks:
             return None

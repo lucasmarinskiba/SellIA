@@ -16,15 +16,27 @@ Migrations:
   alembic upgrade head
 """
 
+import enum
+import os
+from datetime import datetime
+
 from sqlalchemy import (
-    create_engine, Column, String, Float, Integer, DateTime, Boolean, JSON, Text,
-    ForeignKey, Enum, Index, UniqueConstraint
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
-import os
-import enum
+from sqlalchemy.orm import relationship, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia")
 

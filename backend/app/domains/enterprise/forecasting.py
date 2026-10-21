@@ -18,17 +18,17 @@ forecasting_models.DealOutcome) -- deal scores and pipeline forecasts are
 recomputed on every call, which is more correct than a cache (Deal state
 changes constantly and a stale forecast is worse than a slower one).
 """
-from datetime import datetime, timezone
-from typing import Optional
-from uuid import UUID
 from dataclasses import asdict
+from datetime import UTC, datetime
+from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.crm.models import Deal, LeadStage
 from app.domains.enterprise.collaboration import DealComment
-from .deal_scorer import DealScorer, RevenueForecast, DealScoreFactors, RiskLevel
+
+from .deal_scorer import DealScoreFactors, DealScorer, RevenueForecast, RiskLevel
 
 # Maps the app's real pipeline stages onto DealScorer's weight buckets
 # (which were written with generic stage names). closed_lost intentionally
@@ -62,8 +62,8 @@ def _deal_to_factors_dict(deal: Deal, comment_count: int) -> dict:
     win-rate-by-segment table) -- defaulted honestly rather than invented;
     everything else here is real.
     """
-    now = datetime.now(timezone.utc)
-    updated_at = deal.updated_at if deal.updated_at.tzinfo else deal.updated_at.replace(tzinfo=timezone.utc)
+    now = datetime.now(UTC)
+    updated_at = deal.updated_at if deal.updated_at.tzinfo else deal.updated_at.replace(tzinfo=UTC)
     days_since_update = max((now - updated_at).days, 0)
 
     return {
@@ -149,7 +149,7 @@ class ForecastingManager:
             "high_probability_deals": high_probability,
         }
 
-    async def get_deal_score(self, business_id: UUID, deal_id: UUID, db: AsyncSession) -> Optional[dict]:
+    async def get_deal_score(self, business_id: UUID, deal_id: UUID, db: AsyncSession) -> dict | None:
         """Score a single deal."""
         result = await db.execute(select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id))
         deal = result.scalar_one_or_none()
@@ -187,7 +187,7 @@ class ForecastingManager:
         deals = await _fetch_open_deals_with_comments(business_id, db)
         if not deals:
             return {
-                "timestamp": datetime.now(timezone.utc), "total_opportunities": 0,
+                "timestamp": datetime.now(UTC), "total_opportunities": 0,
                 "total_pipeline_value": 0.0, "weighted_forecast": 0.0,
                 "average_deal_size": 0.0, "average_days_in_pipeline": 0.0, "by_stage": {},
             }
@@ -220,7 +220,7 @@ class ForecastingManager:
             stage_data["avg_probability"] = (sum(probs) / len(probs)) * 100 if probs else 0.0
 
         return {
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(UTC),
             "total_opportunities": len(deals),
             "total_pipeline_value": total_value,
             "weighted_forecast": weighted_total,
@@ -229,7 +229,7 @@ class ForecastingManager:
             "by_stage": by_stage,
         }
 
-    async def project_revenue(self, business_id: UUID, db: AsyncSession, days_ahead: int, target_revenue: Optional[float]) -> dict:
+    async def project_revenue(self, business_id: UUID, db: AsyncSession, days_ahead: int, target_revenue: float | None) -> dict:
         """Best/likely/worst-case revenue projection for a period ahead."""
         deals = await _fetch_open_deals_with_comments(business_id, db)
         forecast = self.forecaster.forecast_revenue(deals, days_ahead)
@@ -348,10 +348,10 @@ class DealOutcomeAnalyzer:
         deal_id: UUID,
         business_id: UUID,
         outcome: str,
-        final_value: Optional[float],
+        final_value: float | None,
         days_to_close: int,
         forecasted_probability: float,
-        win_loss_reason: Optional[str] = None,
+        win_loss_reason: str | None = None,
     ) -> dict:
         from .forecasting_models import DealOutcome
 

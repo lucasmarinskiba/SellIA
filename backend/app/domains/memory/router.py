@@ -1,21 +1,20 @@
 """Memory Engine API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.memory.service import MemoryEngine
 from app.domains.memory.schemas import (
-    MemoryChunkResponse,
-    CustomerMemoryResponse,
     CustomerMemoryCreate,
+    CustomerMemoryResponse,
     CustomerProfileResponse,
+    MemoryChunkResponse,
 )
+from app.domains.memory.service import MemoryEngine
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/memory", tags=["memory"])
 
@@ -25,9 +24,9 @@ router = APIRouter(prefix="/memory", tags=["memory"])
 @router.get("/chunks", response_model=list[MemoryChunkResponse])
 async def retrieve_relevant_chunks(
     query: str = Query(..., description="Query text for semantic search"),
-    conversation_id: Optional[UUID] = Query(None),
-    business_id: Optional[UUID] = Query(None),
-    customer_id: Optional[UUID] = Query(None),
+    conversation_id: UUID | None = Query(None),
+    business_id: UUID | None = Query(None),
+    customer_id: UUID | None = Query(None),
     k: int = Query(5, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -52,7 +51,6 @@ async def delete_chunk(
     deleted = await engine.delete_chunk(chunk_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Chunk no encontrado")
-    return None
 
 
 # ========== Customer Memories ==========

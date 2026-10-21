@@ -5,9 +5,9 @@ from __future__ import annotations
 import uuid
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -99,7 +99,7 @@ class ReconciliationService:
 
     # ------------------------------------------------------------------
     async def run_reconciliation(
-        self, business_id: uuid.UUID, bank_account_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID, bank_account_id: uuid.UUID | None = None
     ) -> dict[str, Any]:
         q = select(BankTransaction).where(
             BankTransaction.business_id == business_id,
@@ -153,7 +153,7 @@ class ReconciliationService:
 
     async def _find_matching_entry(
         self, business_id: uuid.UUID, txn: BankTransaction
-    ) -> Optional[JournalEntry]:
+    ) -> JournalEntry | None:
         """Match a bank movement to an existing posted entry whose net cash
         movement equals the bank amount, within a date window."""
         lo = txn.txn_date - timedelta(days=DATE_WINDOW_DAYS)
@@ -178,7 +178,7 @@ class ReconciliationService:
 
         by_entry: dict[uuid.UUID, tuple[JournalEntry, Decimal]] = {}
         for line, entry in rows:
-            _, delta = by_entry.get(entry.id, (entry, Decimal("0")))
+            _, delta = by_entry.get(entry.id, (entry, Decimal(0)))
             by_entry[entry.id] = (entry, delta + (line.debit - line.credit))
 
         for entry, delta in by_entry.values():
@@ -193,7 +193,7 @@ class ReconciliationService:
 
     def _first_matching_rule(
         self, rules: list[ReconciliationRule], txn: BankTransaction
-    ) -> Optional[ReconciliationRule]:
+    ) -> ReconciliationRule | None:
         desc = (txn.description or "").lower()
         amt = _q(txn.amount)
         direction = "inflow" if amt >= 0 else "outflow"
@@ -227,8 +227,8 @@ class ReconciliationService:
         txn: BankTransaction,
         *,
         account_id: uuid.UUID,
-        contact_type: Optional[str] = None,
-        contact_id: Optional[uuid.UUID] = None,
+        contact_type: str | None = None,
+        contact_id: uuid.UUID | None = None,
     ) -> JournalEntry:
         """Post a categorization entry for an uncategorized bank movement."""
         cash_id = await self._default_cash_account_id(business_id)
@@ -288,8 +288,8 @@ class ReconciliationService:
         business_id: uuid.UUID,
         txn_id: uuid.UUID,
         *,
-        account_id: Optional[uuid.UUID] = None,
-        account_subtype: Optional[str] = None,
+        account_id: uuid.UUID | None = None,
+        account_subtype: str | None = None,
     ) -> JournalEntry:
         res = await self.db.execute(
             select(BankTransaction).where(
@@ -312,8 +312,8 @@ class ReconciliationService:
         self,
         business_id: uuid.UUID,
         *,
-        status: Optional[str] = None,
-        bank_account_id: Optional[uuid.UUID] = None,
+        status: str | None = None,
+        bank_account_id: uuid.UUID | None = None,
         limit: int = 200,
     ) -> list[BankTransaction]:
         q = select(BankTransaction).where(BankTransaction.business_id == business_id)

@@ -1,17 +1,16 @@
 """Phase 31 Psychology Sales API endpoints."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.psychology_sales import (
+    AssumptiveCloseEngine,
     DiscoveryQuestionsEngine,
     NeedCreationEngine,
-    UrgencyTriggerEngine,
     PsychologyObjectionHandler,
-    AssumptiveCloseEngine,
+    UrgencyTriggerEngine,
 )
 
 router = APIRouter(prefix="/api/v1/psychology", tags=["psychology-sales"])
@@ -29,8 +28,8 @@ class DiscoveryQuestionRequest(BaseModel):
 
 
 class DiscoveryQuestionResponse(BaseModel):
-    questions: List[str]
-    psychology: List[str]
+    questions: list[str]
+    psychology: list[str]
     next_stage: str
 
 
@@ -43,12 +42,12 @@ class RecordResponseRequest(BaseModel):
 class RecordResponseResponse(BaseModel):
     recorded: bool
     urgency_level: int
-    pain_points: List[str]
+    pain_points: list[str]
 
 
 class NeedNarrativeRequest(BaseModel):
     deal_id: str
-    discovery_responses: List[str]
+    discovery_responses: list[str]
 
 
 class NeedNarrativeResponse(BaseModel):
@@ -64,7 +63,7 @@ class UrgencyTriggersRequest(BaseModel):
 
 
 class UrgencyTriggersResponse(BaseModel):
-    triggers: List[dict]
+    triggers: list[dict]
 
 
 class ObjectionRequest(BaseModel):
@@ -105,7 +104,9 @@ def get_discovery_questions(
     """Get contextual discovery questions for prospect."""
 
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:

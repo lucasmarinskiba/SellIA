@@ -5,7 +5,7 @@ Workflows: sync_inventory_everywhere, extract_analytics_all_platforms, track_inf
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class MultiPlatformWorkflows:
         self,
         product_id: str,
         quantity: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Workflow: Actualiza stock en MercadoLibre → Amazon → Shopify → eBay → TikTok Shop.
 
@@ -59,7 +59,7 @@ class MultiPlatformWorkflows:
 
     # ========== WORKFLOW 2: EXTRACT ANALYTICS ALL PLATFORMS ==========
 
-    async def extract_analytics_all_platforms(self) -> Dict[str, Any]:
+    async def extract_analytics_all_platforms(self) -> dict[str, Any]:
         """
         Workflow: Captura dashboards analytics de todas plataformas.
 
@@ -97,7 +97,7 @@ class MultiPlatformWorkflows:
         self,
         influencer_id: str,
         promo_code: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Workflow: Monitorea sales del influencer (compara promo code usage).
 
@@ -127,7 +127,7 @@ class MultiPlatformWorkflows:
     async def auto_delist_zero_stock(
         self,
         product_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Workflow: Cuando stock = 0, automáticamente delist en todas plataformas.
 
@@ -160,7 +160,7 @@ class MultiPlatformWorkflows:
 
     # ========== WORKFLOW 5: EXTRACT NEGATIVE REVIEWS ==========
 
-    async def extract_negative_reviews(self) -> Dict[str, Any]:
+    async def extract_negative_reviews(self) -> dict[str, Any]:
         """
         Workflow: Extrae reviews negativos (< 3 stars) de todas plataformas.
 
@@ -194,9 +194,9 @@ class MultiPlatformWorkflows:
 
     async def list_product_internationally(
         self,
-        product: Dict[str, Any],
-        target_countries: List[str],  # ["BR", "MX", "AR"]
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        target_countries: list[str],  # ["BR", "MX", "AR"]
+    ) -> dict[str, Any]:
         """
         Workflow: Lista producto internacionalmente (auto-convierte precio/descripción).
 
@@ -236,7 +236,7 @@ class MultiPlatformWorkflows:
 
     # ========== WORKFLOW 7: SUBSCRIPTION MANAGEMENT ==========
 
-    async def manage_subscriptions(self) -> Dict[str, Any]:
+    async def manage_subscriptions(self) -> dict[str, Any]:
         """
         Workflow: Audita subscriptions activas (Stripe + plataformas).
 

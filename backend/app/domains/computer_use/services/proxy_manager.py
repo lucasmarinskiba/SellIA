@@ -6,11 +6,12 @@ de IP y health checks.
 """
 
 import random
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from app.core.logger import get_logger
+from datetime import UTC, datetime
+from typing import Any
+
 from app.core.config import get_settings
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -20,11 +21,11 @@ settings = get_settings()
 class ProxyConfig:
     host: str
     port: int
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
     proxy_type: str = "http"  # http, https, socks5
 
-    def to_playwright_format(self) -> Dict[str, str]:
+    def to_playwright_format(self) -> dict[str, str]:
         """Convierte a formato de proxy de Playwright."""
         server = f"{self.proxy_type}://{self.host}:{self.port}"
         result = {"server": server}
@@ -46,10 +47,10 @@ class ProxyManager:
     """Gestor de proxies para Computer Use."""
 
     def __init__(self):
-        self._proxies: List[ProxyConfig] = []
-        self._health_status: Dict[str, bool] = {}
-        self._use_counts: Dict[str, int] = {}
-        self._last_rotation: Dict[str, datetime] = {}
+        self._proxies: list[ProxyConfig] = []
+        self._health_status: dict[str, bool] = {}
+        self._use_counts: dict[str, int] = {}
+        self._last_rotation: dict[str, datetime] = {}
 
     def add_proxy(self, config: ProxyConfig) -> None:
         """Agrega un proxy al pool."""
@@ -75,7 +76,7 @@ class ProxyManager:
                 proxy_type=proxy_type,
             ))
 
-    def get_proxy(self, strategy: str = "round_robin") -> Optional[ProxyConfig]:
+    def get_proxy(self, strategy: str = "round_robin") -> ProxyConfig | None:
         """Obtiene un proxy según la estrategia."""
         healthy = [p for p in self._proxies if self._health_status.get(f"{p.host}:{p.port}", True)]
         if not healthy:
@@ -90,7 +91,7 @@ class ProxyManager:
 
         key = f"{proxy.host}:{proxy.port}"
         self._use_counts[key] = self._use_counts.get(key, 0) + 1
-        self._last_rotation[key] = datetime.now(timezone.utc)
+        self._last_rotation[key] = datetime.now(UTC)
 
         return proxy
 
@@ -106,7 +107,7 @@ class ProxyManager:
         self._health_status[key] = True
         logger.info(f"Proxy marked healthy: {key}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Estadísticas del pool de proxies."""
         total = len(self._proxies)
         healthy = sum(1 for p in self._proxies if self._health_status.get(f"{p.host}:{p.port}", True))
@@ -148,7 +149,7 @@ class ProxyManager:
 
 
 # Global proxy manager
-_proxy_manager: Optional[ProxyManager] = None
+_proxy_manager: ProxyManager | None = None
 
 
 def get_proxy_manager() -> ProxyManager:

@@ -1,9 +1,19 @@
 """Phase 49: Multi-Vendor Management & Orchestration."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
+
 
 class VendorPartner(Base):
     __tablename__ = "vendor_partners"
@@ -18,7 +28,7 @@ class VendorPartner(Base):
     commission_rate = Column(Float, default=0)
     total_products = Column(Integer, default=0)
     total_sales = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class VendorProduct(Base):
     __tablename__ = "vendor_products"
@@ -35,7 +45,7 @@ class VendorProduct(Base):
     lead_time_days = Column(Integer, default=0)
     quality_score = Column(Float, default=0)
     approval_status = Column(String(50), default="pending")
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CommissionTracking(Base):
     __tablename__ = "commission_tracking"
@@ -48,9 +58,9 @@ class CommissionTracking(Base):
     total_commission = Column(Float, default=0)
     payments_made = Column(Float, default=0)
     balance_due = Column(Float, default=0)
-    payment_date = Column(DateTime(timezone.utc), nullable=True)
+    payment_date = Column(DateTime(UTC), nullable=True)
     status = Column(String(50), default="pending")
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class VendorPerformance(Base):
     __tablename__ = "vendor_performance"
@@ -66,7 +76,7 @@ class VendorPerformance(Base):
     communication_score = Column(Float, default=0)
     overall_score = Column(Float, default=0)
     performance_status = Column(String(50), default="good")
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 class VendorSettlement(Base):
     __tablename__ = "vendor_settlements"
@@ -81,5 +91,5 @@ class VendorSettlement(Base):
     net_payment = Column(Float, default=0)
     settlement_status = Column(String(50), default="pending")  # pending, scheduled, paid
     payment_method = Column(String(50), nullable=True)
-    payment_date = Column(DateTime(timezone.utc), nullable=True)
-    settled_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    payment_date = Column(DateTime(UTC), nullable=True)
+    settled_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

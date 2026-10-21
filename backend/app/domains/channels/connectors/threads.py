@@ -1,12 +1,13 @@
 """Threads Connector — Replies and mentions via Meta Threads API."""
 
-import httpx
 from typing import Any
 
-from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
-from app.domains.channels.models import ChannelPlatform
+import httpx
+
 from app.core.logger import get_logger
+from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 logger = get_logger(__name__)
 

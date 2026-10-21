@@ -1,17 +1,14 @@
 """Predictive modeling service."""
 
 import logging
-from datetime import datetime, timezone
-from uuid import UUID
-from typing import Optional, Dict, List
 import math
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
 
 from app.domains.predictive.predictive_models import (
-    DynamicSegment, SegmentMembership, LookalikeAudience,
-    PredictionLog, PredictiveMetrics
+    DynamicSegment,
+    PredictiveMetrics,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,7 +53,7 @@ class PredictiveService:
         return {"customer_id": str(customer_id), "churn_risk": churn_risk}
 
     @staticmethod
-    def create_segment(business_id: UUID, name: str, rules: Dict, seg_type: str, db: Session = None) -> dict:
+    def create_segment(business_id: UUID, name: str, rules: dict, seg_type: str, db: Session = None) -> dict:
         if not db:
             raise ValueError("Database session required")
         

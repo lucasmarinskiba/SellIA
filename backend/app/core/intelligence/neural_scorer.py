@@ -1,8 +1,7 @@
 """Neural scoring engine — ML-based lead scoring, pricing, recommendation."""
 
 import logging
-from typing import Dict, List, Any
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class NeuralScorer:
     """Neural net (heuristics-based) scoring."""
 
     @staticmethod
-    def score_lead(lead: Dict[str, Any]) -> float:
+    def score_lead(lead: dict[str, Any]) -> float:
         """
         Score lead 0-100 based on signals.
 
@@ -63,7 +62,7 @@ class NeuralScorer:
         return min(score, 100)
 
     @staticmethod
-    def calculate_dynamic_price(base_price: float, factors: Dict[str, Any]) -> float:
+    def calculate_dynamic_price(base_price: float, factors: dict[str, Any]) -> float:
         """
         Calcula precio dinámico basado en múltiples factores.
 
@@ -112,7 +111,7 @@ class NeuralScorer:
         return round(final_price, 2)
 
     @staticmethod
-    def score_content_viral_potential(content: Dict[str, Any]) -> float:
+    def score_content_viral_potential(content: dict[str, Any]) -> float:
         """Score contenido por viral potential 0-100."""
         score = 0.0
 
@@ -147,7 +146,7 @@ class NeuralScorer:
         return min(score, 100)
 
     @staticmethod
-    def rank_actions(actions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_actions(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank actions by expected ROI."""
         for action in actions:
             roi_score = 0.0

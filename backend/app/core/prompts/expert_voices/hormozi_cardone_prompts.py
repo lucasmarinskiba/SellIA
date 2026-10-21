@@ -4,14 +4,15 @@ Hormozi: Sales funnels, offer design, value stacking
 Cardone: Closing pressure, urgency, activity, volume
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, Any, Callable
+
 
 @dataclass
 class HormoziCardonePrompt:
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str
@@ -159,4 +160,4 @@ CARDONE_PROMPTS = [
 # Combined export
 ALL_HORMOZI_CARDONE_PROMPTS = HORMOZI_PROMPTS + CARDONE_PROMPTS
 
-__all__ = ["HORMOZI_PROMPTS", "CARDONE_PROMPTS", "ALL_HORMOZI_CARDONE_PROMPTS", "HormoziCardonePrompt"]
+__all__ = ["ALL_HORMOZI_CARDONE_PROMPTS", "CARDONE_PROMPTS", "HORMOZI_PROMPTS", "HormoziCardonePrompt"]

@@ -9,14 +9,14 @@ Traces back through a conversation to attribute revenue to:
 """
 
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.channels.models import Conversation, Message
-from app.domains.automations.models import WorkflowExecution
 from app.domains.agents.models import AgentConversation, AgentMessage
+from app.domains.automations.models import WorkflowExecution
+from app.domains.channels.models import Conversation, Message
 from app.domains.orders.models import Order
 
 
@@ -26,7 +26,7 @@ class RevenueAttributionEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def attrib_order(self, order: Order) -> Dict[str, Any]:
+    async def attrib_order(self, order: Order) -> dict[str, Any]:
         """Populate attribution fields on an order before saving."""
         if not order.conversation_id:
             order.attribution_model = "last_touch"
@@ -135,7 +135,7 @@ class RevenueAttributionEngine:
     async def get_conversation_touchpoints(
         self,
         conversation_id: uuid.UUID,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all touchpoints for a conversation."""
         touchpoints = []
 

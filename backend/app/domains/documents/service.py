@@ -1,17 +1,16 @@
 """Business Document Service Layer"""
 
-import os
 import uuid
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from fastapi import UploadFile
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.logger import get_logger
-from app.domains.documents.models import BusinessDocument, DocumentChunk
-from app.domains.documents.processor import document_processor, STORAGE_DIR
+from app.domains.documents.models import BusinessDocument
+from app.domains.documents.processor import STORAGE_DIR, document_processor
 from app.domains.documents.tasks import process_document_task
 
 logger = get_logger(__name__)
@@ -37,7 +36,7 @@ class DocumentService:
         self,
         business_id: uuid.UUID,
         file: UploadFile,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> BusinessDocument:
         if not file.filename:
             raise ValueError("Filename is required")
@@ -80,7 +79,7 @@ class DocumentService:
 
         return doc
 
-    async def list_documents(self, business_id: uuid.UUID) -> List[BusinessDocument]:
+    async def list_documents(self, business_id: uuid.UUID) -> list[BusinessDocument]:
         result = await self.db.execute(
             select(BusinessDocument)
             .where(BusinessDocument.business_id == business_id)
@@ -88,7 +87,7 @@ class DocumentService:
         )
         return result.scalars().all()
 
-    async def get_document(self, document_id: uuid.UUID) -> Optional[BusinessDocument]:
+    async def get_document(self, document_id: uuid.UUID) -> BusinessDocument | None:
         result = await self.db.execute(
             select(BusinessDocument).where(BusinessDocument.id == document_id)
         )
@@ -102,5 +101,5 @@ class DocumentService:
         business_id: uuid.UUID,
         query: str,
         k: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return await document_processor.search_documents(self.db, business_id, query, k)

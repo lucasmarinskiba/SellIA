@@ -10,9 +10,9 @@ Scoring factors:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class LeadScoreBreakdown:
         self.recency_score = 0.0  # 0-10 pts
         self.total_score = 0.0  # 0-100 pts
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         return {
             "engagement": self.engagement_score,
             "intent": self.intent_score,
@@ -74,7 +74,7 @@ class LeadScore:
         else:
             return "re_engage_gently"  # Retarget
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "lead_id": self.lead_id,
             "lead_name": self.lead_name,
@@ -117,9 +117,9 @@ class LeadScoringService:
         self,
         lead_id: str,
         lead_name: str,
-        conversation_history: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-        product_info: Optional[Dict[str, Any]] = None,
+        conversation_history: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+        product_info: dict[str, Any] | None = None,
     ) -> LeadScore:
         """
         Calcula score completo del lead.
@@ -177,7 +177,7 @@ class LeadScoringService:
 
         return score
 
-    def _calculate_engagement_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_engagement_score(self, conversation_history: list[dict[str, str]]) -> float:
         """Calcula engagement basado en frecuencia + velocidad."""
         if not conversation_history:
             return 0.0
@@ -205,7 +205,7 @@ class LeadScoringService:
 
         return min(25.0, engagement)
 
-    def _calculate_intent_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_intent_score(self, conversation_history: list[dict[str, str]]) -> float:
         """Calcula intent basado en keywords."""
         if not conversation_history:
             return 0.0
@@ -241,7 +241,7 @@ class LeadScoringService:
 
         return min(30.0, score)
 
-    def _calculate_personality_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_personality_score(self, conversation_history: list[dict[str, str]]) -> float:
         """Calcula personality score (drivers = mejor compradores)."""
         if not conversation_history:
             return 7.5  # Neutral
@@ -263,7 +263,7 @@ class LeadScoringService:
         # Default neutral
         return 7.5
 
-    def _calculate_stage_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_stage_score(self, conversation_history: list[dict[str, str]]) -> float:
         """Calcula stage score (closure > negotiation > consideration > awareness)."""
         if not conversation_history:
             return 0.0
@@ -285,7 +285,7 @@ class LeadScoringService:
         # Awareness only
         return 5.0
 
-    def _calculate_recency_score(self, conversation_history: List[Dict[str, str]]) -> float:
+    def _calculate_recency_score(self, conversation_history: list[dict[str, str]]) -> float:
         """Calcula recency score (leads recientes = más hot)."""
         if not conversation_history:
             return 0.0
@@ -316,7 +316,7 @@ class LeadScoringService:
         except Exception:
             return 5.0
 
-    def _estimate_days_span(self, timestamps: List[str]) -> int:
+    def _estimate_days_span(self, timestamps: list[str]) -> int:
         """Estima días entre primer y último mensaje."""
         if len(timestamps) < 2:
             return 0
@@ -330,13 +330,13 @@ class LeadScoringService:
 
     async def get_leads_by_temperature(
         self,
-        leads: List[LeadScore],
+        leads: list[LeadScore],
         temperature: LeadTemperature,
-    ) -> List[LeadScore]:
+    ) -> list[LeadScore]:
         """Filtra leads por temperatura."""
         return [lead for lead in leads if lead.temperature == temperature]
 
-    async def prioritize_leads(self, leads: List[LeadScore]) -> List[LeadScore]:
+    async def prioritize_leads(self, leads: list[LeadScore]) -> list[LeadScore]:
         """Ordena leads por priority (hot → warm → cold, y dentro de cada grupo por score)."""
         temp_order = {LeadTemperature.HOT: 0, LeadTemperature.WARM: 1, LeadTemperature.COLD: 2}
 

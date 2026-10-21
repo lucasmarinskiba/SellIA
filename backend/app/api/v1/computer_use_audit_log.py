@@ -9,29 +9,25 @@ Endpoints para ver actividad REAL de agents:
 - POST /audit-logs/{id}/reject — rechazar acción
 """
 
-import logging
 from datetime import datetime, timedelta
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
-from app.domains.computer_use.services.audit_log_service import (
-    get_audit_log_service,
-    AuditLogService,
-)
 from app.domains.computer_use.models_audit_log import ComputerUseAuditLogSearchFilter
 from app.domains.computer_use.schemas_audit_log import (
-    AuditLogResponse,
-    AuditLogListResponse,
-    AuditLogSearchRequest,
     AuditLogApprovalRequest,
+    AuditLogListResponse,
+    AuditLogResponse,
     AuditLogSummaryResponse,
 )
+from app.domains.computer_use.services.audit_log_service import (
+    get_audit_log_service,
+)
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()

@@ -8,10 +8,16 @@ Pricing (2025-2026):
 Usado para voiceovers en videos y audio para Reels/ads.
 """
 
-from typing import Dict, Any, Optional
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
 
 settings = get_settings()
 
@@ -49,7 +55,7 @@ class ElevenLabsProvider(BaseProvider):
         cost_per_1k = ELEVENLABS_COSTS["tts-premium"] if config.quality == ContentQuality.PREMIUM else ELEVENLABS_COSTS["tts-standard"]
         return (char_count / 1000) * cost_per_1k
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return ELEVENLABS_COSTS
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:

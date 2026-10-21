@@ -8,16 +8,14 @@ Analiza feedback de usuarios con LLM para:
 - Asignar plan objetivo según complejidad
 """
 
-import uuid
 import json
-from typing import Optional, Tuple
+import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.feedback.models import FeedbackType, FeedbackSeverity, UserFeedback
-from app.domains.feedback.service import FeedbackService
 from app.domains.agents.ai_reply import generate_raw_ai_response
-
+from app.domains.feedback.models import FeedbackSeverity, FeedbackType, UserFeedback
+from app.domains.feedback.service import FeedbackService
 
 # Keywords para clasificación rápida sin LLM
 BUG_KEYWORDS = ["bug", "error", "falla", "crashea", "no funciona", "broken", "se rompe", "problema"]
@@ -37,7 +35,7 @@ async def analyze_feedback(
     business_id: uuid.UUID,
     title: str,
     description: str,
-) -> Tuple[FeedbackType, str, FeedbackSeverity, str, str, float, Optional[uuid.UUID]]:
+) -> tuple[FeedbackType, str, FeedbackSeverity, str, str, float, uuid.UUID | None]:
     """
     Analiza feedback con LLM.
 
@@ -131,7 +129,7 @@ def _keyword_classify_severity(content: str) -> FeedbackSeverity:
     return FeedbackSeverity.MEDIUM
 
 
-def _detect_duplicate(title: str, description: str, existing: list[UserFeedback]) -> Optional[uuid.UUID]:
+def _detect_duplicate(title: str, description: str, existing: list[UserFeedback]) -> uuid.UUID | None:
     """Detecta duplicados por similitud de palabras clave."""
     import re
     new_words = set(re.findall(r"\b\w{4,}\b", f"{title} {description}".lower()))

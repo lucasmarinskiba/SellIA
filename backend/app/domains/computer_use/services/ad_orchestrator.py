@@ -6,18 +6,16 @@ Monitorea performance → optimiza budget automáticamente.
 
 import logging
 import uuid
-from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass
+from typing import Any
 
-from app.domains.computer_use.integrations import (
-    MetaAdsConnector,
-    GoogleAdsConnector,
-    get_meta_ads_connector,
-    get_google_ads_connector,
-)
 from app.core.config import get_settings
+from app.domains.computer_use.integrations import (
+    get_google_ads_connector,
+    get_meta_ads_connector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +63,9 @@ class AdCreative:
     """Asset creativo para ad."""
 
     type: str  # image_url, video_url, text_only
-    content_url: Optional[str] = None
-    description: Optional[str] = None
-    dimensions: Optional[str] = None  # 1200x628, 1080x1080, etc
+    content_url: str | None = None
+    description: str | None = None
+    dimensions: str | None = None  # 1200x628, 1080x1080, etc
 
 
 @dataclass
@@ -78,12 +76,12 @@ class AdCampaign:
     name: str
     platform: AdPlatform
     format: AdFormat
-    copies: List[AdCopy]
-    creatives: List[AdCreative]
-    target_audience: Dict[str, Any]
+    copies: list[AdCopy]
+    creatives: list[AdCreative]
+    target_audience: dict[str, Any]
     daily_budget: float
     start_date: datetime
-    end_date: Optional[datetime] = None
+    end_date: datetime | None = None
     status: str = "draft"  # draft, running, paused, completed
     created_at: datetime = None
 
@@ -91,7 +89,7 @@ class AdCampaign:
         if self.created_at is None:
             self.created_at = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "campaign_id": self.campaign_id,
             "name": self.name,
@@ -211,10 +209,10 @@ class AdCopyGenerator:
 
     async def generate_ad_copies(
         self,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         tone: CopyTone,
         count: int = 5,
-    ) -> List[AdCopy]:
+    ) -> list[AdCopy]:
         """
         Genera múltiples variantes de ad copy.
 
@@ -249,7 +247,7 @@ class AdCopyGenerator:
 
         return copies
 
-    def _fill_template(self, template: str, context: Dict[str, Any]) -> str:
+    def _fill_template(self, template: str, context: dict[str, Any]) -> str:
         """Reemplaza variables en template con valores del contexto."""
         replacements = {
             "{product}": context.get("product_name", "product"),
@@ -282,7 +280,7 @@ class AdOrchestrator:
     def __init__(self):
         self.copy_generator = AdCopyGenerator()
         self.logger = logger
-        self.campaigns: Dict[str, AdCampaign] = {}  # campaign_id → AdCampaign
+        self.campaigns: dict[str, AdCampaign] = {}  # campaign_id → AdCampaign
 
         # Real API connectors. Same "from app.core.config import settings"
         # ImportError as conversion_tracker.py -- app.core.config exports
@@ -307,12 +305,12 @@ class AdOrchestrator:
     async def create_campaign(
         self,
         campaign_name: str,
-        product_info: Dict[str, Any],
-        platforms: List[AdPlatform],
+        product_info: dict[str, Any],
+        platforms: list[AdPlatform],
         daily_budget: float,
         duration_days: int = 7,
-        target_audience: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[bool, List[str]]:
+        target_audience: dict[str, Any] | None = None,
+    ) -> tuple[bool, list[str]]:
         """
         Crea campaign: genera copy + creatives + lanza en plataformas.
 
@@ -368,7 +366,7 @@ class AdOrchestrator:
             self.logger.error(f"Error creating campaign: {e}")
             return False, []
 
-    async def get_campaign_performance(self, campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_performance(self, campaign_id: str) -> dict[str, Any]:
         """Obtiene metrics de performance (placeholder)."""
         campaign = self.campaigns.get(campaign_id)
 
@@ -393,8 +391,8 @@ class AdOrchestrator:
     async def optimize_campaigns(
         self,
         user_id: str,
-        campaigns: List[str],
-    ) -> Tuple[int, List[str]]:
+        campaigns: list[str],
+    ) -> tuple[int, list[str]]:
         """
         Optimiza campaigns basado en performance.
 
@@ -434,7 +432,7 @@ class AdOrchestrator:
         else:
             return AdFormat.SINGLE_IMAGE
 
-    def _generate_placeholder_creatives(self, count: int = 3) -> List[AdCreative]:
+    def _generate_placeholder_creatives(self, count: int = 3) -> list[AdCreative]:
         """Genera creatives placeholder."""
         return [
             AdCreative(
@@ -446,7 +444,7 @@ class AdOrchestrator:
             for i in range(1, count + 1)
         ]
 
-    def _default_audience(self) -> Dict[str, Any]:
+    def _default_audience(self) -> dict[str, Any]:
         """Audience targeting por defecto."""
         return {
             "age_min": 18,

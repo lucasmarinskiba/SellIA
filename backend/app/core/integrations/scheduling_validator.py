@@ -8,8 +8,8 @@ Checks:
 """
 
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def validate_scheduling_request(
     seller_id: str,
     scheduled_time: datetime,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     P1: Valida si se puede agendar una call/meeting.
 
@@ -59,7 +59,7 @@ async def validate_scheduling_request(
         }
 
     except Exception as e:
-        logger.error(f"Scheduling validation error: {str(e)}")
+        logger.error(f"Scheduling validation error: {e!s}")
         return {
             "allowed": False,
             "error": "validation_error",

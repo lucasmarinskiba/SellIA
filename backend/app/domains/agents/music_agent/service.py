@@ -3,14 +3,12 @@
 Handles music generation via Suno / Mureka APIs.
 """
 
-import uuid
 import os
-from datetime import datetime, timezone
+import uuid
 from pathlib import Path
-from typing import Optional, List
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -106,7 +104,7 @@ class MusicService:
         await self.db.refresh(track)
         return track
 
-    async def list_tracks(self, business_id: uuid.UUID) -> List[MusicTrack]:
+    async def list_tracks(self, business_id: uuid.UUID) -> list[MusicTrack]:
         """List generated music tracks for a business."""
         result = await self.db.execute(
             select(MusicTrack)
@@ -115,13 +113,13 @@ class MusicService:
         )
         return result.scalars().all()
 
-    async def get_track(self, track_id: uuid.UUID) -> Optional[MusicTrack]:
+    async def get_track(self, track_id: uuid.UUID) -> MusicTrack | None:
         result = await self.db.execute(
             select(MusicTrack).where(MusicTrack.id == track_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_job(self, job_id: uuid.UUID) -> Optional[MusicGenerationJob]:
+    async def get_job(self, job_id: uuid.UUID) -> MusicGenerationJob | None:
         result = await self.db.execute(
             select(MusicGenerationJob).where(MusicGenerationJob.id == job_id)
         )

@@ -32,13 +32,16 @@ ranking code can't regress the payments/webhook connector).
 import asyncio
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
 
 from app.core.logger import get_logger
-from app.domains.seo_config.platform_ranking_base import PlatformRankingConnector, RankingSignal
+from app.domains.seo_config.platform_ranking_base import (
+    PlatformRankingConnector,
+    RankingSignal,
+)
 
 logger = get_logger(__name__)
 
@@ -128,7 +131,7 @@ class HotmartRankingConnector(PlatformRankingConnector):
             else "métricas a nivel cuenta: no se pudo resolver un product_id desde el link"
         )
 
-        end = datetime.now(timezone.utc)
+        end = datetime.now(UTC)
         start = end - timedelta(days=self.WINDOW_DAYS)
         start_ms, end_ms = int(start.timestamp() * 1000), int(end.timestamp() * 1000)
 

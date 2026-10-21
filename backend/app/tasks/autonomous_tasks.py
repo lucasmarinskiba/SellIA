@@ -4,21 +4,26 @@
 self-configuration, self-repair, self-optimization, self-protection.
 """
 
-from celery import shared_task
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
-from app.core.database import AsyncSessionLocal
+from celery import shared_task
+from sqlalchemy import select
+
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
+from app.domains.autopilot.router_v2 import SmartActionRouter
 from app.domains.businesses.models import Business
 from app.domains.intelligence.service import MessageIntelligenceService
+from app.domains.notifications.service import (
+    BriefingDeliveryService,
+    HandoffAlertService,
+)
+from app.domains.optimization.service import (
+    AutoOptimizer,
+    ExperimentRunner,
+)
 from app.domains.outreach.proactive import ProactiveOutreachEngine
-from app.domains.automations.content_engine import ContentGenerationRouter, ContentConfidenceScorer
-from app.domains.notifications.service import BriefingDeliveryService, HandoffAlertService
-from app.domains.optimization.service import ExperimentRunner, AutoOptimizer, CadenceOptimizer
-from app.domains.autopilot.router_v2 import SmartActionRouter
-from app.domains.crm.auto_close import AutoCloseEvaluator
-from sqlalchemy import select
 
 logger = get_logger(__name__)
 
@@ -45,7 +50,7 @@ def smart_action_router_evaluator():
             from app.domains.intelligence.models import MessageAnalysis
             recent = await db.execute(
                 select(MessageAnalysis).where(
-                    MessageAnalysis.created_at >= datetime.now(timezone.utc) - timedelta(minutes=15)
+                    MessageAnalysis.created_at >= datetime.now(UTC) - timedelta(minutes=15)
                 ).limit(50)
             )
             analyses = recent.scalars().all()
@@ -152,7 +157,7 @@ def handoff_alert_sender():
             service = HandoffAlertService(db)
 
             # Find recent handoffs (conversations awaiting human in last 5 min)
-            since = datetime.now(timezone.utc) - timedelta(minutes=5)
+            since = datetime.now(UTC) - timedelta(minutes=5)
             conversations = await _conversations_awaiting_human(db, since)
 
             sent = 0
@@ -222,7 +227,6 @@ def ab_test_winner_applier():
     """Weekly: apply A/B test winners."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.automations.models import WorkflowVariant, Workflow
             from app.domains.optimization.models import OptimizationExperiment
 
             # Find completed experiments with a winner
@@ -253,12 +257,11 @@ def pipeline_automation_trigger_scanner():
         async with AsyncSessionLocal() as db:
             from app.domains.agents.pipeline_automations import PipelineAutomationEngine
             from app.domains.crm.models import Deal
-            from app.domains.channels.models import Conversation
 
             engine = PipelineAutomationEngine(db)
 
             # Check stalled deals
-            since = datetime.now(timezone.utc) - timedelta(days=3)
+            since = datetime.now(UTC) - timedelta(days=3)
             result = await db.execute(
                 select(Deal).where(
                     Deal.is_active == True,
@@ -306,9 +309,12 @@ def autonomous_operations_cycle(self, business_id: str | None = None):
     """
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.agents.autonomous.operations_center import get_operations_center
-            from app.domains.businesses.models import Business
             from sqlalchemy import select
+
+            from app.domains.agents.autonomous.operations_center import (
+                get_operations_center,
+            )
+            from app.domains.businesses.models import Business
 
             center = get_operations_center(db)
 
@@ -362,8 +368,11 @@ def system_health_check(business_id: str | None = None):
     """
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.agents.autonomous.operations_center import get_operations_center
             from uuid import UUID
+
+            from app.domains.agents.autonomous.operations_center import (
+                get_operations_center,
+            )
             center = get_operations_center(db)
             bid = UUID(business_id) if business_id else None
             result = await center.run_quick_health_check(bid)
@@ -385,10 +394,14 @@ def deep_system_optimization(business_id: str | None = None):
     """
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.agents.autonomous.self_optimization import SelfOptimizationEngine
-            from app.domains.businesses.models import Business
-            from sqlalchemy import select
             from uuid import UUID
+
+            from sqlalchemy import select
+
+            from app.domains.agents.autonomous.self_optimization import (
+                SelfOptimizationEngine,
+            )
+            from app.domains.businesses.models import Business
 
             engine = SelfOptimizationEngine(db)
 
@@ -432,8 +445,11 @@ def emergency_security_scan(self, business_id: str | None = None, reason: str = 
     """
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.agents.autonomous.self_protection import SelfProtectionEngine
             from uuid import UUID
+
+            from app.domains.agents.autonomous.self_protection import (
+                SelfProtectionEngine,
+            )
             logger.warning(f"[EmergencyScan] Iniciando. Razón: {reason}, business={business_id}")
             engine = SelfProtectionEngine(db)
             bid = UUID(business_id) if business_id else None
@@ -538,11 +554,13 @@ def weekly_executive_report(business_id: str | None = None):
 
             from sqlalchemy import select
 
-            from app.domains.agents.autonomous.operations_center import get_operations_center
+            from app.domains.agents.autonomous.operations_center import (
+                get_operations_center,
+            )
             from app.domains.businesses.models import Business
 
             center = get_operations_center(db)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             if business_id:
                 biz_r = await db.execute(select(Business).where(Business.id == UUID(business_id)))

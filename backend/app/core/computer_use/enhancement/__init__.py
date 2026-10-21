@@ -26,7 +26,7 @@ Status: PRODUCTION READY - Listo para automatizar cualquier plataforma sin fallo
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Configure logging
 logging.basicConfig(
@@ -51,106 +51,105 @@ __status__ = "PRODUCTION"
 
 try:
     # Platform Handlers
-    from .platform_handlers import (
-        MercadoLibrePlatformHandler,
-        ShopifyPlatformHandler,
-        FacebookPlatformHandler,
-        WhatsAppPlatformHandler,
-        EmailPlatformHandler,
-        PlatformHandlerFactory,
-        PlatformMetadata,
-        PageLoadEvent,
-        InteractionResult,
-    )
-
-    # Error Recovery
-    from .error_recovery import (
-        ErrorDetector,
-        ErrorRecoveryManager,
-        ResilientAction,
-        ErrorCategory,
-        RecoveryStrategy,
-        ErrorEvent,
-        RecoveryAttempt,
-        CircuitBreakerState,
-    )
-
     # Action Verification
     from .action_verification import (
-        VerificationCoordinator,
-        FormSubmissionVerifier,
         FileUploadVerifier,
-        PaymentVerifier,
+        FormSubmissionVerifier,
         MessageDeliveryVerifier,
         NavigationVerifier,
+        PaymentVerifier,
+        VerificationCoordinator,
         VerificationResult,
-        VerificationType,
         VerificationStatus,
-    )
-
-    # Interaction Patterns
-    from .interaction_patterns import (
-        InteractionPatternLibrary,
-        LoginPattern,
-        SearchPattern,
-        FormFillPattern,
-        PaginationPattern,
-        ModalHandlingPattern,
-        UploadPattern,
-        PatternResult,
+        VerificationType,
     )
 
     # Data Extraction
     from .data_extraction import (
-        UniversalDataExtractor,
-        StructuredDataExtractor,
-        SemiStructuredDataExtractor,
-        UnstructuredDataExtractor,
-        MetadataExtractor,
-        DataValidator,
-        ExtractionRule,
-        ExtractionResult,
         DataType,
+        DataValidator,
+        ExtractionResult,
+        ExtractionRule,
         ExtractionStrategy,
+        MetadataExtractor,
+        SemiStructuredDataExtractor,
+        StructuredDataExtractor,
+        UniversalDataExtractor,
+        UnstructuredDataExtractor,
     )
 
-    # Resilience Patterns
-    from .resilience_patterns import (
-        CircuitBreaker,
-        CircuitBreakerConfig,
+    # Error Recovery
+    from .error_recovery import (
         CircuitBreakerState,
-        BulkheadManager,
-        BulkheadPartition,
-        FallbackStrategy,
-        TimeoutPolicy,
-        ThrottlingPolicy,
-        ChaosMonkey,
-        ResilienceCoordinator,
+        ErrorCategory,
+        ErrorDetector,
+        ErrorEvent,
+        ErrorRecoveryManager,
+        RecoveryAttempt,
+        RecoveryStrategy,
+        ResilientAction,
+    )
+
+    # Interaction Patterns
+    from .interaction_patterns import (
+        FormFillPattern,
+        InteractionPatternLibrary,
+        LoginPattern,
+        ModalHandlingPattern,
+        PaginationPattern,
+        PatternResult,
+        SearchPattern,
+        UploadPattern,
     )
 
     # Monitoring & Stats
     from .monitoring_stats import (
-        MetricsCollector,
-        ErrorTracker,
+        Alert,
         AlertManager,
-        PerformanceReporter,
+        AlertSeverity,
+        ErrorTracker,
+        MetricPoint,
+        MetricsCollector,
+        MetricType,
         MonitoringDashboard,
         PerformanceMetrics,
-        Alert,
-        MetricPoint,
-        MetricType,
-        AlertSeverity,
+        PerformanceReporter,
+    )
+    from .platform_handlers import (
+        EmailPlatformHandler,
+        FacebookPlatformHandler,
+        InteractionResult,
+        MercadoLibrePlatformHandler,
+        PageLoadEvent,
+        PlatformHandlerFactory,
+        PlatformMetadata,
+        ShopifyPlatformHandler,
+        WhatsAppPlatformHandler,
+    )
+
+    # Resilience Patterns
+    from .resilience_patterns import (
+        BulkheadManager,
+        BulkheadPartition,
+        ChaosMonkey,
+        CircuitBreaker,
+        CircuitBreakerConfig,
+        CircuitBreakerState,
+        FallbackStrategy,
+        ResilienceCoordinator,
+        ThrottlingPolicy,
+        TimeoutPolicy,
     )
 
 except ImportError as e:
-    logger.warning(f"Could not import all enhancement modules: {str(e)}")
+    logger.warning(f"Could not import all enhancement modules: {e!s}")
 
 
 # ============================================================================
 # CONVENIENCE INITIALIZERS
 # ============================================================================
 
-async def create_enhancement_system(computer_use_engine) -> Dict[str, Any]:
+async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
     """
     Crear sistema de mejora completo.
 

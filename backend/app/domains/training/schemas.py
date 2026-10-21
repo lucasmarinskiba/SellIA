@@ -1,11 +1,10 @@
 """Simulation / Training Engine — Pydantic Schemas (v2)"""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # SimulationScenario
@@ -13,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class SimulationScenarioBase(BaseModel):
     name: str = Field(..., max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
     difficulty: str = Field(default="medium", pattern=r"^(easy|medium|hard|expert)$")
     customer_persona: dict[str, Any] = Field(default_factory=dict)
     objective: str = Field(default="close_sale", pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$")
@@ -27,14 +26,14 @@ class SimulationScenarioCreate(SimulationScenarioBase):
 
 
 class SimulationScenarioUpdate(BaseModel):
-    name: Optional[str] = Field(default=None, max_length=200)
-    description: Optional[str] = None
-    difficulty: Optional[str] = Field(default=None, pattern=r"^(easy|medium|hard|expert)$")
-    customer_persona: Optional[dict[str, Any]] = None
-    objective: Optional[str] = Field(default=None, pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$")
-    success_criteria: Optional[dict[str, Any]] = None
-    agent_type: Optional[str] = Field(default=None, max_length=50)
-    is_active: Optional[bool] = None
+    name: str | None = Field(default=None, max_length=200)
+    description: str | None = None
+    difficulty: str | None = Field(default=None, pattern=r"^(easy|medium|hard|expert)$")
+    customer_persona: dict[str, Any] | None = None
+    objective: str | None = Field(default=None, pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$")
+    success_criteria: dict[str, Any] | None = None
+    agent_type: str | None = Field(default=None, max_length=50)
+    is_active: bool | None = None
 
 
 class SimulationScenarioOut(SimulationScenarioBase):
@@ -54,7 +53,7 @@ class SimulationMessage(BaseModel):
     role: str  # agent | customer | system
     content: str
     turn: int
-    timestamp: Optional[str] = None
+    timestamp: str | None = None
 
 
 class SimulationRunOut(BaseModel):
@@ -62,17 +61,17 @@ class SimulationRunOut(BaseModel):
 
     id: UUID
     scenario_id: UUID
-    agent_id: Optional[UUID] = None
+    agent_id: UUID | None = None
     status: str
     messages: list[dict[str, Any]] = Field(default_factory=list)
-    score: Optional[int] = None
-    objective_achieved: Optional[bool] = None
-    time_to_close_seconds: Optional[int] = None
-    customer_satisfaction: Optional[float] = None
+    score: int | None = None
+    objective_achieved: bool | None = None
+    time_to_close_seconds: int | None = None
+    customer_satisfaction: float | None = None
     skills_tested: dict[str, Any] = Field(default_factory=dict)
-    feedback: Optional[str] = None
+    feedback: str | None = None
     created_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +80,7 @@ class SimulationRunOut(BaseModel):
 
 class SimulationStartRequest(BaseModel):
     scenario_id: UUID
-    agent_id: Optional[UUID] = None  # if None, uses scenario.agent_type
+    agent_id: UUID | None = None  # if None, uses scenario.agent_type
 
 
 # ---------------------------------------------------------------------------
@@ -95,5 +94,5 @@ class LeaderboardEntry(BaseModel):
     agent_type: str
     score: int
     objective_achieved: bool
-    customer_satisfaction: Optional[float] = None
+    customer_satisfaction: float | None = None
     created_at: datetime

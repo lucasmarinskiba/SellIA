@@ -1,7 +1,7 @@
 """Scalability Engine — Horizontal scaling, sharding, load balancing."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class ScalabilityEngine:
         current_requests_per_second: int,
         target_rps: int,
         requests_per_server: int = 1000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Plan horizontal scaling."""
 
         current_servers = max(1, current_requests_per_second // requests_per_server)
@@ -33,7 +33,7 @@ class ScalabilityEngine:
     def database_sharding_strategy(
         total_rows: int,
         shard_key: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design database sharding."""
 
         if total_rows < 10000000:
@@ -56,7 +56,7 @@ class ScalabilityEngine:
         }
 
     @staticmethod
-    def load_balancing_config() -> Dict[str, Any]:
+    def load_balancing_config() -> dict[str, Any]:
         """Load balancing configuration."""
 
         return {
@@ -68,7 +68,7 @@ class ScalabilityEngine:
         }
 
     @staticmethod
-    def cdn_strategy() -> Dict[str, Any]:
+    def cdn_strategy() -> dict[str, Any]:
         """CDN configuration for static content."""
 
         return {

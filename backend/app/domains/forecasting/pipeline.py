@@ -12,13 +12,13 @@ from app.domains.forecasting.backtest import RollingOriginBacktester
 from app.domains.forecasting.models import default_model_pool
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES
 from app.domains.forecasting.models.ensemble import EnsembleForecaster
+from app.domains.forecasting.models.ml import GBMForecaster
 from app.domains.forecasting.models.statistical import (
     CrostonForecaster,
     HoltWintersForecaster,
     SeasonalNaiveForecaster,
     ThetaForecaster,
 )
-from app.domains.forecasting.models.ml import GBMForecaster
 from app.domains.forecasting.types import BacktestReport, ForecastResult, TimeSeries
 
 logger = get_logger(__name__)

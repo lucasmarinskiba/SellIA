@@ -1,18 +1,16 @@
 """SellIA Director — CEO IA that supervises all departments."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.objectives.models import Department, BusinessObjective, KPI
-from app.domains.objectives.services import ObjectiveService
-from app.domains.retention.services import RetentionService
-from app.domains.finance.services import FinanceService
-from app.domains.bi.services import BiService
 from app.core.logger import get_logger
+from app.domains.bi.services import BiService
+from app.domains.objectives.models import KPI
+from app.domains.objectives.services import ObjectiveService
 
 logger = get_logger(__name__)
 
@@ -32,7 +30,7 @@ class SellIADirector:
 
         return {
             "business_id": str(business_id),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "objectives_count": len(objectives),
             "kpis_evaluated": len(kpi_status),
             "action_plan": action_plan,

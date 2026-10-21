@@ -4,7 +4,6 @@ Detecta requests que pasan por Cloudflare y extrae información de seguridad.
 """
 
 import ipaddress
-from typing import Optional
 
 # Lista de rangos IP de Cloudflare (actualizada 2024)
 # Fuente: https://www.cloudflare.com/ips/

@@ -17,11 +17,10 @@ Pipeline completo:
 
 from __future__ import annotations
 
-import uuid
-from typing import Any, Optional
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
-from datetime import datetime, timezone
+from typing import Any
 
 
 class PipelineStage(str, Enum):
@@ -39,14 +38,14 @@ class PipelineStage(str, Enum):
 @dataclass
 class PipelineContext:
     """Contexto compartido entre todos los agentes del pipeline."""
-    lead_id: Optional[str] = None
-    deal_id: Optional[str] = None
-    business_id: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_channel: Optional[str] = None  # whatsapp, email, instagram, etc.
-    product_name: Optional[str] = None
-    product_price: Optional[float] = None
-    lead_source: Optional[str] = None
+    lead_id: str | None = None
+    deal_id: str | None = None
+    business_id: str | None = None
+    contact_name: str | None = None
+    contact_channel: str | None = None  # whatsapp, email, instagram, etc.
+    product_name: str | None = None
+    product_price: float | None = None
+    lead_source: str | None = None
     pain_points: list[str] = field(default_factory=list)
     objections_raised: list[str] = field(default_factory=list)
     objections_resolved: list[str] = field(default_factory=list)
@@ -59,7 +58,7 @@ class PipelineContext:
         self.stage_history.append({
             "from": self.current_stage,
             "to": stage,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         self.current_stage = stage
 
@@ -530,8 +529,8 @@ class PipelineAgentEngine:
     def get_system_prompt(
         self,
         stage: PipelineStage,
-        context: Optional[PipelineContext] = None,
-        business_context: Optional[str] = None,
+        context: PipelineContext | None = None,
+        business_context: str | None = None,
     ) -> str:
         """Retorna el system prompt para la etapa dada, personalizado con contexto."""
         base_prompt = self._stage_prompts[stage]

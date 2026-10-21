@@ -8,15 +8,17 @@ bounded by the automations' declared cadence, not by the tick frequency.
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.domains.brand_transformation.models import BrandAutomation, TransformationProgram
+from app.domains.brand_transformation.models import (
+    BrandAutomation,
+)
 from app.domains.brand_transformation.orchestrator import TransformationOrchestrator
 
 logger = get_logger(__name__)
@@ -41,7 +43,7 @@ def _is_due(automation: BrandAutomation, now: datetime) -> bool:
     if last is None:
         return True
     if last.tzinfo is None:
-        last = last.replace(tzinfo=timezone.utc)
+        last = last.replace(tzinfo=UTC)
     return (now - last) >= timedelta(seconds=interval - _SLACK)
 
 
@@ -50,7 +52,7 @@ def run_due_brand_automations():
     """Hourly: run every active brand automation whose interval has elapsed."""
 
     async def _run():
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         async with AsyncSessionLocal() as db:
             rows = (
                 await db.execute(
@@ -68,7 +70,7 @@ def run_due_brand_automations():
                             select(BrandAutomation).where(BrandAutomation.id == automation_id)
                         )
                     ).scalar_one_or_none()
-                    if row is None or not _is_due(row, datetime.now(timezone.utc)):
+                    if row is None or not _is_due(row, datetime.now(UTC)):
                         continue
                     await TransformationOrchestrator(run_db).run_automation(row)
                 ran += 1

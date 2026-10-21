@@ -3,13 +3,14 @@ Coupon Router
 """
 
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.coupons import service as coupon_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/coupons", tags=["coupons"])
 

@@ -17,8 +17,9 @@ each recommendation is derived from the account's own figures.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from . import pillars as pillar_calc
 from .models import ActionMode

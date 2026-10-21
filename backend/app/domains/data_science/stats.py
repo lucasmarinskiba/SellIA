@@ -12,8 +12,8 @@ the Railway image for them is not a trade worth making.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Sequence
 
 Z_95 = 1.959963984540054
 
@@ -81,7 +81,7 @@ class Proportion:
         )
 
 
-def median(values: Sequence[float]) -> Optional[float]:
+def median(values: Sequence[float]) -> float | None:
     """Median, not mean: one customer answered three days late would drag an
     average past the point of being descriptive."""
     if not values:
@@ -93,7 +93,7 @@ def median(values: Sequence[float]) -> Optional[float]:
     return (ordered[mid - 1] + ordered[mid]) / 2
 
 
-def quartiles(values: Sequence[float]) -> tuple[Optional[float], Optional[float]]:
+def quartiles(values: Sequence[float]) -> tuple[float | None, float | None]:
     if len(values) < 4:
         return (None, None)
     ordered = sorted(values)

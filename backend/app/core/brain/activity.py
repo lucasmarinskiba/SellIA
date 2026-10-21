@@ -20,8 +20,8 @@ from __future__ import annotations
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass, asdict
-from typing import Any, Deque, Optional
+from dataclasses import asdict, dataclass
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -48,7 +48,7 @@ class ActivityEvent:
     ts: float                  # epoch segundos
     kind: str                  # uno de _KINDS
     source: str                # id de nodo origen (capability id o canal)
-    target: Optional[str]      # id de nodo destino (None = self-activación)
+    target: str | None      # id de nodo destino (None = self-activación)
     detail: str                # descripción corta y honesta
 
     def as_dict(self) -> dict[str, Any]:
@@ -59,7 +59,7 @@ class BrainActivityBus:
     """Ring buffer thread-safe de eventos reales."""
 
     def __init__(self, maxlen: int = _MAX_EVENTS) -> None:
-        self._events: Deque[ActivityEvent] = deque(maxlen=maxlen)
+        self._events: deque[ActivityEvent] = deque(maxlen=maxlen)
         self._lock = threading.Lock()
         self._seq = 0
 
@@ -68,7 +68,7 @@ class BrainActivityBus:
         kind: str,
         source: str,
         detail: str,
-        target: Optional[str] = None,
+        target: str | None = None,
     ) -> None:
         """Registra un evento real. Best-effort: nunca lanza."""
         try:
@@ -116,7 +116,7 @@ class CuaFlowStore:
     """
 
     def __init__(self, maxlen: int = 30) -> None:
-        self._flows: Deque[dict[str, Any]] = deque(maxlen=maxlen)
+        self._flows: deque[dict[str, Any]] = deque(maxlen=maxlen)
         self._lock = threading.Lock()
         self._seq = 0
 
@@ -132,8 +132,8 @@ class CuaFlowStore:
             return list(self._flows)[-limit:]
 
 
-_cua_store: Optional[CuaFlowStore] = None
-_bus: Optional[BrainActivityBus] = None
+_cua_store: CuaFlowStore | None = None
+_bus: BrainActivityBus | None = None
 _bus_lock = threading.Lock()
 
 
@@ -155,6 +155,6 @@ def get_activity_bus() -> BrainActivityBus:
     return _bus
 
 
-def record_activity(kind: str, source: str, detail: str, target: Optional[str] = None) -> None:
+def record_activity(kind: str, source: str, detail: str, target: str | None = None) -> None:
     """Atajo best-effort para emitir un evento real desde cualquier capa."""
     get_activity_bus().record(kind=kind, source=source, detail=detail, target=target)

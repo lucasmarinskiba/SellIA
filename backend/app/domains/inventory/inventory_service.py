@@ -1,15 +1,17 @@
 """Location inventory service — stock management, fulfillment routing."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.domains.inventory.inventory_models import (
-    LocationInventory, StockMovement, LowStockAlert, FulfillmentRoute,
-    StockStatus, FulfillmentMethod
+    FulfillmentMethod,
+    LocationInventory,
+    LowStockAlert,
+    StockMovement,
+    StockStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +36,7 @@ class LocationInventoryService:
         location_id: UUID,
         product_id: str,
         db: Session
-    ) -> Optional[LocationInventory]:
+    ) -> LocationInventory | None:
         """Get inventory for specific product at location."""
         return db.query(LocationInventory).filter(
             LocationInventory.location_id == location_id,
@@ -70,7 +72,7 @@ class LocationInventoryService:
         quantity_before = inventory.quantity_available
         inventory.quantity_available = max(0, quantity_before + quantity_change)
         inventory.quantity_on_hand = max(0, inventory.quantity_on_hand + quantity_change)
-        inventory.last_stock_check = datetime.now(timezone.utc)
+        inventory.last_stock_check = datetime.now(UTC)
 
         # Update status
         if inventory.quantity_available <= 0:
@@ -154,7 +156,7 @@ class LocationInventoryService:
             product_id=product_id,
             quantity_change=-1,  # Reserve for demo
             movement_type="demo_checked",
-            reason=f"Visitor demo during checkin",
+            reason="Visitor demo during checkin",
             related_checkin_id=checkin_id,
             db=db
         )
@@ -180,7 +182,7 @@ class LocationInventoryService:
 
         from datetime import timedelta
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(StockMovement).filter(
             StockMovement.location_id == location_id,
@@ -206,7 +208,7 @@ class LocationInventoryService:
 
         alert.acknowledged = True
         alert.acknowledged_by = staff_id
-        alert.acknowledged_at = datetime.now(timezone.utc)
+        alert.acknowledged_at = datetime.now(UTC)
 
         db.commit()
         db.refresh(alert)

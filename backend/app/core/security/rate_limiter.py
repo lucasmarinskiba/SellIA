@@ -6,12 +6,10 @@ Implements:
 - Login brute-force protection: 5 failed attempts -> 15 min ban
 """
 
-import redis.asyncio as redis
 import time
-from datetime import datetime, timedelta
-from typing import Optional
-import hashlib
-from fastapi import Request, HTTPException, status
+
+import redis.asyncio as redis
+from fastapi import Request
 
 
 class RateLimiter:
@@ -158,7 +156,7 @@ class RateLimiter:
 
 
 # Global rate limiter instance
-_rate_limiter: Optional[RateLimiter] = None
+_rate_limiter: RateLimiter | None = None
 
 
 def get_rate_limiter(redis_client: redis.Redis) -> RateLimiter:

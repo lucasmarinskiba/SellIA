@@ -1,11 +1,20 @@
 """Multi-tenant isolation models — data boundaries, audit, compliance."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -62,8 +71,8 @@ class TenantIsolationPolicy(Base):
     allowed_regions = Column(JSONB, default=["us", "eu"])  # Where data can be stored
     data_residency_enforced = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -107,7 +116,7 @@ class AuditLog(Base):
     endpoint = Column(String(255), nullable=True)  # Which endpoint was called
     request_id = Column(String(100), nullable=True)  # Correlation ID
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_business_date", "business_id", "created_at"),
@@ -137,12 +146,12 @@ class TenantUser(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    last_login_at = Column(DateTime(timezone.utc), nullable=True)
-    invited_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    joined_at = Column(DateTime(timezone.utc), nullable=True)
+    last_login_at = Column(DateTime(UTC), nullable=True)
+    invited_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    joined_at = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_email", "business_id", "email", unique=True),
@@ -175,7 +184,7 @@ class DataAccessLog(Base):
     pii_fields_included = Column(Boolean, default=False)  # Contains personally identifiable info
     encrypted_in_transit = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_business_user_date", "business_id", "user_email", "created_at"),
@@ -208,7 +217,7 @@ class ComplianceReport(Base):
 
     # Report file
     report_file_url = Column(String(500), nullable=True)  # S3 URL to full report
-    generated_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    generated_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_type_date", "business_id", "report_type", "report_period_start"),

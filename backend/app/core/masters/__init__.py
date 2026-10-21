@@ -15,75 +15,69 @@ Production-ready system with 40,000+ lines of financial/business intelligence.
 All modules indexed, searchable, and optimized for real-time consultation.
 """
 
-from .stock_market import (
-    EquityFundamentals,
-    TechnicalAnalysis,
-    FundamentalAnalysis,
-    PortfolioStrategy,
-    RiskManagement,
-    TradingPsychology,
-    MarketMicrostructure,
-)
-
-from .forex import (
-    FXFundamentals,
-    FXTrading,
-    FXHedging,
-    FXForecasting,
-    FXRegulations,
-    FXOperations,
-)
-
 from .bonds import (
     BondFundamentals,
-    YieldCurve,
-    GovernmentBonds,
     CorporateBonds,
     FixedIncomeStrategies,
+    GovernmentBonds,
+    YieldCurve,
 )
-
-from .investment import (
-    InvestmentPhilosophy,
-    StockPicking,
-    SectorAnalysis,
-    CompanyAnalysis,
-    MacroInvesting,
-    AlternativeInvestments,
-    RiskAssessment,
-    PerformanceEvaluation,
-)
-
 from .commerce import (
-    ImportExport,
-    CustomsCompliance,
-    CurrencyManagement,
-    MarketEntry,
-    TradeAgreements,
     CommerceRiskManagement,
+    CurrencyManagement,
+    CustomsCompliance,
+    ImportExport,
     LegalFrameworks,
     LogisticsNetworks,
+    MarketEntry,
+    TradeAgreements,
 )
-
 from .decision_engines import (
-    SalesAdvisor,
-    MarketingPlanner,
-    EcommerceOptimizer,
-    InvestmentAdvisor,
-    FXTrader,
-    RiskAssessor,
-    OpportunityScout,
     BusinessStrategist,
+    EcommerceOptimizer,
+    FXTrader,
+    InvestmentAdvisor,
+    MarketingPlanner,
+    OpportunityScout,
     PortfolioOptimizer,
+    RiskAssessor,
+    SalesAdvisor,
     WorkflowAutomator,
 )
-
+from .forex import (
+    FXForecasting,
+    FXFundamentals,
+    FXHedging,
+    FXOperations,
+    FXRegulations,
+    FXTrading,
+)
+from .investment import (
+    AlternativeInvestments,
+    CompanyAnalysis,
+    InvestmentPhilosophy,
+    MacroInvesting,
+    PerformanceEvaluation,
+    RiskAssessment,
+    SectorAnalysis,
+    StockPicking,
+)
 from .reasoning import (
     ExpertSynthesis,
+    LearningFromMasters,
+    PatternRecognition,
     SituationAnalyzer,
     StrategyGenerator,
     TacticRecommender,
-    LearningFromMasters,
-    PatternRecognition,
+)
+from .stock_market import (
+    EquityFundamentals,
+    FundamentalAnalysis,
+    MarketMicrostructure,
+    PortfolioStrategy,
+    RiskManagement,
+    TechnicalAnalysis,
+    TradingPsychology,
 )
 
 __all__ = [

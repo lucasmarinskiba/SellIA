@@ -11,12 +11,13 @@ business's own ManyChat flow can branch on SellIA's qualification result
 (e.g. a "sellia_qualified" tag routes to a human, "sellia_disqualified" ends the flow).
 """
 
-import httpx
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class ManyChatConnector(BaseChannelConnector):

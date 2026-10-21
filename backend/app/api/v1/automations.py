@@ -1,37 +1,59 @@
 """Automations API Router"""
 
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import Integer, and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, Integer, cast, and_
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.automations.models import (
-    Workflow, EmailTemplate, EmailSequence, SequenceStep, ChatbotRule,
-    SequenceSubscription, SequenceEmailLog, WorkflowVariant,
-    GeneratedContent, ContentCalendar,
-    AutomationToggle, ToggleAuditLog,
+    AutomationToggle,
+    ChatbotRule,
+    ContentCalendar,
+    EmailSequence,
+    EmailTemplate,
+    GeneratedContent,
+    SequenceEmailLog,
+    SequenceStep,
+    SequenceSubscription,
+    ToggleAuditLog,
+    Workflow,
+    WorkflowVariant,
 )
-from app.domains.subscriptions.models import Subscription
 from app.domains.automations.schemas import (
-    WorkflowCreate, WorkflowUpdate, WorkflowResponse,
-    EmailTemplateCreate, EmailTemplateUpdate, EmailTemplateResponse,
-    EmailSequenceCreate, EmailSequenceResponse, EmailSequenceUpdate,
+    AutomationToggleCreate,
+    AutomationToggleResponse,
+    AutomationToggleUpdate,
+    ChatbotRuleCreate,
+    ChatbotRuleResponse,
+    ChatbotRuleUpdate,
+    ContentCalendarCreate,
+    ContentCalendarResponse,
+    ContentGenerationRequest,
+    ContentGenerationResponse,
+    EmailSequenceCreate,
+    EmailSequenceResponse,
+    EmailSequenceUpdate,
+    EmailTemplateCreate,
+    EmailTemplateResponse,
+    EmailTemplateUpdate,
+    GeneratedContentResponse,
     SequenceAnalytics,
-    ChatbotRuleCreate, ChatbotRuleUpdate, ChatbotRuleResponse,
-    WorkflowVariantCreate, WorkflowVariantUpdate, WorkflowVariantResponse,
-    WorkflowABTestResult,
-    GeneratedContentResponse, ContentCalendarResponse, ContentCalendarCreate,
-    ContentGenerationRequest, ContentGenerationResponse,
-    AutomationToggleCreate, AutomationToggleUpdate, AutomationToggleResponse,
-    ToggleAuditLogResponse, ToggleDashboardResponse,
+    ToggleAuditLogResponse,
+    ToggleDashboardResponse,
+    WorkflowCreate,
+    WorkflowResponse,
+    WorkflowUpdate,
+    WorkflowVariantCreate,
+    WorkflowVariantResponse,
+    WorkflowVariantUpdate,
 )
 from app.domains.automations.seed import seed_automations
+from app.domains.subscriptions.models import Subscription
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -104,7 +126,7 @@ async def delete_workflow(
 @router.get("/email-templates", response_model=list[EmailTemplateResponse])
 async def list_templates(
     business_id: UUID,
-    category: Optional[str] = None,
+    category: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -322,7 +344,7 @@ async def delete_sequence(
 @router.get("/chatbot-rules", response_model=list[ChatbotRuleResponse])
 async def list_rules(
     business_id: UUID,
-    intent: Optional[str] = None,
+    intent: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -526,7 +548,6 @@ async def delete_workflow_variant(
 
     await db.delete(variant)
     await db.commit()
-    return None
 
 
 @router.get("/workflows/{workflow_id}/ab-test-results")
@@ -601,11 +622,11 @@ async def generate_content(
 ):
     """Genera contenido con IA (imagen, video, copy, carousel, thumbnail)."""
     from app.tasks.content_tasks import (
-        generate_product_images_task,
-        generate_video_clips_task,
-        generate_product_copy_task,
         generate_carousel_task,
+        generate_product_copy_task,
+        generate_product_images_task,
         generate_thumbnail_task,
+        generate_video_clips_task,
     )
 
     task_dispatch = {
@@ -659,9 +680,9 @@ async def generate_content(
 @router.get("/content", response_model=list[GeneratedContentResponse])
 async def list_generated_content(
     business_id: UUID,
-    content_type: Optional[str] = None,
-    status: Optional[str] = None,
-    agent_slug: Optional[str] = None,
+    content_type: str | None = None,
+    status: str | None = None,
+    agent_slug: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -713,7 +734,7 @@ async def approve_content(
 
     content.approval_status = "approved"
     content.reviewed_by = current_user.id
-    content.reviewed_at = datetime.now(timezone.utc)
+    content.reviewed_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(content)
 
@@ -723,7 +744,7 @@ async def approve_content(
 @router.patch("/content/{content_id}/reject")
 async def reject_content(
     content_id: UUID,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -737,7 +758,7 @@ async def reject_content(
 
     content.approval_status = "rejected"
     content.reviewed_by = current_user.id
-    content.reviewed_at = datetime.now(timezone.utc)
+    content.reviewed_at = datetime.now(UTC)
     if feedback:
         content.feedback_notes = feedback
     await db.commit()
@@ -751,8 +772,8 @@ async def reject_content(
 @router.get("/calendar", response_model=list[ContentCalendarResponse])
 async def list_calendar(
     business_id: UUID,
-    platform: Optional[str] = None,
-    status: Optional[str] = None,
+    platform: str | None = None,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -843,7 +864,7 @@ async def publish_calendar_entry(
 
     # TODO: Integrar con APIs de plataforma
     entry.status = "published"
-    entry.published_at = datetime.now(timezone.utc)
+    entry.published_at = datetime.now(UTC)
     entry.published_by = current_user.id
     await db.commit()
 
@@ -860,7 +881,8 @@ async def list_content_tools(
 ):
     """Lista herramientas de IA de contenido disponibles según el plan del negocio."""
     from app.integrations.content_generation.plan_tools import (
-        get_tools_for_plan, TOOL_REGISTRY, get_plan_comparison
+        TOOL_REGISTRY,
+        get_tools_for_plan,
     )
     from app.integrations.content_generation.router import ContentGenerationRouter
 
@@ -908,7 +930,9 @@ async def get_tool_detail(
 ):
     """Obtiene detalle de una herramienta específica."""
     from app.integrations.content_generation.plan_tools import (
-        TOOL_REGISTRY, get_plan_upgrade_message, is_tool_allowed
+        TOOL_REGISTRY,
+        get_plan_upgrade_message,
+        is_tool_allowed,
     )
     from app.integrations.content_generation.router import ContentGenerationRouter
 
@@ -982,7 +1006,7 @@ async def get_content_usage(
 
     # Obtener stats de DB
     from datetime import timedelta
-    month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+    month_ago = datetime.now(UTC) - timedelta(days=30)
 
     result = await db.execute(
         select(GeneratedContent).where(
@@ -1018,12 +1042,11 @@ async def get_content_usage(
 @router.get("/toggles/business/{business_id}", response_model=list[AutomationToggleResponse])
 async def list_toggles_by_business(
     business_id: UUID,
-    category: Optional[str] = None,
+    category: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Lista todos los toggles del negocio, opcionalmente filtrados por categoría."""
-    from sqlalchemy import and_
 
     query = select(AutomationToggle).where(AutomationToggle.business_id == business_id)
     if category:
@@ -1037,11 +1060,11 @@ async def list_toggles_by_business(
 @router.get("/toggles/business/{business_id}/search", response_model=list[AutomationToggleResponse])
 async def search_toggles_advanced(
     business_id: UUID,
-    categories: Optional[str] = None,
-    usage_min: Optional[int] = None,
-    usage_max: Optional[int] = None,
-    enabled_only: Optional[bool] = None,
-    modified_after: Optional[datetime] = None,
+    categories: str | None = None,
+    usage_min: int | None = None,
+    usage_max: int | None = None,
+    enabled_only: bool | None = None,
+    modified_after: datetime | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -1109,7 +1132,7 @@ async def get_toggle(
 async def update_toggle(
     toggle_id: UUID,
     data: AutomationToggleUpdate,
-    reason: Optional[str] = None,
+    reason: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -1128,13 +1151,13 @@ async def update_toggle(
     # Actualizar
     if data.is_enabled is not None:
         toggle.is_enabled = data.is_enabled
-        toggle.enabled_at = datetime.now(timezone.utc) if data.is_enabled else toggle.enabled_at
-        toggle.disabled_at = datetime.now(timezone.utc) if not data.is_enabled else toggle.disabled_at
+        toggle.enabled_at = datetime.now(UTC) if data.is_enabled else toggle.enabled_at
+        toggle.disabled_at = datetime.now(UTC) if not data.is_enabled else toggle.disabled_at
 
     if data.monthly_limit is not None:
         toggle.monthly_limit = data.monthly_limit
 
-    toggle.updated_at = datetime.now(timezone.utc)
+    toggle.updated_at = datetime.now(UTC)
     toggle.changed_by = current_user.id
 
     # Crear audit log
@@ -1197,8 +1220,7 @@ async def reset_toggle_usage(
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
 
     toggle.current_month_usage = 0
-    from datetime import date
-    toggle.last_reset_date = datetime.now(timezone.utc)
+    toggle.last_reset_date = datetime.now(UTC)
     await db.commit()
 
     return {"ok": True, "message": "Contador reseteado"}
@@ -1222,7 +1244,6 @@ async def get_toggles_dashboard(
         .group_by(AutomationToggle.category)
     )
 
-    from sqlalchemy import Integer, cast
     rows = result.all()
     by_category = []
     for row in rows:
@@ -1235,7 +1256,7 @@ async def get_toggles_dashboard(
 
     return ToggleDashboardResponse(
         by_category=by_category,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -1258,7 +1279,7 @@ async def seed_toggles_endpoint(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Error al seed toggles: {str(e)}",
+            detail=f"Error al seed toggles: {e!s}",
         )
 
 

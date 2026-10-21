@@ -1,8 +1,9 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
+import enum
 from datetime import datetime
 from typing import Any
-import enum
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.subscriptions.models import SubscriptionStatus
 

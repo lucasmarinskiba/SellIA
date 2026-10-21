@@ -5,11 +5,12 @@ Loguea cada request a features protegidas para evidencia de entrega de servicio.
 """
 
 import time
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.domains.subscriptions.integrity import log_feature_access
 from app.core.logger import get_logger
+from app.domains.subscriptions.integrity import log_feature_access
 
 logger = get_logger(__name__)
 

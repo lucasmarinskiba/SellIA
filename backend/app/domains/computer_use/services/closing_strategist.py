@@ -9,9 +9,9 @@ Strategist para cerrar ventas con técnicas probadas:
 """
 
 import logging
-from typing import Optional, List, Dict, Any
-from enum import Enum
 from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class SalesSignal:
         self.urgency_level = urgency_level  # 1-10
         self.detected_at = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal_type": self.signal_type,
             "confidence": self.confidence,
@@ -206,9 +206,9 @@ Decision time. Yes or no?
 
     async def detect_closing_moment(
         self,
-        conversation_history: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-    ) -> tuple[bool, List[SalesSignal]]:
+        conversation_history: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+    ) -> tuple[bool, list[SalesSignal]]:
         """
         Detecta si es momento de cerrar.
 
@@ -259,9 +259,9 @@ Decision time. Yes or no?
 
     async def select_closing_technique(
         self,
-        buyer_personality: Optional[BuyerPersonality] = None,
-        signals: Optional[List[SalesSignal]] = None,
-        product_type: Optional[str] = None,
+        buyer_personality: BuyerPersonality | None = None,
+        signals: list[SalesSignal] | None = None,
+        product_type: str | None = None,
     ) -> ClosingTechnique:
         """
         Selecciona técnica de cierre óptima.
@@ -296,9 +296,9 @@ Decision time. Yes or no?
         self,
         technique: ClosingTechnique,
         customer_name: str,
-        product_info: Dict[str, Any],
-        offer_deadline: Optional[datetime] = None,
-        objections: Optional[List[str]] = None,
+        product_info: dict[str, Any],
+        offer_deadline: datetime | None = None,
+        objections: list[str] | None = None,
     ) -> str:
         """Genera mensaje de cierre personalizado."""
         template = self.CLOSING_TEMPLATES.get(technique, "")
@@ -332,7 +332,7 @@ Decision time. Yes or no?
     async def handle_objection(
         self,
         objection: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
     ) -> str:
         """Maneja objeción con técnicas de Hormozi/Trump."""
         objection_lower = objection.lower()
@@ -379,7 +379,7 @@ You're safe. Let's do this.
 """
 
         # Default: Reframe + Scarcity
-        return f"""
+        return """
 I appreciate your caution. That shows you think carefully.
 
 But here's the thing: Every day you wait is a day someone else is getting ahead.
@@ -391,9 +391,9 @@ What would it take for you to say yes TODAY?
 
     async def score_close_readiness(
         self,
-        conversation_history: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-        signals: List[SalesSignal],
+        conversation_history: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+        signals: list[SalesSignal],
     ) -> float:
         """
         Calcula readiness score para cerrar (0-1).

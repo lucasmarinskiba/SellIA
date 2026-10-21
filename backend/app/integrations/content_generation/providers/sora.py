@@ -4,10 +4,10 @@ Pricing: ~$0.20-$0.50/second (estimated)
 Strengths: Photorealism, physics, narrative video
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class SoraProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.30 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"sora-standard": 0.30, "sora-hd": 0.50}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:

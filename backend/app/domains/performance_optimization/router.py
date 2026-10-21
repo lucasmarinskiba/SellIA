@@ -1,11 +1,11 @@
 """Phase 5: Performance Optimization Endpoints."""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Optional, List
+
 from app.core.database import get_db
 from app.domains.performance_optimization.service import PerformanceOptimizationService
-
 
 router = APIRouter(prefix="/api/v1/performance-optimization", tags=["performance-optimization"])
 
@@ -49,7 +49,7 @@ async def identify_slow_query(
     query_signature: str,
     avg_execution_time_ms: float,
     execution_count: int = 1,
-    max_execution_time_ms: Optional[float] = None,
+    max_execution_time_ms: float | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Identify and log slow query."""
@@ -68,7 +68,7 @@ async def identify_slow_query(
 async def recommend_index(
     business_id: UUID,
     table_name: str,
-    column_names: List[str],
+    column_names: list[str],
     estimated_queries_improved: int = 0,
     estimated_improvement_percent: float = 0,
     db: AsyncSession = Depends(get_db),
@@ -91,7 +91,7 @@ async def configure_cache(
     cache_type: str = "redis",
     ttl_seconds: int = 3600,
     max_size_mb: float = 256,
-    cache_patterns: Optional[List[str]] = None,
+    cache_patterns: list[str] | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Configure caching strategy."""

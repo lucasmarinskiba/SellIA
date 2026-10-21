@@ -9,13 +9,12 @@ Features:
 - Intent detection (what user wants)
 """
 
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-import json
-from collections import defaultdict
 import re
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 
 class Intent(str, Enum):
@@ -47,7 +46,7 @@ class ConversationTurn:
     bot_response: str
     user_sentiment: Sentiment
     detected_intent: Intent
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -55,13 +54,13 @@ class UserProfile:
     """Persistent user profile"""
     user_id: str
     name: str
-    email: Optional[str] = None
-    industry: Optional[str] = None
-    preferences: Dict[str, Any] = field(default_factory=dict)
-    purchase_history: List[str] = field(default_factory=list)
+    email: str | None = None
+    industry: str | None = None
+    preferences: dict[str, Any] = field(default_factory=dict)
+    purchase_history: list[str] = field(default_factory=list)
     conversation_count: int = 0
-    last_interaction: Optional[datetime] = None
-    custom_traits: Dict[str, Any] = field(default_factory=dict)
+    last_interaction: datetime | None = None
+    custom_traits: dict[str, Any] = field(default_factory=dict)
 
 
 class SentimentAnalyzer:
@@ -178,16 +177,16 @@ class ConversationMemory:
     """Manage conversation history for context"""
 
     def __init__(self, max_history: int = 10):
-        self.history: Dict[str, List[ConversationTurn]] = defaultdict(list)
+        self.history: dict[str, list[ConversationTurn]] = defaultdict(list)
         self.max_history = max_history
-        self.user_profiles: Dict[str, UserProfile] = {}
+        self.user_profiles: dict[str, UserProfile] = {}
 
     def add_turn(
         self,
         user_id: str,
         user_message: str,
         bot_response: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ) -> ConversationTurn:
         """Add conversation turn"""
         sentiment = SentimentAnalyzer.analyze(user_message)
@@ -232,14 +231,14 @@ class ConversationMemory:
         profile.preferences["intents"][intent.value] = \
             profile.preferences["intents"].get(intent.value, 0) + 1
 
-    def get_history(self, user_id: str, limit: Optional[int] = None) -> List[ConversationTurn]:
+    def get_history(self, user_id: str, limit: int | None = None) -> list[ConversationTurn]:
         """Get conversation history"""
         history = self.history[user_id]
         if limit:
             return history[-limit:]
         return history
 
-    def get_context_summary(self, user_id: str) -> Dict[str, Any]:
+    def get_context_summary(self, user_id: str) -> dict[str, Any]:
         """Get summary of recent context"""
         history = self.get_history(user_id, limit=5)
         if not history:
@@ -268,7 +267,7 @@ class ConversationMemory:
             ]
         }
 
-    def _extract_topics(self, text: str) -> List[str]:
+    def _extract_topics(self, text: str) -> list[str]:
         """Extract main topics from text"""
         # Simple keyword extraction
         keywords = {}
@@ -307,7 +306,7 @@ class ContextRetriever:
     def __init__(self, memory: ConversationMemory):
         self.memory = memory
 
-    def get_context(self, user_id: str, current_message: str) -> Dict[str, Any]:
+    def get_context(self, user_id: str, current_message: str) -> dict[str, Any]:
         """Get all relevant context for response generation"""
         profile = self.memory.get_user_profile(user_id)
         history = self.memory.get_history(user_id, limit=5)
@@ -355,7 +354,7 @@ class ContextRetriever:
             return "neutral"
         return max(sentiments, key=sentiments.get)
 
-    def _extract_user_topics(self, profile: UserProfile) -> List[str]:
+    def _extract_user_topics(self, profile: UserProfile) -> list[str]:
         """Extract user's topics of interest"""
         return profile.preferences.get("topics", [])
 
@@ -364,7 +363,7 @@ class ContextRetriever:
         intent: Intent,
         sentiment: Sentiment,
         profile: UserProfile
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate guidance for response generation"""
         guidance = {
             "tone": "friendly",
@@ -399,8 +398,8 @@ class ContextRetriever:
 
 
 # Singleton instances
-_memory_instance: Optional[ConversationMemory] = None
-_retriever_instance: Optional[ContextRetriever] = None
+_memory_instance: ConversationMemory | None = None
+_retriever_instance: ContextRetriever | None = None
 
 
 def get_conversation_memory() -> ConversationMemory:

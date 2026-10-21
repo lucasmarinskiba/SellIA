@@ -12,10 +12,10 @@ Suite de tests para validar:
 Run: pytest backend/app/core/brain/brain_tests.py -v
 """
 
+from datetime import datetime
+from typing import Any
+
 import pytest
-import json
-from datetime import datetime, timedelta
-from typing import Dict, Any
 
 # Imports (commented out para permitir test sin deps)
 # from app.core.brain.agents_evolution import (
@@ -42,7 +42,7 @@ from typing import Dict, Any
 
 
 class MockDecisionContext:
-    def __init__(self, target_id: str, signals: Dict[str, Any]):
+    def __init__(self, target_id: str, signals: dict[str, Any]):
         self.target_id = target_id
         self.signals = signals
         self.timestamp = datetime.utcnow()
@@ -73,7 +73,6 @@ class TestAgentMemory:
         # assert memory.agent_id == "agent_1"
         # assert len(memory.decisions) == 0
         # assert len(memory.outcomes) == 0
-        pass
 
     def test_record_decision(self):
         """Registra decisión con confianza."""
@@ -83,7 +82,6 @@ class TestAgentMemory:
         # assert len(memory.decisions) == 1
         # assert memory.decisions[0]["decision"] == "close_now"
         # assert memory.decisions[0]["confidence"] == 0.85
-        pass
 
     def test_success_rate_calculation(self):
         """Calcula tasa de éxito de patrón."""
@@ -93,7 +91,6 @@ class TestAgentMemory:
         # memory.update_pattern("email_open", "send_email", False)
         # sr = memory.success_rate("email_open")
         # assert sr == 2/3
-        pass
 
 
 class TestSalesCloserAgent:
@@ -112,7 +109,6 @@ class TestSalesCloserAgent:
         # result = await agent.decide(context)
         # assert result["decision"] in ["close_now", "build_value", "nurture"]
         # assert 0 <= result["confidence"] <= 1.0
-        pass
 
     @pytest.mark.asyncio
     async def test_learning_from_outcomes(self):
@@ -124,7 +120,6 @@ class TestSalesCloserAgent:
         # stats = agent.get_memory_stats()
         # assert stats["total_outcomes"] == 2
         # assert stats["success_rate"] == 0.5
-        pass
 
 
 class TestPersuasionMasterAgent:
@@ -145,7 +140,6 @@ class TestPersuasionMasterAgent:
         # assert result["primary_tactic"] in [
         #     "scarcity", "social_proof", "authority", "commitment"
         # ]
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -167,7 +161,6 @@ class TestDemandForecastingTool:
         # assert "60d" in result.primary_result
         # assert "90d" in result.primary_result
         # assert result.confidence > 0.5
-        pass
 
     @pytest.mark.asyncio
     async def test_forecast_with_insufficient_data(self):
@@ -176,7 +169,6 @@ class TestDemandForecastingTool:
         # result = await tool.execute(historical_sales=[100, 110])
         # assert "error" in result.primary_result
         # assert result.confidence == 0.0
-        pass
 
 
 class TestChurnPredictionTool:
@@ -196,7 +188,6 @@ class TestChurnPredictionTool:
         # assert result.outcome_type.value == "prediction"
         # assert result.primary_result["churn_score"] > 0.5  # Alto riesgo
         # assert result.primary_result["risk_level"] in ["critical", "high"]
-        pass
 
     @pytest.mark.asyncio
     async def test_recommends_interventions(self):
@@ -212,7 +203,6 @@ class TestChurnPredictionTool:
         # interventions = result.secondary_results["recommended_interventions"]
         # assert len(interventions) > 0
         # assert interventions[0]["priority"] in ["immediate", "24h"]
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -233,7 +223,6 @@ class TestBayesianNetwork:
         # posteriors = network.infer("closure_probability")
         # assert "high" in posteriors
         # assert posteriors["high"] > 0.7  # Alta probabilidad de cierre
-        pass
 
 
 class TestCausalGraph:
@@ -248,7 +237,6 @@ class TestCausalGraph:
         # causes = graph.get_causes("churn")
         # assert len(causes) == 2
         # assert causes[0].strength == 0.8  # Inactivity is stronger
-        pass
 
     def test_counterfactual_inference(self):
         """Infiere what-if: si hacemos X, pasa Y?"""
@@ -259,7 +247,6 @@ class TestCausalGraph:
         #     "retention"
         # )
         # assert "retention" in result or "qbr_conducted" in result
-        pass
 
 
 class TestReinforcementLearner:
@@ -273,7 +260,6 @@ class TestReinforcementLearner:
         # old_q = learner.q_table.get(state_key, {}).get("raise_price", 0.0)
         # new_q = learner.update_q_value(state_key, "raise_price", reward=10, next_state_value=5)
         # assert new_q > old_q  # Q-value mejoró
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -293,7 +279,6 @@ class TestDemandForecastingCapability:
         # result = await cap.forecast(historical, include_seasonality=True)
         # assert result.periods["30d"] > 0
         # assert result.confidence > 0.6
-        pass
 
 
 class TestPatternRecognition:
@@ -311,7 +296,6 @@ class TestPatternRecognition:
         # ]
         # patterns = await recognizer.analyze_behavior(interactions)
         # assert any(p.name == "regular_purchaser" for p in patterns)
-        pass
 
 
 class TestSelfLearning:
@@ -332,7 +316,6 @@ class TestSelfLearning:
         # )
         # hyp_confidence = learner.hypotheses["price_increase_10pct"]["confidence"]
         # assert hyp_confidence > 0.7
-        pass
 
 
 class TestFraudDetection:
@@ -353,7 +336,6 @@ class TestFraudDetection:
         # anomaly = await detector.analyze_transaction(transaction)
         # assert anomaly is not None
         # assert anomaly.severity == "critical"
-        pass
 
 
 class TestCounterfactualReasoning:
@@ -371,7 +353,6 @@ class TestCounterfactualReasoning:
         # )
         # assert "expected_volume_change" in result
         # assert "expected_revenue_change" in result
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -397,7 +378,6 @@ class TestContextEngine:
         # retrieved = engine.get_context("deal_1")
         # assert retrieved.stage == "proposal"
         # assert retrieved.signals["deal_value"] == 10000
-        pass
 
     def test_update_signal(self):
         """Actualizar signal funciona."""
@@ -413,7 +393,6 @@ class TestContextEngine:
         # engine.update_signal("deal_1", "buyer_authority", "confirmed")
         # updated = engine.get_context("deal_1")
         # assert updated.signals["buyer_authority"] == "confirmed"
-        pass
 
 
 class TestAgentSelector:
@@ -425,7 +404,6 @@ class TestAgentSelector:
         # selector = AgentSelector()
         # agents = selector.select_agents("proposal", {"deal_value": 5000})
         # assert "agent.pipeline.propuesta" in agents
-        pass
 
     def test_adds_secondary_agents_by_context(self):
         """Agrega agentes secundarios según contexto."""
@@ -433,7 +411,6 @@ class TestAgentSelector:
         # agents = selector.select_agents("proposal", {"deal_value": 15000})
         # # Deal value alto → agrega revenue optimization
         # assert any("revenue" in a for a in agents) or len(agents) > 1
-        pass
 
 
 class TestBrainOrchestrator:
@@ -452,7 +429,6 @@ class TestBrainOrchestrator:
         # assert decision.primary_agent.startswith("agent.")
         # assert decision.confidence > 0.5
         # assert len(decision.secondary_inputs) >= 0
-        pass
 
 
 class TestLearningLoopManager:
@@ -471,7 +447,6 @@ class TestLearningLoopManager:
         # assert perf["decisions"] == 1
         # assert perf["successes"] == 1
         # assert perf["success_rate"] == 1.0
-        pass
 
 
 class TestHealthMonitor:
@@ -486,7 +461,6 @@ class TestHealthMonitor:
         # report = monitor.generate_health_report()
         # assert report["overall_health"] > 0.7
         # assert len(report["metrics"]) == 2
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -522,7 +496,6 @@ class TestFullDecisionPipeline:
         # # 4. Verify learning
         # health = brain.get_health()
         # assert health["overall_health"] > 0.5
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -543,7 +516,6 @@ class TestPerformance:
         # )
         # latency = (datetime.utcnow() - start).total_seconds() * 1000
         # assert latency < 500, f"Latency {latency}ms > 500ms"
-        pass
 
     @pytest.mark.asyncio
     async def test_prediction_latency_under_5s(self):
@@ -553,7 +525,6 @@ class TestPerformance:
         # forecast = await cap.forecast([100, 110, 120, 130, 140] * 10)
         # latency = (datetime.utcnow() - start).total_seconds()
         # assert latency < 5, f"Latency {latency}s > 5s"
-        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────

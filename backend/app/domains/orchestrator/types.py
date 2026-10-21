@@ -1,10 +1,9 @@
 """Orchestrator types — multi-domain decision models."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
 
 
 class Priority(str, Enum):
@@ -28,7 +27,7 @@ class Action(str, Enum):
 class BusinessMetrics:
     """Real-time snapshot of business state."""
     cash_balance: Decimal
-    runway_days: Optional[int]
+    runway_days: int | None
     forecast_revenue_30d: Decimal
     forecast_confidence: Decimal  # 0–1 (q90-q10) / q50
     current_monthly_opex: Decimal
@@ -44,10 +43,10 @@ class Recommendation:
     """Single action recommendation."""
     action: Action
     rationale: str
-    target_value: Optional[Decimal] = None  # e.g., new budget % or OpEx reduction %
+    target_value: Decimal | None = None  # e.g., new budget % or OpEx reduction %
     confidence: Decimal = Decimal("0.5")  # 0–1
-    impact_cash_30d: Optional[Decimal] = None  # estimated impact
-    impact_revenue_30d: Optional[Decimal] = None
+    impact_cash_30d: Decimal | None = None  # estimated impact
+    impact_revenue_30d: Decimal | None = None
 
 
 @dataclass
@@ -59,7 +58,7 @@ class OrchestratorPlan:
     recommendations: list[Recommendation] = field(default_factory=list)
     scenario_name: str = "current_state"
     approved_actions: list[Action] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     reasoning: str = ""
 
 
@@ -71,6 +70,6 @@ class Scenario:
     changes: dict  # {"ad_spend_daily": 0.25, "opex_pct": -0.15}
     projected_cash_30d: Decimal
     projected_revenue_30d: Decimal
-    projected_runway_days: Optional[int]
+    projected_runway_days: int | None
     feasibility: str  # "easy" | "moderate" | "hard"
     risks: list[str] = field(default_factory=list)

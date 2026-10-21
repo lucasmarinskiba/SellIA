@@ -12,22 +12,22 @@ Routes:
 - POST /foom/competitor-intel - Get competitive data
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.fomo_system import (
+    AuthoritySignalsEngine,
+    CompetitiveIntelligenceTracker,
+    CostOfDelayCalculator,
+    FOOMContentGenerator,
+    LossAversionEngine,
+    MicroCommitmentSequence,
+    RealTimeFOMODashboard,
     ScarcityEngine,
     SocialProofEngine,
-    CostOfDelayCalculator,
-    LossAversionEngine,
-    AuthoritySignalsEngine,
-    MicroCommitmentSequence,
-    FOOMContentGenerator,
-    CompetitiveIntelligenceTracker,
-    RealTimeFOMODashboard,
 )
 
 router = APIRouter(prefix="/api/v1/foom", tags=["foom-system"])
@@ -40,14 +40,14 @@ router = APIRouter(prefix="/api/v1/foom", tags=["foom-system"])
 
 class TriggersRequest(BaseModel):
     deal_id: str
-    include_channels: Optional[List[str]] = None  # ["in_app", "social", "personal"]
+    include_channels: list[str] | None = None  # ["in_app", "social", "personal"]
 
 
 class TriggersResponse(BaseModel):
     deal_id: str
     foom_level: str  # LOW, MEDIUM, HIGH, CRITICAL
     foom_score: int  # 1-10
-    triggers: List[dict]
+    triggers: list[dict]
 
 
 class CostOfDelayRequest(BaseModel):
@@ -141,7 +141,9 @@ def get_platform_foom_metrics(db: Session = Depends(get_db)):
 def generate_all_triggers(request: TriggersRequest, db: Session = Depends(get_db)):
     """Generate all FOOM triggers for deal."""
     try:
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
 
         deal = db.query(Deal).filter(Deal.id == request.deal_id).first()
         if not deal:

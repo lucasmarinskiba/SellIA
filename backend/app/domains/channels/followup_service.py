@@ -15,15 +15,18 @@ Conservative by design:
   more than one nudge per scan cycle.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.channels.models import (
-    Conversation, ConversationStatus, Message, MessageDirection,
+    Conversation,
+    ConversationStatus,
+    Message,
+    MessageDirection,
 )
 
 logger = get_logger(__name__)
@@ -34,7 +37,7 @@ SCAN_BATCH_LIMIT = 200  # cap per run so one giant backlog can't block the loop 
 
 
 async def _find_cold_conversations(db: AsyncSession) -> list[Conversation]:
-    threshold = datetime.now(timezone.utc) - timedelta(hours=COLD_THRESHOLD_HOURS)
+    threshold = datetime.now(UTC) - timedelta(hours=COLD_THRESHOLD_HOURS)
 
     result = await db.execute(
         select(Conversation).where(
@@ -110,7 +113,7 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             from app.domains.channels.services import send_outbound_message
             await send_outbound_message(db, conversation.id, text)
 
-            conversation.last_followup_sent_at = datetime.now(timezone.utc)
+            conversation.last_followup_sent_at = datetime.now(UTC)
             conversation.followup_count = (conversation.followup_count or 0) + 1
             await db.commit()
 

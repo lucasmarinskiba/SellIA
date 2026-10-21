@@ -5,7 +5,7 @@ Se importa desde main.py para instrumentación automática y desde
 auth.py para métricas de login.
 """
 
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Gauge, Histogram
 
 # Métricas de autenticación
 SELLIA_LOGINS = Counter(

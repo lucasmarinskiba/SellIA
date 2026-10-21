@@ -1,11 +1,19 @@
 """Unified analytics dashboard — consolidated metrics across all locations."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+)
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -70,7 +78,7 @@ class UnifiedLocationMetric(Base):
     attributed_revenue = Column(Numeric(12, 2), default=0)
 
     # Metadata
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -120,7 +128,7 @@ class BusinessDashboardSummary(Base):
 
     # Health score (0-100)
     overall_health_score = Column(Integer, default=0)
-    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -155,7 +163,7 @@ class LocationComparison(Base):
     revenue_variance_pct = Column(Numeric(5, 2), default=0)
     nps_variance = Column(Numeric(3, 1), default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_comparison", "business_id", "date"),
@@ -193,7 +201,7 @@ class FunnelStageMetric(Base):
     avg_days_visit_to_order = Column(Integer, nullable=True)
     avg_days_order_to_repeat = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 

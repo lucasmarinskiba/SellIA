@@ -1,9 +1,10 @@
 """Phase 5C: Channel Integration Service."""
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.channel_integration.models import (
     GoogleBusinessProfileConnection,
     GoogleMapsLocation,
@@ -62,10 +63,10 @@ class ChannelIntegrationService:
         business_id: UUID,
         location_id: UUID,
         message_id: UUID,
-        user_id: Optional[UUID] = None,
-        phone: Optional[str] = None,
-        email: Optional[str] = None,
-        content: Optional[str] = None,
+        user_id: UUID | None = None,
+        phone: str | None = None,
+        email: str | None = None,
+        content: str | None = None,
     ) -> LocationMessageExecution:
         result = await db.execute(select(LocationMessage).where(LocationMessage.id == message_id))
         msg = result.scalar()
@@ -93,7 +94,7 @@ class ChannelIntegrationService:
         db: AsyncSession,
         business_id: UUID,
         location_id: UUID,
-    ) -> List[LocationReview]:
+    ) -> list[LocationReview]:
         result = await db.execute(
             select(LocationReview).where(
                 and_(
@@ -112,8 +113,8 @@ class ChannelIntegrationService:
         place_id: str,
         rating: float = 0,
         review_count: int = 0,
-        phone: Optional[str] = None,
-        website: Optional[str] = None,
+        phone: str | None = None,
+        website: str | None = None,
     ) -> GoogleMapsLocation:
         result = await db.execute(
             select(GoogleMapsLocation).where(
@@ -131,7 +132,7 @@ class ChannelIntegrationService:
             existing.review_count = review_count
             existing.phone = phone
             existing.website = website
-            existing.last_updated = datetime.now(timezone.utc)
+            existing.last_updated = datetime.now(UTC)
             await db.commit()
             await db.refresh(existing)
             return existing
@@ -157,9 +158,9 @@ class ChannelIntegrationService:
         location_id: UUID,
         reviewer_name: str,
         rating: float,
-        review_text: Optional[str] = None,
+        review_text: str | None = None,
         platform: str = "google",
-        review_date: Optional[datetime] = None,
+        review_date: datetime | None = None,
     ) -> LocationReview:
         review = LocationReview(
             business_id=business_id,
@@ -168,7 +169,7 @@ class ChannelIntegrationService:
             rating=rating,
             review_text=review_text,
             platform=platform,
-            review_date=review_date or datetime.now(timezone.utc),
+            review_date=review_date or datetime.now(UTC),
         )
         db.add(review)
         await db.commit()

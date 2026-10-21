@@ -1,6 +1,8 @@
 """Phase X12: Conversion & Attraction Agent - Multi-Touch Closing Sequences."""
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, JSON, Text
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
+
 from app.db.models import Base
 
 
@@ -19,18 +21,18 @@ class ConversionSequence(Base):
 
     # Multi-touch sequence
     touch_1_type = Column(String(50))  # email, demo_invite, content
-    touch_1_sent = Column(DateTime(timezone.utc), nullable=True)
+    touch_1_sent = Column(DateTime(UTC), nullable=True)
     touch_1_opened = Column(Boolean, default=False)
 
     touch_2_type = Column(String(50))
-    touch_2_sent = Column(DateTime(timezone.utc), nullable=True)
+    touch_2_sent = Column(DateTime(UTC), nullable=True)
     touch_2_result = Column(String(50))  # opened, clicked, demo_scheduled
 
     touch_3_type = Column(String(50))
-    touch_3_sent = Column(DateTime(timezone.utc), nullable=True)
+    touch_3_sent = Column(DateTime(UTC), nullable=True)
 
     touch_4_type = Column(String(50))
-    touch_4_sent = Column(DateTime(timezone.utc), nullable=True)
+    touch_4_sent = Column(DateTime(UTC), nullable=True)
 
     # Closing tactics
     last_closing_angle = Column(String(255))  # ROI-focused, risk-reduction, competitive-advantage
@@ -39,7 +41,7 @@ class ConversionSequence(Base):
 
     # Results
     demo_scheduled = Column(Boolean, default=False)
-    demo_date = Column(DateTime(timezone.utc), nullable=True)
+    demo_date = Column(DateTime(UTC), nullable=True)
     contract_sent = Column(Boolean, default=False)
     contract_signed = Column(Boolean, default=False)
     closed_value = Column(Float, default=0)
@@ -48,8 +50,8 @@ class ConversionSequence(Base):
     which_touch_converted = Column(Integer, default=0)  # 1, 2, 3, 4
     conversion_attributed_to_tactic = Column(String(100))  # "urgency", "ROI", "social_proof"
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    closed_at = Column(DateTime(timezone.utc), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    closed_at = Column(DateTime(UTC), nullable=True)
 
 
 class AttractionMagnet(Base):
@@ -83,4 +85,4 @@ class AttractionMagnet(Base):
     followup_email_2_delay_hours = Column(Integer, default=24)
     followup_email_3_delay_hours = Column(Integer, default=72)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

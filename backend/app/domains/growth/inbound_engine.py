@@ -5,20 +5,23 @@ and UGC collection into a unified "vender sin vender" pipeline.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.events import event_bus
+from app.core.logger import get_logger
 from app.domains.growth.models import (
-    GrowthCampaign, GrowthCampaignType, GrowthCampaignStatus,
-    InboundLead, InboundLeadSource, NurturingStage,
-    LeadMagnet,
+    GrowthCampaign,
+    GrowthCampaignStatus,
+    GrowthCampaignType,
+    InboundLead,
+    InboundLeadSource,
+    NurturingStage,
 )
 from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
-from app.core.events import event_bus
 
 logger = get_logger(__name__)
 
@@ -67,7 +70,7 @@ class InboundGrowthEngine:
         if not campaign:
             raise ValueError(f"Campaign {campaign_id} not found")
         campaign.status = GrowthCampaignStatus.ACTIVE
-        campaign.started_at = datetime.now(timezone.utc)
+        campaign.started_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(campaign)
         logger.info(f"Activated growth campaign {campaign_id}")
@@ -140,7 +143,7 @@ class InboundGrowthEngine:
         business_id: uuid.UUID,
         campaign_type: GrowthCampaignType = None,
         status: GrowthCampaignStatus = None,
-    ) -> List[GrowthCampaign]:
+    ) -> list[GrowthCampaign]:
         """List campaigns with optional filters."""
         query = select(GrowthCampaign).where(
             GrowthCampaign.business_id == business_id,
@@ -157,7 +160,7 @@ class InboundGrowthEngine:
     async def get_dashboard_metrics(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Get unified organic growth dashboard metrics."""
         # Leads this week
-        week_ago = datetime.now(timezone.utc) - __import__('datetime').timedelta(days=7)
+        week_ago = datetime.now(UTC) - __import__('datetime').timedelta(days=7)
         leads_week_result = await self.db.execute(
             select(func.count(InboundLead.id)).where(
                 InboundLead.business_id == business_id,
@@ -263,10 +266,10 @@ class InboundGrowthEngine:
         old_stage = lead.nurturing_stage
         lead.nurturing_stage = new_stage
         lead.engagement_score += engagement_delta
-        lead.last_touch_at = datetime.now(timezone.utc)
+        lead.last_touch_at = datetime.now(UTC)
 
         if new_stage == NurturingStage.CONVERTED and old_stage != NurturingStage.CONVERTED:
-            lead.converted_at = datetime.now(timezone.utc)
+            lead.converted_at = datetime.now(UTC)
 
         await self.db.commit()
         await self.db.refresh(lead)
@@ -278,7 +281,7 @@ class InboundGrowthEngine:
         stage: NurturingStage = None,
         source_type: InboundLeadSource = None,
         limit: int = 50,
-    ) -> List[InboundLead]:
+    ) -> list[InboundLead]:
         """List inbound leads with filters."""
         query = select(InboundLead).where(
             InboundLead.business_id == business_id,
@@ -298,7 +301,7 @@ class InboundGrowthEngine:
         self,
         business_id: uuid.UUID,
         content_id: uuid.UUID,
-        platforms: List[str],
+        platforms: list[str],
     ) -> dict[str, Any]:
         """Distribute generated content across platforms."""
         from app.domains.automations.models import ContentCalendar
@@ -310,7 +313,7 @@ class InboundGrowthEngine:
                 content_id=content_id,
                 platform=platform,
                 status="scheduled",
-                scheduled_at=datetime.now(timezone.utc),
+                scheduled_at=datetime.now(UTC),
             )
             self.db.add(entry)
             results.append({"platform": platform, "status": "scheduled"})
@@ -321,13 +324,13 @@ class InboundGrowthEngine:
 
     # ========== Helpers ==========
 
-    async def _get_campaign(self, campaign_id: uuid.UUID) -> Optional[GrowthCampaign]:
+    async def _get_campaign(self, campaign_id: uuid.UUID) -> GrowthCampaign | None:
         result = await self.db.execute(
             select(GrowthCampaign).where(GrowthCampaign.id == campaign_id)
         )
         return result.scalar_one_or_none()
 
-    async def _get_lead(self, lead_id: uuid.UUID) -> Optional[InboundLead]:
+    async def _get_lead(self, lead_id: uuid.UUID) -> InboundLead | None:
         result = await self.db.execute(
             select(InboundLead).where(InboundLead.id == lead_id)
         )

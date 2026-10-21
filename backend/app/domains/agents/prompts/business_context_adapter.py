@@ -4,7 +4,8 @@ Provides reusable helpers to inject enriched BusinessContext into
 agent prompts without duplicating logic across 15+ services.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.agents.context_builder import BusinessContextBuilder
@@ -15,7 +16,7 @@ async def get_agent_prompt_context(
     business_id: Any,
     include_catalog: bool = True,
     max_catalog_items: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Load enriched business context formatted for agent prompts.
 
     Returns a dict with keys:
@@ -30,7 +31,7 @@ async def get_agent_prompt_context(
     )
 
 
-def format_business_context_for_prompt(ctx: Dict[str, Any]) -> str:
+def format_business_context_for_prompt(ctx: dict[str, Any]) -> str:
     """Format a business context dict into a rich text block for prompts."""
     if not ctx:
         return ""
@@ -57,7 +58,7 @@ def format_business_context_for_prompt(ctx: Dict[str, Any]) -> str:
     return "\n\nBUSINESS PROFILE:\n" + "\n".join(lines)
 
 
-def enrich_system_prompt(base_prompt: str, ctx: Dict[str, Any]) -> str:
+def enrich_system_prompt(base_prompt: str, ctx: dict[str, Any]) -> str:
     """Prepend business context to a system prompt."""
     context_block = format_business_context_for_prompt(ctx)
     if not context_block:
@@ -65,7 +66,7 @@ def enrich_system_prompt(base_prompt: str, ctx: Dict[str, Any]) -> str:
     return base_prompt + "\n\n" + context_block
 
 
-def enrich_user_prompt(base_prompt: str, ctx: Dict[str, Any]) -> str:
+def enrich_user_prompt(base_prompt: str, ctx: dict[str, Any]) -> str:
     """Append business context to a user prompt."""
     context_block = format_business_context_for_prompt(ctx)
     if not context_block:

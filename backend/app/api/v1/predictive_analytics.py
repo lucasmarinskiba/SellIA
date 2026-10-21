@@ -1,11 +1,10 @@
 """Predictive analytics API — demand + churn + revenue forecasting."""
 
-from uuid import UUID
-from typing import Optional, List
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,7 +18,7 @@ class PredictChurnRequest(BaseModel):
     customer_id: UUID
     days_since_purchase: int
     purchase_frequency: Decimal
-    engagement_score: Optional[Decimal] = None
+    engagement_score: Decimal | None = None
 
 
 class PredictPurchaseTimingRequest(BaseModel):
@@ -30,20 +29,20 @@ class PredictPurchaseTimingRequest(BaseModel):
 
 class ForecastDemandRequest(BaseModel):
     product_category: str
-    historical_units: List[int]
+    historical_units: list[int]
     forecast_days: int = 30
 
 
 class ForecastRevenueRequest(BaseModel):
-    historical_revenue: List[float]
-    new_customer_ratio: Optional[Decimal] = Decimal("0.3")
+    historical_revenue: list[float]
+    new_customer_ratio: Decimal | None = Decimal("0.3")
     forecast_horizon: str = "next_30_days"
 
 
 class EvaluateAccuracyRequest(BaseModel):
     prediction_type: str
-    predictions: List[float]
-    actuals: List[float]
+    predictions: list[float]
+    actuals: list[float]
 
 
 @router.post("/businesses/{business_id}/predict-churn")
@@ -58,7 +57,7 @@ def predict_churn(
         customer_id=request.customer_id,
         days_since_purchase=request.days_since_purchase,
         purchase_frequency=request.purchase_frequency,
-        engagement_score=request.engagement_score or Decimal("5"),
+        engagement_score=request.engagement_score or Decimal(5),
         db=db
     )
 

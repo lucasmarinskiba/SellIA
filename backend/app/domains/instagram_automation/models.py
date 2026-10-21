@@ -1,6 +1,8 @@
 """Instagram automation models: @sell_.ia brand promotion."""
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
+
 from app.db.database import Base
 
 
@@ -13,7 +15,7 @@ class InstagramPost(Base):
     hashtags = Column(String(500))  # Hashtags: #sell_.ia #AI #SalesTech
     content_type = Column(String(50))  # carousel, reel, story, static
     media_url = Column(String(500))  # Image/video URL
-    posted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    posted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     scheduled_for = Column(DateTime(timezone=True), nullable=True)
 
     # Publish status real (no simulado)
@@ -35,7 +37,7 @@ class InstagramPost(Base):
     utm_params = Column(String(200))  # utm_source=instagram utm_medium=post
     conversions_attributed = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class InstagramCampaign(Base):
@@ -64,7 +66,7 @@ class InstagramCampaign(Base):
     sellbox_link = Column(String(500))  # Direct link to SellIA
 
     status = Column(String(50), default="draft")  # draft, scheduled, active, completed
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     launched_at = Column(DateTime(timezone=True), nullable=True)
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -96,7 +98,7 @@ class InstagramAudience(Base):
 
     first_interaction_at = Column(DateTime(timezone=True), nullable=True)
     last_interaction_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class InstagramConversionPath(Base):
@@ -130,4 +132,4 @@ class InstagramConversionPath(Base):
     touches_before_conversion = Column(Integer, default=0)
     instagram_attribution_credit = Column(Float, default=0.0)  # 0-1.0
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

@@ -3,15 +3,14 @@ Competitive Service
 """
 
 import uuid
-from typing import Optional, List
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.domains.competitive.models import CompetitiveBattlecard
 
 
-async def list_battlecards(db: AsyncSession, user_id: uuid.UUID) -> List[CompetitiveBattlecard]:
+async def list_battlecards(db: AsyncSession, user_id: uuid.UUID) -> list[CompetitiveBattlecard]:
     result = await db.execute(
         select(CompetitiveBattlecard)
         .where(CompetitiveBattlecard.user_id == user_id)
@@ -20,7 +19,7 @@ async def list_battlecards(db: AsyncSession, user_id: uuid.UUID) -> List[Competi
     return result.scalars().all()
 
 
-async def get_battlecard(db: AsyncSession, battlecard_id: uuid.UUID, user_id: uuid.UUID) -> Optional[CompetitiveBattlecard]:
+async def get_battlecard(db: AsyncSession, battlecard_id: uuid.UUID, user_id: uuid.UUID) -> CompetitiveBattlecard | None:
     result = await db.execute(
         select(CompetitiveBattlecard).where(
             CompetitiveBattlecard.id == battlecard_id,

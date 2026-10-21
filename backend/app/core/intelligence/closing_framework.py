@@ -10,7 +10,7 @@ Técnicas cierre:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class ClosingFramework:
     ]
 
     @staticmethod
-    def handle_objection(objection_type: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_objection(objection_type: str, context: dict[str, Any]) -> dict[str, Any]:
         """Maneja objeción específica (Belfort)."""
 
         handler = ClosingFramework.OBJECTION_HANDLERS.get(
@@ -130,7 +130,7 @@ class ClosingFramework:
     def present_deal_structure(
         base_price: float,
         buyer_type: str = "standard",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Presenta 3 opciones de deal (Trump: choice architecture)."""
 
         deals = []
@@ -155,7 +155,7 @@ class ClosingFramework:
         return deals
 
     @staticmethod
-    def create_urgency_tactics(product: Dict[str, Any]) -> List[str]:
+    def create_urgency_tactics(product: dict[str, Any]) -> list[str]:
         """Crea urgencia genuina (no fake, Trump-style)."""
 
         tactics = []
@@ -171,7 +171,7 @@ class ClosingFramework:
         return tactics
 
     @staticmethod
-    def micro_commitment_sequence(buyer: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def micro_commitment_sequence(buyer: dict[str, Any]) -> list[dict[str, Any]]:
         """Secuencia de micro-commitments (Belfort)."""
 
         return [

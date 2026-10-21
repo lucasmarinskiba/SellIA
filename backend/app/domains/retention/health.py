@@ -4,19 +4,19 @@ Detects at-risk customers BEFORE they churn and activates retention workflows.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.retention.models import CustomerSegment, CustomerSegmentType
+from app.core.logger import get_logger
 from app.domains.channels.models import Conversation, Message
 from app.domains.orders.models import Order
-from app.domains.retention.models import NpsResponse
+from app.domains.retention.models import (
+    NpsResponse,
+)
 from app.domains.support.models import SupportTicket
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -64,7 +64,7 @@ class HealthScoringService:
             return CustomerHealthScore(conversation_id, 0, "declining", ChurnRiskLevel.CRITICAL, "Cliente no encontrado")
 
         business_id = conv.business_id
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # 1. Recency (30%): days since last order
         order_result = await self.db.execute(
@@ -240,7 +240,7 @@ class HealthScoringService:
             record.engagement_score = self._get_engagement_score(conv.id)
             record.nps_score = self._get_nps_score(conv.id)
             record.support_ticket_count = self._get_support_ticket_count(conv.id)
-            record.calculated_at = datetime.now(timezone.utc)
+            record.calculated_at = datetime.now(UTC)
 
             # Save history
             history = HealthScoreHistory(
@@ -281,7 +281,6 @@ class ChurnPreventionEngine:
     async def activate_prevention_for_business(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
         """Activate churn prevention for all at-risk customers of a business."""
         from app.domains.retention.models import HealthScoreRecord
-        from app.domains.autopilot.service import AutopilotEngine, AutopilotActionType, AutopilotActionStatus
 
         result = await self.db.execute(
             select(HealthScoreRecord).where(
@@ -299,9 +298,13 @@ class ChurnPreventionEngine:
 
         return actions
 
-    async def _activate_for_customer(self, record) -> Optional[dict[str, Any]]:
+    async def _activate_for_customer(self, record) -> dict[str, Any] | None:
         """Activate the appropriate retention action for a customer."""
-        from app.domains.autopilot.service import AutopilotEngine, AutopilotActionType, AutopilotActionStatus
+        from app.domains.autopilot.service import (
+            AutopilotActionStatus,
+            AutopilotActionType,
+            AutopilotEngine,
+        )
 
         autopilot = AutopilotEngine(self.db)
         config = await autopilot.get_or_create_config(record.business_id)
@@ -340,7 +343,11 @@ class ChurnPreventionEngine:
 
     async def _trigger_workflow(self, record, workflow_type: str) -> dict[str, Any]:
         """Trigger a retention workflow for a customer."""
-        from app.domains.autopilot.service import AutopilotEngine, AutopilotActionType, AutopilotActionStatus
+        from app.domains.autopilot.service import (
+            AutopilotActionStatus,
+            AutopilotActionType,
+            AutopilotEngine,
+        )
 
         autopilot = AutopilotEngine(self.db)
 

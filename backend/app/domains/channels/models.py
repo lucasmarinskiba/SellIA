@@ -1,14 +1,24 @@
-import uuid
+import enum
 import secrets
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Enum, Integer, Numeric, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-import enum
 
 
 class ChannelPlatform(str, enum.Enum):
@@ -70,8 +80,8 @@ class ChannelConnection(Base):
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", back_populates="channels")
 
@@ -99,8 +109,8 @@ class Conversation(Base):
     followup_count = Column(Integer, default=0, nullable=False)  # caps nudges per conversation
     extra_data = Column(MutableDict.as_mutable(JSONB), default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", back_populates="conversations")
     channel = relationship("ChannelConnection")
@@ -131,8 +141,8 @@ class Message(Base):
     status = Column(Enum(MessageStatus), default=MessageStatus.SENT, nullable=False)
     external_message_id = Column(String(255), nullable=True)
     extra_data = Column(JSONB, default=dict, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_messages_conversation_created', 'conversation_id', 'created_at'),
@@ -159,7 +169,7 @@ class BookingEvent(Base):
     invitee_phone = Column(String(50), nullable=True)
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(20), default="scheduled", nullable=False)  # scheduled, cancelled
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_booking_events_business_created', 'business_id', 'created_at'),

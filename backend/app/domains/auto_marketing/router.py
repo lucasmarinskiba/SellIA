@@ -1,11 +1,11 @@
 """Phase X8: Auto-Marketing & Growth Agent API."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from app.core.database import get_db
-from app.domains.auto_marketing.service import AutoMarketingAgent
-from app.domains.auto_marketing.models import MarketingChannel
 
+from app.core.database import get_db
+from app.domains.auto_marketing.models import MarketingChannel
+from app.domains.auto_marketing.service import AutoMarketingAgent
 
 router = APIRouter(prefix="/api/v1/auto-marketing", tags=["auto-marketing"])
 

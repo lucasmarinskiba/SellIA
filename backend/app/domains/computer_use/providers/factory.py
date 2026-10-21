@@ -6,11 +6,12 @@ Orden de preferencia:
 3. Ollama local (gratis, privado, menos preciso)
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.domains.computer_use.schemas import ComputerUseAction
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -29,29 +30,28 @@ async def _is_ollama_available() -> bool:
     base_url = get_settings().OLLAMA_BASE_URL.rstrip("/")
     try:
         import aiohttp
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{base_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=3),
-            ) as resp:
-                if resp.status != 200:
-                    return False
-                data = await resp.json()
-                models = data.get("models", [])
-                # Check if any vision model is available
-                vision_models = ["llava", "bakllava", "moondream", "llava-phi3"]
-                return any(
-                    any(vm in m.get("name", "").lower() for vm in vision_models)
-                    for m in models
-                )
+        async with aiohttp.ClientSession() as session, session.get(
+            f"{base_url}/api/tags",
+            timeout=aiohttp.ClientTimeout(total=3),
+        ) as resp:
+            if resp.status != 200:
+                return False
+            data = await resp.json()
+            models = data.get("models", [])
+            # Check if any vision model is available
+            vision_models = ["llava", "bakllava", "moondream", "llava-phi3"]
+            return any(
+                any(vm in m.get("name", "").lower() for vm in vision_models)
+                for m in models
+            )
     except Exception:
         return False
 
 
 def create_provider(
     provider_name: str,
-    api_key: Optional[str] = None,
-) -> Optional[ComputerUseProvider]:
+    api_key: str | None = None,
+) -> ComputerUseProvider | None:
     """Crea un provider específico.
 
     Args:
@@ -91,8 +91,8 @@ def create_provider(
 
 
 async def create_provider_with_fallback(
-    preferred_provider: Optional[str] = None,
-    api_key: Optional[str] = None,
+    preferred_provider: str | None = None,
+    api_key: str | None = None,
 ) -> ComputerUseProvider:
     """Crea un provider con fallback automático.
 
@@ -166,9 +166,9 @@ class FallbackComputerUseProvider(ComputerUseProvider):
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         errors = []
 
@@ -183,7 +183,7 @@ class FallbackComputerUseProvider(ComputerUseProvider):
                     return result
                 errors.append(f"{provider.provider_name}: {result.params.get('message', 'error')}")
             except Exception as e:
-                errors.append(f"{provider.provider_name}: {str(e)}")
+                errors.append(f"{provider.provider_name}: {e!s}")
                 continue
 
         # All providers failed
@@ -193,7 +193,7 @@ class FallbackComputerUseProvider(ComputerUseProvider):
             reason="All providers failed",
         )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         for provider in self.providers:
             try:
                 return await provider.generate_summary(actions_log)

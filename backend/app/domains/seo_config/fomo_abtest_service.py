@@ -1,13 +1,14 @@
 """A/B testing service for FOMO copy variants."""
 
-from uuid import UUID
 from datetime import datetime
-from sqlalchemy import select, func
+from uuid import UUID
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.domains.seo_config.fomo_models import ConversionEvent, FOMABTest
 from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
-from app.domains.seo_config.fomo_models import FOMABTest, ConversionEvent
 
 logger = get_logger(__name__)
 

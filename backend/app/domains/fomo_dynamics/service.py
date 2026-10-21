@@ -1,12 +1,16 @@
 """Phase X6: FOMO Dynamics Service - Ultra-Potent Psychology-Driven FOMO."""
-import math
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Dict
+from datetime import UTC, datetime
 from uuid import UUID
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+
 from app.domains.fomo_dynamics.models import (
-    DynamicOffer, PriceElasticity, FOMOBadge, SocialProofReal, PersonalizedFOMO, FOMOStrategy
+    DynamicOffer,
+    FOMOBadge,
+    FOMOStrategy,
+    PersonalizedFOMO,
+    SocialProofReal,
 )
 
 
@@ -18,8 +22,8 @@ class FOMODynamicsService:
         product_id: UUID,
         strategy: FOMOStrategy,
         base_price: float,
-        total_stock: Optional[int] = None,
-        ends_at: Optional[datetime] = None,
+        total_stock: int | None = None,
+        ends_at: datetime | None = None,
         headline: str = "",
     ) -> DynamicOffer:
         """Create psychological FOMO offer with automatic strategy optimization."""
@@ -63,13 +67,13 @@ class FOMODynamicsService:
     async def get_urgency_badge(
         db: AsyncSession,
         offer_id: UUID,
-    ) -> Optional[FOMOBadge]:
+    ) -> FOMOBadge | None:
         """Generate psychological urgency badge."""
         offer = await db.get(DynamicOffer, offer_id)
         if not offer:
             return None
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         badge_type = None
         badge_text = ""
         urgency_level = 1
@@ -277,7 +281,7 @@ class FOMODynamicsService:
 
             # Time pressure
             if offer.ends_at:
-                time_left = offer.ends_at - datetime.now(timezone.utc)
+                time_left = offer.ends_at - datetime.now(UTC)
                 hours_left = time_left.total_seconds() / 3600
                 if hours_left < 1:
                     probability += 0.25

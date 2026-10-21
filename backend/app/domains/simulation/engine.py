@@ -4,16 +4,20 @@ Orchestrates sales simulations between an AI agent and a simulated customer pers
 evaluates performance, and maintains leaderboards.
 """
 
-import uuid
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, desc, func
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.simulation.models import SimulationScenario, SimulationRun, SimulationLeaderboard
 from app.core.logger import get_logger
+from app.domains.simulation.models import (
+    SimulationLeaderboard,
+    SimulationRun,
+    SimulationScenario,
+)
 
 logger = get_logger(__name__)
 
@@ -32,14 +36,14 @@ class SimulationEngine:
     async def create_scenario(
         self,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         name: str,
         description: str,
         difficulty: str,
         objective: str,
-        customer_persona: Dict[str, Any],
+        customer_persona: dict[str, Any],
         agent_type: str,
-        success_criteria: Dict[str, Any],
+        success_criteria: dict[str, Any],
     ) -> SimulationScenario:
         scenario = SimulationScenario(
             business_id=business_id,
@@ -61,7 +65,7 @@ class SimulationEngine:
         db: AsyncSession,
         scenario_id: uuid.UUID,
         user_id: uuid.UUID,
-        agent_config: Optional[Dict[str, Any]] = None,
+        agent_config: dict[str, Any] | None = None,
     ) -> SimulationRun:
         result = await db.execute(
             select(SimulationScenario).where(
@@ -79,14 +83,14 @@ class SimulationEngine:
             agent_config=agent_config or {},
             status="running",
             messages=[],
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         db.add(run)
         await db.commit()
         await db.refresh(run)
 
-        started = datetime.now(timezone.utc)
-        messages_history: List[Dict[str, str]] = []
+        started = datetime.now(UTC)
+        messages_history: list[dict[str, str]] = []
 
         try:
             # Initial customer message (ice breaker)
@@ -124,7 +128,7 @@ class SimulationEngine:
             # Evaluate
             score, outcome, skills, feedback = await self._evaluate_run(db, scenario, messages_history)
 
-            duration = int((datetime.now(timezone.utc) - started).total_seconds())
+            duration = int((datetime.now(UTC) - started).total_seconds())
 
             run.status = "completed"
             run.messages = messages_history
@@ -133,7 +137,7 @@ class SimulationEngine:
             run.skills_tested = skills
             run.feedback = feedback
             run.duration_seconds = duration
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await db.commit()
             await db.refresh(run)
 
@@ -144,7 +148,7 @@ class SimulationEngine:
             logger.exception(f"Simulation run failed: {e}")
             run.status = "failed"
             run.messages = messages_history
-            run.duration_seconds = int((datetime.now(timezone.utc) - started).total_seconds())
+            run.duration_seconds = int((datetime.now(UTC) - started).total_seconds())
             await db.commit()
             await db.refresh(run)
 
@@ -154,10 +158,10 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
-    ) -> Optional[str]:
-        from app.domains.agents.prompts import get_system_prompt
+        messages_history: list[dict[str, str]],
+    ) -> str | None:
         from app.domains.agents.ai_reply import generate_raw_ai_response
+        from app.domains.agents.prompts import get_system_prompt
 
         system_prompt = get_system_prompt(scenario.agent_type)
         system_prompt += (
@@ -183,8 +187,8 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
-    ) -> Optional[str]:
+        messages_history: list[dict[str, str]],
+    ) -> str | None:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
         persona = scenario.customer_persona
@@ -210,7 +214,7 @@ class SimulationEngine:
             temperature=0.8,
         )
 
-    def _build_transcript(self, messages_history: List[Dict[str, str]]) -> str:
+    def _build_transcript(self, messages_history: list[dict[str, str]]) -> str:
         lines = []
         for m in messages_history:
             speaker = "Agente" if m["role"] == "agent" else "Cliente"
@@ -225,7 +229,7 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
+        messages_history: list[dict[str, str]],
     ) -> str:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
@@ -257,7 +261,7 @@ class SimulationEngine:
         self,
         db: AsyncSession,
         scenario: SimulationScenario,
-        messages_history: List[Dict[str, str]],
+        messages_history: list[dict[str, str]],
     ) -> tuple:
         from app.domains.agents.ai_reply import generate_raw_ai_response
 
@@ -317,7 +321,7 @@ class SimulationEngine:
 
         return score, outcome, skills, feedback
 
-    def _extract_number(self, text: Optional[str], default: int = 0, max_val: int = 100) -> int:
+    def _extract_number(self, text: str | None, default: int = 0, max_val: int = 100) -> int:
         if not text:
             return default
         digits = "".join(c for c in text if c.isdigit())
@@ -327,7 +331,7 @@ class SimulationEngine:
         except ValueError:
             return default
 
-    def _extract_json(self, text: Optional[str], default: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_json(self, text: str | None, default: dict[str, Any]) -> dict[str, Any]:
         if not text:
             return default
         try:
@@ -393,15 +397,15 @@ class SimulationEngine:
         lb.avg_score = avg_score
         lb.best_score = best_score
         lb.success_rate = success_rate
-        lb.updated_at = datetime.now(timezone.utc)
+        lb.updated_at = datetime.now(UTC)
         await db.commit()
 
     async def get_leaderboard(
         self,
         db: AsyncSession,
-        agent_type: Optional[str] = None,
+        agent_type: str | None = None,
         limit: int = 50,
-    ) -> List[SimulationLeaderboard]:
+    ) -> list[SimulationLeaderboard]:
         query = select(SimulationLeaderboard).order_by(
             desc(SimulationLeaderboard.avg_score)
         ).limit(limit)

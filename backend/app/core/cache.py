@@ -3,11 +3,13 @@
 Provides a @cached decorator for FastAPI endpoints and async functions.
 """
 
-import json
-import hashlib
 import functools
-from typing import Any, Callable
+import hashlib
+import json
+from collections.abc import Callable
+
 import redis.asyncio as redis
+
 from app.core.config import get_settings
 
 settings = get_settings()

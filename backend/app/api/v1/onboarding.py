@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
+from app.domains.onboarding.analyzer import OnboardingAnalyzer
+from app.domains.onboarding.generator import OnboardingGenerator
 from app.domains.onboarding.schemas import (
     OnboardingAnalyzeRequest,
     OnboardingAnalyzeResponse,
@@ -16,8 +17,7 @@ from app.domains.onboarding.schemas import (
     OnboardingCreateResponse,
 )
 from app.domains.onboarding.scraper import OnboardingScraper
-from app.domains.onboarding.analyzer import OnboardingAnalyzer
-from app.domains.onboarding.generator import OnboardingGenerator
+from app.domains.users.models import User
 
 router = APIRouter(tags=["Onboarding Mágico"])
 
@@ -35,7 +35,7 @@ async def analyze_source(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"No se pudo acceder a la fuente. Verificá que sea pública. Error: {str(e)}",
+            detail=f"No se pudo acceder a la fuente. Verificá que sea pública. Error: {e!s}",
         )
 
     analyzer = OnboardingAnalyzer()

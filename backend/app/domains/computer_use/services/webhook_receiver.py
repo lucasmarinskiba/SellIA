@@ -13,10 +13,10 @@ Normaliza a formato estándar → Message Queue.
 """
 
 import logging
-from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -59,19 +59,19 @@ class IncomingMessage:
     content: str
 
     # Opcionales / con default -- van todos después de los requeridos.
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
-    media_urls: Optional[list] = None
+    customer_email: str | None = None
+    customer_phone: str | None = None
+    media_urls: list | None = None
 
     # Contexto
-    product_id: Optional[str] = None  # Si es comentario de producto
-    order_id: Optional[str] = None  # Si es sobre orden
-    previous_messages: Optional[list] = None  # Historial (últimos 5)
+    product_id: str | None = None  # Si es comentario de producto
+    order_id: str | None = None  # Si es sobre orden
+    previous_messages: list | None = None  # Historial (últimos 5)
 
     # Metadata
-    received_at: Optional[datetime] = None
-    platform_timestamp: Optional[datetime] = None
-    raw_data: Optional[Dict[str, Any]] = None  # Datos crudos para debug
+    received_at: datetime | None = None
+    platform_timestamp: datetime | None = None
+    raw_data: dict[str, Any] | None = None  # Datos crudos para debug
 
     def __post_init__(self):
         if self.received_at is None:
@@ -82,7 +82,7 @@ class WhatsAppWebhookHandler:
     """Maneja webhooks de WhatsApp."""
 
     @staticmethod
-    def parse(payload: Dict[str, Any], user_id: str) -> Optional[IncomingMessage]:
+    def parse(payload: dict[str, Any], user_id: str) -> IncomingMessage | None:
         """
         Parsea webhook de WhatsApp.
 
@@ -128,7 +128,7 @@ class InstagramWebhookHandler:
     """Maneja webhooks de Instagram (comments + DMs)."""
 
     @staticmethod
-    def parse(payload: Dict[str, Any], user_id: str) -> Optional[IncomingMessage]:
+    def parse(payload: dict[str, Any], user_id: str) -> IncomingMessage | None:
         """
         Parsea webhook de Instagram.
 
@@ -180,7 +180,7 @@ class TikTokWebhookHandler:
     """Maneja webhooks de TikTok (comments)."""
 
     @staticmethod
-    def parse(payload: Dict[str, Any], user_id: str) -> Optional[IncomingMessage]:
+    def parse(payload: dict[str, Any], user_id: str) -> IncomingMessage | None:
         """Parsea webhook de TikTok comments."""
         try:
             events = payload.get("events", [])
@@ -210,7 +210,7 @@ class FacebookWebhookHandler:
     """Maneja webhooks de Facebook (comments + Messenger)."""
 
     @staticmethod
-    def parse(payload: Dict[str, Any], user_id: str) -> Optional[IncomingMessage]:
+    def parse(payload: dict[str, Any], user_id: str) -> IncomingMessage | None:
         """Parsea webhook de Facebook."""
         try:
             entry = payload.get("entry", [{}])[0]
@@ -264,9 +264,9 @@ class WebhookReceiverService:
     @staticmethod
     async def process(
         platform: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         user_id: str,
-    ) -> Optional[IncomingMessage]:
+    ) -> IncomingMessage | None:
         """
         Procesa webhook de cualquier plataforma.
 

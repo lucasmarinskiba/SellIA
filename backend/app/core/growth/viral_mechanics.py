@@ -1,8 +1,7 @@
 """Viral Mechanics — Referral loops, network effects, organic amplification."""
 
 import logging
-from typing import Dict, List, Any
-from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +19,8 @@ class ViralMechanics:
     @staticmethod
     def design_referral_loop(
         product_name: str,
-        unit_economics: Dict[str, float],
-    ) -> Dict[str, Any]:
+        unit_economics: dict[str, float],
+    ) -> dict[str, Any]:
         """
         Design referral loop maximizing viral coefficient.
 
@@ -54,7 +53,7 @@ class ViralMechanics:
         }
 
     @staticmethod
-    def create_content_amplification_strategy() -> Dict[str, Any]:
+    def create_content_amplification_strategy() -> dict[str, Any]:
         """Strategy for users to share content."""
 
         return {
@@ -81,7 +80,7 @@ class ViralMechanics:
         daily_active_users: int,
         invitations_sent: int,
         new_signups_from_invites: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate viral coefficient from actual data."""
 
         viral_coefficient = (invitations_sent / daily_active_users) * (new_signups_from_invites / invitations_sent) if daily_active_users > 0 else 0
@@ -99,7 +98,7 @@ class ViralMechanics:
     def optimize_viral_loop(
         current_k: float,
         bottleneck: str,  # "invites" or "conversion"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Suggest optimizations to improve viral coefficient."""
 
         if bottleneck == "invites":

@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -12,22 +11,22 @@ class AccountCreate(BaseModel):
     code: str
     name: str
     type: str  # asset|liability|equity|revenue|expense
-    subtype: Optional[str] = None
+    subtype: str | None = None
     currency: str = "ARS"
-    parent_id: Optional[UUID] = None
-    description: Optional[str] = None
-    tax_code: Optional[str] = None
+    parent_id: UUID | None = None
+    description: str | None = None
+    tax_code: str | None = None
 
 
 class AccountResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     business_id: UUID
-    parent_id: Optional[UUID]
+    parent_id: UUID | None
     code: str
     name: str
     type: str
-    subtype: Optional[str]
+    subtype: str | None
     normal_balance: str
     currency: str
     is_active: bool
@@ -35,15 +34,15 @@ class AccountResponse(BaseModel):
 
 
 class JournalLineInput(BaseModel):
-    account_id: Optional[UUID] = None
-    account_code: Optional[str] = None
-    account_subtype: Optional[str] = None
-    description: Optional[str] = None
-    debit: Decimal = Decimal("0")
-    credit: Decimal = Decimal("0")
-    contact_type: Optional[str] = None
-    contact_id: Optional[UUID] = None
-    tax_code: Optional[str] = None
+    account_id: UUID | None = None
+    account_code: str | None = None
+    account_subtype: str | None = None
+    description: str | None = None
+    debit: Decimal = Decimal(0)
+    credit: Decimal = Decimal(0)
+    contact_type: str | None = None
+    contact_id: UUID | None = None
+    tax_code: str | None = None
 
     @model_validator(mode="after")
     def _one_side_only(self) -> "JournalLineInput":
@@ -59,11 +58,11 @@ class JournalLineInput(BaseModel):
 
 
 class JournalEntryCreate(BaseModel):
-    entry_date: Optional[datetime] = None
-    memo: Optional[str] = None
+    entry_date: datetime | None = None
+    memo: str | None = None
     source: str = "manual"
-    source_ref: Optional[str] = None
-    idempotency_key: Optional[str] = None
+    source_ref: str | None = None
+    idempotency_key: str | None = None
     currency: str = "ARS"
     lines: list[JournalLineInput] = Field(min_length=2)
 
@@ -72,28 +71,28 @@ class JournalLineResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     account_id: UUID
-    description: Optional[str]
+    description: str | None
     debit: Decimal
     credit: Decimal
     currency: str
-    contact_type: Optional[str]
-    contact_id: Optional[UUID]
-    tax_code: Optional[str]
+    contact_type: str | None
+    contact_id: UUID | None
+    tax_code: str | None
 
 
 class JournalEntryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     business_id: UUID
-    period_id: Optional[UUID]
+    period_id: UUID | None
     entry_number: str
     entry_date: datetime
-    memo: Optional[str]
+    memo: str | None
     source: str
-    source_ref: Optional[str]
+    source_ref: str | None
     status: str
-    posted_at: Optional[datetime]
-    reversal_of_id: Optional[UUID]
+    posted_at: datetime | None
+    reversal_of_id: UUID | None
     total_debit: Decimal
     total_credit: Decimal
     currency: str
@@ -167,23 +166,23 @@ class PeriodResponse(BaseModel):
     period_start: datetime
     period_end: datetime
     status: str
-    closed_at: Optional[datetime]
-    net_income: Optional[Decimal]
+    closed_at: datetime | None
+    net_income: Decimal | None
 
 
 class PeriodCloseResult(BaseModel):
     period: PeriodResponse
-    closing_entry_id: Optional[UUID]
+    closing_entry_id: UUID | None
     net_income: Decimal
     message: str
 
 
 class BankTransactionImport(BaseModel):
     txn_date: datetime
-    description: Optional[str] = None
+    description: str | None = None
     amount: Decimal
     currency: str = "ARS"
-    external_id: Optional[str] = None
+    external_id: str | None = None
     raw: dict = {}
 
 
@@ -197,12 +196,12 @@ class BankTransactionResponse(BaseModel):
     id: UUID
     bank_account_id: UUID
     txn_date: datetime
-    description: Optional[str]
+    description: str | None
     amount: Decimal
     currency: str
     status: str
-    matched_entry_id: Optional[UUID]
-    match_confidence: Optional[Decimal]
+    matched_entry_id: UUID | None
+    match_confidence: Decimal | None
     reconciled: bool
 
 

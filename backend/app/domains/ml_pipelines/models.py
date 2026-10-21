@@ -1,8 +1,10 @@
 """Phase 2: ML Pipelines - Predictive Models."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+
 from app.core.database import Base
 
 
@@ -33,8 +35,8 @@ class LeadScoringModel(Base):
     # Reasoning
     top_factors = Column(ARRAY(String), nullable=True)  # ["high_engagement", "demo_attended", ...]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class ChurnPredictionModel(Base):
@@ -63,8 +65,8 @@ class ChurnPredictionModel(Base):
     # Retention actions
     recommended_action = Column(String(100), nullable=True)  # "special_offer", "loyalty_program", "check_in"
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class CLVModel(Base):
@@ -93,8 +95,8 @@ class CLVModel(Base):
     crosssell_propensity = Column(Float, default=0)  # 0-1: likelihood to buy complementary
     expansion_propensity = Column(Float, default=0)  # 0-1: likelihood to increase spend
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class ChannelRoutingModel(Base):
@@ -127,5 +129,5 @@ class ChannelRoutingModel(Base):
     sms_optimal_hour = Column(Integer, nullable=True)
     whatsapp_optimal_hour = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))

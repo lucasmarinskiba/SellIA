@@ -19,14 +19,14 @@ Para no enviar el email directo, implementamos un wrapper que:
 """
 
 import hashlib
+
 import aiohttp
-from typing import Optional, List
 
 HIBP_API_BASE = "https://haveibeenpwned.com/api/v3"
 PWNED_PASSWORDS_API = "https://api.pwnedpasswords.com/range"
 
 
-async def check_email_breaches(email: str, api_key: str) -> Optional[dict]:
+async def check_email_breaches(email: str, api_key: str) -> dict | None:
     """
     Verifica si un email aparece en breaches conocidas via HIBP.
     
@@ -47,42 +47,41 @@ async def check_email_breaches(email: str, api_key: str) -> Optional[dict]:
     }
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as resp:
-                if resp.status == 404:
-                    # Email limpio
-                    return {"found": False, "count": 0, "names": [], "details": []}
-                if resp.status == 429:
-                    from app.core.logger import get_logger
-                    get_logger(__name__).warning("HIBP rate limit alcanzado")
-                    return None
-                if resp.status != 200:
-                    from app.core.logger import get_logger
-                    get_logger(__name__).error(f"HIBP API error: {resp.status}")
-                    return None
+        async with aiohttp.ClientSession() as session, session.get(
+            url,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as resp:
+            if resp.status == 404:
+                # Email limpio
+                return {"found": False, "count": 0, "names": [], "details": []}
+            if resp.status == 429:
+                from app.core.logger import get_logger
+                get_logger(__name__).warning("HIBP rate limit alcanzado")
+                return None
+            if resp.status != 200:
+                from app.core.logger import get_logger
+                get_logger(__name__).error(f"HIBP API error: {resp.status}")
+                return None
 
-                breaches = await resp.json()
-                if not isinstance(breaches, list):
-                    return {"found": False, "count": 0, "names": [], "details": []}
+            breaches = await resp.json()
+            if not isinstance(breaches, list):
+                return {"found": False, "count": 0, "names": [], "details": []}
 
-                names = [b.get("Name") for b in breaches]
-                return {
-                    "found": True,
-                    "count": len(breaches),
-                    "names": names,
-                    "details": breaches,
-                }
+            names = [b.get("Name") for b in breaches]
+            return {
+                "found": True,
+                "count": len(breaches),
+                "names": names,
+                "details": breaches,
+            }
     except Exception as e:
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Error consultando breaches: {e}")
         return None
 
 
-async def check_password_breach(password: str) -> Optional[dict]:
+async def check_password_breach(password: str) -> dict | None:
     """
     Verifica si una contraseña aparece en breaches via k-anonymity (PwnedPasswords).
     
@@ -109,24 +108,23 @@ async def check_password_breach(password: str) -> Optional[dict]:
     url = f"{PWNED_PASSWORDS_API}/{prefix}"
     
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url,
-                headers={"Add-Padding": "true"},
-                timeout=aiohttp.ClientTimeout(total=5),
-            ) as resp:
-                if resp.status != 200:
-                    return None
+        async with aiohttp.ClientSession() as session, session.get(
+            url,
+            headers={"Add-Padding": "true"},
+            timeout=aiohttp.ClientTimeout(total=5),
+        ) as resp:
+            if resp.status != 200:
+                return None
 
-                text = await resp.text()
-                for line in text.splitlines():
-                    parts = line.split(":")
-                    if len(parts) == 2:
-                        candidate, count = parts[0], int(parts[1])
-                        if candidate == suffix:
-                            return {"found": True, "count": count}
+            text = await resp.text()
+            for line in text.splitlines():
+                parts = line.split(":")
+                if len(parts) == 2:
+                    candidate, count = parts[0], int(parts[1])
+                    if candidate == suffix:
+                        return {"found": True, "count": count}
 
-                return {"found": False, "count": 0}
+            return {"found": False, "count": 0}
     except Exception as e:
         from app.core.logger import get_logger
         get_logger(__name__).error(f"Error consultando password: {e}")

@@ -10,16 +10,15 @@ Example: generating 20 product descriptions → 1 structured request.
 
 import json
 import uuid
-from typing import List, Dict, Any
-from datetime import datetime, timezone
+from typing import Any
 
 from celery import shared_task
 from sqlalchemy import select
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.provisioning import service as provisioning_service
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -56,10 +55,15 @@ async def _process_batch_async(task_self, batch_job_id: str):
             structured_prompt = _build_batch_prompt(task_type, items)
 
             # Call LLM once
-            from app.domains.agents.llm_provider import LLMResponse
-            from app.domains.agents.llm_router import route_model
-            from app.domains.agents.llm_provider import OpenAIProvider, AnthropicProvider, KimiProvider, OllamaProvider
             from langchain_core.messages import HumanMessage, SystemMessage
+
+            from app.domains.agents.llm_provider import (
+                AnthropicProvider,
+                KimiProvider,
+                OllamaProvider,
+                OpenAIProvider,
+            )
+            from app.domains.agents.llm_router import route_model
 
             provider_name, model, _ = route_model(structured_prompt, ollama_available=False)
 
@@ -119,7 +123,7 @@ async def _process_batch_async(task_self, batch_job_id: str):
             raise task_self.retry(exc=exc) from exc
 
 
-def _build_batch_prompt(task_type: str, items: List[Dict[str, Any]]) -> str:
+def _build_batch_prompt(task_type: str, items: list[dict[str, Any]]) -> str:
     """Build a single prompt for batch generation."""
     lines = [
         f"Generate content for the following {len(items)} items.",

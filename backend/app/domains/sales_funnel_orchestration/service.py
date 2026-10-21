@@ -1,6 +1,8 @@
 """Sales Funnel Orchestration service."""
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 
 class FunnelOrchestrationService:
     @staticmethod

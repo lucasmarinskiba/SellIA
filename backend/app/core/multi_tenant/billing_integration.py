@@ -3,16 +3,17 @@ BillingService: Track usage, calculate costs, manage billing periods.
 300 lines: Integrates with Stripe, generates invoices, enforces limits.
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime, timedelta
 from enum import Enum
+from typing import Any
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
-from .models import TenantBilling, Tenant, AuditLog
+from app.core.logger import get_logger
+
+from .models import Tenant, TenantBilling
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,7 @@ class BillingService:
     async def record_api_call(
         self,
         tenant_id: str,
-        api_key_id: Optional[str] = None,
+        api_key_id: str | None = None,
         response_time_ms: int = 0,
     ) -> None:
         """
@@ -60,7 +61,7 @@ class BillingService:
 
         if billing_obj.api_calls_used > tenant_obj.max_monthly_api_calls:
             logger.warning(
-                f"Tenant exceeded API call limit",
+                "Tenant exceeded API call limit",
                 extra={
                     "tenant_id": str(tenant_id),
                     "used": billing_obj.api_calls_used,
@@ -72,7 +73,7 @@ class BillingService:
                 status_code=429,
             )
 
-        billing_obj.updated_at = datetime.now(timezone.utc)
+        billing_obj.updated_at = datetime.now(UTC)
         await self.db.commit()
 
     async def record_storage(self, tenant_id: str, gb_used: float) -> None:
@@ -86,7 +87,7 @@ class BillingService:
             raise AppException("Billing record not found", status_code=404)
 
         billing_obj.storage_gb_used = gb_used
-        billing_obj.updated_at = datetime.now(timezone.utc)
+        billing_obj.updated_at = datetime.now(UTC)
 
         await self.db.commit()
 
@@ -101,11 +102,11 @@ class BillingService:
             raise AppException("Billing record not found", status_code=404)
 
         billing_obj.compute_hours_used = hours_used
-        billing_obj.updated_at = datetime.now(timezone.utc)
+        billing_obj.updated_at = datetime.now(UTC)
 
         await self.db.commit()
 
-    async def calculate_billing_cycle(self, tenant_id: str) -> Dict[str, Any]:
+    async def calculate_billing_cycle(self, tenant_id: str) -> dict[str, Any]:
         """
         Calculate costs for current billing cycle.
 
@@ -184,7 +185,7 @@ class BillingService:
 
         # Generate invoice number
         import uuid
-        billing_obj.invoice_number = f"INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        billing_obj.invoice_number = f"INV-{datetime.now(UTC).strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
 
         # Reset for next period
         next_start = billing_obj.billing_period_end
@@ -201,7 +202,7 @@ class BillingService:
         await self.db.commit()
 
         logger.info(
-            f"Billing cycle finalized",
+            "Billing cycle finalized",
             extra={
                 "tenant_id": str(tenant_id),
                 "invoice_number": billing_obj.invoice_number,
@@ -229,12 +230,12 @@ class BillingService:
             raise AppException("Billing record not found", status_code=404)
 
         billing_obj.status = BillingStatus.PAID
-        billing_obj.last_payment_attempt = datetime.now(timezone.utc)
+        billing_obj.last_payment_attempt = datetime.now(UTC)
 
         await self.db.commit()
 
         logger.info(
-            f"Payment processed",
+            "Payment processed",
             extra={
                 "tenant_id": str(tenant_id),
                 "stripe_id": stripe_payment_intent_id,
@@ -259,19 +260,19 @@ class BillingService:
 
         billing_obj.status = BillingStatus.FAILED
         billing_obj.payment_failed_reason = reason
-        billing_obj.last_payment_attempt = datetime.now(timezone.utc)
+        billing_obj.last_payment_attempt = datetime.now(UTC)
 
         await self.db.commit()
 
         logger.warning(
-            f"Payment failed",
+            "Payment failed",
             extra={
                 "tenant_id": str(tenant_id),
                 "reason": reason,
             },
         )
 
-    async def get_usage_stats(self, tenant_id: str) -> Dict[str, Any]:
+    async def get_usage_stats(self, tenant_id: str) -> dict[str, Any]:
         """Get current billing period usage."""
         billing = await self.db.execute(
             select(TenantBilling).where(TenantBilling.tenant_id == tenant_id)
@@ -320,7 +321,7 @@ class BillingTracker:
         await service.record_api_call(tenant_id, **kwargs)
 
 
-_billing_tracker: Optional[BillingTracker] = None
+_billing_tracker: BillingTracker | None = None
 
 
 def get_billing_tracker() -> BillingTracker:

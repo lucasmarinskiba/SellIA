@@ -10,13 +10,15 @@ Los providers están en app/domains/computer_use/providers/:
 - factory.py: Creación con fallback automático
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.providers.factory import create_provider_with_fallback, FallbackComputerUseProvider
 from app.domains.computer_use.providers.base import ComputerUseProvider
+from app.domains.computer_use.providers.factory import (
+    create_provider_with_fallback,
+)
+from app.domains.computer_use.schemas import ComputerUseAction
 
 logger = get_logger(__name__)
 
@@ -27,11 +29,11 @@ class VisionAgent:
     Delega a un provider con fallback automático.
     """
 
-    def __init__(self, api_key: Optional[str] = None, provider: str = "auto"):
+    def __init__(self, api_key: str | None = None, provider: str = "auto"):
         self.api_key = api_key
         self.provider_name = provider  # "auto", "anthropic_native", "openai", "ollama"
         self.settings = get_settings()
-        self._provider: Optional[ComputerUseProvider] = None
+        self._provider: ComputerUseProvider | None = None
 
     async def _get_provider(self) -> ComputerUseProvider:
         """Obtiene o crea el provider con fallback."""
@@ -47,9 +49,9 @@ class VisionAgent:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         """Decide la próxima acción basada en el screenshot actual."""
         if history is None:
@@ -72,7 +74,7 @@ class VisionAgent:
                 reason="VisionAgent error",
             )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         """Genera un resumen de la sesión."""
         try:
             provider = await self._get_provider()

@@ -9,9 +9,10 @@ This is deterministic regardless of what codec (if any) the connection
 has registered.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
 import json
 import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 router = APIRouter()
 

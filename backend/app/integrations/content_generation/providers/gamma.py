@@ -4,10 +4,10 @@ Pricing: Plan-based, ~$0.05/doc
 Strengths: Interactive docs, landing pages, guides, presentations
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -26,7 +26,7 @@ class GammaProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.05
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"gamma-doc": 0.05}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -46,13 +46,12 @@ class GammaProvider(BaseProvider):
                 "type": config.extra_params.get("doc_type", "presentation"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.gamma.app/v1/documents",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.gamma.app/v1/documents",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             doc_url = data.get("url") or data.get("document", {}).get("url")
             if not doc_url:

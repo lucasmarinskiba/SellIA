@@ -1,9 +1,8 @@
+import uuid
 from dataclasses import dataclass
-from typing import Optional, Any
 from datetime import datetime, timedelta
 from enum import Enum
-import uuid
-import json
+from typing import Any
 
 
 class ReportFormat(str, Enum):
@@ -66,7 +65,7 @@ class AnalyticsReportingManager:
         name: str,
         widgets: list[dict],
         is_default: bool = False,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Dashboard:
         """Create custom dashboard."""
         dashboard_id = str(uuid.uuid4())
@@ -81,7 +80,7 @@ class AnalyticsReportingManager:
         self.dashboards[dashboard_id] = dashboard
         return dashboard
 
-    def get_dashboard(self, dashboard_id: str) -> Optional[Dashboard]:
+    def get_dashboard(self, dashboard_id: str) -> Dashboard | None:
         """Get dashboard by ID."""
         return self.dashboards.get(dashboard_id)
 
@@ -141,7 +140,7 @@ class AnalyticsReportingManager:
         user_id: str,
         entity_type: str,
         format: ReportFormat = ReportFormat.CSV,
-        filters: Optional[dict] = None,
+        filters: dict | None = None,
     ) -> dict:
         """Export data as CSV/Excel/JSON."""
         export_id = str(uuid.uuid4())
@@ -216,7 +215,7 @@ class AnalyticsReportingManager:
         """Execute report query (placeholder)."""
         return []
 
-    def _get_entity_data(self, entity_type: str, filters: Optional[dict]) -> list[dict]:
+    def _get_entity_data(self, entity_type: str, filters: dict | None) -> list[dict]:
         """Get entity data for export (placeholder)."""
         return []
 

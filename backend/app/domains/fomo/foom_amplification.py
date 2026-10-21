@@ -8,16 +8,13 @@ FOOM Amplification: Aggressive FOOM mechanics for SellIA acquisition
 - Exclusivity tiering
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List
-from decimal import Decimal
 
 
 class SocialProofAmplification:
     """Amplify social proof signals across all channels"""
 
     @staticmethod
-    def generate_social_proof_assets() -> Dict:
+    def generate_social_proof_assets() -> dict:
         """Generate social proof content for every FOOM touchpoint"""
         return {
             "proof_types": {
@@ -67,7 +64,7 @@ class SocialProofAmplification:
         }
 
     @staticmethod
-    def create_testimonial_automation() -> Dict:
+    def create_testimonial_automation() -> dict:
         """Automate collection + distribution of testimonials"""
         return {
             "collection_triggers": [
@@ -118,7 +115,7 @@ class ScarcityAutomation:
     """Automate scarcity messaging across product"""
 
     @staticmethod
-    def create_scarcity_triggers() -> Dict:
+    def create_scarcity_triggers() -> dict:
         """Real-time scarcity mechanics"""
         return {
             "seat_scarcity": {
@@ -162,7 +159,7 @@ class ScarcityAutomation:
         }
 
     @staticmethod
-    def create_countdown_timers() -> Dict:
+    def create_countdown_timers() -> dict:
         """Automated countdown urgency"""
         return {
             "trial_countdown": {
@@ -191,7 +188,7 @@ class SuccessStoryPackaging:
     """Package user wins as viral narratives"""
 
     @staticmethod
-    def create_success_story_angles() -> List[Dict]:
+    def create_success_story_angles() -> list[dict]:
         """Multiple angles for same success story"""
         return [
             {
@@ -233,7 +230,7 @@ class SuccessStoryPackaging:
         ]
 
     @staticmethod
-    def create_content_repurposing() -> Dict:
+    def create_content_repurposing() -> dict:
         """Repurpose one story across 20+ formats"""
         return {
             "source": "User case study (30 min interview)",
@@ -271,7 +268,7 @@ class CompetitivePositioning:
     """Position SellIA vs alternatives"""
 
     @staticmethod
-    def create_comparison_content() -> Dict:
+    def create_comparison_content() -> dict:
         """Aggressive comparison marketing"""
         return {
             "comparisons": [
@@ -311,7 +308,7 @@ class ExclusivityTiering:
     """Create exclusivity ladder"""
 
     @staticmethod
-    def create_vip_program() -> Dict:
+    def create_vip_program() -> dict:
         """VIP tiers with escalating benefits"""
         return {
             "tiers": [
@@ -365,7 +362,7 @@ class FearOfMissingOut:
     """Active FOMO loop creation"""
 
     @staticmethod
-    def create_fomo_sequences() -> Dict:
+    def create_fomo_sequences() -> dict:
         """Multi-touch FOMO sequences"""
         return {
             "signup_fomo": {

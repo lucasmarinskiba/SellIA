@@ -1,12 +1,11 @@
 """FOMO Webhook Receiver - Ingest real-time events from customer websites"""
 
-from datetime import datetime
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import hashlib
 import hmac
-import json
+from datetime import datetime
 from decimal import Decimal
+from enum import Enum
+from typing import Any
 
 
 class WebhookEventType(str, Enum):
@@ -42,7 +41,7 @@ class WebhookPayload:
         return hmac.compare_digest(signature, expected)
 
     @staticmethod
-    def parse_event(data: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_event(data: dict[str, Any]) -> dict[str, Any]:
         """Parse and normalize webhook event"""
         return {
             "event_type": data.get("type"),
@@ -71,7 +70,7 @@ class WebhookProcessor:
     """Process incoming FOMO webhook events"""
 
     @staticmethod
-    async def process_visitor_arrived(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_visitor_arrived(event: dict[str, Any]) -> dict[str, Any]:
         """Handle visitor.arrived event"""
         return {
             "event_id": event.get("session_id"),
@@ -88,7 +87,7 @@ class WebhookProcessor:
         }
 
     @staticmethod
-    async def process_purchase_completed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_purchase_completed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle purchase.completed event - trigger purchase notification widget"""
         data = event.get("data", {})
         return {
@@ -113,7 +112,7 @@ class WebhookProcessor:
         }
 
     @staticmethod
-    async def process_cart_abandoned(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_cart_abandoned(event: dict[str, Any]) -> dict[str, Any]:
         """Handle cart.abandoned event - trigger recovery automations"""
         data = event.get("data", {})
         return {
@@ -153,7 +152,7 @@ class WebhookProcessor:
         }
 
     @staticmethod
-    async def process_cart_recovered(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_cart_recovered(event: dict[str, Any]) -> dict[str, Any]:
         """Handle cart.recovered event - celebrate recovery"""
         data = event.get("data", {})
         return {
@@ -171,7 +170,7 @@ class WebhookProcessor:
         }
 
     @staticmethod
-    async def process_page_viewed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_page_viewed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle page.viewed event"""
         data = event.get("data", {})
         return {
@@ -188,7 +187,7 @@ class WebhookProcessor:
         }
 
     @staticmethod
-    async def process_checkout_completed(event: Dict[str, Any]) -> Dict[str, Any]:
+    async def process_checkout_completed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle checkout.completed event"""
         data = event.get("data", {})
         return {
@@ -210,7 +209,7 @@ class WebhookQuota:
     """Rate limiting for webhooks"""
 
     @staticmethod
-    def get_quota_limits(plan_tier: str) -> Dict[str, int]:
+    def get_quota_limits(plan_tier: str) -> dict[str, int]:
         """Get webhook quota limits by plan tier"""
         limits = {
             "starter": {
@@ -247,7 +246,7 @@ class WebhookQuota:
         plan_tier: str,
         events_today: int,
         events_this_minute: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Check if webhook quota exceeded"""
         limits = WebhookQuota.get_quota_limits(plan_tier)
 
@@ -268,7 +267,7 @@ class WebhookRetry:
     """Retry logic for failed webhook deliveries"""
 
     @staticmethod
-    def get_retry_schedule() -> List[Dict[str, Any]]:
+    def get_retry_schedule() -> list[dict[str, Any]]:
         """Get exponential backoff retry schedule"""
         return [
             {"attempt": 1, "delay_seconds": 5, "description": "First retry after 5 seconds"},

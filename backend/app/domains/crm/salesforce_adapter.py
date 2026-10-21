@@ -1,8 +1,10 @@
 """Salesforce CRM adapter - Production integration."""
 
-from typing import Optional, Dict, Any, List
 import logging
+from typing import Any
+
 import httpx
+
 from app.domains.crm.crm_adapter import CRMAdapter, CRMLead, CRMType
 
 logger = logging.getLogger(__name__)
@@ -66,8 +68,8 @@ class SalesforceAdapter(CRMAdapter):
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make authenticated API call to Salesforce."""
         token = await self._get_access_token()
         headers = {
@@ -90,7 +92,7 @@ class SalesforceAdapter(CRMAdapter):
             response.raise_for_status()
             return response.json()
 
-    async def fetch_lead(self, lead_id: str) -> Optional[CRMLead]:
+    async def fetch_lead(self, lead_id: str) -> CRMLead | None:
         """Fetch single lead from Salesforce."""
         try:
             # Query lead by ID
@@ -117,8 +119,8 @@ class SalesforceAdapter(CRMAdapter):
             return None
 
     async def fetch_leads(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[CRMLead]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[CRMLead]:
         """Fetch multiple leads from Salesforce with optional filtering."""
         try:
             # Build SOQL query
@@ -132,7 +134,7 @@ class SalesforceAdapter(CRMAdapter):
                     where_clauses.append(f"Industry = '{filters['industry']}'")
 
             where_clause = " AND ".join(where_clauses) if where_clauses else ""
-            query = f"SELECT Id, Company, FirstName, LastName, Email, Phone, Industry, LeadScore__c, LeadSource, Status, Amount__c, Budget__c FROM Lead"
+            query = "SELECT Id, Company, FirstName, LastName, Email, Phone, Industry, LeadScore__c, LeadSource, Status, Amount__c, Budget__c FROM Lead"
             if where_clause:
                 query += f" WHERE {where_clause}"
             query += " LIMIT 500"
@@ -166,7 +168,7 @@ class SalesforceAdapter(CRMAdapter):
             logger.error(f"Salesforce fetch_leads failed: {e}")
             return []
 
-    async def update_lead(self, lead_id: str, data: Dict[str, Any]) -> bool:
+    async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
         """Update lead in Salesforce."""
         try:
             endpoint = f"/sobjects/Lead/{lead_id}"

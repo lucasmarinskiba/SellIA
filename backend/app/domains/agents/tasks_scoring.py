@@ -3,18 +3,17 @@
 Periodic task to update deal scores and generate alerts.
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from celery import shared_task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.domains.channels.models import Conversation
-from app.domains.agents.service_scoring import DealScoringService
 from app.domains.agents.deal_scorer import DealScorer
+from app.domains.agents.service_scoring import DealScoringService
+from app.domains.channels.models import Conversation
 
 logger = get_logger(__name__)
 
@@ -25,7 +24,7 @@ def update_deal_scores_task():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            cutoff = datetime.now(UTC) - timedelta(days=7)
 
             # Find active conversations from last 7 days
             result = await db.execute(

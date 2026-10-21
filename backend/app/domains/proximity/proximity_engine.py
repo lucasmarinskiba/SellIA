@@ -3,8 +3,7 @@
 import logging
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class UserLocation:
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.now(timezone.utc)
+            self.timestamp = datetime.now(UTC)
 
 
 @dataclass
@@ -43,7 +42,7 @@ class ProximityEvent:
     distance_km: float
     detected_at: datetime
     automation_triggered: bool = False
-    automation_id: Optional[UUID] = None
+    automation_id: UUID | None = None
 
 
 class ProximityEngine:
@@ -65,8 +64,8 @@ class ProximityEngine:
     @staticmethod
     def check_proximity(
         user_location: UserLocation,
-        locations: List[Location],
-    ) -> List[ProximityEvent]:
+        locations: list[Location],
+    ) -> list[ProximityEvent]:
         """Check if user near any location."""
         nearby = []
         for loc in locations:

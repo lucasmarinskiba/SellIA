@@ -5,8 +5,7 @@ Convierte Computer Use de "dumb executor" a "intelligent agent que raziona".
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +21,9 @@ class BrainIntegrationLayer:
 
     async def decide_action(
         self,
-        situation: Dict[str, Any],  # {"platform": "mercadolibre", "action_type": "list_product", "context": {...}}
-        available_strategies: List[str],
-    ) -> Dict[str, Any]:
+        situation: dict[str, Any],  # {"platform": "mercadolibre", "action_type": "list_product", "context": {...}}
+        available_strategies: list[str],
+    ) -> dict[str, Any]:
         """
         Lee situación + consulta brain → decide mejor acción.
 
@@ -66,7 +65,7 @@ class BrainIntegrationLayer:
             "confidence": analysis.get("confidence_score", 0),
         }
 
-    async def _fetch_relevant_knowledge(self, action_type: str) -> Dict[str, Any]:
+    async def _fetch_relevant_knowledge(self, action_type: str) -> dict[str, Any]:
         """
         Busca knowledge files relevantes para tipo de acción.
 
@@ -128,9 +127,9 @@ class BrainIntegrationLayer:
 
     async def _analyze_situation(
         self,
-        situation: Dict[str, Any],
-        knowledge: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        situation: dict[str, Any],
+        knowledge: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Analiza situación actual. Retorna: insights, problemas, oportunidades.
         """
@@ -184,9 +183,9 @@ class BrainIntegrationLayer:
     async def _recommend_strategy(
         self,
         action_type: str,
-        analysis: Dict[str, Any],
-        available_strategies: List[str],
-        knowledge: Dict[str, Any],
+        analysis: dict[str, Any],
+        available_strategies: list[str],
+        knowledge: dict[str, Any],
     ) -> str:
         """
         Recomienda estrategia óptima basada en análisis.
@@ -223,9 +222,9 @@ class BrainIntegrationLayer:
         self,
         action_type: str,
         strategy: str,
-        situation: Dict[str, Any],
-        knowledge: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        situation: dict[str, Any],
+        knowledge: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Genera tácticas específicas de ejecución.
 
@@ -283,7 +282,7 @@ class BrainIntegrationLayer:
 
         return tactics
 
-    def _price_strategy(self, situation: Dict[str, Any], strategy: str) -> Dict[str, Any]:
+    def _price_strategy(self, situation: dict[str, Any], strategy: str) -> dict[str, Any]:
         """Determina estrategia de precio."""
         base_price = situation.get("base_price", 100)
         competitor_price = situation.get("competitor_price", base_price)
@@ -310,8 +309,8 @@ class BrainIntegrationLayer:
     def _calculate_optimal_price(
         self,
         base_price: float,
-        situation: Dict[str, Any],
-        knowledge: Dict[str, Any],
+        situation: dict[str, Any],
+        knowledge: dict[str, Any],
     ) -> float:
         """Calcula precio óptimo usando psychological pricing + demand dynamics."""
         # Psychological: $X.99 es más barato psicológicamente que $X+1
@@ -332,14 +331,13 @@ class BrainIntegrationLayer:
     async def remember_outcome(
         self,
         action: str,
-        result: Dict[str, Any],
+        result: dict[str, Any],
     ) -> None:
         """Recuerda resultado de acción para futuras decisiones."""
         logger.info(f"Remembering outcome: {action} → {result.get('status')}")
         # TODO: Guardar en context memory del brain
-        pass
 
-    async def get_learnings(self) -> List[str]:
+    async def get_learnings(self) -> list[str]:
         """Retorna lecciones aprendidas de acciones previas."""
         # TODO: Extraer patrones de context memory
         return [

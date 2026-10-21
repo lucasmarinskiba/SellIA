@@ -2,13 +2,18 @@
 """Seed Phase 2-5 test data."""
 import asyncio
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base
-from app.core.database import AsyncSessionLocal, engine, Base
+
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.domains.businesses.models import Business, BusinessType, LocalizationModel
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
-from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis
+from app.domains.channel_routing.models import (
+    ChannelAffinityModel,
+    ChannelPerformanceMetrics,
+)
+from app.domains.ml_pipelines.models import (
+    ChurnPredictionModel,
+    CLVModel,
+    LeadScoringModel,
+)
 from app.domains.performance_optimization.models import PerformanceMetrics
 
 TEST_BUSINESS_ID = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")

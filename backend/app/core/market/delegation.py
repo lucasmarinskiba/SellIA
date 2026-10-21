@@ -1,8 +1,8 @@
 """Delegation Layer — SellIA → Real Estate Agent integration."""
 
 import logging
-from typing import Any, Dict, Optional, List
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class DelegationLayer:
     def __init__(self):
         self.real_estate_orchestrator = None
         self.other_agents = {}
-        self.delegation_log: List[Dict[str, Any]] = []
+        self.delegation_log: list[dict[str, Any]] = []
 
     def set_real_estate_orchestrator(self, orchestrator: Any) -> None:
         """Set real estate orchestrator reference."""
@@ -32,8 +32,8 @@ class DelegationLayer:
         logger.info(f"Registered agent system: {system_name}")
 
     async def delegate_conversation(
-        self, market_profile: "MarketProfile", lead_data: Dict[str, Any], session_id: str
-    ) -> Dict[str, Any]:
+        self, market_profile: "MarketProfile", lead_data: dict[str, Any], session_id: str
+    ) -> dict[str, Any]:
         """Delegate conversation to appropriate agent system."""
 
         if market_profile.industry.value == "real_estate":
@@ -41,7 +41,7 @@ class DelegationLayer:
         else:
             return await self._handle_with_sellias(market_profile, lead_data, session_id)
 
-    async def _delegate_to_real_estate(self, lead_data: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+    async def _delegate_to_real_estate(self, lead_data: dict[str, Any], session_id: str) -> dict[str, Any]:
         """Delegate to Real Estate Agent system."""
         if not self.real_estate_orchestrator:
             logger.error("Real Estate Orchestrator not initialized")
@@ -74,12 +74,12 @@ class DelegationLayer:
             }
 
         except Exception as e:
-            logger.error(f"Error delegating to real estate: {str(e)}")
-            return {"error": f"Delegation failed: {str(e)}"}
+            logger.error(f"Error delegating to real estate: {e!s}")
+            return {"error": f"Delegation failed: {e!s}"}
 
     async def _handle_with_sellias(
-        self, market_profile: "MarketProfile", lead_data: Dict[str, Any], session_id: str
-    ) -> Dict[str, Any]:
+        self, market_profile: "MarketProfile", lead_data: dict[str, Any], session_id: str
+    ) -> dict[str, Any]:
         """Handle with SellIA's own agents."""
         logger.info(f"Handling session {session_id} with SellIA agents")
 
@@ -97,7 +97,7 @@ class DelegationLayer:
             "recommended_agents": market_profile.recommended_agents,
         }
 
-    def _format_lead_for_real_estate(self, lead_data: Dict[str, Any]) -> str:
+    def _format_lead_for_real_estate(self, lead_data: dict[str, Any]) -> str:
         """Format lead data as natural language for real estate orchestrator."""
         parts = []
 
@@ -125,7 +125,7 @@ class DelegationLayer:
         """Determine if real estate agent should be used."""
         return market_profile.industry.value == "real_estate"
 
-    def should_escalate_to_human(self, session_id: str, reason: str) -> Dict[str, Any]:
+    def should_escalate_to_human(self, session_id: str, reason: str) -> dict[str, Any]:
         """Escalate conversation to human agent."""
         logger.warning(f"Escalating session {session_id} to human: {reason}")
 
@@ -144,11 +144,11 @@ class DelegationLayer:
 
         return result
 
-    def get_delegation_history(self, session_id: str) -> List[Dict[str, Any]]:
+    def get_delegation_history(self, session_id: str) -> list[dict[str, Any]]:
         """Get delegation history for session."""
         return [log for log in self.delegation_log if log.get("session_id") == session_id]
 
-    def analyze_delegation_patterns(self) -> Dict[str, Any]:
+    def analyze_delegation_patterns(self) -> dict[str, Any]:
         """Analyze delegation patterns."""
         total_delegations = len(self.delegation_log)
 
@@ -165,7 +165,7 @@ class DelegationLayer:
             "success_rate": ((total_delegations - escalations) / total_delegations * 100) if total_delegations > 0 else 0,
         }
 
-    def get_agent_routing_rules(self) -> Dict[str, List[str]]:
+    def get_agent_routing_rules(self) -> dict[str, list[str]]:
         """Get agent routing rules."""
         return {
             "real_estate": [

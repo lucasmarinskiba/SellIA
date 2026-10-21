@@ -4,39 +4,40 @@ Endpoints para gestionar agentes expertos, conversaciones y chat.
 """
 
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.subscriptions.services import check_subscription_limit, track_usage
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.agents.models import AgentPersonality, AgentConversation, AgentMessage, AgentConfig
+from app.domains.agents.models import (
+    AgentConfig,
+    AgentPersonality,
+)
 from app.domains.agents.schemas import (
-    AgentPersonalityResponse,
+    AgentChatResponse,
+    AgentConfigCreate,
+    AgentConfigResponse,
     AgentConversationCreate,
-    AgentConversationResponse,
     AgentConversationDetailResponse,
+    AgentConversationResponse,
     AgentMessageCreate,
     AgentMessageResponse,
-    AgentChatResponse,
+    AgentPersonalityResponse,
     AutopilotVoiceConfig,
     AutopilotVoiceConfigResponse,
-    AgentConfigResponse,
-    AgentConfigCreate,
-    AgentConfigUpdate,
-    ReactChatRequest,
-    ReactChatResponse,
     PlanRequest,
     PlanResponse,
     PlanStepResponse,
+    ReactChatRequest,
+    ReactChatResponse,
 )
 from app.domains.agents.services import AgentService
+from app.domains.businesses.models import Business
 from app.domains.subscriptions.models import UserAPIKey
+from app.domains.subscriptions.services import check_subscription_limit, track_usage
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -70,7 +71,7 @@ async def seed_personalities(
 
 @router.get("/conversations", response_model=list[AgentConversationResponse])
 async def list_conversations(
-    business_id: Optional[UUID] = None,
+    business_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -499,7 +500,7 @@ async def create_and_execute_plan(
 @router.post("/{business_id}/playbooks/generate", status_code=status.HTTP_201_CREATED)
 async def generate_playbook(
     business_id: UUID,
-    voice_slug: Optional[str] = None,
+    voice_slug: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

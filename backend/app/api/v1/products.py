@@ -1,25 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
-from uuid import UUID, uuid4
-from decimal import Decimal
 from datetime import datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.websites.models import Website
 from app.domains.products.models import (
-    Product, ProductVariant, ProductCategory,
-    ShoppingCart, CartItem, Order, OrderItem
+    CartItem,
+    Order,
+    OrderItem,
+    Product,
+    ShoppingCart,
 )
 from app.domains.products.schemas import (
-    ProductCreateRequest, ProductUpdateRequest, ProductResponse,
-    CartItemRequest, ShoppingCartResponse, CartCheckoutRequest,
-    OrderResponse, OrderListResponse, ProductCategoryCreateRequest,
-    ProductCategoryResponse
+    CartCheckoutRequest,
+    CartItemRequest,
+    OrderListResponse,
+    OrderResponse,
+    ProductCreateRequest,
+    ProductResponse,
+    ProductUpdateRequest,
+    ShoppingCartResponse,
 )
+from app.domains.users.models import User
+from app.domains.websites.models import Website
 
 router = APIRouter()
 

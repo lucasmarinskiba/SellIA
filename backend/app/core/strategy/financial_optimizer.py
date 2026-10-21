@@ -1,9 +1,9 @@
 """Financial Optimizer — Optimizar costos, ingresos, márgenes."""
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, Any, List
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class PricingRecommendation:
     expected_volume_change: float  # Percentage
     confidence: float
     reasoning: str
-    implementation_steps: List[str]
+    implementation_steps: list[str]
 
 
 @dataclass
@@ -44,7 +44,7 @@ class CostReduction:
     savings_percent: float
     implementation_difficulty: str  # easy, medium, hard
     timeline_weeks: int
-    risks: List[str]
+    risks: list[str]
 
 
 @dataclass
@@ -53,9 +53,9 @@ class MarginImprovement:
     improvement_type: str  # COGS reduction, price increase, mix shift, scale
     gross_margin_impact: float
     net_margin_impact: float
-    implementation_steps: List[str]
+    implementation_steps: list[str]
     timeline_weeks: int
-    risks: List[str]
+    risks: list[str]
 
 
 class FinancialOptimizer:
@@ -63,12 +63,11 @@ class FinancialOptimizer:
 
     def __init__(self):
         """Initialize financial optimizer."""
-        pass
 
     def optimize_pricing(
         self,
         current_price: float,
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
         business_profile: "BusinessProfile",
     ) -> PricingRecommendation:
         """
@@ -128,9 +127,9 @@ class FinancialOptimizer:
     def reduce_cac(
         self,
         current_cac: float,
-        current_acquisition_channels: List[str],
+        current_acquisition_channels: list[str],
         business_profile: "BusinessProfile",
-    ) -> List[CostReduction]:
+    ) -> list[CostReduction]:
         """
         Reduce customer acquisition cost.
 
@@ -202,8 +201,8 @@ class FinancialOptimizer:
     def improve_margins(
         self,
         business_profile: "BusinessProfile",
-        market_data: Dict[str, Any] = None,
-    ) -> List[MarginImprovement]:
+        market_data: dict[str, Any] = None,
+    ) -> list[MarginImprovement]:
         """
         Improve gross and net margins.
 
@@ -220,7 +219,7 @@ class FinancialOptimizer:
         Returns:
             List of margin improvement opportunities
         """
-        logger.info(f"Analyzing margin improvements")
+        logger.info("Analyzing margin improvements")
 
         improvements = []
         current_gross_margin = business_profile.financials.gross_margin_percent
@@ -297,7 +296,7 @@ class FinancialOptimizer:
 
         return improvements
 
-    def optimize_cash_flow(self, business_profile: "BusinessProfile") -> Dict[str, Any]:
+    def optimize_cash_flow(self, business_profile: "BusinessProfile") -> dict[str, Any]:
         """Optimize working capital and cash flow."""
         financials = business_profile.financials
 
@@ -316,7 +315,7 @@ class FinancialOptimizer:
         self,
         current_price: float,
         business_profile: "BusinessProfile",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Cost-plus pricing: cost + markup %."""
         # Simple but ignores market
         return {
@@ -332,8 +331,8 @@ class FinancialOptimizer:
     def _value_based_pricing(
         self,
         current_price: float,
-        market_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        market_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """Value-based pricing: by value delivered."""
         customer_value = market_data.get("customer_value_perception", 1.0)
         optimized_price = current_price * customer_value
@@ -363,8 +362,8 @@ class FinancialOptimizer:
     def _competitor_based_pricing(
         self,
         current_price: float,
-        competitor_prices: List[float],
-    ) -> Dict[str, Any]:
+        competitor_prices: list[float],
+    ) -> dict[str, Any]:
         """Competitor-based pricing: match/undercut."""
         avg_competitor = sum(competitor_prices) / len(competitor_prices)
         optimized_price = avg_competitor * 0.95  # 5% discount
@@ -379,7 +378,7 @@ class FinancialOptimizer:
             "steps": ["Monitor competitor pricing", "Adjust dynamically", "Set alerts"],
         }
 
-    def _psychological_pricing(self, current_price: float) -> Dict[str, Any]:
+    def _psychological_pricing(self, current_price: float) -> dict[str, Any]:
         """Psychological pricing: charm pricing, prestige."""
         # Charm pricing: $9.99 instead of $10
         if current_price > 100:

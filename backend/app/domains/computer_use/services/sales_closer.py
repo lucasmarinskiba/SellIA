@@ -13,16 +13,20 @@ Pipeline:
 
 import logging
 import uuid
-from typing import Optional, Dict, Any, Tuple, List
 from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.computer_use.services.audit_log_service import (
+    AuditLogEntry,
+    AuditLogService,
+)
 from app.domains.computer_use.services.closing_strategist import (
-    ClosingStrategist,
     BuyerPersonality,
+    ClosingStrategist,
     ClosingTechnique,
 )
-from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
 from app.domains.computer_use.services.webhook_receiver import IncomingMessage
 
 logger = logging.getLogger(__name__)
@@ -40,11 +44,11 @@ class SalesCloserService:
         self,
         user_id: str,
         message: IncomingMessage,
-        conversation_history: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-        product_info: Dict[str, Any],
+        conversation_history: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+        product_info: dict[str, Any],
         mode: str = "supervised",  # auto | supervised
-    ) -> Tuple[Optional[str], str, float]:
+    ) -> tuple[str | None, str, float]:
         """
         Evalúa si cerrar y ejecuta cierre.
 
@@ -164,9 +168,9 @@ class SalesCloserService:
         user_id: str,
         customer_id: str,
         customer_name: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         amount: float,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """
         Maneja confirmación de venta.
 
@@ -201,7 +205,7 @@ Team
     def _infer_personality(
         self,
         message: str,
-        conversation_history: List[Dict[str, str]],
+        conversation_history: list[dict[str, str]],
     ) -> BuyerPersonality:
         """Infiere personalidad del comprador basada en conversación."""
         msg_lower = message.lower()
@@ -240,12 +244,12 @@ Team
         self,
         user_id: str,
         message: IncomingMessage,
-        response: Optional[str],
+        response: str | None,
         technique: ClosingTechnique,
         status: str,
         confidence: float,
         readiness: float,
-        buyer_personality: Optional[str] = None,
+        buyer_personality: str | None = None,
     ) -> None:
         """Registra actividad de cierre en Audit Log."""
         try:

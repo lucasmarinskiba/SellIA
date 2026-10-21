@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.procurement.models import PurchaseOrder, RFQ, Vendor
+from app.domains.procurement.models import RFQ, PurchaseOrder, Vendor
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,7 @@ class VendorService:
         name: str,
         category: str,
         contact_email: str,
-        contact_phone: Optional[str] = None,
+        contact_phone: str | None = None,
     ) -> Vendor:
         """Create vendor."""
         vendor = Vendor(
@@ -93,7 +92,7 @@ class RFQService:
     async def create_rfq(
         self,
         business_id: uuid.UUID,
-        vendor_id: Optional[uuid.UUID],
+        vendor_id: uuid.UUID | None,
         description: str,
         quantity: int,
         unit: str,
@@ -135,7 +134,7 @@ class RFQService:
         rfq = await self.get_rfq(rfq_id)
         rfq.status = "received"
         rfq.quote_amount_aed = quote_amount_aed
-        rfq.response_received_at = datetime.now(timezone.utc)
+        rfq.response_received_at = datetime.now(UTC)
         await self.db.commit()
         return rfq
 
@@ -150,7 +149,7 @@ class PurchaseOrderService:
         self,
         business_id: uuid.UUID,
         vendor_id: uuid.UUID,
-        rfq_id: Optional[uuid.UUID],
+        rfq_id: uuid.UUID | None,
         description: str,
         quantity: int,
         unit_price_aed: Decimal,
@@ -193,9 +192,9 @@ class PurchaseOrderService:
         self,
         po_id: uuid.UUID,
         status: str,
-        actual_delivery_date: Optional[date] = None,
-        invoice_number: Optional[str] = None,
-        invoice_amount_aed: Optional[Decimal] = None,
+        actual_delivery_date: date | None = None,
+        invoice_number: str | None = None,
+        invoice_amount_aed: Decimal | None = None,
     ) -> PurchaseOrder:
         """Update PO status."""
         po = await self.get_po(po_id)
@@ -210,7 +209,7 @@ class PurchaseOrderService:
             po.invoice_amount_aed = invoice_amount_aed or po.total_amount_aed
 
         if status == "paid":
-            po.paid_at = datetime.now(timezone.utc)
+            po.paid_at = datetime.now(UTC)
 
         await self.db.commit()
         logger.info(f"PO {po_id} status: {old_status} → {status}")

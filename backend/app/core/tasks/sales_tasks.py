@@ -6,9 +6,10 @@ Setup:
   celery -A app.core.tasks worker -l info --concurrency=10
 """
 
-from celery import Celery, group, chain
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from celery import Celery, chain, group
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ app.conf.update(
 
 
 @app.task(bind=True, max_retries=3)
-def run_sales_cycle_task(self, cycle_data: Dict[str, Any]) -> Dict[str, Any]:
+def run_sales_cycle_task(self, cycle_data: dict[str, Any]) -> dict[str, Any]:
     """
     Tarea: Ejecuta ciclo venta completo (7 fases).
 
@@ -58,13 +59,13 @@ def run_sales_cycle_task(self, cycle_data: Dict[str, Any]) -> Dict[str, Any]:
         return result
 
     except Exception as e:
-        logger.error(f"Error in sales cycle {cycle_data.get('id')}: {str(e)}")
+        logger.error(f"Error in sales cycle {cycle_data.get('id')}: {e!s}")
         # Retry con exponential backoff
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
 
 @app.task
-def process_lead_task(lead_data: Dict[str, Any]) -> Dict[str, Any]:
+def process_lead_task(lead_data: dict[str, Any]) -> dict[str, Any]:
     """Tarea: Califica y valida lead."""
 
     try:
@@ -77,12 +78,12 @@ def process_lead_task(lead_data: Dict[str, Any]) -> Dict[str, Any]:
         return {"lead_id": lead_id, "score": score, "qualified": score > 70}
 
     except Exception as e:
-        logger.error(f"Error processing lead: {str(e)}")
+        logger.error(f"Error processing lead: {e!s}")
         return {"error": str(e)}
 
 
 @app.task
-def send_email_task(email_data: Dict[str, Any]) -> Dict[str, Any]:
+def send_email_task(email_data: dict[str, Any]) -> dict[str, Any]:
     """Tarea: Envía email vía SendGrid."""
 
     try:
@@ -92,12 +93,12 @@ def send_email_task(email_data: Dict[str, Any]) -> Dict[str, Any]:
         return {"email_sent": True, "to": email_data.get("to")}
 
     except Exception as e:
-        logger.error(f"Error sending email: {str(e)}")
+        logger.error(f"Error sending email: {e!s}")
         return {"error": str(e)}
 
 
 @app.task
-def run_browser_automation_task(automation_data: Dict[str, Any]) -> Dict[str, Any]:
+def run_browser_automation_task(automation_data: dict[str, Any]) -> dict[str, Any]:
     """Tarea: Ejecuta browser automation (MercadoLibre, Meta, etc)."""
 
     try:
@@ -111,13 +112,13 @@ def run_browser_automation_task(automation_data: Dict[str, Any]) -> Dict[str, An
         return {"automation": script_name, "status": "success"}
 
     except Exception as e:
-        logger.error(f"Error running automation: {str(e)}")
+        logger.error(f"Error running automation: {e!s}")
         return {"error": str(e)}
 
 
 # Workflow: ciclo venta completo en paralelo
 @app.task
-def orchestrate_sales_cycle(cycle_data: Dict[str, Any]) -> Dict[str, Any]:
+def orchestrate_sales_cycle(cycle_data: dict[str, Any]) -> dict[str, Any]:
     """
     Orquesta ciclo venta: ejecuta fases en paralelo donde posible.
 
@@ -151,7 +152,7 @@ def orchestrate_sales_cycle(cycle_data: Dict[str, Any]) -> Dict[str, Any]:
 
 # Batch processing: N ciclos simultáneamente
 @app.task
-def batch_process_sales_cycles(cycles: list) -> Dict[str, Any]:
+def batch_process_sales_cycles(cycles: list) -> dict[str, Any]:
     """Procesa N ciclos en paralelo (10, 100, 1000)."""
 
     logger.info(f"Batch processing {len(cycles)} sales cycles")

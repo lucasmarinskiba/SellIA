@@ -1,12 +1,22 @@
 """Fraud detection models — order + account fraud scoring."""
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -76,10 +86,10 @@ class OrderFraudScore(Base):
     is_confirmed_fraud = Column(Boolean, default=False)
     is_confirmed_legitimate = Column(Boolean, default=False)
     dispute_reported = Column(Boolean, default=False)
-    resolution_date = Column(DateTime(timezone.utc), nullable=True)
+    resolution_date = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
@@ -127,8 +137,8 @@ class AccountFraudScore(Base):
     account_suspended = Column(Boolean, default=False)
     suspension_reason = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC), index=True)
 
     customer = relationship("Customer", foreign_keys=[customer_id])
 
@@ -156,8 +166,8 @@ class FraudBlacklist(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    listed_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    expires_at = Column(DateTime(timezone.utc), nullable=True)  # Temporary blacklists
+    listed_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    expires_at = Column(DateTime(UTC), nullable=True)  # Temporary blacklists
 
     notes = Column(String(500), nullable=True)
 
@@ -203,7 +213,7 @@ class FraudMetrics(Base):
     manual_reviews_pending = Column(Integer, default=0)
     manual_review_resolution_rate = Column(Decimal(5, 2), default=0)  # % resolved
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 

@@ -4,15 +4,15 @@ CRUD and analytics for deal scores and alerts.
 """
 
 import uuid
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
+from typing import Any
 
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, asc
 
 from app.core.logger import get_logger
-from app.domains.agents.models_scoring import DealScore, DealAlert
 from app.domains.agents.deal_scorer import DealScorer
+from app.domains.agents.models_scoring import DealAlert, DealScore
 
 logger = get_logger(__name__)
 
@@ -30,11 +30,11 @@ class DealScoringService:
     async def get_deal_scores(
         self,
         business_id: uuid.UUID,
-        category: Optional[str] = None,
-        min_score: Optional[int] = None,
+        category: str | None = None,
+        min_score: int | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """List deal scores with optional filters."""
         query = select(DealScore).where(DealScore.business_id == business_id)
 
@@ -63,7 +63,7 @@ class DealScoringService:
     async def get_deal_score_history(
         self,
         conversation_id: uuid.UUID,
-    ) -> List[DealScore]:
+    ) -> list[DealScore]:
         """Timeline of scores for a conversation."""
         result = await self.db.execute(
             select(DealScore)
@@ -75,9 +75,9 @@ class DealScoringService:
     async def calculate_and_save_score(
         self,
         conversation_id: uuid.UUID,
-        business_id: Optional[uuid.UUID] = None,
-        customer_id: Optional[uuid.UUID] = None,
-        precomputed_result: Optional[Any] = None,
+        business_id: uuid.UUID | None = None,
+        customer_id: uuid.UUID | None = None,
+        precomputed_result: Any | None = None,
     ) -> DealScore:
         """Calculate a new score and persist it."""
         if precomputed_result is not None:
@@ -110,7 +110,7 @@ class DealScoringService:
             recommendation=result.recommendation,
             previous_score=previous_score,
             score_change=score_change,
-            calculated_at=datetime.now(timezone.utc),
+            calculated_at=datetime.now(UTC),
         )
         self.db.add(deal_score)
         await self.db.commit()
@@ -132,7 +132,7 @@ class DealScoringService:
         unread_only: bool = False,
         limit: int = 50,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """List alerts for a business."""
         query = select(DealAlert).where(DealAlert.conversation_id.in_(
             select(DealScore.conversation_id).where(DealScore.business_id == business_id)
@@ -160,7 +160,7 @@ class DealScoringService:
     async def mark_alert_read(
         self,
         alert_id: uuid.UUID,
-    ) -> Optional[DealAlert]:
+    ) -> DealAlert | None:
         """Mark an alert as read."""
         result = await self.db.execute(
             select(DealAlert).where(DealAlert.id == alert_id)
@@ -203,7 +203,7 @@ class DealScoringService:
     async def get_pipeline_funnel(
         self,
         business_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Count deal scores by category (cold/warm/hot/ready)."""
         result = await self.db.execute(
             select(DealScore.category, func.count())

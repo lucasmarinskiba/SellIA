@@ -4,23 +4,22 @@ Endpoints for deal scores, pipeline funnel, and alerts.
 """
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.service_scoring import DealScoringService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/deals", tags=["deals"])
 
 
 @router.get("/scores")
 async def list_deal_scores(
-    category: Optional[str] = Query(None, description="Filter by category: cold, warm, hot, ready"),
-    min_score: Optional[int] = Query(None, ge=0, le=100),
+    category: str | None = Query(None, description="Filter by category: cold, warm, hot, ready"),
+    min_score: int | None = Query(None, ge=0, le=100),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),

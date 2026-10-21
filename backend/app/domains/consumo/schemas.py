@@ -3,11 +3,10 @@ Consumo Schemas
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
-
 
 # ===== Cost Attribution =====
 
@@ -21,7 +20,7 @@ class AICallLogOut(BaseModel):
     tokens_input: int
     tokens_output: int
     cost_usd: float
-    latency_ms: Optional[float]
+    latency_ms: float | None
     cache_hit: bool
     was_batched: bool
     created_at: datetime
@@ -32,7 +31,7 @@ class CostAttributionSummary(BaseModel):
     total_cost_usd: float
     total_tokens_input: int
     total_tokens_output: int
-    avg_latency_ms: Optional[float]
+    avg_latency_ms: float | None
     cache_hit_rate: float
     by_provider: list[dict[str, Any]]
     by_model: list[dict[str, Any]]
@@ -63,10 +62,10 @@ class QualityGateConfigOut(BaseModel):
 
 
 class QualityGateConfigUpdate(BaseModel):
-    enabled: Optional[bool] = None
-    min_confidence_threshold: Optional[float] = None
-    auto_escalate_on_low_confidence: Optional[bool] = None
-    max_ai_messages_before_human: Optional[int] = None
+    enabled: bool | None = None
+    min_confidence_threshold: float | None = None
+    auto_escalate_on_low_confidence: bool | None = None
+    max_ai_messages_before_human: int | None = None
 
 
 # ===== Plan Recommendation =====
@@ -77,10 +76,10 @@ class PlanRecommendationOut(BaseModel):
     current_limit: int
     usage_percent: float
     recommendation: str  # keep | upgrade | downgrade
-    suggested_plan: Optional[str]
-    suggested_plan_price: Optional[float]
+    suggested_plan: str | None
+    suggested_plan_price: float | None
     reason: str
-    estimated_savings_or_extra_cost: Optional[float]
+    estimated_savings_or_extra_cost: float | None
 
 
 # ===== Onboarding =====
@@ -103,7 +102,7 @@ class OnboardingProgressOut(BaseModel):
 
 class OnboardingHelpRequest(BaseModel):
     current_step: str
-    context: Optional[str] = None
+    context: str | None = None
 
 
 class OnboardingHelpResponse(BaseModel):

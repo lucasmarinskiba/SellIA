@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
 from app.domains.forecasting.types import ForecastResult, TimeSeries
@@ -13,7 +12,7 @@ from app.domains.forecasting.types import ForecastResult, TimeSeries
 class SeasonalNaiveForecaster(Forecaster):
     name = "seasonal_naive"
 
-    def fit(self, ts: TimeSeries) -> "SeasonalNaiveForecaster":
+    def fit(self, ts: TimeSeries) -> SeasonalNaiveForecaster:
         self.y = ts.values.astype(float)
         self.m = ts.seasonal_period if ts.n > 2 * ts.seasonal_period else 1
         if len(self.y) > self.m:
@@ -44,7 +43,7 @@ class HoltWintersForecaster(Forecaster):
     def __init__(self, damped: bool = True):
         self.damped = damped
 
-    def fit(self, ts: TimeSeries) -> "HoltWintersForecaster":
+    def fit(self, ts: TimeSeries) -> HoltWintersForecaster:
         self.y = ts.values.astype(float)
         self.m = ts.seasonal_period if ts.n >= 2 * ts.seasonal_period + 2 else 1
         best = None
@@ -117,7 +116,7 @@ class ThetaForecaster(Forecaster):
 
     name = "theta"
 
-    def fit(self, ts: TimeSeries) -> "ThetaForecaster":
+    def fit(self, ts: TimeSeries) -> ThetaForecaster:
         y = ts.values.astype(float)
         self.n = len(y)
         self.m = ts.seasonal_period if self.n >= 2 * ts.seasonal_period + 2 else 1
@@ -210,7 +209,7 @@ class CrostonForecaster(Forecaster):
         self.alpha = alpha
         self.name = f"croston_{variant}"
 
-    def fit(self, ts: TimeSeries) -> "CrostonForecaster":
+    def fit(self, ts: TimeSeries) -> CrostonForecaster:
         y = ts.values.astype(float)
         self.n = len(y)
         nz_idx = np.flatnonzero(y > 0)

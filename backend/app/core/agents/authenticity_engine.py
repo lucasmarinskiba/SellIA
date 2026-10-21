@@ -10,9 +10,8 @@ Checks:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +73,9 @@ class AuthenticityEngine:
     @staticmethod
     def check_personality_consistency(
         current_message: str,
-        historical_messages: List[str],
-        declared_personality: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        historical_messages: list[str],
+        declared_personality: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Check if current message matches established personality.
 
@@ -176,7 +175,7 @@ class AuthenticityEngine:
         }
 
     @staticmethod
-    def _analyze_tone(text: str) -> Dict[str, Any]:
+    def _analyze_tone(text: str) -> dict[str, Any]:
         """Analyze tone characteristics."""
 
         formality_keywords = {
@@ -211,7 +210,7 @@ class AuthenticityEngine:
     def check_tone_authenticity(
         message: str,
         expected_tone: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check if tone is authentic vs corporate/robotic.
 
@@ -285,9 +284,9 @@ class AuthenticityEngine:
 
     @staticmethod
     def validate_stories(
-        story: Dict[str, Any],
-        story_database: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        story: dict[str, Any],
+        story_database: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Validate if story is real (not fabricated fiction).
 
@@ -385,7 +384,7 @@ class AuthenticityEngine:
         return validation
 
     @staticmethod
-    def check_vulnerability(message: str) -> Dict[str, Any]:
+    def check_vulnerability(message: str) -> dict[str, Any]:
         """
         Check if message shows healthy vulnerability (admits limits).
 
@@ -436,7 +435,7 @@ class AuthenticityEngine:
         }
 
     @staticmethod
-    def check_growth_mindset(message: str) -> Dict[str, Any]:
+    def check_growth_mindset(message: str) -> dict[str, Any]:
         """
         Check if message demonstrates growth mindset.
 
@@ -482,10 +481,10 @@ class AuthenticityEngine:
     @staticmethod
     def authenticity_score(
         message: str,
-        personality: Dict[str, Any],
-        historical_messages: List[str],
-        story: Dict[str, Any] = None,
-    ) -> Dict[str, Any]:
+        personality: dict[str, Any],
+        historical_messages: list[str],
+        story: dict[str, Any] = None,
+    ) -> dict[str, Any]:
         """
         Overall authenticity score (0-100).
 

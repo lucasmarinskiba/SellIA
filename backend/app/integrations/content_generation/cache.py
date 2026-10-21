@@ -16,10 +16,10 @@ TTLs:
 
 import hashlib
 import json
-from typing import Optional
-from datetime import timedelta
+from datetime import UTC, timedelta
 
 import redis.asyncio as redis
+
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -38,7 +38,7 @@ class ContentCache:
     """Cache manager para generación de contenido."""
 
     _instance = None
-    _redis: Optional[redis.Redis] = None
+    _redis: redis.Redis | None = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -66,7 +66,7 @@ class ContentCache:
         catalog_item_id: str,
         content_type: str,
         purpose: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Obtiene un prompt cacheado para un producto y propósito."""
         r = await self._get_redis()
         key = f"prompt:{catalog_item_id}:{content_type}:{purpose}"
@@ -91,7 +91,7 @@ class ContentCache:
         self,
         provider: str,
         config: dict,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Obtiene resultado cacheado por hash de config."""
         r = await self._get_redis()
         config_hash = self._hash_key({"provider": provider, **config})
@@ -117,7 +117,7 @@ class ContentCache:
 
     # ========== URL Cache ==========
 
-    async def get_cached_url(self, url_hash: str) -> Optional[str]:
+    async def get_cached_url(self, url_hash: str) -> str | None:
         """Obtiene URL cacheada de asset generado."""
         r = await self._get_redis()
         key = f"url:{url_hash}"
@@ -161,8 +161,8 @@ class ContentCache:
         await r.expire(key, 86400)
 
     def _today(self) -> str:
-        from datetime import datetime, timezone
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        from datetime import datetime
+        return datetime.now(UTC).strftime("%Y-%m-%d")
 
     # ========== Bulk Operations ==========
 

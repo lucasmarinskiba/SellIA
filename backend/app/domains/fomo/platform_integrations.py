@@ -1,8 +1,7 @@
 """Platform Integrations: Instagram, TikTok, Google Shopping"""
 
-from datetime import datetime, timedelta
-from typing import List, Dict
 import asyncio
+from datetime import datetime
 
 
 class InstagramIntegration:
@@ -11,10 +10,10 @@ class InstagramIntegration:
 
     async def generate_story_template(
         self, product_name: str, image_url: str, stock: int, total: int
-    ) -> Dict:
+    ) -> dict:
         urgency = stock / total
         if urgency < 0.1:
-            text = f"🔥🔥🔥 ÚLTIMO"
+            text = "🔥🔥🔥 ÚLTIMO"
             color = "#dc2626"
         elif urgency < 0.3:
             text = f"🔥 Solo {stock} quedan"
@@ -34,13 +33,13 @@ class InstagramIntegration:
         }
 
     async def schedule_carousel_post(
-        self, product_id: str, images: List[str], caption: str, scheduled_time: datetime
+        self, product_id: str, images: list[str], caption: str, scheduled_time: datetime
     ) -> str:
         # Would integrate with Instagram API
         return f"post_{product_id}_{int(scheduled_time.timestamp())}"
 
     async def auto_generate_7day_campaign(
-        self, product_id: str, product_name: str, images: List[str], stock: int, price: float
+        self, product_id: str, product_name: str, images: list[str], stock: int, price: float
     ):
         """Generate 7-day Instagram campaign"""
         campaign = [
@@ -59,11 +58,11 @@ class TikTokIntegration:
     def __init__(self, user_token: str):
         self.token = user_token
 
-    def generate_hook_variants(self, product_name: str, price: float, stock: int) -> List[str]:
+    def generate_hook_variants(self, product_name: str, price: float, stock: int) -> list[str]:
         return [
             f"Solo {stock} en stock de {product_name} 🔥",
             f"TODOS están comprando {product_name} AHORA 👀",
-            f"Primeros 50 = ENVÍO GRATIS 📦",
+            "Primeros 50 = ENVÍO GRATIS 📦",
             f"Mañana sube a ${price * 1.3}... hoy ${price} 📈",
             f"Se agotó en Amazon pero aquí hay {product_name}",
             f"45K personas compraron {product_name} este mes 🚀",
@@ -96,7 +95,7 @@ class GoogleShoppingIntegration:
         self.merchant_id = merchant_id
         self.api_key = api_key
 
-    def create_foom_feed(self, products: List[Dict], campaign_name: str) -> List[Dict]:
+    def create_foom_feed(self, products: list[dict], campaign_name: str) -> list[dict]:
         """Create feed with FOOM annotations"""
         feed_items = []
 

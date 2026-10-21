@@ -24,17 +24,20 @@ numbers. Metrics with no real data source anywhere in the app yet
 sense) are returned as None with an honest label rather than a random
 number that looks real.
 """
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.businesses.team_models import BusinessMember, BusinessMemberRole, DealDelegation
 from app.domains.businesses.models import Business
-from app.domains.users.models import User
+from app.domains.businesses.team_models import (
+    BusinessMember,
+    BusinessMemberRole,
+    DealDelegation,
+)
 from app.domains.crm.models import Deal, LeadStage
+from app.domains.users.models import User
 
 
 class TeamManager:
@@ -100,7 +103,7 @@ class TeamManager:
         return result
 
     @staticmethod
-    async def get_member_role(business_id: UUID, user_id: UUID, db: AsyncSession) -> Optional[str]:
+    async def get_member_role(business_id: UUID, user_id: UUID, db: AsyncSession) -> str | None:
         biz_result = await db.execute(select(Business).where(Business.id == business_id))
         business = biz_result.scalar_one_or_none()
         if business and business.user_id == user_id:
@@ -244,7 +247,7 @@ class TeamManager:
         delegation = DealDelegation(
             business_id=business_id, from_user_id=from_user_id, to_user_id=to_user_id,
             deal_ids=[str(d) for d in deal_ids], reason=reason,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=duration_hours),
+            expires_at=datetime.now(UTC) + timedelta(hours=duration_hours),
         )
         db.add(delegation)
         await db.commit()
@@ -260,7 +263,7 @@ class TeamManager:
         if not delegation:
             return False
         delegation.status = decision
-        delegation.decided_at = datetime.now(timezone.utc)
+        delegation.decided_at = datetime.now(UTC)
         if decision == "approved":
             for deal_id_str in delegation.deal_ids:
                 deal_result = await db.execute(select(Deal).where(Deal.id == UUID(deal_id_str)))

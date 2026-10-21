@@ -1,16 +1,15 @@
 """Base Neural Network Infrastructure for SellIA Brain."""
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Callable
 from datetime import datetime
-import json
+from enum import Enum
+from typing import Any
 
 import numpy as np
-from scipy import optimize
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import r2_score
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class NetworkConfig:
     """Neural network configuration."""
 
     input_size: int
-    hidden_layers: List[int]
+    hidden_layers: list[int]
     output_size: int
     activation: ActivationFunction = ActivationFunction.RELU
     output_activation: ActivationFunction = ActivationFunction.LINEAR
@@ -47,7 +46,7 @@ class NetworkConfig:
     dropout_rate: float = 0.3
     use_batch_norm: bool = False
     regularization_l2: float = 0.01
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -64,7 +63,7 @@ class TrainingConfig:
     optimizer: str = "adam"  # adam, sgd, rmsprop
     momentum: float = 0.9
     decay: float = 0.0001
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,9 +76,9 @@ class TrainingMetrics:
     train_score: float
     val_score: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    additional_metrics: Dict[str, float] = field(default_factory=dict)
+    additional_metrics: dict[str, float] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "epoch": self.epoch,
             "train_loss": float(self.train_loss),
@@ -94,15 +93,15 @@ class TrainingMetrics:
 class NeuralNetworkBase(ABC):
     """Base class for neural networks in SellIA Brain."""
 
-    def __init__(self, config: NetworkConfig, training_config: Optional[TrainingConfig] = None):
+    def __init__(self, config: NetworkConfig, training_config: TrainingConfig | None = None):
         self.config = config
         self.training_config = training_config or TrainingConfig()
-        self.weights: List[np.ndarray] = []
-        self.biases: List[np.ndarray] = []
-        self.training_history: List[TrainingMetrics] = []
+        self.weights: list[np.ndarray] = []
+        self.biases: list[np.ndarray] = []
+        self.training_history: list[TrainingMetrics] = []
         self.is_trained = False
-        self.scaler_X: Optional[Any] = None
-        self.scaler_y: Optional[Any] = None
+        self.scaler_X: Any | None = None
+        self.scaler_y: Any | None = None
         self._initialize_weights()
 
     def _initialize_weights(self) -> None:
@@ -142,7 +141,7 @@ class NeuralNetworkBase(ABC):
         else:  # LINEAR
             return np.ones_like(x)
 
-    def forward(self, X: np.ndarray) -> Tuple[np.ndarray, List[np.ndarray]]:
+    def forward(self, X: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
         """Forward pass through network.
 
         Args:
@@ -168,7 +167,7 @@ class NeuralNetworkBase(ABC):
 
         return activations[-1], activations[:-1]
 
-    def backward(self, X: np.ndarray, y: np.ndarray, predictions: np.ndarray) -> Dict[str, np.ndarray]:
+    def backward(self, X: np.ndarray, y: np.ndarray, predictions: np.ndarray) -> dict[str, np.ndarray]:
         """Backward pass through network.
 
         Args:
@@ -225,19 +224,16 @@ class NeuralNetworkBase(ABC):
     @abstractmethod
     def fit(self, X: np.ndarray, y: np.ndarray) -> "NeuralNetworkBase":
         """Train the network."""
-        pass
 
     @abstractmethod
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Make predictions."""
-        pass
 
     @abstractmethod
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """Predict probabilities."""
-        pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get network configuration."""
         return {
             "input_size": self.config.input_size,

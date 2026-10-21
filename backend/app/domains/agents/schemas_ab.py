@@ -1,9 +1,9 @@
 """A/B Testing Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PromptExperimentCreate(BaseModel):
@@ -19,15 +19,15 @@ class PromptExperimentCreate(BaseModel):
 
 
 class PromptExperimentUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=200)
-    status: Optional[str] = Field(None, max_length=20)
-    confidence_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
-    min_samples: Optional[int] = Field(None, ge=1)
+    name: str | None = Field(None, max_length=200)
+    status: str | None = Field(None, max_length=20)
+    confidence_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    min_samples: int | None = Field(None, ge=1)
 
 
 class PromptExperimentResponse(BaseModel):
     id: UUID
-    business_id: Optional[UUID] = None
+    business_id: UUID | None = None
     name: str
     agent_type: str
     metric: str
@@ -38,9 +38,9 @@ class PromptExperimentResponse(BaseModel):
     status: str
     confidence_threshold: float
     min_samples: int
-    winner_variant: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    winner_variant: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -52,9 +52,9 @@ class PromptExperimentResultResponse(BaseModel):
     experiment_id: UUID
     variant: str
     conversation_id: UUID
-    outcome: Optional[str] = None
-    revenue: Optional[float] = None
-    engagement_score: Optional[float] = None
+    outcome: str | None = None
+    revenue: float | None = None
+    engagement_score: float | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -70,10 +70,10 @@ class PromptExperimentAnalysis(BaseModel):
     rate_b: float
     z_score: float
     p_value: float
-    winner: Optional[str] = None
+    winner: str | None = None
     is_significant: bool
 
 
 class PromptExperimentListResponse(BaseModel):
     total: int
-    experiments: List[PromptExperimentResponse]
+    experiments: list[PromptExperimentResponse]

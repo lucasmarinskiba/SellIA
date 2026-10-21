@@ -16,11 +16,8 @@ Capacidades:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
-from enum import Enum
-from datetime import datetime, timedelta
-import json
-
+from datetime import datetime
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────
 # PREDICTIVE ANALYTICS CAPABILITY
@@ -31,7 +28,7 @@ import json
 class ForecastResult:
     """Resultado de forecast."""
     metric: str
-    periods: Dict[str, float]  # {"30d": 100, "60d": 120, "90d": 130}
+    periods: dict[str, float]  # {"30d": 100, "60d": 120, "90d": 130}
     confidence: float
     methodology: str
     timestamp: str = ""
@@ -46,10 +43,10 @@ class DemandForecastingCapability:
 
     def __init__(self):
         self.name = "demand_forecasting"
-        self.historical_data: List[float] = []
-        self.forecasts: List[ForecastResult] = []
+        self.historical_data: list[float] = []
+        self.forecasts: list[ForecastResult] = []
 
-    async def forecast(self, historical_sales: List[float],
+    async def forecast(self, historical_sales: list[float],
                       include_seasonality: bool = True,
                       confidence_level: float = 0.8) -> ForecastResult:
         """Predice demanda futura."""
@@ -75,7 +72,7 @@ class DemandForecastingCapability:
         self.forecasts.append(result)
         return result
 
-    def _calculate_trend(self, data: List[float]) -> float:
+    def _calculate_trend(self, data: list[float]) -> float:
         """Calcula tendencia usando regresión lineal."""
         if len(data) < 2:
             return 0.0
@@ -87,7 +84,7 @@ class DemandForecastingCapability:
         denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
         return numerator / denominator if denominator > 0 else 0.0
 
-    def _extract_seasonality(self, data: List[float]) -> float:
+    def _extract_seasonality(self, data: list[float]) -> float:
         """Extrae factor estacional."""
         if len(data) < 12:
             return 1.0
@@ -111,8 +108,8 @@ class RevenueProjectionCapability:
         self.name = "revenue_projection"
 
     async def project_revenue(self, arpu: float,
-                             customer_forecast: Dict[str, int],
-                             pricing_strategy: Optional[str] = None) -> Dict[str, float]:
+                             customer_forecast: dict[str, int],
+                             pricing_strategy: str | None = None) -> dict[str, float]:
         """Proyecta revenue 12-24-60 meses."""
         projections = {}
 
@@ -139,7 +136,7 @@ class LTVPredictionCapability:
     async def predict_ltv(self, initial_purchase: float,
                          avg_monthly_spend: float,
                          retention_rate: float,
-                         discount_rate: float = 0.02) -> Dict[str, float]:
+                         discount_rate: float = 0.02) -> dict[str, float]:
         """Calcula LTV descontado (DCF)."""
         ltv_values = {}
 
@@ -167,7 +164,7 @@ class Pattern:
     type: str  # "cyclical", "trending", "seasonal", "anomaly"
     confidence: float
     description: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class CustomerBehaviorPatternRecognition:
@@ -175,9 +172,9 @@ class CustomerBehaviorPatternRecognition:
 
     def __init__(self):
         self.name = "customer_behavior_patterns"
-        self.patterns: List[Pattern] = []
+        self.patterns: list[Pattern] = []
 
-    async def analyze_behavior(self, customer_interactions: List[Dict[str, Any]]) -> List[Pattern]:
+    async def analyze_behavior(self, customer_interactions: list[dict[str, Any]]) -> list[Pattern]:
         """Analiza interacciones y detecta patrones."""
         patterns = []
 
@@ -201,7 +198,7 @@ class CustomerBehaviorPatternRecognition:
         self.patterns.extend(patterns)
         return patterns
 
-    def _extract_purchase_intervals(self, interactions: List[Dict[str, Any]]) -> List[float]:
+    def _extract_purchase_intervals(self, interactions: list[dict[str, Any]]) -> list[float]:
         """Extrae intervalos entre compras (en días)."""
         purchases = [i for i in interactions if i.get("type") == "purchase"]
         if len(purchases) < 2:
@@ -213,7 +210,7 @@ class CustomerBehaviorPatternRecognition:
             intervals.append((t2 - t1).days)
         return intervals
 
-    def _detect_frequency_pattern(self, intervals: List[float]) -> Optional[Pattern]:
+    def _detect_frequency_pattern(self, intervals: list[float]) -> Pattern | None:
         """Detecta patrón de frecuencia de compra."""
         if not intervals:
             return None
@@ -232,7 +229,7 @@ class CustomerBehaviorPatternRecognition:
             )
         return None
 
-    def _detect_value_pattern(self, values: List[float]) -> Optional[Pattern]:
+    def _detect_value_pattern(self, values: list[float]) -> Pattern | None:
         """Detecta patrón en monto de compra."""
         if not values:
             return None
@@ -247,7 +244,7 @@ class CustomerBehaviorPatternRecognition:
             )
         return None
 
-    def _detect_engagement_pattern(self, interactions: List[Dict[str, Any]]) -> Optional[Pattern]:
+    def _detect_engagement_pattern(self, interactions: list[dict[str, Any]]) -> Pattern | None:
         """Detecta patrón de engagement."""
         engagement_events = [i for i in interactions if i.get("type") in ["view", "click", "email_open"]]
         if len(engagement_events) > 20:
@@ -264,7 +261,7 @@ class CustomerBehaviorPatternRecognition:
 class MarketTrendDetection:
     """Capability: Detecta trends en el mercado."""
 
-    async def detect_trends(self, market_signals: List[Dict[str, Any]]) -> List[Pattern]:
+    async def detect_trends(self, market_signals: list[dict[str, Any]]) -> list[Pattern]:
         """Analiza señales de mercado."""
         trends = []
 
@@ -288,14 +285,14 @@ class MarketTrendDetection:
 
         return trends
 
-    def _volume_increasing(self, signals: List[Dict[str, Any]]) -> bool:
+    def _volume_increasing(self, signals: list[dict[str, Any]]) -> bool:
         """¿Volume está subiendo?"""
         volumes = [s.get("volume", 0) for s in signals[-12:] if "volume" in s]
         if len(volumes) < 3:
             return False
         return volumes[-1] > volumes[0]
 
-    def _prices_increasing(self, signals: List[Dict[str, Any]]) -> bool:
+    def _prices_increasing(self, signals: list[dict[str, Any]]) -> bool:
         """¿Precios están subiendo?"""
         prices = [s.get("price", 0) for s in signals[-12:] if "price" in s]
         if len(prices) < 3:
@@ -314,7 +311,7 @@ class LearningEvent:
     experiment_id: str
     hypothesis: str
     outcome: str  # "success", "failure"
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
     timestamp: str = ""
 
     def __post_init__(self):
@@ -327,13 +324,13 @@ class SelfLearningCapability:
 
     def __init__(self):
         self.name = "self_learning"
-        self.learning_events: List[LearningEvent] = []
-        self.hypotheses: Dict[str, Dict[str, float]] = {}
+        self.learning_events: list[LearningEvent] = []
+        self.hypotheses: dict[str, dict[str, float]] = {}
 
     async def record_experiment(self, experiment_id: str,
                                hypothesis: str,
                                outcome: str,
-                               metrics: Dict[str, float]) -> None:
+                               metrics: dict[str, float]) -> None:
         """Registra resultado de experimento."""
         event = LearningEvent(
             experiment_id=experiment_id,
@@ -360,7 +357,7 @@ class SelfLearningCapability:
                 self.hypotheses[hypothesis]["success"] / total
             )
 
-    async def recommend_optimizations(self) -> List[str]:
+    async def recommend_optimizations(self) -> list[str]:
         """Recomienda optimizaciones basadas en aprendizajes."""
         recommendations = []
 
@@ -378,7 +375,7 @@ class DynamicPricingOptimization:
 
     def __init__(self):
         self.name = "dynamic_pricing"
-        self.price_history: List[Dict[str, Any]] = []
+        self.price_history: list[dict[str, Any]] = []
 
     async def optimize_price(self, current_demand: float,
                             inventory: int,
@@ -427,9 +424,9 @@ class FraudDetectionCapability:
 
     def __init__(self):
         self.name = "fraud_detection"
-        self.anomalies: List[Anomaly] = []
+        self.anomalies: list[Anomaly] = []
 
-    async def analyze_transaction(self, transaction: Dict[str, Any]) -> Optional[Anomaly]:
+    async def analyze_transaction(self, transaction: dict[str, Any]) -> Anomaly | None:
         """Analiza transacción y detecta fraude."""
         fraud_score = 0.0
 
@@ -466,8 +463,8 @@ class FraudDetectionCapability:
 class OutlierDetectionCapability:
     """Capability: Detecta valores outlier."""
 
-    async def detect_outliers(self, values: List[float],
-                             threshold: float = 2.0) -> List[Anomaly]:
+    async def detect_outliers(self, values: list[float],
+                             threshold: float = 2.0) -> list[Anomaly]:
         """Detecta outliers usando Z-score."""
         if len(values) < 3:
             return []
@@ -503,8 +500,8 @@ class CounterfactualReasoningCapability:
         self.name = "counterfactual_reasoning"
 
     async def what_if(self, scenario: str,
-                     intervention: Dict[str, Any],
-                     model_params: Dict[str, float]) -> Dict[str, Any]:
+                     intervention: dict[str, Any],
+                     model_params: dict[str, float]) -> dict[str, Any]:
         """¿Qué pasaría si hacemos esto?"""
         # Simula outcome
 
@@ -568,7 +565,7 @@ class CapabilitiesOrchestrator:
             "counterfactual": CounterfactualReasoningCapability(),
         }
 
-    async def execute_capability(self, capability_name: str, **kwargs) -> Dict[str, Any]:
+    async def execute_capability(self, capability_name: str, **kwargs) -> dict[str, Any]:
         """Ejecuta una capability."""
         # Routing simple
         if capability_name.startswith("forecast_"):
@@ -584,11 +581,16 @@ class CapabilitiesOrchestrator:
 
 # Export
 __all__ = [
-    "ForecastResult",
-    "DemandForecastingCapability", "RevenueProjectionCapability", "LTVPredictionCapability",
-    "CustomerBehaviorPatternRecognition", "MarketTrendDetection",
-    "SelfLearningCapability", "DynamicPricingOptimization",
-    "FraudDetectionCapability", "OutlierDetectionCapability",
-    "CounterfactualReasoningCapability",
     "CapabilitiesOrchestrator",
+    "CounterfactualReasoningCapability",
+    "CustomerBehaviorPatternRecognition",
+    "DemandForecastingCapability",
+    "DynamicPricingOptimization",
+    "ForecastResult",
+    "FraudDetectionCapability",
+    "LTVPredictionCapability",
+    "MarketTrendDetection",
+    "OutlierDetectionCapability",
+    "RevenueProjectionCapability",
+    "SelfLearningCapability",
 ]

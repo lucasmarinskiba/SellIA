@@ -1,6 +1,6 @@
 """Feedback loop: Conversion data → X9 profile improvements."""
-from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.user_intelligence.models import UserRiskProfile
 
 

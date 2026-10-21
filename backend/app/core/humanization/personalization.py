@@ -11,10 +11,10 @@ Personalizes messages with:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +33,20 @@ class BuyerProfile:
     buyer_id: str
     name: str
     first_name: str
-    company: Optional[str] = None
-    industry: Optional[str] = None
-    role: Optional[str] = None
-    location: Optional[str] = None
+    company: str | None = None
+    industry: str | None = None
+    role: str | None = None
+    location: str | None = None
 
     # Behavior data
-    past_purchases: List[Dict[str, Any]] = field(default_factory=list)
-    engagement_history: List[str] = field(default_factory=list)
-    preferences: Dict[str, Any] = field(default_factory=dict)
+    past_purchases: list[dict[str, Any]] = field(default_factory=list)
+    engagement_history: list[str] = field(default_factory=list)
+    preferences: dict[str, Any] = field(default_factory=dict)
 
     # Interaction timing
-    last_contact: Optional[datetime] = None
-    best_contact_time: Optional[str] = None  # "morning", "afternoon", "evening"
-    timezone: Optional[str] = None
+    last_contact: datetime | None = None
+    best_contact_time: str | None = None  # "morning", "afternoon", "evening"
+    timezone: str | None = None
 
     # Urgency signals
     urgency_level: int = 5  # 1-10, detected from behavior
@@ -63,9 +63,9 @@ class PersonalizationContext:
     """Context for personalizing a message"""
     buyer_profile: BuyerProfile
     message_type: str  # "initial", "follow_up", "objection_response", "closing"
-    previous_messages: List[str] = field(default_factory=list)
-    industry_context: Optional[str] = None
-    campaign_name: Optional[str] = None
+    previous_messages: list[str] = field(default_factory=list)
+    industry_context: str | None = None
+    campaign_name: str | None = None
     personalization_level: PersonalizationLevel = PersonalizationLevel.MODERATE
 
 
@@ -160,9 +160,9 @@ class PersonalizationEngine:
 
     def infer_industry(
         self,
-        company_name: Optional[str] = None,
-        context_clues: Optional[str] = None,
-    ) -> Optional[str]:
+        company_name: str | None = None,
+        context_clues: str | None = None,
+    ) -> str | None:
         """
         Infer buyer industry from company name or context.
 
@@ -198,7 +198,7 @@ class PersonalizationEngine:
         buyer_profile: BuyerProfile,
         context: PersonalizationContext,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Personalize message for buyer.
 
@@ -352,7 +352,7 @@ class PersonalizationEngine:
         self,
         buyer_profile: BuyerProfile,
         days_since_contact: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate appropriate follow-up context based on timing.
 
@@ -387,7 +387,7 @@ class PersonalizationEngine:
     def extract_buyer_preferences(
         self,
         buyer_profile: BuyerProfile,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract buyer preferences for personalization.
 
@@ -437,7 +437,7 @@ class PersonalizationEngine:
 
     def _calculate_personalization_confidence(
         self,
-        elements: List[str],
+        elements: list[str],
     ) -> float:
         """Calculate confidence in personalization quality"""
         if not elements:
@@ -485,7 +485,7 @@ class PersonalizationEngine:
         self,
         buyer_profile: BuyerProfile,
         reference_type: str,  # "product", "company", "role", "industry"
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Create dynamic reference to buyer's specific context.
 

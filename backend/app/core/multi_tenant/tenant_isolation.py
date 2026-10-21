@@ -4,15 +4,13 @@ TenantIsolation: Row-level security, schema isolation, data boundaries.
 """
 
 import re
-from typing import Optional, List
-from datetime import datetime, timezone
 
-from sqlalchemy import text, and_, select
+from sqlalchemy import and_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
+from app.core.logger import get_logger
+
 from .models import Tenant, TenantMember
 
 logger = get_logger(__name__)
@@ -45,7 +43,7 @@ class TenantContext:
         tenant_id: str,
         user_id: str,
         role: str = "member",
-        permissions: Optional[dict] = None,
+        permissions: dict | None = None,
     ):
         self.tenant_id = tenant_id
         self.user_id = user_id
@@ -98,7 +96,7 @@ class TenantIsolation:
 
         if not member:
             logger.warning(
-                f"Unauthorized tenant access attempt",
+                "Unauthorized tenant access attempt",
                 extra={
                     "tenant_id": str(tenant_id),
                     "user_id": str(user_id),
@@ -246,7 +244,7 @@ class TenantIsolation:
             await self.db.commit()
 
             logger.info(
-                f"Tenant schema created",
+                "Tenant schema created",
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
@@ -279,7 +277,7 @@ class TenantIsolation:
             await self.db.commit()
 
             logger.warning(
-                f"Tenant schema dropped",
+                "Tenant schema dropped",
                 extra={"tenant_id": str(tenant_id), "schema": schema},
             )
 
@@ -362,7 +360,7 @@ class TenantIsolationMiddleware:
         return await call_next(request)
 
 
-def extract_tenant_from_request(request) -> Optional[str]:
+def extract_tenant_from_request(request) -> str | None:
     """
     Extract tenant_id from request:
     1. Path parameter: /api/tenants/{tenant_id}/...

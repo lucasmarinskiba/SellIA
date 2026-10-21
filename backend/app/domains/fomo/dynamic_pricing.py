@@ -1,8 +1,6 @@
 """Dynamic Pricing Engine: ROAS-driven pricing"""
 
 from decimal import Decimal
-from typing import Dict, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DynamicPricingEngine:
@@ -10,7 +8,7 @@ class DynamicPricingEngine:
     async def calculate_seat_price(
         current_seats: int,
         total_seats: int = 100,
-        base_price: Decimal = Decimal("99"),
+        base_price: Decimal = Decimal(99),
     ) -> Decimal:
         """Scarcity-based pricing based on occupancy"""
         occupancy = current_seats / total_seats
@@ -34,19 +32,19 @@ class DynamicPricingEngine:
         """Variable pricing for feature add-ons"""
         pricing = {
             "sms_sending": [
-                {"max": 100, "cost": Decimal("0")},
-                {"max": 500, "cost": Decimal("10")},
-                {"max": 2000, "cost": Decimal("30")},
+                {"max": 100, "cost": Decimal(0)},
+                {"max": 500, "cost": Decimal(10)},
+                {"max": 2000, "cost": Decimal(30)},
             ],
             "email_sending": [
-                {"max": 1000, "cost": Decimal("0")},
-                {"max": 5000, "cost": Decimal("15")},
-                {"max": 20000, "cost": Decimal("50")},
+                {"max": 1000, "cost": Decimal(0)},
+                {"max": 5000, "cost": Decimal(15)},
+                {"max": 20000, "cost": Decimal(50)},
             ],
             "api_calls": [
-                {"max": 10000, "cost": Decimal("0")},
-                {"max": 50000, "cost": Decimal("25")},
-                {"max": 200000, "cost": Decimal("100")},
+                {"max": 10000, "cost": Decimal(0)},
+                {"max": 50000, "cost": Decimal(25)},
+                {"max": 200000, "cost": Decimal(100)},
             ],
         }
 
@@ -55,7 +53,7 @@ class DynamicPricingEngine:
             if monthly_usage <= tier["max"]:
                 return tier["cost"]
 
-        return tiers[-1]["cost"] if tiers else Decimal("0")
+        return tiers[-1]["cost"] if tiers else Decimal(0)
 
     @staticmethod
     async def optimize_by_roas(
@@ -89,7 +87,7 @@ class DynamicPricingEngine:
     def calculate_volume_discount(
         quantity: int,
         unit_price: Decimal,
-    ) -> Dict:
+    ) -> dict:
         """Calculate bulk discounts"""
         discounts = {
             (1, 10): 0,

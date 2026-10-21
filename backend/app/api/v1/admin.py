@@ -7,16 +7,16 @@ Cross-domain admin endpoints for platform management.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.consumo.models import ChurnRiskSignal
 from app.domains.consumo import service as consumo_service
+from app.domains.consumo.models import ChurnRiskSignal
 from app.domains.nps.models import FeedbackNPSResponse
 from app.domains.referrals.models import ReferralCode
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

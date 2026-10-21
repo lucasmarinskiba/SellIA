@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 
 
 @dataclass
@@ -13,7 +12,7 @@ class CashFlowAssumptions:
     cogs_pct_revenue: Decimal  # cost of goods as % of revenue
     opex_daily: Decimal  # fixed daily operating expense
     tax_rate: Decimal = Decimal("0.21")  # Argentina default
-    beginning_balance: Decimal = Decimal("0")
+    beginning_balance: Decimal = Decimal(0)
 
 
 @dataclass
@@ -44,6 +43,6 @@ class CashFlowForecast:
     min_balance: Decimal
     max_balance: Decimal
     min_balance_date: date
-    runway_days: Optional[int]  # days until zero if negative burn
+    runway_days: int | None  # days until zero if negative burn
     assumptions: CashFlowAssumptions
     computed_at: datetime

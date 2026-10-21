@@ -12,20 +12,19 @@ Endpoints para recibir webhooks de plataformas:
 Webhooks sin autenticación (validar con tokens en headers).
 """
 
-import logging
-from typing import Dict, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.config import get_settings
+from app.core.database import get_db
 from app.core.logger import get_logger
-from app.domains.computer_use.services.webhook_receiver import (
-    WebhookReceiverService,
-    IncomingMessage,
-)
 from app.domains.computer_use.services.auto_responder import get_auto_responder_service
+from app.domains.computer_use.services.webhook_receiver import (
+    IncomingMessage,
+    WebhookReceiverService,
+)
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -54,7 +53,7 @@ async def _verify_webhook_token(
 
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="whatsapp")),
@@ -108,7 +107,7 @@ async def whatsapp_webhook(
 
 @router.post("/webhooks/instagram")
 async def instagram_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="instagram")),
@@ -138,7 +137,7 @@ async def instagram_webhook(
 
 @router.post("/webhooks/tiktok")
 async def tiktok_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="tiktok")),
@@ -168,7 +167,7 @@ async def tiktok_webhook(
 
 @router.post("/webhooks/facebook")
 async def facebook_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="facebook")),
@@ -198,7 +197,7 @@ async def facebook_webhook(
 
 @router.post("/webhooks/mercadolibre")
 async def mercadolibre_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="mercadolibre")),
@@ -228,7 +227,7 @@ async def mercadolibre_webhook(
 
 @router.post("/webhooks/amazon")
 async def amazon_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="amazon")),
@@ -258,7 +257,7 @@ async def amazon_webhook(
 
 @router.post("/webhooks/hotmart")
 async def hotmart_webhook(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     db: AsyncSession = Depends(get_db),
     background_tasks: BackgroundTasks = None,
     _token: str = Depends(lambda: _verify_webhook_token(platform="hotmart")),

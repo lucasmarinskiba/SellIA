@@ -5,18 +5,22 @@ Servicios para crear, ejecutar y monitorear misiones cross-plataforma.
 
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, desc
+from typing import Any
 
-from .models import Mission, MissionStep, BusinessDiagnostic
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .diagnostic_engine import run_diagnostic
+from .models import BusinessDiagnostic, Mission, MissionStep
+from .playbook_library import get_playbook, list_playbooks
 from .schemas import (
-    MissionCreate, MissionRead, MissionUpdate,
-    MissionStepUpdate, BusinessDiagnosticCreate, BusinessDiagnosticRead,
+    BusinessDiagnosticRead,
+    MissionCreate,
+    MissionRead,
+    MissionStepUpdate,
+    MissionUpdate,
     PlaybookRead,
 )
-from .playbook_library import get_playbook, list_playbooks, get_recommended_playbooks
-from .diagnostic_engine import run_diagnostic
 
 
 class MissionService:
@@ -31,7 +35,7 @@ class MissionService:
         self,
         user_id: uuid.UUID,
         playbook_slug: str,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         auto_approve_low_impact: bool = True,
     ) -> MissionRead:
         """Crear una misión a partir de un playbook."""
@@ -121,7 +125,7 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def get(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> Optional[MissionRead]:
+    async def get(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> MissionRead | None:
         """Obtener una misión por ID (con verificación de ownership)."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -134,11 +138,11 @@ class MissionService:
     async def list_by_user(
         self,
         user_id: uuid.UUID,
-        status: Optional[str] = None,
-        category: Optional[str] = None,
+        status: str | None = None,
+        category: str | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[MissionRead]:
+    ) -> list[MissionRead]:
         """Listar misiones de un usuario."""
         query = select(Mission).where(Mission.user_id == user_id).order_by(desc(Mission.created_at))
         if status:
@@ -151,7 +155,7 @@ class MissionService:
         missions = result.scalars().all()
         return [MissionRead.model_validate(m) for m in missions]
 
-    async def update(self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate) -> Optional[MissionRead]:
+    async def update(self, mission_id: uuid.UUID, user_id: uuid.UUID, data: MissionUpdate) -> MissionRead | None:
         """Actualizar una misión."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -168,7 +172,7 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def approve(self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False) -> Optional[MissionRead]:
+    async def approve(self, mission_id: uuid.UUID, user_id: uuid.UUID, approve_all_steps: bool = False) -> MissionRead | None:
         """Aprobar una misión propuesta."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id)
@@ -188,7 +192,7 @@ class MissionService:
         await self.db.refresh(mission)
         return MissionRead.model_validate(mission)
 
-    async def start(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> Optional[MissionRead]:
+    async def start(self, mission_id: uuid.UUID, user_id: uuid.UUID) -> MissionRead | None:
         """Iniciar una misión aprobada."""
         result = await self.db.execute(
             select(Mission).where(Mission.id == mission_id, Mission.user_id == user_id, Mission.status == "approved")
@@ -217,7 +221,7 @@ class MissionService:
         step_id: uuid.UUID,
         user_id: uuid.UUID,
         data: MissionStepUpdate,
-    ) -> Optional[MissionRead]:
+    ) -> MissionRead | None:
         """Actualizar el estado de un paso y avanzar al siguiente si corresponde."""
         result = await self.db.execute(
             select(MissionStep)
@@ -269,9 +273,9 @@ class MissionService:
     async def run_diagnostic(
         self,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID],
-        business_metrics: Dict[str, Any],
-    ) -> List[BusinessDiagnosticRead]:
+        business_id: uuid.UUID | None,
+        business_metrics: dict[str, Any],
+    ) -> list[BusinessDiagnosticRead]:
         """Ejecutar diagnóstico completo y guardar resultados."""
         # Load business context for context-aware diagnostics
         context = {}
@@ -323,10 +327,10 @@ class MissionService:
     async def list_diagnostics(
         self,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID] = None,
-        is_resolved: Optional[bool] = None,
+        business_id: uuid.UUID | None = None,
+        is_resolved: bool | None = None,
         limit: int = 100,
-    ) -> List[BusinessDiagnosticRead]:
+    ) -> list[BusinessDiagnosticRead]:
         """Listar diagnósticos de un usuario/negocio."""
         query = select(BusinessDiagnostic).where(BusinessDiagnostic.user_id == user_id)
         if business_id:
@@ -357,10 +361,10 @@ class MissionService:
 
     # ─── Playbooks ─────────────────────────────────────────────────────────────
 
-    async def list_playbooks(self, category: Optional[str] = None) -> List[PlaybookRead]:
+    async def list_playbooks(self, category: str | None = None) -> list[PlaybookRead]:
         """Listar playbooks disponibles."""
         return list_playbooks(category)
 
-    async def get_playbook(self, slug: str) -> Optional[PlaybookRead]:
+    async def get_playbook(self, slug: str) -> PlaybookRead | None:
         """Obtener un playbook por slug."""
         return get_playbook(slug)

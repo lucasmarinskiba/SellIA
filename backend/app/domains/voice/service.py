@@ -3,10 +3,9 @@
 Handles STT, TTS, and AI-driven voice call processing.
 """
 
-import uuid
 import base64
-from typing import Optional
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
@@ -211,7 +210,7 @@ class VoiceService:
             phone_number=phone_number,
             direction=direction,
             status="ringing",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         self.db.add(call)
         await self.db.commit()
@@ -221,7 +220,7 @@ class VoiceService:
     async def end_call(
         self,
         call_id: uuid.UUID,
-        outcome: Optional[str] = None,
+        outcome: str | None = None,
     ) -> VoiceCall:
         """End a voice call and set outcome."""
         result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
@@ -230,14 +229,14 @@ class VoiceService:
             raise ValueError("Call not found")
 
         call.status = "completed"
-        call.ended_at = datetime.now(timezone.utc)
+        call.ended_at = datetime.now(UTC)
         if outcome:
             call.outcome = outcome
         await self.db.commit()
         await self.db.refresh(call)
         return call
 
-    async def get_call_transcript(self, call_id: uuid.UUID) -> Optional[str]:
+    async def get_call_transcript(self, call_id: uuid.UUID) -> str | None:
         """Retrieve the transcript for a call."""
         result = await self.db.execute(select(VoiceCall).where(VoiceCall.id == call_id))
         call = result.scalar_one_or_none()
@@ -264,7 +263,7 @@ class VoiceService:
             await self.db.refresh(config)
         return config
 
-    async def get_config(self, business_id: uuid.UUID) -> Optional[VoiceConfig]:
+    async def get_config(self, business_id: uuid.UUID) -> VoiceConfig | None:
         result = await self.db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
         return result.scalar_one_or_none()
 
@@ -277,7 +276,7 @@ class VoiceService:
             for field, value in data.items():
                 if value is not None and hasattr(config, field):
                     setattr(config, field, value)
-            config.updated_at = datetime.now(timezone.utc)
+            config.updated_at = datetime.now(UTC)
         else:
             config = VoiceConfig(**data)
             self.db.add(config)

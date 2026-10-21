@@ -4,8 +4,8 @@ Genera captions contextuales basadas en trending topics + product.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class ContentTemplate:
 
     def generate_caption(
         self,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         trending_topic: str,
         style: ContentStyle,
         platform: str,  # instagram, tiktok
@@ -83,7 +83,7 @@ class ContentTemplate:
                 "benefit": product_info.get("benefit", "cambiar tu vida"),
                 "tip_number": self._get_tip_number(),
                 "insight": f"La mayoría intenta vender sin {trending_topic}",
-                "action": f"Aquí está el secreto...",
+                "action": "Aquí está el secreto...",
                 "hashtags": self._generate_hashtags(trending_topic, platform),
                 "successful_person": "Hormozi",
                 "action_text": "construyó su imperio",
@@ -149,7 +149,7 @@ class ContentTemplate:
 
         return " ".join(base_hashtags[:12])
 
-    def select_image_theme(self, trending_topic: str) -> Dict[str, Any]:
+    def select_image_theme(self, trending_topic: str) -> dict[str, Any]:
         """Sugiere tema de imagen para trending topic."""
         themes = {
             "hustle_culture": {

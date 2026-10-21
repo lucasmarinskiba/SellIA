@@ -1,17 +1,18 @@
 """Celery tasks for SEO config operations."""
 
+import logging
+from datetime import date, timedelta
+
 from celery import shared_task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import date, timedelta
-import logging
 
 from app.core.async_bridge import run_async
 from app.core.config import get_settings
-from app.domains.seo_config.models import PublicationLink, SEOConfig
-from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -211,9 +212,9 @@ def monitor_fomo_decay(self):
 
         async with async_session() as db:
             try:
-                from app.domains.seo_config.fomo_decay_service import FOMADecayService
-                from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
                 from app.domains.businesses.models import Business
+                from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
+                from app.domains.seo_config.fomo_decay_service import FOMADecayService
 
                 # Get all active businesses
                 result = await db.execute(select(Business).where(Business.is_active.is_(True)))
@@ -276,7 +277,9 @@ def compute_positioning_scores(self):
 
         async with async_session() as db:
             try:
-                from app.domains.seo_config.positioning_score_service import PositioningScoreService
+                from app.domains.seo_config.positioning_score_service import (
+                    PositioningScoreService,
+                )
 
                 result = await db.execute(
                     select(PublicationLink).where(PublicationLink.seo_enabled == True)
@@ -329,8 +332,12 @@ def compute_store_positioning_scores(self):
 
         async with async_session() as db:
             try:
-                from app.domains.integrations.integration_models import IntegrationConnection
-                from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
+                from app.domains.integrations.integration_models import (
+                    IntegrationConnection,
+                )
+                from app.domains.seo_config.store_positioning_service import (
+                    StorePositioningScoreService,
+                )
 
                 result = await db.execute(
                     select(IntegrationConnection).where(

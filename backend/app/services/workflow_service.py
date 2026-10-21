@@ -6,12 +6,13 @@ Workflow Service - Orchestrates leads through email sequences.
 """
 import logging
 from datetime import datetime, timedelta
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Lead, Workflow, WorkflowExecution
-from app.core.scheduler import EmailScheduler
 from app.api.v1.workflows import render_email_template
+from app.core.scheduler import EmailScheduler
+from app.db.models import Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 

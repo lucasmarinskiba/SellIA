@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import os
 import uuid
-from typing import Any, Optional
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.logger import get_logger
 
@@ -62,7 +62,7 @@ class SelfConfigEngine:
         self._current_config: dict[str, Any] = ADAPTIVE_CONFIGS["normal_load"].copy()
         self._config_history: list[dict] = []
 
-    async def run_config_cycle(self, business_id: Optional[uuid.UUID] = None) -> dict[str, Any]:
+    async def run_config_cycle(self, business_id: uuid.UUID | None = None) -> dict[str, Any]:
         """Ejecuta un ciclo completo de auto-configuración."""
         logger.info("[SelfConfig] Iniciando ciclo de auto-configuración")
 
@@ -73,7 +73,7 @@ class SelfConfigEngine:
         channel_config = await self._configure_channel_limits(business_id)
 
         result = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "load_state": load_state,
             "metrics": metrics,
             "config_applied": config_applied,
@@ -88,7 +88,7 @@ class SelfConfigEngine:
         logger.info(f"[SelfConfig] Ciclo completado. Estado: {load_state}")
         return result
 
-    async def _collect_system_metrics(self, business_id: Optional[uuid.UUID]) -> dict[str, Any]:
+    async def _collect_system_metrics(self, business_id: uuid.UUID | None) -> dict[str, Any]:
         """Recolecta métricas actuales del sistema."""
         metrics: dict[str, Any] = {
             "active_conversations": 0,
@@ -96,7 +96,7 @@ class SelfConfigEngine:
             "tasks_queued": 0,
             "avg_response_time_ms": 0,
             "db_connections_used": 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         try:
@@ -125,6 +125,7 @@ class SelfConfigEngine:
 
         try:
             import redis.asyncio as aioredis
+
             from app.core.config import get_settings
             settings = get_settings()
             r = aioredis.from_url(settings.REDIS_URL)
@@ -211,7 +212,7 @@ class SelfConfigEngine:
 
         return provider_status
 
-    async def _configure_channel_limits(self, business_id: Optional[uuid.UUID]) -> dict[str, Any]:
+    async def _configure_channel_limits(self, business_id: uuid.UUID | None) -> dict[str, Any]:
         """Ajusta límites de mensajería por canal según carga."""
         channel_config: dict[str, Any] = {
             "whatsapp": {"rate_limit_per_minute": 20, "batch_delay_ms": 500},

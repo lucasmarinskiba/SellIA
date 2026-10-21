@@ -1,21 +1,20 @@
 """Platform Script Registry — maps domains to platform script classes."""
 
-from typing import Optional, Type
+
+from .amazon import AmazonScript
 from .base import PlatformScript
-from .instagram import InstagramScript
 from .facebook_business import FacebookBusinessScript
 from .facebook_messenger import FacebookMessengerScript
-from .whatsapp_web import WhatsAppWebScript
 from .google_ads import GoogleAdsScript
-from .tiktok import TikTokScript
-from .shopify import ShopifyScript
-from .mercadolibre import MercadoLibreScript
-from .amazon import AmazonScript
-from .hotmart import HotmartScript
 from .google_business import GoogleBusinessScript
+from .hotmart import HotmartScript
+from .instagram import InstagramScript
+from .mercadolibre import MercadoLibreScript
+from .shopify import ShopifyScript
+from .tiktok import TikTokScript
+from .whatsapp_web import WhatsAppWebScript
 
-
-PLATFORM_REGISTRY: dict[str, Type[PlatformScript]] = {
+PLATFORM_REGISTRY: dict[str, type[PlatformScript]] = {
     "web.whatsapp.com": WhatsAppWebScript,
     "whatsapp.com": WhatsAppWebScript,
     "messenger.com": FacebookMessengerScript,
@@ -43,7 +42,7 @@ PLATFORM_REGISTRY: dict[str, Type[PlatformScript]] = {
 }
 
 
-def get_script_for_domain(domain: str) -> Optional[PlatformScript]:
+def get_script_for_domain(domain: str) -> PlatformScript | None:
     """Get an instance of the appropriate platform script for a domain."""
     # Try exact match first
     if domain in PLATFORM_REGISTRY:
@@ -57,7 +56,7 @@ def get_script_for_domain(domain: str) -> Optional[PlatformScript]:
     return None
 
 
-def get_script_for_task(platform: str, action_type: str) -> Optional[PlatformScript]:
+def get_script_for_task(platform: str, action_type: str) -> PlatformScript | None:
     """Get script by platform name (from playbook steps)."""
     platform_map = {
         "whatsapp": WhatsAppWebScript,

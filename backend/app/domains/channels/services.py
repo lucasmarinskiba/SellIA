@@ -1,15 +1,21 @@
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.automations.models import ChatbotRule, WorkflowTriggerType
+from app.domains.channels.connectors import get_connector
 from app.domains.channels.models import (
-    ChannelConnection, ChannelPlatform, Conversation, Message,
-    MessageDirection, MessageStatus, ConversationStatus
+    ChannelConnection,
+    ChannelPlatform,
+    Conversation,
+    ConversationStatus,
+    Message,
+    MessageDirection,
+    MessageStatus,
 )
 from app.domains.channels.schemas import WebhookPayload
-from app.domains.automations.models import WorkflowTriggerType, ChatbotRule
-from app.domains.channels.connectors import get_connector
 
 
 async def _ai_classify_intent(
@@ -17,7 +23,7 @@ async def _ai_classify_intent(
     business_id: Any,
     content: str,
     available_intents: list[str],
-) -> Optional[str]:
+) -> str | None:
     """Use AI to classify the intent of an inbound message.
 
     Returns the matched intent slug from available_intents, or None.
@@ -26,9 +32,10 @@ async def _ai_classify_intent(
         return None
 
     try:
-        from app.domains.businesses.models import Business
+        from langchain_core.messages import HumanMessage, SystemMessage
+
         from app.domains.agents.llm_provider import generate_with_fallback
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from app.domains.businesses.models import Business
 
         result = await db.execute(
             select(Business).where(Business.id == business_id)
@@ -164,7 +171,15 @@ Competitors (JSON array only):"""
 
         # Create Alert + Recommendation
         try:
-            from app.domains.alerts.models import Alert, AlertSeverity, AlertStatus, Recommendation, RecommendationType, RecommendationActionType, RecommendationStatus
+            from app.domains.alerts.models import (
+                Alert,
+                AlertSeverity,
+                AlertStatus,
+                Recommendation,
+                RecommendationActionType,
+                RecommendationStatus,
+                RecommendationType,
+            )
             alert = Alert(
                 business_id=business_id,
                 conversation_id=conversation.id,
@@ -208,7 +223,7 @@ async def _evaluate_chatbot_rules(
     business_id: Any,
     platform: ChannelPlatform,
     content: str,
-) -> Optional[ChatbotRule]:
+) -> ChatbotRule | None:
     """Evaluar reglas de chatbot y devolver la primera que haga match.
 
     First tries keyword matching. If no match, falls back to AI intent classification.
@@ -329,7 +344,7 @@ async def _maybe_ai_auto_reply(
     # Computed in Python: func.interval("30 seconds") renders as
     # `interval($1::VARCHAR)`, which Postgres rejects -- interval is a type,
     # not a function. Every auto-reply attempt died on this query.
-    cutoff = datetime.now(timezone.utc) - timedelta(seconds=30)
+    cutoff = datetime.now(UTC) - timedelta(seconds=30)
     recent_outbound = await db.execute(
         select(Message).where(
             Message.conversation_id == conversation.id,
@@ -594,7 +609,7 @@ async def process_incoming_message(
     # default, and reading it back off the instance here was yielding None --
     # leaving last_message_at NULL on every conversation, which is what the
     # inbox sorts by and what any "recent activity" query filters on.
-    conversation.last_message_at = message.created_at or datetime.now(timezone.utc)
+    conversation.last_message_at = message.created_at or datetime.now(UTC)
     await db.commit()
 
     # === Procesar confirmaciones de citas ===
@@ -658,6 +673,7 @@ async def process_incoming_message(
     # a booking-link invite if the business configured one.
     try:
         from sqlalchemy import func
+
         from app.domains.agents.lead_qualifier import service as lq_service
 
         inbound_count_result = await db.execute(
@@ -913,7 +929,7 @@ async def send_outbound_message(
     db.add(message)
     # Was `message.created_at` -- read before any flush, so the column default
     # had not been applied yet and this assigned None every single time.
-    conversation.last_message_at = datetime.now(timezone.utc)
+    conversation.last_message_at = datetime.now(UTC)
     await db.commit()
 
     # === Emitir evento de mensaje enviado ===
@@ -936,8 +952,9 @@ async def send_outbound_message(
 async def _process_appointment_confirmation(db, conversation, content: str):
     """Check if incoming message is an appointment confirmation/cancellation response."""
     from sqlalchemy import select
+
     from app.domains.services.models import Appointment, AppointmentStatus
-    from app.domains.services.services import confirm_appointment, cancel_appointment
+    from app.domains.services.services import cancel_appointment, confirm_appointment
 
     # Find pending appointments for this conversation
     result = await db.execute(

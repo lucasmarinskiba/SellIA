@@ -1,16 +1,19 @@
 """Workflow automation engine."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Optional, Dict, List
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.workflows.workflow_models import (
-    Workflow, WorkflowCondition, WorkflowAction, WorkflowExecution,
-    WorkflowMetrics, TriggerType, ActionType, ConditionOperator
+    ActionType,
+    Workflow,
+    WorkflowAction,
+    WorkflowCondition,
+    WorkflowExecution,
+    WorkflowMetrics,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,8 +43,8 @@ class WorkflowEngine:
         description: str,
         trigger_type: str,
         trigger_config: dict,
-        conditions: Optional[List[dict]] = None,
-        actions: Optional[List[dict]] = None,
+        conditions: list[dict] | None = None,
+        actions: list[dict] | None = None,
         db: AsyncSession = None
     ) -> dict:
         """Create workflow."""
@@ -108,7 +111,7 @@ class WorkflowEngine:
         business_id: UUID,
         active_only: bool = True,
         db: AsyncSession = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get workflows."""
         if not db:
             raise ValueError("Database session required")
@@ -205,7 +208,7 @@ class WorkflowEngine:
             return {"status": "workflow_not_found"}
 
         # Check execution limits
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         count_result = await db.execute(
             select(func.count(WorkflowExecution.id)).where(
                 WorkflowExecution.workflow_id == workflow_id,
@@ -256,7 +259,7 @@ class WorkflowEngine:
             actions_executed=actions_executed,
             actions_failed=actions_failed,
             execution_log=execution_log,
-            completed_at=datetime.now(timezone.utc)
+            completed_at=datetime.now(UTC)
         )
 
         db.add(execution)
@@ -265,7 +268,7 @@ class WorkflowEngine:
         workflow.total_executions += 1
         if actions_failed > 0:
             workflow.total_failures += 1
-        workflow.last_executed_at = datetime.now(timezone.utc)
+        workflow.last_executed_at = datetime.now(UTC)
 
         # Update metrics
         metrics_result = await db.execute(
@@ -334,7 +337,7 @@ class WorkflowEngine:
                 return {"action_type": action_type, "status": "unknown_action"}
 
         except Exception as e:
-            logger.error(f"Action execution failed: {action_type} - {str(e)}")
+            logger.error(f"Action execution failed: {action_type} - {e!s}")
             return {"action_type": action_type, "status": "failed", "error": str(e)}
 
     @staticmethod
@@ -343,7 +346,7 @@ class WorkflowEngine:
         business_id: UUID,
         limit: int = 50,
         db: AsyncSession = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get workflow execution history."""
         if not db:
             raise ValueError("Database session required")

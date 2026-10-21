@@ -1,12 +1,23 @@
 """Competitive intelligence models — competitor tracking + market analysis."""
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -67,8 +78,8 @@ class Competitor(Base):
     notes = Column(String(1000), nullable=True)
     threat_level = Column(String(20), nullable=True)  # low, medium, high, critical
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_competitor", "business_id", "competitor_type"),
@@ -101,7 +112,7 @@ class CompetitorPricing(Base):
     date_observed = Column(String(10), nullable=False)  # YYYY-MM-DD
     source = Column(String(100), nullable=True)  # website, store_visit, aggregator
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     competitor = relationship("Competitor", foreign_keys=[competitor_id])
 
@@ -134,7 +145,7 @@ class CompetitorOffering(Base):
     our_has_equivalent = Column(Boolean, default=False)
     competitive_advantage = Column(String(500), nullable=True)  # What they do better
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     competitor = relationship("Competitor", foreign_keys=[competitor_id])
 
@@ -172,7 +183,7 @@ class CompetitivePosition(Base):
     avg_competitor_rating = Column(Decimal(2, 1), nullable=True)  # 1-5
     avg_review_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 

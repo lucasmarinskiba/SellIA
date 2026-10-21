@@ -16,9 +16,9 @@ business selling in ARS and USD has two totals, not one meaningless number.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import Select, and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -68,24 +68,24 @@ SEARCH_SCAN_CAP = 4000
 class TableQuery:
     """Everything the spreadsheet can be narrowed by."""
 
-    search: Optional[str] = None
+    search: str | None = None
     status: list[str] = field(default_factory=list)
     payment_status: list[str] = field(default_factory=list)
     platform: list[str] = field(default_factory=list)
     channel: list[str] = field(default_factory=list)
     currency: list[str] = field(default_factory=list)
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
-    amount_min: Optional[float] = None
-    amount_max: Optional[float] = None
-    has_tracking: Optional[bool] = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    amount_min: float | None = None
+    amount_max: float | None = None
+    has_tracking: bool | None = None
     sort_by: str = "created_at"
     sort_dir: str = "desc"
     page: int = 1
     page_size: int = 50
 
 
-def _coerce_enum(raw: str, enum_cls: Any) -> Optional[Any]:
+def _coerce_enum(raw: str, enum_cls: Any) -> Any | None:
     """Accept 'paid', 'PAID' or 'OrderStatus.PAID'; drop anything else.
 
     A typo used to reach Postgres and come back as a raw 500. Silently dropping
@@ -180,27 +180,27 @@ def _items_summary(items: Any) -> tuple[int, int, str]:
     return len(items), units, label
 
 
-def _hours_between(start: Optional[datetime], end: Optional[datetime]) -> Optional[float]:
+def _hours_between(start: datetime | None, end: datetime | None) -> float | None:
     if not start or not end:
         return None
     if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
+        start = start.replace(tzinfo=UTC)
     if end.tzinfo is None:
-        end = end.replace(tzinfo=timezone.utc)
+        end = end.replace(tzinfo=UTC)
     return round((end - start).total_seconds() / 3600, 1)
 
 
-def serialize_row(order: Order, *, now: Optional[datetime] = None) -> dict[str, Any]:
+def serialize_row(order: Order, *, now: datetime | None = None) -> dict[str, Any]:
     """One spreadsheet row.
 
     Customer fields stay masked, the same as every other orders read in this
     API — the spreadsheet is not a side door around that policy.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     items_count, units, items_label = _items_summary(order.items)
     created = order.created_at
     if created and created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
+        created = created.replace(tzinfo=UTC)
 
     return {
         "id": str(order.id),
@@ -282,7 +282,7 @@ async def fetch_table(
         notes.append("Se ignoraron filtros desconocidos: " + ", ".join(sorted(set(ignored))))
 
     base: Select = select(Order).where(and_(*conditions))
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if needle or q.sort_by in SORTABLE_PYTHON:
         # Either the filter or the ordering depends on a decrypted or derived

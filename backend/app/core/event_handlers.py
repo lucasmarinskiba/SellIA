@@ -3,14 +3,14 @@
 Registra handlers para eventos del sistema que conectan dominios.
 """
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
-from app.core.events import event_bus
 from app.core.database import AsyncSessionLocal
+from app.core.events import event_bus
 
 
-async def _on_lead_score_changed(payload: Dict[str, Any]):
+async def _on_lead_score_changed(payload: dict[str, Any]):
     """Cuando un lead cambia de clasificación, actuar según corresponda."""
     new_classification = payload.get("new_classification")
     conversation_id = payload.get("conversation_id")
@@ -20,6 +20,7 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
         # Verificar si ya existe un deal para esta conversación
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select
+
             from app.domains.crm.models import Deal
             result = await db.execute(
                 select(Deal).where(
@@ -67,7 +68,7 @@ async def _on_lead_score_changed(payload: Dict[str, Any]):
         )
 
 
-async def _on_deal_created(payload: Dict[str, Any]):
+async def _on_deal_created(payload: dict[str, Any]):
     """Cuando se crea un deal, evaluar alertas."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
@@ -82,10 +83,11 @@ async def _on_deal_created(payload: Dict[str, Any]):
         )
 
 
-async def _on_human_handoff(payload: Dict[str, Any]):
+async def _on_human_handoff(payload: dict[str, Any]):
     """Cuando se requiere handoff humano, agregar a cola Redis."""
     try:
         import redis
+
         from app.core.config import get_settings
         settings = get_settings()
         r = redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -109,7 +111,7 @@ async def _on_human_handoff(payload: Dict[str, Any]):
         )
 
 
-async def _on_order_created(payload: Dict[str, Any]):
+async def _on_order_created(payload: dict[str, Any]):
     """Cuando se crea una orden, evaluar alertas de revenue."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
@@ -124,7 +126,7 @@ async def _on_order_created(payload: Dict[str, Any]):
         )
 
 
-async def _on_workflow_completed(payload: Dict[str, Any]):
+async def _on_workflow_completed(payload: dict[str, Any]):
     """Cuando un workflow completa, evaluar si falló."""
     business_id = payload.get("business_id")
     async with AsyncSessionLocal() as db:
@@ -139,7 +141,7 @@ async def _on_workflow_completed(payload: Dict[str, Any]):
         )
 
 
-async def _on_order_created_growth(payload: Dict[str, Any]):
+async def _on_order_created_growth(payload: dict[str, Any]):
     """Cuando se crea una orden: gamificación + review + referral."""
     business_id = payload.get("business_id")
     order_id = payload.get("order_id")
@@ -149,9 +151,8 @@ async def _on_order_created_growth(payload: Dict[str, Any]):
     async with AsyncSessionLocal() as db:
         # 1. Gamification: record sale and trigger celebration
         try:
-            from app.domains.gamification.service import GamificationEngine
-            from app.domains.users.models import User
             from app.domains.businesses.models import Business
+            from app.domains.gamification.service import GamificationEngine
 
             # Find user for this business
             biz = await db.get(Business, UUID(business_id))
@@ -203,7 +204,7 @@ async def _on_order_created_growth(payload: Dict[str, Any]):
                 get_logger(__name__).info(f"Review request scheduling skipped: {e}")
 
 
-async def _on_lead_magnet_delivered(payload: Dict[str, Any]):
+async def _on_lead_magnet_delivered(payload: dict[str, Any]):
     """Cuando se entrega un lead magnet y no hay respuesta en 24h, enviar value bomb."""
     business_id = payload.get("business_id")
     conversation_id = payload.get("conversation_id")
@@ -214,7 +215,7 @@ async def _on_lead_magnet_delivered(payload: Dict[str, Any]):
     get_logger(__name__).info(f"Lead magnet delivered to {conversation_id}, monitoring for response")
 
 
-async def _on_referral_signup(payload: Dict[str, Any]):
+async def _on_referral_signup(payload: dict[str, Any]):
     """Cuando un referral se registra, iniciar secuencia de bienvenida."""
     business_id = payload.get("business_id")
     new_conversation_id = payload.get("new_conversation_id")
@@ -224,7 +225,7 @@ async def _on_referral_signup(payload: Dict[str, Any]):
         get_logger(__name__).info(f"Referral signup from {new_conversation_id}, welcome sequence queued")
 
 
-async def _on_social_proof_approved(payload: Dict[str, Any]):
+async def _on_social_proof_approved(payload: dict[str, Any]):
     """Cuando se aprueba social proof, hacerlo disponible para sales messages."""
     item_id = payload.get("item_id")
     from app.core.logger import get_logger

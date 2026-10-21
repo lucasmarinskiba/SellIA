@@ -6,12 +6,13 @@ Lead Progression Service
 - Lead scoring on actions
 """
 import logging
-from datetime import datetime, timedelta
-from sqlalchemy import select, and_
+from datetime import datetime
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Lead, WorkflowExecution, Workflow
 from app.core.scheduler import EmailScheduler
+from app.db.models import Lead, Workflow, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,6 @@ class ProgressionService:
         # Find workflows with STATUS_CHANGE trigger
         # (In prod: query DB, for now mock)
         # Workflow step with trigger_status == new_status
-        pass
 
     async def _progress_workflow_if_ready(
         self,

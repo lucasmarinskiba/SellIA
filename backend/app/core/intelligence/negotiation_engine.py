@@ -9,8 +9,8 @@ Técnicas:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +29,15 @@ class NegotiationEngine:
     """Negocia + cierra ventas automático."""
 
     def __init__(self):
-        self.negotiation_log: List[Dict[str, Any]] = []
-        self.buyer_profile_cache: Dict[str, Any] = {}
+        self.negotiation_log: list[dict[str, Any]] = []
+        self.buyer_profile_cache: dict[str, Any] = {}
 
     async def generate_negotiation_strategy(
         self,
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
+        product: dict[str, Any],
+        buyer: dict[str, Any],
         price: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Genera estrategia negociación personalizada.
 
@@ -75,7 +75,7 @@ class NegotiationEngine:
             "sequence": sequence,
         }
 
-    def _classify_buyer(self, buyer: Dict[str, Any]) -> str:
+    def _classify_buyer(self, buyer: dict[str, Any]) -> str:
         """Clasifica buyer psychology (impulsor, analítico, autoridad, etc)."""
 
         behavior = buyer.get("behavior", "")
@@ -90,7 +90,7 @@ class NegotiationEngine:
         else:
             return "pragmático"  # Precio + rapidez
 
-    def _extract_pain_points(self, buyer: Dict[str, Any], product: Dict[str, Any]) -> List[str]:
+    def _extract_pain_points(self, buyer: dict[str, Any], product: dict[str, Any]) -> list[str]:
         """Extrae dolor del buyer (qué problema tienen)."""
 
         pain_points = []
@@ -112,9 +112,9 @@ class NegotiationEngine:
     def _predict_objections(
         self,
         buyer_type: str,
-        product: Dict[str, Any],
+        product: dict[str, Any],
         price: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Predice objeciones (Belfort: saber de antemano)."""
 
         objections = []
@@ -153,10 +153,10 @@ class NegotiationEngine:
 
     def _identify_leverage(
         self,
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
+        product: dict[str, Any],
+        buyer: dict[str, Any],
         price: float,
-    ) -> List[str]:
+    ) -> list[str]:
         """Trump: identifica puntos de leverage en negociación."""
 
         leverage = []
@@ -183,7 +183,7 @@ class NegotiationEngine:
 
         return leverage
 
-    def _calculate_walk_away_threshold(self, buyer: Dict[str, Any], price: float) -> Dict[str, Any]:
+    def _calculate_walk_away_threshold(self, buyer: dict[str, Any], price: float) -> dict[str, Any]:
         """Trump: cuándo caminar. Si buyer no valora → walk away."""
 
         # Si buyer regatea >30% del precio = walk away
@@ -205,11 +205,11 @@ class NegotiationEngine:
     def _build_negotiation_sequence(
         self,
         buyer_type: str,
-        pain_points: List[str],
-        leverage: List[str],
-        objections: List[Dict[str, Any]],
+        pain_points: list[str],
+        leverage: list[str],
+        objections: list[dict[str, Any]],
         price: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Construye secuencia de negociación (Belfort Straight Line)."""
 
         sequence = []
@@ -303,11 +303,11 @@ class NegotiationEngine:
 
     async def execute_negotiation(
         self,
-        buyer: Dict[str, Any],
-        product: Dict[str, Any],
+        buyer: dict[str, Any],
+        product: dict[str, Any],
         price: float,
         current_stage: str = "opening",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ejecuta negociación según secuencia (via Computer Use)."""
 
         logger.info(f"Executing negotiation for {buyer.get('email')} at stage {current_stage}")

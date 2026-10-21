@@ -3,14 +3,12 @@ Servicio de notificaciones push Web Push.
 Usa VAPID para autenticación con los servidores push de navegadores.
 """
 
-import os
 import json
-import base64
-from datetime import datetime, timezone
-from typing import Optional
+import os
+from datetime import UTC, datetime
 
 try:
-    from pywebpush import webpush, WebPushException
+    from pywebpush import WebPushException, webpush
     WEBPUSH_AVAILABLE = True
 except ImportError:
     webpush = None
@@ -80,7 +78,7 @@ async def send_push_notification(
         "url": url,
         "tag": tag,
         "requireInteraction": require_interaction,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
     for sub in subscriptions:

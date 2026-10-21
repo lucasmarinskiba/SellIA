@@ -20,11 +20,11 @@ Dashboard views:
 - Monthly: growth rate, profitability
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-from collections import defaultdict
 import asyncio
+import logging
+from collections import defaultdict
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,13 @@ class MetricsCollector:
     """Colecta metrics en tiempo real."""
 
     def __init__(self):
-        self.metrics: Dict[str, Any] = defaultdict(lambda: {
+        self.metrics: dict[str, Any] = defaultdict(lambda: {
             "count": 0,
             "total": 0,
             "min": float("inf"),
             "max": 0,
         })
-        self.events: List[Dict[str, Any]] = []
+        self.events: list[dict[str, Any]] = []
         self.lock = asyncio.Lock()
         self.max_events = 10000  # Keep last N events
 
@@ -47,7 +47,7 @@ class MetricsCollector:
         self,
         metric_name: str,
         value: float,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Registra un metric."""
         async with self.lock:
@@ -69,7 +69,7 @@ class MetricsCollector:
             if len(self.events) > self.max_events:
                 self.events = self.events[-self.max_events:]
 
-    async def get_metric(self, metric_name: str) -> Optional[Dict[str, Any]]:
+    async def get_metric(self, metric_name: str) -> dict[str, Any] | None:
         """Obtiene stats de un metric."""
         async with self.lock:
             metric = self.metrics.get(metric_name)
@@ -85,7 +85,7 @@ class MetricsCollector:
                 "max": metric["max"],
             }
 
-    async def get_all_metrics(self) -> Dict[str, Dict[str, Any]]:
+    async def get_all_metrics(self) -> dict[str, dict[str, Any]]:
         """Obtiene todos los metrics."""
         async with self.lock:
             return {
@@ -115,10 +115,10 @@ class MonitoringDashboard:
         self.scheduler = scheduler
         self.escalation_handler = escalation_handler
         self.metrics_collector = MetricsCollector()
-        self.hourly_stats: Dict[str, Dict[str, Any]] = {}
-        self.daily_stats: Dict[str, Dict[str, Any]] = {}
+        self.hourly_stats: dict[str, dict[str, Any]] = {}
+        self.daily_stats: dict[str, dict[str, Any]] = {}
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Status actual del sistema."""
         queue_stats = await self.job_queue.get_stats()
         state_metrics = await self.state_manager.export_metrics()
@@ -130,7 +130,7 @@ class MonitoringDashboard:
             "active_tasks": len(await self.scheduler.list_tasks()),
         }
 
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """KPIs principales."""
         stats_24h = await self.state_manager.get_statistics(hours=24)
         escalation_stats = await self.escalation_handler.get_escalation_stats(hours=24)
@@ -157,7 +157,7 @@ class MonitoringDashboard:
             },
         }
 
-    async def get_alerts(self) -> List[Dict[str, Any]]:
+    async def get_alerts(self) -> list[dict[str, Any]]:
         """Problemas activos requiriendo atención."""
         alerts = []
 
@@ -233,7 +233,7 @@ class MonitoringDashboard:
         await self.metrics_collector.record_metric(f"error.{error_type}", 1)
         logger.debug(f"Error recorded: {error_type}")
 
-    async def get_hourly_report(self) -> Dict[str, Any]:
+    async def get_hourly_report(self) -> dict[str, Any]:
         """Reporte de última hora."""
         stats = await self.state_manager.get_statistics(hours=1)
         metrics = await self.metrics_collector.get_all_metrics()
@@ -245,7 +245,7 @@ class MonitoringDashboard:
             "metrics": metrics,
         }
 
-    async def get_daily_report(self) -> Dict[str, Any]:
+    async def get_daily_report(self) -> dict[str, Any]:
         """Reporte de último día."""
         stats = await self.state_manager.get_statistics(hours=24)
         escalation_stats = await self.escalation_handler.get_escalation_stats(hours=24)
@@ -257,7 +257,7 @@ class MonitoringDashboard:
             "escalations": escalation_stats,
         }
 
-    async def get_weekly_report(self) -> Dict[str, Any]:
+    async def get_weekly_report(self) -> dict[str, Any]:
         """Reporte de última semana."""
         stats = await self.state_manager.get_statistics(hours=168)
         escalation_stats = await self.escalation_handler.get_escalation_stats(hours=168)
@@ -299,7 +299,7 @@ class DashboardAPI:
     def __init__(self, monitoring: MonitoringDashboard):
         self.monitoring = monitoring
 
-    async def get_dashboard_data(self) -> Dict[str, Any]:
+    async def get_dashboard_data(self) -> dict[str, Any]:
         """Datos completos para dashboard."""
         return {
             "status": await self.monitoring.get_status(),
@@ -308,7 +308,7 @@ class DashboardAPI:
             "hourly": await self.monitoring.get_hourly_report(),
         }
 
-    async def get_jobs_table(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_jobs_table(self, limit: int = 50) -> list[dict[str, Any]]:
         """Obtiene tabla de jobs para UI."""
         recent_jobs = await self.monitoring.state_manager.get_recent(hours=1, limit=limit)
 
@@ -324,7 +324,7 @@ class DashboardAPI:
             for job in recent_jobs
         ]
 
-    async def get_escalations_table(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_escalations_table(self, limit: int = 50) -> list[dict[str, Any]]:
         """Obtiene tabla de escalaciones para UI."""
         escalations = await self.monitoring.escalation_handler.get_pending_escalations(limit=limit)
 

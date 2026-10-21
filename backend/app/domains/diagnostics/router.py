@@ -5,16 +5,15 @@ Exposes automated diagnostic endpoints for the Self-Service Hub.
 """
 
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.diagnostics import service as diag_service
 from app.domains.diagnostics.schemas import DiagnosticRunCreate, DiagnosticRunOut
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/diagnostics", tags=["diagnostics"])
 
@@ -46,7 +45,8 @@ async def list_diagnostics(
     limit: int = 20,
 ):
     """List recent diagnostic runs for the current user."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.diagnostics.models import DiagnosticRun
     result = await db.execute(
         select(DiagnosticRun)

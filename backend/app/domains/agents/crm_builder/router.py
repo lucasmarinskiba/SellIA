@@ -1,21 +1,20 @@
 """CRM Builder API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.agents.crm_builder.service import CRMBuilderService
 from app.domains.agents.crm_builder.schemas import (
     CRMBuildJobCreate,
-    CRMBuildJobResponse,
     CRMBuildJobDetailResponse,
+    CRMBuildJobResponse,
 )
+from app.domains.agents.crm_builder.service import CRMBuilderService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/crm-builder", tags=["crm-builder"])
 
@@ -58,6 +57,7 @@ async def get_job(
     if not job:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado")
     from sqlalchemy import select
+
     from app.domains.agents.crm_builder.models import CRMModule
     result = await db.execute(select(CRMModule).where(CRMModule.job_id == job_id))
     modules = result.scalars().all()

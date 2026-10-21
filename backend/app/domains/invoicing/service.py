@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Optional
 
-from sqlalchemy import and_, desc, select, func
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -25,12 +24,12 @@ class InvoicingService:
     async def create_invoice(
         self,
         business_id: uuid.UUID,
-        customer_id: Optional[uuid.UUID],
+        customer_id: uuid.UUID | None,
         amount_aed: Decimal,
         tax_aed: Decimal,
         due_date: datetime,
-        items: Optional[list] = None,
-        notes: Optional[str] = None,
+        items: list | None = None,
+        notes: str | None = None,
     ) -> Invoice:
         """Create invoice."""
         # Second-precision timestamp alone collides whenever two invoices are
@@ -68,7 +67,7 @@ class InvoicingService:
     async def list_invoices(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
+        status: str | None = None,
         limit: int = 100,
     ) -> list[Invoice]:
         """List invoices."""
@@ -82,9 +81,9 @@ class InvoicingService:
     async def update_invoice(
         self,
         invoice_id: uuid.UUID,
-        status: Optional[str] = None,
-        due_date: Optional[datetime] = None,
-        notes: Optional[str] = None,
+        status: str | None = None,
+        due_date: datetime | None = None,
+        notes: str | None = None,
     ) -> Invoice:
         """Update invoice."""
         invoice = await self.get_invoice(invoice_id)
@@ -101,7 +100,7 @@ class InvoicingService:
         """Mark invoice as sent."""
         invoice = await self.get_invoice(invoice_id)
         invoice.status = "sent"
-        invoice.sent_at = datetime.now(timezone.utc)
+        invoice.sent_at = datetime.now(UTC)
         await self.db.commit()
         logger.info(f"Invoice {invoice.invoice_number} sent")
         return invoice
@@ -109,7 +108,7 @@ class InvoicingService:
     async def mark_viewed(self, invoice_id: uuid.UUID) -> Invoice:
         """Mark invoice as viewed."""
         invoice = await self.get_invoice(invoice_id)
-        invoice.viewed_at = datetime.now(timezone.utc)
+        invoice.viewed_at = datetime.now(UTC)
         await self.db.commit()
         return invoice
 
@@ -158,7 +157,7 @@ class PaymentService:
         invoice_id: uuid.UUID,
         amount_aed: Decimal,
         method: str,
-        reference: Optional[str] = None,
+        reference: str | None = None,
     ) -> Payment:
         """Record payment for invoice."""
         invoice = (
@@ -179,7 +178,7 @@ class PaymentService:
 
         # Mark invoice as paid
         invoice.status = "paid"
-        invoice.paid_at = datetime.now(timezone.utc)
+        invoice.paid_at = datetime.now(UTC)
         invoice.payment_method = method
 
         await self.db.commit()

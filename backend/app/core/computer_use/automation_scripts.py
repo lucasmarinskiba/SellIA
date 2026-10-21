@@ -1,13 +1,13 @@
 """Automation scripts — Computer Use + browser = controla cualquier plataforma."""
 
-from typing import Dict, List, Any
+from typing import Any
 
 
 class AutomationScripts:
     """Scripts para cada plataforma."""
 
     @staticmethod
-    def mercadolibre_create_listing(product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def mercadolibre_create_listing(product: dict[str, Any]) -> list[dict[str, Any]]:
         """Script: MercadoLibre listar producto."""
         return [
             {"type": "navigate", "params": {"url": "https://www.mercadolibre.com.ar"}},
@@ -26,7 +26,7 @@ class AutomationScripts:
         ]
 
     @staticmethod
-    def shopify_create_product(product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def shopify_create_product(product: dict[str, Any]) -> list[dict[str, Any]]:
         """Script: Shopify crear producto."""
         return [
             {"type": "navigate", "params": {"url": "https://admin.shopify.com/products"}},
@@ -42,7 +42,7 @@ class AutomationScripts:
         ]
 
     @staticmethod
-    def meta_ads_create_campaign(campaign: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def meta_ads_create_campaign(campaign: dict[str, Any]) -> list[dict[str, Any]]:
         """Script: Meta Ads crear campaña."""
         return [
             {"type": "navigate", "params": {"url": "https://ads.facebook.com"}},
@@ -58,7 +58,7 @@ class AutomationScripts:
         ]
 
     @staticmethod
-    def generic_fill_and_submit(form_config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def generic_fill_and_submit(form_config: dict[str, Any]) -> list[dict[str, Any]]:
         """Script genérico: llenar formulario cualquier sitio + submit."""
         script = [
             {"type": "navigate", "params": {"url": form_config.get("url")}},
@@ -76,7 +76,7 @@ class AutomationScripts:
         return script
 
     @staticmethod
-    def google_ads_create_campaign(campaign: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def google_ads_create_campaign(campaign: dict[str, Any]) -> list[dict[str, Any]]:
         """Script: Google Ads crear campaña."""
         return [
             {"type": "navigate", "params": {"url": "https://ads.google.com"}},
@@ -90,7 +90,7 @@ class AutomationScripts:
         ]
 
     @staticmethod
-    def instagram_schedule_post(post: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def instagram_schedule_post(post: dict[str, Any]) -> list[dict[str, Any]]:
         """Script: Instagram programar post."""
         return [
             {"type": "navigate", "params": {"url": "https://instagram.com"}},

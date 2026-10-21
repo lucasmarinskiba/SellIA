@@ -2,9 +2,9 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +24,15 @@ class OfferTerms:
 
     offer_price: float
     earnest_money: float
-    contingencies: List[str] = field(default_factory=list)
+    contingencies: list[str] = field(default_factory=list)
     inspection_period_days: int = 10
     appraisal_contingency: bool = True
     financing_contingency: bool = True
-    close_date: Optional[datetime] = None
+    close_date: datetime | None = None
     title_commitment_days: int = 10
     final_walkthrough_allowed: bool = True
-    repair_escrow: Optional[float] = None  # For known issues
-    possession_date: Optional[datetime] = None
+    repair_escrow: float | None = None  # For known issues
+    possession_date: datetime | None = None
     seller_concessions: float = 0.0  # Amount seller will contribute
 
 
@@ -43,8 +43,8 @@ class NegotiationStrategy:
     strategy_type: str  # aggressive, balanced, collaborative
     opening_offer_pct_below: float  # How much below asking to start
     walk_away_price: float  # Minimum acceptable price
-    priority_terms: List[str]  # Most important terms
-    contingencies_to_include: List[str]
+    priority_terms: list[str]  # Most important terms
+    contingencies_to_include: list[str]
     expected_counter_rounds: int  # Expected negotiations
     time_pressure: bool  # Urgency to close
 
@@ -53,12 +53,12 @@ class NegotiationAgent:
     """Manage offer negotiations and closing strategy."""
 
     def __init__(self):
-        self.offers: Dict[str, Dict[str, Any]] = {}
-        self.negotiations: Dict[str, List[Dict[str, Any]]] = {}
+        self.offers: dict[str, dict[str, Any]] = {}
+        self.negotiations: dict[str, list[dict[str, Any]]] = {}
 
     def create_offer(
         self, property_id: str, lead_id: str, strategy: NegotiationStrategy, property_value: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create initial offer based on strategy."""
         # Calculate opening offer
         opening_offer_price = property_value * (1 - strategy.opening_offer_pct_below)
@@ -96,7 +96,7 @@ class NegotiationAgent:
             "expected_close": (datetime.utcnow() + timedelta(days=45)).isoformat(),
         }
 
-    def submit_offer(self, offer_id: str, additional_terms: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def submit_offer(self, offer_id: str, additional_terms: dict[str, Any] | None = None) -> dict[str, Any]:
         """Submit offer to seller."""
         if offer_id not in self.offers:
             return {"error": "Offer not found"}
@@ -122,7 +122,7 @@ class NegotiationAgent:
             "submission_time": datetime.utcnow().isoformat(),
         }
 
-    def process_counter_offer(self, offer_id: str, counter_terms: Dict[str, Any]) -> Dict[str, Any]:
+    def process_counter_offer(self, offer_id: str, counter_terms: dict[str, Any]) -> dict[str, Any]:
         """Process seller's counter offer."""
         if offer_id not in self.offers:
             return {"error": "Offer not found"}
@@ -159,7 +159,7 @@ class NegotiationAgent:
             "suggested_response": self._suggest_response_to_counter(counter_price, strategy),
         }
 
-    def _evaluate_counter_offer(self, counter_price: float, walk_away: float, original_offer: float, strategy: NegotiationStrategy) -> Dict[str, Any]:
+    def _evaluate_counter_offer(self, counter_price: float, walk_away: float, original_offer: float, strategy: NegotiationStrategy) -> dict[str, Any]:
         """Evaluate acceptability of counter offer."""
         spread = original_offer - counter_price
         spread_pct = (spread / original_offer) * 100
@@ -186,7 +186,7 @@ class NegotiationAgent:
         else:
             return "REJECT - Below acceptable minimum"
 
-    def _suggest_response_to_counter(self, counter_price: float, strategy: NegotiationStrategy) -> Dict[str, Any]:
+    def _suggest_response_to_counter(self, counter_price: float, strategy: NegotiationStrategy) -> dict[str, Any]:
         """Suggest response to counter offer."""
         midpoint = (strategy.walk_away_price + counter_price) / 2
 
@@ -205,7 +205,7 @@ class NegotiationAgent:
             },
         }
 
-    def finalize_terms(self, offer_id: str) -> Dict[str, Any]:
+    def finalize_terms(self, offer_id: str) -> dict[str, Any]:
         """Finalize accepted offer terms."""
         if offer_id not in self.offers:
             return {"error": "Offer not found"}
@@ -239,11 +239,11 @@ class NegotiationAgent:
             ],
         }
 
-    def get_negotiation_history(self, offer_id: str) -> Optional[List[Dict[str, Any]]]:
+    def get_negotiation_history(self, offer_id: str) -> list[dict[str, Any]] | None:
         """Get full negotiation history."""
         return self.negotiations.get(offer_id)
 
-    def estimate_final_price(self, offer_id: str) -> Optional[float]:
+    def estimate_final_price(self, offer_id: str) -> float | None:
         """Estimate likely final price based on negotiation pattern."""
         if offer_id not in self.negotiations:
             return None

@@ -11,13 +11,13 @@ Docs: https://woocommerce.github.io/woocommerce-rest-api-docs/#webhooks
 """
 
 import base64
-import hmac
 import hashlib
+import hmac
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 _ORDER_STATUS_LABELS = {
     "pending": "pendiente de pago",

@@ -7,11 +7,11 @@ Redis-based Email Scheduler
 """
 import json
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, List
-from enum import Enum
-import redis.asyncio as redis
 import os
+from datetime import datetime, timedelta
+from enum import Enum
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class EmailScheduler:
             "REDIS_URL",
             "redis://localhost:6379/0"
         )
-        self.redis: Optional[redis.Redis] = None
+        self.redis: redis.Redis | None = None
         self.queue_key = "sellia:queue"
         self.delayed_key = "sellia:delayed"
         self.failed_key = "sellia:failed"
@@ -74,7 +74,7 @@ class EmailScheduler:
         lead_email: str,
         subject: str,
         body: str,
-        send_at: Optional[datetime] = None,
+        send_at: datetime | None = None,
         priority: int = 5
     ) -> str:
         """
@@ -122,8 +122,8 @@ class EmailScheduler:
     async def schedule_batch_emails(
         self,
         workflow_id: int,
-        lead_emails: List[dict],  # [{ id, email, subject, body }, ...]
-        send_at: Optional[datetime] = None
+        lead_emails: list[dict],  # [{ id, email, subject, body }, ...]
+        send_at: datetime | None = None
     ) -> str:
         """Queue batch of emails."""
         task = {
@@ -219,7 +219,7 @@ class EmailScheduler:
             logger.error(f"Delayed move error: {e}")
             return 0
 
-    async def peek_queue(self, count: int = 5) -> List[dict]:
+    async def peek_queue(self, count: int = 5) -> list[dict]:
         """Peek at queue without removing."""
         if not self.redis:
             return []
@@ -231,7 +231,7 @@ class EmailScheduler:
             logger.error(f"Peek error: {e}")
             return []
 
-    async def pop_task(self) -> Optional[dict]:
+    async def pop_task(self) -> dict | None:
         """Pop next task from queue."""
         if not self.redis:
             return None

@@ -22,16 +22,21 @@ Error Handling: Standardized error responses with correlation IDs
 
 import logging
 import uuid
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Depends, Header, Request, status
+from datetime import UTC, datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import json
 
 from app.core.database import get_db
-from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+from app.domains.channels.models import (
+    ChannelConnection,
+    ChannelPlatform,
+    ChannelStatus,
+)
+
 # get_connector se importa perezoso dentro de cada handler (no a nivel de
 # módulo): app.domains.channels.connectors.__init__ importa TODOS los
 # conectores al cargarse, incluido email.py -> aiosmtplib. Un import a nivel
@@ -59,7 +64,7 @@ class PlatformConfig(BaseModel):
     api_key: str
     webhook_url: str
     is_active: bool = True
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrderSyncRequest(BaseModel):
@@ -75,7 +80,7 @@ class SyncResponse(BaseModel):
     status: str
     synced_count: int
     duration_seconds: float
-    errors: List[str] = []
+    errors: list[str] = []
 
 
 class AlertRequest(BaseModel):
@@ -83,7 +88,7 @@ class AlertRequest(BaseModel):
     title: str
     message: str
     level: str = "info"  # info, warning, error, critical
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 # ========== FACEBOOK SHOP ENDPOINTS ==========
@@ -128,7 +133,7 @@ async def facebook_shop_webhook_orders(
         logger.error(f"[{correlation_id}] Error processing webhook: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Webhook processing failed: {str(e)}",
+            detail=f"Webhook processing failed: {e!s}",
         )
 
 
@@ -136,7 +141,7 @@ async def facebook_shop_webhook_orders(
 async def facebook_shop_config(
     config: PlatformConfig,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Configure Facebook Shop integration.
 
@@ -213,7 +218,7 @@ async def facebook_shop_sync_products(
 async def facebook_shop_get_order(
     order_id: str,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fetch Facebook Shop order details.
 
@@ -304,7 +309,7 @@ async def instagram_shop_sync_products(
 async def instagram_shop_analytics(
     account_id: str = Header(...),
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Fetch Instagram Shop analytics."""
     try:
         logger.info(f"Fetching Instagram analytics for {account_id}")
@@ -357,7 +362,7 @@ async def tiktok_shop_webhook_orders(
 async def tiktok_shop_config(
     config: PlatformConfig,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Configure TikTok Shop OAuth."""
     try:
         logger.info(f"Configuring TikTok Shop for {account_id}")
@@ -425,7 +430,7 @@ async def tiktok_shop_sync_orders(
                                  errors=["TikTok Shop API no devolvió órdenes - credenciales inválidas o error de API"])
 
         connection.status = ChannelStatus.CONNECTED
-        connection.last_sync_at = datetime.now(timezone.utc)
+        connection.last_sync_at = datetime.now(UTC)
         await db.commit()
 
         return SyncResponse(status="success", synced_count=len(orders), duration_seconds=duration)
@@ -441,7 +446,7 @@ async def tiktok_shop_sync_orders(
 
 @router.post("/calendly/webhooks/events")
 async def calendly_webhook_events(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     account_id: str = Header(...),
 ) -> WebhookResponse:
     """Handle Calendly webhook for scheduled events."""
@@ -469,7 +474,7 @@ async def calendly_webhook_events(
 async def calendly_config(
     config: PlatformConfig,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Configure Calendly integration."""
     try:
         logger.info(f"Configuring Calendly for {account_id}")
@@ -492,7 +497,7 @@ async def calendly_config(
 async def calendly_list_events(
     account_id: str = Header(...),
     days: int = 7,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """List upcoming Calendly events."""
     try:
         logger.info(f"Fetching Calendly events for {account_id}")
@@ -516,7 +521,7 @@ async def calendly_list_events(
 async def slack_command_handler(
     request: Request,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Handle Slack slash commands.
 
@@ -552,9 +557,9 @@ async def slack_command_handler(
 
 @router.post("/slack/events")
 async def slack_events_handler(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Handle Slack Events API."""
     try:
         # Handle verification challenges
@@ -576,7 +581,7 @@ async def slack_events_handler(
 async def slack_send_alert(
     alert: AlertRequest,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Send alert via Slack bot."""
     try:
         logger.info(f"Sending Slack alert for {account_id}")
@@ -600,7 +605,7 @@ async def slack_send_alert(
 async def telegram_webhook_updates(
     request: Request,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Handle Telegram bot updates."""
     correlation_id = str(uuid.uuid4())
 
@@ -627,7 +632,7 @@ async def telegram_webhook_updates(
 async def telegram_config(
     config: PlatformConfig,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Configure Telegram bot."""
     try:
         logger.info(f"Configuring Telegram for {account_id}")
@@ -650,7 +655,7 @@ async def telegram_config(
 async def telegram_send_notification(
     alert: AlertRequest,
     account_id: str = Header(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Send Telegram notification."""
     try:
         logger.info(f"Sending Telegram notification for {account_id}")
@@ -671,7 +676,7 @@ async def telegram_send_notification(
 # ========== HEALTH & STATUS ==========
 
 @router.get("/health")
-async def platforms_health() -> Dict[str, Any]:
+async def platforms_health() -> dict[str, Any]:
     """Check health of all platform integrations."""
     try:
         return {
@@ -695,7 +700,7 @@ async def platforms_health() -> Dict[str, Any]:
 async def platforms_status(
     account_id: str = Header(...),
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get platform integration status for account.
 
     tiktok_shop consulta la conexión real en channel_connections. Las otras 5

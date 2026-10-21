@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-import numpy as np
 import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.forecasting.types import Grain, SeriesLevel, SeriesSpec, TargetKind, TimeSeries
+from app.domains.forecasting.types import (
+    Grain,
+    SeriesLevel,
+    SeriesSpec,
+    TargetKind,
+    TimeSeries,
+)
 
 logger = get_logger(__name__)
 
@@ -21,7 +25,7 @@ _PAID_STATES = ("completed", "paid")
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class DemandDataLoader:
@@ -62,7 +66,6 @@ class DemandDataLoader:
     ) -> pd.Series:
         try:
             from app.domains.ledger.models import (
-                AccountType,
                 JournalEntry,
                 JournalLine,
                 JournalStatus,
@@ -101,9 +104,9 @@ class DemandDataLoader:
         spec: SeriesSpec,
         *,
         lookback_days: int = 540,
-        end: Optional[datetime] = None,
+        end: datetime | None = None,
         min_points: int = 28,
-    ) -> Optional[TimeSeries]:
+    ) -> TimeSeries | None:
         end = (end or _utcnow()).replace(hour=0, minute=0, second=0, microsecond=0)
         start = end - timedelta(days=lookback_days)
         business_id = uuid.UUID(spec.business_id) if isinstance(spec.business_id, str) else spec.business_id

@@ -1,10 +1,21 @@
 """Phase 42: Accounting Intelligence - Financial Operations."""
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class TransactionType(str, Enum):
     REVENUE = "revenue"
@@ -21,8 +32,8 @@ class FinancialTransaction(Base):
     currency = Column(String(10), default="USD")
     reference_id = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
-    transaction_date = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    transaction_date = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class RevenueRecognition(Base):
     __tablename__ = "revenue_recognition"
@@ -33,8 +44,8 @@ class RevenueRecognition(Base):
     contract_value = Column(Float, default=0)
     recognition_schedule = Column(JSONB, nullable=True)
     recognized_amount = Column(Float, default=0)
-    recognition_date = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    recognition_date = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CostAnalysis(Base):
     __tablename__ = "cost_analysis"
@@ -45,7 +56,7 @@ class CostAnalysis(Base):
     cost_per_unit = Column(Float, default=0)
     cost_breakdown = Column(JSONB, nullable=True)
     efficiency_score = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ProfitMarginAnalysis(Base):
     __tablename__ = "profit_margin_analysis"
@@ -56,7 +67,7 @@ class ProfitMarginAnalysis(Base):
     net_margin = Column(Float, default=0)
     margin_trend = Column(JSONB, nullable=True)  # historical trend
     optimization_opportunity = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CashFlowForecast(Base):
     __tablename__ = "cash_flow_forecast"
@@ -68,7 +79,7 @@ class CashFlowForecast(Base):
     net_cash_forecast = Column(Float, default=0)
     confidence_level = Column(Float, default=0)
     scenario = Column(String(50), default="base")  # base, optimistic, pessimistic
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class BudgetAllocation(Base):
     __tablename__ = "budget_allocation"
@@ -79,8 +90,8 @@ class BudgetAllocation(Base):
     spent_amount = Column(Float, default=0)
     roi_target = Column(Float, default=0)
     roi_actual = Column(Float, default=0)
-    allocation_date = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    allocation_date = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class FinancialMetrics(Base):
     __tablename__ = "financial_metrics"
@@ -96,4 +107,4 @@ class FinancialMetrics(Base):
     debt_to_equity = Column(Float, default=0)
     burn_rate = Column(Float, default=0)
     runway_months = Column(Integer, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))

@@ -1,16 +1,17 @@
 """SEO Agent Guard — enforces SEO toggles before AI optimizations run."""
 
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import SEOConfig, PlatformSEOStatus
 from app.domains.seo_config.brain_toggles import (
     AGENT_BRAIN_ID,
     is_brain_capability_enabled,
     platform_brain_id,
 )
+from app.domains.seo_config.models import PlatformSEOStatus, SEOConfig
 
 logger = get_logger(__name__)
 

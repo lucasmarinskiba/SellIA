@@ -1,19 +1,20 @@
 """Webhook & event streaming service."""
 
-import logging
-import hmac
 import hashlib
+import hmac
 import json
-import httpx
-from datetime import datetime, timezone, timedelta
+import logging
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
 
+import httpx
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.webhooks.webhook_models import (
-    WebhookEndpoint, WebhookEvent, WebhookDeliveryLog, EventQueue, EventType
+    EventQueue,
+    WebhookDeliveryLog,
+    WebhookEndpoint,
+    WebhookEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class WebhookService:
     def register_webhook(
         business_id: UUID,
         url: str,
-        subscribed_events: List[str],
+        subscribed_events: list[str],
         description: str = None,
         db: Session = None
     ) -> dict:
@@ -67,7 +68,7 @@ class WebhookService:
     def trigger_event(
         business_id: UUID,
         event_type: str,
-        event_data: Dict,
+        event_data: dict,
         db: Session = None
     ) -> dict:
         """Trigger event and deliver to webhooks."""
@@ -111,7 +112,7 @@ class WebhookService:
         }
 
     @staticmethod
-    def _generate_signature(data: Dict, secret: str) -> str:
+    def _generate_signature(data: dict, secret: str) -> str:
         """Generate HMAC-SHA256 signature."""
         payload = json.dumps(data, sort_keys=True)
         return hmac.new(
@@ -164,8 +165,8 @@ class WebhookService:
                 event.response_body = response.text[:500]
 
             event.delivery_attempts += 1
-            event.last_attempt_at = datetime.now(timezone.utc)
-            webhook.last_fired_at = datetime.now(timezone.utc)
+            event.last_attempt_at = datetime.now(UTC)
+            webhook.last_fired_at = datetime.now(UTC)
 
             db.commit()
             logger.info(f"Webhook delivered: {webhook.url} - {response.status_code}")
@@ -173,7 +174,7 @@ class WebhookService:
             return response.status_code == 200
 
         except Exception as e:
-            logger.error(f"Webhook delivery failed: {webhook.url} - {str(e)}")
+            logger.error(f"Webhook delivery failed: {webhook.url} - {e!s}")
 
             log = WebhookDeliveryLog(
                 webhook_event_id=event.id,
@@ -194,7 +195,7 @@ class WebhookService:
     def queue_event(
         business_id: UUID,
         event_type: str,
-        event_data: Dict,
+        event_data: dict,
         source: str = "api",
         db: Session = None
     ) -> dict:
@@ -230,7 +231,7 @@ class WebhookService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         webhooks = db.query(WebhookEndpoint).filter(
             WebhookEndpoint.business_id == business_id

@@ -5,19 +5,17 @@ Sistema de espionaje 24/7 que monitorea competidores, detecta cambios de precios
 y promociones, y sugiere estrategias de respuesta con IA.
 """
 
-import asyncio
 import re
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.alerts.models import Alert, AlertSeverity, AlertStatus
-from app.domains.catalogs.models import CatalogItem
 from app.domains.competitive.models import CompetitiveMonitor
 
 logger = get_logger(__name__)
@@ -42,9 +40,9 @@ _PROMO_PATTERNS = [
 ]
 
 
-def _extract_prices(text: str) -> Dict[str, str]:
+def _extract_prices(text: str) -> dict[str, str]:
     """Extrae precios de texto crudo usando regex."""
-    prices: Dict[str, str] = {}
+    prices: dict[str, str] = {}
     lines = text.split('\n')
     for line in lines:
         line = line.strip()
@@ -61,16 +59,16 @@ def _extract_prices(text: str) -> Dict[str, str]:
     return prices
 
 
-def _detect_promotions(text: str) -> List[str]:
+def _detect_promotions(text: str) -> list[str]:
     """Detecta menciones a promociones en el texto."""
-    promos: List[str] = []
+    promos: list[str] = []
     for pattern in _PROMO_PATTERNS:
         if pattern.search(text):
             promos.append(pattern.pattern)
     return promos
 
 
-def _normalize_price(value: str) -> Optional[float]:
+def _normalize_price(value: str) -> float | None:
     """Normaliza un string de precio a float."""
     try:
         cleaned = value.replace('$', '').replace(' ', '').replace(',', '.')
@@ -92,7 +90,7 @@ class CompetitiveIntelligenceEngine:
         business_id: uuid.UUID,
         competitor_url: str,
         competitor_name: str,
-        products_to_track: Optional[List[str]] = None,
+        products_to_track: list[str] | None = None,
     ) -> CompetitiveMonitor:
         """Registra un competidor para monitoreo continuo."""
         monitor = CompetitiveMonitor(
@@ -108,7 +106,7 @@ class CompetitiveIntelligenceEngine:
         logger.info(f"Monitor creado: {competitor_name} para business {business_id}")
         return monitor
 
-    async def scrape_competitor(self, monitor_id: uuid.UUID) -> Dict[str, Any]:
+    async def scrape_competitor(self, monitor_id: uuid.UUID) -> dict[str, Any]:
         """Scrapea el sitio del competidor y extrae precios."""
         result = await self.db.execute(
             select(CompetitiveMonitor).where(CompetitiveMonitor.id == monitor_id)
@@ -141,10 +139,10 @@ class CompetitiveIntelligenceEngine:
             snapshot = {
                 "prices": prices,
                 "promotions": promos,
-                "scraped_at": datetime.now(timezone.utc).isoformat(),
+                "scraped_at": datetime.now(UTC).isoformat(),
             }
 
-            monitor.last_scraped_at = datetime.now(timezone.utc)
+            monitor.last_scraped_at = datetime.now(UTC)
             monitor.last_snapshot = snapshot
             monitor.status = 'active'
             await self.db.commit()
@@ -168,7 +166,7 @@ class CompetitiveIntelligenceEngine:
             logger.error(f"Scrape error {monitor.competitor_url}: {e}")
             return {"error": str(e), "status": "error"}
 
-    async def detect_changes(self, business_id: uuid.UUID) -> List[Dict[str, Any]]:
+    async def detect_changes(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
         """Compara el ultimo snapshot con el anterior y detecta cambios."""
         result = await self.db.execute(
             select(CompetitiveMonitor)
@@ -178,7 +176,7 @@ class CompetitiveIntelligenceEngine:
             )
         )
         monitors = result.scalars().all()
-        changes: List[Dict[str, Any]] = []
+        changes: list[dict[str, Any]] = []
 
         for monitor in monitors:
             snapshot = monitor.last_snapshot or {}
@@ -213,7 +211,7 @@ class CompetitiveIntelligenceEngine:
                         "old_value": None,
                         "new_value": price_str,
                         "diff_percent": None,
-                        "detected_at": datetime.now(timezone.utc),
+                        "detected_at": datetime.now(UTC),
                     })
                     continue
 
@@ -228,7 +226,7 @@ class CompetitiveIntelligenceEngine:
                         "old_value": prev_price_str,
                         "new_value": price_str,
                         "diff_percent": round(diff, 2),
-                        "detected_at": datetime.now(timezone.utc),
+                        "detected_at": datetime.now(UTC),
                     })
                 elif current_price > prev_price:
                     diff = ((current_price - prev_price) / prev_price) * 100 if prev_price else 0
@@ -240,7 +238,7 @@ class CompetitiveIntelligenceEngine:
                         "old_value": prev_price_str,
                         "new_value": price_str,
                         "diff_percent": round(diff, 2),
-                        "detected_at": datetime.now(timezone.utc),
+                        "detected_at": datetime.now(UTC),
                     })
 
             # Detectar nuevas promociones
@@ -256,7 +254,7 @@ class CompetitiveIntelligenceEngine:
                     "old_value": None,
                     "new_value": promo,
                     "diff_percent": None,
-                    "detected_at": datetime.now(timezone.utc),
+                    "detected_at": datetime.now(UTC),
                 })
 
             # Detectar productos fuera de stock (desaparecidos del snapshot)
@@ -270,7 +268,7 @@ class CompetitiveIntelligenceEngine:
                     "old_value": prev_prices.get(product),
                     "new_value": None,
                     "diff_percent": None,
-                    "detected_at": datetime.now(timezone.utc),
+                    "detected_at": datetime.now(UTC),
                 })
 
         return changes
@@ -278,8 +276,8 @@ class CompetitiveIntelligenceEngine:
     async def generate_response_strategy(
         self,
         business_id: uuid.UUID,
-        change: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        change: dict[str, Any],
+    ) -> dict[str, Any]:
         """Usa IA para sugerir una estrategia de respuesta ante un cambio competitivo."""
         try:
             from app.domains.agents.ai_reply import generate_raw_ai_response
@@ -310,7 +308,7 @@ class CompetitiveIntelligenceEngine:
             )
 
             # Parseo simple para extraer opciones
-            options: List[str] = []
+            options: list[str] = []
             risk_note = None
             if suggestion:
                 lines = suggestion.split('\n')
@@ -341,7 +339,7 @@ class CompetitiveIntelligenceEngine:
                 "risk_note": "Riesgo de matching: Erosion de margen 15%",
             }
 
-    async def get_intelligence_dashboard(self, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_intelligence_dashboard(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Retorna todo el estado de inteligencia competitiva para un negocio."""
         result = await self.db.execute(
             select(CompetitiveMonitor)
@@ -382,7 +380,7 @@ class CompetitiveIntelligenceEngine:
             "strategies": strategies,
         }
 
-    async def create_alert(self, business_id: uuid.UUID, change: Dict[str, Any]) -> Alert:
+    async def create_alert(self, business_id: uuid.UUID, change: dict[str, Any]) -> Alert:
         """Crea una alerta en el sistema para notificar al usuario."""
         change_type = change.get("change_type", "cambio")
         competitor = change.get("competitor_name", "Competidor")

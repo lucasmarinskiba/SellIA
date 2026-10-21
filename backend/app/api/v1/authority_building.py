@@ -1,14 +1,13 @@
 """Phase 3 Authority Building endpoints - E-E-A-T signals, testimonials, awards."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends, Body
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
+
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import select
-from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.authority_building import (
-    Testimonial, Award, Review, TrustScore, SellerBio
-)
+from app.models.authority_building import Award, Review, SellerBio, Testimonial
 
 router = APIRouter(prefix="/authority", tags=["authority"])
 
@@ -147,7 +146,7 @@ async def calculate_trust_score(seller_id: str, db: AsyncSession = Depends(get_d
     plausible number.
     """
     reviews_result = await db.execute(
-        select(Review).where(Review.seller_id == seller_id, Review.is_flagged == False)  # noqa: E712
+        select(Review).where(Review.seller_id == seller_id, Review.is_flagged == False)
     )
     reviews = reviews_result.scalars().all()
 

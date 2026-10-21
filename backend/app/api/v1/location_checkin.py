@@ -1,16 +1,16 @@
 """API endpoints for location check-in/checkout + feedback."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.locations.checkin_service import LocationCheckinService
 from app.domains.locations.checkin_models import CheckinType
+from app.domains.locations.checkin_service import LocationCheckinService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["location-checkin"])
 
@@ -18,23 +18,23 @@ router = APIRouter(prefix="", tags=["location-checkin"])
 class VisitorCheckinRequest(BaseModel):
     location_id: UUID
     checkin_type: str
-    visitor_phone: Optional[str] = None
-    visitor_email: Optional[str] = None
-    visitor_name: Optional[str] = None
-    qr_code: Optional[str] = None
+    visitor_phone: str | None = None
+    visitor_email: str | None = None
+    visitor_name: str | None = None
+    qr_code: str | None = None
 
 
 class VisitorCheckoutRequest(BaseModel):
     checkin_id: UUID
-    visited_sections: Optional[list[str]] = None
+    visited_sections: list[str] | None = None
 
 
 class FeedbackRequest(BaseModel):
     location_id: UUID
-    nps_score: Optional[int] = Query(None, ge=0, le=10)
-    comment: Optional[str] = None
-    topics: Optional[list[str]] = None
-    checkin_id: Optional[UUID] = None
+    nps_score: int | None = Query(None, ge=0, le=10)
+    comment: str | None = None
+    topics: list[str] | None = None
+    checkin_id: UUID | None = None
 
 
 class StaffCheckinRequest(BaseModel):

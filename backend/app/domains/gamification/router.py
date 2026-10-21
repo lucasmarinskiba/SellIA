@@ -1,24 +1,36 @@
 """Gamification & Experience API Router"""
 
 import uuid
-from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.users.models import User
-
-from app.domains.gamification.models import UserGamificationProfile, Achievement, UserAchievement, CelebrationEvent
+from app.domains.gamification.leaderboard import (
+    DEFAULT_METRIC,
+    LeaderboardService,
+)
+from app.domains.gamification.models import (
+    Achievement,
+    UserAchievement,
+)
 from app.domains.gamification.schemas import (
-    GamificationProfileResponse, AchievementResponse, UserAchievementResponse,
-    CelebrationEventResponse, GardenStateResponse, CompanionMessageResponse,
-    MoodCheckinRequest, MoodCheckinResponse, SaleRecordedResponse, LoginResponse,
-    LeaderboardEntryResponse, UserRankResponse, NearbyUsersResponse, TeamStatsResponse,
+    AchievementResponse,
+    CelebrationEventResponse,
+    GamificationProfileResponse,
+    GardenStateResponse,
+    LeaderboardEntryResponse,
+    LoginResponse,
+    MoodCheckinRequest,
+    MoodCheckinResponse,
+    NearbyUsersResponse,
+    TeamStatsResponse,
+    UserAchievementResponse,
+    UserRankResponse,
 )
 from app.domains.gamification.service import GamificationEngine, GamificationSeeder
-from app.domains.gamification.leaderboard import LeaderboardService, VALID_METRICS, DEFAULT_METRIC
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
@@ -55,7 +67,7 @@ async def record_login(
     }
 
 
-@router.get("/achievements", response_model=List[AchievementResponse])
+@router.get("/achievements", response_model=list[AchievementResponse])
 async def list_achievements(
     db: AsyncSession = Depends(get_db),
 ):
@@ -65,7 +77,7 @@ async def list_achievements(
     return list(result.scalars().all())
 
 
-@router.get("/my-achievements", response_model=List[UserAchievementResponse])
+@router.get("/my-achievements", response_model=list[UserAchievementResponse])
 async def my_achievements(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -80,7 +92,7 @@ async def my_achievements(
     return list(result.scalars().all())
 
 
-@router.get("/celebrations/pending", response_model=List[CelebrationEventResponse])
+@router.get("/celebrations/pending", response_model=list[CelebrationEventResponse])
 async def get_pending_celebrations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -214,7 +226,8 @@ async def mood_history(
     current_user: User = Depends(get_current_user),
 ):
     """Get mood history."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.gamification.models import DailyMoodLog
     result = await db.execute(
         select(DailyMoodLog).where(
@@ -238,7 +251,7 @@ async def seed_achievements(
 #  Leaderboard
 # ============================================================
 
-@router.get("/leaderboard", response_model=List[LeaderboardEntryResponse])
+@router.get("/leaderboard", response_model=list[LeaderboardEntryResponse])
 async def get_leaderboard(
     business_id: uuid.UUID,
     metric: str = DEFAULT_METRIC,

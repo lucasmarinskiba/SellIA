@@ -11,10 +11,10 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple, Optional
-from enum import Enum
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,10 @@ class Framework:
     """Business framework definition."""
     name: str
     description: str
-    suitable_for: List[str]  # Business types/stages
-    key_concepts: List[str]
-    implementation_steps: List[str]
-    kpis: List[str]
+    suitable_for: list[str]  # Business types/stages
+    key_concepts: list[str]
+    implementation_steps: list[str]
+    kpis: list[str]
     time_to_implement: str
     difficulty: str  # easy, medium, hard
 
@@ -311,10 +311,10 @@ class MethodologyAgent:
 
     @staticmethod
     def recommend_framework(
-        business_type: Optional[str] = None,
-        business_stage: Optional[str] = None,
-        specific_problem: Optional[str] = None
-    ) -> Dict[str, Any]:
+        business_type: str | None = None,
+        business_stage: str | None = None,
+        specific_problem: str | None = None
+    ) -> dict[str, Any]:
         """
         Recommend frameworks based on business context.
 
@@ -382,7 +382,7 @@ class MethodologyAgent:
         return recommendations
 
     @staticmethod
-    def _match_frameworks_to_problem(problem: str) -> List[Dict[str, Any]]:
+    def _match_frameworks_to_problem(problem: str) -> list[dict[str, Any]]:
         """Match frameworks to specific problem."""
         problem_lower = problem.lower()
 
@@ -414,7 +414,7 @@ class MethodologyAgent:
         return matched if matched else []
 
     @staticmethod
-    def get_framework_details(framework_key: str) -> Optional[Dict[str, Any]]:
+    def get_framework_details(framework_key: str) -> dict[str, Any] | None:
         """Get detailed information about a specific framework."""
         framework = MethodologyAgent.FRAMEWORKS.get(framework_key)
         if not framework:
@@ -434,8 +434,8 @@ class MethodologyAgent:
     @staticmethod
     def create_implementation_plan(
         framework_key: str,
-        business_context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        business_context: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create detailed implementation plan for a framework."""
         framework = MethodologyAgent.FRAMEWORKS.get(framework_key)
         if not framework:
@@ -462,7 +462,7 @@ class MethodologyAgent:
         }
 
     @staticmethod
-    def _get_resources_for_framework(framework_key: str) -> List[str]:
+    def _get_resources_for_framework(framework_key: str) -> list[str]:
         """Get resources needed for framework implementation."""
         resources_map = {
             "jtbd": [
@@ -511,7 +511,7 @@ class MethodologyAgent:
         return resources_map.get(framework_key, [])
 
     @staticmethod
-    def _get_pitfalls_for_framework(framework_key: str) -> List[str]:
+    def _get_pitfalls_for_framework(framework_key: str) -> list[str]:
         """Get common pitfalls to avoid."""
         pitfalls_map = {
             "jtbd": [
@@ -560,7 +560,7 @@ class MethodologyAgent:
         return pitfalls_map.get(framework_key, [])
 
     @staticmethod
-    def _get_next_frameworks(framework_key: str) -> List[str]:
+    def _get_next_frameworks(framework_key: str) -> list[str]:
         """Get recommended next frameworks after this one."""
         progression_map = {
             "jtbd": ["vpd", "design_thinking"],
@@ -575,9 +575,9 @@ class MethodologyAgent:
 
     @staticmethod
     def assess_framework_readiness(
-        business_context: Dict[str, Any],
+        business_context: dict[str, Any],
         framework_key: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Assess if business is ready for a framework."""
         readiness = {
             "ready": True,

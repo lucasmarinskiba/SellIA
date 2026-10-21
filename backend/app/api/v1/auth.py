@@ -1,16 +1,20 @@
-from typing import Optional
+import uuid
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-import uuid
-from datetime import datetime, timedelta, timezone
 
-from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, get_password_hash, decode_access_token
 from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.security import (
+    create_access_token,
+    decode_access_token,
+    get_password_hash,
+    verify_password,
+)
 
 # Optional imports with fallback
 try:
@@ -22,7 +26,10 @@ try:
 except ImportError:
     device_fingerprint = None
 try:
-    from app.core.security_notifications import notify_security_event, email_new_device_alert
+    from app.core.security_notifications import (
+        email_new_device_alert,
+        notify_security_event,
+    )
 except ImportError:
     notify_security_event = None
     email_new_device_alert = None
@@ -41,7 +48,7 @@ except ImportError:
     check_email_breaches = None
     format_breach_alert = None
 try:
-    from app.core.elk_logger import log_login, log_new_device, log_geofence_violation
+    from app.core.elk_logger import log_geofence_violation, log_login, log_new_device
 except ImportError:
     log_login = None
     log_new_device = None
@@ -49,8 +56,11 @@ except ImportError:
 
 try:
     from app.core.metrics import (
-        SELLIA_LOGINS, SELLIA_FAILED_LOGINS, SELLIA_GEOFENCE_VIOLATIONS,
-        SELLIA_NEW_DEVICES, SELLIA_ACTIVE_SESSIONS
+        SELLIA_ACTIVE_SESSIONS,
+        SELLIA_FAILED_LOGINS,
+        SELLIA_GEOFENCE_VIOLATIONS,
+        SELLIA_LOGINS,
+        SELLIA_NEW_DEVICES,
     )
 except ImportError:
     SELLIA_LOGINS = None
@@ -60,11 +70,15 @@ except ImportError:
     SELLIA_ACTIVE_SESSIONS = None
 
 from app.domains.users.models import User
-from app.domains.users.schemas import UserCreate, UserResponse, Token
+from app.domains.users.schemas import Token, UserCreate, UserResponse
 
 try:
     from app.domains.security.models import (
-        UserLoginLog, SecurityConfig, UserSession, TwoFABackupCode, BreachCheckLog
+        BreachCheckLog,
+        SecurityConfig,
+        TwoFABackupCode,
+        UserLoginLog,
+        UserSession,
     )
 except ImportError:
     UserLoginLog = None
@@ -81,9 +95,9 @@ try:
     import qrcode
 except ImportError:
     qrcode = None
-import io
 import base64
 import hashlib
+import io
 import secrets
 
 router = APIRouter()
@@ -255,7 +269,7 @@ async def login(
         )
 
     # Verificar bloqueo de cuenta
-    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+    if user.locked_until and user.locked_until > datetime.now(UTC):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intentá más tarde.",
@@ -264,10 +278,10 @@ async def login(
     # Verificar contraseña
     if not verify_password(form_data.password, user.hashed_password):
         user.failed_login_attempts += 1
-        user.last_failed_login = datetime.now(timezone.utc)
+        user.last_failed_login = datetime.now(UTC)
 
         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            user.locked_until = datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
             # Revocar todas las sesiones activas al bloquear cuenta
             if UserSession is not None:
                 await db.execute(
@@ -333,7 +347,7 @@ async def login(
             if backup_code:
                 backup_valid = True
                 backup_code.is_used = True
-                backup_code.used_at = datetime.now(timezone.utc)
+                backup_code.used_at = datetime.now(UTC)
 
         if not totp_valid and not backup_valid:
             await db.commit()
@@ -400,7 +414,7 @@ async def login(
         SELLIA_NEW_DEVICES.inc()
 
     # Actualizar último login
-    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_at = datetime.now(UTC)
     user.last_device_fingerprint = current_fingerprint
     await db.commit()
 
@@ -502,7 +516,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
             ip=request.state.client_ip,
             country=country,
             user_agent=request.headers.get("user-agent", ""),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
         await notify_security_event(
             db=db,
@@ -560,7 +574,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
                 select(func.count()).select_from(UserSession).where(
                     UserSession.user_id == user.id,
                     UserSession.is_revoked == False,
-                    UserSession.expires_at > datetime.now(timezone.utc)
+                    UserSession.expires_at > datetime.now(UTC)
                 )
             )
             SELLIA_ACTIVE_SESSIONS.set(result.scalar() or 0)
@@ -583,7 +597,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
             ip_address=request.state.client_ip,
             user_agent=request.headers.get("user-agent"),
             country=country,
-            expires_at=datetime.now(timezone.utc) + access_token_expires,
+            expires_at=datetime.now(UTC) + access_token_expires,
         )
         db.add(user_session)
         await db.commit()
@@ -960,7 +974,7 @@ async def resend_verification(
 EMAIL_OTP_PURPOSES = ("login", "setup")
 
 
-def _otp_purpose(raw: Optional[str]) -> str:
+def _otp_purpose(raw: str | None) -> str:
     return raw if raw in EMAIL_OTP_PURPOSES else "login"
 
 
@@ -1073,7 +1087,7 @@ async def disable_email_otp(
 async def send_email_otp(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    purpose: Optional[str] = None,
+    purpose: str | None = None,
 ):
     """Envía un código OTP por email."""
     from app.core.deps import get_current_user
@@ -1096,7 +1110,7 @@ async def verify_email_otp_endpoint(
     code: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    purpose: Optional[str] = None,
+    purpose: str | None = None,
 ):
     """Verifica un código OTP por email.
 
@@ -1272,8 +1286,8 @@ async def export_my_data(
     db: AsyncSession = Depends(get_db),
 ):
     """Exporta todos los datos personales del usuario."""
-    from app.core.deps import get_current_user
     from app.core.data_deletion import export_user_data
+    from app.core.deps import get_current_user
 
     user = await get_current_user(request, db)
     data = await export_user_data(db, user.id)
@@ -1304,7 +1318,7 @@ async def security_status(
         "unknown": [],
     }
 
-    async def _count(label: str, statement) -> Optional[int]:
+    async def _count(label: str, statement) -> int | None:
         try:
             result = await db.execute(statement)
             return int(result.scalar() or 0)
@@ -1422,8 +1436,8 @@ async def delete_my_account(
     db: AsyncSession = Depends(get_db),
 ):
     """Borra la cuenta del usuario (GDPR)."""
-    from app.core.deps import get_current_user
     from app.core.data_deletion import secure_delete_user
+    from app.core.deps import get_current_user
 
     user = await get_current_user(request, db)
     success = await secure_delete_user(db, user.id)
@@ -1433,10 +1447,12 @@ async def delete_my_account(
 
 
 # 2FA endpoints
-from pydantic import BaseModel
+from io import BytesIO
+
 import pyotp
 import qrcode as qr_lib
-from io import BytesIO
+from pydantic import BaseModel
+
 
 class Enable2FARequest(BaseModel):
     user_id: str
@@ -1502,7 +1518,7 @@ async def verify_2fa(request: Verify2FARequest, db: AsyncSession = Depends(get_d
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"2FA verify failed: {e!s}")
 
 # NOTE: a second `POST /2fa/disable` used to live here, taking a raw
 # `user_id` + password in the body with no auth dependency at all (not even

@@ -4,13 +4,14 @@ Tareas de Celery para gestión de suscripciones, pagos crypto,
 recordatorios de renovación, alerts de uso, y downgrade automático.
 """
 
-from datetime import datetime, timezone, timedelta
-from celery import shared_task
+from datetime import UTC, datetime, timedelta
 
+from celery import shared_task
+from sqlalchemy import func, select
+
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from sqlalchemy import select, func
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -20,10 +21,14 @@ def check_expiring_subscriptions():
     """Verifica suscripciones que vencen pronto y envía recordatorios."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import Subscription, SubscriptionStatus, SubscriptionPlan
+            from app.domains.subscriptions.models import (
+                Subscription,
+                SubscriptionPlan,
+                SubscriptionStatus,
+            )
             from app.domains.users.models import User
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Recordatorio a 7 días
             reminder_7d = now + timedelta(days=7)
@@ -93,10 +98,18 @@ def process_crypto_pending_payments():
     """Consulta blockchain para pagos crypto pendientes."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import PaymentTransaction, PaymentStatus, Subscription, SubscriptionStatus, SubscriptionPlan
-            from app.domains.subscriptions.crypto_billing import check_crypto_payment_status, verify_crypto_payment
+            from app.domains.subscriptions.crypto_billing import (
+                check_crypto_payment_status,
+                verify_crypto_payment,
+            )
+            from app.domains.subscriptions.models import (
+                PaymentStatus,
+                PaymentTransaction,
+                Subscription,
+                SubscriptionStatus,
+            )
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             ttl = now - timedelta(minutes=30)
 
             result = await db.execute(
@@ -157,9 +170,12 @@ def cleanup_expired_crypto_payments():
     """Marca como expirados los pagos crypto que superaron el TTL."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import PaymentTransaction, PaymentStatus
+            from app.domains.subscriptions.models import (
+                PaymentStatus,
+                PaymentTransaction,
+            )
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             ttl = now - timedelta(minutes=30)
 
             result = await db.execute(
@@ -196,11 +212,15 @@ def _usage_limit(value):
 
 async def _check_usage_alerts(db) -> None:
     from app.domains.subscriptions.models import (
-        Subscription, SubscriptionPlan, UsageTracking, UsageAlert, SubscriptionStatus,
+        Subscription,
+        SubscriptionPlan,
+        SubscriptionStatus,
+        UsageAlert,
+        UsageTracking,
     )
     from app.domains.users.models import User
 
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month = datetime.now(UTC).strftime("%Y-%m")
 
     result = await db.execute(
         select(Subscription, SubscriptionPlan, User)
@@ -238,7 +258,7 @@ async def _check_usage_alerts(db) -> None:
                             UsageAlert.user_id == user.id,
                             UsageAlert.metric_type == metric,
                             UsageAlert.threshold_percent == threshold,
-                            UsageAlert.sent_at >= datetime.now(timezone.utc) - timedelta(days=7),
+                            UsageAlert.sent_at >= datetime.now(UTC) - timedelta(days=7),
                         )
                     )
                     if not existing.scalar_one_or_none():
@@ -269,10 +289,14 @@ def generate_recurring_invoices():
     """Genera invoices para suscripciones con renovación automática."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import Subscription, SubscriptionStatus, SubscriptionPlan
+            from app.domains.subscriptions.models import (
+                Subscription,
+                SubscriptionPlan,
+                SubscriptionStatus,
+            )
             from app.domains.subscriptions.services import create_invoice
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             result = await db.execute(
                 select(Subscription, SubscriptionPlan)
@@ -285,7 +309,10 @@ def generate_recurring_invoices():
             )
 
             for sub, plan in result.all():
-                from app.domains.subscriptions.services import get_plan_price, get_region_from_country
+                from app.domains.subscriptions.services import (
+                    get_plan_price,
+                    get_region_from_country,
+                )
                 from app.domains.users.models import User
 
                 user_result = await db.execute(select(User).where(User.id == sub.user_id))
@@ -325,12 +352,15 @@ def send_transfer_reminders():
     """Envía recordatorios de transferencias pendientes que están por vencer."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import BankTransferPayment, BankTransferStatus
-            from app.domains.users.models import User
             from app.core.email_service import send_email
             from app.domains.subscriptions.email_templates import transfer_reminder
+            from app.domains.subscriptions.models import (
+                BankTransferPayment,
+                BankTransferStatus,
+            )
+            from app.domains.users.models import User
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             # Remind once. The task runs every 6 hours and there is no "reminded" column, so the
             # window is exactly one cadence wide: an order that expires between 18 and 24 hours from
             # now falls in it on a single run (a bare "expires within 24 h" sent up to four reminders).
@@ -369,12 +399,15 @@ def expire_pending_transfers():
     """Marca como expiradas las transferencias que superaron las 48h."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import BankTransferPayment, BankTransferStatus
-            from app.domains.users.models import User
             from app.core.email_service import send_email
             from app.domains.subscriptions.email_templates import transfer_expired
+            from app.domains.subscriptions.models import (
+                BankTransferPayment,
+                BankTransferStatus,
+            )
+            from app.domains.users.models import User
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             result = await db.execute(
                 select(BankTransferPayment, User)
@@ -406,11 +439,16 @@ def sync_mercadopago_preapprovals():
     """Sincroniza estados de preapprovals con MercadoPago (resiliencia ante webhooks perdidos)."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.subscriptions.models import Subscription, SubscriptionStatus
-            from app.domains.users.models import User
-            from app.domains.subscriptions.billing import get_preapproval_status
             from app.core.email_service import send_email
-            from app.domains.subscriptions.email_templates import preapproval_payment_failed
+            from app.domains.subscriptions.billing import get_preapproval_status
+            from app.domains.subscriptions.email_templates import (
+                preapproval_payment_failed,
+            )
+            from app.domains.subscriptions.models import (
+                Subscription,
+                SubscriptionStatus,
+            )
+            from app.domains.users.models import User
 
             result = await db.execute(
                 select(Subscription, User)
@@ -432,7 +470,9 @@ def sync_mercadopago_preapprovals():
                         sub.auto_renew = False
                         sub.status = SubscriptionStatus.PAST_DUE
                         if user.email:
-                            from app.domains.subscriptions.models import SubscriptionPlan
+                            from app.domains.subscriptions.models import (
+                                SubscriptionPlan,
+                            )
                             plan_result = await db.execute(
                                 select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
                             )

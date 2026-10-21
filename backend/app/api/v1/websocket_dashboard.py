@@ -1,30 +1,33 @@
 """WebSocket real-time location dashboard."""
 
-import logging
 import json
-from datetime import datetime, timezone, timedelta
+import logging
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Dict, Set
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.domains.locations.checkin_models import LocationCheckin, StaffCheckin, LocationFeedback
+from app.domains.locations.checkin_models import (
+    LocationCheckin,
+    LocationFeedback,
+    StaffCheckin,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["websocket"])
 
 # Store active WebSocket connections per location
-active_connections: Dict[str, Set[WebSocket]] = {}
+active_connections: dict[str, set[WebSocket]] = {}
 
 
 class LocationDashboardManager:
     """Manage WebSocket connections + broadcast location events."""
 
     def __init__(self):
-        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: dict[str, set[WebSocket]] = {}
 
     async def connect(self, location_id: str, websocket: WebSocket):
         """Register WebSocket for location."""
@@ -87,7 +90,7 @@ async def websocket_location_dashboard(
         await websocket.send_json({
             "type": "connection_established",
             "location_id": location_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "message": "Connected to location dashboard"
         })
 
@@ -95,7 +98,7 @@ async def websocket_location_dashboard(
         metrics = _get_location_metrics(location_uuid, 24, db)
         await websocket.send_json({
             "type": "location_metrics",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **metrics
         })
 
@@ -107,12 +110,10 @@ async def websocket_location_dashboard(
             if message.get("type") == "subscribe_staff":
                 staff_id = message.get("staff_id")
                 # TODO: send staff-specific performance stream
-                pass
 
             elif message.get("type") == "alert_acknowledged":
                 alert_id = message.get("alert_id")
                 # TODO: mark alert as acknowledged in DB
-                pass
 
             elif message.get("type") == "disconnect":
                 break
@@ -138,7 +139,7 @@ async def broadcast_visitor_checkin(
         "location_id": str(location_id),
         "visitor_name": visitor_name,
         "checkin_type": checkin_type,
-        "checkin_time": datetime.now(timezone.utc).isoformat(),
+        "checkin_time": datetime.now(UTC).isoformat(),
         "estimated_dwell": "5-20m"
     }
     await manager.broadcast(str(location_id), message)
@@ -160,7 +161,7 @@ async def broadcast_visitor_checkout(
         "dwell_minutes": dwell_seconds // 60,
         "sections_visited": sections_visited,
         "purchase_amount": purchase_amount,
-        "checkout_time": datetime.now(timezone.utc).isoformat()
+        "checkout_time": datetime.now(UTC).isoformat()
     }
     await manager.broadcast(str(location_id), message)
 
@@ -177,7 +178,7 @@ async def broadcast_staff_action(
         "location_id": str(location_id),
         "staff_name": staff_name,
         "action": action,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "action_count": action_count
     }
     await manager.broadcast(str(location_id), message)
@@ -241,16 +242,15 @@ async def broadcast_alert(
         "alert_type": alert_type,
         "severity": severity,
         "message": message_text,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
     await manager.broadcast(str(location_id), message)
 
 
 def _get_location_metrics(location_id: UUID, hours: int, db: Session) -> dict:
     """Get current location metrics for dashboard."""
-    from datetime import timedelta
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
 
     # Active visitors
     active_visitors = db.query(LocationCheckin).filter(

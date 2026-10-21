@@ -2,18 +2,17 @@
 FOMO Engine Service - Star Player Logic
 """
 
-from typing import Optional, List
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.fomo.models import (
+    FOMOABTest,
     FOMOCampaign,
     FOMOEvent,
-    FOMOABTest,
     FOMOMetric,
     SocialProofEvent,
 )
@@ -28,7 +27,7 @@ class FOMOService:
         campaign_type: str,
         headline: str,
         config: dict,
-        trigger_type: Optional[str] = None,
+        trigger_type: str | None = None,
         **kwargs,
     ) -> FOMOCampaign:
         campaign = FOMOCampaign(
@@ -53,18 +52,18 @@ class FOMOService:
             raise ValueError(f"Campaign {campaign_id} not found")
         campaign.status = 'active'
         campaign.is_active = True
-        campaign.updated_at = datetime.now(timezone.utc)
+        campaign.updated_at = datetime.now(UTC)
         await db.flush()
         return campaign
 
     @staticmethod
-    async def get_campaigns(db: AsyncSession, user_id: UUID) -> List[FOMOCampaign]:
+    async def get_campaigns(db: AsyncSession, user_id: UUID) -> list[FOMOCampaign]:
         stmt = select(FOMOCampaign).where(FOMOCampaign.user_id == user_id).order_by(FOMOCampaign.created_at.desc())
         result = await db.execute(stmt)
         return result.scalars().all()
 
     @staticmethod
-    async def get_campaign(db: AsyncSession, campaign_id: UUID) -> Optional[FOMOCampaign]:
+    async def get_campaign(db: AsyncSession, campaign_id: UUID) -> FOMOCampaign | None:
         stmt = select(FOMOCampaign).where(FOMOCampaign.id == campaign_id)
         return await db.scalar(stmt)
 
@@ -74,9 +73,9 @@ class FOMOService:
         db: AsyncSession,
         campaign_id: UUID,
         event_type: str,
-        customer_id: Optional[UUID] = None,
-        product_id: Optional[UUID] = None,
-        metadata: Optional[dict] = None,
+        customer_id: UUID | None = None,
+        product_id: UUID | None = None,
+        metadata: dict | None = None,
     ) -> FOMOEvent:
         event = FOMOEvent(
             campaign_id=campaign_id,
@@ -90,7 +89,7 @@ class FOMOService:
         return event
 
     @staticmethod
-    async def get_recent_events(db: AsyncSession, campaign_id: UUID, limit: int = 10) -> List[FOMOEvent]:
+    async def get_recent_events(db: AsyncSession, campaign_id: UUID, limit: int = 10) -> list[FOMOEvent]:
         stmt = (
             select(FOMOEvent)
             .where(FOMOEvent.campaign_id == campaign_id)
@@ -104,10 +103,10 @@ class FOMOService:
     async def get_event_count(
         db: AsyncSession,
         campaign_id: UUID,
-        event_type: Optional[str] = None,
+        event_type: str | None = None,
         hours: int = 24,
     ) -> int:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         where_clause = [FOMOEvent.campaign_id == campaign_id, FOMOEvent.created_at > cutoff]
         if event_type:
             where_clause.append(FOMOEvent.event_type == event_type)
@@ -196,9 +195,9 @@ class FOMOService:
         db: AsyncSession,
         campaign_id: UUID,
         event_type: str,  # 'impression' | 'conversion'
-        revenue: Optional[Decimal] = None,
+        revenue: Decimal | None = None,
     ) -> None:
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
 
         stmt = select(FOMOMetric).where(
             and_(
@@ -223,8 +222,8 @@ class FOMOService:
         await db.flush()
 
     @staticmethod
-    async def get_metrics(db: AsyncSession, campaign_id: UUID, days: int = 30) -> List[dict]:
-        cutoff = datetime.now(timezone.utc).date() - timedelta(days=days)
+    async def get_metrics(db: AsyncSession, campaign_id: UUID, days: int = 30) -> list[dict]:
+        cutoff = datetime.now(UTC).date() - timedelta(days=days)
 
         stmt = (
             select(FOMOMetric)
@@ -276,9 +275,9 @@ class FOMOService:
         }
 
     @staticmethod
-    async def get_active_campaigns(db: AsyncSession, page_path: Optional[str] = None, plan_id: Optional[str] = None) -> List[FOMOCampaign]:
+    async def get_active_campaigns(db: AsyncSession, page_path: str | None = None, plan_id: str | None = None) -> list[FOMOCampaign]:
         """Get campaigns active for a given page."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         query = select(FOMOCampaign).where(
             and_(
                 FOMOCampaign.is_active == True,
@@ -300,7 +299,7 @@ class FOMOService:
         return active
 
     @staticmethod
-    async def get_recent_social_proof(db: AsyncSession, limit: int = 10) -> List[SocialProofEvent]:
+    async def get_recent_social_proof(db: AsyncSession, limit: int = 10) -> list[SocialProofEvent]:
         result = await db.execute(
             select(SocialProofEvent)
             .order_by(desc(SocialProofEvent.created_at))

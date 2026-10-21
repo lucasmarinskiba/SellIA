@@ -8,15 +8,11 @@ configuraciones de navegador.
 import asyncio
 import json
 import os
-from typing import Optional, Dict, List, Any
 from dataclasses import dataclass
-from uuid import UUID
+from typing import Any
 
-from PIL import Image
-import io
-
-from app.core.logger import get_logger
 from app.core.config import get_settings
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -32,8 +28,8 @@ class BrowserInstance:
     page: Any
     playwright: Any
     in_use: bool = False
-    session_id: Optional[str] = None
-    profile: Optional[dict] = None
+    session_id: str | None = None
+    profile: dict | None = None
 
 
 class BrowserPoolManager:
@@ -41,7 +37,7 @@ class BrowserPoolManager:
 
     def __init__(self, max_instances: int = 6):
         self.max_instances = max_instances
-        self._instances: Dict[str, BrowserInstance] = {}
+        self._instances: dict[str, BrowserInstance] = {}
         self._playwright = None
         self._lock = asyncio.Lock()
         self._semaphore = asyncio.Semaphore(max_instances)
@@ -55,8 +51,8 @@ class BrowserPoolManager:
         self,
         browser_type: str = "chromium",
         headless: bool = True,
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
     ) -> BrowserInstance:
         """Crea una nueva instancia de navegador."""
         async with self._lock:
@@ -136,8 +132,8 @@ class BrowserPoolManager:
         self,
         browser_type: str = "chromium",
         headless: bool = True,
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
     ) -> BrowserInstance:
         """Adquiere una instancia del pool (reutiliza si hay disponibles)."""
         async with self._semaphore:
@@ -185,7 +181,7 @@ class BrowserPoolManager:
         except Exception as e:
             logger.warning(f"BrowserPool: error destroying {instance_id}: {e}")
 
-    async def get_instance_for_session(self, session_id: str) -> Optional[BrowserInstance]:
+    async def get_instance_for_session(self, session_id: str) -> BrowserInstance | None:
         """Obtiene la instancia asociada a una sesión."""
         for inst in self._instances.values():
             if inst.session_id == session_id:
@@ -227,7 +223,7 @@ class BrowserPoolManager:
 
 
 # Global pool instance
-_pool_manager: Optional[BrowserPoolManager] = None
+_pool_manager: BrowserPoolManager | None = None
 
 
 def get_browser_pool() -> BrowserPoolManager:

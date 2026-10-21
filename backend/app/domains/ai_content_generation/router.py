@@ -1,23 +1,22 @@
 """Phase 51: AI Content Generation Endpoints."""
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from typing import List, Optional
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.ai_content_generation.service import ContentGenerationService
-
 
 router = APIRouter(prefix="/api/v1/content-generation", tags=["content-generation"])
 
 
 class ContentGenerationRequest(BaseModel):
     content_type: str  # product_title, product_description, social_post, email_subject, email_body
-    product_id: Optional[UUID] = None
-    platform: Optional[str] = None
-    original_content: Optional[str] = None
-    prompt: Optional[str] = None
+    product_id: UUID | None = None
+    platform: str | None = None
+    original_content: str | None = None
+    prompt: str | None = None
 
 
 class ContentVariantRequest(BaseModel):
@@ -28,8 +27,8 @@ class ContentVariantRequest(BaseModel):
 class BulkGenerationRequest(BaseModel):
     batch_name: str
     content_type: str
-    product_ids: List[UUID]
-    platform: Optional[str] = None
+    product_ids: list[UUID]
+    platform: str | None = None
 
 
 @router.post("/generate")
@@ -68,7 +67,7 @@ async def generate_content(
 async def create_variants(
     business_id: UUID,
     generated_content_id: UUID,
-    variants: List[ContentVariantRequest],
+    variants: list[ContentVariantRequest],
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Create content variants (different tones/styles)."""
@@ -162,7 +161,7 @@ async def update_bulk_status(
 async def track_content_performance(
     business_id: UUID,
     generated_content_id: UUID,
-    product_id: Optional[UUID],
+    product_id: UUID | None,
     platform: str,
     views: int = 0,
     clicks: int = 0,
@@ -197,7 +196,7 @@ async def track_content_performance(
 async def get_content_by_type(
     business_id: UUID,
     content_type: str,
-    platform: Optional[str] = None,
+    platform: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get all published content by type."""

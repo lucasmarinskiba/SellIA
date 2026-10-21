@@ -4,9 +4,8 @@ Allows auto-pilot agents (captador, vendedor, etc.) to reason and communicate
 using the frameworks, philosophy, and style of any expert personality.
 """
 
-from typing import Optional
-from app.domains.agents.prompts import AGENT_PROMPTS
 
+from app.domains.agents.prompts import AGENT_PROMPTS
 
 # Auto-pilot functional slugs that can be composed with expert voices
 FUNCTIONAL_SLUGS = {"captador", "cualificador", "vendedor", "post-venta"}
@@ -14,7 +13,7 @@ FUNCTIONAL_SLUGS = {"captador", "cualificador", "vendedor", "post-venta"}
 
 def compose_system_prompt(
     base_slug: str,
-    voice_slug: Optional[str] = None,
+    voice_slug: str | None = None,
     business_context: dict = None,
     custom_instructions: str = None,
 ) -> str:

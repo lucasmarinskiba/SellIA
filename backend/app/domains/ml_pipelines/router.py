@@ -1,11 +1,11 @@
 """Phase 2: ML Pipeline Endpoints."""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Optional
+
 from app.core.database import get_db
 from app.domains.ml_pipelines.service import MLPipelineService
-
 
 router = APIRouter(prefix="/api/v1/ml-pipelines", tags=["ml-pipelines"])
 
@@ -55,7 +55,7 @@ async def predict_churn(
     total_lifetime_value: float,
     purchase_frequency_per_month: float,
     support_tickets: int = 0,
-    nps_score: Optional[int] = None,
+    nps_score: int | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Predict churn probability."""

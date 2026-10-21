@@ -1,11 +1,18 @@
 """Social Seller models — vendedores virtuales por plataforma."""
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Numeric, JSON, Text, Enum, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -25,8 +32,8 @@ class SocialSeller(Base):
     ai_auto_reply = Column(Boolean, default=True, nullable=False)
     greeting_message = Column(Text, nullable=True)
     closing_message = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class SellerCustomerRelationship(Base):
@@ -44,8 +51,8 @@ class SellerCustomerRelationship(Base):
     relationship_stage = Column(String(30), default="first_contact", nullable=False)  # first_contact, nurturing, proposal, closed, loyal, advocate
     loyalty_score = Column(Integer, default=0, nullable=False)  # 0-100
     next_best_action = Column(String(100), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class UnifiedCustomer(Base):
@@ -65,8 +72,8 @@ class UnifiedCustomer(Base):
     rfm_segment = Column(String(30), nullable=True)  # Champion, Loyal, Potential, New, At Risk, Lost
     last_purchase_at = Column(DateTime(timezone=True), nullable=True)
     total_purchases = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class SellerPerformance(Base):
@@ -85,7 +92,7 @@ class SellerPerformance(Base):
     conversion_rate = Column(Numeric(5, 2), default=0, nullable=False)
     best_performing_hour = Column(Integer, nullable=True)  # 0-23
     best_performing_content_type = Column(String(50), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class CustomerLoyaltyBadge(Base):
@@ -98,7 +105,7 @@ class CustomerLoyaltyBadge(Base):
     description = Column(Text, nullable=True)
     icon_url = Column(Text, nullable=True)
     criteria = Column(JSONB, default=dict, nullable=False)  # { "min_purchases": 5, "min_ltv": 1000 }
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class CustomerBadgeAssignment(Base):
@@ -108,5 +115,5 @@ class CustomerBadgeAssignment(Base):
     badge_id = Column(UUID(as_uuid=True), ForeignKey("customer_loyalty_badges.id", ondelete="CASCADE"), nullable=False)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
-    earned_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    earned_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     awarded_by_seller_id = Column(UUID(as_uuid=True), ForeignKey("social_sellers.id", ondelete="SET NULL"), nullable=True)

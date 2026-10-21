@@ -1,13 +1,13 @@
 """Phase X6: FOMO Dynamics API Endpoints."""
+from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Optional
-from datetime import datetime
-from app.core.database import get_db
-from app.domains.fomo_dynamics.service import FOMODynamicsService
-from app.domains.fomo_dynamics.models import FOMOStrategy
 
+from app.core.database import get_db
+from app.domains.fomo_dynamics.models import FOMOStrategy
+from app.domains.fomo_dynamics.service import FOMODynamicsService
 
 router = APIRouter(prefix="/api/v1/fomo-dynamics", tags=["fomo-dynamics"])
 
@@ -18,8 +18,8 @@ async def create_fomo_offer(
     product_id: str,
     strategy: FOMOStrategy,
     base_price: float,
-    total_stock: Optional[int] = None,
-    ends_at: Optional[datetime] = None,
+    total_stock: int | None = None,
+    ends_at: datetime | None = None,
     headline: str = "",
     db: AsyncSession = Depends(get_db),
 ) -> dict:

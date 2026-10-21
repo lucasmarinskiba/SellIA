@@ -5,8 +5,8 @@ Usa embeddings y similitud de coseno para encontrar patrones.
 """
 
 import json
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 @dataclass
 class Suggestion:
     action_type: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     confidence: float
     reason: str
     based_on_sessions: int
@@ -26,10 +26,10 @@ class AISuggestions:
     """Motor de sugerencias basado en historial."""
 
     def __init__(self):
-        self._action_patterns: Dict[str, List[Dict]] = {}
-        self._embedding_cache: Dict[str, List[float]] = {}
+        self._action_patterns: dict[str, list[dict]] = {}
+        self._embedding_cache: dict[str, list[float]] = {}
 
-    def _simple_embed(self, text: str) -> List[float]:
+    def _simple_embed(self, text: str) -> list[float]:
         """Embedding simple basado en frecuencia de palabras (fallback sin OpenAI)."""
         words = text.lower().split()
         # Simple bag-of-words hash
@@ -43,12 +43,12 @@ class AISuggestions:
             vec = [x / norm for x in vec]
         return vec
 
-    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
+    def _cosine_similarity(self, a: list[float], b: list[float]) -> float:
         """Similitud de coseno entre dos vectores."""
         dot = sum(x * y for x, y in zip(a, b))
         return dot  # Already normalized
 
-    def index_session(self, task: str, actions: List[Dict[str, Any]], success: bool) -> None:
+    def index_session(self, task: str, actions: list[dict[str, Any]], success: bool) -> None:
         """Indexa una sesión completada para futuras sugerencias."""
         if not success:
             return
@@ -63,9 +63,9 @@ class AISuggestions:
         task: str,
         current_step: int,
         current_url: str,
-        history: List[Dict[str, Any]],
+        history: list[dict[str, Any]],
         top_k: int = 3,
-    ) -> List[Suggestion]:
+    ) -> list[Suggestion]:
         """Sugiere acciones basadas en sesiones similares previas."""
         if not self._embedding_cache:
             return []
@@ -105,8 +105,8 @@ class AISuggestions:
         self,
         task: str,
         error_message: str,
-        history: List[Dict[str, Any]],
-    ) -> Optional[Suggestion]:
+        history: list[dict[str, Any]],
+    ) -> Suggestion | None:
         """Sugiere una acción de recuperación tras un error."""
         common_recoveries = {
             "timeout": {"action_type": "wait", "params": {"seconds": 3}, "reason": "La página puede estar lenta, esperar un poco más"},

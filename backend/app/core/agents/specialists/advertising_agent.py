@@ -9,10 +9,8 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
-from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +307,7 @@ class AdvertisingAgent:
     }
 
     @staticmethod
-    def get_platform_strategy(platform: AdPlatform) -> Dict[str, Any]:
+    def get_platform_strategy(platform: AdPlatform) -> dict[str, Any]:
         """Get strategy for specific advertising platform."""
         return AdvertisingAgent.PLATFORM_SPECS.get(platform, {})
 
@@ -319,7 +317,7 @@ class AdvertisingAgent:
         campaign_goal: str,
         budget: float,
         timeline_days: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend best advertising platform(s) for campaign."""
         recommendations = {
             "primary_platform": None,
@@ -363,8 +361,8 @@ class AdvertisingAgent:
     @staticmethod
     def create_audience_segments(
         target_market: str,
-        segment_criteria: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        segment_criteria: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create detailed audience segments."""
         segments = {
             "primary_segments": [],
@@ -380,7 +378,7 @@ class AdvertisingAgent:
     def design_creative_test(
         test_type: str,
         variations_count: int = 3
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design A/B test for ad creative."""
         test_framework = AdvertisingAgent.CREATIVE_TESTING_FRAMEWORK.get(test_type, {})
 
@@ -400,9 +398,9 @@ class AdvertisingAgent:
     @staticmethod
     def optimize_budget(
         monthly_budget: float,
-        current_spending: Dict[str, float],
-        channel_performance: Dict[str, Dict[str, float]]
-    ) -> Dict[str, Any]:
+        current_spending: dict[str, float],
+        channel_performance: dict[str, dict[str, float]]
+    ) -> dict[str, Any]:
         """Optimize budget allocation across channels."""
         return {
             "current_budget": monthly_budget,
@@ -418,7 +416,7 @@ class AdvertisingAgent:
         monthly_budget: float,
         conversion_volume: int,
         revenue_tracking: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend optimal bid strategy."""
         recommendation = {
             "recommended_strategy": None,
@@ -440,9 +438,9 @@ class AdvertisingAgent:
     def create_campaign_structure(
         campaign_name: str,
         platform: str,
-        audience_segments: List[str],
+        audience_segments: list[str],
         budget: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create campaign structure and organization."""
         return {
             "campaign_name": campaign_name,
@@ -469,8 +467,8 @@ class AdvertisingAgent:
 
     @staticmethod
     def analyze_campaign_performance(
-        campaign_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        campaign_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze and provide insights on campaign performance."""
         return {
             "campaign": campaign_data.get("name", ""),
@@ -495,7 +493,7 @@ class AdvertisingAgent:
         current_roas: float,
         target_roas: float,
         timeline_months: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create testing roadmap to improve performance."""
         return {
             "current_roas": current_roas,
@@ -519,7 +517,7 @@ class AdvertisingAgent:
         }
 
     @staticmethod
-    def get_compliance_guidelines(platform: AdPlatform) -> Dict[str, Any]:
+    def get_compliance_guidelines(platform: AdPlatform) -> dict[str, Any]:
         """Get advertising compliance guidelines for platform."""
         return {
             "platform": platform.value,

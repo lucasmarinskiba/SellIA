@@ -24,39 +24,35 @@ Key Features:
 - Platform-specific optimization (Email, WhatsApp, SMS, Instagram)
 """
 
-from .tone_engine import (
-    ToneEngine,
-    ToneType,
-    Market,
-    Industry,
-    ToneProfile,
+from .a_b_testing import (
+    ABTest,
+    ABTestingEngine,
+    ExperimentType,
+    Variant,
 )
-
 from .empathy_layer import (
-    EmpathyLayer,
     EmotionalState,
+    EmpathyLayer,
     EmpathyResponse,
     EmpathySignal,
 )
-
 from .personalization import (
-    PersonalizationEngine,
     BuyerProfile,
     PersonalizationContext,
+    PersonalizationEngine,
     PersonalizationLevel,
 )
-
 from .response_builder import (
-    ResponseBuilder,
     CTAType,
+    ResponseBuilder,
     ResponseTemplate,
 )
-
-from .a_b_testing import (
-    ABTestingEngine,
-    ABTest,
-    Variant,
-    ExperimentType,
+from .tone_engine import (
+    Industry,
+    Market,
+    ToneEngine,
+    ToneProfile,
+    ToneType,
 )
 
 __all__ = [

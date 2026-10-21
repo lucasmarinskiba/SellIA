@@ -11,11 +11,22 @@ Este es nuestro proveedor de bajo costo para drafts y alta volumetría.
 
 import asyncio
 import io
-from typing import Dict, Any, Optional
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import compress_image, smart_quality_for_size, get_image_size_kb, download_url
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -66,7 +77,7 @@ class ReplicateProvider(BaseProvider):
             return 0.04 * duration * config.num_variations
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "flux-schnell": 0.015,
             "flux-dev": 0.025,

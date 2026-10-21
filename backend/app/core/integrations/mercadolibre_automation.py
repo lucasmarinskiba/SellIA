@@ -15,10 +15,10 @@ Sistema:
 """
 
 import logging
+from datetime import datetime
+from typing import Any
+
 import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class MercadoLibreAutomation:
 
     BASE_URL = "https://api.mercadolibre.com"
 
-    def __init__(self, seller_id: str, access_token: str, refresh_token: Optional[str] = None):
+    def __init__(self, seller_id: str, access_token: str, refresh_token: str | None = None):
         self.seller_id = seller_id
         self.access_token = access_token
         self.refresh_token = refresh_token
@@ -36,7 +36,7 @@ class MercadoLibreAutomation:
 
     # ========== ORDERS SYNC ==========
 
-    async def sync_orders(self) -> Dict[str, Any]:
+    async def sync_orders(self) -> dict[str, Any]:
         """
         Sincroniza órdenes desde Mercado Libre automáticamente.
 
@@ -96,10 +96,10 @@ class MercadoLibreAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Orders sync failed: {str(e)}")
+            logger.error(f"Orders sync failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _fetch_new_orders(self) -> List[Dict[str, Any]]:
+    async def _fetch_new_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes nuevas (sin procesar)."""
 
         try:
@@ -121,10 +121,10 @@ class MercadoLibreAutomation:
                 return []
 
         except Exception as e:
-            logger.error(f"Fetch orders failed: {str(e)}")
+            logger.error(f"Fetch orders failed: {e!s}")
             return []
 
-    async def _fetch_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def _fetch_order_details(self, order_id: str) -> dict[str, Any] | None:
         """Obtiene detalles de orden (buyer, producto, dirección)."""
 
         try:
@@ -140,10 +140,10 @@ class MercadoLibreAutomation:
                 return None
 
         except Exception as e:
-            logger.error(f"Fetch order details failed: {str(e)}")
+            logger.error(f"Fetch order details failed: {e!s}")
             return None
 
-    async def _confirm_purchase(self, order_id: str) -> Dict[str, Any]:
+    async def _confirm_purchase(self, order_id: str) -> dict[str, Any]:
         """Auto-confirma compra (cambiar status a packed)."""
 
         logger.info(f"Confirming purchase {order_id}")
@@ -163,12 +163,12 @@ class MercadoLibreAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Confirm purchase failed: {str(e)}")
+            logger.error(f"Confirm purchase failed: {e!s}")
             return {"status": "error"}
 
     # ========== AUTO-RESPONSE ==========
 
-    async def _respond_buyer_questions(self, order_id: str) -> Dict[str, Any]:
+    async def _respond_buyer_questions(self, order_id: str) -> dict[str, Any]:
         """Auto-responde preguntas frecuentes de buyers."""
 
         logger.info(f"Checking buyer questions for order {order_id}")
@@ -219,10 +219,10 @@ class MercadoLibreAutomation:
             }
 
         except Exception as e:
-            logger.error(f"Auto-response failed: {str(e)}")
+            logger.error(f"Auto-response failed: {e!s}")
             return {"status": "error"}
 
-    def _get_faq_response(self, question: str) -> Optional[str]:
+    def _get_faq_response(self, question: str) -> str | None:
         """Detecta pregunta frecuente, retorna respuesta automática."""
 
         faq = {
@@ -243,7 +243,7 @@ class MercadoLibreAutomation:
 
         return None
 
-    async def _answer_question(self, question_id: str, answer_text: str) -> Dict[str, Any]:
+    async def _answer_question(self, question_id: str, answer_text: str) -> dict[str, Any]:
         """Responde pregunta automáticamente."""
 
         try:
@@ -264,7 +264,7 @@ class MercadoLibreAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Answer question failed: {str(e)}")
+            logger.error(f"Answer question failed: {e!s}")
             return {"status": "error"}
 
     # ========== SHIPPING & FULFILLMENT ==========
@@ -272,8 +272,8 @@ class MercadoLibreAutomation:
     async def _generate_shipping_label(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        order_details: dict[str, Any],
+    ) -> dict[str, Any]:
         """Genera shipping label automáticamente."""
 
         logger.info(f"Generating shipping label for {order_id}")
@@ -313,12 +313,12 @@ class MercadoLibreAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Generate label failed: {str(e)}")
+            logger.error(f"Generate label failed: {e!s}")
             return {"status": "error"}
 
     # ========== TRACKING UPDATES ==========
 
-    async def update_tracking(self, shipment_id: str, buyer_email: str) -> Dict[str, Any]:
+    async def update_tracking(self, shipment_id: str, buyer_email: str) -> dict[str, Any]:
         """Actualiza tracking automáticamente y notifica buyer."""
 
         logger.info(f"Updating tracking for shipment {shipment_id}")
@@ -349,7 +349,7 @@ class MercadoLibreAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Update tracking failed: {str(e)}")
+            logger.error(f"Update tracking failed: {e!s}")
             return {"status": "error"}
 
     # ========== DB INTEGRATION ==========
@@ -357,9 +357,9 @@ class MercadoLibreAutomation:
     async def _save_order_to_db(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
-        shipping_result: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        order_details: dict[str, Any],
+        shipping_result: dict[str, Any],
+    ) -> dict[str, Any]:
         """Guarda orden en DB para tracking."""
 
         logger.info(f"Saving order {order_id} to DB")
@@ -375,7 +375,7 @@ class MercadoLibreAutomation:
 
     # ========== TOKEN REFRESH ==========
 
-    async def refresh_access_token(self) -> Optional[str]:
+    async def refresh_access_token(self) -> str | None:
         """Refresh OAuth token si expiró."""
 
         if not self.refresh_token:
@@ -404,7 +404,7 @@ class MercadoLibreAutomation:
                 return None
 
         except Exception as e:
-            logger.error(f"Refresh token failed: {str(e)}")
+            logger.error(f"Refresh token failed: {e!s}")
             return None
 
     async def close(self):

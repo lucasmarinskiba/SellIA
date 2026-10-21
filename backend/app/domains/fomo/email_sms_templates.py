@@ -1,7 +1,7 @@
 """Email & SMS Templates for FOMO Automations"""
 
-from typing import Dict, List, Any
 from enum import Enum
+from typing import Any
 
 
 class TemplateType(str, Enum):
@@ -14,7 +14,7 @@ class CartAbandonmentTemplates:
     """3-step cart abandonment recovery sequence"""
 
     @staticmethod
-    def email_1_immediate() -> Dict[str, Any]:
+    def email_1_immediate() -> dict[str, Any]:
         """Step 1: Immediate reminder (sent within 5 minutes)"""
         return {
             "id": "cart_abandoned_1",
@@ -55,7 +55,7 @@ class CartAbandonmentTemplates:
         }
 
     @staticmethod
-    def email_2_social_proof() -> Dict[str, Any]:
+    def email_2_social_proof() -> dict[str, Any]:
         """Step 2: Social proof + scarcity (sent 2 hours later)"""
         return {
             "id": "cart_abandoned_2_social_proof",
@@ -105,7 +105,7 @@ class CartAbandonmentTemplates:
         }
 
     @staticmethod
-    def email_3_final_discount() -> Dict[str, Any]:
+    def email_3_final_discount() -> dict[str, Any]:
         """Step 3: Final discount offer (sent 24 hours later)"""
         return {
             "id": "cart_abandoned_3_final_discount",
@@ -161,7 +161,7 @@ class CartAbandonmentTemplates:
         }
 
     @staticmethod
-    def sms_final_push() -> Dict[str, Any]:
+    def sms_final_push() -> dict[str, Any]:
         """SMS Step 3: Last push (sent 24 hours later, concurrent with email)"""
         return {
             "id": "cart_abandoned_3_sms",
@@ -179,7 +179,7 @@ class FlashSaleTemplates:
     """Flash sale campaign sequence"""
 
     @staticmethod
-    def email_launch() -> Dict[str, Any]:
+    def email_launch() -> dict[str, Any]:
         return {
             "id": "flash_sale_launch",
             "type": "email",
@@ -205,7 +205,7 @@ class FlashSaleTemplates:
         }
 
     @staticmethod
-    def email_reminder_4h() -> Dict[str, Any]:
+    def email_reminder_4h() -> dict[str, Any]:
         return {
             "id": "flash_sale_reminder_4h",
             "type": "email",
@@ -234,7 +234,7 @@ class FlashSaleTemplates:
         }
 
     @staticmethod
-    def sms_1h_warning() -> Dict[str, Any]:
+    def sms_1h_warning() -> dict[str, Any]:
         return {
             "id": "flash_sale_sms_1h",
             "type": "sms",
@@ -244,7 +244,7 @@ class FlashSaleTemplates:
         }
 
     @staticmethod
-    def sms_30min_final() -> Dict[str, Any]:
+    def sms_30min_final() -> dict[str, Any]:
         return {
             "id": "flash_sale_sms_30min",
             "type": "sms",
@@ -258,7 +258,7 @@ class PostPurchaseTemplates:
     """Post-purchase sequences"""
 
     @staticmethod
-    def email_thank_you() -> Dict[str, Any]:
+    def email_thank_you() -> dict[str, Any]:
         return {
             "id": "post_purchase_thank_you",
             "type": "email",
@@ -282,7 +282,7 @@ class PostPurchaseTemplates:
         }
 
     @staticmethod
-    def email_product_recommendation() -> Dict[str, Any]:
+    def email_product_recommendation() -> dict[str, Any]:
         return {
             "id": "post_purchase_recommendation",
             "type": "email",
@@ -314,7 +314,7 @@ class TrialExpiryTemplates:
     """Trial expiring soon sequences"""
 
     @staticmethod
-    def email_7day_warning() -> Dict[str, Any]:
+    def email_7day_warning() -> dict[str, Any]:
         return {
             "id": "trial_expiring_7day",
             "type": "email",
@@ -345,7 +345,7 @@ class TrialExpiryTemplates:
         }
 
     @staticmethod
-    def email_1day_final() -> Dict[str, Any]:
+    def email_1day_final() -> dict[str, Any]:
         return {
             "id": "trial_expiring_1day",
             "type": "email",
@@ -369,7 +369,7 @@ class TemplateLibrary:
     """Complete template library with categorization"""
 
     @staticmethod
-    def get_all_templates() -> Dict[str, List[Dict[str, Any]]]:
+    def get_all_templates() -> dict[str, list[dict[str, Any]]]:
         return {
             "cart_abandonment": [
                 CartAbandonmentTemplates.email_1_immediate(),
@@ -394,7 +394,7 @@ class TemplateLibrary:
         }
 
     @staticmethod
-    def get_template_by_id(template_id: str) -> Dict[str, Any]:
+    def get_template_by_id(template_id: str) -> dict[str, Any]:
         """Fetch template by ID"""
         all_templates = TemplateLibrary.get_all_templates()
         for category, templates in all_templates.items():
@@ -404,7 +404,7 @@ class TemplateLibrary:
         return {}
 
     @staticmethod
-    def get_templates_by_category(category: str) -> List[Dict[str, Any]]:
+    def get_templates_by_category(category: str) -> list[dict[str, Any]]:
         """Get all templates in category"""
         all_templates = TemplateLibrary.get_all_templates()
         return all_templates.get(category, [])

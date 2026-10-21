@@ -1,9 +1,21 @@
 """Phase 47: SEO & Marketplace Positioning Engine."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
+
 from app.core.database import Base
+
 
 class KeywordResearch(Base):
     __tablename__ = "keyword_research"
@@ -19,7 +31,7 @@ class KeywordResearch(Base):
     trend = Column(String(50), nullable=False)  # rising, stable, declining
     ranking_position = Column(Integer, nullable=True)
     platform = Column(String(50), nullable=False)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ProductListing(Base):
     __tablename__ = "product_listings"
@@ -38,7 +50,7 @@ class ProductListing(Base):
     views_last_30d = Column(Integer, default=0)
     conversions_last_30d = Column(Integer, default=0)
     conversion_rate = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class RankingTracker(Base):
     __tablename__ = "ranking_tracker"
@@ -53,7 +65,7 @@ class RankingTracker(Base):
     organic_impressions = Column(Integer, default=0)
     organic_clicks = Column(Integer, default=0)
     ctr = Column(Float, default=0)
-    tracked_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tracked_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SEOOptimization(Base):
     __tablename__ = "seo_optimization"
@@ -70,7 +82,7 @@ class SEOOptimization(Base):
     review_count = Column(Integer, default=0)
     overall_score = Column(Float, default=0)
     recommendations = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class WebPagePerformance(Base):
     __tablename__ = "web_page_performance"
@@ -86,4 +98,4 @@ class WebPagePerformance(Base):
     page_speed = Column(Float, default=0)
     mobile_score = Column(Float, default=0)
     core_web_vitals = Column(JSONB, nullable=True)
-    tracked_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tracked_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

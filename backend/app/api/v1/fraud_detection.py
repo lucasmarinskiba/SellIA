@@ -1,10 +1,9 @@
 """Fraud detection API — order + account fraud scoring."""
 
-from uuid import UUID
-from typing import Optional
 from decimal import Decimal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -18,10 +17,10 @@ class ScoreOrderFraudRequest(BaseModel):
     order_id: str
     customer_id: UUID
     order_value: Decimal
-    ip_address: Optional[str] = None
-    device_fingerprint: Optional[str] = None
-    billing_address: Optional[str] = None
-    shipping_address: Optional[str] = None
+    ip_address: str | None = None
+    device_fingerprint: str | None = None
+    billing_address: str | None = None
+    shipping_address: str | None = None
 
 
 class ScoreAccountFraudRequest(BaseModel):
@@ -31,7 +30,7 @@ class ScoreAccountFraudRequest(BaseModel):
 class AddBlacklistRequest(BaseModel):
     entity_type: str  # email, ip, card_token, phone
     entity_value: str
-    fraud_reason: Optional[str] = None
+    fraud_reason: str | None = None
 
 
 @router.post("/businesses/{business_id}/score-order-fraud")
@@ -87,7 +86,7 @@ def add_to_blacklist(
 @router.get("/businesses/{business_id}/fraud-summary")
 def get_fraud_summary(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get fraud detection summary."""

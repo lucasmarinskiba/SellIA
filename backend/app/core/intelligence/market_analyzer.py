@@ -6,9 +6,8 @@ Output: Análisis competencia, precios, demanda, tendencias, oportunidades.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +20,11 @@ class MarketAnalysis:
     market_size: str  # Pequeño, Medio, Grande
     demand_level: str  # Bajo, Medio, Alto
     competition_level: str  # Baja, Media, Alta
-    price_range: Dict[str, float]  # min, max, avg
-    top_competitors: List[Dict[str, Any]]
-    market_trends: List[str]
-    opportunities: List[str]
-    threats: List[str]
+    price_range: dict[str, float]  # min, max, avg
+    top_competitors: list[dict[str, Any]]
+    market_trends: list[str]
+    opportunities: list[str]
+    threats: list[str]
     recommended_positioning: str
     confidence: float  # 0-1
 
@@ -151,7 +150,7 @@ class MarketAnalyzer:
         return high_comp.get(category, "Media")
 
     @staticmethod
-    def _estimate_price_range(category: str, user_price: float) -> Dict[str, float]:
+    def _estimate_price_range(category: str, user_price: float) -> dict[str, float]:
         """Estima rango de precios mercado."""
         # Mock: basado en categoría
         ranges = {
@@ -173,7 +172,7 @@ class MarketAnalyzer:
         }
 
     @staticmethod
-    def _get_trends(category: str) -> List[str]:
+    def _get_trends(category: str) -> list[str]:
         """Tendencias mercado."""
         trends = {
             "saas": [
@@ -197,7 +196,7 @@ class MarketAnalyzer:
     @staticmethod
     def _identify_opportunities(
         category: str, demand: str, competition: str, price: float
-    ) -> List[str]:
+    ) -> list[str]:
         """Oportunidades para usuario."""
         opps = []
 
@@ -221,7 +220,7 @@ class MarketAnalyzer:
         return opps[:3]  # Top 3
 
     @staticmethod
-    def _identify_threats(category: str, competition: str) -> List[str]:
+    def _identify_threats(category: str, competition: str) -> list[str]:
         """Threats."""
         threats = []
 
@@ -238,7 +237,7 @@ class MarketAnalyzer:
 
     @staticmethod
     def _recommend_positioning(
-        category: str, competition: str, price_range: Dict[str, float], user_price: float
+        category: str, competition: str, price_range: dict[str, float], user_price: float
     ) -> str:
         """Recomendación posicionamiento."""
 
@@ -261,7 +260,7 @@ class MarketComparator:
     @staticmethod
     def compare_strategies(
         user_product_analysis: MarketAnalysis, competitor_analysis: MarketAnalysis
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compara estrategias vs competidor."""
 
         return {

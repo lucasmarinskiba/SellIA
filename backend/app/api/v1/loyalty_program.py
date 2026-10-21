@@ -1,10 +1,9 @@
 """Loyalty program API — customer retention + rewards."""
 
-from uuid import UUID
-from typing import Optional
 from decimal import Decimal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -29,8 +28,8 @@ class AwardPointsRequest(BaseModel):
     member_id: UUID
     points: int
     transaction_type: str = "earn"
-    description: Optional[str] = None
-    order_id: Optional[str] = None
+    description: str | None = None
+    order_id: str | None = None
 
 
 class RedeemRewardRequest(BaseModel):
@@ -42,7 +41,7 @@ class CreateRewardRequest(BaseModel):
     reward_name: str
     reward_type: str
     points_required: int
-    value: Optional[Decimal] = None
+    value: Decimal | None = None
 
 
 @router.post("/businesses/{business_id}/loyalty-program")
@@ -143,7 +142,7 @@ def get_member_details(
 @router.get("/businesses/{business_id}/loyalty-metrics")
 def get_loyalty_metrics(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get loyalty program metrics."""

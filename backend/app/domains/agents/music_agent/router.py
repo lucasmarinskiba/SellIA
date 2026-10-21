@@ -9,13 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.music_agent.schemas import (
     MusicGenerateRequest,
     MusicTrackResponse,
-    MusicGenerationJobResponse,
 )
-from app.domains.agents.music_agent.service import MusicService, STORAGE_DIR
+from app.domains.agents.music_agent.service import STORAGE_DIR, MusicService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/agents/music-agent", tags=["music-agent"])
 

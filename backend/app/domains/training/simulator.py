@@ -5,19 +5,19 @@ patterns to run agent-vs-customer simulations without real customers.
 """
 
 import json
-import uuid
 import time
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from sqlalchemy import select
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.llm_provider import generate_with_fallback
-from app.domains.training.models import TrainingScenario, TrainingRun
 from app.domains.agents.models import AgentConfig, AgentPersonality
+from app.domains.training.models import TrainingRun, TrainingScenario
 
 logger = get_logger(__name__)
 
@@ -155,7 +155,7 @@ No markdown, no extra text. Only the JSON.
 class SimulationEngine:
     """Runs agent-vs-simulated-customer conversations and evaluates them."""
 
-    def __init__(self, db: AsyncSession, business_id: Optional[uuid.UUID] = None):
+    def __init__(self, db: AsyncSession, business_id: uuid.UUID | None = None):
         self.db = db
         self.business_id = business_id
         self.max_turns = 20
@@ -164,7 +164,7 @@ class SimulationEngine:
     # Persona generation
     # ------------------------------------------------------------------
 
-    async def create_customer_persona(self, difficulty: str = "medium") -> Dict[str, Any]:
+    async def create_customer_persona(self, difficulty: str = "medium") -> dict[str, Any]:
         """Generate a synthetic customer profile using the LLM."""
         if not self.business_id:
             # Fallback to deterministic persona based on difficulty
@@ -198,7 +198,7 @@ class SimulationEngine:
 
         return self._fallback_persona(difficulty)
 
-    def _fallback_persona(self, difficulty: str) -> Dict[str, Any]:
+    def _fallback_persona(self, difficulty: str) -> dict[str, Any]:
         """Deterministic fallback persona when LLM is unavailable."""
         mapping = {
             "easy": "friendly",
@@ -221,7 +221,7 @@ class SimulationEngine:
         self,
         scenario_id: uuid.UUID,
         agent_type: str,
-        run_id: Optional[uuid.UUID] = None,
+        run_id: uuid.UUID | None = None,
     ) -> TrainingRun:
         """Run a full simulation: load scenario, converse, evaluate, save results."""
         start_time = time.monotonic()
@@ -268,7 +268,7 @@ class SimulationEngine:
                 persona = await self.create_customer_persona(scenario.difficulty)
 
             # Run conversation loop
-            messages_log: List[Dict[str, Any]] = []
+            messages_log: list[dict[str, Any]] = []
             conversation_turns = 0
             objective_achieved = False
             conversation_ended = False
@@ -279,7 +279,7 @@ class SimulationEngine:
                 agent_objective=scenario.objective,
                 conversation_history=messages_log,
             )
-            messages_log.append({"role": "customer", "content": customer_msg, "turn": 0, "timestamp": datetime.now(timezone.utc).isoformat()})
+            messages_log.append({"role": "customer", "content": customer_msg, "turn": 0, "timestamp": datetime.now(UTC).isoformat()})
 
             for turn in range(1, self.max_turns + 1):
                 conversation_turns = turn
@@ -291,7 +291,7 @@ class SimulationEngine:
                     scenario_description=scenario.description or "",
                     conversation_history=messages_log,
                 )
-                messages_log.append({"role": "agent", "content": agent_msg, "turn": turn, "timestamp": datetime.now(timezone.utc).isoformat()})
+                messages_log.append({"role": "agent", "content": agent_msg, "turn": turn, "timestamp": datetime.now(UTC).isoformat()})
 
                 # Check for objective achievement signals from agent message
                 if self._check_agent_objective_achievement(agent_msg, scenario.objective):
@@ -303,7 +303,7 @@ class SimulationEngine:
                     agent_objective=scenario.objective,
                     conversation_history=messages_log,
                 )
-                messages_log.append({"role": "customer", "content": customer_msg, "turn": turn, "timestamp": datetime.now(timezone.utc).isoformat()})
+                messages_log.append({"role": "customer", "content": customer_msg, "turn": turn, "timestamp": datetime.now(UTC).isoformat()})
 
                 # Check for conversation end signals
                 if self._check_conversation_end(customer_msg):
@@ -330,11 +330,11 @@ class SimulationEngine:
             logger.exception(f"Simulation run {run.id} failed: {exc}")
             run.status = "failed"
             run.feedback = f"Simulation failed: {str(exc)[:500]}"
-            run.completed_at = datetime.now(timezone.utc)
+            run.completed_at = datetime.now(UTC)
             await self.db.commit()
             raise
 
-    async def _resolve_agent_id(self, agent_type: str) -> Optional[uuid.UUID]:
+    async def _resolve_agent_id(self, agent_type: str) -> uuid.UUID | None:
         """Try to resolve agent_type string to an AgentConfig UUID."""
         # If it looks like a UUID, use it directly
         try:
@@ -363,7 +363,7 @@ class SimulationEngine:
         agent_type: str,
         objective: str,
         scenario_description: str,
-        conversation_history: List[Dict[str, Any]],
+        conversation_history: list[dict[str, Any]],
     ) -> str:
         """Generate the AI agent's next message using the existing LLM router."""
         system_prompt = AGENT_SYSTEM_PROMPT_TEMPLATE.format(
@@ -396,9 +396,9 @@ class SimulationEngine:
 
     async def _generate_customer_message(
         self,
-        persona: Dict[str, Any],
+        persona: dict[str, Any],
         agent_objective: str,
-        conversation_history: List[Dict[str, Any]],
+        conversation_history: list[dict[str, Any]],
     ) -> str:
         """Generate the simulated customer's next message using the LLM."""
         system_prompt = CUSTOMER_SYSTEM_PROMPT_TEMPLATE.format(
@@ -461,8 +461,8 @@ class SimulationEngine:
     async def evaluate_simulation(
         self,
         run_id: uuid.UUID,
-        scenario: Optional[TrainingScenario] = None,
-    ) -> Dict[str, Any]:
+        scenario: TrainingScenario | None = None,
+    ) -> dict[str, Any]:
         """Use LLM to evaluate a completed simulation run."""
         result = await self.db.execute(
             select(TrainingRun).where(TrainingRun.id == run_id)
@@ -513,13 +513,13 @@ class SimulationEngine:
         run.skills_tested = eval_data.get("skills_tested", {})
         run.feedback = eval_data.get("feedback")
         run.status = "completed"
-        run.completed_at = datetime.now(timezone.utc)
+        run.completed_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(run)
 
         return eval_data
 
-    def _parse_evaluation(self, text: str) -> Dict[str, Any]:
+    def _parse_evaluation(self, text: str) -> dict[str, Any]:
         """Parse evaluation JSON from LLM response."""
         text = (text or "").strip()
         try:

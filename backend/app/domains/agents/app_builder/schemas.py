@@ -1,16 +1,17 @@
 """App MVP Builder Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AppFeatureBase(BaseModel):
     feature_name: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: int = 1
-    estimated_hours: Optional[int] = None
+    estimated_hours: int | None = None
 
 
 class AppFeatureCreate(AppFeatureBase):
@@ -28,7 +29,7 @@ class AppFeatureResponse(AppFeatureBase):
 class AppBuildJobBase(BaseModel):
     app_name: str
     description: str
-    features: List[Dict[str, Any]] = Field(default_factory=list)
+    features: list[dict[str, Any]] = Field(default_factory=list)
     tech_stack: str = "nextjs-fastapi-postgres"
 
 
@@ -36,15 +37,15 @@ class AppBuildJobCreate(BaseModel):
     business_id: UUID
     app_name: str
     description: str
-    features: List[AppFeatureCreate] = Field(default_factory=list)
+    features: list[AppFeatureCreate] = Field(default_factory=list)
     tech_stack: str = "nextjs-fastapi-postgres"
 
 
 class AppBuildJobUpdate(BaseModel):
-    status: Optional[str] = None
-    code_zip_url: Optional[str] = None
-    preview_url: Optional[str] = None
-    deploy_instructions: Optional[str] = None
+    status: str | None = None
+    code_zip_url: str | None = None
+    preview_url: str | None = None
+    deploy_instructions: str | None = None
 
 
 class AppBuildJobResponse(BaseModel):
@@ -52,12 +53,12 @@ class AppBuildJobResponse(BaseModel):
     business_id: UUID
     app_name: str
     description: str
-    features: List[Dict[str, Any]] = Field(default_factory=list)
+    features: list[dict[str, Any]] = Field(default_factory=list)
     tech_stack: str
     status: str
-    code_zip_url: Optional[str] = None
-    preview_url: Optional[str] = None
-    deploy_instructions: Optional[str] = None
+    code_zip_url: str | None = None
+    preview_url: str | None = None
+    deploy_instructions: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -65,10 +66,10 @@ class AppBuildJobResponse(BaseModel):
 
 
 class AppBuildJobDetailResponse(AppBuildJobResponse):
-    features_detail: List[AppFeatureResponse] = Field(default_factory=list)
+    features_detail: list[AppFeatureResponse] = Field(default_factory=list)
 
 
 class AppBuildPreviewResponse(BaseModel):
-    preview_url: Optional[str] = None
-    deploy_instructions: Optional[str] = None
+    preview_url: str | None = None
+    deploy_instructions: str | None = None
     status: str

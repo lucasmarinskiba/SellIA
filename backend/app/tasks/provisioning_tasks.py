@@ -4,16 +4,15 @@ Emula el patrón de workers de Atlassian que consumen de SQS
 y actualizan estado en DynamoDB (en nuestro caso: PostgreSQL).
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from celery import shared_task
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.domains.provisioning.models import ResourceRequest
 from app.domains.provisioning import service as provisioning_service
-from app.core.async_bridge import run_async
+from app.domains.provisioning.models import ResourceRequest
 
 logger = get_logger(__name__)
 
@@ -52,7 +51,7 @@ async def _process_resource_request_async(task_self, request_id: str):
                 raise ValueError(f"Tipo de recurso no soportado: {request.resource_type}")
 
             request.status = "completed"
-            request.completed_at = datetime.now(timezone.utc)
+            request.completed_at = datetime.now(UTC)
             await db.commit()
             await provisioning_service.add_event(
                 db, request.id, "completed", "Provisionamiento completado exitosamente"
@@ -62,10 +61,10 @@ async def _process_resource_request_async(task_self, request_id: str):
         except Exception as exc:
             request.status = "failed"
             request.error_message = str(exc)
-            request.completed_at = datetime.now(timezone.utc)
+            request.completed_at = datetime.now(UTC)
             await db.commit()
             await provisioning_service.add_event(
-                db, request.id, "failed", f"Error: {str(exc)}"
+                db, request.id, "failed", f"Error: {exc!s}"
             )
             logger.exception(f"Provisioning request {request_id} failed")
             raise task_self.retry(exc=exc) from exc

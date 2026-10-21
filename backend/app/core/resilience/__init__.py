@@ -1,10 +1,11 @@
 """Resilience module — Retry engines, circuit breakers, failover logic."""
-import logging
 import asyncio
-from datetime import datetime, timedelta
-from typing import Callable, Any, Optional, Dict
-from enum import Enum
+import logging
 import re as _re
+from collections.abc import Callable
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class CircuitState(str, Enum):
 
 class ServiceHealthTracker:
     def __init__(self):
-        self.services: Dict[str, Any] = {}
+        self.services: dict[str, Any] = {}
 
     def get_breaker(self, service_name: str):
         if service_name not in self.services:
@@ -33,7 +34,7 @@ class ServiceHealthTracker:
     def record_failure(self, service_name: str):
         pass
 
-    def status(self) -> Dict[str, str]:
+    def status(self) -> dict[str, str]:
         return {}
 
 
@@ -57,37 +58,37 @@ async def retry_with_exponential_backoff(func: Callable, args: tuple = (), kwarg
                 delay *= 2
     raise last_exception
 
-from .retry_engine import (
-    RetryEngine,
-    RetryPolicy,
-    RetryConfig,
-    CircuitBreaker,
-    CircuitBreakerState,
-    RetryHistory,
-    RetryAttempt,
-    retry,
-    retry_engine,
-)
-
 # InputValidator lives in app/core/input_validation.py (moved out of the old
 # app/core/resilience.py file, which collided with this package's name and
 # was silently shadowed by it) — re-exported here so existing callers of
 # `from app.core.resilience import InputValidator` keep working.
 from app.core.input_validation import InputValidator
 
+from .retry_engine import (
+    CircuitBreaker,
+    CircuitBreakerState,
+    RetryAttempt,
+    RetryConfig,
+    RetryEngine,
+    RetryHistory,
+    RetryPolicy,
+    retry,
+    retry_engine,
+)
+
 __all__ = [
-    "RetryEngine",
-    "RetryPolicy",
-    "RetryConfig",
     "CircuitBreaker",
     "CircuitBreakerState",
-    "RetryHistory",
-    "RetryAttempt",
-    "retry",
-    "retry_engine",
     "CircuitState",
+    "InputValidator",
+    "RetryAttempt",
+    "RetryConfig",
+    "RetryEngine",
+    "RetryHistory",
+    "RetryPolicy",
     "ServiceHealthTracker",
     "health_tracker",
+    "retry",
+    "retry_engine",
     "retry_with_exponential_backoff",
-    "InputValidator",
 ]

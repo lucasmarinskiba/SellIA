@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,9 @@ class FinancingAdvisorAgent:
     """Guide buyers through financing options."""
 
     def __init__(self):
-        self.financing_plans: Dict[str, Dict[str, Any]] = {}
+        self.financing_plans: dict[str, dict[str, Any]] = {}
 
-    def calculate_mortgage_options(self, purchase_price: float, down_payment_pct: float, credit_score: int) -> List[MortgageOption]:
+    def calculate_mortgage_options(self, purchase_price: float, down_payment_pct: float, credit_score: int) -> list[MortgageOption]:
         """Calculate mortgage options based on buyer profile."""
         down_payment = purchase_price * (down_payment_pct / 100)
         loan_amount = purchase_price - down_payment
@@ -108,7 +108,7 @@ class FinancingAdvisorAgent:
             return principal / num_payments
         return principal * (monthly_rate * (1 + monthly_rate) ** num_payments) / (((1 + monthly_rate) ** num_payments) - 1)
 
-    def prequalify_buyer(self, buyer_data: Dict[str, Any]) -> Dict[str, Any]:
+    def prequalify_buyer(self, buyer_data: dict[str, Any]) -> dict[str, Any]:
         """Prequalify buyer for financing."""
         monthly_income = buyer_data.get("monthly_income", 0)
         monthly_debts = buyer_data.get("monthly_debts", 0)
@@ -136,7 +136,7 @@ class FinancingAdvisorAgent:
             "recommendations": self._get_financing_recommendations(credit_score, buyer_data),
         }
 
-    def _get_financing_recommendations(self, credit_score: int, buyer_data: Dict[str, Any]) -> List[str]:
+    def _get_financing_recommendations(self, credit_score: int, buyer_data: dict[str, Any]) -> list[str]:
         """Get financing recommendations for buyer."""
         recommendations = []
 
@@ -157,7 +157,7 @@ class FinancingAdvisorAgent:
 
         return recommendations
 
-    def estimate_closing_costs(self, purchase_price: float) -> Dict[str, float]:
+    def estimate_closing_costs(self, purchase_price: float) -> dict[str, float]:
         """Estimate closing costs (typically 2-5% of purchase price)."""
         return {
             "loan_origination": purchase_price * 0.01,
@@ -174,7 +174,7 @@ class FinancingAdvisorAgent:
             "total": purchase_price * 0.035,  # Average 3.5%
         }
 
-    def calculate_affordability(self, annual_income: float, monthly_debts: float, down_payment: float) -> Dict[str, Any]:
+    def calculate_affordability(self, annual_income: float, monthly_debts: float, down_payment: float) -> dict[str, Any]:
         """Calculate home affordability."""
         monthly_income = annual_income / 12
         max_monthly_payment = (monthly_income * 0.43) - monthly_debts

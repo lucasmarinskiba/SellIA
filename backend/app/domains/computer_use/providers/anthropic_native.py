@@ -9,13 +9,13 @@ Requiere: pip install anthropic
 API: https://docs.anthropic.com/en/docs/build-with-claude/computer-use
 """
 
-import json
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.computer_use.schemas import ComputerUseAction
 from app.domains.computer_use.prompts import COMPUTER_USE_SUMMARY_PROMPT
+from app.domains.computer_use.schemas import ComputerUseAction
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -61,10 +61,10 @@ class AnthropicNativeProvider(ComputerUseProvider):
         self,
         screenshot_base64: str,
         task: str,
-        history: List[Dict[str, Any]],
-        user_message: Optional[str],
-        page_info: Optional[Dict[str, str]],
-    ) -> List[Dict[str, Any]]:
+        history: list[dict[str, Any]],
+        user_message: str | None,
+        page_info: dict[str, str] | None,
+    ) -> list[dict[str, Any]]:
         """Construye mensajes en formato nativo de Anthropic."""
         # Build context
         history_text = ""
@@ -113,7 +113,7 @@ Previous actions:
 
         return messages
 
-    def _parse_tool_use(self, content_blocks: List[Dict[str, Any]]) -> ComputerUseAction:
+    def _parse_tool_use(self, content_blocks: list[dict[str, Any]]) -> ComputerUseAction:
         """Parsea tool_use blocks de Anthropic a ComputerUseAction."""
         for block in content_blocks:
             if block.get("type") == "tool_use" and block.get("name") == "computer":
@@ -204,9 +204,9 @@ Previous actions:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         if history is None:
             history = []
@@ -244,9 +244,9 @@ Previous actions:
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]],
-        user_message: Optional[str],
-        page_info: Optional[Dict[str, str]],
+        history: list[dict[str, Any]],
+        user_message: str | None,
+        page_info: dict[str, str] | None,
     ) -> ComputerUseAction:
         """Fallback al provider OpenAI-style cuando la API nativa falla."""
         logger.warning("Falling back to LangChain Anthropic provider")
@@ -256,7 +256,7 @@ Previous actions:
         provider = OpenAIVisionProvider(api_key=self.api_key, model=self.model)
         # Override to use Anthropic model
         from langchain_anthropic import ChatAnthropic
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from langchain_core.messages import HumanMessage, SystemMessage
 
         screenshot_base64 = self._encode_image(screenshot_bytes)
 
@@ -315,7 +315,7 @@ Previous actions:
                 reason="Both native and fallback failed",
             )
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         actions_text = "\n".join(
             f"Step {a.get('step_number', i+1)}: {a.get('action_type')} — {a.get('reason', '')}"
             for i, a in enumerate(actions_log)

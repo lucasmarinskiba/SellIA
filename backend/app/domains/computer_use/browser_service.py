@@ -13,11 +13,11 @@ Optimizado para precisión, velocidad y eficiencia:
 
 import io
 import re
-from typing import Optional, Any
+from typing import Any
 from urllib.parse import urlparse
 
-from playwright.async_api import async_playwright
 from PIL import Image
+from playwright.async_api import async_playwright
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
@@ -41,14 +41,14 @@ class BrowserService:
 
     def __init__(self) -> None:
         self._playwright = None
-        self._browser: Optional[Any] = None
-        self._context: Optional[Any] = None
-        self._page: Optional[Any] = None
+        self._browser: Any | None = None
+        self._context: Any | None = None
+        self._page: Any | None = None
         self._viewport = {"width": 1280, "height": 720}
 
     # ── lifecycle ───────────────────────────────────────────────────────
     @property
-    def page(self) -> Optional[Any]:
+    def page(self) -> Any | None:
         """Active Playwright page (read-only accessor)."""
         return self._page
 
@@ -131,7 +131,7 @@ class BrowserService:
         logger.info("BrowserService stopped")
 
     # ── internal helpers ────────────────────────────────────────────────
-    async def _settle(self, floor_ms: Optional[int] = None) -> None:
+    async def _settle(self, floor_ms: int | None = None) -> None:
         """Espera inteligente: red inactiva + DOM listo, con piso corto.
 
         Reemplaza los ``wait_for_timeout`` fijos. Sale apenas la página se
@@ -180,7 +180,7 @@ class BrowserService:
         if not self._validate_url(url):
             raise ValueError(f"URL no permitida: {url}")
 
-        last_err: Optional[str] = None
+        last_err: str | None = None
         for attempt in range(2):
             try:
                 response = await self._page.goto(
@@ -208,7 +208,7 @@ class BrowserService:
         raw_bytes = await self._page.screenshot(type="png", full_page=False)
         return self._encode_jpeg(raw_bytes)
 
-    async def screenshot_element(self, selector: str) -> Optional[bytes]:
+    async def screenshot_element(self, selector: str) -> bytes | None:
         """Captura solo un elemento (más preciso y liviano)."""
         if not self._page:
             raise RuntimeError("Browser not started")
@@ -348,7 +348,7 @@ class BrowserService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    async def wait_for_selector(self, selector: str, timeout_ms: Optional[int] = None) -> dict:
+    async def wait_for_selector(self, selector: str, timeout_ms: int | None = None) -> dict:
         """Espera a que aparezca un elemento (sincronización determinística)."""
         if not self._page:
             raise RuntimeError("Browser not started")

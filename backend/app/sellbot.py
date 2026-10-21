@@ -10,113 +10,114 @@ Endpoints:
 - /api/v1/workflows/* (Email automation)
 - /api/v1/lead-sources/* (Prospecting)
 """
-import os
-import logging
-import json
 import asyncio
+import json
+import logging
+import os
+from collections import defaultdict
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException, Depends
-from starlette.middleware.base import BaseHTTPMiddleware
+from datetime import datetime, timedelta
+
+import httpx
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import httpx
-from collections import defaultdict
-from datetime import datetime, timedelta
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.api.v1 import accounting_intelligence as accounting_intelligence_module
+from app.api.v1 import analytics as analytics_module
+from app.api.v1 import attribution as attribution_module
+from app.api.v1 import compliance as compliance_module
+from app.api.v1 import crm_collaboration as crm_collaboration_module
+from app.api.v1 import deal_intelligence as deal_intelligence_module
+from app.api.v1 import email_webhooks as email_webhooks_module
+from app.api.v1 import integrations as integrations_module
+from app.api.v1 import journeys as journeys_module
+from app.api.v1 import lead_sources as lead_sources_module
 
 # Import routers
 from app.api.v1 import leads as leads_module
-from app.api.v1 import workflows as workflows_module
-from app.api.v1 import lead_sources as lead_sources_module
-from app.api.v1 import email_webhooks as email_webhooks_module
-from app.api.v1 import progression as progression_module
-from app.api.v1 import analytics as analytics_module
-from app.api.v1 import attribution as attribution_module
-from app.api.v1 import journeys as journeys_module
-from app.api.v1 import compliance as compliance_module
-from app.api.v1 import integrations as integrations_module
-from app.api.v1 import sales_agents as sales_agents_module
-from app.api.v1 import neural_networks as neural_networks_module
-from app.api.v1 import sales_automation as sales_automation_module
-from app.api.v1 import deal_intelligence as deal_intelligence_module
-from app.api.v1 import sales_coaching as sales_coaching_module
-from app.api.v1 import crm_collaboration as crm_collaboration_module
-from app.api.v1 import sales_funnel_orchestration as sales_funnel_orchestration_module
 from app.api.v1 import marketing_intelligence as marketing_intelligence_module
-from app.api.v1 import accounting_intelligence as accounting_intelligence_module
+from app.api.v1 import neural_networks as neural_networks_module
+from app.api.v1 import progression as progression_module
+from app.api.v1 import sales_agents as sales_agents_module
+from app.api.v1 import sales_automation as sales_automation_module
+from app.api.v1 import sales_coaching as sales_coaching_module
+from app.api.v1 import sales_funnel_orchestration as sales_funnel_orchestration_module
 from app.api.v1 import sales_operations as sales_operations_module
-
-# Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
-from app.domains.fomo_dynamics import router as fomo_dynamics_router
-
-# Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
-from app.domains.perception_engineering import router as perception_engineering_router
-
-# Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
-from app.domains.auto_marketing import router as auto_marketing_router
-
-# Phase X9: AI User Intelligence (Deep Profiling)
-from app.domains.user_intelligence import router as user_intelligence_router
-
-# Phase X10: FOMO Generation (Personalized Scarcity)
-from app.domains.fomo_generation import router as fomo_generation_router
-
-# Phase X11: Loyalty & Retention (VIP Program)
-from app.domains.loyalty_engine import router as loyalty_engine_router
-
-# Phase X12: Conversion & Attraction (Multi-touch Closing)
-from app.domains.conversion_engine import router as conversion_engine_router
-
-# Acquisition Orchestrator (X9→X10→X12→X11 Integration)
-from app.domains.acquisition_orchestrator import router as acquisition_orchestrator_router
-
-# Instagram Automation (@sell_.ia + FeedIA synergy)
-from app.domains.instagram_automation import router as instagram_automation_router
-
-# Feedback Loop (Conversion data → X9 improvements)
-from app.domains.feedback_loop import router as feedback_loop_router
-
-# FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
-from app.domains.fomo_intelligence import router as fomo_intelligence_router
-
-# ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
-from app.domains.arca_compliance import router as arca_compliance_router
-
-# Business model: se importa explícito porque ChannelConnection.business usa
-# relationship("Business") (string) - SQLAlchemy necesita la clase ya cargada
-# en el registry antes de configurar mappers, y ningún import previo la traía.
-from app.domains.businesses.models import Business
-
-# Location model: Phase 5A location profiles — must be imported before SQLAlchemy mapper config
-from app.domains.businesses.location_models import Location
+from app.api.v1 import workflows as workflows_module
 
 # Nota: api.v1.channels ya se registra en app.main (_try_include, prefix
 # /api/v1/businesses) — no duplicar acá.
-
 # Platforms Integration (TikTok Shop real; resto queda como TODO histórico)
 from app.api.v1.platforms_integration import router as platforms_integration_router
-
-from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
-from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
-from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
-
-# Database
-from app.db import init_db, close_db, get_db
-
-# Scheduler
-from app.core.scheduler import get_scheduler
-from app.core.task_processor import init_processor, start_processor, stop_processor, get_processor_stats
-
-# Progression
-from app.services.progression_service import init_progression_service
 
 # Cold-lead follow-up loop (Task 5)
 from app.core.followup_scheduler import run_followup_loop, stop_followup_loop
 
+# Scheduler
+from app.core.scheduler import get_scheduler
+from app.core.startup_state import router as startup_router
+
 # Liveness vs readiness of the background bootstrap (/api/ready)
-from app.core.startup_state import startup_state, router as startup_router
+from app.core.startup_state import startup_state
+from app.core.task_processor import (
+    get_processor_stats,
+    init_processor,
+    start_processor,
+    stop_processor,
+)
+
+# Database
+from app.db import close_db, get_db, init_db
+
+# Acquisition Orchestrator (X9→X10→X12→X11 Integration)
+from app.domains.acquisition_orchestrator import (
+    router as acquisition_orchestrator_router,
+)
+
+# ARCA Compliance (CUIT, Monotributo, INCOTERMS, NCM — datos reales)
+from app.domains.arca_compliance import router as arca_compliance_router
+
+# Phase X8: Auto-Marketing & Growth (SellIA Self-Promotion)
+from app.domains.auto_marketing import router as auto_marketing_router
+
+# Location model: Phase 5A location profiles — must be imported before SQLAlchemy mapper config
+# Business model: se importa explícito porque ChannelConnection.business usa
+# relationship("Business") (string) - SQLAlchemy necesita la clase ya cargada
+# en el registry antes de configurar mappers, y ningún import previo la traía.
+# Phase X12: Conversion & Attraction (Multi-touch Closing)
+from app.domains.conversion_engine import router as conversion_engine_router
+
+# Feedback Loop (Conversion data → X9 improvements)
+from app.domains.feedback_loop import router as feedback_loop_router
+
+# Phase X6: FOMO Dynamics (Ultra-Potent Psychology Engine)
+from app.domains.fomo_dynamics import router as fomo_dynamics_router
+
+# Phase X10: FOMO Generation (Personalized Scarcity)
+from app.domains.fomo_generation import router as fomo_generation_router
+
+# FOMO Intelligence (Escasez real / Prueba social / Exclusividad / Transparencia)
+from app.domains.fomo_intelligence import router as fomo_intelligence_router
+
+# Instagram Automation (@sell_.ia + FeedIA synergy)
+from app.domains.instagram_automation import router as instagram_automation_router
+
+# Phase X11: Loyalty & Retention (VIP Program)
+from app.domains.loyalty_engine import router as loyalty_engine_router
+
+# Phase X7: Perception Engineering (Psychology-Driven Sales Agent)
+from app.domains.perception_engineering import router as perception_engineering_router
+
+# Phase X9: AI User Intelligence (Deep Profiling)
+from app.domains.user_intelligence import router as user_intelligence_router
+
+# Progression
+from app.services.progression_service import init_progression_service
 
 scheduler = None
 processor = None
@@ -147,6 +148,7 @@ async def _bootstrap_database() -> None:
     # Migrate schema for 2FA columns
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -176,6 +178,7 @@ async def _bootstrap_database() -> None:
     # table so this never got created by the disabled auto-create_all path.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -259,6 +262,7 @@ async def _bootstrap_database() -> None:
     # bootstrapped isolated Base, so none of these ever existed either way.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         id_col = "VARCHAR(36) PRIMARY KEY"
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
@@ -367,6 +371,7 @@ async def _bootstrap_database() -> None:
     # FK relationship to a UUID-typed table).
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -402,6 +407,7 @@ async def _bootstrap_database() -> None:
     # intelligence) depends on this table actually existing.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -497,6 +503,7 @@ async def _bootstrap_database() -> None:
     # in this function. Used by app/domains/enterprise/voice_agent.py.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -560,6 +567,7 @@ async def _bootstrap_database() -> None:
     # ADD COLUMN IF NOT EXISTS rather than CREATE TABLE.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -622,6 +630,7 @@ async def _bootstrap_database() -> None:
     # payment_service.py) actually reads/writes these tables.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -671,6 +680,7 @@ async def _bootstrap_database() -> None:
     # and conversion record silently no-op'd behind a caught exception.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -734,6 +744,7 @@ async def _bootstrap_database() -> None:
     # never existed -- run it for real, not a fabricated shortcut list.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         ts_col = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
         id_type = "VARCHAR(36)" if is_sqlite else "UUID"
@@ -811,13 +822,24 @@ async def _bootstrap_database() -> None:
     # init_db() already documents in a comment but never implements), in FK
     # dependency order, so one bad table can't roll back the others.
     try:
-        from app.core.database import engine, Base
-        from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+        from app.core.database import Base, engine
+        from app.domains.computer_use.models import (
+            ComputerUseMessage,
+            ComputerUseSession,
+            ComputerUseStep,
+        )
         from app.domains.computer_use.models_extended import (
-            ComputerUseTemplate, ComputerUseScheduledTask, ComputerUseAnnotation,
-            ComputerUseBrowserProfile, ComputerUseProxyConfig, ComputerUseSessionShare,
-            ComputerUseBatchJob, ComputerUseSessionTag, ComputerUseSessionNote,
-            ComputerUseSessionBookmark, ComputerUseWebhook,
+            ComputerUseAnnotation,
+            ComputerUseBatchJob,
+            ComputerUseBrowserProfile,
+            ComputerUseProxyConfig,
+            ComputerUseScheduledTask,
+            ComputerUseSessionBookmark,
+            ComputerUseSessionNote,
+            ComputerUseSessionShare,
+            ComputerUseSessionTag,
+            ComputerUseTemplate,
+            ComputerUseWebhook,
         )
 
         cu_batches = [
@@ -859,6 +881,7 @@ async def _bootstrap_database() -> None:
     # broke every one of those call sites with AttributeError).
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -880,6 +903,7 @@ async def _bootstrap_database() -> None:
     # same class of drift-caused AttributeError as is_active above).
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -913,6 +937,7 @@ async def _bootstrap_database() -> None:
     # investor_pitch/service.py, agents.py — same drift-caused AttributeError).
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -935,6 +960,7 @@ async def _bootstrap_database() -> None:
     # app.domains.business_context.models.BusinessContext.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -983,6 +1009,7 @@ async def _bootstrap_database() -> None:
     # columns need this same idempotent-patch idiom used above for 2FA.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -1013,6 +1040,7 @@ async def _bootstrap_database() -> None:
     # that might use the new value in the same transaction (Postgres rule).
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         if not is_sqlite:
             async with AsyncSessionLocal() as db:
@@ -1033,6 +1061,7 @@ async def _bootstrap_database() -> None:
     # app.domains.payments.payment_models.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -1148,6 +1177,7 @@ async def _bootstrap_database() -> None:
     # the webhook's own try/except and the payments dashboard stays empty.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -1202,6 +1232,7 @@ async def _bootstrap_database() -> None:
     # and cap ("max N nudges per conversation") without re-scanning history.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -1228,6 +1259,7 @@ async def _bootstrap_database() -> None:
     # table llm_provider.py checks/increments on every LLM call.
     try:
         from sqlalchemy import text
+
         from app.core.database import AsyncSessionLocal, is_sqlite
         async with AsyncSessionLocal() as db:
             if is_sqlite:
@@ -1273,7 +1305,9 @@ async def _bootstrap_database() -> None:
         await ensure_ad_budget_tables()
         from app.domains.forecasting.bootstrap import ensure_forecasting_tables
         await ensure_forecasting_tables()
-        from app.domains.brand_transformation.bootstrap import ensure_brand_transformation_tables
+        from app.domains.brand_transformation.bootstrap import (
+            ensure_brand_transformation_tables,
+        )
         await ensure_brand_transformation_tables()
         startup_state.mark("brand_transformation")
         from app.domains.ai_activity.bootstrap import ensure_ai_activity_tables
@@ -1302,14 +1336,18 @@ async def _bootstrap_database() -> None:
         await ensure_leads_owner_column()
         from app.db.catalog_bootstrap import ensure_catalog_item_columns
         await ensure_catalog_item_columns()
-        from app.domains.seo_config.positioning_bootstrap import ensure_positioning_recommendation_columns
+        from app.domains.seo_config.positioning_bootstrap import (
+            ensure_positioning_recommendation_columns,
+        )
         await ensure_positioning_recommendation_columns()
-        from app.domains.seo_config.conversion_events_bootstrap import ensure_conversion_event_dedupe_column
+        from app.domains.seo_config.conversion_events_bootstrap import (
+            ensure_conversion_event_dedupe_column,
+        )
         await ensure_conversion_event_dedupe_column()
+        from app.core.database import engine
         from app.domains.hr.models import HR_TABLES
         from app.domains.legal.models import LEGAL_TABLES
         from app.domains.procurement.models import PROCUREMENT_TABLES
-        from app.core.database import engine
         # Only open the transaction for tables that are actually missing; the
         # checkfirst per table below stays as the safety net (and is the whole
         # path when the catalog listing is unavailable).
@@ -1476,6 +1514,7 @@ rate_limiter = RateLimiter(requests_per_minute=100)
 @app.middleware("http")
 async def log_request(request: Request, call_next):
     import time
+
     from app.middleware.threat_intel import get_client_ip
     start_time = time.time()
     client_ip = get_client_ip(request)
@@ -1794,7 +1833,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         # Check database
         await asyncio.wait_for(db.execute(select(1)), timeout=3)
         db_status = "ok"
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("Database health check timed out")
         db_status = "timeout"
     except Exception as e:

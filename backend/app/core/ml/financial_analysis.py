@@ -1,10 +1,10 @@
 """Financial Analysis — Budgeting, Costs, Cash Flow, Sensitivity Analysis."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import numpy as np
 
@@ -24,11 +24,11 @@ class CostItem:
     name: str
     cost_type: CostType
     monthly_amount: float
-    annual_amount: Optional[float] = None
+    annual_amount: float | None = None
     category: str = "general"
     is_recurring: bool = True
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
     def get_annual_cost(self) -> float:
         """Calculate annual cost."""
@@ -44,8 +44,8 @@ class RevenueItem:
     name: str
     monthly_amount: float
     growth_rate: float = 0.0  # Monthly growth rate
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
     def get_annual_revenue(self) -> float:
         """Calculate annual revenue."""
@@ -61,9 +61,9 @@ class BudgetPlanner:
 
     def __init__(self, currency: str = "USD"):
         self.currency = currency
-        self.costs: Dict[str, CostItem] = {}
-        self.revenues: Dict[str, RevenueItem] = {}
-        self.budget_periods: List[Dict[str, Any]] = []
+        self.costs: dict[str, CostItem] = {}
+        self.revenues: dict[str, RevenueItem] = {}
+        self.budget_periods: list[dict[str, Any]] = []
 
     def add_cost(self, cost: CostItem) -> None:
         """Add cost item."""
@@ -75,7 +75,7 @@ class BudgetPlanner:
         self.revenues[revenue.name] = revenue
         logger.info(f"Added revenue: {revenue.name}")
 
-    def project_budget(self, months: int = 12) -> Dict[str, Any]:
+    def project_budget(self, months: int = 12) -> dict[str, Any]:
         """Project budget for specified months."""
         monthly_budgets = []
         cumulative_profit = 0
@@ -120,7 +120,7 @@ class BudgetPlanner:
             "breakeven_month": self._find_breakeven_month(monthly_budgets),
         }
 
-    def _is_active(self, start_date: Optional[datetime], end_date: Optional[datetime], check_date: datetime) -> bool:
+    def _is_active(self, start_date: datetime | None, end_date: datetime | None, check_date: datetime) -> bool:
         """Check if item is active on given date."""
         if start_date and check_date < start_date:
             return False
@@ -128,7 +128,7 @@ class BudgetPlanner:
             return False
         return True
 
-    def _find_breakeven_month(self, monthly_budgets: List[Dict[str, Any]]) -> Optional[int]:
+    def _find_breakeven_month(self, monthly_budgets: list[dict[str, Any]]) -> int | None:
         """Find month when cumulative profit becomes positive."""
         for i, budget in enumerate(monthly_budgets):
             if budget["cumulative_profit"] >= 0:
@@ -140,7 +140,7 @@ class CostAnalyzer:
     """Analyze fixed, variable, and marginal costs."""
 
     def __init__(self):
-        self.cost_data: List[Tuple[float, float]] = []  # (units, cost)
+        self.cost_data: list[tuple[float, float]] = []  # (units, cost)
         self.fixed_costs: float = 0.0
         self.variable_cost_per_unit: float = 0.0
 
@@ -148,7 +148,7 @@ class CostAnalyzer:
         """Add cost observation."""
         self.cost_data.append((units_produced, total_cost))
 
-    def analyze_costs(self) -> Dict[str, Any]:
+    def analyze_costs(self) -> dict[str, Any]:
         """Analyze cost structure."""
         if len(self.cost_data) < 2:
             return {"error": "Need at least 2 observations"}
@@ -194,7 +194,7 @@ class ProfitMarginCalculator:
     """Calculate gross/net margins, ROI, payback period."""
 
     def __init__(self):
-        self.transactions: List[Dict[str, float]] = []
+        self.transactions: list[dict[str, float]] = []
 
     def add_transaction(self, revenue: float, cost_of_goods: float, operating_expenses: float, taxes: float = 0.0) -> None:
         """Add transaction for analysis."""
@@ -252,7 +252,7 @@ class ProfitMarginCalculator:
             return 0.0
         return (profit / initial_investment) * 100
 
-    def payback_period(self, initial_investment: float, monthly_profit: float) -> Optional[float]:
+    def payback_period(self, initial_investment: float, monthly_profit: float) -> float | None:
         """Calculate payback period in months."""
         if monthly_profit <= 0:
             return None
@@ -263,10 +263,10 @@ class AssetsLiabilitiesTracker:
     """Track balance sheet (assets, liabilities, equity)."""
 
     def __init__(self):
-        self.assets: Dict[str, float] = {}
-        self.liabilities: Dict[str, float] = {}
-        self.equity: Dict[str, float] = {}
-        self.snapshots: List[Dict[str, Any]] = []
+        self.assets: dict[str, float] = {}
+        self.liabilities: dict[str, float] = {}
+        self.equity: dict[str, float] = {}
+        self.snapshots: list[dict[str, Any]] = []
 
     def add_asset(self, name: str, value: float) -> None:
         """Add asset."""
@@ -280,7 +280,7 @@ class AssetsLiabilitiesTracker:
         """Add equity."""
         self.equity[name] = value
 
-    def get_balance_sheet(self) -> Dict[str, Any]:
+    def get_balance_sheet(self) -> dict[str, Any]:
         """Generate balance sheet."""
         total_assets = sum(self.assets.values())
         total_liabilities = sum(self.liabilities.values())
@@ -300,7 +300,7 @@ class AssetsLiabilitiesTracker:
         self.snapshots.append(snapshot)
         return snapshot
 
-    def calculate_financial_ratios(self) -> Dict[str, float]:
+    def calculate_financial_ratios(self) -> dict[str, float]:
         """Calculate key financial ratios."""
         total_assets = sum(self.assets.values())
         total_liabilities = sum(self.liabilities.values())
@@ -321,8 +321,8 @@ class CashFlowProjector:
     """Project monthly, quarterly, annual cash flows."""
 
     def __init__(self):
-        self.cash_inflows: List[Dict[str, Any]] = []
-        self.cash_outflows: List[Dict[str, Any]] = []
+        self.cash_inflows: list[dict[str, Any]] = []
+        self.cash_outflows: list[dict[str, Any]] = []
         self.starting_balance: float = 0.0
 
     def set_starting_balance(self, amount: float) -> None:
@@ -347,7 +347,7 @@ class CashFlowProjector:
             "start_month": start_month,
         })
 
-    def project(self, months: int = 12) -> Dict[str, Any]:
+    def project(self, months: int = 12) -> dict[str, Any]:
         """Project cash flow."""
         cash_balance = self.starting_balance
         monthly_flows = []
@@ -387,11 +387,7 @@ class CashFlowProjector:
         total = 0
         for inflow in self.cash_inflows:
             if month >= inflow["start_month"]:
-                if inflow["frequency"] == "monthly":
-                    total += inflow["amount"]
-                elif inflow["frequency"] == "quarterly" and month % 3 == 0:
-                    total += inflow["amount"]
-                elif inflow["frequency"] == "annual" and month == 12:
+                if inflow["frequency"] == "monthly" or inflow["frequency"] == "quarterly" and month % 3 == 0 or inflow["frequency"] == "annual" and month == 12:
                     total += inflow["amount"]
         return total
 
@@ -400,11 +396,7 @@ class CashFlowProjector:
         total = 0
         for outflow in self.cash_outflows:
             if month >= outflow["start_month"]:
-                if outflow["frequency"] == "monthly":
-                    total += outflow["amount"]
-                elif outflow["frequency"] == "quarterly" and month % 3 == 0:
-                    total += outflow["amount"]
-                elif outflow["frequency"] == "annual" and month == 12:
+                if outflow["frequency"] == "monthly" or outflow["frequency"] == "quarterly" and month % 3 == 0 or outflow["frequency"] == "annual" and month == 12:
                     total += outflow["amount"]
         return total
 
@@ -413,18 +405,18 @@ class SensitivityAnalyzer:
     """What-if scenarios and sensitivity analysis."""
 
     def __init__(self):
-        self.base_case: Dict[str, float] = {}
-        self.scenarios: Dict[str, Dict[str, float]] = {}
+        self.base_case: dict[str, float] = {}
+        self.scenarios: dict[str, dict[str, float]] = {}
 
-    def set_base_case(self, variables: Dict[str, float]) -> None:
+    def set_base_case(self, variables: dict[str, float]) -> None:
         """Set baseline assumptions."""
         self.base_case = variables.copy()
 
-    def create_scenario(self, name: str, variables: Dict[str, float]) -> None:
+    def create_scenario(self, name: str, variables: dict[str, float]) -> None:
         """Create alternative scenario."""
         self.scenarios[name] = variables.copy()
 
-    def analyze_sensitivity(self, outcome_fn: callable, variable: str, range_pct: float = 0.2) -> Dict[str, Any]:
+    def analyze_sensitivity(self, outcome_fn: callable, variable: str, range_pct: float = 0.2) -> dict[str, Any]:
         """Analyze impact of variable on outcome."""
         if not self.base_case:
             return {"error": "Base case not set"}
@@ -464,7 +456,7 @@ class SensitivityAnalyzer:
             "sensitivity_level": "high" if abs(np.mean(elasticities)) > 1 else "moderate" if abs(np.mean(elasticities)) > 0.5 else "low",
         }
 
-    def scenario_comparison(self, outcome_fn: callable) -> Dict[str, Any]:
+    def scenario_comparison(self, outcome_fn: callable) -> dict[str, Any]:
         """Compare outcomes across scenarios."""
         if not self.base_case:
             return {"error": "Base case not set"}

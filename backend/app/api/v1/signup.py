@@ -1,22 +1,23 @@
 """User signup/registration endpoints with secure password validation and 2FA."""
 
-from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel, EmailStr, field_validator
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
-from app.core.database import get_db
-from app.core.deps import get_current_user
-from app.core.config import get_settings
-from app.domains.users.models import User
-from datetime import timedelta
-import hashlib
 import base64
-import uuid
 import re
+import uuid
+from datetime import timedelta
+from io import BytesIO
+
 import bcrypt
 import pyotp
 import qrcode
-from io import BytesIO
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, field_validator
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import get_settings
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -123,7 +124,7 @@ async def signup(
         raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Signup failed: {e!s}")
 
 
 class SigninRequest(BaseModel):
@@ -173,7 +174,7 @@ async def signin(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Signin failed: {e!s}")
 
 
 class Enable2FARequest(BaseModel):
@@ -230,7 +231,7 @@ async def verify_2fa(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"2FA verify failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"2FA verify failed: {e!s}")
 
 
 class Disable2FARequest(BaseModel):

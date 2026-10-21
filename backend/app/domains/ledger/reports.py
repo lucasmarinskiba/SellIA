@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +18,15 @@ from app.domains.ledger.models import (
     JournalLine,
     JournalSource,
     JournalStatus,
-    LedgerAccount,
     PeriodStatus,
 )
-from app.domains.ledger.service import BALANCE_TOLERANCE, LedgerError, LedgerService, _q, _utcnow
+from app.domains.ledger.service import (
+    BALANCE_TOLERANCE,
+    LedgerError,
+    LedgerService,
+    _q,
+    _utcnow,
+)
 
 logger = get_logger(__name__)
 
@@ -55,7 +60,7 @@ class LedgerReports:
         self.ledger = LedgerService(db)
 
     async def _account_movements(
-        self, business_id: uuid.UUID, start: Optional[datetime], end: Optional[datetime]
+        self, business_id: uuid.UUID, start: datetime | None, end: datetime | None
     ) -> dict[uuid.UUID, tuple[Decimal, Decimal]]:
         q = (
             select(
@@ -89,9 +94,9 @@ class LedgerReports:
         cogs: dict[str, float] = {}
         opex: dict[str, float] = {}
         by_department: dict[str, Decimal] = {}
-        total_revenue = Decimal("0")
-        total_cogs = Decimal("0")
-        total_opex = Decimal("0")
+        total_revenue = Decimal(0)
+        total_cogs = Decimal(0)
+        total_opex = Decimal(0)
 
         for acc_id, (dr, cr) in moves.items():
             acc = accounts.get(acc_id)
@@ -104,7 +109,7 @@ class LedgerReports:
             elif acc.type == AccountType.EXPENSE.value:
                 amount = dr - cr
                 dept = DEPARTMENT_BY_SUBTYPE.get(acc.subtype or "", "operations")
-                by_department[dept] = by_department.get(dept, Decimal("0")) + amount
+                by_department[dept] = by_department.get(dept, Decimal(0)) + amount
                 if (acc.subtype or "") in COGS_SUBTYPES:
                     total_cogs += amount
                     cogs[acc.name] = float(_q(cogs.get(acc.name, 0) + amount))
@@ -136,7 +141,7 @@ class LedgerReports:
     # Balance sheet
     # ------------------------------------------------------------------
     async def balance_sheet(
-        self, business_id: uuid.UUID, as_of: Optional[datetime] = None
+        self, business_id: uuid.UUID, as_of: datetime | None = None
     ) -> dict[str, Any]:
         as_of = as_of or _utcnow()
         accounts = {a.id: a for a in await self.ledger.get_accounts(business_id)}
@@ -145,12 +150,12 @@ class LedgerReports:
         assets: dict[str, float] = {}
         liabilities: dict[str, float] = {}
         equity: dict[str, float] = {}
-        total_assets = Decimal("0")
-        total_liabilities = Decimal("0")
-        total_equity = Decimal("0")
-        earnings_ytd = Decimal("0")
+        total_assets = Decimal(0)
+        total_liabilities = Decimal(0)
+        total_equity = Decimal(0)
+        earnings_ytd = Decimal(0)
 
-        fy_start = datetime(as_of.year, 1, 1, tzinfo=timezone.utc)
+        fy_start = datetime(as_of.year, 1, 1, tzinfo=UTC)
         fy_moves = await self._account_movements(business_id, fy_start, as_of)
         for acc_id, (dr, cr) in fy_moves.items():
             acc = accounts.get(acc_id)
@@ -211,10 +216,10 @@ class LedgerReports:
         }
 
         # opening cash
-        opening = Decimal("0")
+        opening = Decimal(0)
         open_moves = await self._account_movements(business_id, None, start)
         for aid in cash_ids:
-            dr, cr = open_moves.get(aid, (Decimal("0"), Decimal("0")))
+            dr, cr = open_moves.get(aid, (Decimal(0), Decimal(0)))
             opening += dr - cr
 
         # entries in period that touch cash
@@ -236,10 +241,10 @@ class LedgerReports:
         operating: dict[str, Decimal] = {}
         investing: dict[str, Decimal] = {}
         financing: dict[str, Decimal] = {}
-        net_change = Decimal("0")
+        net_change = Decimal(0)
 
         for eid, lines in entries.items():
-            cash_delta = Decimal("0")
+            cash_delta = Decimal(0)
             for ln, _ in lines:
                 if ln.account_id in cash_ids:
                     cash_delta += ln.debit - ln.credit
@@ -260,7 +265,7 @@ class LedgerReports:
                     bucket, label = financing, "Financiamiento"
                 elif acc.subtype in ("fixed_assets",):
                     bucket, label = investing, "Inversiones"
-            bucket[label] = bucket.get(label, Decimal("0")) + cash_delta
+            bucket[label] = bucket.get(label, Decimal(0)) + cash_delta
 
         return {
             "period_start": start,
@@ -282,7 +287,7 @@ class LedgerReports:
         business_id: uuid.UUID,
         period_name: str,
         *,
-        user_id: Optional[uuid.UUID] = None,
+        user_id: uuid.UUID | None = None,
         lock: bool = False,
     ) -> dict[str, Any]:
         res = await self.db.execute(
@@ -313,7 +318,7 @@ class LedgerReports:
             )
             accounts = {a.id: a for a in await self.ledger.get_accounts(business_id)}
             lines: list[dict[str, Any]] = []
-            net_to_equity = Decimal("0")
+            net_to_equity = Decimal(0)
             for acc_id, (dr, cr) in moves.items():
                 acc = accounts.get(acc_id)
                 if not acc or acc.type not in (

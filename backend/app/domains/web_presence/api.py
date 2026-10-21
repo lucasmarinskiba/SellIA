@@ -7,7 +7,7 @@ variant, because there is no such thing as "the platform's links".
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/web-presence", tags=["Web Presence"])
 class LinkIn(BaseModel):
     platform: str = Field(..., max_length=40)
     url: str = Field(..., max_length=1024)
-    label: Optional[str] = Field(None, max_length=200)
+    label: str | None = Field(None, max_length=200)
     is_primary: bool = False
 
 

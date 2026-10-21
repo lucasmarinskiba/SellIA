@@ -6,11 +6,11 @@ un System Health Report que alimenta al Improvement Generator.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, text
 
 from app.core.logger import get_logger
 
@@ -22,16 +22,16 @@ class SystemHealthReport:
 
     def __init__(self):
         self.id = uuid.uuid4()
-        self.generated_at = datetime.now(timezone.utc)
-        self.errors: List[Dict[str, Any]] = []
-        self.metrics: Dict[str, Any] = {}
+        self.generated_at = datetime.now(UTC)
+        self.errors: list[dict[str, Any]] = []
+        self.metrics: dict[str, Any] = {}
         self.conversation_failures = 0
         self.unresolved_tickets = 0
-        self.top_feedback_themes: List[str] = []
-        self.slow_endpoints: List[Dict[str, Any]] = []
-        self.recommendations: List[str] = []
+        self.top_feedback_themes: list[str] = []
+        self.slow_endpoints: list[dict[str, Any]] = []
+        self.recommendations: list[str] = []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": str(self.id),
             "generated_at": self.generated_at.isoformat(),
@@ -54,7 +54,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
 
     # 2. Tickets de soporte no resueltos
     try:
-        from app.domains.support.models import TicketStatus, SupportTicket
+        from app.domains.support.models import SupportTicket, TicketStatus
         result = await db.execute(
             select(func.count()).select_from(SupportTicket).where(
                 SupportTicket.status.in_([TicketStatus.OPEN, TicketStatus.ESCALATED])
@@ -69,7 +69,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
         from app.domains.feedback.models import UserFeedback
         result = await db.execute(
             select(UserFeedback.category, func.count())
-            .where(UserFeedback.created_at >= datetime.now(timezone.utc) - timedelta(days=7))
+            .where(UserFeedback.created_at >= datetime.now(UTC) - timedelta(days=7))
             .group_by(UserFeedback.category)
             .order_by(desc(func.count()))
             .limit(5)
@@ -84,7 +84,7 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
         result = await db.execute(
             select(func.count()).select_from(Message).where(
                 Message.direction == "inbound",
-                Message.created_at >= datetime.now(timezone.utc) - timedelta(days=1),
+                Message.created_at >= datetime.now(UTC) - timedelta(days=1),
                 Message.content == ""  # fallback: no outbound response
             )
         )
@@ -102,15 +102,18 @@ async def generate_health_report(db: AsyncSession) -> SystemHealthReport:
     return report
 
 
-async def _collect_prometheus_metrics() -> Dict[str, Any]:
+async def _collect_prometheus_metrics() -> dict[str, Any]:
     """Intenta recolectar métricas de Prometheus."""
     metrics = {}
     try:
         # Estas métricas vendrían de Prometheus en producción
         # Por ahora, placeholders que se llenan con los contadores del backend
         from app.core.metrics import (
-            SELLIA_LOGINS, SELLIA_FAILED_LOGINS, SELLIA_GEOFENCE_VIOLATIONS,
-            SELLIA_NEW_DEVICES, SELLIA_ACTIVE_SESSIONS
+            SELLIA_ACTIVE_SESSIONS,
+            SELLIA_FAILED_LOGINS,
+            SELLIA_GEOFENCE_VIOLATIONS,
+            SELLIA_LOGINS,
+            SELLIA_NEW_DEVICES,
         )
         metrics["total_logins"] = SELLIA_LOGINS._value.sum() if hasattr(SELLIA_LOGINS, '_value') else 0
         metrics["failed_logins"] = SELLIA_FAILED_LOGINS._value.sum() if hasattr(SELLIA_FAILED_LOGINS, '_value') else 0
@@ -122,14 +125,14 @@ async def _collect_prometheus_metrics() -> Dict[str, Any]:
     return metrics
 
 
-async def _collect_recent_errors() -> List[Dict[str, Any]]:
+async def _collect_recent_errors() -> list[dict[str, Any]]:
     """Recolecta errores recientes de los logs."""
     # En producción, esto vendría de ELK/Loki
     # Por ahora retornamos lista vacía
     return []
 
 
-def _generate_basic_recommendations(report: SystemHealthReport) -> List[str]:
+def _generate_basic_recommendations(report: SystemHealthReport) -> list[str]:
     """Genera recomendaciones básicas basadas en el reporte."""
     recs = []
     if report.unresolved_tickets > 10:

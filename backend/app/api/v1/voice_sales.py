@@ -1,15 +1,15 @@
 """Phase 29 Voice Sales API endpoints."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.voice_sales import (
-    VoiceCallManager,
-    PlaybookExtractor,
     PlaybookRecommender,
+    VoiceCallManager,
 )
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice-sales"])
@@ -177,6 +177,7 @@ def get_voice_metrics(
 
     try:
         from sqlalchemy import func
+
         from app.models.voice_sales import VoiceCall, VoiceCallMetrics
 
         # Get metrics

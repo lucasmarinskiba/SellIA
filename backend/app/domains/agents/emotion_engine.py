@@ -3,18 +3,16 @@
 Detects customer emotions from messages and adapts AI tone accordingly.
 """
 
-import uuid
-import json
 import hashlib
-from datetime import datetime, timezone
-from typing import List, Optional
+import json
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.schemas_intelligence import EmotionResult
 from app.domains.agents.models_emotion import EmotionDetection
+from app.domains.agents.schemas_intelligence import EmotionResult
 
 logger = get_logger(__name__)
 
@@ -27,9 +25,9 @@ class EmotionDetector:
         db: AsyncSession,
         business_id: uuid.UUID,
         message: str,
-        conversation_history: Optional[List[str]] = None,
-        message_id: Optional[uuid.UUID] = None,
-        conversation_id: Optional[uuid.UUID] = None,
+        conversation_history: list[str] | None = None,
+        message_id: uuid.UUID | None = None,
+        conversation_id: uuid.UUID | None = None,
     ) -> EmotionResult:
         """
         Analyze the emotion of a customer message using the cheapest LLM.
@@ -45,6 +43,7 @@ class EmotionDetector:
         # Try cache first
         try:
             import redis.asyncio as redis
+
             from app.core.config import get_settings
 
             settings = get_settings()
@@ -134,6 +133,7 @@ class EmotionDetector:
         # Cache for 1 hour
         try:
             import redis.asyncio as redis
+
             from app.core.config import get_settings
 
             settings = get_settings()
@@ -213,7 +213,7 @@ class EmotionTimeline:
     async def get_emotion_timeline(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> List[EmotionDetection]:
+    ) -> list[EmotionDetection]:
         """Return all emotion snapshots for a conversation, ordered by time."""
         result = await db.execute(
             select(EmotionDetection)

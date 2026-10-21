@@ -13,10 +13,14 @@ blank the whole signal set.
 """
 
 from typing import Any
+
 import httpx
 
 from app.core.logger import get_logger
-from app.domains.seo_config.platform_ranking_base import PlatformRankingConnector, RankingSignal
+from app.domains.seo_config.platform_ranking_base import (
+    PlatformRankingConnector,
+    RankingSignal,
+)
 
 logger = get_logger(__name__)
 

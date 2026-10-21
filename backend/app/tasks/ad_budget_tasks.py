@@ -4,12 +4,11 @@
 from celery import shared_task
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.ad_budget.models import AdBudgetConfig
 from app.domains.ad_budget.service import AdBudgetService
-from app.domains.businesses.models import Business
 
 logger = get_logger(__name__)
 

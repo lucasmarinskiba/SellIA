@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class AutopilotMode(str, Enum):
@@ -63,7 +63,7 @@ _PUBLISH_SELECTOR = re.compile(
 )
 
 
-def classify_action_risk(action_type: str, params: Dict[str, Any], reason: str = "") -> RiskLevel:
+def classify_action_risk(action_type: str, params: dict[str, Any], reason: str = "") -> RiskLevel:
     """Clasifica el nivel de riesgo de una acción de Computer Use."""
     params = params or {}
     blob = f"{reason} {params.get('text', '')} {params.get('selector', '')} {params.get('value', '')}"
@@ -98,7 +98,7 @@ class AutopilotPolicy:
     def __init__(self, mode: AutopilotMode | str = AutopilotMode.SUPERVISED):
         self.mode = AutopilotMode(mode) if not isinstance(mode, AutopilotMode) else mode
 
-    def evaluate(self, action_type: str, params: Dict[str, Any], reason: str = "") -> PolicyDecision:
+    def evaluate(self, action_type: str, params: dict[str, Any], reason: str = "") -> PolicyDecision:
         risk = classify_action_risk(action_type, params, reason)
 
         # Críticas: nunca automáticas. Gastan dinero, exponen credenciales o

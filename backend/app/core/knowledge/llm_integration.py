@@ -4,10 +4,9 @@ Proporciona el conocimiento de la biblioteca interna al sistema de IA
 de SellIA sin revelar nunca al usuario las fuentes específicas.
 """
 
-from typing import List, Dict, Any, Optional
 
+from app.core.knowledge.knowledge_engine import KnowledgeItem, get_knowledge_engine
 from app.core.logger import get_logger
-from app.core.knowledge.knowledge_engine import get_knowledge_engine, KnowledgeItem
 
 logger = get_logger(__name__)
 
@@ -21,9 +20,9 @@ class KnowledgeContextProvider:
     def build_context(
         self,
         user_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        detected_intent: Optional[str] = None,
-        detected_emotion: Optional[str] = None,
+        conversation_history: list[dict[str, str]] | None = None,
+        detected_intent: str | None = None,
+        detected_emotion: str | None = None,
         max_items: int = 5,
     ) -> str:
         """Construye un string de contexto para inyectar en el prompt del LLM.
@@ -62,9 +61,9 @@ class KnowledgeContextProvider:
     async def build_context_async(
         self,
         user_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        detected_intent: Optional[str] = None,
-        detected_emotion: Optional[str] = None,
+        conversation_history: list[dict[str, str]] | None = None,
+        detected_intent: str | None = None,
+        detected_emotion: str | None = None,
         max_items: int = 5,
     ) -> str:
         """Versión async de build_context que usa búsqueda semántica.
@@ -74,7 +73,7 @@ class KnowledgeContextProvider:
         embeddings fallan, semantic_query ya cae internamente a keyword search.
         """
         categories = self._detect_categories(user_message)
-        context_parts: List[str] = []
+        context_parts: list[str] = []
 
         if categories:
             per_cat = max(1, max_items // len(categories))
@@ -96,7 +95,7 @@ class KnowledgeContextProvider:
         return self._wrap_context(context_parts)
 
     @staticmethod
-    def _wrap_context(context_parts: List[str]) -> str:
+    def _wrap_context(context_parts: list[str]) -> str:
         """Envuelve los principios en el bloque de prompt (o vacío si no hay)."""
         if not context_parts:
             return ""
@@ -107,7 +106,7 @@ class KnowledgeContextProvider:
             + "\n\n".join(context_parts)
         )
 
-    def _detect_categories(self, message: str) -> List[str]:
+    def _detect_categories(self, message: str) -> list[str]:
         """Detecta qué categorías son relevantes para el mensaje."""
         msg_lower = message.lower()
         categories = []
@@ -172,7 +171,7 @@ class KnowledgeContextProvider:
 
         return "\n\n".join(parts)
 
-    def _get_framework_for_context(self, message: str) -> Optional[str]:
+    def _get_framework_for_context(self, message: str) -> str | None:
         """Obtiene un framework general relevante."""
         msg_lower = message.lower()
 
@@ -219,7 +218,7 @@ def get_knowledge_context_provider() -> KnowledgeContextProvider:
 def inject_knowledge(
     user_message: str,
     base_prompt: str,
-    conversation_history: Optional[List[Dict[str, str]]] = None,
+    conversation_history: list[dict[str, str]] | None = None,
 ) -> str:
     """Inyecta conocimiento de la biblioteca en un prompt base.
 
@@ -239,7 +238,7 @@ def inject_knowledge(
 async def inject_knowledge_async(
     user_message: str,
     base_prompt: str,
-    conversation_history: Optional[List[Dict[str, str]]] = None,
+    conversation_history: list[dict[str, str]] | None = None,
 ) -> str:
     """Versión async de inject_knowledge — usa ranking semántico (embeddings).
 

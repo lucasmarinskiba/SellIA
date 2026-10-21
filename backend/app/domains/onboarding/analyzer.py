@@ -1,7 +1,7 @@
 """Onboarding Mágico — Analyzer con IA"""
 
 import json
-from typing import Any
+
 from app.core.config import get_settings
 from app.core.logger import get_logger
 from app.domains.onboarding.schemas import BusinessDiscovery, ScrapedProduct

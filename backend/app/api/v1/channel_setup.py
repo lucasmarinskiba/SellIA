@@ -21,7 +21,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.logger import get_logger
-from app.domains.channels.catalog import catalog_entries, mask_credentials, missing_required
+from app.domains.channels.catalog import (
+    catalog_entries,
+    mask_credentials,
+    missing_required,
+)
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/channel-setup", tags=["Channel Setup"])
@@ -36,7 +40,10 @@ async def get_catalog(
     """Every connectable platform, merged with this account's real state."""
     from app.domains.businesses.models import Business
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     biz_result = await db.execute(select(Business.id, Business.name).where(Business.user_id == user.id))

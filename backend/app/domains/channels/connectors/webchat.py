@@ -1,10 +1,11 @@
 """Web Chat Widget Connector."""
 
+from datetime import UTC, datetime
 from typing import Any
-from datetime import datetime, timezone
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class WebChatConnector(BaseChannelConnector):
@@ -25,7 +26,7 @@ class WebChatConnector(BaseChannelConnector):
             "recipient_id": recipient_id,
             "content": content,
             "content_type": content_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:

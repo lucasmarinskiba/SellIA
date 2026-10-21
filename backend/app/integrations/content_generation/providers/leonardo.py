@@ -4,11 +4,22 @@ Pricing: ~$0.015/image (via API credits)
 Strengths: Artistic quality, Alchemy, photo-real, fine-tuned models
 """
 
-from typing import Dict, Any, Optional
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -34,7 +45,7 @@ class LeonardoProvider(BaseProvider):
         cost = LEONARDO_COSTS.get(config.quality, LEONARDO_COSTS[ContentQuality.STANDARD])
         return cost * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "leonardo-standard": 0.015,
             "leonardo-alchemy": 0.025,
@@ -67,13 +78,12 @@ class LeonardoProvider(BaseProvider):
                 payload["alchemy"] = True
                 payload["photoReal"] = True
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://cloud.leonardo.ai/api/rest/v1/generations",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://cloud.leonardo.ai/api/rest/v1/generations",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             generation_id = data.get("sdGenerationJob", {}).get("generationId")
             if not generation_id:

@@ -4,10 +4,10 @@ Advanced Browser Agent — OCR, multi-tab, error recovery, context memory, adapt
 Capaz de: navegar, rellenar formularios complejos, detectar cambios, resolver errores automáticamente.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import asyncio
+import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class AdvancedBrowserAgent:
 
     # ========== CORE ACTIONS (mejorado) ==========
 
-    async def navigate(self, url: str, wait_for: Optional[str] = None) -> Dict[str, Any]:
+    async def navigate(self, url: str, wait_for: str | None = None) -> dict[str, Any]:
         """Navega + espera elemento opcional + detección automática."""
 
         try:
@@ -59,10 +59,10 @@ class AdvancedBrowserAgent:
             }
 
         except Exception as e:
-            logger.error(f"Navigation failed: {str(e)}")
+            logger.error(f"Navigation failed: {e!s}")
             return await self._handle_error("navigate", {"url": url}, e)
 
-    async def fill_form_intelligent(self, fields: Dict[str, str]) -> Dict[str, Any]:
+    async def fill_form_intelligent(self, fields: dict[str, str]) -> dict[str, Any]:
         """Rellena formulario de forma inteligente (detecta tipos, maneja errores)."""
 
         results = {"filled": 0, "failed": []}
@@ -92,7 +92,7 @@ class AdvancedBrowserAgent:
                 logger.info(f"Filled {selector} with {value}")
 
             except Exception as e:
-                logger.error(f"Failed to fill {selector}: {str(e)}")
+                logger.error(f"Failed to fill {selector}: {e!s}")
                 results["failed"].append({"selector": selector, "error": str(e)})
 
         return {"status": "completed", "results": results}
@@ -109,7 +109,7 @@ class AdvancedBrowserAgent:
 
     # ========== ADVANCED ACTIONS ==========
 
-    async def scroll(self, direction: str = "down", amount: int = 3) -> Dict[str, Any]:
+    async def scroll(self, direction: str = "down", amount: int = 3) -> dict[str, Any]:
         """Scrollea página (simulando humano)."""
 
         try:
@@ -124,10 +124,10 @@ class AdvancedBrowserAgent:
             return {"status": "success", "direction": direction, "amount": amount}
 
         except Exception as e:
-            logger.error(f"Scroll failed: {str(e)}")
+            logger.error(f"Scroll failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def hover(self, selector: str) -> Dict[str, Any]:
+    async def hover(self, selector: str) -> dict[str, Any]:
         """Hover sobre elemento (trigger tooltips, modals, etc)."""
 
         try:
@@ -137,7 +137,7 @@ class AdvancedBrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def keyboard_shortcut(self, shortcut: str) -> Dict[str, Any]:
+    async def keyboard_shortcut(self, shortcut: str) -> dict[str, Any]:
         """Ejecuta keyboard shortcut (Ctrl+A, Cmd+C, etc)."""
 
         try:
@@ -147,7 +147,7 @@ class AdvancedBrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def upload_file(self, selector: str, file_path: str) -> Dict[str, Any]:
+    async def upload_file(self, selector: str, file_path: str) -> dict[str, Any]:
         """Sube archivo a input file."""
 
         try:
@@ -157,7 +157,7 @@ class AdvancedBrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def extract_table_data(self, selector: str) -> Dict[str, Any]:
+    async def extract_table_data(self, selector: str) -> dict[str, Any]:
         """Extrae datos de tabla (headers + rows)."""
 
         try:
@@ -183,7 +183,7 @@ class AdvancedBrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def ocr_text_from_image(self, selector: str) -> Dict[str, Any]:
+    async def ocr_text_from_image(self, selector: str) -> dict[str, Any]:
         """OCR: extrae texto de imagen (usando Tesseract)."""
 
         try:
@@ -201,12 +201,12 @@ class AdvancedBrowserAgent:
             }
 
         except Exception as e:
-            logger.error(f"OCR failed: {str(e)}")
+            logger.error(f"OCR failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== MULTI-TAB MANAGEMENT ==========
 
-    async def open_new_tab(self, url: Optional[str] = None) -> Dict[str, Any]:
+    async def open_new_tab(self, url: str | None = None) -> dict[str, Any]:
         """Abre nueva tab."""
 
         try:
@@ -224,7 +224,7 @@ class AdvancedBrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def switch_tab(self, tab_id: str) -> Dict[str, Any]:
+    async def switch_tab(self, tab_id: str) -> dict[str, Any]:
         """Cambia a tab específica."""
 
         if tab_id in self.tabs:
@@ -239,9 +239,9 @@ class AdvancedBrowserAgent:
     async def _handle_error(
         self,
         action: str,
-        params: Dict[str, Any],
+        params: dict[str, Any],
         error: Exception,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Auto-recovery: retry con estrategia diferente."""
 
         logger.warning(f"Error in {action}, attempting recovery...")
@@ -274,12 +274,12 @@ class AdvancedBrowserAgent:
                 return await self.navigate(params["url"])
             # Más acciones según sea necesario
         except Exception as e2:
-            logger.error(f"Recovery failed: {str(e2)}")
+            logger.error(f"Recovery failed: {e2!s}")
             return {"status": "failed", "error": str(e2)}
 
     # ========== CONTEXT MEMORY ==========
 
-    async def _capture_page_state(self) -> Dict[str, Any]:
+    async def _capture_page_state(self) -> dict[str, Any]:
         """Captura estado completo de página (para detectar cambios)."""
 
         state = {
@@ -291,7 +291,7 @@ class AdvancedBrowserAgent:
 
         return state
 
-    def get_context_memory(self) -> Dict[str, Any]:
+    def get_context_memory(self) -> dict[str, Any]:
         """Retorna memoria de contexto (qué hemos hecho)."""
 
         return self.context_memory
@@ -303,7 +303,7 @@ class AdvancedBrowserAgent:
 
     # ========== ADAPTIVE MODE ==========
 
-    async def adaptive_action(self, action_type: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def adaptive_action(self, action_type: str, params: dict[str, Any]) -> dict[str, Any]:
         """En modo ADAPTIVE: ajusta velocidad/estrategia basado en éxito/fallo previo."""
 
         if self.mode == BrowserMode.ADAPTIVE:
@@ -326,7 +326,7 @@ class AdvancedBrowserAgent:
 
         return result
 
-    async def execute_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_action(self, action: dict[str, Any]) -> dict[str, Any]:
         """Ejecuta acción (versión mejorada)."""
 
         action_type = action.get("type")
@@ -349,7 +349,7 @@ class AdvancedBrowserAgent:
         else:
             return {"status": "error", "message": f"Unknown action: {action_type}"}
 
-    async def _click(self, selector: str) -> Dict[str, Any]:
+    async def _click(self, selector: str) -> dict[str, Any]:
         """Click (mejorado con error handling)."""
 
         try:

@@ -4,14 +4,11 @@ Handles order notifications, inventory updates, and buyer messages.
 Docs: https://developer-docs.amazon.com/sp-api/docs
 """
 
-import hmac
-import hashlib
-import base64
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class AmazonSellerConnector(BaseChannelConnector):

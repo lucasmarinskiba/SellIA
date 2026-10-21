@@ -6,27 +6,27 @@
 # did `import app.core.ml` (or anything importing from it) has always raised
 # ModuleNotFoundError. Fixed to relative imports pointing at the real
 # sibling files.
-from .ml_engine import (
-    SupervisedLearner,
-    UnsupervisedLearner,
-    ReinforcementLearner,
-    FeatureEngineer,
-    ModelEvaluator,
+from .financial_analysis import (
+    AssetsLiabilitiesTracker,
+    BudgetPlanner,
+    CashFlowProjector,
+    CostAnalyzer,
+    ProfitMarginCalculator,
+    SensitivityAnalyzer,
 )
 from .market_analysis_engine import (
     CompetitiveIntelligence,
+    ForecastingEngine,
     MarketTrendsAnalyzer,
     OwnAnalyzer,
     SWOTAnalyzer,
-    ForecastingEngine,
 )
-from .financial_analysis import (
-    BudgetPlanner,
-    CostAnalyzer,
-    ProfitMarginCalculator,
-    AssetsLiabilitiesTracker,
-    CashFlowProjector,
-    SensitivityAnalyzer,
+from .ml_engine import (
+    FeatureEngineer,
+    ModelEvaluator,
+    ReinforcementLearner,
+    SupervisedLearner,
+    UnsupervisedLearner,
 )
 
 # The neural_networks re-export block that used to live here (35+ classes:
@@ -38,20 +38,20 @@ from .financial_analysis import (
 # Re-add this block once that subsystem exists for real.
 
 __all__ = [
+    "AssetsLiabilitiesTracker",
+    "BudgetPlanner",
+    "CashFlowProjector",
+    "CompetitiveIntelligence",
+    "CostAnalyzer",
+    "FeatureEngineer",
+    "ForecastingEngine",
+    "MarketTrendsAnalyzer",
+    "ModelEvaluator",
+    "OwnAnalyzer",
+    "ProfitMarginCalculator",
+    "ReinforcementLearner",
+    "SWOTAnalyzer",
+    "SensitivityAnalyzer",
     "SupervisedLearner",
     "UnsupervisedLearner",
-    "ReinforcementLearner",
-    "FeatureEngineer",
-    "ModelEvaluator",
-    "CompetitiveIntelligence",
-    "MarketTrendsAnalyzer",
-    "OwnAnalyzer",
-    "SWOTAnalyzer",
-    "ForecastingEngine",
-    "BudgetPlanner",
-    "CostAnalyzer",
-    "ProfitMarginCalculator",
-    "AssetsLiabilitiesTracker",
-    "CashFlowProjector",
-    "SensitivityAnalyzer",
 ]

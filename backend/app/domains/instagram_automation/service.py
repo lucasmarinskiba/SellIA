@@ -8,16 +8,21 @@ transparencia), registrada con su dato real, y el caption sale de esa
 `generated_message` validada — no de un diccionario hardcodeado.
 """
 import uuid
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.domains.instagram_automation.models import (
-    InstagramPost, InstagramCampaign, InstagramAudience, InstagramConversionPath
-)
-from app.domains.instagram_automation.graph_publisher import (
-    InstagramGraphPublisher, InstagramNotConfiguredError, InstagramPublishError,
-)
-from app.domains.fomo_intelligence.service import FOMOIntelligenceService
+from datetime import UTC, datetime
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.fomo_intelligence.service import FOMOIntelligenceService
+from app.domains.instagram_automation.graph_publisher import (
+    InstagramGraphPublisher,
+    InstagramNotConfiguredError,
+    InstagramPublishError,
+)
+from app.domains.instagram_automation.models import (
+    InstagramCampaign,
+    InstagramConversionPath,
+    InstagramPost,
+)
 
 CTA_BY_PERSONALITY = {
     "pragmatist": "Calculá tu ROI →",
@@ -94,7 +99,7 @@ class InstagramAutomationAgent:
                 post.ig_media_id = result["media_id"]
                 post.ig_permalink = result["permalink"]
                 post.publish_status = "published"
-                post.posted_at = datetime.now(timezone.utc)
+                post.posted_at = datetime.now(UTC)
             except InstagramNotConfiguredError as e:
                 post.publish_status = "pending_credentials"
                 post.publish_error = str(e)
@@ -132,7 +137,7 @@ class InstagramAutomationAgent:
             content_mix=content_mix,
             feedia_integration=True,
             status="scheduled",
-            launched_at=datetime.now(timezone.utc),
+            launched_at=datetime.now(UTC),
         )
         db.add(campaign)
         await db.commit()
@@ -152,7 +157,7 @@ class InstagramAutomationAgent:
         path = InstagramConversionPath(
             id="igpath_" + __import__('uuid').uuid4().hex[:8],
             user_id=user_id,
-            instagram_interaction_at=datetime.now(timezone.utc),
+            instagram_interaction_at=datetime.now(UTC),
             instagram_post_id=instagram_post_id,
             campaign_id=campaign_id,
             utm_medium=interaction_type,

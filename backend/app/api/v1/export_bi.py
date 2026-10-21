@@ -1,9 +1,8 @@
 """Export & BI API — data export, reports, dashboards."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -17,10 +16,10 @@ class CreateExportRequest(BaseModel):
     export_name: str
     export_type: str  # customers, orders, transactions, journeys, segments, etc
     export_format: str = "csv"  # csv, excel, json, parquet
-    date_start: Optional[str] = None  # YYYY-MM-DD
-    date_end: Optional[str] = None
-    filters: Optional[Dict] = None
-    requested_by: Optional[str] = None
+    date_start: str | None = None  # YYYY-MM-DD
+    date_end: str | None = None
+    filters: dict | None = None
+    requested_by: str | None = None
 
 
 class CreateScheduledReportRequest(BaseModel):
@@ -28,20 +27,20 @@ class CreateScheduledReportRequest(BaseModel):
     report_type: str
     frequency: str  # daily, weekly, monthly, quarterly
     schedule_time: str = "06:00"  # HH:MM
-    recipients: Optional[List[str]] = None
+    recipients: list[str] | None = None
 
 
 class SetupWarehouseSyncRequest(BaseModel):
     warehouse_type: str  # bigquery, snowflake, redshift, databricks
     warehouse_name: str
     connection_string: str
-    tables_to_sync: Optional[List[str]] = None
+    tables_to_sync: list[str] | None = None
 
 
 class CreateBIDashboardRequest(BaseModel):
     dashboard_name: str
     dashboard_type: str
-    charts: Optional[List[Dict]] = None
+    charts: list[dict] | None = None
 
 
 @router.post("/businesses/{business_id}/exports")
@@ -130,7 +129,7 @@ def create_bi_dashboard(
 @router.get("/businesses/{business_id}/export-metrics")
 def get_export_metrics(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get export & BI metrics."""

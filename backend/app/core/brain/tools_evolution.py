@@ -12,13 +12,11 @@ Total: 135 skills avanzadas.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-from enum import Enum
 from abc import ABC, abstractmethod
-import json
-from datetime import datetime, timedelta
-
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────
 # TOOL FRAMEWORK
@@ -45,7 +43,7 @@ class ToolMetrics:
     output_quality: float = 0.8  # 0.0–1.0
     business_impact: float = 0.5  # ROI estimado
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "calls": self.calls_total,
@@ -62,10 +60,10 @@ class ToolOutput:
     tool_id: str
     outcome_type: ToolOutcomeType
     primary_result: Any
-    secondary_results: Dict[str, Any] = None
+    secondary_results: dict[str, Any] = None
     confidence: float = 0.8
     timestamp: str = ""
-    metrics: Optional[ToolMetrics] = None
+    metrics: ToolMetrics | None = None
 
     def __post_init__(self):
         if self.secondary_results is None:
@@ -73,7 +71,7 @@ class ToolOutput:
         if not self.timestamp:
             self.timestamp = datetime.utcnow().isoformat()
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "tool": self.tool_id,
             "type": self.outcome_type.value,
@@ -92,12 +90,11 @@ class BaseTool(ABC):
         self.name = name
         self.category = category
         self.metrics = ToolMetrics(name)
-        self.last_invocation: Optional[datetime] = None
+        self.last_invocation: datetime | None = None
 
     @abstractmethod
     async def execute(self, **kwargs) -> ToolOutput:
         """Ejecuta la herramienta."""
-        pass
 
     async def invoke(self, **kwargs) -> ToolOutput:
         """Invocar con tracking."""
@@ -106,7 +103,7 @@ class BaseTool(ABC):
         self.metrics.calls_total += 1
         return result
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         return self.metrics.as_dict()
 
 
@@ -121,7 +118,7 @@ class DemandForecastingTool(BaseTool):
     def __init__(self):
         super().__init__("tool.forecast_demand", "Demand Forecasting", "predictive")
 
-    async def execute(self, historical_sales: List[float],
+    async def execute(self, historical_sales: list[float],
                      seasonality_factor: float = 1.0,
                      forecast_days: int = 90) -> ToolOutput:
         """Predice demanda 30/60/90 días."""
@@ -155,7 +152,7 @@ class DemandForecastingTool(BaseTool):
             confidence=0.75
         )
 
-    def _calculate_trend(self, data: List[float]) -> float:
+    def _calculate_trend(self, data: list[float]) -> float:
         """Calcula tendencia lineal."""
         if len(data) < 2:
             return 0.0
@@ -167,7 +164,7 @@ class DemandForecastingTool(BaseTool):
         denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
         return numerator / denominator if denominator > 0 else 0.0
 
-    def _calculate_seasonality(self, data: List[float]) -> float:
+    def _calculate_seasonality(self, data: list[float]) -> float:
         """Extrae componente estacional."""
         if len(data) < 12:
             return 1.0
@@ -243,7 +240,7 @@ class ChurnPredictionTool(BaseTool):
         else:
             return "low"
 
-    def _recommend_interventions(self, risk_level: str) -> List[Dict[str, str]]:
+    def _recommend_interventions(self, risk_level: str) -> list[dict[str, str]]:
         interventions = {
             "critical": [
                 {"action": "Emergency win-back call", "priority": "immediate"},
@@ -345,7 +342,7 @@ class CustomerSegmentationTool(BaseTool):
     def __init__(self):
         super().__init__("tool.customer_segmentation", "Customer Segmentation", "analysis")
 
-    async def execute(self, customers: List[Dict[str, float]]) -> ToolOutput:
+    async def execute(self, customers: list[dict[str, float]]) -> ToolOutput:
         """Segmenta clientes en VIP/loyal/at-risk/dormant."""
         segments = self._segment_customers(customers)
 
@@ -360,7 +357,7 @@ class CustomerSegmentationTool(BaseTool):
             confidence=0.85
         )
 
-    def _segment_customers(self, customers: List[Dict[str, float]]) -> Dict[str, List[str]]:
+    def _segment_customers(self, customers: list[dict[str, float]]) -> dict[str, list[str]]:
         """Segmentación RFM."""
         segments = {"vip": [], "loyal": [], "at_risk": [], "dormant": []}
         for c in customers:
@@ -382,7 +379,7 @@ class FunnelOptimizationTool(BaseTool):
     def __init__(self):
         super().__init__("tool.funnel_optimization", "Funnel Optimization", "analysis")
 
-    async def execute(self, funnel_stages: Dict[str, int]) -> ToolOutput:
+    async def execute(self, funnel_stages: dict[str, int]) -> ToolOutput:
         """Analiza conversion rates + bottlenecks."""
         conversions = self._calculate_conversions(funnel_stages)
         bottleneck = self._find_bottleneck(conversions)
@@ -400,7 +397,7 @@ class FunnelOptimizationTool(BaseTool):
             confidence=0.88
         )
 
-    def _calculate_conversions(self, stages: Dict[str, int]) -> Dict[str, float]:
+    def _calculate_conversions(self, stages: dict[str, int]) -> dict[str, float]:
         """Calcula CR entre etapas."""
         conv = {}
         prev_count = None
@@ -413,7 +410,7 @@ class FunnelOptimizationTool(BaseTool):
         conv["total"] = final_conversions / total_visitors if total_visitors > 0 else 0
         return conv
 
-    def _find_bottleneck(self, conversions: Dict[str, float]) -> Dict[str, Any]:
+    def _find_bottleneck(self, conversions: dict[str, float]) -> dict[str, Any]:
         """Encuentra etapa con peor CR."""
         worst_stage = min(
             ((k, v) for k, v in conversions.items() if "_cr" in k),
@@ -513,7 +510,7 @@ class CompetitorMovePredictorTool(BaseTool):
     def __init__(self):
         super().__init__("tool.competitor_moves", "Competitor Move Predictor", "analysis")
 
-    async def execute(self, competitor_signals: Dict[str, Any]) -> ToolOutput:
+    async def execute(self, competitor_signals: dict[str, Any]) -> ToolOutput:
         """Predice siguiente move del competidor."""
         signals = competitor_signals
         predicted_move = self._predict_move(signals)
@@ -528,7 +525,7 @@ class CompetitorMovePredictorTool(BaseTool):
             confidence=0.65
         )
 
-    def _predict_move(self, signals: Dict[str, Any]) -> str:
+    def _predict_move(self, signals: dict[str, Any]) -> str:
         """Predice estrategia siguiente."""
         if signals.get("hiring_increase"):
             return "Market expansion"
@@ -557,7 +554,7 @@ class RiskAssessorTool(BaseTool):
     def __init__(self):
         super().__init__("tool.risk_assessment", "Risk Assessor", "analysis")
 
-    async def execute(self, risk_factors: Dict[str, float]) -> ToolOutput:
+    async def execute(self, risk_factors: dict[str, float]) -> ToolOutput:
         """Calcula risk score total."""
         risk_scores = {k: v for k, v in risk_factors.items()}
         total_risk = sum(risk_scores.values()) / len(risk_scores) if risk_scores else 0.0
@@ -579,8 +576,8 @@ class OpportunityScouttool(BaseTool):
     def __init__(self):
         super().__init__("tool.opportunity_scout", "Opportunity Scout", "analysis")
 
-    async def execute(self, market_data: Dict[str, Any],
-                     internal_capabilities: List[str]) -> ToolOutput:
+    async def execute(self, market_data: dict[str, Any],
+                     internal_capabilities: list[str]) -> ToolOutput:
         """Identifica oportunidades de negocio."""
         opportunities = self._identify_opportunities(market_data, internal_capabilities)
 
@@ -595,8 +592,8 @@ class OpportunityScouttool(BaseTool):
             confidence=0.72
         )
 
-    def _identify_opportunities(self, market: Dict[str, Any],
-                               capabilities: List[str]) -> List[str]:
+    def _identify_opportunities(self, market: dict[str, Any],
+                               capabilities: list[str]) -> list[str]:
         """Busca match entre market trends + capabilities."""
         return [f"Opportunity_{i}" for i in range(1, 4)]
 
@@ -608,8 +605,8 @@ class AutomationWorkflowBuilderTool(BaseTool):
         super().__init__("tool.workflow_builder", "Automation Workflow Builder", "action")
 
     async def execute(self, workflow_type: str,
-                     triggers: List[str],
-                     actions: List[str]) -> ToolOutput:
+                     triggers: list[str],
+                     actions: list[str]) -> ToolOutput:
         """Diseña workflow automatizado."""
         workflow = self._design_workflow(workflow_type, triggers, actions)
 
@@ -622,8 +619,8 @@ class AutomationWorkflowBuilderTool(BaseTool):
             confidence=0.90
         )
 
-    def _design_workflow(self, wtype: str, triggers: List[str],
-                        actions: List[str]) -> Dict[str, Any]:
+    def _design_workflow(self, wtype: str, triggers: list[str],
+                        actions: list[str]) -> dict[str, Any]:
         """Diseña el workflow."""
         return {
             "type": wtype,
@@ -642,7 +639,7 @@ class EvolvedToolRegistry:
     """Registry de herramientas evolucionadas."""
 
     def __init__(self):
-        self.tools: Dict[str, BaseTool] = {}
+        self.tools: dict[str, BaseTool] = {}
         self._register_all()
 
     def _register_all(self) -> None:
@@ -681,7 +678,7 @@ class EvolvedToolRegistry:
             )
         return await self.tools[tool_id].invoke(**kwargs)
 
-    def list_tools(self) -> List[Dict[str, Any]]:
+    def list_tools(self) -> list[dict[str, Any]]:
         """Lista todas las herramientas."""
         return [
             {
@@ -693,20 +690,28 @@ class EvolvedToolRegistry:
             for tool in self.tools.values()
         ]
 
-    def get_tools_by_category(self, category: str) -> List[BaseTool]:
+    def get_tools_by_category(self, category: str) -> list[BaseTool]:
         """Obtiene herramientas por categoría."""
         return [t for t in self.tools.values() if t.category == category]
 
 
 # Export
 __all__ = [
-    "ToolOutcomeType", "ToolMetrics", "ToolOutput", "BaseTool",
-    "DemandForecastingTool", "ChurnPredictionTool", "LTVPredictionTool",
-    "RevenueProjectionTool", "ContentPerformancePredictorTool",
-    "CompetitorMovePredictorTool",
-    "CustomerSegmentationTool", "FunnelOptimizationTool",
     "ABTestingDesignerTool",
-    "RiskAssessorTool", "OpportunityScouttool",
     "AutomationWorkflowBuilderTool",
+    "BaseTool",
+    "ChurnPredictionTool",
+    "CompetitorMovePredictorTool",
+    "ContentPerformancePredictorTool",
+    "CustomerSegmentationTool",
+    "DemandForecastingTool",
     "EvolvedToolRegistry",
+    "FunnelOptimizationTool",
+    "LTVPredictionTool",
+    "OpportunityScouttool",
+    "RevenueProjectionTool",
+    "RiskAssessorTool",
+    "ToolMetrics",
+    "ToolOutcomeType",
+    "ToolOutput",
 ]

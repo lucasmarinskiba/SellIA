@@ -13,9 +13,9 @@ updates rather than duplicates.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 DEFAULT_LOOKBACK_DAYS = 60
 
 
-def _decimal(value: Any) -> Optional[Decimal]:
+def _decimal(value: Any) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -64,10 +64,10 @@ def normalize_order(platform: str, raw: dict[str, Any]) -> dict[str, Any]:
     external_id = _first(raw, "id", "order_id", "AmazonOrderId", "transaction", "order_sn")
     created_raw = _first(raw, "created_at", "PurchaseDate", "create_time", "order_date")
 
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     if isinstance(created_raw, (int, float)):
         try:
-            created_at = datetime.fromtimestamp(float(created_raw), tz=timezone.utc)
+            created_at = datetime.fromtimestamp(float(created_raw), tz=UTC)
         except (OverflowError, OSError, ValueError):
             created_at = None
     elif isinstance(created_raw, str):
@@ -115,7 +115,7 @@ async def sync_platform_orders(
 
     connector = get_connector(ChannelPlatform(platform), credentials, settings)
     method = getattr(connector, method_name)
-    since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    since = datetime.now(UTC) - timedelta(days=lookback_days)
 
     try:
         # Each connector names its window parameter differently; try the ones
@@ -191,7 +191,7 @@ async def sync_platform_orders(
         if any(word in status_raw for word in ("paid", "approved", "complete", "shipped", "delivered")):
             order.payment_status = PaymentStatus.COMPLETED
             if order.paid_at is None:
-                order.paid_at = norm["created_at"] or datetime.now(timezone.utc)
+                order.paid_at = norm["created_at"] or datetime.now(UTC)
 
     await db.commit()
     return {

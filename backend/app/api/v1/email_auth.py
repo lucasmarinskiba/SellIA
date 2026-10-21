@@ -1,13 +1,13 @@
 """Email authentication API endpoints."""
 
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import verify_admin_token
 from app.domains.auth.email_auth import EmailAuthManager
-from app.dependencies import get_current_user, verify_admin_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["email-auth"])
 
@@ -25,15 +25,15 @@ class EmailVerificationResponse(BaseModel):
     success: bool
     message: str
     user_id: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 class ApprovalRequestBody(BaseModel):
     user_id: str
     email: EmailStr
     full_name: str
-    company: Optional[str] = None
-    role: Optional[str] = None
+    company: str | None = None
+    role: str | None = None
 
 
 class ApprovalResponse(BaseModel):
@@ -46,23 +46,23 @@ class ApprovalResponse(BaseModel):
 class AdminApprovalAction(BaseModel):
     approval_id: str
     action: str  # "approve" or "reject"
-    notes: Optional[str] = None
-    rejection_reason: Optional[str] = None
+    notes: str | None = None
+    rejection_reason: str | None = None
 
 
 class PendingApprovalItem(BaseModel):
     id: str
     email: str
     full_name: str
-    company: Optional[str]
-    role: Optional[str]
+    company: str | None
+    role: str | None
     requested_at: str
 
 
 class ApprovalStatusResponse(BaseModel):
     approval_status: str  # pending, approved, rejected
-    approved_at: Optional[str]
-    rejection_reason: Optional[str]
+    approved_at: str | None
+    rejection_reason: str | None
     auto_approved: bool
 
 
@@ -160,7 +160,7 @@ def admin_approve_account(
     return {"success": True, "action": request.action}
 
 
-@router.get("/admin/pending-approvals", response_model=List[PendingApprovalItem])
+@router.get("/admin/pending-approvals", response_model=list[PendingApprovalItem])
 def get_pending_approvals(
     current_user=Depends(verify_admin_token),
     db: Session = Depends(get_db),

@@ -1,18 +1,19 @@
 """Market API — Endpoints for market detection & agent management."""
 
-from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Any
 
-from app.core.market import (
-    MarketDetector,
-    AgentLoader,
-    MarketRulesEngine,
-    ContinuousLearner,
-)
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
 from app.core.brain.brain_orchestrator_v3 import BrainOrchestratorV3
+from app.core.market import (
+    AgentLoader,
+    ContinuousLearner,
+    MarketDetector,
+    MarketRulesEngine,
+)
 
 router = APIRouter(prefix="/api/v1/market", tags=["market"])
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ learner = ContinuousLearner()
 
 class DetectMarketRequest(BaseModel):
     user_input: str
-    company_data: Optional[Dict[str, Any]] = None
+    company_data: dict[str, Any] | None = None
 
 
 class DetectMarketResponse(BaseModel):
@@ -56,7 +57,7 @@ async def detect_market(request: DetectMarketRequest) -> DetectMarketResponse:
 
 
 @router.get("/agents")
-async def get_available_agents(market: Optional[str] = None) -> Dict[str, Any]:
+async def get_available_agents(market: str | None = None) -> dict[str, Any]:
     """Get available agents for market."""
     if market:
         from app.core.market import Industry
@@ -72,7 +73,7 @@ async def get_available_agents(market: Optional[str] = None) -> Dict[str, Any]:
 
 
 @router.get("/rules/{market}")
-async def get_market_rules(market: str) -> Dict[str, Any]:
+async def get_market_rules(market: str) -> dict[str, Any]:
     """Get rules for market."""
     try:
         from app.core.market import Industry
@@ -91,7 +92,7 @@ async def get_market_rules(market: str) -> Dict[str, Any]:
 
 
 @router.post("/sync")
-async def sync_external_systems() -> Dict[str, Any]:
+async def sync_external_systems() -> dict[str, Any]:
     """Manually trigger sync from external systems."""
     try:
         result = orchestrator.sync_external_systems()
@@ -106,7 +107,7 @@ async def sync_external_systems() -> Dict[str, Any]:
 
 
 @router.get("/status")
-async def get_market_status() -> Dict[str, Any]:
+async def get_market_status() -> dict[str, Any]:
     """Get market system status."""
     try:
         return {

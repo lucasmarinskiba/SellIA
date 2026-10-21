@@ -1,15 +1,15 @@
 """Learning Networks for SellIA Brain — Online, Transfer, Meta, Few-shot Learning."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
 from collections import deque
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.linear_model import SGDRegressor, SGDClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +20,12 @@ class LearningUpdate:
 
     iteration: int
     loss: float
-    accuracy: Optional[float] = None
+    accuracy: float | None = None
     learning_rate: float = 0.001
     batch_size: int = 32
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "iteration": self.iteration,
             "loss": float(self.loss),
@@ -48,7 +48,7 @@ class TransferLearningResults:
     estimated_training_time_saved: int  # hours
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "source_domain": self.source_domain,
             "target_domain": self.target_domain,
@@ -71,7 +71,7 @@ class MetaLearningResult:
     performance_improvement: float  # % improvement
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "task_adaptation_speed": float(self.task_adaptation_speed),
             "generalization_score": float(self.generalization_score),
@@ -136,7 +136,7 @@ class OnlineLearningEngine:
 
         return update
 
-    def get_learning_curve(self) -> List[LearningUpdate]:
+    def get_learning_curve(self) -> list[LearningUpdate]:
         """Get learning history."""
         return list(self.update_history)
 
@@ -157,11 +157,11 @@ class TransferLearningEngine:
     """Leverage knowledge from source domain to target domain."""
 
     def __init__(self):
-        self.source_model: Optional[RandomForestRegressor] = None
-        self.target_model: Optional[RandomForestRegressor] = None
+        self.source_model: RandomForestRegressor | None = None
+        self.target_model: RandomForestRegressor | None = None
         self.scaler = StandardScaler()
         self.is_trained = False
-        self.layer_weights: List[np.ndarray] = []
+        self.layer_weights: list[np.ndarray] = []
 
     def train_source_domain(self, X: np.ndarray, y: np.ndarray, domain: str) -> "TransferLearningEngine":
         """Train model on source domain."""
@@ -196,7 +196,7 @@ class TransferLearningEngine:
             transfer_accuracy_gain=accuracy_gain,
             layers_transferred=3,
             fine_tuning_required=abs(accuracy_gain) > 0.1,
-            estimated_training_time_saved=int(40),  # hours
+            estimated_training_time_saved=40,  # hours
         )
 
         self.is_trained = True
@@ -217,8 +217,8 @@ class MetaLearningEngine:
     """Learn how to learn for new tasks quickly."""
 
     def __init__(self):
-        self.task_models: Dict[str, RandomForestRegressor] = {}
-        self.task_performance: Dict[str, float] = {}
+        self.task_models: dict[str, RandomForestRegressor] = {}
+        self.task_performance: dict[str, float] = {}
         self.scaler = StandardScaler()
         self.meta_strategy = "model_agnostic"
         self.learned_tasks = 0
@@ -288,7 +288,7 @@ class FewShotLearner:
 
     def __init__(self, n_shot: int = 5):
         self.n_shot = n_shot
-        self.models: Dict[str, RandomForestRegressor] = {}
+        self.models: dict[str, RandomForestRegressor] = {}
         self.scaler = StandardScaler()
 
     def learn_from_few_examples(self, task_name: str, X: np.ndarray, y: np.ndarray) -> float:
@@ -346,7 +346,7 @@ class ActiveLearner:
         self.is_trained = True
         return self
 
-    def select_samples_to_label(self, X_unlabeled: np.ndarray, n_samples: int = 10) -> Tuple[List[int], List[float]]:
+    def select_samples_to_label(self, X_unlabeled: np.ndarray, n_samples: int = 10) -> tuple[list[int], list[float]]:
         """Select most uncertain samples for labeling."""
         if not self.is_trained:
             raise ValueError("Learner must be initialized first")
@@ -390,7 +390,7 @@ class ActiveLearner:
 
         return update
 
-    def get_uncertainty_distribution(self, X_unlabeled: np.ndarray) -> Dict[str, float]:
+    def get_uncertainty_distribution(self, X_unlabeled: np.ndarray) -> dict[str, float]:
         """Get uncertainty statistics."""
         if not self.is_trained:
             raise ValueError("Learner must be initialized first")

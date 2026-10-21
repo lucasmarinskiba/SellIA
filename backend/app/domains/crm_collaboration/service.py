@@ -1,6 +1,8 @@
 """CRM Collaboration service."""
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 
 class CRMCollaborationService:
     @staticmethod

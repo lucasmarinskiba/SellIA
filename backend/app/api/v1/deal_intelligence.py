@@ -1,7 +1,9 @@
 """Phase 37: Deal Intelligence API."""
-from fastapi import APIRouter, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 
 router = APIRouter(prefix="/deal-intelligence", tags=["deal-intelligence"])

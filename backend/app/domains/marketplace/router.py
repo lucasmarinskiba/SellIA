@@ -2,16 +2,17 @@
 Marketplace Router
 """
 
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.marketplace import service as marketplace_service
 from app.domains.marketplace.models import MarketplaceCategory
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
@@ -24,8 +25,8 @@ async def get_db():
 @router.get("/items")
 async def list_items(
     db: Annotated[AsyncSession, Depends(get_db)],
-    category: Optional[str] = None,
-    search: Optional[str] = None,
+    category: str | None = None,
+    search: str | None = None,
     featured: bool = False,
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),

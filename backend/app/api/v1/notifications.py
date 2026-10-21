@@ -1,9 +1,8 @@
 """Notifications API endpoints."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -14,29 +13,29 @@ router = APIRouter(prefix="/api/v1", tags=["notifications"])
 
 
 class NotificationPreferenceRequest(BaseModel):
-    email_enabled: Optional[bool] = None
-    sms_enabled: Optional[bool] = None
-    whatsapp_enabled: Optional[bool] = None
-    in_app_enabled: Optional[bool] = None
-    slack_enabled: Optional[bool] = None
-    quiet_hours_start: Optional[str] = None
-    quiet_hours_end: Optional[str] = None
+    email_enabled: bool | None = None
+    sms_enabled: bool | None = None
+    whatsapp_enabled: bool | None = None
+    in_app_enabled: bool | None = None
+    slack_enabled: bool | None = None
+    quiet_hours_start: str | None = None
+    quiet_hours_end: str | None = None
 
 
 class AlertRuleRequest(BaseModel):
     name: str
     alert_type: str
-    condition_json: Dict
-    channels: List[str]
-    priority: Optional[str] = "medium"
+    condition_json: dict
+    channels: list[str]
+    priority: str | None = "medium"
 
 
 class AlertTriggerRequest(BaseModel):
     alert_type: str
     alert_title: str
     alert_message: str
-    priority: Optional[str] = "medium"
-    target_user_ids: Optional[List[UUID]] = None
+    priority: str | None = "medium"
+    target_user_ids: list[UUID] | None = None
 
 
 @router.post("/users/{user_id}/notifications/preferences")
@@ -105,7 +104,7 @@ def get_alert_rules(
 @router.patch("/alerts/{rule_id}")
 def update_alert_rule(
     rule_id: UUID,
-    updates: Dict,
+    updates: dict,
     db: Session = Depends(get_db)
 ):
     """Update alert rule."""
@@ -153,7 +152,7 @@ def get_notification_history(
 @router.post("/notifications/{notification_id}/read")
 def mark_notification_read(
     notification_id: UUID,
-    action: Optional[str] = Query(None),
+    action: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     """Mark notification as read."""

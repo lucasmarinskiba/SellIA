@@ -3,7 +3,7 @@ Webhook Router
 """
 
 import uuid
-from typing import Annotated, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,13 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-
 from app.domains.webhooks import service as webhook_service
 from app.domains.webhooks.schemas import (
-    WebhookSubscriptionCreate,
-    WebhookSubscriptionUpdate,
-    WebhookSubscriptionResponse,
     WebhookDeliveryResponse,
+    WebhookSubscriptionCreate,
+    WebhookSubscriptionResponse,
+    WebhookSubscriptionUpdate,
 )
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -43,7 +42,7 @@ async def create_subscription(
     return sub
 
 
-@router.get("/subscriptions", response_model=List[WebhookSubscriptionResponse])
+@router.get("/subscriptions", response_model=list[WebhookSubscriptionResponse])
 async def list_subscriptions(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -90,12 +89,11 @@ async def delete_subscription(
     deleted = await webhook_service.delete_subscription(db, subscription_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
-    return None
 
 
 # ========== Deliveries ==========
 
-@router.get("/deliveries/{subscription_id}", response_model=List[WebhookDeliveryResponse])
+@router.get("/deliveries/{subscription_id}", response_model=list[WebhookDeliveryResponse])
 async def list_deliveries(
     subscription_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],

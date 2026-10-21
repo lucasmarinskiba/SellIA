@@ -7,9 +7,8 @@ Mounted at /api/v1/businesses/{business_id}/brand-transformation
 
 from __future__ import annotations
 
-from uuid import UUID
-
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,12 +21,12 @@ from app.domains.brand_transformation.schemas import (
     AutoBridgesIn,
     AutomationIn,
     AutomationOut,
-    DeployAssetsIn,
-    DeployCampaignsIn,
-    DeployCompetitiveIn,
     BrandIdentityOut,
     BusinessModelOut,
     BusinessProfileIn,
+    DeployAssetsIn,
+    DeployCampaignsIn,
+    DeployCompetitiveIn,
     DiagnosisIn,
     DiagnosisOut,
     FOMOPlaybookOut,
@@ -538,6 +537,7 @@ async def automation_history(
     current_user: User = Depends(get_current_user),
 ):
     from sqlalchemy import select
+
     from app.domains.brand_transformation.models import BrandAutomation
 
     r = await db.execute(select(BrandAutomation).where(BrandAutomation.id == automation_id))
@@ -555,6 +555,7 @@ async def run_automation(
     current_user: User = Depends(get_current_user),
 ):
     from sqlalchemy import select
+
     from app.domains.brand_transformation.models import BrandAutomation
 
     r = await db.execute(select(BrandAutomation).where(BrandAutomation.id == automation_id))

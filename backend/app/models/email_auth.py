@@ -2,8 +2,19 @@
 
 from datetime import datetime, timedelta
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, ForeignKey, Text, Index
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
 
 

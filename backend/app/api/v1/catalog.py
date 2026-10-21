@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.cache import cached, invalidate_cache_pattern
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached, invalidate_cache_pattern
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.catalogs.models import CatalogItem
-from app.domains.catalogs.schemas import CatalogItemCreate, CatalogItemUpdate, CatalogItemResponse
+from app.domains.catalogs.schemas import (
+    CatalogItemCreate,
+    CatalogItemResponse,
+    CatalogItemUpdate,
+)
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -208,7 +213,6 @@ async def delete_catalog_item(
     item.is_active = False
     await db.commit()
     await invalidate_cache_pattern(f"catalog:*:{business_id}:*")
-    return None
 
 
 @router.post("/debug/add-listing-columns", tags=["debug"])

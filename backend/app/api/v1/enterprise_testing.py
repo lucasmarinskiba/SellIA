@@ -19,7 +19,7 @@ attributed back to it. See app/domains/agents/ai_reply.py and
 app/api/v1/enterprise_deal_intelligence.py's record_deal_outcome.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -28,10 +28,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.agents.models import AgentPersonality
 from app.domains.agents.ab_service import ABTestEngine
+from app.domains.agents.models import AgentPersonality
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter(tags=["testing"])
 
@@ -208,7 +208,7 @@ async def get_active_tests(
                 "name": t.name,
                 "agent_type": t.agent_type,
                 "variants": [t.variant_a_name, t.variant_b_name],
-                "days_running": (datetime.now(timezone.utc) - t.started_at).days if t.started_at else 0,
+                "days_running": (datetime.now(UTC) - t.started_at).days if t.started_at else 0,
             }
             for t in listing["experiments"]
         ],

@@ -1,17 +1,19 @@
 """API rate limiting & caching service."""
 
-import logging
 import hashlib
-from datetime import datetime, timezone, timedelta
+import logging
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, Dict, Tuple
-from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.api_management.rate_limit_models import (
-    ApiKey, RateLimitLog, CachePolicy, ApiMetrics, RateLimitTier, RateLimitWindow
+    ApiKey,
+    ApiMetrics,
+    CachePolicy,
+    RateLimitLog,
+    RateLimitTier,
+    RateLimitWindow,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,8 +35,8 @@ class RateLimitService:
         business_id: UUID,
         key_name: str,
         tier: str = RateLimitTier.STARTER,
-        custom_limit: Optional[int] = None,
-        expires_at: Optional[datetime] = None,
+        custom_limit: int | None = None,
+        expires_at: datetime | None = None,
         db: Session = None
     ) -> dict:
         """Create new API key."""
@@ -80,7 +82,7 @@ class RateLimitService:
         ip_address: str = None,
         user_agent: str = None,
         db: Session = None
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Check if request is rate limited."""
         if not db:
             raise ValueError("Database session required")
@@ -95,7 +97,7 @@ class RateLimitService:
             return False, "Invalid API key"
 
         # Check expiration
-        if api_key.expires_at and datetime.now(timezone.utc) > api_key.expires_at:
+        if api_key.expires_at and datetime.now(UTC) > api_key.expires_at:
             return False, "API key expired"
 
         # Get rate limit
@@ -104,7 +106,7 @@ class RateLimitService:
         )
 
         # Count requests in past hour
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        cutoff = datetime.now(UTC) - timedelta(hours=1)
         requests_in_hour = db.query(RateLimitLog).filter(
             RateLimitLog.api_key_id == api_key.id,
             RateLimitLog.created_at >= cutoff
@@ -129,7 +131,7 @@ class RateLimitService:
         db.add(log_entry)
 
         # Update last used
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         db.commit()
 
         if is_rate_limited:
@@ -156,7 +158,7 @@ class RateLimitService:
         )
 
         # Requests in past hour
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        cutoff = datetime.now(UTC) - timedelta(hours=1)
         requests_in_hour = db.query(RateLimitLog).filter(
             RateLimitLog.api_key_id == api_key_id,
             RateLimitLog.created_at >= cutoff
@@ -170,7 +172,7 @@ class RateLimitService:
             "limit_per_hour": limit,
             "requests_used": requests_in_hour,
             "requests_remaining": remaining,
-            "reset_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+            "reset_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat()
         }
 
     @staticmethod
@@ -250,7 +252,7 @@ class RateLimitService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         date_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         date_end = date_start + timedelta(days=1)

@@ -4,7 +4,8 @@ Alternativa a Meta Ads para campañas en Google Search, Display, etc.
 """
 
 import logging
-from typing import Optional, Tuple, Dict, Any
+from typing import Any
+
 from google.ads.googleads.client import GoogleAdsClient
 from google.ads.googleads.errors import GoogleAdsException
 
@@ -46,7 +47,7 @@ class GoogleAdsConnector:
         campaign_name: str,
         budget_micros: int,  # $100 = 100000000 micros
         keywords: list,  # ["keyword1", "keyword2"]
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Crea Search campaign.
 
@@ -110,7 +111,7 @@ class GoogleAdsConnector:
         campaign_id: str,
         ad_group_name: str,
         cpc_bid_micros: int,  # $1 = 1000000 micros
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea Ad Group dentro de campaign."""
         try:
             service = self.client.get_service("AdGroupService")
@@ -146,7 +147,7 @@ class GoogleAdsConnector:
         headline2: str,
         description: str,
         final_url: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea Responsive Search Ad."""
         try:
             service = self.client.get_service("AdService")
@@ -186,7 +187,7 @@ class GoogleAdsConnector:
             logger.error(f"Error creating ad: {e}")
             return False, None
 
-    async def get_campaign_stats(self, campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_stats(self, campaign_id: str) -> dict[str, Any]:
         """Obtiene stats de campaign."""
         try:
             service = self.client.get_service("GoogleAdsService")

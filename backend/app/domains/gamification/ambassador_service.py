@@ -3,19 +3,23 @@ Ambassador & Certification Service
 """
 
 import uuid
-from typing import Optional, List
+
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
-from app.domains.gamification.ambassador_models import CertificationProgram, UserCertification, PublicExpertProfile
+from app.domains.gamification.ambassador_models import (
+    CertificationProgram,
+    PublicExpertProfile,
+    UserCertification,
+)
 
 
-async def list_certifications(db: AsyncSession) -> List[CertificationProgram]:
+async def list_certifications(db: AsyncSession) -> list[CertificationProgram]:
     result = await db.execute(select(CertificationProgram).where(CertificationProgram.is_active == True))
     return result.scalars().all()
 
 
-async def get_user_certifications(db: AsyncSession, user_id: uuid.UUID) -> List[UserCertification]:
+async def get_user_certifications(db: AsyncSession, user_id: uuid.UUID) -> list[UserCertification]:
     result = await db.execute(
         select(UserCertification)
         .where(UserCertification.user_id == user_id)

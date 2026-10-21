@@ -9,7 +9,6 @@ Endpoints:
 """
 
 import logging
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
@@ -18,12 +17,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.businesses.location_models import (
-    Location, LocationCreate, LocationResponse, LocationUpdate, LocationProfileResponse
-)
 from app.domains.businesses.localization import BusinessLocalizationService
+from app.domains.businesses.location_models import (
+    Location,
+    LocationCreate,
+    LocationProfileResponse,
+    LocationResponse,
+    LocationUpdate,
+)
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +92,14 @@ async def create_location(
 
 @router.get(
     "/businesses/{business_id}/locations",
-    response_model=List[LocationResponse],
+    response_model=list[LocationResponse],
 )
 async def list_locations(
     business_id: UUID = Path(...),
     active_only: bool = Query(True),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> List[LocationResponse]:
+) -> list[LocationResponse]:
     """List all locations for a business."""
 
     # Verify business ownership

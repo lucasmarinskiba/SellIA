@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.crm.models import Deal
-from app.domains.enterprise.forecasting import ForecastingManager, DealOutcomeAnalyzer
+from app.domains.enterprise.forecasting import DealOutcomeAnalyzer, ForecastingManager
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -115,8 +115,8 @@ async def record_deal_outcome(
         # not a proxy. No-op if this deal's conversation was never enrolled
         # in a running experiment.
         if deal.conversation_id:
-            from app.domains.channels.models import Conversation
             from app.domains.agents.ab_service import ABTestEngine
+            from app.domains.channels.models import Conversation
             conv_result = await db.execute(select(Conversation).where(Conversation.id == deal.conversation_id))
             conversation = conv_result.scalar_one_or_none()
             if conversation:

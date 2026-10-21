@@ -1,6 +1,7 @@
 """Amazon Seller Central Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class AmazonScript(PlatformScript):
     login_url = "https://sellercentral.amazon.com/signin"
     dashboard_url = "https://sellercentral.amazon.com/home"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "create_product_listing":
             return self._create_listing(params)
         elif task_type == "manage_inventory":
@@ -19,7 +20,7 @@ class AmazonScript(PlatformScript):
             return self._respond_messages(params)
         return super().get_task_steps(task_type, params)
 
-    def _create_listing(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_listing(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://sellercentral.amazon.com/listing/create", description="Navigate to create listing"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -31,14 +32,14 @@ class AmazonScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify listing created"),
         ]
 
-    def _manage_inventory(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _manage_inventory(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://sellercentral.amazon.com/inventory", description="Navigate to inventory"),
             ScriptStep(action="wait", wait_ms=3000),
             ScriptStep(action="screenshot", description="Check inventory levels"),
         ]
 
-    def _respond_messages(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _respond_messages(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://sellercentral.amazon.com/messaging", description="Navigate to buyer messages"),
             ScriptStep(action="wait", wait_ms=3000),

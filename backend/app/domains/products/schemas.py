@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from uuid import UUID
 from decimal import Decimal
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 # ============================================================
 # PRODUCT SCHEMAS
@@ -10,19 +11,19 @@ from decimal import Decimal
 
 class ProductVariantAttrCreate(BaseModel):
     name: str
-    sku: Optional[str] = None
-    price: Optional[Decimal] = None
+    sku: str | None = None
+    price: Decimal | None = None
     inventory_count: int = 0
-    attributes: Dict[str, Any] = Field(default_factory=dict)
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProductVariantResponse(BaseModel):
     id: UUID
     name: str
-    sku: Optional[str]
-    price: Optional[Decimal]
+    sku: str | None
+    price: Decimal | None
     inventory_count: int
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
     is_available: bool
 
     class Config:
@@ -31,33 +32,33 @@ class ProductVariantResponse(BaseModel):
 
 class ProductCreateRequest(BaseModel):
     name: str
-    slug: Optional[str] = None
-    description: Optional[str] = None
-    short_description: Optional[str] = None
+    slug: str | None = None
+    description: str | None = None
+    short_description: str | None = None
     price: Decimal
-    compare_at_price: Optional[Decimal] = None
-    sku: Optional[str] = None
-    barcode: Optional[str] = None
-    weight: Optional[Decimal] = None
+    compare_at_price: Decimal | None = None
+    sku: str | None = None
+    barcode: str | None = None
+    weight: Decimal | None = None
     inventory_count: int = 0
     track_inventory: bool = True
-    featured_image_url: Optional[str] = None
-    images: List[str] = Field(default_factory=list)
+    featured_image_url: str | None = None
+    images: list[str] = Field(default_factory=list)
     status: str = 'DRAFT'
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProductUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    short_description: Optional[str] = None
-    price: Optional[Decimal] = None
-    compare_at_price: Optional[Decimal] = None
-    inventory_count: Optional[int] = None
-    featured_image_url: Optional[str] = None
-    images: Optional[List[str]] = None
-    status: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    name: str | None = None
+    description: str | None = None
+    short_description: str | None = None
+    price: Decimal | None = None
+    compare_at_price: Decimal | None = None
+    inventory_count: int | None = None
+    featured_image_url: str | None = None
+    images: list[str] | None = None
+    status: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class ProductResponse(BaseModel):
@@ -65,16 +66,16 @@ class ProductResponse(BaseModel):
     website_id: UUID
     name: str
     slug: str
-    description: Optional[str]
-    short_description: Optional[str]
+    description: str | None
+    short_description: str | None
     price: Decimal
-    compare_at_price: Optional[Decimal]
-    sku: Optional[str]
+    compare_at_price: Decimal | None
+    sku: str | None
     inventory_count: int
-    featured_image_url: Optional[str]
-    images: List[str]
+    featured_image_url: str | None
+    images: list[str]
     status: str
-    variants: List[ProductVariantResponse] = Field(default_factory=list)
+    variants: list[ProductVariantResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
@@ -88,16 +89,16 @@ class ProductResponse(BaseModel):
 
 class CartItemRequest(BaseModel):
     product_id: UUID
-    variant_id: Optional[UUID] = None
+    variant_id: UUID | None = None
     quantity: int = 1
 
 
 class CartItemResponse(BaseModel):
     id: UUID
     product_id: UUID
-    product_name: Optional[str]
-    variant_id: Optional[UUID]
-    variant_name: Optional[str]
+    product_name: str | None
+    variant_id: UUID | None
+    variant_name: str | None
     quantity: int
     unit_price: Decimal
     line_total: Decimal
@@ -110,15 +111,15 @@ class ShoppingCartResponse(BaseModel):
     id: UUID
     website_id: UUID
     status: str
-    items: List[CartItemResponse] = Field(default_factory=list)
+    items: list[CartItemResponse] = Field(default_factory=list)
     subtotal: Decimal
     tax: Decimal
     shipping: Decimal
     discount: Decimal
     total: Decimal
-    coupon_code: Optional[str]
-    customer_email: Optional[str]
-    customer_phone: Optional[str]
+    coupon_code: str | None
+    customer_email: str | None
+    customer_phone: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -128,11 +129,11 @@ class ShoppingCartResponse(BaseModel):
 
 class CartCheckoutRequest(BaseModel):
     customer_email: str
-    customer_phone: Optional[str] = None
-    shipping_address: Dict[str, Any]
-    billing_address: Optional[Dict[str, Any]] = None
-    coupon_code: Optional[str] = None
-    notes: Optional[str] = None
+    customer_phone: str | None = None
+    shipping_address: dict[str, Any]
+    billing_address: dict[str, Any] | None = None
+    coupon_code: str | None = None
+    notes: str | None = None
 
 
 # ============================================================
@@ -142,7 +143,7 @@ class CartCheckoutRequest(BaseModel):
 class OrderItemResponse(BaseModel):
     id: UUID
     product_name: str
-    variant_name: Optional[str]
+    variant_name: str | None
     quantity: int
     unit_price: Decimal
     line_total: Decimal
@@ -162,20 +163,20 @@ class OrderResponse(BaseModel):
     discount: Decimal
     total: Decimal
     customer_email: str
-    customer_phone: Optional[str]
-    items: List[OrderItemResponse] = Field(default_factory=list)
-    payment_method: Optional[str]
+    customer_phone: str | None
+    items: list[OrderItemResponse] = Field(default_factory=list)
+    payment_method: str | None
     created_at: datetime
     updated_at: datetime
-    paid_at: Optional[datetime]
-    shipped_at: Optional[datetime]
+    paid_at: datetime | None
+    shipped_at: datetime | None
 
     class Config:
         from_attributes = True
 
 
 class OrderListResponse(BaseModel):
-    orders: List[OrderResponse]
+    orders: list[OrderResponse]
     total: int
     page: int
     per_page: int
@@ -188,9 +189,9 @@ class OrderListResponse(BaseModel):
 class ProductCategoryCreateRequest(BaseModel):
     name: str
     slug: str
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    parent_id: Optional[UUID] = None
+    description: str | None = None
+    image_url: str | None = None
+    parent_id: UUID | None = None
     display_order: int = 0
 
 
@@ -198,8 +199,8 @@ class ProductCategoryResponse(BaseModel):
     id: UUID
     name: str
     slug: str
-    description: Optional[str]
-    image_url: Optional[str]
+    description: str | None
+    image_url: str | None
     display_order: int
 
     class Config:

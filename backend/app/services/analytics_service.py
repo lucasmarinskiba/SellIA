@@ -8,10 +8,11 @@ Analytics Service
 """
 import logging
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, and_, cast, Integer
+
+from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Lead, WorkflowExecution, LeadSource, EmailLog
+from app.db.models import EmailLog, Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 

@@ -12,11 +12,16 @@ Gen-4 Standard para producción.
 """
 
 import asyncio
-from typing import Dict, Any, Optional
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
 
 settings = get_settings()
 
@@ -69,7 +74,7 @@ class RunwayProvider(BaseProvider):
             return 0.05
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "gen-4-turbo": 0.05,
             "gen-4": 0.12,
@@ -208,20 +213,19 @@ class RunwayProvider(BaseProvider):
             "model": "gen-4-image",
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                "https://api.dev.runwayml.com/v1/image-to-image",  # o endpoint correcto
-                headers=headers,
-                json=payload,
-            ) as resp:
-                if resp.status not in (200, 201):
-                    text = await resp.text()
-                    return GenerationResult(
-                        success=False,
-                        error_message=f"Runway image error {resp.status}: {text}",
-                    )
-                data = await resp.json()
-                image_url = data.get("url") or data.get("output", [{}])[0].get("url")
+        async with aiohttp.ClientSession() as session, session.post(
+            "https://api.dev.runwayml.com/v1/image-to-image",  # o endpoint correcto
+            headers=headers,
+            json=payload,
+        ) as resp:
+            if resp.status not in (200, 201):
+                text = await resp.text()
+                return GenerationResult(
+                    success=False,
+                    error_message=f"Runway image error {resp.status}: {text}",
+                )
+            data = await resp.json()
+            image_url = data.get("url") or data.get("output", [{}])[0].get("url")
 
         return GenerationResult(
             success=True,

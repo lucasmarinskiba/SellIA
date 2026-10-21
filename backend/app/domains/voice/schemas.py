@@ -1,8 +1,9 @@
 """Voice Agent Schemas"""
 
-from uuid import UUID
 from datetime import datetime, time
-from typing import Optional, List, Dict, Any
+from typing import Any
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -16,7 +17,7 @@ class TranscriptSegment(BaseModel):
 class VoiceCallBase(BaseModel):
     business_id: UUID
     customer_id: UUID
-    conversation_id: Optional[UUID] = None
+    conversation_id: UUID | None = None
     phone_number: str
     direction: str
     status: str = "ringing"
@@ -27,30 +28,30 @@ class VoiceCallCreate(VoiceCallBase):
 
 
 class VoiceCallUpdate(BaseModel):
-    status: Optional[str] = None
-    recording_url: Optional[str] = None
-    recording_duration: Optional[int] = None
-    transcript: Optional[str] = None
-    transcript_segments: Optional[List[TranscriptSegment]] = None
-    ai_summary: Optional[str] = None
-    outcome: Optional[str] = None
-    cost_usd: Optional[float] = None
-    extra_data: Optional[Dict[str, Any]] = None
-    ended_at: Optional[datetime] = None
+    status: str | None = None
+    recording_url: str | None = None
+    recording_duration: int | None = None
+    transcript: str | None = None
+    transcript_segments: list[TranscriptSegment] | None = None
+    ai_summary: str | None = None
+    outcome: str | None = None
+    cost_usd: float | None = None
+    extra_data: dict[str, Any] | None = None
+    ended_at: datetime | None = None
 
 
 class VoiceCallResponse(VoiceCallBase):
     id: UUID
-    recording_url: Optional[str] = None
-    recording_duration: Optional[int] = None
-    transcript: Optional[str] = None
-    transcript_segments: Optional[List[TranscriptSegment]] = None
-    ai_summary: Optional[str] = None
-    outcome: Optional[str] = None
+    recording_url: str | None = None
+    recording_duration: int | None = None
+    transcript: str | None = None
+    transcript_segments: list[TranscriptSegment] | None = None
+    ai_summary: str | None = None
+    outcome: str | None = None
     cost_usd: float = 0
-    extra_data: Dict[str, Any] = {}
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    extra_data: dict[str, Any] = {}
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -74,15 +75,15 @@ class VoiceConfigCreate(VoiceConfigBase):
 
 
 class VoiceConfigUpdate(BaseModel):
-    is_active: Optional[bool] = None
-    voice_id: Optional[str] = None
-    tts_provider: Optional[str] = None
-    stt_provider: Optional[str] = None
-    language: Optional[str] = None
-    greeting_message: Optional[str] = None
-    max_call_duration: Optional[int] = None
-    allowed_hours_start: Optional[time] = None
-    allowed_hours_end: Optional[time] = None
+    is_active: bool | None = None
+    voice_id: str | None = None
+    tts_provider: str | None = None
+    stt_provider: str | None = None
+    language: str | None = None
+    greeting_message: str | None = None
+    max_call_duration: int | None = None
+    allowed_hours_start: time | None = None
+    allowed_hours_end: time | None = None
 
 
 class VoiceConfigResponse(VoiceConfigBase):
@@ -104,4 +105,4 @@ class TranscriptionResponse(BaseModel):
 class CallSegmentResponse(BaseModel):
     transcript: str
     ai_response_text: str
-    audio_b64: Optional[str] = None
+    audio_b64: str | None = None

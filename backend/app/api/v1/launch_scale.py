@@ -1,8 +1,9 @@
 """Phases 19-22: Launch & Scale Endpoints."""
 
-from fastapi import APIRouter, Query, Body
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from fastapi import APIRouter, Body, Query
 
 # Phase 19-22 stub - to be implemented
 # from app.domains.onboarding.user_onboarding import OnboardingEngine, OnboardingStep, UserOnboardingSession
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/onboarding/start/{user_id}")
-async def start_onboarding(user_id: str) -> Dict[str, Any]:
+async def start_onboarding(user_id: str) -> dict[str, Any]:
     """Start onboarding for new user."""
 
     session = onboarding.create_session(user_id)
@@ -35,7 +36,7 @@ async def start_onboarding(user_id: str) -> Dict[str, Any]:
 
 
 @router.get("/onboarding/step/{session_id}")
-async def get_onboarding_step(session_id: str) -> Dict[str, Any]:
+async def get_onboarding_step(session_id: str) -> dict[str, Any]:
     """Get current onboarding step."""
 
     # Mock step - would retrieve from DB
@@ -54,8 +55,8 @@ async def get_onboarding_step(session_id: str) -> Dict[str, Any]:
 async def complete_onboarding_step(
     session_id: str,
     step: str = Query(...),
-    answers: Dict[str, Any] = Body(...)
-) -> Dict[str, Any]:
+    answers: dict[str, Any] = Body(...)
+) -> dict[str, Any]:
     """Complete onboarding step."""
 
     return {
@@ -67,7 +68,7 @@ async def complete_onboarding_step(
 
 
 @router.get("/onboarding/progress/{session_id}")
-async def get_onboarding_progress(session_id: str) -> Dict[str, Any]:
+async def get_onboarding_progress(session_id: str) -> dict[str, Any]:
     """Get onboarding progress."""
 
     # Mock session
@@ -87,7 +88,7 @@ async def get_onboarding_progress(session_id: str) -> Dict[str, Any]:
 
 
 @router.get("/admin/metrics")
-async def get_platform_metrics() -> Dict[str, Any]:
+async def get_platform_metrics() -> dict[str, Any]:
     """Get platform-wide metrics."""
 
     metrics = dashboard.get_platform_metrics()
@@ -108,7 +109,7 @@ async def get_platform_metrics() -> Dict[str, Any]:
 
 
 @router.get("/admin/trends")
-async def get_trending_metrics() -> Dict[str, Any]:
+async def get_trending_metrics() -> dict[str, Any]:
     """Get trending metrics."""
 
     trends = dashboard.get_trending_metrics()
@@ -120,7 +121,7 @@ async def get_trending_metrics() -> Dict[str, Any]:
 
 
 @router.get("/admin/system-health")
-async def get_system_health() -> Dict[str, Any]:
+async def get_system_health() -> dict[str, Any]:
     """Get system health status."""
 
     health = dashboard.get_system_health()
@@ -132,7 +133,7 @@ async def get_system_health() -> Dict[str, Any]:
 
 
 @router.get("/admin/top-users")
-async def get_top_users(limit: int = Query(10, ge=1, le=100)) -> Dict[str, Any]:
+async def get_top_users(limit: int = Query(10, ge=1, le=100)) -> dict[str, Any]:
     """Get top performing users."""
 
     users = dashboard.get_top_users(limit)
@@ -144,7 +145,7 @@ async def get_top_users(limit: int = Query(10, ge=1, le=100)) -> Dict[str, Any]:
 
 
 @router.get("/admin/insights")
-async def get_insights() -> Dict[str, Any]:
+async def get_insights() -> dict[str, Any]:
     """Get actionable insights."""
 
     insights = dashboard.get_insights()
@@ -164,7 +165,7 @@ async def get_insights() -> Dict[str, Any]:
 async def create_tenant(
     name: str = Query(...),
     tier: str = Query("pro", regex="^(free|pro|enterprise)$")
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create new tenant."""
 
     tenant = tenant_mgr.create_tenant(name, tier)
@@ -180,7 +181,7 @@ async def create_tenant(
 
 
 @router.get("/tenant/{tenant_id}/usage")
-async def get_tenant_usage(tenant_id: str) -> Dict[str, Any]:
+async def get_tenant_usage(tenant_id: str) -> dict[str, Any]:
     """Get tenant usage."""
 
     usage = tenant_mgr.get_tenant_usage(tenant_id)
@@ -196,7 +197,7 @@ async def get_tenant_usage(tenant_id: str) -> Dict[str, Any]:
 async def upgrade_tenant(
     tenant_id: str,
     new_tier: str = Query(..., regex="^(pro|enterprise)$")
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Upgrade tenant plan."""
 
     result = tenant_mgr.upgrade_tenant(tenant_id, new_tier)
@@ -205,7 +206,7 @@ async def upgrade_tenant(
 
 
 @router.get("/tenant/{tenant_id}/billing")
-async def get_billing(tenant_id: str) -> Dict[str, Any]:
+async def get_billing(tenant_id: str) -> dict[str, Any]:
     """Get tenant billing info."""
 
     billing = tenant_mgr.get_billing_summary(tenant_id)
@@ -222,7 +223,7 @@ async def get_billing(tenant_id: str) -> Dict[str, Any]:
 
 
 @router.get("/monitoring/alerts")
-async def get_active_alerts() -> Dict[str, Any]:
+async def get_active_alerts() -> dict[str, Any]:
     """Get active alerts."""
 
     alerts = monitoring.get_active_alerts()
@@ -235,7 +236,7 @@ async def get_active_alerts() -> Dict[str, Any]:
 
 
 @router.get("/monitoring/performance")
-async def get_performance_stats() -> Dict[str, Any]:
+async def get_performance_stats() -> dict[str, Any]:
     """Get performance statistics."""
 
     stats = monitoring.get_performance_stats()
@@ -247,7 +248,7 @@ async def get_performance_stats() -> Dict[str, Any]:
 
 
 @router.get("/monitoring/health")
-async def get_system_status() -> Dict[str, Any]:
+async def get_system_status() -> dict[str, Any]:
     """Get overall system health."""
 
     summary = monitoring.get_alert_summary()
@@ -267,7 +268,7 @@ async def create_alert(
     severity: str = Query(..., regex="^(critical|high|medium|low|info)$"),
     title: str = Query(...),
     message: str = Query(...)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create alert (admin only)."""
 
     alert = monitoring.create_alert(

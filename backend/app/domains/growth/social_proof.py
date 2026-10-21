@@ -5,17 +5,21 @@ Integrates with MessageIntelligenceService for sentiment analysis.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import SocialProofItem, SocialProofType, SocialProofStatus
-from app.domains.intelligence.service import MessageIntelligenceService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    SocialProofItem,
+    SocialProofStatus,
+    SocialProofType,
+)
+from app.domains.intelligence.service import MessageIntelligenceService
 
 logger = get_logger(__name__)
 
@@ -112,7 +116,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         content: str,
         order_id: uuid.UUID = None,
         customer_name: str = None,
-        media_urls: List[str] = None,
+        media_urls: list[str] = None,
     ) -> SocialProofItem:
         """Collect and analyze a customer testimonial/review."""
         # Analyze sentiment
@@ -191,7 +195,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         except Exception:
             return ""
 
-    async def _extract_quotes(self, business_id: uuid.UUID, content: str) -> List[str]:
+    async def _extract_quotes(self, business_id: uuid.UUID, content: str) -> list[str]:
         """Extract powerful quotes from testimonial."""
         try:
             response = await generate_raw_ai_response(
@@ -218,7 +222,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
 
         item.status = SocialProofStatus.APPROVED
         item.approved_by = approved_by
-        item.approved_at = datetime.now(timezone.utc)
+        item.approved_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(item)
 
@@ -249,7 +253,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
         item_type: SocialProofType = None,
         count: int = 10,
         min_rating: int = None,
-    ) -> List[SocialProofItem]:
+    ) -> list[SocialProofItem]:
         """Get approved social proof items for display."""
         query = select(SocialProofItem).where(
             SocialProofItem.business_id == business_id,
@@ -277,7 +281,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
 
         item = items[0]
         item.usage_count += 1
-        item.last_used_at = datetime.now(timezone.utc)
+        item.last_used_at = datetime.now(UTC)
         await self.db.commit()
 
         # Format testimonial snippet
@@ -286,7 +290,7 @@ Ejemplo: "¡Hola! Espero que estés disfrutando [producto]. Me ayudaría MUCHO s
 
         return message + social_proof_block
 
-    async def get_moderation_queue(self, business_id: uuid.UUID) -> List[SocialProofItem]:
+    async def get_moderation_queue(self, business_id: uuid.UUID) -> list[SocialProofItem]:
         """Get pending social proof items for moderation."""
         result = await self.db.execute(
             select(SocialProofItem).where(

@@ -10,10 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Optional
 
 CENT = Decimal("0.01")
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _q(v) -> Decimal:
@@ -32,16 +31,16 @@ class ChannelInput:
     revenue: Decimal
     conversions: int = 0
     roas: Decimal = ZERO
-    recent_roas: Optional[Decimal] = None
-    min_budget: Optional[Decimal] = None
-    max_budget: Optional[Decimal] = None
+    recent_roas: Decimal | None = None
+    min_budget: Decimal | None = None
+    max_budget: Decimal | None = None
     is_managed: bool = True
     is_paused: bool = False
 
 
 @dataclass
 class OptimizerConfig:
-    total_daily_budget: Optional[Decimal] = None
+    total_daily_budget: Decimal | None = None
     target_roas: Decimal = Decimal("2.0")
     kill_roas: Decimal = Decimal("0.7")
     min_channel_share: Decimal = Decimal("0.10")
@@ -131,8 +130,8 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
             noop=True, note="pool de presupuesto en cero", pool=pool,
         )
 
-    target = config.target_roas if config.target_roas > 0 else Decimal("1")
-    aggr = float(config.aggressiveness or Decimal("1"))
+    target = config.target_roas if config.target_roas > 0 else Decimal(1)
+    aggr = float(config.aggressiveness or Decimal(1))
 
     # --- classify: kill vs active -------------------------------------------
     active: list[ChannelInput] = []
@@ -184,15 +183,14 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
         hard_min = _q(c.min_budget) if c.min_budget is not None else ZERO
         hard_max = _q(c.max_budget) if c.max_budget is not None else pool
         if cur > 0:
-            band_lo = _q(cur * (Decimal("1") - shift))
-            band_hi = _q(cur * (Decimal("1") + shift))
+            band_lo = _q(cur * (Decimal(1) - shift))
+            band_hi = _q(cur * (Decimal(1) + shift))
         else:
             band_lo = ZERO
             band_hi = max(floor_share * 2, hard_min)
         l = max(hard_min, band_lo, floor_share if cur > 0 else ZERO)
         h = min(hard_max, band_hi) if band_hi > 0 else hard_max
-        if h < l:
-            h = l
+        h = max(h, l)
         lo[c.channel_id] = l
         hi[c.channel_id] = h
 

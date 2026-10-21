@@ -1,8 +1,10 @@
 """Phase X9: AI User Intelligence Agent - Deep User Profiling."""
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON
-from app.db.models import Base
 import enum
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String
+
+from app.db.models import Base
 
 
 class UserPersonalityType(str, enum.Enum):
@@ -72,8 +74,8 @@ class UserRiskProfile(Base):
     recommended_messaging = Column(String(255))  # ROI-focused, risk-reduction, social proof
     churn_risk_score = Column(Float, default=0)  # 0-1.0, for existing customers
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class UserJourneyStage(Base):
@@ -82,8 +84,8 @@ class UserJourneyStage(Base):
 
     user_id = Column(String(36), nullable=False, index=True)
     stage = Column(String(50), nullable=False)  # awareness, consideration, decision, onboarding, retention
-    entry_date = Column(DateTime(timezone.utc), nullable=False)
-    exit_date = Column(DateTime(timezone.utc), nullable=True)
+    entry_date = Column(DateTime(UTC), nullable=False)
+    exit_date = Column(DateTime(UTC), nullable=True)
 
     # Stage-specific metrics
     stage_duration_days = Column(Integer, default=0)
@@ -95,4 +97,4 @@ class UserJourneyStage(Base):
     touchpoint_count_this_stage = Column(Integer, default=0)
     next_recommended_touchpoint = Column(String(255))
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

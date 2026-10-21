@@ -19,11 +19,22 @@ Pricing varies by model:
 - Luma: ~$0.05/s
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -60,7 +71,7 @@ class FalAggregatorProvider(BaseProvider):
             duration = config.duration_seconds or 5
             return model_config["cost_per_second"] * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "flux-schnell": 0.003,
             "flux-dev": 0.015,
@@ -124,7 +135,7 @@ class FalAggregatorProvider(BaseProvider):
             elif hasattr(result, "video") and result.video:
                 url = result.video.url
             elif isinstance(result, dict):
-                if "images" in result and result["images"]:
+                if result.get("images"):
                     url = result["images"][0].get("url")
                 elif "video" in result:
                     url = result["video"].get("url") if isinstance(result["video"], dict) else result["video"]
@@ -139,8 +150,9 @@ class FalAggregatorProvider(BaseProvider):
                 image_bytes = await download_url(url)
                 if image_bytes:
                     local = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
-                    from PIL import Image as PILImage
                     import io
+
+                    from PIL import Image as PILImage
                     img = PILImage.open(io.BytesIO(local))
                     width, height = img.size
 

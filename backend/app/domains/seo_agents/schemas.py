@@ -1,6 +1,7 @@
 """SEO Agents schemas — request/response models."""
 
 from uuid import UUID
+
 from pydantic import BaseModel
 
 

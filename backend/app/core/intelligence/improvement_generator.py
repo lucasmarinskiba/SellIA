@@ -5,16 +5,15 @@ Usa LLM para analizar el System Health Report y generar propuestas de mejora
 concretas para el sistema.
 """
 
-import uuid
 import json
-from typing import List, Optional
+import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.intelligence.system_analyzer import SystemHealthReport
+from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.feedback.models import SystemImprovement
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -23,7 +22,7 @@ async def generate_improvements(
     db: AsyncSession,
     report: SystemHealthReport,
     business_id: uuid.UUID,
-) -> List[SystemImprovement]:
+) -> list[SystemImprovement]:
     """
     Genera propuestas de mejora basadas en el health report.
 
@@ -105,7 +104,7 @@ Generate improvement proposals based on this data."""
 async def create_feature_flag_for_improvement(
     db: AsyncSession,
     improvement: SystemImprovement,
-) -> Optional[str]:
+) -> str | None:
     """
     Crea un feature flag para una mejora aprobada.
 

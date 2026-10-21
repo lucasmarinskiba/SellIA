@@ -1,12 +1,15 @@
 """Phase X7: Perception Engineering Agent Service."""
-from datetime import datetime, timezone
-from typing import List, Optional, Dict
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.domains.perception_engineering.models import (
-    ProductPerception, PerceptionShiftCampaign, ValuePerceptionOptimizer,
-    PerceptionNarrative, PerceptionDimension, PerceptionShiftTechnique
+    PerceptionDimension,
+    PerceptionNarrative,
+    PerceptionShiftCampaign,
+    PerceptionShiftTechnique,
+    ProductPerception,
+    ValuePerceptionOptimizer,
 )
 
 
@@ -18,7 +21,7 @@ class PerceptionEngineeringAgent:
         db: AsyncSession,
         business_id: UUID,
         product_id: UUID,
-        current_perception: Dict[str, float],
+        current_perception: dict[str, float],
     ) -> ProductPerception:
         """Analyze gap between current and desired perception."""
         perception = ProductPerception(
@@ -182,7 +185,7 @@ class PerceptionEngineeringAgent:
         product_id: UUID,
         base_price: float,
         current_perceived_value: float,
-        competitor_prices: List[float],
+        competitor_prices: list[float],
     ) -> ValuePerceptionOptimizer:
         """Optimize how much value customers perceive in the product."""
 
@@ -265,15 +268,15 @@ class PerceptionEngineeringAgent:
         narrative.narrative_variants = [
             {
                 "segment": "luxury_buyers",
-                "narrative": f"Exclusively designed for discerning professionals who demand the finest."
+                "narrative": "Exclusively designed for discerning professionals who demand the finest."
             },
             {
                 "segment": "budget_conscious",
-                "narrative": f"Premium quality at prices that make sense. Finally."
+                "narrative": "Premium quality at prices that make sense. Finally."
             },
             {
                 "segment": "early_adopters",
-                "narrative": f"The innovation leaders are already here. Are you next?"
+                "narrative": "The innovation leaders are already here. Are you next?"
             }
         ]
 
@@ -287,7 +290,7 @@ class PerceptionEngineeringAgent:
         current_perception: float,
         technique: PerceptionShiftTechnique,
         campaign_budget: float,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Predict sales impact of perception shift campaign."""
 
         # Base conversion lift from perception shift

@@ -18,7 +18,7 @@ between runs: every alert carries a ``kind`` in ``alert_metadata``, and
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -84,7 +84,7 @@ async def alert_sent_recently(
     dedupe_key: str | None = None,
 ) -> bool:
     """Whether this business already got an alert of this ``kind`` (and ``dedupe_key``) lately."""
-    since = datetime.now(timezone.utc) - within
+    since = datetime.now(UTC) - within
     conditions = [
         Alert.business_id == business_id,
         Alert.alert_metadata["kind"].astext == kind,

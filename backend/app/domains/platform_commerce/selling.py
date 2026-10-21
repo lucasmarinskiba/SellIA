@@ -95,7 +95,10 @@ async def pending_questions(
     a question on a listing is someone with their wallet already out.
     """
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     result = await db.execute(

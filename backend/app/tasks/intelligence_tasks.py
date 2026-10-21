@@ -4,7 +4,7 @@ Celery tasks for System Intelligence Engine.
 Automated analysis, improvement generation, and rollout.
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
 
@@ -28,11 +28,12 @@ async def hourly_system_analysis():
 @shared_task
 async def daily_improvement_generation():
     """Genera propuestas de mejora diariamente."""
-    from app.core.database import AsyncSessionLocal
-    from app.core.intelligence.system_analyzer import generate_health_report
-    from app.core.intelligence.improvement_generator import generate_improvements
-    from app.domains.businesses.models import Business
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.improvement_generator import generate_improvements
+    from app.core.intelligence.system_analyzer import generate_health_report
+    from app.domains.businesses.models import Business
 
     async with AsyncSessionLocal() as db:
         # Get first business as context
@@ -51,8 +52,8 @@ async def daily_improvement_generation():
 async def weekly_feedback_synthesis():
     """Síntesis semanal de todo el feedback para detectar patrones."""
     from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.service import FeedbackService
     from app.domains.feedback.models import FeedbackType
+    from app.domains.feedback.service import FeedbackService
 
     async with AsyncSessionLocal() as db:
         svc = FeedbackService(db)
@@ -73,10 +74,13 @@ async def weekly_feedback_synthesis():
 @shared_task
 async def apply_approved_improvements():
     """Aplica mejoras aprobadas creando feature flags."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import SystemImprovement
-    from app.core.intelligence.improvement_generator import create_feature_flag_for_improvement
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.improvement_generator import (
+        create_feature_flag_for_improvement,
+    )
+    from app.domains.feedback.models import SystemImprovement
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -97,10 +101,11 @@ async def apply_approved_improvements():
 @shared_task
 async def rollout_progressive():
     """Incrementa gradualmente el rollout de features en progreso."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import FeatureFlag
-    from app.core.intelligence.feature_flags import increment_rollout
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.core.intelligence.feature_flags import increment_rollout
+    from app.domains.feedback.models import FeatureFlag
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -124,16 +129,17 @@ async def rollout_progressive():
 @shared_task
 async def notify_users_of_new_features():
     """Notifica a usuarios cuando una feature que solicitaron se despliega."""
-    from app.core.database import AsyncSessionLocal
-    from app.domains.feedback.models import UserFeedback, SystemImprovement
     from sqlalchemy import select
+
+    from app.core.database import AsyncSessionLocal
+    from app.domains.feedback.models import SystemImprovement
 
     async with AsyncSessionLocal() as db:
         # Find shipped improvements linked to feedback
         result = await db.execute(
             select(SystemImprovement).where(
                 SystemImprovement.status == "deployed",
-                SystemImprovement.deployed_at >= datetime.now(timezone.utc) - timedelta(days=1),
+                SystemImprovement.deployed_at >= datetime.now(UTC) - timedelta(days=1),
             )
         )
         improvements = result.scalars().all()

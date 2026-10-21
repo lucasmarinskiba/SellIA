@@ -1,13 +1,12 @@
 """Background job queue system (Celery + Redis)."""
 
+import logging
+import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
 from datetime import datetime, timedelta
 from enum import Enum
-import json
-import uuid
-import logging
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +33,14 @@ class BackgroundJob:
     status: JobStatus
     priority: JobPriority
     payload: dict
-    result: Optional[Any] = None
-    error: Optional[str] = None
+    result: Any | None = None
+    error: str | None = None
     retry_count: int = 0
     max_retries: int = 3
     created_at: datetime = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    next_retry_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    next_retry_at: datetime | None = None
 
     def __post_init__(self):
         if self.created_at is None:
@@ -111,7 +110,7 @@ class BackgroundJobQueue:
         logger.info(f"Enqueued job {job_id} ({job_type}, priority={priority})")
         return job_id
 
-    def dequeue(self, priority: JobPriority = JobPriority.HIGH) -> Optional[BackgroundJob]:
+    def dequeue(self, priority: JobPriority = JobPriority.HIGH) -> BackgroundJob | None:
         """
         Dequeue next pending job (highest priority first).
         """
@@ -151,7 +150,7 @@ class BackgroundJobQueue:
             return True
 
         except Exception as e:
-            logger.error(f"Job {job.id} failed: {str(e)}")
+            logger.error(f"Job {job.id} failed: {e!s}")
             self._handle_retry(job, str(e))
             return False
 
@@ -207,12 +206,12 @@ class BackgroundJobQueue:
             self._mark_failed(job, f"Max retries exceeded: {error}")
             logger.error(f"Job {job.id} permanently failed after {max_retries} retries")
 
-    def get_job_status(self, job_id: str) -> Optional[BackgroundJob]:
+    def get_job_status(self, job_id: str) -> BackgroundJob | None:
         """Get job status by ID."""
 
         return self.jobs.get(job_id)
 
-    def list_jobs(self, status: Optional[JobStatus] = None, limit: int = 100) -> list[BackgroundJob]:
+    def list_jobs(self, status: JobStatus | None = None, limit: int = 100) -> list[BackgroundJob]:
         """List jobs (optionally filtered by status)."""
 
         jobs = list(self.jobs.values())

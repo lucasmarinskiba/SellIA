@@ -1,13 +1,22 @@
 """Inventory domain — location-based stock management."""
 
 from .inventory_models import (
-    LocationInventory, StockMovement, LowStockAlert, FulfillmentRoute,
-    StockStatus, FulfillmentMethod
+    FulfillmentMethod,
+    FulfillmentRoute,
+    LocationInventory,
+    LowStockAlert,
+    StockMovement,
+    StockStatus,
 )
-from .inventory_service import LocationInventoryService, FulfillmentRoutingService
+from .inventory_service import FulfillmentRoutingService, LocationInventoryService
 
 __all__ = [
-    "LocationInventory", "StockMovement", "LowStockAlert", "FulfillmentRoute",
-    "StockStatus", "FulfillmentMethod",
-    "LocationInventoryService", "FulfillmentRoutingService"
+    "FulfillmentMethod",
+    "FulfillmentRoute",
+    "FulfillmentRoutingService",
+    "LocationInventory",
+    "LocationInventoryService",
+    "LowStockAlert",
+    "StockMovement",
+    "StockStatus"
 ]

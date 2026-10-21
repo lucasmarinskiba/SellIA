@@ -1,9 +1,12 @@
 """Phase 37: Deal Intelligence."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import Column, DateTime, Float, ForeignKey, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class WinLossAnalysis(Base):
     __tablename__ = "win_loss_analysis"
@@ -13,7 +16,7 @@ class WinLossAnalysis(Base):
     outcome = Column(String(20), nullable=False)  # won, lost
     analysis = Column(String(2000), nullable=True)
     key_factors = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CompetitiveIntelligence(Base):
     __tablename__ = "competitive_intelligence"
@@ -22,7 +25,7 @@ class CompetitiveIntelligence(Base):
     competitor_name = Column(String(255), nullable=False)
     intel_data = Column(JSONB, nullable=True)
     threat_level = Column(String(20), default="medium")
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class DealVelocity(Base):
     __tablename__ = "deal_velocity"
@@ -31,4 +34,4 @@ class DealVelocity(Base):
     deal_id = Column(UUID(as_uuid=True), nullable=False)
     avg_days_to_close = Column(Float, default=0)
     velocity_forecast = Column(String(255), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

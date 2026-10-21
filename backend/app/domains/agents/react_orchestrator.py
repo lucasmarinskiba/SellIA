@@ -13,16 +13,16 @@ function calling for OpenAI/Anthropic when available.
 
 import json
 import uuid
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from app.core.logger import get_logger
-from app.domains.agents.tool_registry import ToolRegistry
-from app.domains.agents.llm_provider import generate_with_fallback, resolve_api_keys
 from app.domains.agents.business_type_registry import BusinessTypeRegistry
+from app.domains.agents.llm_provider import generate_with_fallback, resolve_api_keys
+from app.domains.agents.tool_registry import ToolRegistry
 from app.domains.consumo.service import log_ai_call
 
 logger = get_logger(__name__)
@@ -70,18 +70,18 @@ Business context: {business_context}
 class ReActStep(BaseModel):
     thought: str
     action: str
-    action_input: Dict[str, Any] = Field(default_factory=dict)
-    final_answer: Optional[str] = None
+    action_input: dict[str, Any] = Field(default_factory=dict)
+    final_answer: str | None = None
 
 
 class ReActResult(BaseModel):
     final_answer: str
     iterations: int
-    tool_calls: List[Dict[str, Any]]
+    tool_calls: list[dict[str, Any]]
     tokens_used: int
     model: str
     provider: str
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ReActOrchestrator:
@@ -91,9 +91,9 @@ class ReActOrchestrator:
         self,
         db,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         max_iterations: int = 5,
-        business_type: Optional[str] = None,
+        business_type: str | None = None,
     ):
         self.db = db
         self.user_id = user_id
@@ -102,13 +102,13 @@ class ReActOrchestrator:
         self._raw_business_type = business_type
         self.registry = ToolRegistry()
         self._total_tokens = 0
-        self._tool_calls: List[Dict[str, Any]] = []
+        self._tool_calls: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
     # Prompt construction
     # ------------------------------------------------------------------
 
-    def _build_system_prompt(self, business_context: Optional[Dict] = None) -> str:
+    def _build_system_prompt(self, business_context: dict | None = None) -> str:
         # Determine allowed tools based on business type
         allowed_tool_names = None
         if self._raw_business_type:
@@ -138,7 +138,7 @@ class ReActOrchestrator:
 
         return REACT_SYSTEM_PROMPT.format(
             tool_descriptions=tool_desc,
-            current_date=datetime.now(timezone.utc).isoformat(),
+            current_date=datetime.now(UTC).isoformat(),
             business_context=json.dumps(ctx, ensure_ascii=False),
         )
 
@@ -146,7 +146,7 @@ class ReActOrchestrator:
     # Parsing
     # ------------------------------------------------------------------
 
-    def _parse_step(self, text: str) -> Optional[ReActStep]:
+    def _parse_step(self, text: str) -> ReActStep | None:
         text = text.strip()
 
         # Direct JSON parse
@@ -193,10 +193,10 @@ class ReActOrchestrator:
 
     async def _call_llm(
         self,
-        messages: List,
+        messages: list,
         temperature: float = 0.3,
         max_tokens: int = 2000,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Call LLM via the existing fallback infrastructure."""
         response = await generate_with_fallback(
             db=self.db,
@@ -213,10 +213,10 @@ class ReActOrchestrator:
 
     async def _call_llm_with_native_tools(
         self,
-        messages: List,
+        messages: list,
         temperature: float = 0.3,
         max_tokens: int = 2000,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Try native tool calling for OpenAI / Anthropic."""
         if not self.business_id:
             return None
@@ -309,7 +309,7 @@ class ReActOrchestrator:
         self,
         iteration: int,
         step: ReActStep,
-        observation: Optional[str],
+        observation: str | None,
         model: str,
         provider: str,
     ):
@@ -339,7 +339,7 @@ class ReActOrchestrator:
     # Main loop
     # ------------------------------------------------------------------
 
-    async def _load_business_type(self) -> Optional[str]:
+    async def _load_business_type(self) -> str | None:
         """Lazy-load business_type from BusinessContext if business_id is set."""
         if self._raw_business_type:
             return self._raw_business_type
@@ -347,6 +347,7 @@ class ReActOrchestrator:
             return None
         try:
             from sqlalchemy import select
+
             from app.domains.business_context.models import BusinessContext
             result = await self.db.execute(
                 select(BusinessContext.business_type).where(
@@ -365,9 +366,9 @@ class ReActOrchestrator:
     async def process(
         self,
         user_input: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        business_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        conversation_history: list[dict[str, str]] | None = None,
+        business_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         await self._load_business_type()
         system_prompt = self._build_system_prompt(business_context)
         messages = [SystemMessage(content=system_prompt)]

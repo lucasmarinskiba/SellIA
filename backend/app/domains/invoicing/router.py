@@ -1,9 +1,8 @@
 """Invoicing API — /api/v1/businesses/{business_id}/invoicing/*"""
 
-from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -11,18 +10,17 @@ from app.core.deps import get_current_user
 from app.domains.invoicing.schemas import (
     InvoiceCreate,
     InvoiceOut,
+    InvoiceStatsResponse,
+    InvoiceTemplateCreate,
+    InvoiceTemplateOut,
     InvoiceUpdate,
     PaymentCreate,
     PaymentOut,
-    InvoiceTemplateCreate,
-    InvoiceTemplateOut,
-    InvoiceStatsResponse,
-    InvoiceSend,
 )
 from app.domains.invoicing.service import (
+    InvoiceTemplateService,
     InvoicingService,
     PaymentService,
-    InvoiceTemplateService,
 )
 from app.domains.users.models import User
 

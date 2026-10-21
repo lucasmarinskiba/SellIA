@@ -1,9 +1,10 @@
 """Phase 26c: Deal Intelligence - Scoring, Forecasting, Risk Analysis."""
 
-from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSON
-from datetime import datetime, timedelta
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSON
 
 from app.database import Base
 

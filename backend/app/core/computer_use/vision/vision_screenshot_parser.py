@@ -10,13 +10,13 @@ Responsibilities:
 Comprehensive page understanding.
 """
 
-import logging
+import asyncio
 import base64
 import json
-import asyncio
-from typing import Dict, List, Any, Optional, Tuple
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class ViewportSize(Enum):
 @dataclass
 class ImageContent:
     """Información de imagen detectada."""
-    url: Optional[str] = None
-    alt_text: Optional[str] = None
+    url: str | None = None
+    alt_text: str | None = None
     x: int = 0
     y: int = 0
     width: int = 0
@@ -56,7 +56,7 @@ class Heading:
 class PageMetadata:
     """Metadata extraído de página."""
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     lang: str = "es"
     charset: str = "utf-8"
     viewport_size_type: ViewportSize = ViewportSize.DESKTOP
@@ -68,9 +68,9 @@ class PageMetadata:
 class PageStructure:
     """Estructura completa de página."""
     metadata: PageMetadata
-    headings: List[Heading]
-    images: List[ImageContent]
-    text_hierarchy: List[Dict[str, Any]]
+    headings: list[Heading]
+    images: list[ImageContent]
+    text_hierarchy: list[dict[str, Any]]
     all_text: str
     unique_text_regions: int
     element_count: int
@@ -90,7 +90,7 @@ class VisionScreenshotParser:
     async def parse_complete_page(
         self,
         screenshot_bytes: bytes,
-        url: Optional[str] = None
+        url: str | None = None
     ) -> PageStructure:
         """Parsea completamente una página."""
         if not self.anthropic:
@@ -238,7 +238,7 @@ Responde SOLO el texto concatenado (no JSON)."""
     async def identify_all_ui_elements(
         self,
         screenshot_bytes: bytes
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """Identifica TODOS los elementos UI."""
         logger.info("Identifying all UI elements")
 
@@ -320,8 +320,8 @@ Responde SOLO en JSON:
     async def detect_viewport_size(
         self,
         screenshot_bytes: bytes,
-        actual_width: Optional[int] = None
-    ) -> Tuple[ViewportSize, bool]:
+        actual_width: int | None = None
+    ) -> tuple[ViewportSize, bool]:
         """Detecta tamaño de viewport y si es responsive.
 
         Returns:
@@ -399,7 +399,7 @@ Responde SOLO: {"viewport_size": "mobile|tablet|desktop", "is_responsive": true|
     async def identify_images(
         self,
         screenshot_bytes: bytes
-    ) -> List[ImageContent]:
+    ) -> list[ImageContent]:
         """Identifica todas las imágenes en la página."""
         logger.info("Identifying images")
 
@@ -469,7 +469,7 @@ Responde SOLO en JSON:
             logger.error(f"Image identification failed: {e}")
             return []
 
-    def _parse_page_structure(self, data: Dict[str, Any]) -> PageStructure:
+    def _parse_page_structure(self, data: dict[str, Any]) -> PageStructure:
         """Parsea la estructura de página."""
         metadata_data = data.get("metadata", {})
         viewport_str = metadata_data.get("viewport_size_type", "desktop").lower()
@@ -539,7 +539,7 @@ Responde SOLO en JSON:
             f"DESCRIPTION: {structure.metadata.description or 'N/A'}",
             f"VIEWPORT: {structure.metadata.viewport_size_type.value}",
             f"RESPONSIVE: {structure.metadata.is_responsive}",
-            f"",
+            "",
             f"HEADINGS ({len(structure.headings)}):",
         ]
 
@@ -547,8 +547,8 @@ Responde SOLO en JSON:
             lines.append(f"  H{h.level}: {h.text}")
 
         lines.extend([
-            f"",
-            f"ELEMENTS:",
+            "",
+            "ELEMENTS:",
             f"  Total: {structure.element_count}",
             f"  Buttons: {structure.button_count}",
             f"  Links: {structure.link_count}",
@@ -556,14 +556,14 @@ Responde SOLO en JSON:
             f"  Tables: {structure.table_count}",
             f"  Lists: {structure.list_count}",
             f"  Images: {len(structure.images)}",
-            f"",
-            f"IMAGES:",
+            "",
+            "IMAGES:",
         ])
 
         for img in structure.images[:5]:
             lines.append(f"  - {img.alt_text or 'no alt'} ({img.content_type})")
 
-        lines.append(f"")
+        lines.append("")
         lines.append(f"TEXT ({len(structure.all_text)} chars):")
         lines.append(structure.all_text[:300])
 

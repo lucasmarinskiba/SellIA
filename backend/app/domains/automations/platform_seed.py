@@ -8,12 +8,18 @@ These automations work with the platform specialist agents in
 """
 
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.automations.models import (
-    Workflow, WorkflowTriggerType, WorkflowActionType, WorkflowStatus,
-    EmailTemplate, EmailSequence, ChatbotRule,
+    ChatbotRule,
+    EmailSequence,
+    EmailTemplate,
+    Workflow,
+    WorkflowActionType,
+    WorkflowStatus,
+    WorkflowTriggerType,
 )
 
 

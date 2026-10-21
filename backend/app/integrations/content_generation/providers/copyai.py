@@ -4,10 +4,10 @@ Pricing: ~$0.005/generation
 Strengths: Ads, headlines, social captions, quick marketing copy
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -26,7 +26,7 @@ class CopyAIProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.005
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"copyai-generation": 0.005}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -47,13 +47,12 @@ class CopyAIProvider(BaseProvider):
                 "language": config.extra_params.get("language", "es"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.copy.ai/api/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.copy.ai/api/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             text = data.get("data", {}).get("text") if isinstance(data.get("data"), dict) else data.get("text")
             if not text:

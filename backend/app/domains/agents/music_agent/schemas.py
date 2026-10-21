@@ -1,8 +1,8 @@
 """Music Agent Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -20,9 +20,9 @@ class MusicGenerationJobCreate(MusicGenerationJobBase):
 class MusicGenerationJobResponse(MusicGenerationJobBase):
     id: UUID
     status: str = "pending"
-    provider_used: Optional[str] = None
-    file_url: Optional[str] = None
-    file_format: Optional[str] = None
+    provider_used: str | None = None
+    file_url: str | None = None
+    file_format: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -33,20 +33,20 @@ class MusicTrackBase(BaseModel):
     business_id: UUID
     track_name: str
     genre: str
-    mood: Optional[str] = None
-    tempo: Optional[int] = None
+    mood: str | None = None
+    tempo: int | None = None
     duration: int
     file_url: str
-    usage_rights: Optional[str] = "commercial"
+    usage_rights: str | None = "commercial"
 
 
 class MusicTrackCreate(MusicTrackBase):
-    job_id: Optional[UUID] = None
+    job_id: UUID | None = None
 
 
 class MusicTrackResponse(MusicTrackBase):
     id: UUID
-    job_id: Optional[UUID] = None
+    job_id: UUID | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

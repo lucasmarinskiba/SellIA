@@ -1,14 +1,14 @@
 """Retention & Loyalty Pydantic Schemas."""
 
-from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReferralProgramBase(BaseModel):
     name: str = Field(..., max_length=200)
-    description: Optional[str] = None
+    description: str | None = None
     reward_type: str = "discount_percent"
     reward_value: float = 10.0
     max_referrals_per_user: int = 10
@@ -33,12 +33,12 @@ class ReferralCodeResponse(BaseModel):
     business_id: UUID
     program_id: UUID
     code: str
-    referrer_name: Optional[str] = None
-    referrer_email: Optional[str] = None
+    referrer_name: str | None = None
+    referrer_email: str | None = None
     total_uses: int
     total_conversions: int
     total_revenue: float
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     is_active: bool
     created_at: datetime
 
@@ -47,8 +47,8 @@ class NpsCampaignBase(BaseModel):
     name: str = Field(..., max_length=200)
     trigger_type: str = "post_purchase"
     trigger_days: int = 14
-    question_text: Optional[str] = None
-    thank_you_message: Optional[str] = None
+    question_text: str | None = None
+    thank_you_message: str | None = None
 
 
 class NpsCampaignCreate(NpsCampaignBase):

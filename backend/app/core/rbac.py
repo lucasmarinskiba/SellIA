@@ -4,18 +4,17 @@ Simple permission system: roles have permissions, users have roles per business.
 """
 
 import uuid
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
-from fastapi import HTTPException, status, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.security.models import BusinessUserRole, RolePermission
-
+from app.domains.users.models import User
 
 # Default permissions matrix
 DEFAULT_PERMISSIONS = [

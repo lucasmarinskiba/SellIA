@@ -2,8 +2,8 @@
 
 import logging
 import uuid
-from typing import Any, Dict, Optional
 from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +12,9 @@ class ContractGeneratorAgent:
     """Generate purchase agreements and contracts."""
 
     def __init__(self):
-        self.contracts: Dict[str, Dict[str, Any]] = {}
+        self.contracts: dict[str, dict[str, Any]] = {}
 
-    def generate_purchase_agreement(self, property_id: str, buyer_id: str, terms: Dict[str, Any], region: str = "Argentina") -> Dict[str, Any]:
+    def generate_purchase_agreement(self, property_id: str, buyer_id: str, terms: dict[str, Any], region: str = "Argentina") -> dict[str, Any]:
         """Generate purchase agreement based on offer terms."""
         # Random suffix guards against two contracts generated in the same second.
         contract_id = f"PA_{property_id}_{buyer_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -45,7 +45,7 @@ class ContractGeneratorAgent:
 
         return agreement
 
-    def _generate_contract_sections(self, terms: Dict[str, Any], region: str) -> Dict[str, str]:
+    def _generate_contract_sections(self, terms: dict[str, Any], region: str) -> dict[str, str]:
         """Generate standard contract sections."""
         sections = {}
 
@@ -195,7 +195,7 @@ class ContractGeneratorAgent:
         Buyer shall notify of any financing issues within 30 days.
         """
 
-    def finalize_contract(self, contract_id: str) -> Optional[Dict[str, Any]]:
+    def finalize_contract(self, contract_id: str) -> dict[str, Any] | None:
         """Finalize contract for execution."""
         if contract_id not in self.contracts:
             return None
@@ -213,7 +213,7 @@ class ContractGeneratorAgent:
             "next_step": "Schedule closing and prepare for signatures",
         }
 
-    def get_contract(self, contract_id: str) -> Optional[Dict[str, Any]]:
+    def get_contract(self, contract_id: str) -> dict[str, Any] | None:
         """Retrieve contract."""
         return self.contracts.get(contract_id)
 

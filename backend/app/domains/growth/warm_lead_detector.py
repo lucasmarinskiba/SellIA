@@ -11,17 +11,16 @@ Cuando detecta calentamiento, activa secuencias de aceleración automáticamente
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import InboundLead, NurturingStage
-from app.domains.crm.models import LeadScore
-from app.domains.channels.models import Conversation, Message
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.channels.models import Conversation, Message
+from app.domains.growth.models import InboundLead, NurturingStage
 
 logger = get_logger(__name__)
 
@@ -36,9 +35,9 @@ class WarmLeadDetector:
         self,
         business_id: uuid.UUID,
         lookback_hours: int = 24,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Scan for leads showing warming signals in the last N hours."""
-        since = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+        since = datetime.now(UTC) - timedelta(hours=lookback_hours)
 
         warming_leads = []
 
@@ -160,7 +159,7 @@ class WarmLeadDetector:
         else:
             return  # Not enough to advance
 
-        lead.last_touch_at = datetime.now(timezone.utc)
+        lead.last_touch_at = datetime.now(UTC)
         await self.db.commit()
 
         # Emit event for autopilot to act
@@ -184,7 +183,7 @@ class WarmLeadDetector:
         days: int = 7,
     ) -> dict[str, Any]:
         """Get report of warming leads over time."""
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(UTC) - timedelta(days=days)
 
         result = await self.db.execute(
             select(func.count(InboundLead.id)).where(

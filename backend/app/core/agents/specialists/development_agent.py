@@ -9,9 +9,8 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -281,9 +280,9 @@ class DevelopmentAgent:
     def recommend_tech_stack(
         company_stage: str,
         expected_scale: str,
-        team_expertise: List[str],
+        team_expertise: list[str],
         budget: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend technology stack."""
         return {
             "company_stage": company_stage,
@@ -307,7 +306,7 @@ class DevelopmentAgent:
         target_users: str,
         budget: float,
         timeline_months: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design growth hacking experiment."""
         return {
             "product": product,
@@ -331,7 +330,7 @@ class DevelopmentAgent:
         product_vision: str,
         target_launch_date: str,
         team_size: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create MVP development roadmap."""
         return {
             "vision": product_vision,
@@ -366,9 +365,9 @@ class DevelopmentAgent:
 
     @staticmethod
     def prioritize_features(
-        features: List[Dict[str, Any]],
+        features: list[dict[str, Any]],
         framework: str = "rice"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prioritize features using selected framework."""
         return {
             "framework": framework,
@@ -380,9 +379,9 @@ class DevelopmentAgent:
 
     @staticmethod
     def assess_technical_debt(
-        codebase_metrics: Dict[str, Any],
+        codebase_metrics: dict[str, Any],
         team_velocity: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Assess technical debt in codebase."""
         return {
             "debt_score": 0,
@@ -400,9 +399,9 @@ class DevelopmentAgent:
 
     @staticmethod
     def identify_automation_opportunities(
-        current_processes: List[str],
+        current_processes: list[str],
         team_size: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Identify automation opportunities."""
         return {
             "current_processes": current_processes,
@@ -425,7 +424,7 @@ class DevelopmentAgent:
         product_type: str,
         expected_users: int,
         data_volume_gb: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design system architecture."""
         return {
             "product_type": product_type,
@@ -450,7 +449,7 @@ class DevelopmentAgent:
         }
 
     @staticmethod
-    def growth_metrics_framework() -> Dict[str, List[str]]:
+    def growth_metrics_framework() -> dict[str, list[str]]:
         """Get growth metrics to track."""
         return {
             "awareness": [

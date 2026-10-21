@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,7 +45,7 @@ class PostingService:
         self.db = db
         self.ledger = LedgerService(db)
 
-    def _cash_subtype(self, gateway: Optional[str]) -> str:
+    def _cash_subtype(self, gateway: str | None) -> str:
         if not gateway:
             return "cash"
         return GATEWAY_CASH_SUBTYPE.get(gateway.lower().strip(), "cash")
@@ -57,14 +57,14 @@ class PostingService:
         *,
         order_id: uuid.UUID,
         total_amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        discount_amount: Optional[Decimal] = None,
-        processing_fee: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        discount_amount: Decimal | None = None,
+        processing_fee: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         is_service: bool = False,
-        entry_date: Optional[datetime] = None,
-        customer_id: Optional[uuid.UUID] = None,
+        entry_date: datetime | None = None,
+        customer_id: uuid.UUID | None = None,
     ) -> Any:
         """Revenue recognition for a paid order.
 
@@ -119,12 +119,12 @@ class PostingService:
         *,
         order_id: uuid.UUID,
         amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         is_service: bool = False,
-        entry_date: Optional[datetime] = None,
-        refund_ref: Optional[str] = None,
+        entry_date: datetime | None = None,
+        refund_ref: str | None = None,
     ) -> Any:
         amt = _q(amount)
         tax = _q(tax_amount or 0)
@@ -162,8 +162,8 @@ class PostingService:
         spend_ref: str,
         on_credit: bool = False,
         currency: str = "ARS",
-        entry_date: Optional[datetime] = None,
-        campaign: Optional[str] = None,
+        entry_date: datetime | None = None,
+        campaign: str | None = None,
     ) -> Any:
         amt = _q(amount)
         subtype = AD_PLATFORM_SUBTYPE.get((platform or "").lower().strip(), "ad_spend_other")
@@ -192,11 +192,11 @@ class PostingService:
         *,
         charge_ref: str,
         amount: Decimal,
-        tax_amount: Optional[Decimal] = None,
-        gateway: Optional[str] = None,
+        tax_amount: Decimal | None = None,
+        gateway: str | None = None,
         currency: str = "ARS",
         deferred: bool = False,
-        entry_date: Optional[datetime] = None,
+        entry_date: datetime | None = None,
     ) -> Any:
         amt = _q(amount)
         tax = _q(tax_amount or 0)
@@ -229,12 +229,12 @@ class PostingService:
         expense_subtype: str,
         amount: Decimal,
         expense_ref: str,
-        vat_credit: Optional[Decimal] = None,
+        vat_credit: Decimal | None = None,
         on_credit: bool = False,
         currency: str = "ARS",
-        entry_date: Optional[datetime] = None,
-        vendor_id: Optional[uuid.UUID] = None,
-        memo: Optional[str] = None,
+        entry_date: datetime | None = None,
+        vendor_id: uuid.UUID | None = None,
+        memo: str | None = None,
     ) -> Any:
         amt = _q(amount)
         vat = _q(vat_credit or 0)
@@ -284,7 +284,7 @@ class PostingService:
                 await self.post_order_paid(
                     business_id,
                     order_id=o.id,
-                    total_amount=o.total_amount or Decimal("0"),
+                    total_amount=o.total_amount or Decimal(0),
                     tax_amount=o.tax_amount,
                     discount_amount=o.discount_amount,
                     gateway=o.payment_gateway or o.payment_method,

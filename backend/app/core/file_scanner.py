@@ -3,12 +3,11 @@ Sistema de escaneo de archivos subidos por usuarios.
 Integra ClamAV para detección de malware y validaciones de seguridad adicionales.
 """
 
-import io
-import os
 import hashlib
+import io
 import mimetypes
+import os
 from pathlib import Path
-from typing import BinaryIO
 
 try:
     import clamd
@@ -17,7 +16,7 @@ except ImportError:
     clamd = None  # type: ignore
     CLAMD_AVAILABLE = False
 
-from fastapi import UploadFile, HTTPException, status
+from fastapi import UploadFile
 
 # Configuración
 CLAMAV_HOST = os.getenv("CLAMAV_HOST", "clamav")
@@ -191,7 +190,7 @@ class FileScanner:
         except Exception as e:
             return ScanResult(
                 clean=False,
-                message=f"Error al escanear con ClamAV: {str(e)}",
+                message=f"Error al escanear con ClamAV: {e!s}",
                 details={"error": str(e)},
             )
 

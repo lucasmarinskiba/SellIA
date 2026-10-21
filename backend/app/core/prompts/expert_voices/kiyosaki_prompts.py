@@ -1,12 +1,13 @@
 """Kiyosaki Expert Voice Prompts (17 total) - Wealth mindset, cash flow, passive income"""
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, Any, Callable
+
 
 @dataclass
 class KiyosakiPrompt:
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str

@@ -1,9 +1,12 @@
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.integrations.integration_models import IntegrationApp, IntegrationConnection, IntegrationEvent
+from app.domains.integrations.integration_models import (
+    IntegrationConnection,
+)
 from app.domains.seo_config.smart_defaults import SmartDefaultsService
 
 logger = get_logger(__name__)

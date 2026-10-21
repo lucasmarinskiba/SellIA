@@ -4,15 +4,16 @@ Recolecta catálogo, configuración del negocio, BusinessContext enriquecido,
 instrucciones personalizadas y las inyecta en el system prompt.
 """
 
-from typing import Any, Dict, List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from typing import Any
 
-from app.domains.catalogs.models import CatalogItem
-from app.domains.businesses.models import Business, DEFAULT_CONFIGS
-from app.domains.business_context.models import BusinessContext
-from app.domains.agents.models import AgentConfig, AgentPersonality
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.agents.business_type_registry import BusinessTypeRegistry
+from app.domains.agents.models import AgentConfig, AgentPersonality
+from app.domains.business_context.models import BusinessContext
+from app.domains.businesses.models import Business
+from app.domains.catalogs.models import CatalogItem
 
 
 class BusinessContextBuilder:
@@ -24,9 +25,9 @@ class BusinessContextBuilder:
     async def build_context(
         self,
         business_id: Any,
-        personality_id: Optional[Any] = None,
-        personality_slug: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        personality_id: Any | None = None,
+        personality_slug: str | None = None,
+    ) -> dict[str, Any]:
         """Construir contexto completo de negocio."""
         result = await self.db.execute(
             select(Business).where(Business.id == business_id)
@@ -65,7 +66,7 @@ class BusinessContextBuilder:
 
         return context
 
-    async def _get_catalog_summary(self, business_id: Any) -> List[Dict[str, Any]]:
+    async def _get_catalog_summary(self, business_id: Any) -> list[dict[str, Any]]:
         """Obtener resumen del catálogo del negocio."""
         result = await self.db.execute(
             select(CatalogItem).where(
@@ -90,7 +91,7 @@ class BusinessContextBuilder:
             })
         return summary
 
-    async def _get_business_context(self, business_id: Any) -> Optional[Dict[str, Any]]:
+    async def _get_business_context(self, business_id: Any) -> dict[str, Any] | None:
         """Cargar BusinessContext enriquecido si existe."""
         result = await self.db.execute(
             select(BusinessContext).where(
@@ -137,9 +138,9 @@ class BusinessContextBuilder:
     async def _get_agent_config(
         self,
         business_id: Any,
-        personality_id: Optional[Any] = None,
-        personality_slug: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        personality_id: Any | None = None,
+        personality_slug: str | None = None,
+    ) -> dict[str, Any] | None:
         """Obtener configuración personalizada del agente, incluyendo voz experta."""
         from sqlalchemy.orm import joinedload
 
@@ -184,9 +185,9 @@ class BusinessContextBuilder:
     async def build_system_prompt_context(
         self,
         business_id: Any,
-        personality_id: Optional[Any] = None,
-        personality_slug: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        personality_id: Any | None = None,
+        personality_slug: str | None = None,
+    ) -> dict[str, Any]:
         """Construir el dict business_context compatible con get_system_prompt."""
         ctx = await self.build_context(business_id, personality_id, personality_slug)
 

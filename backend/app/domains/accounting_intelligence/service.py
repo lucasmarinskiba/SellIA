@@ -1,6 +1,8 @@
 """Accounting Intelligence service."""
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 
 class AccountingIntelligenceService:
     @staticmethod

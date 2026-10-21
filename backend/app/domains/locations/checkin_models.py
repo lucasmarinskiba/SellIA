@@ -1,11 +1,12 @@
 """Location check-in models — staff + customer app integrations."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -48,7 +49,7 @@ class LocationCheckin(Base):
     app_version = Column(String(50), nullable=True)
 
     # Timeline
-    checkin_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    checkin_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
     checkout_time = Column(DateTime(timezone=True), nullable=True)
     status = Column(SQLEnum(CheckinStatus), default=CheckinStatus.CHECKED_IN, nullable=False)
 
@@ -60,7 +61,7 @@ class LocationCheckin(Base):
     entry_source = Column(String(100), nullable=True)  # "door", "mobility_app", "web", etc
     checkin_metadata = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -78,7 +79,7 @@ class StaffCheckin(Base):
     staff_email = Column(String(255), nullable=True)
     staff_role = Column(String(100), nullable=False)  # "sales", "manager", "demo_specialist", etc
 
-    checkin_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    checkin_time = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
     checkout_time = Column(DateTime(timezone=True), nullable=True)
 
     # Performance
@@ -90,7 +91,7 @@ class StaffCheckin(Base):
     notes = Column(String(1000), nullable=True)
     staff_metadata = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -119,6 +120,6 @@ class LocationFeedback(Base):
     followup_assigned_to = Column(UUID(as_uuid=True), nullable=True)  # Staff member
     resolved = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])

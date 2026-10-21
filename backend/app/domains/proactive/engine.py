@@ -4,21 +4,19 @@ Detects outreach opportunities and generates personalized messages using AI.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, func, desc, text
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.proactive.models import OutreachOpportunity, OutreachRule
-from app.domains.memory.models import CustomerMemory, ConversationMemoryChunk
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.models import Conversation, Message
+from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
 from app.domains.memory.service import MemoryEngine
 from app.domains.orders.models import Order
-from app.domains.channels.models import Conversation, Message
-from app.domains.catalogs.models import CatalogItem
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.agents.business_type_registry import BusinessTypeRegistry
+from app.domains.proactive.models import OutreachOpportunity, OutreachRule
 
 logger = get_logger(__name__)
 
@@ -93,10 +91,11 @@ class ProactiveEngine:
         self.db = db
         self.memory = MemoryEngine(db)
 
-    async def _get_business_type(self, business_id: uuid.UUID) -> Optional[str]:
+    async def _get_business_type(self, business_id: uuid.UUID) -> str | None:
         """Load the specific business type from BusinessContext."""
         try:
             from sqlalchemy import select
+
             from app.domains.business_context.models import BusinessContext
             # SAVEPOINT: this lookup swallows its own failure, and a failed statement
             # would otherwise leave the shared transaction aborted for everything after it.
@@ -117,14 +116,14 @@ class ProactiveEngine:
     # Opportunity Detection
     # ------------------------------------------------------------------
 
-    async def detect_opportunities(self, business_id: uuid.UUID) -> List[OutreachOpportunity]:
+    async def detect_opportunities(self, business_id: uuid.UUID) -> list[OutreachOpportunity]:
         """Run all opportunity detectors for a business and return created opportunities.
 
         Detectors are filtered by business type relevance so a software company
         doesn't get 'back_in_stock' alerts and a service business doesn't get
         'cart_abandonment' spam.
         """
-        opportunities: List[OutreachOpportunity] = []
+        opportunities: list[OutreachOpportunity] = []
 
         # Load business type for filtering
         business_type = await self._get_business_type(business_id)
@@ -137,7 +136,7 @@ class ProactiveEngine:
             )
         )
         rules = rules_result.scalars().all()
-        rules_by_type: Dict[str, List[OutreachRule]] = {}
+        rules_by_type: dict[str, list[OutreachRule]] = {}
         for rule in rules:
             rules_by_type.setdefault(rule.rule_type, []).append(rule)
 
@@ -180,8 +179,8 @@ class ProactiveEngine:
     async def _detect_cart_abandonment(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Find pending orders older than configured hours."""
         rules = rules_by_type.get("cart_abandonment", [])
         hours = 24
@@ -190,7 +189,7 @@ class ProactiveEngine:
             hours = rule.conditions.get("cart_abandoned_hours", hours)
             min_value = rule.conditions.get("min_cart_value", min_value)
 
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        since = datetime.now(UTC) - timedelta(hours=hours)
 
         stmt = (
             select(Order)
@@ -206,7 +205,7 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         orders = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         for order in orders:
             customer_id = await self._customer_id_from_conversation(order.conversation_id)
             if not customer_id:
@@ -245,15 +244,15 @@ class ProactiveEngine:
     async def _detect_re_engagement(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Find customers with no message in the last 3 days."""
         rules = rules_by_type.get("re_engagement", [])
         days = 3
         for rule in rules:
             days = rule.conditions.get("inactive_days", days)
 
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(UTC) - timedelta(days=days)
 
         # Find conversations for this business with last_message_at older than `since`
         stmt = (
@@ -267,7 +266,7 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         conversations = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         for conv in conversations:
             customer_id = await self._customer_id_from_conversation(conv.id)
             if not customer_id:
@@ -304,8 +303,8 @@ class ProactiveEngine:
     async def _detect_product_recommendation(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Use CustomerMemory to find customers who might like catalog items."""
         rules = rules_by_type.get("product_recommendation", [])
         min_confidence = 0.7
@@ -325,7 +324,7 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         memories = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         seen_customers: set = set()
         for mem in memories:
             if mem.customer_id in seen_customers:
@@ -379,8 +378,8 @@ class ProactiveEngine:
     async def _detect_anniversary_birthday(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Check CustomerMemory for birthday or anniversary facts."""
         rules = rules_by_type.get("birthday", []) + rules_by_type.get("anniversary", [])
 
@@ -395,9 +394,9 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         memories = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         seen: set = set()
-        today = datetime.now(timezone.utc).strftime("%m-%d")
+        today = datetime.now(UTC).strftime("%m-%d")
 
         for mem in memories:
             if mem.customer_id in seen:
@@ -454,15 +453,15 @@ class ProactiveEngine:
     async def _detect_churn_risk(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Detect customers with low engagement + negative emotions."""
         rules = rules_by_type.get("churn_risk", [])
         inactive_days = 7
         for rule in rules:
             inactive_days = rule.conditions.get("inactive_days", inactive_days)
 
-        since = datetime.now(timezone.utc) - timedelta(days=inactive_days)
+        since = datetime.now(UTC) - timedelta(days=inactive_days)
 
         # Find customers with negative memories
         stmt = (
@@ -476,7 +475,7 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         negative_memories = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         seen: set = set()
         for mem in negative_memories:
             if mem.customer_id in seen:
@@ -532,8 +531,8 @@ class ProactiveEngine:
     async def _detect_price_drop_back_in_stock(
         self,
         business_id: uuid.UUID,
-        rules_by_type: Dict[str, List[OutreachRule]],
-    ) -> List[OutreachOpportunity]:
+        rules_by_type: dict[str, list[OutreachRule]],
+    ) -> list[OutreachOpportunity]:
         """Detect catalog items that recently became available or had price drops.
 
         Since there is no price history table, we look at catalog items
@@ -552,7 +551,7 @@ class ProactiveEngine:
         result = await self.db.execute(stmt)
         items = result.scalars().all()
 
-        created: List[OutreachOpportunity] = []
+        created: list[OutreachOpportunity] = []
         for item in items:
             change_type = item.extra_data.get("change_type", "price_drop")
             opp_type = "back_in_stock" if change_type == "back_in_stock" else "price_drop"
@@ -617,7 +616,7 @@ class ProactiveEngine:
     async def generate_outreach_message(
         self,
         opportunity: OutreachOpportunity,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a personalized outreach message using LLM + CustomerMemory."""
         # Load customer profile
         customer_profile = await self.memory.get_customer_profile_summary(opportunity.customer_id)
@@ -674,17 +673,17 @@ class ProactiveEngine:
     async def schedule_outreach(
         self,
         opportunity: OutreachOpportunity,
-        send_at: Optional[datetime] = None,
+        send_at: datetime | None = None,
     ) -> None:
         """Schedule a Celery task to send the outreach at the given time."""
         from app.domains.proactive.tasks import send_outreach_task
 
-        opportunity.scheduled_at = send_at or datetime.now(timezone.utc)
+        opportunity.scheduled_at = send_at or datetime.now(UTC)
         await self.db.commit()
 
         # Queue Celery task; Celery handles ETA internally if we pass countdown or eta
-        if send_at and send_at > datetime.now(timezone.utc):
-            countdown = int((send_at - datetime.now(timezone.utc)).total_seconds())
+        if send_at and send_at > datetime.now(UTC):
+            countdown = int((send_at - datetime.now(UTC)).total_seconds())
             send_outreach_task.apply_async(args=[str(opportunity.id)], countdown=max(countdown, 0))
         else:
             send_outreach_task.delay(str(opportunity.id))
@@ -695,8 +694,8 @@ class ProactiveEngine:
 
     async def _customer_id_from_conversation(
         self,
-        conversation_id: Optional[uuid.UUID],
-    ) -> Optional[uuid.UUID]:
+        conversation_id: uuid.UUID | None,
+    ) -> uuid.UUID | None:
         """Resolve a customer_id from a conversation_id via memory chunks."""
         if not conversation_id:
             return None

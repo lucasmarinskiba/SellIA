@@ -1,7 +1,9 @@
 """Phase 43: Sales Operations Intelligence API."""
-from fastapi import APIRouter, Depends, Query, Path
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 
 router = APIRouter(prefix="/api/v1/sales-operations", tags=["sales-operations"])

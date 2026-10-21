@@ -1,8 +1,8 @@
 """50 Sales Prompts — Discovery, qualification, proposal, negotiation, closing, account management."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class SalesStage(str, Enum):
@@ -23,13 +23,13 @@ class SalesPromptTemplate:
     stage: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class SalesPrompts:
@@ -1233,7 +1233,7 @@ for that separately."
     # Structure follows same pattern with detailed examples
 
     @staticmethod
-    def get_all_sales_prompts() -> Dict[str, SalesPromptTemplate]:
+    def get_all_sales_prompts() -> dict[str, SalesPromptTemplate]:
         """Return all 50 sales prompts indexed by ID."""
         return {
             "sales_001": SalesPrompts.discovery_question_generator(),

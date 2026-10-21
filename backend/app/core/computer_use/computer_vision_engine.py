@@ -9,11 +9,12 @@ APIs:
 - Tesseract OCR (local, offline)
 """
 
-import logging
 import base64
-import httpx
-from typing import Dict, List, Any, Optional
+import logging
+from typing import Any
+
 import anthropic
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 class ComputerVisionEngine:
     """Computer Vision para entender interfaces web automáticamente."""
 
-    def __init__(self, anthropic_api_key: str, google_vision_api_key: Optional[str] = None):
+    def __init__(self, anthropic_api_key: str, google_vision_api_key: str | None = None):
         self.anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
         self.google_api_key = google_vision_api_key
         self.http_client = httpx.AsyncClient(timeout=30)
@@ -31,7 +32,7 @@ class ComputerVisionEngine:
     async def analyze_feedia_interface(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Claude Vision analiza screenshot de FeedIA.
 
@@ -105,7 +106,7 @@ Responde en JSON: {
             }
 
         except Exception as e:
-            logger.error(f"Claude Vision analysis failed: {str(e)}")
+            logger.error(f"Claude Vision analysis failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== BUTTON DETECTION ==========
@@ -113,7 +114,7 @@ Responde en JSON: {
     async def detect_clickable_elements(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detecta botones, links, campos clickeables con sus posiciones.
 
@@ -187,7 +188,7 @@ Responde en JSON:
             }
 
         except Exception as e:
-            logger.error(f"Element detection failed: {str(e)}")
+            logger.error(f"Element detection failed: {e!s}")
             return {"status": "error"}
 
     # ========== TEXT RECOGNITION (OCR) ==========
@@ -195,7 +196,7 @@ Responde en JSON:
     async def extract_text_from_screenshot(
         self,
         screenshot_bytes: bytes,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extrae TODO el texto visible en screenshot.
 
@@ -245,7 +246,7 @@ Responde en JSON:
             return {"status": "success", "extraction": extraction}
 
         except Exception as e:
-            logger.error(f"OCR extraction failed: {str(e)}")
+            logger.error(f"OCR extraction failed: {e!s}")
             return {"status": "error"}
 
     # ========== GOOGLE CLOUD VISION (BACKUP) ==========
@@ -253,8 +254,8 @@ Responde en JSON:
     async def detect_with_google_vision(
         self,
         screenshot_bytes: bytes,
-        features: List[str] = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"],
-    ) -> Dict[str, Any]:
+        features: list[str] = ["TEXT_DETECTION", "LABEL_DETECTION", "OBJECT_LOCALIZATION"],
+    ) -> dict[str, Any]:
         """
         Google Cloud Vision API como backup/complemento.
 
@@ -293,7 +294,7 @@ Responde en JSON:
                 return {"status": "error", "code": response.status_code}
 
         except Exception as e:
-            logger.error(f"Google Vision detection failed: {str(e)}")
+            logger.error(f"Google Vision detection failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== INTELLIGENT ACTION SUGGESTION ==========
@@ -302,7 +303,7 @@ Responde en JSON:
         self,
         screenshot_bytes: bytes,
         goal: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computer Vision lee interfaz + entiende objetivo → sugiere qué hacer.
 
@@ -371,7 +372,7 @@ Responde en JSON: {{
             return {"status": "success", "suggestion": suggestion}
 
         except Exception as e:
-            logger.error(f"Action suggestion failed: {str(e)}")
+            logger.error(f"Action suggestion failed: {e!s}")
             return {"status": "error"}
 
     # ========== VERIFY COMPLETION ==========
@@ -380,7 +381,7 @@ Responde en JSON: {{
         self,
         screenshot_bytes: bytes,
         expected_result: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Verifica si tarea se completó exitosamente.
 
@@ -442,7 +443,7 @@ Responde en JSON: {{
             return {"status": "success", "verification": verification}
 
         except Exception as e:
-            logger.error(f"Task verification failed: {str(e)}")
+            logger.error(f"Task verification failed: {e!s}")
             return {"status": "error"}
 
     async def close(self):

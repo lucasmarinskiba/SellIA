@@ -2,10 +2,20 @@
 Payment Models — SQLAlchemy ORM para órdenes, pagos y catálogo.
 """
 
-from sqlalchemy import Column, String, Float, DateTime, JSON, Enum, Integer, Boolean, ForeignKey, Text
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-import enum
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 

@@ -1,11 +1,11 @@
 """Enrich leads with additional data based on business model."""
 
-from typing import Dict, Any, Optional
-from datetime import datetime
 import logging
+from datetime import datetime
+
+from app.domains.business_intelligence.business_model_detector import BusinessProfile
 
 from .lead_generator import Lead, LeadQuality
-from app.domains.business_intelligence.business_model_detector import BusinessProfile
 
 logger = logging.getLogger(__name__)
 

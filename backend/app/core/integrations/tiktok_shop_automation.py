@@ -20,15 +20,14 @@ Rate Limit: 10,000 req/day per shop
 Timeout: 30 seconds per request
 """
 
-import logging
-import hmac
 import hashlib
-import httpx
-import uuid
-from typing import Dict, List, Any, Optional
+import hmac
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +62,8 @@ class TikTokShopAutomation:
         shop_id: str,
         shop_cipher: str,
         access_token: str,
-        refresh_token: Optional[str] = None,
-        webhook_verify_token: Optional[str] = None,
+        refresh_token: str | None = None,
+        webhook_verify_token: str | None = None,
     ):
         """
         Initialize TikTok Shop automation.
@@ -89,7 +88,7 @@ class TikTokShopAutomation:
         self,
         client_id: str,
         client_secret: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Refresh expired OAuth token.
 
@@ -160,7 +159,7 @@ class TikTokShopAutomation:
             logger.error(f"Webhook signature verification error: {e}")
             return False
 
-    async def handle_webhook(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Process incoming TikTok webhook.
 
@@ -201,7 +200,7 @@ class TikTokShopAutomation:
             logger.error(f"Webhook processing error: {e}")
             return {"code": "1", "message": str(e)}
 
-    async def _handle_order_event(self, order_data: Dict[str, Any]) -> None:
+    async def _handle_order_event(self, order_data: dict[str, Any]) -> None:
         """Handle order create/update event."""
         order_id = order_data.get("order_id")
         status = order_data.get("order_status")
@@ -212,12 +211,12 @@ class TikTokShopAutomation:
         if status == TikTokOrderStatus.PAID_PENDING_SHIPMENT.value:
             await self.confirm_order(order_id)
 
-    async def _handle_product_event(self, product_data: Dict[str, Any]) -> None:
+    async def _handle_product_event(self, product_data: dict[str, Any]) -> None:
         """Handle product update event."""
         product_id = product_data.get("product_id")
         logger.info(f"Product event: {product_id}")
 
-    async def _handle_inventory_event(self, inventory_data: Dict[str, Any]) -> None:
+    async def _handle_inventory_event(self, inventory_data: dict[str, Any]) -> None:
         """Handle inventory change event."""
         product_id = inventory_data.get("product_id")
         stock = inventory_data.get("quantity")
@@ -225,7 +224,7 @@ class TikTokShopAutomation:
 
     # ========== ORDER MANAGEMENT ==========
 
-    async def get_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def get_order_details(self, order_id: str) -> dict[str, Any] | None:
         """
         Fetch complete order details from TikTok Shop.
 
@@ -300,8 +299,8 @@ class TikTokShopAutomation:
         self,
         page: int = 1,
         page_size: int = 20,
-        status_filter: Optional[List[str]] = None,
-    ) -> Optional[List[Dict[str, Any]]]:
+        status_filter: list[str] | None = None,
+    ) -> list[dict[str, Any]] | None:
         """
         List orders with optional status filtering.
 
@@ -349,8 +348,8 @@ class TikTokShopAutomation:
 
     async def sync_products_to_tiktok(
         self,
-        products: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        products: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Sync local products to TikTok Shop catalog.
 
@@ -392,7 +391,7 @@ class TikTokShopAutomation:
             logger.error(f"Error syncing products to TikTok: {e}")
             return {"status": "error", "message": str(e)}
 
-    async def _find_product_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
+    async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
         """Find product in TikTok catalog by SKU."""
         try:
             url = f"{self.TIKTOK_SELLER_API}/product/search"
@@ -421,7 +420,7 @@ class TikTokShopAutomation:
             logger.error(f"Error finding product by SKU {sku}: {e}")
             return None
 
-    async def _create_tiktok_product(self, product: Dict[str, Any]) -> bool:
+    async def _create_tiktok_product(self, product: dict[str, Any]) -> bool:
         """Create product in TikTok Shop."""
         try:
             url = f"{self.TIKTOK_SELLER_API}/product/create"
@@ -458,7 +457,7 @@ class TikTokShopAutomation:
     async def _update_tiktok_product(
         self,
         product_id: str,
-        product: Dict[str, Any],
+        product: dict[str, Any],
     ) -> bool:
         """Update product in TikTok Shop."""
         try:
@@ -526,7 +525,7 @@ class TikTokShopAutomation:
             data = response.json()
 
             if data.get("code") == "0":
-                logger.info(f"Inventory updated successfully")
+                logger.info("Inventory updated successfully")
                 return True
             else:
                 logger.error(f"Inventory update failed: {data.get('message')}")
@@ -542,7 +541,7 @@ class TikTokShopAutomation:
         self,
         order_id: str,
         fulfillment_type: TikTokFulfillmentType,
-        tracking_info: Dict[str, str],
+        tracking_info: dict[str, str],
     ) -> bool:
         """
         Create shipment and update order fulfillment.
@@ -620,7 +619,7 @@ class TikTokShopAutomation:
 
     # ========== RATE LIMITING & QUOTA ==========
 
-    async def check_rate_limit(self) -> Dict[str, Any]:
+    async def check_rate_limit(self) -> dict[str, Any]:
         """Check remaining API quota for shop."""
         try:
             # TikTok provides rate limit info in response headers

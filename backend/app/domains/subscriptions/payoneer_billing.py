@@ -12,7 +12,6 @@ Payoneer Checkout API v4 flow:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
 from typing import Any
 
 import httpx
@@ -241,8 +240,8 @@ async def verify_payoneer_signature(
         return False
 
     try:
-        import hmac
         import hashlib
+        import hmac
 
         expected = hmac.new(
             webhook_secret.encode(),

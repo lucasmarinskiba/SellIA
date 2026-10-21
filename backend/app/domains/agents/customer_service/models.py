@@ -1,10 +1,19 @@
 """Customer Service Auto-Agent Models"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Boolean, Numeric, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -27,8 +36,8 @@ class ServiceBotConfig(Base):
     hours_active = Column(JSONB, nullable=False, default=dict)  # e.g. {"mon": {"start": "09:00", "end": "18:00"}}
     channels = Column(JSONB, nullable=False, default=list)  # ["whatsapp", "email", "webchat"]
     is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class ServiceInteraction(Base):
@@ -50,7 +59,7 @@ class ServiceInteraction(Base):
     escalated = Column(Boolean, nullable=False, default=False)
     escalation_reason = Column(Text, nullable=True)
     satisfaction_score = Column(Numeric(3, 2), nullable=True)  # 0.0 - 1.0
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_service_interactions_created", "created_at"),

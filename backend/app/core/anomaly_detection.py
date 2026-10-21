@@ -4,17 +4,16 @@ Login Anomaly Detection
 Detecta logins anómalos usando z-score simple.
 """
 
-import uuid
 import math
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+import uuid
+from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from app.domains.security.models import UserLoginLog, LoginAnomaly
 from app.core.geo_service import haversine_distance
 from app.core.logger import get_logger
+from app.domains.security.models import LoginAnomaly, UserLoginLog
 
 logger = get_logger(__name__)
 
@@ -23,10 +22,10 @@ async def analyze_login_anomaly(
     db: AsyncSession,
     user_id: uuid.UUID,
     ip: str,
-    country: Optional[str],
-    device_fingerprint: Optional[str],
+    country: str | None,
+    device_fingerprint: str | None,
     timestamp: datetime,
-) -> tuple[float, Optional[str]]:
+) -> tuple[float, str | None]:
     """
     Analiza si un login es anómalo.
 
@@ -81,7 +80,7 @@ async def analyze_login_anomaly(
 
 
 async def _get_recent_logins(db: AsyncSession, user_id: uuid.UUID, hours: int = 2):
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     result = await db.execute(
         select(UserLoginLog).where(
             UserLoginLog.user_id == user_id,
@@ -95,7 +94,7 @@ async def _get_recent_logins(db: AsyncSession, user_id: uuid.UUID, hours: int = 
 async def _check_unusual_hour(db: AsyncSession, user_id: uuid.UUID, timestamp: datetime) -> float:
     """Detecta si el horario de login es inusual para el usuario."""
     # Get user's typical login hours (last 30 days)
-    since = datetime.now(timezone.utc) - timedelta(days=30)
+    since = datetime.now(UTC) - timedelta(days=30)
     result = await db.execute(
         select(func.extract('hour', UserLoginLog.created_at))
         .where(
@@ -123,9 +122,9 @@ async def record_anomaly(
     anomaly_type: str,
     description: str,
     score: float,
-    ip: Optional[str] = None,
-    device_fingerprint: Optional[str] = None,
-    country: Optional[str] = None,
+    ip: str | None = None,
+    device_fingerprint: str | None = None,
+    country: str | None = None,
 ) -> LoginAnomaly:
     """Registra una anomalía detectada."""
     anomaly = LoginAnomaly(

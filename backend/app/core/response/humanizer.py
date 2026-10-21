@@ -11,10 +11,10 @@ Features:
 """
 
 import random
-from typing import Optional, List, Dict, Any
-from enum import Enum
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 
 class Tone(str, Enum):
@@ -36,7 +36,7 @@ class PersonalityProfile:
     formality_level: float = 0.5  # 0=casual, 1=formal
     humor_level: float = 0.5  # 0=serious, 1=very humorous
     language_style: str = "conversational"  # conversational, technical, poetic
-    custom_traits: Dict[str, Any] = None
+    custom_traits: dict[str, Any] = None
 
 
 class ToneAnalyzer:
@@ -163,7 +163,7 @@ class SentenceVariator:
         return '. '.join(varied)
 
     @staticmethod
-    def vary_response(text: str, personality: Optional[PersonalityProfile] = None) -> str:
+    def vary_response(text: str, personality: PersonalityProfile | None = None) -> str:
         """Apply variation based on personality"""
         if not personality or personality.language_style != "conversational":
             return text
@@ -252,7 +252,7 @@ class Humanizer:
     def humanize(
         self,
         text: str,
-        personality: Optional[PersonalityProfile] = None,
+        personality: PersonalityProfile | None = None,
         use_emojis: bool = True,
         add_typos: bool = True,
         filler_intensity: str = "light"
@@ -316,7 +316,7 @@ class Humanizer:
             filler_intensity=filler_intensity
         )
 
-    def quality_score(self, original: str, humanized: str) -> Dict[str, Any]:
+    def quality_score(self, original: str, humanized: str) -> dict[str, Any]:
         """Score humanization quality"""
         scores = {
             "tone_varied": len(set(humanized.split())) > len(set(original.split())),
@@ -336,7 +336,7 @@ class Humanizer:
 
 
 # Singleton
-_humanizer_instance: Optional[Humanizer] = None
+_humanizer_instance: Humanizer | None = None
 
 
 def get_humanizer() -> Humanizer:

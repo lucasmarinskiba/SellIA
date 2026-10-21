@@ -3,12 +3,11 @@ Landing Page FOOM Service
 Manages urgency, social proof, pricing dynamics for SellIA homepage
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.fomo.models import FOMOCampaign, FOMOEvent, FOMOMetric
@@ -18,7 +17,7 @@ class LandingFOOMService:
     """Service para gestionar FOOM en landing page de SellIA"""
 
     @staticmethod
-    async def get_landing_metrics(db: AsyncSession) -> Dict:
+    async def get_landing_metrics(db: AsyncSession) -> dict:
         """
         Get real-time metrics para mostrar en landing:
         - Users activos ahora
@@ -29,19 +28,19 @@ class LandingFOOMService:
 
         # Total users active (sessions in last 30 min)
         stmt = select(func.count(FOMOEvent.id)).where(
-            FOMOEvent.created_at > datetime.now(timezone.utc) - timedelta(minutes=30)
+            FOMOEvent.created_at > datetime.now(UTC) - timedelta(minutes=30)
         )
         active_users = await db.scalar(stmt) or 0
 
         # Total revenue (sum from all metrics)
         stmt = select(func.sum(FOMOMetric.revenue))
-        total_revenue = await db.scalar(stmt) or Decimal("0")
+        total_revenue = await db.scalar(stmt) or Decimal(0)
 
         # Conversion rate
         stmt = select(
             func.sum(FOMOMetric.conversions) / func.nullif(func.sum(FOMOMetric.impressions), 0) * 100
         )
-        conv_rate = await db.scalar(stmt) or Decimal("0")
+        conv_rate = await db.scalar(stmt) or Decimal(0)
 
         # Seats calculation
         total_seats = 100
@@ -63,8 +62,8 @@ class LandingFOOMService:
     @staticmethod
     async def get_dynamic_pricing(
         db: AsyncSession,
-        base_price: Decimal = Decimal("99"),
-    ) -> Dict:
+        base_price: Decimal = Decimal(99),
+    ) -> dict:
         """
         Calculate dynamic pricing based on occupancy
         - 0-20%: $99
@@ -116,7 +115,7 @@ class LandingFOOMService:
             metadata={
                 "source": source,
                 "device": device,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         )
         db.add(event)
@@ -137,20 +136,20 @@ class LandingFOOMService:
             metadata={
                 "plan_selected": plan_selected,
                 "source": source,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         )
         db.add(event)
         await db.flush()
 
         # Record metric
-        await FOMOMetric.record_metric(db, None, "conversion", revenue=Decimal("99") if plan_selected == "pro" else Decimal("0"))
+        await FOMOMetric.record_metric(db, None, "conversion", revenue=Decimal(99) if plan_selected == "pro" else Decimal(0))
 
     @staticmethod
     async def get_testimonials(
         db: AsyncSession,
         limit: int = 6,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get recent user testimonials for landing page"""
 
         testimonials = [
@@ -180,7 +179,7 @@ class LandingFOOMService:
         return testimonials[:limit]
 
     @staticmethod
-    async def get_trust_signals(db: AsyncSession) -> Dict:
+    async def get_trust_signals(db: AsyncSession) -> dict:
         """Get trust signals (social proof metrics)"""
 
         return {

@@ -25,7 +25,7 @@ class Forecaster(abc.ABC):
     supports_exog: bool = False
 
     @abc.abstractmethod
-    def fit(self, ts: TimeSeries) -> "Forecaster":
+    def fit(self, ts: TimeSeries) -> Forecaster:
         ...
 
     @abc.abstractmethod
@@ -56,7 +56,6 @@ class Forecaster(abc.ABC):
         quantiles: tuple[float, ...],
         horizon_growth: bool = True,
     ) -> dict[float, np.ndarray]:
-        from math import sqrt
 
         try:
             from scipy.stats import norm

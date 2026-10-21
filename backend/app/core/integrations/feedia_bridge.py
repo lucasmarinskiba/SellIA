@@ -13,10 +13,10 @@ Flujo:
 """
 
 import logging
-import httpx
-import json
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,9 @@ class FeedIABridge:
 
     async def request_carousel_for_product(
         self,
-        product: Dict[str, Any],
-        market_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        market_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Solicita carrusel a FeedIA para vender producto específico.
 
@@ -71,14 +71,14 @@ class FeedIABridge:
                 return {"status": "error", "code": response.status_code}
 
         except Exception as e:
-            logger.error(f"FeedIA request failed: {str(e)}")
+            logger.error(f"FeedIA request failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def request_reel_for_product(
         self,
-        product: Dict[str, Any],
-        trend_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        trend_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Solicita reel a FeedIA para promoción de producto.
         """
@@ -105,13 +105,13 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"FeedIA reel request failed: {str(e)}")
+            logger.error(f"FeedIA reel request failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def request_tiktok_video_for_product(
         self,
-        product: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Solicita video TikTok a FeedIA para vender.
         """
@@ -137,16 +137,16 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"FeedIA TikTok request failed: {str(e)}")
+            logger.error(f"FeedIA TikTok request failed: {e!s}")
             return {"status": "error"}
 
     # ========== PUBLISHING COORDINATION ==========
 
     async def publish_to_instagram(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Publica contenido FeedIA a Instagram via SellIA Computer Use.
         """
@@ -168,14 +168,14 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Instagram publish failed: {str(e)}")
+            logger.error(f"Instagram publish failed: {e!s}")
             return {"status": "error"}
 
     async def publish_to_tiktok(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Publica contenido FeedIA a TikTok via SellIA Computer Use.
         """
@@ -197,7 +197,7 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"TikTok publish failed: {str(e)}")
+            logger.error(f"TikTok publish failed: {e!s}")
             return {"status": "error"}
 
     # ========== PERFORMANCE FEEDBACK LOOP ==========
@@ -206,8 +206,8 @@ class FeedIABridge:
         self,
         post_id: str,
         platform: str,
-        metrics: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        metrics: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Reporta performance de post a FeedIA para optimización.
 
@@ -231,12 +231,12 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Performance report failed: {str(e)}")
+            logger.error(f"Performance report failed: {e!s}")
             return {"status": "error"}
 
     # ========== AUDIENCE INSIGHTS ==========
 
-    async def get_audience_insights(self, account_id: str) -> Dict[str, Any]:
+    async def get_audience_insights(self, account_id: str) -> dict[str, Any]:
         """
         Obtiene insights de audiencia desde FeedIA para personalizar ventas.
         """
@@ -249,12 +249,12 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Audience insights request failed: {str(e)}")
+            logger.error(f"Audience insights request failed: {e!s}")
             return {"status": "error"}
 
     # ========== HASHTAG & STRATEGY ==========
 
-    async def get_hashtag_strategy(self, product_category: str) -> Dict[str, Any]:
+    async def get_hashtag_strategy(self, product_category: str) -> dict[str, Any]:
         """
         Obtiene estrategia de hashtags desde FeedIA.
         """
@@ -267,10 +267,10 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Hashtag strategy request failed: {str(e)}")
+            logger.error(f"Hashtag strategy request failed: {e!s}")
             return {"status": "error"}
 
-    async def get_posting_schedule(self, account_id: str) -> Dict[str, Any]:
+    async def get_posting_schedule(self, account_id: str) -> dict[str, Any]:
         """
         Obtiene calendario de publicación optimizado desde FeedIA.
         """
@@ -283,12 +283,12 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Schedule request failed: {str(e)}")
+            logger.error(f"Schedule request failed: {e!s}")
             return {"status": "error"}
 
     # ========== TREND MONITORING ==========
 
-    async def get_trending_hooks(self, platform: str) -> List[str]:
+    async def get_trending_hooks(self, platform: str) -> list[str]:
         """
         Obtiene hooks trending actuales desde FeedIA.
         """
@@ -304,14 +304,14 @@ class FeedIABridge:
             return []
 
         except Exception as e:
-            logger.error(f"Trending hooks request failed: {str(e)}")
+            logger.error(f"Trending hooks request failed: {e!s}")
             return []
 
     async def get_competitor_content_analysis(
         self,
         competitor_handle: str,
         platform: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analiza contenido de competidores via FeedIA.
         """
@@ -325,7 +325,7 @@ class FeedIABridge:
             return response.json() if response.status_code == 200 else {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Competitor analysis failed: {str(e)}")
+            logger.error(f"Competitor analysis failed: {e!s}")
             return {"status": "error"}
 
     async def close(self):

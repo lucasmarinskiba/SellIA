@@ -1,16 +1,18 @@
 """Customer 360 & unified data platform service."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Optional, Dict, List
 
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
 
 from app.domains.customer_360.customer_360_models import (
-    CustomerProfile, CustomerScores, CustomerSegmentMembership, CustomerInsights,
-    Customer360Metadata, LifecycleStage
+    Customer360Metadata,
+    CustomerInsights,
+    CustomerProfile,
+    CustomerScores,
+    CustomerSegmentMembership,
 )
 
 logger = logging.getLogger(__name__)
@@ -153,7 +155,7 @@ class Customer360Service:
         # Next best action
         scores.next_best_action, scores.next_best_channel = Customer360Service._calculate_nba(customer_id, scores, db)
 
-        scores.scores_calculated_at = datetime.now(timezone.utc)
+        scores.scores_calculated_at = datetime.now(UTC)
         db.commit()
 
         logger.info(f"Scores calculated for customer {customer_id}")
@@ -258,7 +260,7 @@ class Customer360Service:
         customer_id: UUID,
         limit: int = 10,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get customer insights."""
         if not db:
             raise ValueError("Database session required")
@@ -288,7 +290,7 @@ class Customer360Service:
         segment_name: str,
         limit: int = 100,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get all customers in segment."""
         if not db:
             raise ValueError("Database session required")
@@ -315,7 +317,7 @@ class Customer360Service:
         query: str,
         limit: int = 50,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Search customers by name/email/company."""
         if not db:
             raise ValueError("Database session required")
@@ -377,7 +379,7 @@ class Customer360Service:
             raise ValueError("Insight not found")
 
         insight.is_actioned = True
-        insight.actioned_at = datetime.now(timezone.utc)
+        insight.actioned_at = datetime.now(UTC)
         db.commit()
 
         return {"insight_id": str(insight_id), "actioned": True}

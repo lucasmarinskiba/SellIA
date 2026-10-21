@@ -1,10 +1,10 @@
 """Property Analyzer Agent — Valuation, comps, investment potential."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
 import statistics
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +17,14 @@ class PropertyAnalysis:
     estimated_value: float
     value_confidence: float  # 0-1
     price_per_sqft: float
-    estimated_annual_rent: Optional[float] = None
-    cap_rate: Optional[float] = None  # For investment
-    cash_on_cash_return: Optional[float] = None
+    estimated_annual_rent: float | None = None
+    cap_rate: float | None = None  # For investment
+    cash_on_cash_return: float | None = None
     appreciation_potential: str = "moderate"
     investment_score: float = 0.0
     condition_assessment: str = "average"
-    major_repairs_needed: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    major_repairs_needed: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -48,10 +48,10 @@ class PropertyAnalyzerAgent:
     """Analyze properties for valuation and investment potential."""
 
     def __init__(self):
-        self.comparables_database: List[Comparable] = []
-        self.analysis_history: Dict[str, PropertyAnalysis] = {}
+        self.comparables_database: list[Comparable] = []
+        self.analysis_history: dict[str, PropertyAnalysis] = {}
 
-    def analyze_property(self, property_data: Dict[str, Any], comps: Optional[List[Comparable]] = None) -> PropertyAnalysis:
+    def analyze_property(self, property_data: dict[str, Any], comps: list[Comparable] | None = None) -> PropertyAnalysis:
         """Perform comprehensive property analysis."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -109,7 +109,7 @@ class PropertyAnalyzerAgent:
 
         return analysis
 
-    def _estimate_value(self, property_data: Dict[str, Any], comps: List[Comparable]) -> float:
+    def _estimate_value(self, property_data: dict[str, Any], comps: list[Comparable]) -> float:
         """Estimate property value using comparable sales."""
         if not comps:
             # Fallback: use asking price or estimate from sqft
@@ -143,7 +143,7 @@ class PropertyAnalyzerAgent:
 
         return estimated_value
 
-    def _calculate_confidence(self, property_data: Dict[str, Any], comps: List[Comparable]) -> float:
+    def _calculate_confidence(self, property_data: dict[str, Any], comps: list[Comparable]) -> float:
         """Calculate confidence level of valuation (0-1)."""
         confidence = 0.5
 
@@ -168,7 +168,7 @@ class PropertyAnalyzerAgent:
 
         return min(confidence, 1.0)
 
-    def _assess_condition(self, property_data: Dict[str, Any]) -> str:
+    def _assess_condition(self, property_data: dict[str, Any]) -> str:
         """Assess overall property condition."""
         reported_condition = property_data.get("condition", "average").lower()
 
@@ -181,7 +181,7 @@ class PropertyAnalyzerAgent:
         else:
             return "poor"
 
-    def _identify_needed_repairs(self, property_data: Dict[str, Any]) -> List[str]:
+    def _identify_needed_repairs(self, property_data: dict[str, Any]) -> list[str]:
         """Identify major repairs from property data."""
         repairs = []
         year_built = property_data.get("year_built", 0)
@@ -207,7 +207,7 @@ class PropertyAnalyzerAgent:
 
         return repairs
 
-    def _estimate_appreciation_potential(self, property_data: Dict[str, Any], comps: List[Comparable]) -> str:
+    def _estimate_appreciation_potential(self, property_data: dict[str, Any], comps: list[Comparable]) -> str:
         """Estimate future appreciation potential."""
         # Check market trend
         if comps:
@@ -239,7 +239,7 @@ class PropertyAnalyzerAgent:
             return "low"
 
     def _calculate_investment_score(
-        self, property_data: Dict[str, Any], value: float, cap_rate: Optional[float], condition: str
+        self, property_data: dict[str, Any], value: float, cap_rate: float | None, condition: str
     ) -> float:
         """Calculate investment score (0-100)."""
         score = 50.0
@@ -270,8 +270,8 @@ class PropertyAnalyzerAgent:
         return min(max(score, 0.0), 100.0)
 
     def _generate_recommendations(
-        self, property_data: Dict[str, Any], value: float, condition: str, repairs: List[str]
-    ) -> List[str]:
+        self, property_data: dict[str, Any], value: float, condition: str, repairs: list[str]
+    ) -> list[str]:
         """Generate recommendations."""
         recommendations = []
 
@@ -281,7 +281,7 @@ class PropertyAnalyzerAgent:
         if asking_price > value * 1.1:
             recommendations.append(f"Price appears high - consider offer around ${value * 0.95:,.0f}")
         elif asking_price < value * 0.9:
-            recommendations.append(f"Price looks favorable - good value at asking price")
+            recommendations.append("Price looks favorable - good value at asking price")
 
         # Condition-based
         if condition in ["fair", "poor"]:
@@ -302,7 +302,7 @@ class PropertyAnalyzerAgent:
 
         return recommendations
 
-    def compare_properties(self, property_ids: List[str]) -> Dict[str, Any]:
+    def compare_properties(self, property_ids: list[str]) -> dict[str, Any]:
         """Compare multiple properties."""
         analyses = [self.analysis_history.get(pid) for pid in property_ids if pid in self.analysis_history]
 

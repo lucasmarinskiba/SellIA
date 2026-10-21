@@ -6,15 +6,15 @@ y comportamientos anómalos en tiempo real sin intervención humana.
 
 from __future__ import annotations
 
-import uuid
 import hashlib
-from typing import Any, Optional
-from enum import Enum
-from datetime import datetime, timezone, timedelta
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, desc, update
 
 from app.core.logger import get_logger
 
@@ -47,13 +47,13 @@ class ThreatEvent:
     threat_id: str = field(default_factory=lambda: str(uuid.uuid4())[:12])
     threat_type: ThreatType = ThreatType.BRUTE_FORCE
     threat_level: ThreatLevel = ThreatLevel.LOW
-    source_ip: Optional[str] = None
-    user_id: Optional[str] = None
-    business_id: Optional[str] = None
+    source_ip: str | None = None
+    user_id: str | None = None
+    business_id: str | None = None
     description: str = ""
     evidence: dict[str, Any] = field(default_factory=dict)
     action_taken: str = ""
-    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     is_resolved: bool = False
 
 
@@ -91,7 +91,7 @@ class SelfProtectionEngine:
         self._suspicious_users: set[str] = set()
 
     async def run_protection_cycle(
-        self, business_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID | None = None
     ) -> dict[str, Any]:
         """Ejecuta ciclo completo de escaneo y protección."""
         logger.info("[SelfProtection] Iniciando ciclo de auto-protección")
@@ -131,7 +131,7 @@ class SelfProtectionEngine:
         threat_score = self._calculate_threat_score(threats_detected)
 
         summary = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "threats_detected": len(threats_detected),
             "critical_threats": len(critical),
             "actions_taken": len(actions_taken),
@@ -153,13 +153,13 @@ class SelfProtectionEngine:
     # ─────────────────────────────────────────────
 
     async def _scan_login_anomalies(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[ThreatEvent]:
         """Detecta intentos de fuerza bruta y credential stuffing."""
         threats = []
         try:
             from app.domains.security.models import UserLoginLog
-            threshold = datetime.now(timezone.utc) - timedelta(minutes=5)
+            threshold = datetime.now(UTC) - timedelta(minutes=5)
 
             query = select(
                 UserLoginLog.ip_address,
@@ -191,13 +191,13 @@ class SelfProtectionEngine:
         return threats
 
     async def _scan_api_abuse(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[ThreatEvent]:
         """Detecta abuso de la API (exceso de llamadas, patrones anómalos)."""
         threats = []
         try:
             from app.domains.security.models import UserSession
-            threshold = datetime.now(timezone.utc) - timedelta(minutes=1)
+            threshold = datetime.now(UTC) - timedelta(minutes=1)
 
             query = select(
                 UserSession.user_id,
@@ -225,13 +225,13 @@ class SelfProtectionEngine:
         return threats
 
     async def _scan_message_spam(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[ThreatEvent]:
         """Detecta patrones de spam en mensajes entrantes."""
         threats = []
         try:
-            from app.domains.channels.models import Message, Conversation
-            threshold = datetime.now(timezone.utc) - timedelta(minutes=1)
+            from app.domains.channels.models import Conversation, Message
+            threshold = datetime.now(UTC) - timedelta(minutes=1)
 
             query = select(
                 Conversation.contact_id,
@@ -270,7 +270,7 @@ class SelfProtectionEngine:
         threats = []
         try:
             from app.domains.channels.models import Message
-            threshold = datetime.now(timezone.utc) - timedelta(minutes=30)
+            threshold = datetime.now(UTC) - timedelta(minutes=30)
 
             result = await self.db.execute(
                 select(Message).where(
@@ -319,13 +319,13 @@ class SelfProtectionEngine:
         return threats
 
     async def _scan_geo_anomalies(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[ThreatEvent]:
         """Detecta accesos desde geolocalizaciones inusuales."""
         threats = []
         try:
             from app.domains.security.models import UserLoginLog
-            threshold = datetime.now(timezone.utc) - timedelta(hours=24)
+            threshold = datetime.now(UTC) - timedelta(hours=24)
 
             result = await self.db.execute(
                 select(UserLoginLog).where(
@@ -360,7 +360,7 @@ class SelfProtectionEngine:
     # ─────────────────────────────────────────────
 
     async def _respond_to_threat(
-        self, threat: ThreatEvent, business_id: Optional[uuid.UUID]
+        self, threat: ThreatEvent, business_id: uuid.UUID | None
     ) -> str:
         """Aplica la respuesta automática apropiada para cada amenaza."""
 
@@ -393,8 +393,6 @@ class SelfProtectionEngine:
 
             self._blocked_ips.add(ip)
 
-            from app.domains.security.models import IPAllowlist
-            pass
 
             logger.warning(f"[SelfProtection] IP bloqueada temporalmente: {ip}")
             return f"IP {ip} bloqueada temporalmente (1 hora)"
@@ -419,9 +417,9 @@ class SelfProtectionEngine:
         except Exception as e:
             return f"Mensaje marcado para revisión (DB update fallido: {str(e)[:50]})"
 
-    async def _throttle_contact(self, threat: ThreatEvent, business_id: Optional[uuid.UUID]) -> str:
+    async def _throttle_contact(self, threat: ThreatEvent, business_id: uuid.UUID | None) -> str:
         """Limita la tasa de mensajes de un contacto detectado como spam."""
-        return f"Rate limit aplicado al contacto sospechoso"
+        return "Rate limit aplicado al contacto sospechoso"
 
     async def _apply_rate_limit(self, threat: ThreatEvent) -> str:
         """Aplica rate limiting adicional a un usuario abusivo."""
@@ -435,7 +433,7 @@ class SelfProtectionEngine:
         return f"Sesión marcada como sospechosa desde {threat.source_ip or 'IP desconocida'}"
 
     async def _alert_security_team(
-        self, threat: ThreatEvent, business_id: Optional[uuid.UUID]
+        self, threat: ThreatEvent, business_id: uuid.UUID | None
     ) -> str:
         """Envía alerta crítica de seguridad al equipo/dueño."""
         try:
@@ -449,7 +447,7 @@ class SelfProtectionEngine:
                 message=f"Amenaza de nivel {threat.threat_level.value} detectada:\n{threat.description}\n\nAcción tomada: {threat.action_taken}\n\nEvidencia: {threat.evidence}",
                 severity=AlertSeverity.CRITICAL,
                 is_read=False,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             self.db.add(alert)
             await self.db.commit()
@@ -458,7 +456,7 @@ class SelfProtectionEngine:
             return f"Error enviando alerta: {str(e)[:50]}"
 
     async def _escalate_critical_threats(
-        self, threats: list[ThreatEvent], business_id: Optional[uuid.UUID]
+        self, threats: list[ThreatEvent], business_id: uuid.UUID | None
     ) -> None:
         """Escala amenazas críticas al dueño del negocio con detalle completo."""
         if not business_id or not threats:
@@ -476,7 +474,7 @@ class SelfProtectionEngine:
                 message=summary,
                 severity=AlertSeverity.CRITICAL,
                 is_read=False,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             self.db.add(alert)
             await self.db.commit()
@@ -529,7 +527,7 @@ class SelfProtectionEngine:
 
     def get_threat_summary(self) -> dict[str, Any]:
         recent = [t for t in self._threat_log
-                  if t.detected_at >= datetime.now(timezone.utc) - timedelta(hours=24)]
+                  if t.detected_at >= datetime.now(UTC) - timedelta(hours=24)]
         return {
             "threats_24h": len(recent),
             "blocked_ips": len(self._blocked_ips),

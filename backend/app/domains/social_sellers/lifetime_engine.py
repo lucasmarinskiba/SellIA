@@ -5,19 +5,18 @@ oportunidades para el Radar de Oportunidades.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List, Dict
-from decimal import Decimal
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc, and_, or_, text
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.social_sellers.models import SocialSeller, SellerCustomerRelationship
-from app.domains.channels.models import Conversation, Message, MessageDirection
-from app.domains.orders.models import Order, OrderStatus
-from app.domains.crm.models import LeadScore, LeadActivity
-from app.domains.intelligence.models import ConversationIntelligence
 from app.core.logger import get_logger
+from app.domains.channels.models import Conversation, Message, MessageDirection
+from app.domains.crm.models import LeadActivity, LeadScore
+from app.domains.intelligence.models import ConversationIntelligence
+from app.domains.orders.models import Order
+from app.domains.social_sellers.models import SellerCustomerRelationship, SocialSeller
 
 logger = get_logger(__name__)
 
@@ -54,10 +53,10 @@ class CustomerLifetimeEngine:
 
     # ── Public API ──────────────────────────────────────────────────────
 
-    async def detect_buying_moments(self, business_id: uuid.UUID, lookback_hours: int = 24) -> List[Dict[str, Any]]:
+    async def detect_buying_moments(self, business_id: uuid.UUID, lookback_hours: int = 24) -> list[dict[str, Any]]:
         """Encuentra clientes con alta probabilidad de compra próxima."""
         opportunities = []
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=lookback_hours)
 
         # Obtener conversaciones activas del negocio
         conv_result = await self.db.execute(
@@ -114,7 +113,7 @@ class CustomerLifetimeEngine:
         opportunities.sort(key=lambda x: x['score'], reverse=True)
         return opportunities
 
-    async def predict_next_purchase(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def predict_next_purchase(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Predice la próxima compra basada en historial."""
         orders = await self._get_customer_orders(business_id, conversation_id)
 
@@ -128,9 +127,9 @@ class CustomerLifetimeEngine:
 
         if len(orders) == 1:
             # Primer comprador: estimar en 30-45 días
-            days_since = (datetime.now(timezone.utc) - orders[0].created_at).days
+            days_since = (datetime.now(UTC) - orders[0].created_at).days
             return {
-                'predicted_date': (datetime.now(timezone.utc) + timedelta(days=45)).isoformat(),
+                'predicted_date': (datetime.now(UTC) + timedelta(days=45)).isoformat(),
                 'confidence_score': 30,
                 'days_until': max(0, 45 - days_since),
                 'reason': 'Primer comprador: estimado 45 días',
@@ -142,7 +141,7 @@ class CustomerLifetimeEngine:
         avg_interval = sum(intervals) / len(intervals) if intervals else 45
 
         last_order_date = dates[-1]
-        days_since_last = (datetime.now(timezone.utc) - last_order_date).days
+        days_since_last = (datetime.now(UTC) - last_order_date).days
         days_until = max(0, int(avg_interval - days_since_last))
 
         # Confianza basada en consistencia de intervalos
@@ -153,7 +152,7 @@ class CustomerLifetimeEngine:
         else:
             confidence = 40
 
-        predicted_date = datetime.now(timezone.utc) + timedelta(days=days_until)
+        predicted_date = datetime.now(UTC) + timedelta(days=days_until)
 
         return {
             'predicted_date': predicted_date.isoformat(),
@@ -163,7 +162,7 @@ class CustomerLifetimeEngine:
             'reason': f'Compra cada {round(avg_interval, 0)} días en promedio',
         }
 
-    async def score_opportunity(self, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def score_opportunity(self, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Score 0-100 de qué tan listo está el cliente para comprar."""
         score = 0
         signals = []
@@ -224,7 +223,7 @@ class CustomerLifetimeEngine:
             },
         }
 
-    async def generate_reorder_prompt(self, seller_id: uuid.UUID, conversation_id: uuid.UUID) -> Optional[str]:
+    async def generate_reorder_prompt(self, seller_id: uuid.UUID, conversation_id: uuid.UUID) -> str | None:
         """Genera un mensaje personalizado para recompra."""
         seller_result = await self.db.execute(
             select(SocialSeller).where(SocialSeller.id == seller_id)
@@ -268,7 +267,7 @@ class CustomerLifetimeEngine:
         score_data = await self.score_opportunity(conversation_id)
         return templates.get(score_data['heat_level'], templates['nurture'])
 
-    async def get_radar_data(self, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_radar_data(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Datos principales para el dashboard del Radar."""
         opportunities = await self.detect_buying_moments(business_id, lookback_hours=168)  # 7 días
 
@@ -290,7 +289,7 @@ class CustomerLifetimeEngine:
 
         return {
             'business_id': str(business_id),
-            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'generated_at': datetime.now(UTC).isoformat(),
             'summary': {
                 'total_opportunities': total_opps,
                 'hot_count': len(buckets['hot']),
@@ -303,7 +302,7 @@ class CustomerLifetimeEngine:
             'top_actions': self._generate_top_actions(buckets),
         }
 
-    async def execute_radar_action(self, business_id: uuid.UUID, conversation_id: uuid.UUID, action: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def execute_radar_action(self, business_id: uuid.UUID, conversation_id: uuid.UUID, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         """Ejecuta una acción recomendada desde el radar."""
         payload = payload or {}
 
@@ -351,8 +350,8 @@ class CustomerLifetimeEngine:
 
     # ── Private helpers ─────────────────────────────────────────────────
 
-    async def _get_recent_messages(self, conversation_id: uuid.UUID, hours: int = 24) -> List[Message]:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    async def _get_recent_messages(self, conversation_id: uuid.UUID, hours: int = 24) -> list[Message]:
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         result = await self.db.execute(
             select(Message)
             .where(
@@ -363,14 +362,14 @@ class CustomerLifetimeEngine:
         )
         return list(result.scalars().all())
 
-    async def _get_seller_relationship(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> Optional[SellerCustomerRelationship]:
+    async def _get_seller_relationship(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> SellerCustomerRelationship | None:
         result = await self.db.execute(
             select(SellerCustomerRelationship)
             .where(SellerCustomerRelationship.customer_id == conversation_id)
         )
         return result.scalar_one_or_none()
 
-    async def _get_customer_orders(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> List[Order]:
+    async def _get_customer_orders(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> list[Order]:
         result = await self.db.execute(
             select(Order)
             .where(
@@ -382,7 +381,7 @@ class CustomerLifetimeEngine:
         )
         return list(result.scalars().all())
 
-    async def _get_purchase_history(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def _get_purchase_history(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> dict[str, Any]:
         orders = await self._get_customer_orders(business_id, conversation_id)
         if not orders:
             return {'total_orders': 0, 'total_spent': 0, 'avg_order_value': 0}
@@ -395,16 +394,16 @@ class CustomerLifetimeEngine:
             'last_order_at': orders[0].created_at.isoformat() if orders[0].created_at else None,
         }
 
-    async def _get_lead_score(self, conversation_id: uuid.UUID) -> Optional[LeadScore]:
+    async def _get_lead_score(self, conversation_id: uuid.UUID) -> LeadScore | None:
         result = await self.db.execute(
             select(LeadScore).where(LeadScore.conversation_id == conversation_id)
         )
         return result.scalar_one_or_none()
 
-    async def _get_recent_activity_score(self, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def _get_recent_activity_score(self, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Puntaje por recencia de actividad (0-25)."""
         points = 0
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Mensajes en últimas 24h
         msgs_24h = await self._get_recent_messages(conversation_id, hours=24)
@@ -431,7 +430,7 @@ class CustomerLifetimeEngine:
 
         return {'points': min(25, points), 'recent_messages_24h': len(msgs_24h)}
 
-    async def _get_order_frequency_score(self, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def _get_order_frequency_score(self, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Puntaje por frecuencia de compra (0-20)."""
         # Necesitamos business_id; usamos conversación para inferirlo
         conv_result = await self.db.execute(
@@ -452,7 +451,7 @@ class CustomerLifetimeEngine:
             dates = sorted([o.created_at for o in orders if o.created_at])
             intervals = [(dates[i] - dates[i - 1]).days for i in range(1, len(dates))]
             avg_interval = sum(intervals) / len(intervals) if intervals else 45
-            days_since = (datetime.now(timezone.utc) - dates[-1]).days
+            days_since = (datetime.now(UTC) - dates[-1]).days
 
             # Se acerca a la fecha estimada de recompra
             if days_since >= avg_interval * 0.7:
@@ -466,14 +465,14 @@ class CustomerLifetimeEngine:
 
         return {'points': min(20, points), 'repeat_buyer': len(orders) >= 2}
 
-    async def _get_intent_signals(self, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def _get_intent_signals(self, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Puntaje por señales de intención de compra (0-20)."""
         points = 0
         buying_count = 0
         price_asked = False
 
         # Analizar mensajes recientes (30 días)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
         result = await self.db.execute(
             select(Message)
             .where(
@@ -519,7 +518,7 @@ class CustomerLifetimeEngine:
             'messages_analyzed': len(messages),
         }
 
-    async def _get_engagement_score(self, conversation_id: uuid.UUID) -> Dict[str, Any]:
+    async def _get_engagement_score(self, conversation_id: uuid.UUID) -> dict[str, Any]:
         """Puntaje por calidad de engagement (0-10)."""
         points = 0
         fast_responder = False
@@ -572,7 +571,7 @@ class CustomerLifetimeEngine:
         return 'at_risk'
 
     @staticmethod
-    def _generate_top_actions(buckets: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    def _generate_top_actions(buckets: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
         actions = []
 
         if buckets['hot']:

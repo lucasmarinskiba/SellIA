@@ -2,12 +2,13 @@
 Entry point for Railway deployment.
 Loads what's available; skips broken modules gracefully.
 """
-import os
 import logging
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
-from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,8 +60,7 @@ async def ping():
 @app.get("/health")
 async def health():
     from sqlalchemy import text
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import create_async_engine
 
     checks: dict = {"status": "ok"}
 

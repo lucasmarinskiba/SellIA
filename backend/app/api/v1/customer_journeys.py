@@ -1,14 +1,13 @@
 """Customer journey API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from datetime import UTC
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.domains.users.models import User
 from app.domains.journeys.journey_service import CustomerJourneyService
 
 router = APIRouter(prefix="/api/v1", tags=["customer-journeys"])
@@ -17,10 +16,10 @@ router = APIRouter(prefix="/api/v1", tags=["customer-journeys"])
 class StartJourneyRequest(BaseModel):
     business_id: UUID
     channel: str  # organic_search, paid_search, social_media, email, direct, referral, proximity_invite
-    customer_email: Optional[str] = None
-    customer_phone: Optional[str] = None
-    campaign: Optional[str] = None
-    source: Optional[str] = None
+    customer_email: str | None = None
+    customer_phone: str | None = None
+    campaign: str | None = None
+    source: str | None = None
 
 
 class RecordTouchpointRequest(BaseModel):
@@ -28,9 +27,9 @@ class RecordTouchpointRequest(BaseModel):
     business_id: UUID
     touchpoint_type: str  # email_sent, email_opened, proximity_check, location_visit, order_placed
     channel: str
-    campaign: Optional[str] = None
-    location_id: Optional[UUID] = None
-    order_id: Optional[str] = None
+    campaign: str | None = None
+    location_id: UUID | None = None
+    order_id: str | None = None
 
 
 @router.post("/journeys/start")
@@ -115,10 +114,11 @@ async def get_journey_funnel(
 ) -> dict:
     """Get journey funnel visualization data."""
     try:
-        from app.domains.journeys.journey_models import CustomerJourney
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        from app.domains.journeys.journey_models import CustomerJourney
+
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         journeys = db.query(CustomerJourney).filter(
             CustomerJourney.business_id == business_id,

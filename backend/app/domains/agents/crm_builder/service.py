@@ -5,18 +5,16 @@ como archivos de texto, los comprime en ZIP y guarda en storage.
 """
 
 import os
+import tempfile
 import uuid
 import zipfile
-import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.crm_builder.models import CRMBuildJob, CRMModule, CRMBuildStatus
+from app.domains.agents.crm_builder.models import CRMBuildJob, CRMBuildStatus, CRMModule
 from app.domains.agents.crm_builder.schemas import CRMBuildJobCreate, CRMModuleCreate
 
 logger = get_logger(__name__)
@@ -57,11 +55,11 @@ class CRMBuilderService:
         await self.db.refresh(job)
         return job
 
-    async def get_job(self, job_id: uuid.UUID) -> Optional[CRMBuildJob]:
+    async def get_job(self, job_id: uuid.UUID) -> CRMBuildJob | None:
         result = await self.db.execute(select(CRMBuildJob).where(CRMBuildJob.id == job_id))
         return result.scalar_one_or_none()
 
-    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[CRMBuildJob]:
+    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> list[CRMBuildJob]:
         result = await self.db.execute(
             select(CRMBuildJob)
             .where(CRMBuildJob.business_id == business_id)
@@ -71,7 +69,7 @@ class CRMBuilderService:
         )
         return result.scalars().all()
 
-    async def update_job(self, job_id: uuid.UUID, **kwargs) -> Optional[CRMBuildJob]:
+    async def update_job(self, job_id: uuid.UUID, **kwargs) -> CRMBuildJob | None:
         job = await self.get_job(job_id)
         if not job:
             return None
@@ -87,7 +85,7 @@ class CRMBuilderService:
     async def generate_crm(
         self,
         business_id: uuid.UUID,
-        modules_list: List[CRMModuleCreate],
+        modules_list: list[CRMModuleCreate],
     ) -> CRMBuildJob:
         job = await self.create_job(CRMBuildJobCreate(
             business_id=business_id,
@@ -110,7 +108,7 @@ class CRMBuilderService:
 
         return await self.get_job(job.id)
 
-    def _generate_code_zip(self, job: CRMBuildJob, modules_list: List[CRMModuleCreate]) -> Path:
+    def _generate_code_zip(self, job: CRMBuildJob, modules_list: list[CRMModuleCreate]) -> Path:
         tmpdir = tempfile.mkdtemp(prefix=f"crm_build_{job.id}_")
         crm_slug = "sellcrm"
         active_modules = {m.module_name for m in modules_list}
@@ -1072,7 +1070,7 @@ docker-compose up --build
 
     # ========== Download ==========
 
-    async def get_crm_code(self, job_id: uuid.UUID) -> Optional[Path]:
+    async def get_crm_code(self, job_id: uuid.UUID) -> Path | None:
         job = await self.get_job(job_id)
         if not job or not job.code_url:
             return None

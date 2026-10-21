@@ -3,13 +3,14 @@ NPS & Feedback Router
 """
 
 from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
+from app.domains.nps.models import FeedbackItem, FeedbackNPSResponse
 from app.domains.users.models import User
-from app.domains.nps.models import FeedbackNPSResponse, FeedbackItem
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 

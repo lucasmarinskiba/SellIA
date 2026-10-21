@@ -3,9 +3,10 @@ ML Optimization & Automation API v1 — Phase 6
 Predictive analytics, content optimization, automated improvements, revenue attribution
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(tags=["ml-optimization"])
 
@@ -15,7 +16,7 @@ SITE_URL = "https://sellia-brain.vercel.app"
 @router.get("/predictions/traffic")
 async def predict_organic_traffic(
     days_ahead: int = Query(30, ge=7, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Predict organic traffic using time-series ML model"""
     return {
         "@context": "https://schema.org",
@@ -45,8 +46,8 @@ async def predict_organic_traffic(
 
 @router.get("/recommendations/content")
 async def get_content_recommendations(
-    page_id: Optional[str] = None,
-) -> Dict[str, Any]:
+    page_id: str | None = None,
+) -> dict[str, Any]:
     """Get ML content optimization recommendations"""
     return {
         "@context": "https://schema.org",
@@ -106,7 +107,7 @@ async def get_content_recommendations(
 @router.post("/optimize/page")
 async def optimize_page(
     page_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run ML optimization on specific page"""
     return {
         "status": "optimization_queued",
@@ -124,7 +125,7 @@ async def optimize_page(
 
 
 @router.get("/predictions/rankings")
-async def predict_keyword_rankings() -> Dict[str, Any]:
+async def predict_keyword_rankings() -> dict[str, Any]:
     """Predict future keyword rankings"""
     return {
         "@context": "https://schema.org",
@@ -167,7 +168,7 @@ async def predict_keyword_rankings() -> Dict[str, Any]:
 
 
 @router.get("/revenue-attribution")
-async def get_revenue_attribution() -> Dict[str, Any]:
+async def get_revenue_attribution() -> dict[str, Any]:
     """Calculate revenue contribution by channel/page"""
     return {
         "@context": "https://schema.org",
@@ -219,7 +220,7 @@ async def get_revenue_attribution() -> Dict[str, Any]:
 @router.post("/automated-improvement")
 async def trigger_automated_improvement(
     improvement_type: str = Query("content", description="Type: content|technical|linking"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Trigger automated SEO improvement"""
     improvements = {
         "content": {
@@ -264,7 +265,7 @@ async def trigger_automated_improvement(
 
 
 @router.get("/continuous-learning")
-async def get_learning_status() -> Dict[str, Any]:
+async def get_learning_status() -> dict[str, Any]:
     """Get continuous ML learning status"""
     return {
         "@context": "https://schema.org",
@@ -315,7 +316,7 @@ async def get_learning_status() -> Dict[str, Any]:
 
 
 @router.get("/optimization-roadmap")
-async def get_optimization_roadmap() -> Dict[str, Any]:
+async def get_optimization_roadmap() -> dict[str, Any]:
     """Get AI-generated SEO roadmap for next 90 days"""
     return {
         "@context": "https://schema.org",

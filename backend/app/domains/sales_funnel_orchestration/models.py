@@ -1,10 +1,21 @@
 """Phase 40: Sales Funnel Intelligence - Complete Pipeline Orchestration."""
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class FunnelStage(str, Enum):
     AWARENESS = "awareness"
@@ -25,7 +36,7 @@ class LeadScore(Base):
     acquisition_score = Column(Float, default=0)
     current_stage = Column(String(50), default=FunnelStage.AWARENESS)
     stage_confidence = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class FunnelOrchestration(Base):
     __tablename__ = "funnel_orchestration"
@@ -37,8 +48,8 @@ class FunnelOrchestration(Base):
     agent_assigned = Column(String(50), nullable=True)
     action_executed = Column(Boolean, default=False)
     action_result = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 class FOMOGenerator(Base):
     __tablename__ = "fomo_generators"
@@ -49,7 +60,7 @@ class FOMOGenerator(Base):
     fomo_intensity = Column(Float, default=0)
     message_sent = Column(String(500), nullable=True)
     engagement_response = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class NeedsIdentification(Base):
     __tablename__ = "needs_identification"
@@ -61,7 +72,7 @@ class NeedsIdentification(Base):
     decision_criteria = Column(JSONB, nullable=True)
     budget_range = Column(String(100), nullable=True)
     timeline = Column(String(100), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SolutionPresentation(Base):
     __tablename__ = "solution_presentations"
@@ -72,9 +83,9 @@ class SolutionPresentation(Base):
     key_benefits = Column(JSONB, nullable=True)
     roi_projected = Column(Float, default=0)
     differentiation_points = Column(JSONB, nullable=True)
-    presentation_date = Column(DateTime(timezone.utc), nullable=True)
+    presentation_date = Column(DateTime(UTC), nullable=True)
     engagement_score = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ObjectionHandling(Base):
     __tablename__ = "objection_handling"
@@ -86,7 +97,7 @@ class ObjectionHandling(Base):
     reframe_strategy = Column(Text, nullable=True)
     counter_argument = Column(Text, nullable=True)
     resolution_success = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class DealClosing(Base):
     __tablename__ = "deal_closing"
@@ -98,8 +109,8 @@ class DealClosing(Base):
     closing_probability = Column(Float, default=0)
     deal_value = Column(Float, default=0)
     deal_status = Column(String(50), default="open")  # open, pending, won, lost
-    closing_date = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    closing_date = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CustomerFidelization(Base):
     __tablename__ = "customer_fidelization"
@@ -109,6 +120,6 @@ class CustomerFidelization(Base):
     satisfaction_score = Column(Float, default=0)
     loyalty_tier = Column(String(50), default="bronze")  # bronze, silver, gold, platinum
     retention_action = Column(String(255), nullable=True)
-    next_touchpoint = Column(DateTime(timezone.utc), nullable=True)
+    next_touchpoint = Column(DateTime(UTC), nullable=True)
     advocacy_readiness = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

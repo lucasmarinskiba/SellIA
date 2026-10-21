@@ -1,8 +1,9 @@
 """Viral Video Agent Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -20,10 +21,10 @@ class VideoGenerationJobCreate(VideoGenerationJobBase):
 class VideoGenerationJobResponse(VideoGenerationJobBase):
     id: UUID
     status: str = "pending"
-    provider_used: Optional[str] = None
-    video_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    script: Optional[Dict[str, Any]] = None
+    provider_used: str | None = None
+    video_url: str | None = None
+    thumbnail_url: str | None = None
+    script: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -37,7 +38,7 @@ class VideoScriptBase(BaseModel):
     body: str
     cta: str
     duration: int
-    visual_direction: Optional[str] = None
+    visual_direction: str | None = None
 
 
 class VideoScriptResponse(VideoScriptBase):

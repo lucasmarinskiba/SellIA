@@ -16,9 +16,9 @@ the failure mode this codebase keeps removing.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,10 +27,10 @@ from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
-def _money(value: Optional[Decimal]) -> float:
+def _money(value: Decimal | None) -> float:
     return float(round(value or ZERO, 2))
 
 
@@ -56,7 +56,7 @@ async def platform_pnl(
     """Per-platform and consolidated economics over the window."""
     from app.domains.orders.models import Order, PaymentStatus
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
 
     empty: dict[str, Any] = {

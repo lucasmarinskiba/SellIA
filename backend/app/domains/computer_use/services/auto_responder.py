@@ -16,32 +16,39 @@ Integración con Scheduling:
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.computer_use.services.webhook_receiver import IncomingMessage, MessageSource, MessageType
-from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
-    ActionContext,
-    SalesStage,
-    Platform,
-)
-from app.domains.computer_use.services.audit_log_service import AuditLogEntry, AuditLogService
-from app.domains.computer_use.services.scheduling_orchestrator import SchedulingOrchestrator
-from app.domains.computer_use.services.sales_closer import get_sales_closer_service
+from app.core.config import get_settings
 from app.domains.computer_use.integrations import (
-    WhatsAppConnector,
-    InstagramConnector,
-    get_whatsapp_connector,
     get_instagram_connector,
+    get_whatsapp_connector,
+)
+from app.domains.computer_use.services.audit_log_service import (
+    AuditLogEntry,
+    AuditLogService,
 )
 from app.domains.computer_use.services.conversion_tracker import get_conversion_tracker
 from app.domains.computer_use.services.platform_automation_engine import (
-    get_platform_automation_engine,
     PlatformAutomationType,
+    get_platform_automation_engine,
 )
-from app.core.config import get_settings
+from app.domains.computer_use.services.sales_closer import get_sales_closer_service
+from app.domains.computer_use.services.scheduling_orchestrator import (
+    SchedulingOrchestrator,
+)
+from app.domains.computer_use.services.sellia_brain_service import (
+    ActionContext,
+    Platform,
+    SalesStage,
+    get_brain_service,
+)
+from app.domains.computer_use.services.webhook_receiver import (
+    IncomingMessage,
+    MessageSource,
+    MessageType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +63,7 @@ class AutoResponderService:
     def __init__(
         self,
         db: AsyncSession,
-        scheduling_orchestrator: Optional[SchedulingOrchestrator] = None,
+        scheduling_orchestrator: SchedulingOrchestrator | None = None,
         closer_mode: str = "supervised",  # auto | supervised
     ):
         self.db = db
@@ -93,7 +100,7 @@ class AutoResponderService:
         self,
         user_id: str,
         message: IncomingMessage,
-    ) -> Tuple[Optional[str], str, float]:
+    ) -> tuple[str | None, str, float]:
         """
         Procesa mensaje → genera respuesta.
 
@@ -270,7 +277,7 @@ class AutoResponderService:
 
     # ── Private Methods ──────────────────────────────────────────────
 
-    def _source_to_platform(self, source: MessageSource) -> Optional[Platform]:
+    def _source_to_platform(self, source: MessageSource) -> Platform | None:
         """Mapea MessageSource a Platform."""
         mapping = {
             MessageSource.WHATSAPP: Platform.WHATSAPP,
@@ -333,7 +340,7 @@ class AutoResponderService:
         recipient_id: str,
         response_text: str,
         message: IncomingMessage,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía respuesta por WhatsApp/Instagram. Retorna (success, message_id)."""
         try:
             # Intentar API primero (más confiable)
@@ -378,7 +385,7 @@ class AutoResponderService:
     def _calculate_confidence(
         self,
         strategy: Any,
-        signals: Dict[str, Any],
+        signals: dict[str, Any],
         message: IncomingMessage,
     ) -> float:
         """Calcula score de confianza (0-1)."""
@@ -402,12 +409,12 @@ class AutoResponderService:
         self,
         user_id: str,
         message: IncomingMessage,
-        response: Optional[str],
+        response: str | None,
         strategy: Any,
         status: str,
         confidence: float,
-        signals: Optional[Dict[str, Any]],
-        error: Optional[str] = None,
+        signals: dict[str, Any] | None,
+        error: str | None = None,
     ) -> None:
         """Registra actividad en Audit Log."""
         try:
@@ -453,7 +460,7 @@ class AutoResponderService:
         message: IncomingMessage,
         response: str,
         intent: str,
-        state: Optional[Any],
+        state: Any | None,
     ) -> None:
         """Registra scheduling action en Audit Log."""
         try:

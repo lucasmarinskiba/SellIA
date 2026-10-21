@@ -1,15 +1,16 @@
 """FOMO testing, preview, and conversion tracking service."""
 
-from uuid import UUID
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, desc
+from uuid import UUID
+
+from sqlalchemy import desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
-from app.domains.seo_config.fomo_models import ConversionEvent, FOMABTest, FOMADecayLog
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.fomo_models import ConversionEvent
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 
 logger = get_logger(__name__)
 

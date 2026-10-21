@@ -27,8 +27,8 @@ from typing import Any
 import httpx
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 _TOKEN_URL = "https://api-sec-vlc.hotmart.com/security/oauth/token"
 _SALES_API = "https://developers.hotmart.com/payments/api/v1"
@@ -155,9 +155,7 @@ class HotmartConnector(BaseChannelConnector):
 
         if event in _ABANDONED_EVENTS:
             content_type = "abandoned_cart"
-        elif event in _REFUND_EVENTS or event in _CANCEL_EVENTS:
-            content_type = "order"
-        elif event.startswith("PURCHASE") or event.startswith("SUBSCRIPTION"):
+        elif event in _REFUND_EVENTS or event in _CANCEL_EVENTS or event.startswith("PURCHASE") or event.startswith("SUBSCRIPTION"):
             content_type = "order"
         else:
             content_type = "system"

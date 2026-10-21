@@ -1,11 +1,12 @@
 """A/B Testing framework for comparing agent strategies."""
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, Any, List, Optional
-from datetime import datetime
 import logging
-from enum import Enum
 import random
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(tags=["ab-testing"])
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ async def create_ab_test(
     metric: str = Query("close_rate", description="Metric to optimize"),
     sample_size: int = Query(100, ge=10, le=10000),
     duration_days: int = Query(14, ge=1, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create A/B test to compare two strategies."""
     test_id = f"test_{datetime.now().timestamp()}"
 
@@ -57,7 +58,7 @@ async def create_ab_test(
 
 
 @router.get("/ab-testing/test/{test_id}")
-async def get_test_results(test_id: str) -> Dict[str, Any]:
+async def get_test_results(test_id: str) -> dict[str, Any]:
     """Get current results for an A/B test."""
     # Mock results (in production, query from database)
     control_performance = random.uniform(0.35, 0.65)
@@ -107,7 +108,7 @@ async def get_test_results(test_id: str) -> Dict[str, Any]:
 async def allocate_lead_to_test(
     lead_id: str = Query(...),
     test_id: str = Query(...),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Randomly allocate a lead to control or treatment group."""
     # 50/50 split
     group = "control" if random.random() < 0.5 else "treatment"
@@ -126,7 +127,7 @@ async def allocate_lead_to_test(
 
 
 @router.get("/ab-testing/strategy-comparison")
-async def compare_strategies() -> Dict[str, Any]:
+async def compare_strategies() -> dict[str, Any]:
     """Compare all negotiation strategies on key metrics."""
     return {
         "status": "success",

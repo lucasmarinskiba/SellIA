@@ -4,20 +4,18 @@ Analyzes every inbound message with LLM to detect sentiment, intent, objections,
 pain points, buying signals, and recommends next actions.
 """
 
-import uuid
 import json
 import re
-from datetime import datetime, timezone
-from typing import Optional, Any
+import uuid
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.intelligence.models import MessageAnalysis, ConversationIntelligence
-from app.domains.channels.models import Message, Conversation
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.channels.models import Conversation, Message
+from app.domains.intelligence.models import ConversationIntelligence, MessageAnalysis
 
 logger = get_logger(__name__)
 
@@ -67,7 +65,7 @@ class MessageIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def analyze_message(self, message_id: uuid.UUID) -> Optional[MessageAnalysis]:
+    async def analyze_message(self, message_id: uuid.UUID) -> MessageAnalysis | None:
         """Analyze a single message and store results."""
         # Check if already analyzed
         existing = await self.db.execute(
@@ -189,7 +187,7 @@ class MessageIntelligenceService:
             logger.exception(f"Failed to analyze message {message_id}: {e}")
             return None
 
-    def _extract_json(self, text: str) -> Optional[dict]:
+    def _extract_json(self, text: str) -> dict | None:
         """Extract JSON from LLM response (handles markdown code blocks)."""
         # Try to find JSON in markdown code block
         match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
@@ -370,7 +368,7 @@ class ConversationIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_conversation(self, conversation_id: uuid.UUID) -> Optional[ConversationIntelligence]:
+    async def get_by_conversation(self, conversation_id: uuid.UUID) -> ConversationIntelligence | None:
         result = await self.db.execute(
             select(ConversationIntelligence).where(
                 ConversationIntelligence.conversation_id == conversation_id,

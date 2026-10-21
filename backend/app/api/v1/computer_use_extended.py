@@ -5,57 +5,70 @@ browser profiles, proxies, session sharing, batch jobs, tags, webhooks,
 export, replay, y analytics.
 """
 
-import os
-import csv
-import json
 import secrets
-from datetime import datetime
-from datetime import timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, and_
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
+from app.domains.computer_use.models import (
+    ComputerUseSession,
+    ComputerUseStep,
+)
 from app.domains.computer_use.models_extended import (
-    ComputerUseTemplate,
-    ComputerUseScheduledTask,
     ComputerUseAnnotation,
+    ComputerUseBatchJob,
     ComputerUseBrowserProfile,
     ComputerUseProxyConfig,
+    ComputerUseScheduledTask,
     ComputerUseSessionShare,
-    ComputerUseBatchJob,
     ComputerUseSessionTag,
+    ComputerUseTemplate,
     ComputerUseWebhook,
 )
 from app.domains.computer_use.schemas_extended import (
-    ComputerUseTemplateCreate, ComputerUseTemplateResponse, ComputerUseTemplateListResponse,
-    ComputerUseScheduledTaskCreate, ComputerUseScheduledTaskResponse, ComputerUseScheduledTaskListResponse,
-    ComputerUseAnnotationCreate, ComputerUseAnnotationResponse,
-    ComputerUseBrowserProfileCreate, ComputerUseBrowserProfileResponse,
-    ComputerUseProxyConfigCreate, ComputerUseProxyConfigResponse,
-    ComputerUseSessionShareCreate, ComputerUseSessionShareResponse,
-    ComputerUseBatchJobCreate, ComputerUseBatchJobResponse,
-    ComputerUseSessionTagCreate, ComputerUseSessionTagResponse,
-    ComputerUseSessionBookmarkCreate, ComputerUseSessionBookmarkResponse,
-    ComputerUseSessionNoteCreate, ComputerUseSessionNoteResponse,
-    ComputerUseWebhookCreate, ComputerUseWebhookResponse,
-    ComputerUseExportRequest, ComputerUseReplayResponse, ComputerUseReplayStep,
-    ComputerUseAnalyticsSummary, ComputerUseSessionFilter,
-    ComputerUseTemplateImport, ComputerUseBrowserProfileImport,
-    ComputerUseProxyConfigImport, ComputerUseWebhookImport,
+    ComputerUseAnalyticsSummary,
+    ComputerUseAnnotationCreate,
+    ComputerUseAnnotationResponse,
+    ComputerUseBatchJobCreate,
+    ComputerUseBatchJobResponse,
+    ComputerUseBrowserProfileCreate,
+    ComputerUseBrowserProfileImport,
+    ComputerUseBrowserProfileResponse,
+    ComputerUseExportRequest,
+    ComputerUseProxyConfigCreate,
+    ComputerUseProxyConfigImport,
+    ComputerUseProxyConfigResponse,
+    ComputerUseReplayResponse,
+    ComputerUseReplayStep,
+    ComputerUseScheduledTaskCreate,
+    ComputerUseScheduledTaskListResponse,
+    ComputerUseScheduledTaskResponse,
+    ComputerUseSessionBookmarkCreate,
+    ComputerUseSessionBookmarkResponse,
+    ComputerUseSessionNoteCreate,
+    ComputerUseSessionShareCreate,
+    ComputerUseSessionShareResponse,
+    ComputerUseSessionTagCreate,
+    ComputerUseSessionTagResponse,
+    ComputerUseTemplateCreate,
+    ComputerUseTemplateImport,
+    ComputerUseTemplateListResponse,
+    ComputerUseTemplateResponse,
+    ComputerUseWebhookCreate,
+    ComputerUseWebhookImport,
+    ComputerUseWebhookResponse,
 )
 from app.domains.computer_use.services.pdf_service import PDFExportService
 from app.domains.computer_use.services.webhook_service import WebhookService
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -90,7 +103,7 @@ async def create_template(
 
 @router.get("/templates", response_model=ComputerUseTemplateListResponse)
 async def list_templates(
-    search: Optional[str] = None,
+    search: str | None = None,
     limit: int = 20,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
@@ -359,7 +372,7 @@ async def share_session(
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=data.expires_days) if data.expires_days else None
+    expires_at = datetime.now(UTC) + timedelta(days=data.expires_days) if data.expires_days else None
 
     share = ComputerUseSessionShare(
         session_id=session_id,
@@ -406,7 +419,7 @@ async def get_shared_session(
     share = result.scalar_one_or_none()
     if not share:
         raise HTTPException(status_code=404, detail="Enlace no válido")
-    if share.expires_at and share.expires_at < datetime.now(timezone.utc):
+    if share.expires_at and share.expires_at < datetime.now(UTC):
         raise HTTPException(status_code=410, detail="Enlace expirado")
 
     session_result = await db.execute(
@@ -633,7 +646,9 @@ async def clone_session(
 @router.get("/mobile-presets")
 async def list_mobile_presets():
     """Lista los presets de emulación móvil disponibles."""
-    from app.domains.computer_use.services.mobile_presets import list_presets, MOBILE_PRESETS
+    from app.domains.computer_use.services.mobile_presets import (
+        MOBILE_PRESETS,
+    )
     return {
         "presets": [
             {"id": k, "name": v["name"], "viewport": {"width": v["viewport_width"], "height": v["viewport_height"]}}
@@ -655,7 +670,7 @@ async def export_config(
         "profiles": [],
         "proxies": [],
         "webhooks": [],
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
     }
 
     # Templates
@@ -1101,7 +1116,7 @@ async def get_analytics_summary(
     most_action = action_row[0] if action_row else None
 
     # Time-based counts
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today - timedelta(days=today.weekday())
     month_start = today.replace(day=1)
 

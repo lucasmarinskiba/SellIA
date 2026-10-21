@@ -1,22 +1,23 @@
 """CRM Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PipelineStage(BaseModel):
     id: str
     name: str
     order: int
-    color: Optional[str] = "#3B82F6"
+    color: str | None = "#3B82F6"
 
 
 class PipelineBase(BaseModel):
     name: str
-    description: Optional[str] = None
-    stages: List[PipelineStage] = Field(default_factory=list)
+    description: str | None = None
+    stages: list[PipelineStage] = Field(default_factory=list)
 
 
 class PipelineCreate(PipelineBase):
@@ -24,10 +25,10 @@ class PipelineCreate(PipelineBase):
 
 
 class PipelineUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    stages: Optional[List[PipelineStage]] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    stages: list[PipelineStage] | None = None
+    is_active: bool | None = None
 
 
 class PipelineResponse(PipelineBase):
@@ -43,52 +44,52 @@ class PipelineResponse(PipelineBase):
 
 class DealBase(BaseModel):
     title: str
-    description: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-    value: Optional[float] = None
+    description: str | None = None
+    contact_name: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    value: float | None = None
     currency: str = "ARS"
     stage: str = "new_lead"
     probability: int = 10
     priority: int = 0
-    expected_close_date: Optional[datetime] = None
-    extra_data: Dict[str, Any] = Field(default_factory=dict)
+    expected_close_date: datetime | None = None
+    extra_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class DealCreate(DealBase):
     business_id: UUID
-    pipeline_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
+    pipeline_id: UUID | None = None
+    conversation_id: UUID | None = None
 
 
 class DealUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    contact_name: Optional[str] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-    value: Optional[float] = None
-    currency: Optional[str] = None
-    stage: Optional[str] = None
-    probability: Optional[int] = None
-    priority: Optional[int] = None
-    expected_close_date: Optional[datetime] = None
-    actual_close_date: Optional[datetime] = None
-    close_reason: Optional[str] = None
-    extra_data: Optional[Dict[str, Any]] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    contact_name: str | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    value: float | None = None
+    currency: str | None = None
+    stage: str | None = None
+    probability: int | None = None
+    priority: int | None = None
+    expected_close_date: datetime | None = None
+    actual_close_date: datetime | None = None
+    close_reason: str | None = None
+    extra_data: dict[str, Any] | None = None
+    is_active: bool | None = None
 
 
 class DealResponse(DealBase):
     id: UUID
     business_id: UUID
-    pipeline_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    source_channel: Optional[str] = None
-    source_campaign: Optional[str] = None
-    actual_close_date: Optional[datetime] = None
-    close_reason: Optional[str] = None
+    pipeline_id: UUID | None = None
+    conversation_id: UUID | None = None
+    source_channel: str | None = None
+    source_campaign: str | None = None
+    actual_close_date: datetime | None = None
+    close_reason: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -106,7 +107,7 @@ class LeadScoreResponse(BaseModel):
     behavioral_score: int
     recency_score: int
     classification: str
-    commentary: Optional[str] = None
+    commentary: str | None = None
     last_calculated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -114,14 +115,14 @@ class LeadScoreResponse(BaseModel):
 
 class MoveDealRequest(BaseModel):
     stage: str
-    order: Optional[int] = None
+    order: int | None = None
 
 
 class CRMSummaryResponse(BaseModel):
     total_deals: int
     total_value: float
-    deals_by_stage: Dict[str, int]
-    value_by_stage: Dict[str, float]
+    deals_by_stage: dict[str, int]
+    value_by_stage: dict[str, float]
     avg_deal_value: float
     win_rate: float
     hot_leads: int

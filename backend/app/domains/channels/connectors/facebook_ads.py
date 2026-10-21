@@ -4,12 +4,13 @@ Captures leads from Facebook Lead Ads and Instagram Lead Ads.
 Docs: https://developers.facebook.com/docs/marketing-api/guides/lead-ads/
 """
 
-import httpx
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class FacebookAdsConnector(BaseChannelConnector):
@@ -93,7 +94,7 @@ class FacebookAdsConnector(BaseChannelConnector):
         phone = lead_fields.get("phone_number", lead_fields.get("phone", ""))
         
         # Build content from available fields
-        content_parts = [f"Nuevo lead desde Facebook Ads"]
+        content_parts = ["Nuevo lead desde Facebook Ads"]
         if full_name:
             content_parts.append(f"Nombre: {full_name}")
         if email:

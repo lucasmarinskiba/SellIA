@@ -3,10 +3,11 @@ Cold email sequence generation + sending.
 Uses Efti (cold email) + Kennedy (80/20 ROI) frameworks.
 """
 import os
-import httpx
 from datetime import datetime
-from pydantic import BaseModel
+
+import httpx
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/sequences", tags=["email_sequences"])
 

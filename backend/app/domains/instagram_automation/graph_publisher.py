@@ -16,8 +16,9 @@ Sin estas dos variables, publish_image()/publish_reel() fallan con
 InstagramNotConfiguredError en vez de simular un post exitoso — coherente
 con la regla de integridad del framework FOMO: nada se "publica" si no es real.
 """
-import os
 import asyncio
+import os
+
 import httpx
 
 

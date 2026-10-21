@@ -1,9 +1,9 @@
 """Phase 13: Channel-specific marketing strategies."""
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +29,22 @@ class ChannelAction:
 class ChannelPlan:
     channel: str
     priority: ChannelPriority
-    actions: List[ChannelAction] = field(default_factory=list)
+    actions: list[ChannelAction] = field(default_factory=list)
     expected_leads_per_month: int = 0
     estimated_conversion_rate: float = 0.2
     budget_recommendation: str = ""
     timeline_to_first_lead_days: int = 7
-    quick_wins: List[str] = field(default_factory=list)
+    quick_wins: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ChannelStrategy:
     business_model: str
-    channels: List[ChannelPlan] = field(default_factory=list)
+    channels: list[ChannelPlan] = field(default_factory=list)
     total_expected_leads_per_month: int = 0
     estimated_monthly_cost: int = 0
-    priority_order: List[str] = field(default_factory=list)
-    phased_approach: List[Dict[str, Any]] = field(default_factory=list)
+    priority_order: list[str] = field(default_factory=list)
+    phased_approach: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ChannelStrategyGenerator:

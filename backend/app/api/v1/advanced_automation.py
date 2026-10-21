@@ -1,8 +1,9 @@
 """Phases 14-17: Advanced analytics, automation, and retention."""
 
-from fastapi import APIRouter, Query
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from fastapi import APIRouter, Query
 
 from app.domains.analytics.seller_analytics import SellerAnalyticsEngine
 from app.domains.automation.performance_optimizer import PerformanceOptimizer
@@ -22,7 +23,7 @@ retention_engine = RetentionEngine()
 
 
 @router.get("/analytics/dashboard/{seller_id}")
-async def get_seller_dashboard(seller_id: str) -> Dict[str, Any]:
+async def get_seller_dashboard(seller_id: str) -> dict[str, Any]:
     """Get complete seller analytics dashboard."""
 
     try:
@@ -68,7 +69,7 @@ async def get_seller_dashboard(seller_id: str) -> Dict[str, Any]:
 
 
 @router.get("/analytics/channel-rankings/{seller_id}")
-async def get_channel_rankings(seller_id: str) -> Dict[str, Any]:
+async def get_channel_rankings(seller_id: str) -> dict[str, Any]:
     """Get ranked channels by performance."""
 
     channels = analytics_engine.get_channel_performance(seller_id)
@@ -99,7 +100,7 @@ async def recommend_optimization_strategy(
     seller_id: str = Query(...),
     roi: float = Query(2.0),
     growth_rate: float = Query(0.10),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Recommend optimization strategy based on performance."""
 
     try:
@@ -125,7 +126,7 @@ async def optimize_budget_allocation(
     seller_id: str = Query(...),
     total_budget: float = Query(1000.0),
     strategy: str = Query("balanced"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate optimized budget allocation across channels."""
 
     try:
@@ -167,7 +168,7 @@ async def optimize_budget_allocation(
 
 
 @router.post("/retention/analyze-customer/{customer_id}")
-async def analyze_customer_churn_risk(customer_id: str) -> Dict[str, Any]:
+async def analyze_customer_churn_risk(customer_id: str) -> dict[str, Any]:
     """Analyze customer churn risk and generate retention plan."""
 
     try:
@@ -211,7 +212,7 @@ async def analyze_customer_churn_risk(customer_id: str) -> Dict[str, Any]:
 
 
 @router.get("/retention/high-value-at-risk")
-async def get_high_value_at_risk_customers() -> Dict[str, Any]:
+async def get_high_value_at_risk_customers() -> dict[str, Any]:
     """Get list of high-value customers at risk of churn."""
 
     # Mock data
@@ -244,7 +245,7 @@ async def get_high_value_at_risk_customers() -> Dict[str, Any]:
 
 
 @router.post("/retention/upsell-opportunity/{customer_id}")
-async def identify_upsell_opportunity(customer_id: str) -> Dict[str, Any]:
+async def identify_upsell_opportunity(customer_id: str) -> dict[str, Any]:
     """Identify upsell opportunity for customer."""
 
     # Mock analysis

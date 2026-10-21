@@ -1,10 +1,10 @@
 """Instagram automation API: @sell_.ia + FOMO Intelligence + FeedIA synergy."""
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-from app.domains.instagram_automation.service import InstagramAutomationAgent
-from app.domains.instagram_automation.graph_publisher import InstagramGraphPublisher
 
+from app.core.database import get_db
+from app.domains.instagram_automation.graph_publisher import InstagramGraphPublisher
+from app.domains.instagram_automation.service import InstagramAutomationAgent
 
 router = APIRouter(prefix="/api/v1/instagram-automation", tags=["instagram-automation"])
 

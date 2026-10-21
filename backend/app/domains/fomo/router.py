@@ -2,17 +2,17 @@
 FOMO Engine Router - Star Player
 """
 
-from typing import Annotated, Optional
-from uuid import UUID
 from decimal import Decimal
+from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.fomo.service import fomo_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/fomo", tags=["fomo"])
 
@@ -31,7 +31,7 @@ async def create_campaign(
     campaign_type: str = Body(...),
     headline: str = Body(...),
     config: dict = Body(...),
-    trigger_type: Optional[str] = Body(None),
+    trigger_type: str | None = Body(None),
 ):
     """Create new FOMO campaign (draft status)."""
     campaign = await fomo_service.create_campaign(
@@ -94,9 +94,9 @@ async def log_event(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     event_type: str = Body(...),
-    customer_id: Optional[UUID] = Body(None),
-    product_id: Optional[UUID] = Body(None),
-    metadata: Optional[dict] = Body(None),
+    customer_id: UUID | None = Body(None),
+    product_id: UUID | None = Body(None),
+    metadata: dict | None = Body(None),
 ):
     """Log event (purchase, view, add_to_cart, abandoned)."""
     event = await fomo_service.log_event(
@@ -148,7 +148,7 @@ async def get_recent_events(
 async def get_event_count(
     campaign_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    event_type: Optional[str] = Query(None),
+    event_type: str | None = Query(None),
     hours: int = Query(24, ge=1, le=168),
 ):
     """Get count of events in time window."""
@@ -273,7 +273,7 @@ async def get_all_campaigns_with_analytics(
 @router.get("/campaigns-active")
 async def get_active_campaigns(
     db: Annotated[AsyncSession, Depends(get_db)],
-    page: Optional[str] = Query(None),
+    page: str | None = Query(None),
 ):
     """Get active campaigns for page display."""
     campaigns = await fomo_service.get_active_campaigns(db, page_path=page)

@@ -22,13 +22,13 @@ Características:
 Líneas: 600+ código
 """
 
-import logging
 import asyncio
+import logging
 import time
-from typing import Dict, Any, Optional, List, Callable, Tuple
-from datetime import datetime
+from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,8 @@ class PatternResult:
     success: bool
     timestamp: datetime
     duration_ms: int
-    data_extracted: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    data_extracted: dict[str, Any] | None = None
+    error: str | None = None
     steps_executed: int = 0
     steps_total: int = 0
 
@@ -75,11 +75,11 @@ class LoginPattern:
         login_url: str,
         email: str,
         password: str,
-        email_field_selector: Optional[str] = None,
-        password_field_selector: Optional[str] = None,
-        submit_button_selector: Optional[str] = None,
-        success_indicator: Optional[str] = None,
-        two_fa_handler: Optional[Callable] = None
+        email_field_selector: str | None = None,
+        password_field_selector: str | None = None,
+        submit_button_selector: str | None = None,
+        success_indicator: str | None = None,
+        two_fa_handler: Callable | None = None
     ) -> PatternResult:
         """Ejecutar login pattern."""
         start_time = time.time()
@@ -155,7 +155,7 @@ class LoginPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Login pattern failed: {str(e)}")
+            logger.error(f"Login pattern failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -192,9 +192,9 @@ class SearchPattern:
     async def execute(
         self,
         query: str,
-        search_box_selector: Optional[str] = None,
-        filters: Optional[Dict[str, str]] = None,
-        result_selector: Optional[str] = None,
+        search_box_selector: str | None = None,
+        filters: dict[str, str] | None = None,
+        result_selector: str | None = None,
         max_results: int = 10
     ) -> PatternResult:
         """Ejecutar search pattern."""
@@ -257,7 +257,7 @@ class SearchPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Search pattern failed: {str(e)}")
+            logger.error(f"Search pattern failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -269,7 +269,7 @@ class SearchPattern:
                 steps_total=total_steps
             )
 
-    async def _extract_search_results(self, max_results: int) -> List[Dict[str, Any]]:
+    async def _extract_search_results(self, max_results: int) -> list[dict[str, Any]]:
         """Extraer resultados de búsqueda."""
         results = []
         try:
@@ -277,7 +277,7 @@ class SearchPattern:
             # Por ahora, retornar estructura
             pass
         except Exception as e:
-            logger.debug(f"Error extracting results: {str(e)}")
+            logger.debug(f"Error extracting results: {e!s}")
 
         return results
 
@@ -305,10 +305,10 @@ class FormFillPattern:
 
     async def execute(
         self,
-        form_data: Dict[str, Any],
-        form_selector: Optional[str] = None,
-        submit_button_selector: Optional[str] = None,
-        success_indicator: Optional[str] = None
+        form_data: dict[str, Any],
+        form_selector: str | None = None,
+        submit_button_selector: str | None = None,
+        success_indicator: str | None = None
     ) -> PatternResult:
         """Ejecutar form fill pattern."""
         start_time = time.time()
@@ -386,7 +386,7 @@ class FormFillPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Form fill pattern failed: {str(e)}")
+            logger.error(f"Form fill pattern failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -398,7 +398,7 @@ class FormFillPattern:
                 steps_total=total_steps
             )
 
-    async def _identify_form_fields(self, field_names: List[str]) -> Dict[str, str]:
+    async def _identify_form_fields(self, field_names: list[str]) -> dict[str, str]:
         """Identificar campos del formulario."""
         fields = {}
         for field_name in field_names:
@@ -414,7 +414,7 @@ class FormFillPattern:
 
         return fields
 
-    async def _validate_fields(self, fields: Dict[str, str]) -> List[str]:
+    async def _validate_fields(self, fields: dict[str, str]) -> list[str]:
         """Validar campos."""
         errors = []
         # Validaciones específicas por campo
@@ -449,8 +449,8 @@ class PaginationPattern:
     async def execute(
         self,
         max_pages: int = 10,
-        data_extractor: Optional[Callable] = None,
-        next_button_selector: Optional[str] = None
+        data_extractor: Callable | None = None,
+        next_button_selector: str | None = None
     ) -> PatternResult:
         """Ejecutar pagination pattern."""
         start_time = time.time()
@@ -488,7 +488,7 @@ class PaginationPattern:
                     await asyncio.sleep(2)  # Esperar carga
 
                 except Exception as e:
-                    logger.info(f"Pagination ended: {str(e)}")
+                    logger.info(f"Pagination ended: {e!s}")
                     break
 
                 steps += 1
@@ -508,7 +508,7 @@ class PaginationPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Pagination pattern failed: {str(e)}")
+            logger.error(f"Pagination pattern failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -543,9 +543,9 @@ class ModalHandlingPattern:
 
     async def execute(
         self,
-        modal_selector: Optional[str] = None,
+        modal_selector: str | None = None,
         action: str = "close",
-        close_button_selector: Optional[str] = None
+        close_button_selector: str | None = None
     ) -> PatternResult:
         """Ejecutar modal handling pattern."""
         start_time = time.time()
@@ -603,7 +603,7 @@ class ModalHandlingPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Modal handling failed: {str(e)}")
+            logger.error(f"Modal handling failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -638,8 +638,8 @@ class UploadPattern:
     async def execute(
         self,
         file_path: str,
-        upload_button_selector: Optional[str] = None,
-        success_indicator: Optional[str] = None
+        upload_button_selector: str | None = None,
+        success_indicator: str | None = None
     ) -> PatternResult:
         """Ejecutar upload pattern."""
         start_time = time.time()
@@ -691,7 +691,7 @@ class UploadPattern:
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"Upload pattern failed: {str(e)}")
+            logger.error(f"Upload pattern failed: {e!s}")
 
             return PatternResult(
                 pattern_name=self.pattern_name,
@@ -719,7 +719,7 @@ class InteractionPatternLibrary:
         self.pagination = PaginationPattern(computer_use_engine)
         self.modal = ModalHandlingPattern(computer_use_engine)
         self.upload = UploadPattern(computer_use_engine)
-        self.execution_history: List[PatternResult] = []
+        self.execution_history: list[PatternResult] = []
 
     async def execute_pattern(
         self,
@@ -747,7 +747,7 @@ class InteractionPatternLibrary:
             return result
 
         except Exception as e:
-            logger.error(f"Pattern execution failed: {str(e)}")
+            logger.error(f"Pattern execution failed: {e!s}")
             return PatternResult(
                 pattern_name=pattern_name,
                 success=False,
@@ -758,12 +758,12 @@ class InteractionPatternLibrary:
 
 
 __all__ = [
+    "FormFillPattern",
     "InteractionPatternLibrary",
     "LoginPattern",
-    "SearchPattern",
-    "FormFillPattern",
-    "PaginationPattern",
     "ModalHandlingPattern",
-    "UploadPattern",
+    "PaginationPattern",
     "PatternResult",
+    "SearchPattern",
+    "UploadPattern",
 ]

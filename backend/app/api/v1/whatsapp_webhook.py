@@ -20,8 +20,9 @@ PRECIOS: Poundstone
 COMUNIDAD: Spinks
 STARTUP: Ries
 """
-import os
 import logging
+import os
+
 import httpx
 from fastapi import APIRouter, Request, Response
 

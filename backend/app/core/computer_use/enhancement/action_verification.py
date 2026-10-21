@@ -20,15 +20,14 @@ Características:
 Líneas: 500+ código
 """
 
-import logging
 import asyncio
-import time
-from typing import Dict, Any, Optional, List, Callable
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
 import hashlib
-import json
+import logging
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +70,9 @@ class VerificationResult:
     status: VerificationStatus
     timestamp: datetime
     verification_time_ms: int
-    details: Dict[str, Any] = field(default_factory=dict)
-    evidence: List[str] = field(default_factory=list)  # Capturas, logs, etc.
-    error: Optional[str] = None
+    details: dict[str, Any] = field(default_factory=dict)
+    evidence: list[str] = field(default_factory=list)  # Capturas, logs, etc.
+    error: str | None = None
 
 
 @dataclass
@@ -85,7 +84,7 @@ class ActionSnapshot:
     element_count: int
     visible_text: str
     dom_hash: str
-    screenshot_path: Optional[str] = None
+    screenshot_path: str | None = None
 
 
 # ============================================================================
@@ -103,10 +102,10 @@ class FormSubmissionVerifier:
     async def verify_form_submission(
         self,
         form_name: str,
-        expected_redirect_url: Optional[str] = None,
-        expected_message: Optional[str] = None,
-        db_table: Optional[str] = None,
-        db_record_id: Optional[str] = None
+        expected_redirect_url: str | None = None,
+        expected_message: str | None = None,
+        db_table: str | None = None,
+        db_record_id: str | None = None
     ) -> VerificationResult:
         """
         Verificar envío de formulario.
@@ -176,7 +175,7 @@ class FormSubmissionVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Form verification failed: {str(e)}")
+            logger.error(f"Form verification failed: {e!s}")
             return VerificationResult(
                 action_id=action_id,
                 action_type="form_submission",
@@ -187,7 +186,7 @@ class FormSubmissionVerifier:
                 error=str(e)
             )
 
-    async def _verify_success_message(self, expected_message: Optional[str]) -> bool:
+    async def _verify_success_message(self, expected_message: str | None) -> bool:
         """Verificar mensaje de éxito en UI."""
         try:
             # Patrones comunes de éxito
@@ -219,14 +218,14 @@ class FormSubmissionVerifier:
             return False
 
         except Exception as e:
-            logger.debug(f"Success message verification failed: {str(e)}")
+            logger.debug(f"Success message verification failed: {e!s}")
             return False
 
     async def _verify_db_insert(
         self,
         table: str,
         record_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Verificar inserción en BD."""
         if not self.db:
             return None
@@ -248,7 +247,7 @@ class FormSubmissionVerifier:
             return None
 
         except Exception as e:
-            logger.warning(f"DB verification failed: {str(e)}")
+            logger.warning(f"DB verification failed: {e!s}")
             return None
 
 
@@ -266,7 +265,7 @@ class FileUploadVerifier:
         self,
         file_path: str,
         expected_filename: str,
-        upload_area_selector: Optional[str] = None
+        upload_area_selector: str | None = None
     ) -> VerificationResult:
         """
         Verificar subida de archivo.
@@ -309,7 +308,7 @@ class FileUploadVerifier:
             )
 
         except Exception as e:
-            logger.error(f"File upload verification failed: {str(e)}")
+            logger.error(f"File upload verification failed: {e!s}")
             return VerificationResult(
                 action_id=action_id,
                 action_type="file_upload",
@@ -406,7 +405,7 @@ class PaymentVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Payment verification failed: {str(e)}")
+            logger.error(f"Payment verification failed: {e!s}")
             return VerificationResult(
                 action_id=action_id,
                 action_type="payment",
@@ -421,7 +420,7 @@ class PaymentVerifier:
         self,
         transaction_id: str,
         amount: float
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Verificar con el gateway de pago."""
         if not self.payment_gateway:
             return None
@@ -440,10 +439,10 @@ class PaymentVerifier:
             return None
 
         except Exception as e:
-            logger.debug(f"Payment gateway verification failed: {str(e)}")
+            logger.debug(f"Payment gateway verification failed: {e!s}")
             return None
 
-    async def _verify_payment_in_ui(self) -> Optional[Dict[str, Any]]:
+    async def _verify_payment_in_ui(self) -> dict[str, Any] | None:
         """Verificar pago en UI."""
         try:
             # Buscar confirmación de pago
@@ -523,7 +522,7 @@ class MessageDeliveryVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Message verification failed: {str(e)}")
+            logger.error(f"Message verification failed: {e!s}")
             return VerificationResult(
                 action_id=action_id,
                 action_type="message_send",
@@ -574,7 +573,7 @@ class NavigationVerifier:
     async def verify_navigation(
         self,
         target_url: str,
-        expected_title: Optional[str] = None
+        expected_title: str | None = None
     ) -> VerificationResult:
         """Verificar que navegación fue exitosa."""
         start_time = time.time()
@@ -628,7 +627,7 @@ class NavigationVerifier:
             )
 
         except Exception as e:
-            logger.error(f"Navigation verification failed: {str(e)}")
+            logger.error(f"Navigation verification failed: {e!s}")
             return VerificationResult(
                 action_id=action_id,
                 action_type="navigation",
@@ -654,7 +653,7 @@ class VerificationCoordinator:
         self.payment_verifier = PaymentVerifier(computer_use_engine, payment_gateway)
         self.message_verifier = MessageDeliveryVerifier(computer_use_engine)
         self.navigation_verifier = NavigationVerifier(computer_use_engine)
-        self.verification_history: List[VerificationResult] = []
+        self.verification_history: list[VerificationResult] = []
 
     async def verify_action(
         self,
@@ -693,7 +692,7 @@ class VerificationCoordinator:
             return result
 
         except Exception as e:
-            logger.error(f"Verification failed: {str(e)}", exc_info=True)
+            logger.error(f"Verification failed: {e!s}", exc_info=True)
             return VerificationResult(
                 action_id="error",
                 action_type=action_type,
@@ -706,13 +705,13 @@ class VerificationCoordinator:
 
 
 __all__ = [
-    "VerificationCoordinator",
-    "FormSubmissionVerifier",
     "FileUploadVerifier",
-    "PaymentVerifier",
+    "FormSubmissionVerifier",
     "MessageDeliveryVerifier",
     "NavigationVerifier",
+    "PaymentVerifier",
+    "VerificationCoordinator",
     "VerificationResult",
-    "VerificationType",
     "VerificationStatus",
+    "VerificationType",
 ]

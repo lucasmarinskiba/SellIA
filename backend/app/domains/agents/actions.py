@@ -5,26 +5,23 @@ realmente en el sistema, no solo sugerir. Cada acción es una función async
 que recibe parámetros del orchestrator y ejecuta operaciones reales.
 """
 
-import json
-import uuid
-from typing import Dict, List, Optional, Any
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.domains.agents.services import AgentService
-from app.domains.agents.models import AgentPersonality
 
 
 class SellIAActionExecutor:
     """Ejecuta acciones complejas del sistema basadas en intenciones de SellIA."""
 
-    def __init__(self, db: AsyncSession, user_id: Any, business_id: Optional[str] = None):
+    def __init__(self, db: AsyncSession, user_id: Any, business_id: str | None = None):
         self.db = db
         self.user_id = user_id
         self.business_id = business_id
         self.agent_service = AgentService(db)
 
-    async def execute(self, action_type: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, action_type: str, parameters: dict[str, Any]) -> dict[str, Any]:
         """Ejecuta una acción y retorna resultado estructurado."""
         executors = {
             "CREATE_SEQUENCE": self._create_sequence,
@@ -55,9 +52,13 @@ class SellIAActionExecutor:
     # Pipeline Stage Agent
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def _activate_pipeline_agent(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _activate_pipeline_agent(self, params: dict[str, Any]) -> dict[str, Any]:
         """Activa un agente especializado de etapa del pipeline con contexto de la oportunidad."""
-        from app.domains.agents.pipeline_agents import PipelineAgentEngine, PipelineStage, PipelineContext
+        from app.domains.agents.pipeline_agents import (
+            PipelineAgentEngine,
+            PipelineContext,
+            PipelineStage,
+        )
 
         stage_str = params.get("stage", "prospecting")
         deal_id = params.get("deal_id")
@@ -115,7 +116,7 @@ class SellIAActionExecutor:
     # Negotiation Expert
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def _negotiate(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _negotiate(self, params: dict[str, Any]) -> dict[str, Any]:
         """Activa un experto en negociación con la estrategia apropiada para la situación."""
         expert = params.get("expert", "chris-voss")
         situation = params.get("situation", "")
@@ -229,7 +230,7 @@ class SellIAActionExecutor:
     # Grand Slam Offer Builder (Hormozi)
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def _build_offer(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _build_offer(self, params: dict[str, Any]) -> dict[str, Any]:
         """Construye una Grand Slam Offer usando la Ecuación de Valor de Alex Hormozi."""
         product_name = params.get("product_name", "Tu producto")
         target_audience = params.get("target_audience", "Tu cliente ideal")
@@ -301,12 +302,14 @@ class SellIAActionExecutor:
     # System Health Check
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def _system_health(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _system_health(self, params: dict[str, Any]) -> dict[str, Any]:
         """Consulta el estado de salud del sistema autónomo."""
         include_recommendations = params.get("include_recommendations", True)
 
         try:
-            from app.domains.agents.autonomous.operations_center import get_operations_center
+            from app.domains.agents.autonomous.operations_center import (
+                get_operations_center,
+            )
             center = await get_operations_center(self.db)
             snapshot = await center.run_quick_health_check()
             health_data = snapshot.to_dict()
@@ -358,7 +361,7 @@ class SellIAActionExecutor:
                 ],
             }
 
-    async def _create_sequence(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_sequence(self, params: dict[str, Any]) -> dict[str, Any]:
         """Crea una secuencia de email/WhatsApp/SMS en el sistema."""
         sequence_type = params.get("sequence_type", "email")
         sequence_name = params.get("sequence_name", "Nueva secuencia")
@@ -388,7 +391,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    def _default_sequence_steps(self, seq_type: str, name: str) -> List[Dict]:
+    def _default_sequence_steps(self, seq_type: str, name: str) -> list[dict]:
         """Genera pasos por defecto según tipo de secuencia."""
         if seq_type == "email":
             return [
@@ -412,7 +415,7 @@ class SellIAActionExecutor:
                 {"step": 3, "delay": "3d", "content": "Oferta exclusiva solo para suscriptores: 20% OFF. Válido 48hs. [link]"},
             ]
 
-    def _calculate_sequence_duration(self, steps: List[Dict]) -> str:
+    def _calculate_sequence_duration(self, steps: list[dict]) -> str:
         """Calcula duración total estimada de la secuencia."""
         total_days = 0
         for step in steps:
@@ -424,7 +427,7 @@ class SellIAActionExecutor:
                     pass
         return f"{total_days} días"
 
-    async def _setup_automation(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _setup_automation(self, params: dict[str, Any]) -> dict[str, Any]:
         """Configura una automatización de workflow."""
         automation_name = params.get("automation_name", "Nueva automatización")
         trigger = params.get("trigger", "new_lead")
@@ -448,7 +451,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    def _build_automation_nodes(self, trigger: str, actions: List[str]) -> List[Dict]:
+    def _build_automation_nodes(self, trigger: str, actions: list[str]) -> list[dict]:
         """Construye nodos de automatización para el builder."""
         nodes = [{"id": "trigger", "type": "trigger", "data": {"event": trigger}}]
         for i, action in enumerate(actions):
@@ -460,7 +463,7 @@ class SellIAActionExecutor:
             })
         return nodes
 
-    async def _generate_playbook(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_playbook(self, params: dict[str, Any]) -> dict[str, Any]:
         """Genera un playbook de ventas o negocio."""
         playbook_type = params.get("playbook_type", "sales")
         topic = params.get("topic", "Ventas")
@@ -507,7 +510,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    async def _analyze_business(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _analyze_business(self, params: dict[str, Any]) -> dict[str, Any]:
         """Analiza el negocio del usuario."""
         analysis_type = params.get("analysis_type", "general")
 
@@ -557,7 +560,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    async def _create_content_calendar(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_content_calendar(self, params: dict[str, Any]) -> dict[str, Any]:
         """Genera un calendario de contenido semanal/mensual."""
         period = params.get("period", "weekly")
         platforms = params.get("platforms", ["instagram", "tiktok"])
@@ -597,7 +600,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    async def _multi_agent_panel(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _multi_agent_panel(self, params: dict[str, Any]) -> dict[str, Any]:
         """Consulta múltiples expertos simultáneamente."""
         agent_slugs = params.get("agent_slugs", [])
         question = params.get("question", "")
@@ -629,7 +632,7 @@ class SellIAActionExecutor:
             ],
         }
 
-    async def _computer_use(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _computer_use(self, params: dict[str, Any]) -> dict[str, Any]:
         """Crea una sesión de Computer Use para automatización visual."""
         from app.api.v1.computer_use import create_computer_use_from_orchestrator
 
@@ -649,7 +652,7 @@ class SellIAActionExecutor:
             )
             return {
                 "success": True,
-                "message": f"Sesión de automatización creada. Conectate a la Caja de Cristal para supervisar.",
+                "message": "Sesión de automatización creada. Conectate a la Caja de Cristal para supervisar.",
                 "session_id": str(result.session_id),
                 "ws_url": result.ws_url,
                 "task": result.task,

@@ -1,13 +1,12 @@
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.kpi_architect.service import KPIArchitectService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/kpi-architect", tags=["kpi-architect"])
 

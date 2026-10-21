@@ -7,15 +7,14 @@ Modelos: intent classifier, response quality predictor, lead scorer.
 
 import os
 import pickle
-import uuid
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.feedback.models import MLTrainingData
 from app.core.logger import get_logger
+from app.domains.feedback.models import MLTrainingData
 
 logger = get_logger(__name__)
 
@@ -52,7 +51,7 @@ class SimpleIntentClassifier:
             self.classifier.fit(X_train_vec, y_train)
 
             self.accuracy = self.classifier.score(X_test_vec, y_test)
-            self.version = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            self.version = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
             logger.info(f"Trained intent classifier v{self.version} with accuracy {self.accuracy:.3f}")
             return self.accuracy
@@ -60,7 +59,7 @@ class SimpleIntentClassifier:
             logger.error(f"Failed to train intent classifier: {e}")
             return 0.0
 
-    def predict(self, text: str) -> Optional[str]:
+    def predict(self, text: str) -> str | None:
         if not self.vectorizer or not self.classifier:
             return None
         vec = self.vectorizer.transform([text])
@@ -83,7 +82,7 @@ class SimpleIntentClassifier:
             return False
 
 
-async def train_all_models(db: AsyncSession) -> Dict[str, float]:
+async def train_all_models(db: AsyncSession) -> dict[str, float]:
     """Entrena todos los modelos ML con datos recolectados."""
     results = {}
 
@@ -119,7 +118,7 @@ async def train_all_models(db: AsyncSession) -> Dict[str, float]:
     return results
 
 
-async def get_model_status() -> Dict[str, Any]:
+async def get_model_status() -> dict[str, Any]:
     """Obtiene el estado de los modelos entrenados."""
     status = {}
     for model_name in ["intent_classifier", "response_quality", "lead_scorer"]:
@@ -128,7 +127,7 @@ async def get_model_status() -> Dict[str, Any]:
             mtime = os.path.getmtime(path)
             status[model_name] = {
                 "exists": True,
-                "last_trained": datetime.fromtimestamp(mtime, timezone.utc).isoformat(),
+                "last_trained": datetime.fromtimestamp(mtime, UTC).isoformat(),
             }
         else:
             status[model_name] = {"exists": False}

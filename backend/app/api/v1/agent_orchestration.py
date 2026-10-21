@@ -3,15 +3,14 @@ Agent Orchestration API - Multi-agent routing and orchestration endpoints.
 Phase 7: Multi-Agent Orchestration
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
 
 from app.domains.agents.agent_router import AgentRouter
 from app.domains.agents.base_agent import AgentContext, AgentType
-from app.core.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["agent-orchestration"])
 agent_router = AgentRouter()
@@ -25,12 +24,12 @@ class RouteLeadRequest:
     def __init__(
         self,
         lead_id: str,
-        company: Optional[str] = None,
-        contact_name: Optional[str] = None,
+        company: str | None = None,
+        contact_name: str | None = None,
         intent_score: float = 0.5,
-        budget: Optional[str] = None,
-        timeline: Optional[str] = None,
-        source: Optional[str] = None,
+        budget: str | None = None,
+        timeline: str | None = None,
+        source: str | None = None,
     ):
         self.lead_id = lead_id
         self.company = company
@@ -44,13 +43,13 @@ class RouteLeadRequest:
 @router.post("/orchestrate/route-lead")
 async def route_lead(
     lead_id: str = Query(..., description="Unique lead identifier"),
-    company: Optional[str] = Query(None, description="Company name"),
-    contact_name: Optional[str] = Query(None, description="Contact person name"),
+    company: str | None = Query(None, description="Company name"),
+    contact_name: str | None = Query(None, description="Contact person name"),
     intent_score: float = Query(0.5, ge=0.0, le=1.0, description="Intent score 0-1"),
-    budget: Optional[str] = Query(None, description="Budget range"),
-    timeline: Optional[str] = Query(None, description="Purchasing timeline"),
-    source: Optional[str] = Query(None, description="Lead source"),
-) -> Dict[str, Any]:
+    budget: str | None = Query(None, description="Budget range"),
+    timeline: str | None = Query(None, description="Purchasing timeline"),
+    source: str | None = Query(None, description="Lead source"),
+) -> dict[str, Any]:
     """
     Route a lead through the agent pipeline.
 
@@ -93,13 +92,13 @@ async def route_lead(
 
     except Exception as e:
         logger.exception(f"Lead routing failed: {lead_id}")
-        raise HTTPException(status_code=500, detail=f"Routing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Routing failed: {e!s}")
 
 
 @router.post("/orchestrate/batch-route")
 async def batch_route_leads(
-    leads: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    leads: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Route multiple leads in parallel for high-throughput processing.
 
@@ -152,11 +151,11 @@ async def batch_route_leads(
 
     except Exception as e:
         logger.exception("Batch routing failed")
-        raise HTTPException(status_code=500, detail=f"Batch routing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch routing failed: {e!s}")
 
 
 @router.get("/orchestrate/agent-performance")
-async def get_agent_performance() -> Dict[str, Any]:
+async def get_agent_performance() -> dict[str, Any]:
     """
     Get real-time performance metrics for all agents.
 
@@ -188,12 +187,12 @@ async def get_agent_performance() -> Dict[str, Any]:
     except Exception as e:
         logger.exception("Performance retrieval failed")
         raise HTTPException(
-            status_code=500, detail=f"Performance retrieval failed: {str(e)}"
+            status_code=500, detail=f"Performance retrieval failed: {e!s}"
         )
 
 
 @router.get("/orchestrate/agents")
-async def list_agents() -> Dict[str, Any]:
+async def list_agents() -> dict[str, Any]:
     """List all available agents with their specializations."""
     agents_info = []
 
@@ -226,7 +225,7 @@ async def list_agents() -> Dict[str, Any]:
 
 
 @router.get("/orchestrate/workflow-example")
-async def get_workflow_example() -> Dict[str, Any]:
+async def get_workflow_example() -> dict[str, Any]:
     """Get example lead flow through all agents."""
     return {
         "status": "success",

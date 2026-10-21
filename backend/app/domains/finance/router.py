@@ -1,25 +1,28 @@
 """Finance API Router."""
 
-from fastapi import APIRouter, Depends, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
+from app.domains.finance.autopilot import FinanceAutopilotEngine
 from app.domains.finance.schemas import (
-    SalesInvoiceCreate, SalesInvoiceResponse,
-    PaymentReminderResponse, AccountsReceivableSnapshotResponse,
-    TaxConfigResponse,
-    FinanceAutopilotStatusResponse,
-    TaxReportResponse,
+    AccountsReceivableSnapshotResponse,
     CashFlowForecastResponse,
     DunningPipelineResponse,
+    FinanceAutopilotStatusResponse,
     FinanceDashboardResponse,
+    PaymentReminderResponse,
+    SalesInvoiceCreate,
+    SalesInvoiceResponse,
+    TaxConfigResponse,
+    TaxReportResponse,
 )
 from app.domains.finance.services import FinanceService
-from app.domains.finance.autopilot import FinanceAutopilotEngine
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/finance", tags=["Finance"])
 
@@ -167,8 +170,8 @@ async def get_cash_flow_forecast(
 @router.get("/autopilot/tax-report", response_model=TaxReportResponse)
 async def get_tax_report(
     business_id: UUID,
-    month: int = Query(datetime.now(timezone.utc).month, ge=1, le=12),
-    year: int = Query(datetime.now(timezone.utc).year, ge=2020, le=2100),
+    month: int = Query(datetime.now(UTC).month, ge=1, le=12),
+    year: int = Query(datetime.now(UTC).year, ge=2020, le=2100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

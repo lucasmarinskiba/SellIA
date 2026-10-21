@@ -1,9 +1,9 @@
 """Phase 15: Auto-scaling and performance optimization."""
 
-from dataclasses import dataclass
-from typing import Dict, Any, List
-from enum import Enum
 import logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +27,18 @@ class ChannelAllocation:
 @dataclass
 class OptimizationRecommendation:
     strategy: OptimizationStrategy
-    channel_allocations: List[ChannelAllocation]
+    channel_allocations: list[ChannelAllocation]
     total_recommended_budget: float
     expected_total_revenue: float
     expected_roi: float
     rationale: str
-    actions: List[str]
+    actions: list[str]
 
 
 class PerformanceOptimizer:
     """Auto-optimize seller performance"""
 
-    def analyze_performance(self, seller_metrics: Dict[str, Any]) -> OptimizationStrategy:
+    def analyze_performance(self, seller_metrics: dict[str, Any]) -> OptimizationStrategy:
         """Determine optimal strategy based on current performance"""
 
         roi = seller_metrics.get("roi", 1.0)
@@ -56,7 +56,7 @@ class PerformanceOptimizer:
 
     def optimize_channel_spend(
         self, seller_id: str, total_budget: float, strategy: OptimizationStrategy
-    ) -> List[ChannelAllocation]:
+    ) -> list[ChannelAllocation]:
         """Recommend budget allocation across channels"""
 
         allocations = []
@@ -109,7 +109,7 @@ class PerformanceOptimizer:
     def generate_optimization_plan(
         self,
         seller_id: str,
-        current_metrics: Dict[str, Any],
+        current_metrics: dict[str, Any],
         total_budget: float = 1000.0
     ) -> OptimizationRecommendation:
         """Generate complete optimization plan"""
@@ -136,7 +136,7 @@ class PerformanceOptimizer:
 
         return recommendation
 
-    def _generate_rationale(self, strategy: OptimizationStrategy, metrics: Dict) -> str:
+    def _generate_rationale(self, strategy: OptimizationStrategy, metrics: dict) -> str:
         """Generate explanation for strategy"""
         if strategy == OptimizationStrategy.AGGRESSIVE:
             return "High ROI and growth momentum justify increased spend to capture market share"
@@ -147,14 +147,14 @@ class PerformanceOptimizer:
         else:
             return "Conservative approach recommended - focus on cost efficiency and proven channels"
 
-    def _generate_actions(self, strategy: OptimizationStrategy, allocations: List) -> List[str]:
+    def _generate_actions(self, strategy: OptimizationStrategy, allocations: list) -> list[str]:
         """Generate specific implementation steps"""
         total_leads = sum(a.expected_leads for a in allocations)
         actions = [
             f"1. Allocate budget across {len(allocations)} top channels",
             f"2. Monitor daily leads: target {total_leads} leads",
-            f"3. Track conversion rate weekly",
-            f"4. Adjust bids based on actual ROI",
-            f"5. Review performance bi-weekly"
+            "3. Track conversion rate weekly",
+            "4. Adjust bids based on actual ROI",
+            "5. Review performance bi-weekly"
         ]
         return actions[:5]

@@ -10,12 +10,13 @@ receives is niche/offer-aware instead of generic.
 
 import json
 import uuid
-from typing import Any, Dict
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
+
 from .models import BusinessContext
 
 logger = get_logger(__name__)
@@ -70,7 +71,7 @@ def _build_prompt(ctx: BusinessContext) -> tuple[str, str]:
     return system_prompt, user_prompt
 
 
-def _parse_response(raw: str) -> Dict[str, Any]:
+def _parse_response(raw: str) -> dict[str, Any]:
     json_str = raw.strip()
     if "```json" in json_str:
         json_str = json_str.split("```json")[1].split("```")[0].strip()
@@ -94,7 +95,7 @@ def _parse_response(raw: str) -> Dict[str, Any]:
     }
 
 
-async def generate_communication_angles(db: AsyncSession, ctx: BusinessContext) -> Dict[str, Any]:
+async def generate_communication_angles(db: AsyncSession, ctx: BusinessContext) -> dict[str, Any]:
     """Generates and persists winning communication angles for a BusinessContext."""
     system_prompt, user_prompt = _build_prompt(ctx)
 

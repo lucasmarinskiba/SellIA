@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -20,12 +20,12 @@ router = APIRouter(prefix="/platform-commerce", tags=["Platform Commerce"])
 
 
 class SettingsIn(BaseModel):
-    commission_percent: Optional[float] = Field(None, ge=0, le=100)
-    fixed_fee_per_order: Optional[float] = Field(None, ge=0)
-    cogs_percent: Optional[float] = Field(None, ge=0, le=100)
-    monthly_fixed_cost: Optional[float] = Field(None, ge=0)
-    monthly_ad_spend: Optional[float] = Field(None, ge=0)
-    currency: Optional[str] = Field(None, max_length=3)
+    commission_percent: float | None = Field(None, ge=0, le=100)
+    fixed_fee_per_order: float | None = Field(None, ge=0)
+    cogs_percent: float | None = Field(None, ge=0, le=100)
+    monthly_fixed_cost: float | None = Field(None, ge=0)
+    monthly_ad_spend: float | None = Field(None, ge=0)
+    currency: str | None = Field(None, max_length=3)
 
 
 async def _business_ids(db: AsyncSession, user: User) -> list[Any]:

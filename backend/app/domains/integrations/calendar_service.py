@@ -1,11 +1,8 @@
 """Google Calendar integration for scheduling demos and follow-ups."""
 
-import httpx
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from enum import Enum
-import base64
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +40,7 @@ class CalendarService:
         start_time: datetime,
         duration_minutes: int = 60,
         video_conference: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Schedule event in Google Calendar.
 
@@ -106,7 +103,7 @@ class CalendarService:
         email: str,
         company: str,
         preferred_time: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule product demo."""
         return await self.schedule_event(
             EventType.DEMO,
@@ -124,7 +121,7 @@ class CalendarService:
         email: str,
         reason: str,
         days_from_now: int = 3,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule follow-up call."""
         follow_up_time = datetime.utcnow() + timedelta(days=days_from_now)
         follow_up_time = follow_up_time.replace(hour=10, minute=0)
@@ -146,7 +143,7 @@ class CalendarService:
         company: str,
         deal_size: float,
         preferred_time: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule negotiation/closing call."""
         return await self.schedule_event(
             EventType.NEGOTIATION,
@@ -164,7 +161,7 @@ class CalendarService:
         email: str,
         company: str,
         start_date: datetime,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Schedule onboarding kickoff."""
         return await self.schedule_event(
             EventType.ONBOARDING,

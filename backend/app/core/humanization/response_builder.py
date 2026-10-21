@@ -12,11 +12,10 @@ Flow:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from random import choice
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +35,10 @@ class ResponseTemplate:
     """Template for building responses"""
     intro: str  # Opening line
     body: str  # Main message
-    social_proof: Optional[str]  # "100+ customers love this"
+    social_proof: str | None  # "100+ customers love this"
     cta: str  # Call to action
     closing: str  # Sign-off
-    tone_tags: List[str]  # ["friendly", "professional"]
+    tone_tags: list[str]  # ["friendly", "professional"]
 
 
 class ResponseBuilder:
@@ -196,11 +195,11 @@ class ResponseBuilder:
         base_message: str,
         tone_type: str,
         emotional_state: str,
-        buyer_name: Optional[str] = None,
+        buyer_name: str | None = None,
         cta_type: CTAType = CTAType.SOFT,
-        social_proof_data: Optional[Dict[str, Any]] = None,
+        social_proof_data: dict[str, Any] | None = None,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Build complete human-sounding response.
 
@@ -278,10 +277,10 @@ class ResponseBuilder:
 
     def _build_intro(
         self,
-        buyer_name: Optional[str],
+        buyer_name: str | None,
         emotional_state: str,
         language: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build personalized intro"""
         if not buyer_name:
             return None
@@ -335,9 +334,9 @@ class ResponseBuilder:
 
     def _build_social_proof(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         language: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build social proof statement if data provided"""
         if not data:
             return None
@@ -447,7 +446,7 @@ class ResponseBuilder:
         response: str,
         platform: str,  # "email", "whatsapp", "sms", "instagram"
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimize response for specific platform.
 
@@ -482,7 +481,7 @@ class ResponseBuilder:
             "characteristics": self._get_platform_characteristics(platform),
         }
 
-    def _get_platform_characteristics(self, platform: str) -> Dict[str, Any]:
+    def _get_platform_characteristics(self, platform: str) -> dict[str, Any]:
         """Get platform-specific characteristics"""
         specs = {
             "email": {
@@ -513,7 +512,7 @@ class ResponseBuilder:
         response: str,
         tone: str,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate response quality before sending.
 

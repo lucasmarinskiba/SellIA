@@ -9,37 +9,42 @@ Endpoints de gestión de seguridad:
 """
 
 import hashlib
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
-from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
+from app.core.hibp_service import check_email_breaches
 from app.core.push_notifications import get_vapid_public_key, send_security_push
-from app.core.hibp_service import check_email_breaches, format_breach_alert
-from app.domains.users.models import User
 from app.domains.security.models import (
-    SecurityWebhook, SecurityConfig, UserLoginLog, PushSubscription, UserSession,
-    TwoFABackupCode, BreachCheckLog, DataAccessLog, SecretRotationLog,
-    DataRetentionLog, DataRetentionPolicy,
+    BreachCheckLog,
+    DataAccessLog,
+    DataRetentionLog,
+    PushSubscription,
+    SecretRotationLog,
+    SecurityConfig,
+    SecurityWebhook,
+    UserLoginLog,
+    UserSession,
 )
 from app.domains.security.schemas import (
-    SecurityWebhookCreate,
-    SecurityWebhookResponse,
-    SecurityConfigUpdate,
-    SecurityConfigResponse,
+    AuditLogResponse,
+    BreachCheckResponse,
     LoginLogResponse,
     PushSubscriptionCreate,
     PushSubscriptionResponse,
-    UserSessionResponse,
-    AuditLogResponse,
+    SecurityConfigResponse,
+    SecurityConfigUpdate,
     SecurityStatsResponse,
-    BackupCodeResponse,
-    BreachCheckResponse,
+    SecurityWebhookCreate,
+    SecurityWebhookResponse,
+    UserSessionResponse,
 )
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -62,7 +67,7 @@ async def create_webhook(
     return webhook
 
 
-@router.get("/webhooks", response_model=List[SecurityWebhookResponse])
+@router.get("/webhooks", response_model=list[SecurityWebhookResponse])
 async def list_webhooks(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -138,7 +143,7 @@ async def update_security_config(
 
 # ===== Login logs (propios) =====
 
-@router.get("/login-logs", response_model=List[LoginLogResponse])
+@router.get("/login-logs", response_model=list[LoginLogResponse])
 async def get_my_login_logs(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
@@ -244,7 +249,7 @@ async def test_push(
             body="¡Las notificaciones push están funcionando correctamente en SellIA!",
         )
         return {"detail": "Notificación de prueba enviada"}
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error sending push notification")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -252,7 +257,7 @@ async def test_push(
 
 # ===== Sesiones activas =====
 
-@router.get("/sessions", response_model=List[UserSessionResponse])
+@router.get("/sessions", response_model=list[UserSessionResponse])
 async def get_my_sessions(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -274,7 +279,7 @@ async def get_my_sessions(
         .where(
             UserSession.user_id == current_user.id,
             UserSession.is_revoked == False,
-            UserSession.expires_at > datetime.now(timezone.utc),
+            UserSession.expires_at > datetime.now(UTC),
         )
         .order_by(UserSession.last_active_at.desc())
     )
@@ -355,7 +360,7 @@ async def revoke_all_sessions(
         select(UserSession).where(
             UserSession.user_id == current_user.id,
             UserSession.is_revoked == False,
-            UserSession.expires_at > datetime.now(timezone.utc),
+            UserSession.expires_at > datetime.now(UTC),
         )
     )
     sessions = result.scalars().all()
@@ -372,14 +377,14 @@ async def revoke_all_sessions(
 
 # ===== Admin Audit Logs =====
 
-@router.get("/audit-logs", response_model=List[AuditLogResponse])
+@router.get("/audit-logs", response_model=list[AuditLogResponse])
 async def get_audit_logs(
-    user_id: Optional[UUID] = Query(None),
-    event_type: Optional[str] = Query(None),  # success, failed
-    ip: Optional[str] = Query(None),
-    country: Optional[str] = Query(None),
-    date_from: Optional[datetime] = Query(None),
-    date_to: Optional[datetime] = Query(None),
+    user_id: UUID | None = Query(None),
+    event_type: str | None = Query(None),  # success, failed
+    ip: str | None = Query(None),
+    country: str | None = Query(None),
+    date_from: datetime | None = Query(None),
+    date_to: datetime | None = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -437,7 +442,7 @@ async def get_security_stats(
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
 
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Total logins hoy
     total_logins = await db.scalar(
@@ -467,7 +472,7 @@ async def get_security_stats(
     active_sessions = await db.scalar(
         select(func.count(UserSession.id)).where(
             UserSession.is_revoked == False,
-            UserSession.expires_at > datetime.now(timezone.utc),
+            UserSession.expires_at > datetime.now(UTC),
         )
     )
 
@@ -527,7 +532,7 @@ async def check_user_breach(
         "found": breach_data.get("found", False),
         "count": breach_data.get("count", 0),
         "names": breach_data.get("names", []),
-        "checked_at": datetime.now(timezone.utc),
+        "checked_at": datetime.now(UTC),
     }
 
 
@@ -542,7 +547,7 @@ async def get_security_metrics(
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
 
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
 
     # Total logins last 24h
     total_logins = await db.scalar(
@@ -571,7 +576,7 @@ async def get_security_metrics(
     active_sessions = await db.scalar(
         select(func.count(UserSession.id)).where(
             UserSession.is_revoked == False,
-            UserSession.expires_at > datetime.now(timezone.utc),
+            UserSession.expires_at > datetime.now(UTC),
         )
     )
 
@@ -647,7 +652,7 @@ async def get_audit_report(
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     week_ago = now - timedelta(days=7)
 
     total_logins = await db.scalar(

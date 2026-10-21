@@ -1,7 +1,7 @@
 """Base Provider Interface for Computer Use Agents."""
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.domains.computer_use.schemas import ComputerUseAction
 
@@ -17,21 +17,19 @@ class ComputerUseProvider(ABC):
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         """Decide la próxima acción basada en el screenshot actual.
 
         Returns:
             ComputerUseAction con action_type, params y reason.
         """
-        pass
 
     @abstractmethod
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         """Genera un resumen de la sesión basado en el log de acciones."""
-        pass
 
     def _encode_image(self, image_bytes: bytes) -> str:
         """Codifica imagen a base64."""

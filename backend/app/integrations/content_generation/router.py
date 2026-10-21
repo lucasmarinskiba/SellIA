@@ -1,45 +1,50 @@
 """Smart Content Generation Router"""
 
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 
 from .base import (
-    BaseProvider, GenerationConfig, GenerationResult,
-    ContentQuality, ContentType,
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
 )
-from .cache import ContentCache
 from .budget import BudgetController
+from .cache import ContentCache
 from .plan_tools import (
-    get_tools_for_plan, is_tool_allowed, get_fallback_tool,
-    get_plan_upgrade_message, TOOL_REGISTRY,
+    TOOL_REGISTRY,
+    get_fallback_tool,
+    get_plan_upgrade_message,
+    get_tools_for_plan,
+    is_tool_allowed,
 )
 from .providers import (
+    AdCreativeProvider,
+    BeautifulAIProvider,
+    CanvaProvider,
+    CapCutProvider,
+    CopyAIProvider,
+    ElevenLabsProvider,
+    FalAggregatorProvider,
+    GammaProvider,
+    HeyGenProvider,
+    IdeogramProvider,
+    JasperProvider,
+    KimiProvider,
+    KlingProvider,
+    LeonardoProvider,
+    LumaProvider,
+    MidjourneyProvider,
+    OllamaProvider,
     OpenAIImageProvider,
+    OpusClipProvider,
+    PhotoroomProvider,
+    PikaProvider,
     ReplicateProvider,
     RunwayProvider,
     SeedanceProvider,
-    ElevenLabsProvider,
-    LeonardoProvider,
-    PhotoroomProvider,
-    IdeogramProvider,
-    MidjourneyProvider,
-    HeyGenProvider,
-    PikaProvider,
-    OpusClipProvider,
-    CopyAIProvider,
-    JasperProvider,
-    BeautifulAIProvider,
-    GammaProvider,
-    KlingProvider,
-    LumaProvider,
-    AdCreativeProvider,
-    WritesonicProvider,
-    CanvaProvider,
-    CapCutProvider,
     SoraProvider,
-    FalAggregatorProvider,
-    KimiProvider,
-    OllamaProvider,
+    WritesonicProvider,
 )
 
 
@@ -51,7 +56,7 @@ class RoutingDecision:
     estimated_cost: float
     reason: str
     cached: bool = False
-    cached_result: Optional[dict] = None
+    cached_result: dict | None = None
 
 
 class ContentGenerationRouter:
@@ -62,7 +67,7 @@ class ContentGenerationRouter:
         self.budget = BudgetController()
         self.providers = self._init_providers()
 
-    def _init_providers(self) -> Dict[str, BaseProvider]:
+    def _init_providers(self) -> dict[str, BaseProvider]:
         """Inicializa todos los proveedores disponibles."""
         return {
             "openai_image": OpenAIImageProvider(),
@@ -96,7 +101,7 @@ class ContentGenerationRouter:
     def _get_available_providers(
         self,
         content_type: ContentType,
-    ) -> List[BaseProvider]:
+    ) -> list[BaseProvider]:
         """Filtra proveedores disponibles por tipo de contenido."""
         available = []
         for provider in self.providers.values():
@@ -108,8 +113,8 @@ class ContentGenerationRouter:
         self,
         content_type: ContentType,
         quality: ContentQuality,
-        available: List[BaseProvider],
-    ) -> Optional[BaseProvider]:
+        available: list[BaseProvider],
+    ) -> BaseProvider | None:
         """Selecciona proveedor preferido según tipo y calidad."""
 
         # Routing matrix
@@ -338,9 +343,9 @@ class ContentGenerationRouter:
 
         return result
 
-    def get_pricing_summary(self, plan_tier: str = "starter") -> Dict[str, Dict]:
+    def get_pricing_summary(self, plan_tier: str = "starter") -> dict[str, dict]:
         """Retorna resumen de precios de herramientas disponibles para el plan."""
-        from .plan_tools import get_tools_for_plan, TOOL_REGISTRY
+        from .plan_tools import TOOL_REGISTRY, get_tools_for_plan
         allowed = set(get_tools_for_plan(plan_tier))
         summary = {}
         for tool_slug in allowed:

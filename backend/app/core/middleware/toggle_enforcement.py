@@ -3,21 +3,17 @@
 Chequea si un toggle está enabled y dentro de límite antes de ejecutar endpoints.
 """
 
-import json
+from collections.abc import Callable
 from uuid import UUID
-from datetime import datetime, timezone
-from typing import Callable, Optional, Dict, List
 
-from fastapi import Request, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, Request
 from sqlalchemy import select
 
 from app.core.database import get_db
 from app.domains.automations.models import AutomationToggle
 
-
 # Mapeo de rutas → toggle_key que requireren
-PROTECTED_ROUTES: Dict[str, str] = {
+PROTECTED_ROUTES: dict[str, str] = {
     "/api/v1/computer_use": "feature:computer_use",
     "/api/v1/sales_agents/lead_score": "agent:lead_scorer",
     "/api/v1/sales_agents/negotiate": "agent:negotiation",
@@ -33,7 +29,7 @@ PROTECTED_ROUTES: Dict[str, str] = {
 }
 
 
-def _map_request_to_toggle(request_path: str) -> Optional[str]:
+def _map_request_to_toggle(request_path: str) -> str | None:
     """Mapea request path → toggle_key requerido. Retorna None si no requiere check."""
     for protected_prefix, toggle_key in PROTECTED_ROUTES.items():
         if request_path.startswith(protected_prefix):
@@ -41,7 +37,7 @@ def _map_request_to_toggle(request_path: str) -> Optional[str]:
     return None
 
 
-def _extract_business_id(request: Request) -> Optional[UUID]:
+def _extract_business_id(request: Request) -> UUID | None:
     """Extrae business_id del request (query param o header)."""
     # Try query param first
     business_id_str = request.query_params.get("business_id")

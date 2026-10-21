@@ -4,23 +4,18 @@ Connects landing visitors, dashboard users, admin panel
 """
 
 import asyncio
-import json
-from typing import Dict, Set
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.database import AsyncSessionLocal
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 
 
 class ConnectionManager:
     def __init__(self):
-        self.landing_connections: Set[WebSocket] = set()
-        self.dashboard_connections: Dict[str, WebSocket] = {}
+        self.landing_connections: set[WebSocket] = set()
+        self.dashboard_connections: dict[str, WebSocket] = {}
         self.metrics = {
             "total_visitors": 15340,
             "seats_taken": 47,
@@ -101,7 +96,7 @@ async def generate_proof_events():
                 "user_name": f"{name} ({city})",
                 "metric": event_template["metric"],
                 "amount": event_template["amount"],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "seats_taken": manager.metrics["seats_taken"],
                 "total_revenue": manager.metrics["total_revenue"],
             }
@@ -149,7 +144,7 @@ async def trigger_manual_proof_event(
         "user_name": user_name,
         "metric": metric,
         "amount": amount,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "seats_taken": manager.metrics["seats_taken"],
         "total_revenue": manager.metrics["total_revenue"],
     }

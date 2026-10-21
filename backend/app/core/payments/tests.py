@@ -6,11 +6,23 @@ Run:
     pytest app/core/payments/tests.py -v --cov=app/core/payments
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
-from decimal import Decimal
-import json
+from unittest.mock import Mock, patch
+
+import pytest
+from billing_history import BillingHistoryManager
+from compliance import ComplianceChecker
+from crypto_processor import (
+    CryptoProcessor,
+)
+from invoice_generator import InvoiceGenerator
+from mercadopago_processor import (
+    MercadoPagoProcessor,
+)
+from payment_reconciliation import (
+    PaymentReconciler,
+)
+from payout_manager import PayoutManager
 
 # Import all payment modules
 from stripe_processor import (
@@ -18,24 +30,6 @@ from stripe_processor import (
     StripeWebhookHandler,
     WebhookEventType,
 )
-from mercadopago_processor import (
-    MercadoPagoProcessor,
-    MercadoPagoWebhookHandler,
-    CurrencyCode,
-)
-from crypto_processor import (
-    CryptoProcessor,
-    Blockchain,
-)
-from payment_reconciliation import (
-    PaymentReconciler,
-    FulfillmentOrchestrator,
-)
-from billing_history import BillingHistoryManager
-from invoice_generator import InvoiceGenerator
-from payout_manager import PayoutManager
-from compliance import ComplianceChecker, PciDssCompliance
-
 
 # ============= STRIPE TESTS =============
 

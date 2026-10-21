@@ -1,18 +1,22 @@
 """Dynamic pricing API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional
+from datetime import UTC
 from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.domains.users.models import User
 from app.domains.pricing.pricing_service import (
-    DynamicPricingService, DiscountCodeService, ABTestService, RevenueAnalyticsService
+    ABTestService,
+    DiscountCodeService,
+    DynamicPricingService,
+    RevenueAnalyticsService,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1", tags=["pricing"])
 
@@ -20,8 +24,8 @@ router = APIRouter(prefix="/api/v1", tags=["pricing"])
 class CalculatePriceRequest(BaseModel):
     location_id: UUID
     base_price: Decimal
-    discount_code: Optional[str] = None
-    checkin_id: Optional[UUID] = None
+    discount_code: str | None = None
+    checkin_id: UUID | None = None
 
 
 class LogPricingRequest(BaseModel):
@@ -29,14 +33,14 @@ class LogPricingRequest(BaseModel):
     order_id: str
     base_price: Decimal
     final_price: Decimal
-    discount_code: Optional[str] = None
-    discount_amount: Optional[Decimal] = None
+    discount_code: str | None = None
+    discount_amount: Decimal | None = None
 
 
 class UpdateTierRequest(BaseModel):
     tier: str  # flagship, standard, discount
     tier_multiplier: Decimal
-    peak_discount_pct: Optional[Decimal] = None
+    peak_discount_pct: Decimal | None = None
 
 
 class CreateDiscountRequest(BaseModel):
@@ -44,14 +48,14 @@ class CreateDiscountRequest(BaseModel):
     discount_value: Decimal
     discount_type: str = "percentage"
     valid_days: int = 30
-    usage_limit: Optional[int] = None
+    usage_limit: int | None = None
 
 
 class CreateABTestRequest(BaseModel):
     test_name: str
     control_price: Decimal
-    variant_a_price: Optional[Decimal] = None
-    variant_b_price: Optional[Decimal] = None
+    variant_a_price: Decimal | None = None
+    variant_b_price: Decimal | None = None
     test_duration_days: int = 14
 
 
@@ -234,10 +238,11 @@ async def get_pricing_analytics(
 ) -> dict:
     """Get pricing analytics for location."""
     try:
-        from app.domains.pricing.pricing_models import LocationRevenueImpact
-        from datetime import timedelta, datetime
+        from datetime import datetime, timedelta
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        from app.domains.pricing.pricing_models import LocationRevenueImpact
+
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         impacts = db.query(LocationRevenueImpact).filter(
@@ -276,4 +281,3 @@ async def get_pricing_analytics(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-from datetime import timezone

@@ -3,14 +3,12 @@ Real-time Data Sources Integration
 Market feeds, APIs, external data for research agents
 """
 
-import asyncio
-import aiohttp
 import logging
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
-from abc import ABC, abstractmethod
-import json
+from datetime import datetime
+from typing import Any
+
+import aiohttp
 
 logger = logging.getLogger("data_sources")
 
@@ -22,8 +20,8 @@ class DataSource:
     endpoint: str
     auth_type: str  # "api_key", "oauth", "bearer", "none"
     update_frequency: int  # seconds
-    retry_policy: Dict[str, Any] = field(default_factory=dict)
-    rate_limit: Dict[str, Any] = field(default_factory=dict)
+    retry_policy: dict[str, Any] = field(default_factory=dict)
+    rate_limit: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -33,7 +31,7 @@ class DataSource:
 class GoogleTrendsConnector:
     """Google Trends real-time data"""
 
-    async def get_trending_topics(self, region: str = "US") -> List[Dict[str, Any]]:
+    async def get_trending_topics(self, region: str = "US") -> list[dict[str, Any]]:
         """Fetch trending topics"""
         return [
             {"topic": "AI sales automation", "interest": 95, "trend": "rising"},
@@ -41,7 +39,7 @@ class GoogleTrendsConnector:
             {"topic": "sales automation", "interest": 82, "trend": "stable"},
         ]
 
-    async def get_search_volume(self, keyword: str) -> Dict[str, Any]:
+    async def get_search_volume(self, keyword: str) -> dict[str, Any]:
         """Get search volume for keyword"""
         return {
             "keyword": keyword,
@@ -51,7 +49,7 @@ class GoogleTrendsConnector:
             "cpc": 3.20,
         }
 
-    async def get_related_queries(self, keyword: str) -> List[str]:
+    async def get_related_queries(self, keyword: str) -> list[str]:
         """Get related search queries"""
         return [
             "sales automation AI",
@@ -64,7 +62,7 @@ class GoogleTrendsConnector:
 class SEMrushConnector:
     """SEMrush data for SEO and competitive intelligence"""
 
-    async def get_keyword_research(self, keyword: str) -> Dict[str, Any]:
+    async def get_keyword_research(self, keyword: str) -> dict[str, Any]:
         """Get comprehensive keyword data"""
         return {
             "keyword": keyword,
@@ -75,14 +73,14 @@ class SEMrushConnector:
             "serp_features": ["featured_snippet", "ads"],
         }
 
-    async def get_competitor_keywords(self, domain: str) -> List[Dict[str, Any]]:
+    async def get_competitor_keywords(self, domain: str) -> list[dict[str, Any]]:
         """Get keywords competitor ranks for"""
         return [
             {"keyword": "sales automation", "position": 3, "traffic": 450},
             {"keyword": "sales pipeline", "position": 5, "traffic": 320},
         ]
 
-    async def get_backlink_data(self, domain: str) -> Dict[str, Any]:
+    async def get_backlink_data(self, domain: str) -> dict[str, Any]:
         """Get backlink analysis"""
         return {
             "total_backlinks": 2345,
@@ -97,7 +95,7 @@ class SEMrushConnector:
 class TwitterConnector:
     """Twitter/X for real-time sentiment and trends"""
 
-    async def search_tweets(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
+    async def search_tweets(self, query: str, limit: int = 100) -> list[dict[str, Any]]:
         """Search tweets by query"""
         return [
             {
@@ -109,14 +107,14 @@ class TwitterConnector:
             },
         ]
 
-    async def get_trending_hashtags(self, category: str = "sales") -> List[Dict[str, Any]]:
+    async def get_trending_hashtags(self, category: str = "sales") -> list[dict[str, Any]]:
         """Get trending hashtags"""
         return [
             {"hashtag": "#SalesAutomation", "volume": 42500, "trend": "rising"},
             {"hashtag": "#AIinSales", "volume": 38200, "trend": "rising"},
         ]
 
-    async def get_sentiment_analysis(self, query: str) -> Dict[str, Any]:
+    async def get_sentiment_analysis(self, query: str) -> dict[str, Any]:
         """Get sentiment for query"""
         return {
             "query": query,
@@ -130,7 +128,7 @@ class TwitterConnector:
 class LinkedInConnector:
     """LinkedIn for B2B insights and professional networks"""
 
-    async def search_professionals(self, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def search_professionals(self, criteria: dict[str, Any]) -> list[dict[str, Any]]:
         """Search professionals matching criteria"""
         return [
             {
@@ -142,7 +140,7 @@ class LinkedInConnector:
             },
         ]
 
-    async def get_job_postings(self, query: str) -> List[Dict[str, Any]]:
+    async def get_job_postings(self, query: str) -> list[dict[str, Any]]:
         """Get job postings for trend analysis"""
         return [
             {
@@ -154,7 +152,7 @@ class LinkedInConnector:
             },
         ]
 
-    async def get_company_insights(self, company_name: str) -> Dict[str, Any]:
+    async def get_company_insights(self, company_name: str) -> dict[str, Any]:
         """Get company insights"""
         return {
             "company": company_name,
@@ -168,7 +166,7 @@ class LinkedInConnector:
 class CrunchBaseConnector:
     """CrunchBase for startup and investor data"""
 
-    async def search_companies(self, query: str) -> List[Dict[str, Any]]:
+    async def search_companies(self, query: str) -> list[dict[str, Any]]:
         """Search companies"""
         return [
             {
@@ -180,7 +178,7 @@ class CrunchBaseConnector:
             },
         ]
 
-    async def get_funding_data(self, company_name: str) -> Dict[str, Any]:
+    async def get_funding_data(self, company_name: str) -> dict[str, Any]:
         """Get funding information"""
         return {
             "company": company_name,
@@ -197,7 +195,7 @@ class CrunchBaseConnector:
 class NewsAPIConnector:
     """News API for real-time news monitoring"""
 
-    async def search_news(self, query: str, language: str = "en") -> List[Dict[str, Any]]:
+    async def search_news(self, query: str, language: str = "en") -> list[dict[str, Any]]:
         """Search news articles"""
         return [
             {
@@ -209,7 +207,7 @@ class NewsAPIConnector:
             },
         ]
 
-    async def get_trending_topics(self) -> List[str]:
+    async def get_trending_topics(self) -> list[str]:
         """Get trending topics from news"""
         return [
             "AI sales automation",
@@ -217,7 +215,7 @@ class NewsAPIConnector:
             "revenue intelligence",
         ]
 
-    async def get_company_mentions(self, company_name: str) -> List[Dict[str, Any]]:
+    async def get_company_mentions(self, company_name: str) -> list[dict[str, Any]]:
         """Get news mentions of company"""
         return [
             {
@@ -232,7 +230,7 @@ class NewsAPIConnector:
 class RedditConnector:
     """Reddit for community insights and discussions"""
 
-    async def search_discussions(self, query: str, subreddits: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    async def search_discussions(self, query: str, subreddits: list[str] | None = None) -> list[dict[str, Any]]:
         """Search Reddit discussions"""
         return [
             {
@@ -244,7 +242,7 @@ class RedditConnector:
             },
         ]
 
-    async def get_community_sentiment(self, topic: str) -> Dict[str, Any]:
+    async def get_community_sentiment(self, topic: str) -> dict[str, Any]:
         """Get community sentiment on topic"""
         return {
             "topic": topic,
@@ -258,7 +256,7 @@ class RedditConnector:
 class AltMetricsConnector:
     """Alternative metrics (web mentions, citations)"""
 
-    async def get_web_mentions(self, domain: str) -> Dict[str, Any]:
+    async def get_web_mentions(self, domain: str) -> dict[str, Any]:
         """Get web mentions and citations"""
         return {
             "mentions": 12450,
@@ -268,7 +266,7 @@ class AltMetricsConnector:
             ],
         }
 
-    async def get_citation_metrics(self, query: str) -> Dict[str, Any]:
+    async def get_citation_metrics(self, query: str) -> dict[str, Any]:
         """Get citation metrics"""
         return {
             "citations": 450,
@@ -286,7 +284,7 @@ class AltMetricsConnector:
 class PricingDataConnector:
     """Real-time pricing data from competitors"""
 
-    async def get_competitor_pricing(self, category: str) -> Dict[str, Any]:
+    async def get_competitor_pricing(self, category: str) -> dict[str, Any]:
         """Get competitor pricing data"""
         return {
             "category": category,
@@ -299,7 +297,7 @@ class PricingDataConnector:
             },
         }
 
-    async def get_price_trends(self, product: str) -> Dict[str, Any]:
+    async def get_price_trends(self, product: str) -> dict[str, Any]:
         """Get price trends over time"""
         return {
             "product": product,
@@ -313,7 +311,7 @@ class PricingDataConnector:
 class MarketDataConnector:
     """General market data and economic indicators"""
 
-    async def get_market_conditions(self) -> Dict[str, Any]:
+    async def get_market_conditions(self) -> dict[str, Any]:
         """Get current market conditions"""
         return {
             "gdp_growth": 0.025,
@@ -323,7 +321,7 @@ class MarketDataConnector:
             "consumer_spending": "stable",
         }
 
-    async def get_industry_report(self, industry: str) -> Dict[str, Any]:
+    async def get_industry_report(self, industry: str) -> dict[str, Any]:
         """Get industry report and metrics"""
         return {
             "industry": industry,
@@ -341,7 +339,7 @@ class MarketDataConnector:
 class SocialListeningConnector:
     """Aggregated social listening and sentiment analysis"""
 
-    async def get_brand_sentiment(self, brand: str) -> Dict[str, Any]:
+    async def get_brand_sentiment(self, brand: str) -> dict[str, Any]:
         """Get brand sentiment across social channels"""
         return {
             "brand": brand,
@@ -355,14 +353,14 @@ class SocialListeningConnector:
             "volume": 5420,
         }
 
-    async def get_competitor_sentiment(self, competitors: List[str]) -> Dict[str, Dict[str, Any]]:
+    async def get_competitor_sentiment(self, competitors: list[str]) -> dict[str, dict[str, Any]]:
         """Get sentiment for multiple competitors"""
         return {
             comp: {"sentiment": 0.65 + (i * 0.05), "volume": 2000 + (i * 500)}
             for i, comp in enumerate(competitors)
         }
 
-    async def get_trending_complaints(self, category: str) -> List[Dict[str, Any]]:
+    async def get_trending_complaints(self, category: str) -> list[dict[str, Any]]:
         """Get trending complaints/issues"""
         return [
             {"complaint": "Poor integration support", "frequency": 150, "impact": "high"},
@@ -377,7 +375,7 @@ class SocialListeningConnector:
 class CustomerDataConnector:
     """Aggregated customer data and behavior"""
 
-    async def get_customer_segments(self) -> Dict[str, Any]:
+    async def get_customer_segments(self) -> dict[str, Any]:
         """Get customer segmentation"""
         return {
             "segments": [
@@ -398,7 +396,7 @@ class CustomerDataConnector:
             ],
         }
 
-    async def get_customer_behavior(self) -> Dict[str, Any]:
+    async def get_customer_behavior(self) -> dict[str, Any]:
         """Get customer behavior metrics"""
         return {
             "avg_purchase_frequency": 2.3,
@@ -432,7 +430,7 @@ class DataSourceOrchestrator:
         }
         self.cache = {}
         self.update_timestamps = {}
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def init_session(self):
         """Initialize async session"""
@@ -444,7 +442,7 @@ class DataSourceOrchestrator:
         if self.session:
             await self.session.close()
 
-    async def get_trending_topics(self) -> List[Dict[str, Any]]:
+    async def get_trending_topics(self) -> list[dict[str, Any]]:
         """Get consolidated trending topics"""
         google_trends = await self.sources["google_trends"].get_trending_topics()
         twitter_trends = await self.sources["twitter"].get_trending_hashtags()
@@ -454,7 +452,7 @@ class DataSourceOrchestrator:
             for t in twitter_trends
         ]
 
-    async def get_keyword_intelligence(self, keyword: str) -> Dict[str, Any]:
+    async def get_keyword_intelligence(self, keyword: str) -> dict[str, Any]:
         """Get comprehensive keyword intelligence"""
         seo_data = await self.sources["semrush"].get_keyword_research(keyword)
         search_volume = await self.sources["google_trends"].get_search_volume(keyword)
@@ -467,7 +465,7 @@ class DataSourceOrchestrator:
             "related_queries": related_queries,
         }
 
-    async def get_competitor_intelligence(self, competitor_domain: str) -> Dict[str, Any]:
+    async def get_competitor_intelligence(self, competitor_domain: str) -> dict[str, Any]:
         """Get comprehensive competitor intelligence"""
         keywords = await self.sources["semrush"].get_competitor_keywords(competitor_domain)
         backlinks = await self.sources["semrush"].get_backlink_data(competitor_domain)
@@ -480,7 +478,7 @@ class DataSourceOrchestrator:
             "web_mentions": mentions,
         }
 
-    async def get_market_intelligence(self) -> Dict[str, Any]:
+    async def get_market_intelligence(self) -> dict[str, Any]:
         """Get comprehensive market intelligence"""
         market_data = await self.sources["market_data"].get_market_conditions()
         trends = await self.get_trending_topics()
@@ -492,7 +490,7 @@ class DataSourceOrchestrator:
             "news": news,
         }
 
-    async def get_brand_health(self, brand: str) -> Dict[str, Any]:
+    async def get_brand_health(self, brand: str) -> dict[str, Any]:
         """Get brand health metrics"""
         sentiment = await self.sources["social_listening"].get_brand_sentiment(brand)
         mentions = await self.sources["newsapi"].get_company_mentions(brand)
@@ -503,7 +501,7 @@ class DataSourceOrchestrator:
             "mentions": mentions,
         }
 
-    async def get_customer_insights(self) -> Dict[str, Any]:
+    async def get_customer_insights(self) -> dict[str, Any]:
         """Get customer insights"""
         segments = await self.sources["customer_data"].get_customer_segments()
         behavior = await self.sources["customer_data"].get_customer_behavior()
@@ -513,7 +511,7 @@ class DataSourceOrchestrator:
             "behavior": behavior,
         }
 
-    async def get_real_time_alerts(self) -> List[Dict[str, Any]]:
+    async def get_real_time_alerts(self) -> list[dict[str, Any]]:
         """Get real-time market alerts"""
         alerts = []
 
@@ -539,7 +537,7 @@ class DataSourceOrchestrator:
 
         return alerts
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check data sources health"""
         health = {
             "sources": {},

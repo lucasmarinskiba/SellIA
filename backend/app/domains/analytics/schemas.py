@@ -1,9 +1,10 @@
 """Analytics & BI Pydantic Schemas."""
 
-from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
 
 
 class FunnelMetricResponse(BaseModel):
@@ -24,7 +25,7 @@ class FunnelMetricResponse(BaseModel):
     revenue_total: float
     avg_order_value: float
     created_at: datetime
-    custom_stages: Optional[list[dict[str, Any]]] = None
+    custom_stages: list[dict[str, Any]] | None = None
 
 
 class ChurnPredictionResponse(BaseModel):
@@ -34,9 +35,9 @@ class ChurnPredictionResponse(BaseModel):
     conversation_id: UUID
     risk_level: str
     churn_probability: float
-    predicted_churn_date: Optional[datetime] = None
+    predicted_churn_date: datetime | None = None
     factors: list[str]
-    recommended_action: Optional[str] = None
+    recommended_action: str | None = None
     created_at: datetime
 
 
@@ -60,10 +61,10 @@ class InsightAlertResponse(BaseModel):
     insight_type: str
     severity: str
     title: str
-    description: Optional[str] = None
-    metric_name: Optional[str] = None
-    metric_change_percent: Optional[float] = None
-    recommended_action: Optional[str] = None
+    description: str | None = None
+    metric_name: str | None = None
+    metric_change_percent: float | None = None
+    recommended_action: str | None = None
     action_taken: bool
     created_at: datetime
 
@@ -80,4 +81,4 @@ class DashboardSummaryResponse(BaseModel):
     avg_ltv: float
     top_segment: str
     insights_today: int
-    kpis: Optional[list[dict[str, Any]]] = None
+    kpis: list[dict[str, Any]] | None = None

@@ -1,12 +1,12 @@
 """Secrets management via HashiCorp Vault (or AWS Secrets Manager)."""
 
-import os
-import logging
-from typing import Optional, Dict, Any
-import hvac  # HashiCorp Vault client
 import json
+import logging
+import os
 from functools import lru_cache
+from typing import Any
 
+import hvac  # HashiCorp Vault client
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class SecretsManager:
 
         return value
 
-    def set_secret(self, path: str, data: Dict[str, Any]) -> None:
+    def set_secret(self, path: str, data: dict[str, Any]) -> None:
         """
         Store secret.
 

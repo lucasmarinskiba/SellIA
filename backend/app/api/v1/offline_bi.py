@@ -1,20 +1,21 @@
 """BI API endpoints for offline analytics dashboards."""
 
+from datetime import datetime, timedelta
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.bi.offline_dashboards_schemas import (
-    FootTrafficMetrics, OfflineConversionMetrics, OnlineOfflineAttributionMetrics,
-    LocationComparisonMetrics, ProximityTriggerROI, DashboardSummary,
-    LocationAnalyticsDetailedReport
-)
 from app.domains.analytics.offline_service import OfflineAnalyticsService
+from app.domains.bi.offline_dashboards_schemas import (
+    DashboardSummary,
+    FootTrafficMetrics,
+    OfflineConversionMetrics,
+)
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["offline-bi"])
 
@@ -79,8 +80,9 @@ async def get_conversion_dashboard(
 ) -> OfflineConversionMetrics:
     """Get offline conversion metrics for location."""
 
-    from app.domains.businesses.location_models import Location
     from decimal import Decimal
+
+    from app.domains.businesses.location_models import Location
 
     location = db.query(Location).filter(Location.id == location_id).first()
     if not location:

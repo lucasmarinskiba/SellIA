@@ -9,10 +9,9 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
-from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +45,8 @@ class ContentPillar:
     """Content pillar definition."""
     name: str
     description: str
-    topics: List[str]
-    formats: List[str]  # blog, video, whitepaper, etc.
+    topics: list[str]
+    formats: list[str]  # blog, video, whitepaper, etc.
     monthly_output: int
     seo_priority: str
 
@@ -391,8 +390,8 @@ class MarketingAgent:
     def analyze_positioning(
         target_market: str,
         current_positioning: str,
-        competitors: List[str]
-    ) -> Dict[str, Any]:
+        competitors: list[str]
+    ) -> dict[str, Any]:
         """Analyze and optimize positioning."""
         return {
             "current_positioning": current_positioning,
@@ -407,9 +406,9 @@ class MarketingAgent:
 
     @staticmethod
     def create_marketing_strategy(
-        business_context: Dict[str, Any],
-        target_segments: List[str]
-    ) -> Dict[str, Any]:
+        business_context: dict[str, Any],
+        target_segments: list[str]
+    ) -> dict[str, Any]:
         """Create comprehensive marketing strategy."""
         strategy = {
             "business_context": business_context,
@@ -440,7 +439,7 @@ class MarketingAgent:
     def get_channel_strategy(
         channel: MarketingChannel,
         target_segment: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get strategy for specific channel."""
         channel_strategies = {
             MarketingChannel.EMAIL: {
@@ -517,10 +516,10 @@ class MarketingAgent:
     @staticmethod
     def create_content_calendar(
         company_name: str,
-        content_pillars: List[str],
+        content_pillars: list[str],
         monthly_capacity: int,  # posts per month
-        target_platforms: List[str]
-    ) -> Dict[str, Any]:
+        target_platforms: list[str]
+    ) -> dict[str, Any]:
         """Create content calendar structure."""
         return {
             "company": company_name,
@@ -545,9 +544,9 @@ class MarketingAgent:
     @staticmethod
     def design_growth_loop(
         loop_type: str,
-        product_features: List[str],
-        target_metrics: List[str]
-    ) -> Dict[str, Any]:
+        product_features: list[str],
+        target_metrics: list[str]
+    ) -> dict[str, Any]:
         """Design a growth loop for the product."""
         loop_template = MarketingAgent.GROWTH_LOOPS.get(loop_type, {})
 
@@ -567,9 +566,9 @@ class MarketingAgent:
         campaign_name: str,
         objective: str,
         target_segment: str,
-        channels: List[str],
+        channels: list[str],
         duration_weeks: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create integrated marketing campaign."""
         return {
             "campaign_name": campaign_name,
@@ -596,8 +595,8 @@ class MarketingAgent:
     @staticmethod
     def analyze_messaging(
         current_messaging: str,
-        target_audience: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        target_audience: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze effectiveness of messaging."""
         return {
             "current_messaging": current_messaging,
@@ -615,7 +614,7 @@ class MarketingAgent:
         target_audience: str,
         budget: float,
         timeline_months: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend marketing channels based on business context."""
         return {
             "recommended_primary": [],
@@ -629,8 +628,8 @@ class MarketingAgent:
     @staticmethod
     def create_marketing_jtbd(
         customer_job: str,
-        alternative_solutions: List[str]
-    ) -> Dict[str, Any]:
+        alternative_solutions: list[str]
+    ) -> dict[str, Any]:
         """Analyze marketing from Jobs to Be Done perspective."""
         return {
             "customer_job": customer_job,
@@ -644,8 +643,8 @@ class MarketingAgent:
 
     @staticmethod
     def calculate_marketing_metrics(
-        period_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        period_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate marketing KPIs and metrics."""
         return {
             "period": period_data.get("period", "month"),
@@ -670,7 +669,7 @@ class MarketingAgent:
         }
 
     @staticmethod
-    def get_journey_guidance(stage: str) -> Dict[str, Any]:
+    def get_journey_guidance(stage: str) -> dict[str, Any]:
         """Get marketing tactics for customer journey stage."""
         return MarketingAgent.CUSTOMER_JOURNEY.get(
             stage.lower(),

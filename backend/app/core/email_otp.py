@@ -7,17 +7,16 @@ Genera y verifica códigos OTP enviados por email para:
 - Reset de contraseña seguro
 """
 
-import uuid
-import secrets
 import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+import secrets
+import uuid
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.security.models import EmailOTP
 from app.core.logger import get_logger
+from app.domains.security.models import EmailOTP
 
 logger = get_logger(__name__)
 
@@ -39,7 +38,7 @@ async def create_email_otp(
     db: AsyncSession,
     user_id: uuid.UUID,
     purpose: str,
-    ip_address: Optional[str] = None,
+    ip_address: str | None = None,
 ) -> str:
     """Crea un OTP y lo guarda en la BD. Retorna el código en claro (solo para enviar)."""
     code = generate_otp()
@@ -52,7 +51,7 @@ async def create_email_otp(
         user_id=user_id,
         code_hash=code_hash,
         purpose=purpose,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES),
+        expires_at=datetime.now(UTC) + timedelta(minutes=OTP_EXPIRY_MINUTES),
         ip_address=ip_address,
     )
     db.add(otp)
@@ -78,7 +77,7 @@ async def verify_email_otp(
             EmailOTP.code_hash == code_hash,
             EmailOTP.purpose == purpose,
             EmailOTP.is_used == False,
-            EmailOTP.expires_at > datetime.now(timezone.utc),
+            EmailOTP.expires_at > datetime.now(UTC),
         )
     )
     otp = result.scalar_one_or_none()
@@ -87,7 +86,7 @@ async def verify_email_otp(
         return False
 
     otp.is_used = True
-    otp.used_at = datetime.now(timezone.utc)
+    otp.used_at = datetime.now(UTC)
     await db.commit()
 
     logger.info(f"Verified email OTP for user {user_id}, purpose {purpose}")

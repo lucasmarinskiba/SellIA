@@ -11,17 +11,17 @@ Modules:
 """
 
 from .comment_analyzer import CommentAnalyzer
-from .humor_generator import HumorGenerator
+from .comment_response_engine import CommentResponseEngine
 from .educational_responder import EducationalResponder
 from .engagement_optimizer import EngagementOptimizer
+from .humor_generator import HumorGenerator
 from .personality_injector import PersonalityInjector
-from .comment_response_engine import CommentResponseEngine
 
 __all__ = [
     "CommentAnalyzer",
-    "HumorGenerator",
+    "CommentResponseEngine",
     "EducationalResponder",
     "EngagementOptimizer",
+    "HumorGenerator",
     "PersonalityInjector",
-    "CommentResponseEngine",
 ]

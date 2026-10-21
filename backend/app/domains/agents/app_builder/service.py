@@ -5,22 +5,24 @@ como archivos de texto, los comprime en ZIP y guarda en storage.
 """
 
 import os
+import tempfile
 import uuid
 import zipfile
-import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.app_builder.models import AppBuildJob, AppFeature, AppBuildStatus
+from app.domains.agents.app_builder.models import (
+    AppBuildJob,
+    AppBuildStatus,
+    AppFeature,
+)
 from app.domains.agents.app_builder.schemas import AppBuildJobCreate, AppFeatureCreate
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
@@ -61,11 +63,11 @@ class AppBuilderService:
         await self.db.refresh(job)
         return job
 
-    async def get_job(self, job_id: uuid.UUID) -> Optional[AppBuildJob]:
+    async def get_job(self, job_id: uuid.UUID) -> AppBuildJob | None:
         result = await self.db.execute(select(AppBuildJob).where(AppBuildJob.id == job_id))
         return result.scalar_one_or_none()
 
-    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[AppBuildJob]:
+    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> list[AppBuildJob]:
         result = await self.db.execute(
             select(AppBuildJob)
             .where(AppBuildJob.business_id == business_id)
@@ -75,7 +77,7 @@ class AppBuilderService:
         )
         return result.scalars().all()
 
-    async def update_job(self, job_id: uuid.UUID, **kwargs) -> Optional[AppBuildJob]:
+    async def update_job(self, job_id: uuid.UUID, **kwargs) -> AppBuildJob | None:
         job = await self.get_job(job_id)
         if not job:
             return None
@@ -92,7 +94,7 @@ class AppBuilderService:
         self,
         business_id: uuid.UUID,
         app_description: str,
-        features_list: List[AppFeatureCreate],
+        features_list: list[AppFeatureCreate],
     ) -> AppBuildJob:
         """1. Crea job; 2. Analiza con LLM; 3. Genera código; 4. ZIP + guarda."""
         job = await self.create_job(AppBuildJobCreate(
@@ -131,8 +133,9 @@ class AppBuilderService:
 
         return await self.get_job(job.id)
 
-    async def _analyze_with_llm(self, business_id: uuid.UUID, app_description: str, features_list: List[AppFeatureCreate]) -> str:
-        from langchain_core.messages import SystemMessage, HumanMessage
+    async def _analyze_with_llm(self, business_id: uuid.UUID, app_description: str, features_list: list[AppFeatureCreate]) -> str:
+        from langchain_core.messages import HumanMessage, SystemMessage
+
         from app.domains.agents.llm_provider import generate_with_fallback
 
         ctx = await get_agent_prompt_context(self.db, business_id)
@@ -161,7 +164,7 @@ class AppBuilderService:
         self,
         job: AppBuildJob,
         app_description: str,
-        features_list: List[AppFeatureCreate],
+        features_list: list[AppFeatureCreate],
         analysis: str,
     ) -> Path:
         """Genera archivos de código como texto y los empaqueta en ZIP."""
@@ -305,7 +308,7 @@ export default function AuthPage() {
 }
 '''
 
-    def _frontend_dashboard_page(self, features: List[AppFeatureCreate]) -> str:
+    def _frontend_dashboard_page(self, features: list[AppFeatureCreate]) -> str:
         cards = "\n".join(
             f'        <Card title="{f.feature_name}" description="{f.description or ""}" />'
             for f in features[:6]
@@ -616,7 +619,7 @@ async def login(data: UserCreate, db: AsyncSession = Depends(get_db)):
     return {"access_token": token}
 '''
 
-    def _backend_items_router(self, features: List[AppFeatureCreate]) -> str:
+    def _backend_items_router(self, features: list[AppFeatureCreate]) -> str:
         feature_names = ", ".join(f'"{f.feature_name}"' for f in features[:5]) if features else '"items"'
         return f'''from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -750,7 +753,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
         self,
         app_slug: str,
         description: str,
-        features: List[AppFeatureCreate],
+        features: list[AppFeatureCreate],
         analysis: str,
     ) -> str:
         features_md = "\n".join(f"- {f.feature_name}: {f.description or ''}" for f in features)
@@ -775,7 +778,7 @@ docker-compose up --build
 - API docs: http://localhost:8000/docs
 '''
 
-    def _build_preview_instructions(self, job: AppBuildJob, features: List[AppFeatureCreate]) -> str:
+    def _build_preview_instructions(self, job: AppBuildJob, features: list[AppFeatureCreate]) -> str:
         features_text = "\n".join(f"- {f.feature_name}" for f in features)
         return f"""# Instrucciones de despliegue — {job.app_name}
 
@@ -802,7 +805,7 @@ docker-compose up --build
 
     # ========== Download ==========
 
-    async def get_app_code(self, job_id: uuid.UUID) -> Optional[Path]:
+    async def get_app_code(self, job_id: uuid.UUID) -> Path | None:
         job = await self.get_job(job_id)
         if not job or not job.code_zip_url:
             return None

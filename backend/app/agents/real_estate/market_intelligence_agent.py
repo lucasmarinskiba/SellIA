@@ -2,8 +2,8 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,19 +25,19 @@ class MarketReport:
     buyer_demand_level: str  # high, moderate, low
     supply_demand_ratio: float
     recommended_pricing_strategy: str
-    top_selling_features: List[str] = field(default_factory=list)
-    market_headwinds: List[str] = field(default_factory=list)
-    opportunities: List[str] = field(default_factory=list)
+    top_selling_features: list[str] = field(default_factory=list)
+    market_headwinds: list[str] = field(default_factory=list)
+    opportunities: list[str] = field(default_factory=list)
 
 
 class MarketIntelligenceAgent:
     """Provide market insights and competitive analysis."""
 
     def __init__(self):
-        self.market_reports: Dict[str, MarketReport] = {}
-        self.competitor_tracking: Dict[str, List[Dict[str, Any]]] = {}
+        self.market_reports: dict[str, MarketReport] = {}
+        self.competitor_tracking: dict[str, list[dict[str, Any]]] = {}
 
-    def generate_market_report(self, location: str, market_data: Dict[str, Any]) -> MarketReport:
+    def generate_market_report(self, location: str, market_data: dict[str, Any]) -> MarketReport:
         """Generate comprehensive market analysis report."""
         # Extract key metrics
         median_price = market_data.get("median_price", 300000)
@@ -119,7 +119,7 @@ class MarketIntelligenceAgent:
         monthly_sales_rate = sold_30_days / 1
         return active_listings / monthly_sales_rate
 
-    def _identify_top_selling_features(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_top_selling_features(self, market_data: dict[str, Any]) -> list[str]:
         """Identify top-selling property features in market."""
         features = []
         if market_data.get("high_demand_features"):
@@ -134,7 +134,7 @@ class MarketIntelligenceAgent:
             ]
         return features
 
-    def _identify_market_headwinds(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_market_headwinds(self, market_data: dict[str, Any]) -> list[str]:
         """Identify market challenges/headwinds."""
         headwinds = []
         if market_data.get("high_inventory"):
@@ -145,7 +145,7 @@ class MarketIntelligenceAgent:
             headwinds.append("Economic uncertainty impacting demand")
         return headwinds
 
-    def _identify_opportunities(self, market_data: Dict[str, Any]) -> List[str]:
+    def _identify_opportunities(self, market_data: dict[str, Any]) -> list[str]:
         """Identify market opportunities."""
         opportunities = []
         if market_data.get("low_inventory"):
@@ -167,7 +167,7 @@ class MarketIntelligenceAgent:
         else:
             return "balanced"
 
-    def analyze_neighborhood(self, address: str, neighborhood_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_neighborhood(self, address: str, neighborhood_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze neighborhood characteristics."""
         return {
             "address": address,
@@ -180,7 +180,7 @@ class MarketIntelligenceAgent:
             "desirability_score": self._calculate_desirability(neighborhood_data),
         }
 
-    def _calculate_desirability(self, neighborhood_data: Dict[str, Any]) -> float:
+    def _calculate_desirability(self, neighborhood_data: dict[str, Any]) -> float:
         """Calculate neighborhood desirability (0-100)."""
         score = 50.0
         if neighborhood_data.get("walkability_score", 0) > 70:
@@ -193,7 +193,7 @@ class MarketIntelligenceAgent:
             score += 10
         return min(score, 100.0)
 
-    def track_competitor(self, competitor_id: str, property_data: Dict[str, Any]) -> None:
+    def track_competitor(self, competitor_id: str, property_data: dict[str, Any]) -> None:
         """Track competitor property listings."""
         if competitor_id not in self.competitor_tracking:
             self.competitor_tracking[competitor_id] = []
@@ -203,7 +203,7 @@ class MarketIntelligenceAgent:
             "property_data": property_data,
         })
 
-    def analyze_competition(self, market_area: str, property_type: str) -> Dict[str, Any]:
+    def analyze_competition(self, market_area: str, property_type: str) -> dict[str, Any]:
         """Analyze competitive landscape."""
         return {
             "market_area": market_area,
@@ -217,6 +217,6 @@ class MarketIntelligenceAgent:
             "market_positioning": "You are positioned at median price point",
         }
 
-    def get_market_report(self, location: str) -> Optional[MarketReport]:
+    def get_market_report(self, location: str) -> MarketReport | None:
         """Retrieve market report for location."""
         return self.market_reports.get(location)

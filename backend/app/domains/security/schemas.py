@@ -1,15 +1,15 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
 
 
 class SecurityWebhookCreate(BaseModel):
     name: str
     url: str
     platform: str  # slack, discord, telegram, generic
-    secret: Optional[str] = None
-    events: Optional[str] = None  # login, malware, brute_force, new_device
+    secret: str | None = None
+    events: str | None = None  # login, malware, brute_force, new_device
 
 
 class SecurityWebhookResponse(BaseModel):
@@ -20,36 +20,36 @@ class SecurityWebhookResponse(BaseModel):
     url: str
     platform: str
     is_active: bool
-    events: Optional[str]
+    events: str | None
     created_at: datetime
 
 
 class SecurityConfigUpdate(BaseModel):
-    blocked_countries: Optional[str] = None
-    require_turnstile: Optional[bool] = None
-    require_2fa_for_admins: Optional[bool] = None
-    alert_on_new_device: Optional[bool] = None
-    alert_on_failed_login: Optional[bool] = None
-    alert_on_malware: Optional[bool] = None
-    max_distance_km: Optional[float] = None
-    alert_on_geofence: Optional[bool] = None
-    hibp_api_key: Optional[str] = None
-    alert_on_breach: Optional[bool] = None
+    blocked_countries: str | None = None
+    require_turnstile: bool | None = None
+    require_2fa_for_admins: bool | None = None
+    alert_on_new_device: bool | None = None
+    alert_on_failed_login: bool | None = None
+    alert_on_malware: bool | None = None
+    max_distance_km: float | None = None
+    alert_on_geofence: bool | None = None
+    hibp_api_key: str | None = None
+    alert_on_breach: bool | None = None
 
 
 class SecurityConfigResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    blocked_countries: Optional[str]
+    blocked_countries: str | None
     require_turnstile: bool
     require_2fa_for_admins: bool
     alert_on_new_device: bool
     alert_on_failed_login: bool
     alert_on_malware: bool
-    max_distance_km: Optional[float]
+    max_distance_km: float | None
     alert_on_geofence: bool
-    hibp_api_key: Optional[str]
+    hibp_api_key: str | None
     alert_on_breach: bool
     updated_at: datetime
 
@@ -59,12 +59,12 @@ class LoginLogResponse(BaseModel):
 
     id: UUID
     ip_address: str
-    user_agent: Optional[str]
-    device_fingerprint: Optional[str]
-    country: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    city: Optional[str]
+    user_agent: str | None
+    device_fingerprint: str | None
+    country: str | None
+    latitude: float | None
+    longitude: float | None
+    city: str | None
     success: bool
     created_at: datetime
 
@@ -75,7 +75,7 @@ class PushSubscriptionCreate(BaseModel):
     endpoint: str
     p256dh: str
     auth: str
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
 
 
 class PushSubscriptionResponse(BaseModel):
@@ -83,7 +83,7 @@ class PushSubscriptionResponse(BaseModel):
 
     id: UUID
     endpoint: str
-    user_agent: Optional[str]
+    user_agent: str | None
     is_active: bool
     created_at: datetime
 
@@ -94,16 +94,16 @@ class UserSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    device_name: Optional[str]
-    device_fingerprint: Optional[str]
+    device_name: str | None
+    device_fingerprint: str | None
     ip_address: str
-    user_agent: Optional[str]
-    country: Optional[str]
+    user_agent: str | None
+    country: str | None
     last_active_at: datetime
     expires_at: datetime
     is_revoked: bool
     created_at: datetime
-    is_current: Optional[bool] = None
+    is_current: bool | None = None
 
 
 # Audit logs (admin)
@@ -113,11 +113,11 @@ class AuditLogResponse(BaseModel):
 
     id: UUID
     user_id: UUID
-    user_email: Optional[str]
+    user_email: str | None
     ip_address: str
-    user_agent: Optional[str]
-    country: Optional[str]
-    city: Optional[str]
+    user_agent: str | None
+    country: str | None
+    city: str | None
     success: bool
     created_at: datetime
 

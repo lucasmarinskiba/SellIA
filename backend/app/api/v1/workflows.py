@@ -1,7 +1,6 @@
 """Workflow automation API endpoints."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -10,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
+from app.domains.users.models import User
 from app.domains.workflows.workflow_engine import WorkflowEngine
 from app.domains.workflows.workflow_models import Workflow
 
@@ -49,29 +48,29 @@ async def _get_owned_workflow(workflow_id: UUID, user: User, db: AsyncSession) -
 class WorkflowConditionRequest(BaseModel):
     field_name: str
     operator: str
-    value: Optional[str] = None
-    value_type: Optional[str] = "string"
-    logic_operator: Optional[str] = "AND"
+    value: str | None = None
+    value_type: str | None = "string"
+    logic_operator: str | None = "AND"
 
 
 class WorkflowActionRequest(BaseModel):
     action_type: str
-    action_config: Dict
-    run_after_delay: Optional[int] = 0
+    action_config: dict
+    run_after_delay: int | None = 0
 
 
 class CreateWorkflowRequest(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: str
-    trigger_config: Dict
-    conditions: Optional[List[WorkflowConditionRequest]] = None
-    actions: Optional[List[WorkflowActionRequest]] = None
+    trigger_config: dict
+    conditions: list[WorkflowConditionRequest] | None = None
+    actions: list[WorkflowActionRequest] | None = None
 
 
 class ExecuteWorkflowRequest(BaseModel):
     customer_id: UUID
-    trigger_data: Dict
+    trigger_data: dict
 
 
 @router.post("/businesses/{business_id}/workflows")

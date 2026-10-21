@@ -4,15 +4,18 @@ Implements the 8 missing workflow action types for autonomous content creation.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+from datetime import datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.automations.models import GeneratedContent, ContentCalendar, WorkflowExecution
-from app.domains.catalogs.models import CatalogItem
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.automations.models import (
+    ContentCalendar,
+    GeneratedContent,
+)
+from app.domains.catalogs.models import CatalogItem
 
 logger = get_logger(__name__)
 
@@ -23,7 +26,7 @@ class ContentGenerationRouter:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def generate_image(self, business_id: uuid.UUID, prompt: str, catalog_item_id: uuid.UUID | None = None) -> Optional[GeneratedContent]:
+    async def generate_image(self, business_id: uuid.UUID, prompt: str, catalog_item_id: uuid.UUID | None = None) -> GeneratedContent | None:
         """Generate product image using AI."""
         content = GeneratedContent(
             business_id=business_id,
@@ -45,7 +48,7 @@ class ContentGenerationRouter:
         logger.info(f"Generated image content {content.id} for business {business_id}")
         return content
 
-    async def generate_video(self, business_id: uuid.UUID, script: str, catalog_item_id: uuid.UUID | None = None) -> Optional[GeneratedContent]:
+    async def generate_video(self, business_id: uuid.UUID, script: str, catalog_item_id: uuid.UUID | None = None) -> GeneratedContent | None:
         """Generate video script and thumbnail."""
         content = GeneratedContent(
             business_id=business_id,
@@ -73,7 +76,7 @@ class ContentGenerationRouter:
 
         return content
 
-    async def generate_copy(self, business_id: uuid.UUID, product_name: str, product_description: str, tone: str = "persuasive") -> Optional[GeneratedContent]:
+    async def generate_copy(self, business_id: uuid.UUID, product_name: str, product_description: str, tone: str = "persuasive") -> GeneratedContent | None:
         """Generate sales copy."""
         content = GeneratedContent(
             business_id=business_id,
@@ -99,7 +102,7 @@ class ContentGenerationRouter:
 
         return content
 
-    async def generate_carousel(self, business_id: uuid.UUID, topic: str, slides: int = 5) -> Optional[GeneratedContent]:
+    async def generate_carousel(self, business_id: uuid.UUID, topic: str, slides: int = 5) -> GeneratedContent | None:
         """Generate Instagram carousel structure."""
         content = GeneratedContent(
             business_id=business_id,
@@ -125,7 +128,7 @@ class ContentGenerationRouter:
 
         return content
 
-    async def generate_thumbnail(self, business_id: uuid.UUID, video_title: str) -> Optional[GeneratedContent]:
+    async def generate_thumbnail(self, business_id: uuid.UUID, video_title: str) -> GeneratedContent | None:
         """Generate video thumbnail concept."""
         content = GeneratedContent(
             business_id=business_id,
@@ -151,7 +154,7 @@ class ContentGenerationRouter:
 
         return content
 
-    async def schedule_post(self, business_id: uuid.UUID, content_id: uuid.UUID, platform: str, scheduled_at: datetime) -> Optional[ContentCalendar]:
+    async def schedule_post(self, business_id: uuid.UUID, content_id: uuid.UUID, platform: str, scheduled_at: datetime) -> ContentCalendar | None:
         """Schedule a post to content calendar."""
         content = await self.db.get(GeneratedContent, content_id)
         if not content:
@@ -191,7 +194,7 @@ class ContentGenerationRouter:
         await self.db.commit()
         return True
 
-    async def create_content_brief(self, business_id: uuid.UUID, campaign_name: str, objectives: str) -> Optional[GeneratedContent]:
+    async def create_content_brief(self, business_id: uuid.UUID, campaign_name: str, objectives: str) -> GeneratedContent | None:
         """Generate a complete content brief."""
         content = GeneratedContent(
             business_id=business_id,

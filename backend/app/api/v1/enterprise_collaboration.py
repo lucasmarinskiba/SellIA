@@ -1,16 +1,19 @@
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Body, WebSocket, Depends, HTTPException
-from datetime import datetime
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.crm.models import Deal
-from app.domains.enterprise.collaboration import CollaborationManager, CollaborationActionEnum
+from app.domains.enterprise.collaboration import (
+    CollaborationActionEnum,
+    CollaborationManager,
+)
+from app.domains.users.models import User
 
 router = APIRouter(tags=["collaboration"])
 collab_manager = CollaborationManager()

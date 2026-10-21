@@ -9,9 +9,8 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -380,7 +379,7 @@ class StorytellingAgent:
         founder_origin: str,
         mission: str,
         target_audience: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Craft compelling brand story."""
         return {
             "company": company_name,
@@ -410,8 +409,8 @@ class StorytellingAgent:
         customer_role: str,
         initial_challenge: str,
         solution_provided: str,
-        results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create structured customer case study."""
         case_study = StorytellingAgent.CUSTOMER_STORY_FRAMEWORK.copy()
         case_study.update({
@@ -446,7 +445,7 @@ class StorytellingAgent:
         solution: str,
         market_size: str,
         target_customer: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build compelling pitch narrative."""
         return {
             "company": company,
@@ -472,8 +471,8 @@ class StorytellingAgent:
     def design_investor_pitch(
         company: str,
         funding_amount: float,
-        use_of_funds: Dict[str, float]
-    ) -> Dict[str, Any]:
+        use_of_funds: dict[str, float]
+    ) -> dict[str, Any]:
         """Design investor pitch deck."""
         return {
             "company": company,
@@ -518,7 +517,7 @@ class StorytellingAgent:
         call_to_adventure: str,
         climax: str,
         resolution: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Apply Hero's Journey framework to your story."""
         journey = []
         for stage in StorytellingAgent.HEROS_JOURNEY["structure"]:
@@ -540,8 +539,8 @@ class StorytellingAgent:
     @staticmethod
     def create_content_narratives(
         primary_story: str,
-        target_segments: List[str]
-    ) -> Dict[str, Any]:
+        target_segments: list[str]
+    ) -> dict[str, Any]:
         """Create tailored narratives for different audience segments."""
         return {
             "primary_story": primary_story,
@@ -565,7 +564,7 @@ class StorytellingAgent:
         }
 
     @staticmethod
-    def storytelling_workshop_guide() -> Dict[str, Any]:
+    def storytelling_workshop_guide() -> dict[str, Any]:
         """Guide for storytelling workshop."""
         return {
             "duration": "Half day",

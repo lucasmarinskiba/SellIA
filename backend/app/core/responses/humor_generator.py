@@ -12,9 +12,9 @@ Generates:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
 from random import choice, randint
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class HumorGenerator:
     }
 
     @staticmethod
-    def generate_punny_response(topic: str, subject: str) -> Dict[str, Any]:
+    def generate_punny_response(topic: str, subject: str) -> dict[str, Any]:
         """
         Generate pun-based response.
 
@@ -150,7 +150,7 @@ class HumorGenerator:
         }
 
     @staticmethod
-    def generate_witty_response(context: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_witty_response(context: dict[str, Any]) -> dict[str, Any]:
         """
         Generate witty observation-based response.
 
@@ -183,7 +183,7 @@ class HumorGenerator:
         }
 
     @staticmethod
-    def generate_relatable_response(context: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_relatable_response(context: dict[str, Any]) -> dict[str, Any]:
         """
         Generate relatable humor based on common experiences.
 
@@ -232,8 +232,8 @@ class HumorGenerator:
 
     @staticmethod
     def generate_self_deprecating_response(
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Generate self-aware, humble humor.
 
@@ -269,7 +269,7 @@ class HumorGenerator:
         comment_sentiment: str,
         comment_intent: str,
         audience_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Check if humor is appropriate for this comment.
 
@@ -327,7 +327,7 @@ class HumorGenerator:
     def integrate_emoji(
         response_text: str,
         emoji_strategy: str = "enhance",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Integrate emojis to enhance response.
 
@@ -358,11 +358,7 @@ class HumorGenerator:
         else:
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["approval"]
 
-        if emoji_strategy == "enhance":
-            emoji = choice(emojis_to_add)
-            emoji_response = f"{response_text} {emoji}"
-            emojis_added = [emoji]
-        elif emoji_strategy == "subtle":
+        if emoji_strategy == "enhance" or emoji_strategy == "subtle":
             emoji = choice(emojis_to_add)
             emoji_response = f"{response_text} {emoji}"
             emojis_added = [emoji]
@@ -386,7 +382,7 @@ class HumorGenerator:
         comment_text: str,
         audience_type: str,
         preferred_style: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate complete humor-based response.
 

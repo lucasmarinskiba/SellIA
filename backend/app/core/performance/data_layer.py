@@ -1,7 +1,7 @@
 """Data Layer — Data warehouse, event streaming, ETL."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class DataLayer:
     """Production data infrastructure."""
 
     @staticmethod
-    def data_warehouse_schema() -> Dict[str, Any]:
+    def data_warehouse_schema() -> dict[str, Any]:
         """Design data warehouse schema."""
 
         return {
@@ -35,7 +35,7 @@ class DataLayer:
         }
 
     @staticmethod
-    def event_streaming_pipeline() -> Dict[str, Any]:
+    def event_streaming_pipeline() -> dict[str, Any]:
         """Event streaming for real-time analytics."""
 
         return {
@@ -50,7 +50,7 @@ class DataLayer:
     def etl_pipeline(
         source: str,
         destination: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """ETL pipeline configuration."""
 
         return {
@@ -63,7 +63,7 @@ class DataLayer:
         }
 
     @staticmethod
-    def realtime_analytics() -> Dict[str, Any]:
+    def realtime_analytics() -> dict[str, Any]:
         """Real-time analytics setup."""
 
         return {

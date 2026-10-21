@@ -6,13 +6,11 @@ Detecta urgencia y keywords críticas para escalamiento automático.
 """
 
 import uuid
-from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.support.models import TicketCategory, TicketPriority
 from app.domains.agents.ai_reply import generate_raw_ai_response
-
+from app.domains.support.models import TicketCategory, TicketPriority
 
 # Keywords que disparan escalamiento inmediato a CRITICAL
 URGENT_KEYWORDS = [
@@ -29,7 +27,7 @@ async def classify_ticket(
     business_id: uuid.UUID,
     title: str,
     description: str,
-) -> Tuple[TicketCategory, TicketPriority, float]:
+) -> tuple[TicketCategory, TicketPriority, float]:
     """
     Clasifica un ticket usando LLM.
 

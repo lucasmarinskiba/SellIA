@@ -4,13 +4,12 @@ Provides explicit reasoning traceability and post-conversation self-analysis
 to continuously improve agent behavior.
 """
 
-import uuid
 import json
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -28,12 +27,12 @@ logger = get_logger(__name__)
 class ThoughtStep(BaseModel):
     step_number: int
     thought: str
-    action: Optional[str] = None
-    observation: Optional[str] = None
+    action: str | None = None
+    observation: str | None = None
 
 
 class ThoughtProcess(BaseModel):
-    steps: List[ThoughtStep] = Field(default_factory=list)
+    steps: list[ThoughtStep] = Field(default_factory=list)
 
 
 class ReflectionResult(BaseModel):
@@ -55,9 +54,9 @@ class ChainOfThought:
     async def generate_thought_process(
         db: AsyncSession,
         query: str,
-        context: Dict[str, Any],
-        tools_used: List[str],
-    ) -> List[ThoughtStep]:
+        context: dict[str, Any],
+        tools_used: list[str],
+    ) -> list[ThoughtStep]:
         """Generate explicit reasoning steps for a given query.
 
         Steps:
@@ -112,9 +111,9 @@ class ChainOfThought:
     async def log_thought_process(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-        message_id: Optional[uuid.UUID],
-        thought_steps: List[ThoughtStep],
-    ) -> Optional[ChainOfThoughtLog]:
+        message_id: uuid.UUID | None,
+        thought_steps: list[ThoughtStep],
+    ) -> ChainOfThoughtLog | None:
         """Persist a chain-of-thought to the database."""
         if not thought_steps:
             return None
@@ -142,7 +141,7 @@ class SelfReflection:
     async def reflect_on_conversation(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> Optional[ReflectionResult]:
+    ) -> ReflectionResult | None:
         """After conversation ends, analyze:
 
         1. "¿Qué hice bien?" — identify successful tactics
@@ -234,7 +233,7 @@ class SelfReflection:
     async def _build_transcript(
         db: AsyncSession,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build a text transcript from conversation messages."""
         result = await db.execute(
             select(Message)
@@ -269,7 +268,7 @@ class SelfReflection:
 # JSON parsing helper
 # ------------------------------------------------------------------
 
-def _parse_json_response(text: str, model_class) -> Optional[Any]:
+def _parse_json_response(text: str, model_class) -> Any | None:
     """Robustly parse a JSON response into a Pydantic model."""
     text = text.strip()
 

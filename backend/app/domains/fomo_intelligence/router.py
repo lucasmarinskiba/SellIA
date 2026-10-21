@@ -1,9 +1,9 @@
 """FOMO Intelligence API: registro + inteligencia de las 4 estrategias FOMO."""
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.fomo_intelligence.service import FOMOIntelligenceService
-
 
 router = APIRouter(prefix="/api/v1/fomo-intelligence", tags=["fomo-intelligence"])
 

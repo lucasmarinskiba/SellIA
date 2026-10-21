@@ -5,25 +5,24 @@ pipeline history, and expert sales methodologies.
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
-from sqlalchemy import select, func
+from langchain_core.messages import HumanMessage, SystemMessage
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.agents.llm_provider import generate_with_fallback
+from app.domains.agents.prompts import compose_system_prompt
 from app.domains.businesses.models import Business
 from app.domains.catalogs.models import CatalogItem
 from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation
-from app.domains.agents.prompts import compose_system_prompt
-from app.domains.agents.llm_provider import generate_with_fallback
-from langchain_core.messages import SystemMessage, HumanMessage
 
 
 async def generate_sales_playbook(
     db: AsyncSession,
     business_id: uuid.UUID,
-    voice_slug: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    voice_slug: str | None = None,
+) -> dict[str, Any] | None:
     """Generate a complete sales playbook for a business.
 
     Analyzes business profile, catalog, deal history, and generates

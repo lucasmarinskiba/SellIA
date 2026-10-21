@@ -1,11 +1,12 @@
 """Instagram DM Connector via Meta Graph API."""
 
-import httpx
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class InstagramConnector(BaseChannelConnector):

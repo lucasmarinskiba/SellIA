@@ -9,13 +9,14 @@ Flujo:
 5. Logging completo + métricas
 """
 
-import logging
 import asyncio
-from typing import Callable, Optional, Any, Dict, List
+import logging
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-import uuid
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +58,8 @@ class RetryAttempt:
     attempt_number: int
     delay_seconds: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    error: Optional[str] = None
-    status_code: Optional[int] = None
+    error: str | None = None
+    status_code: int | None = None
 
 
 @dataclass
@@ -66,9 +67,9 @@ class RetryHistory:
     """Historial de retries para una operación."""
     operation_id: str
     operation_name: str
-    attempts: List[RetryAttempt] = field(default_factory=list)
+    attempts: list[RetryAttempt] = field(default_factory=list)
     final_status: str = "pending"  # success, failed, timeout
-    final_error: Optional[str] = None
+    final_error: str | None = None
     total_duration: float = 0.0  # segundos
 
 
@@ -81,7 +82,7 @@ class CircuitBreaker:
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self.last_state_change = datetime.utcnow()
 
     def record_success(self) -> None:
@@ -142,7 +143,7 @@ class CircuitBreaker:
         self.last_state_change = datetime.utcnow()
         logger.info(f"Circuit breaker '{self.name}' CLOSED. Service recovered.")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Retorna status del circuit breaker."""
         return {
             "name": self.name,
@@ -158,8 +159,8 @@ class RetryEngine:
     """Motor de retry con exponential backoff + circuit breaker."""
 
     def __init__(self):
-        self.circuit_breakers: Dict[str, CircuitBreaker] = {}
-        self.retry_history: Dict[str, RetryHistory] = {}
+        self.circuit_breakers: dict[str, CircuitBreaker] = {}
+        self.retry_history: dict[str, RetryHistory] = {}
         self.default_config = RetryConfig()
 
     def get_config(self, policy: RetryPolicy = RetryPolicy.DEFAULT) -> RetryConfig:
@@ -178,7 +179,7 @@ class RetryEngine:
         *args,
         policy: RetryPolicy = RetryPolicy.DEFAULT,
         operation_name: str = "operation",
-        circuit_breaker_name: Optional[str] = None,
+        circuit_breaker_name: str | None = None,
         **kwargs,
     ) -> Any:
         """
@@ -251,7 +252,7 @@ class RetryEngine:
                 )
                 return result
 
-            except asyncio.TimeoutError as e:
+            except TimeoutError:
                 error_msg = f"Timeout after {config.timeout}s"
                 self._record_attempt(history, attempt, config, error_msg, timeout=True)
 
@@ -305,7 +306,7 @@ class RetryEngine:
         attempt: int,
         config: RetryConfig,
         error: str,
-        status_code: Optional[int] = None,
+        status_code: int | None = None,
         timeout: bool = False,
     ) -> None:
         """Registra intento fallido."""
@@ -322,16 +323,16 @@ class RetryEngine:
         )
         history.attempts.append(retry_attempt)
 
-    def get_history(self, operation_id: str) -> Optional[RetryHistory]:
+    def get_history(self, operation_id: str) -> RetryHistory | None:
         """Obtiene historial de una operación."""
         return self.retry_history.get(operation_id)
 
-    def get_circuit_breaker_status(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_circuit_breaker_status(self, name: str) -> dict[str, Any] | None:
         """Obtiene status de un circuit breaker."""
         cb = self.circuit_breakers.get(name)
         return cb.get_status() if cb else None
 
-    def get_all_circuit_breakers_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_circuit_breakers_status(self) -> dict[str, dict[str, Any]]:
         """Obtiene status de todos los circuit breakers."""
         return {name: cb.get_status() for name, cb in self.circuit_breakers.items()}
 
@@ -358,7 +359,7 @@ retry_engine = RetryEngine()
 
 def retry(
     policy: RetryPolicy = RetryPolicy.DEFAULT,
-    circuit_breaker_name: Optional[str] = None,
+    circuit_breaker_name: str | None = None,
 ):
     """Decorador para retry automático en funciones async."""
 

@@ -1,8 +1,7 @@
 """Copy and content generation for marketing."""
 
-from dataclasses import dataclass
-from typing import List, Dict, Any
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -10,12 +9,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CopyKit:
     channel: str
-    headlines: List[str]
-    descriptions: List[str]
-    calls_to_action: List[str]
-    sample_posts: List[Dict[str, str]]
-    email_templates: List[Dict[str, str]]
-    best_practices: List[str]
+    headlines: list[str]
+    descriptions: list[str]
+    calls_to_action: list[str]
+    sample_posts: list[dict[str, str]]
+    email_templates: list[dict[str, str]]
+    best_practices: list[str]
 
 
 class CopyGenerator:
@@ -51,12 +50,12 @@ class CopyGenerator:
                 f"{business_name} - Respuesta rápida garantizada",
             ],
             descriptions=[
-                f"Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
-                f"Presupuesto sin compromiso.",
-                f"Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
-                f"Clientes satisfechos.",
-                f"Servicio profesional y confiable. Disponibles 24/7. "
-                f"Garantía en todos nuestros trabajos.",
+                "Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
+                "Presupuesto sin compromiso.",
+                "Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
+                "Clientes satisfechos.",
+                "Servicio profesional y confiable. Disponibles 24/7. "
+                "Garantía en todos nuestros trabajos.",
             ],
             calls_to_action=[
                 "Llama ahora",
@@ -96,15 +95,15 @@ class CopyGenerator:
             channel="instagram",
             headlines=[
                 f"Descubre {business_name} ✨",
-                f"Transforma tu [espacio] con nosotros",
-                f"Calidad profesional a tu alcance",
-                f"Somos tu solución número 1"
+                "Transforma tu [espacio] con nosotros",
+                "Calidad profesional a tu alcance",
+                "Somos tu solución número 1"
             ],
             descriptions=[
-                f"Especialistas en [especialidad]. Síguenos para tips, antes y después, "
-                f"y ofertas exclusivas. 👇",
-                f"Tus [productos/servicios] de confianza. Calidad premium. "
-                f"Envío rápido. ¡Síguenos!",
+                "Especialistas en [especialidad]. Síguenos para tips, antes y después, "
+                "y ofertas exclusivas. 👇",
+                "Tus [productos/servicios] de confianza. Calidad premium. "
+                "Envío rápido. ¡Síguenos!",
             ],
             calls_to_action=[
                 "Compra ahora",
@@ -196,12 +195,12 @@ class CopyGenerator:
             channel="linkedin",
             headlines=[
                 f"Transforma tu negocio con {business_name}",
-                f"Soluciones empresariales que crecen con tu empresa",
-                f"Expertos en [industria]",
+                "Soluciones empresariales que crecen con tu empresa",
+                "Expertos en [industria]",
             ],
             descriptions=[
-                f"Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
-                f"Conectemos y exploremos oportunidades.",
+                "Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
+                "Conectemos y exploremos oportunidades.",
             ],
             calls_to_action=[
                 "Conectemos",
@@ -249,10 +248,10 @@ class CopyGenerator:
         return CopyKit(
             channel="email",
             headlines=[
-                f"¿Quieres aumentar tus ventas 40% en 30 días?",
-                f"El secreto que tus competidores no quieren que sepas",
+                "¿Quieres aumentar tus ventas 40% en 30 días?",
+                "El secreto que tus competidores no quieren que sepas",
                 f"Oferta exclusiva para {business_name}",
-                f"Transforma tu negocio: aquí está cómo",
+                "Transforma tu negocio: aquí está cómo",
             ],
             descriptions=[],
             calls_to_action=[

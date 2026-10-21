@@ -4,15 +4,14 @@ Orchestrates expert selection and prompt execution for sales conversations
 Production-ready implementation with async support
 """
 
-from typing import Optional, Dict, List, Any, Callable, AsyncGenerator
-from dataclasses import dataclass
-from enum import Enum
 import asyncio
-import json
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
+from expert_selector import ExpertSelection, ExpertSelector, SalesScenario
 from prompt_registry import ExpertType, SalesContext
-from expert_selector import ExpertSelector, SalesScenario, ExpertSelection
 
 
 @dataclass
@@ -21,8 +20,8 @@ class PromptExecutionContext:
     scenario: SalesScenario
     expert_selection: ExpertSelection
     customer_message: str
-    conversation_history: List[Dict[str, str]]
-    additional_context: Dict[str, Any]
+    conversation_history: list[dict[str, str]]
+    additional_context: dict[str, Any]
     timestamp: datetime
 
 
@@ -33,10 +32,10 @@ class PromptExecutionResult:
     expert_voice: str
     suggested_response: str
     tactical_approach: str
-    success_metrics: List[str]
+    success_metrics: list[str]
     confidence_score: float
     execution_time_ms: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class PromptExecutionMode(Enum):
@@ -62,8 +61,8 @@ class ExpertOrchestrator:
         self,
         scenario: SalesScenario,
         customer_message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        additional_context: Optional[Dict[str, Any]] = None
+        conversation_history: list[dict[str, str]] | None = None,
+        additional_context: dict[str, Any] | None = None
     ) -> PromptExecutionResult:
         """
         Execute expert prompt for sales situation
@@ -106,7 +105,7 @@ class ExpertOrchestrator:
             return result
 
         except Exception as e:
-            raise PromptExecutionError(f"Failed to execute expert prompt: {str(e)}")
+            raise PromptExecutionError(f"Failed to execute expert prompt: {e!s}")
 
     async def _execute_prompt_internal(self, context: PromptExecutionContext) -> PromptExecutionResult:
         """Internal prompt execution"""
@@ -189,7 +188,7 @@ class ExpertOrchestrator:
         return "Apply expert methodology to situation"
 
     def _build_tactical_response(
-        self, expert_type: ExpertType, tactics: List[str], context: PromptExecutionContext
+        self, expert_type: ExpertType, tactics: list[str], context: PromptExecutionContext
     ) -> str:
         """Build tactical approach for expert"""
         lines = ["TACTICAL APPROACH:", ""]
@@ -201,7 +200,7 @@ class ExpertOrchestrator:
 
     def _extract_success_metrics(
         self, expert_type: ExpertType, context: PromptExecutionContext
-    ) -> List[str]:
+    ) -> list[str]:
         """Extract success metrics for this situation"""
 
         default_metrics = [
@@ -315,7 +314,7 @@ class ExpertOrchestrator:
         }
         self.execution_history.append(log_entry)
 
-    def get_execution_analytics(self) -> Dict[str, Any]:
+    def get_execution_analytics(self) -> dict[str, Any]:
         """Get analytics on executions"""
         if not self.execution_history:
             return {"total_executions": 0}
@@ -339,7 +338,6 @@ class ExpertOrchestrator:
 
 class PromptExecutionError(Exception):
     """Error during prompt execution"""
-    pass
 
 
 async def demonstrate_orchestration():
@@ -373,24 +371,24 @@ async def demonstrate_orchestration():
         }
     )
 
-    print(f"ORCHESTRATION RESULT")
-    print(f"=" * 50)
+    print("ORCHESTRATION RESULT")
+    print("=" * 50)
     print(f"Expert Selected: {result.expert_type.value}")
     print(f"Confidence Score: {result.confidence_score:.2f}")
     print(f"Execution Time: {result.execution_time_ms:.2f}ms")
-    print(f"\nEXPERT VOICE:")
+    print("\nEXPERT VOICE:")
     print(f"{result.expert_voice}")
-    print(f"\nTACTICAL APPROACH:")
+    print("\nTACTICAL APPROACH:")
     print(f"{result.tactical_approach}")
-    print(f"\nSUCCESS METRICS:")
+    print("\nSUCCESS METRICS:")
     for metric in result.success_metrics:
         print(f"  - {metric}")
-    print(f"\nMETADATA:")
+    print("\nMETADATA:")
     print(f"  {result.metadata}")
 
     # Analytics
     analytics = orchestrator.get_execution_analytics()
-    print(f"\nANALYTICS:")
+    print("\nANALYTICS:")
     print(f"  Total Executions: {analytics['total_executions']}")
     print(f"  Avg Execution Time: {analytics['average_execution_time_ms']:.2f}ms")
 
@@ -399,9 +397,9 @@ async def demonstrate_orchestration():
 __all__ = [
     "ExpertOrchestrator",
     "PromptExecutionContext",
-    "PromptExecutionResult",
+    "PromptExecutionError",
     "PromptExecutionMode",
-    "PromptExecutionError"
+    "PromptExecutionResult"
 ]
 
 

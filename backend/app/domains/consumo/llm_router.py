@@ -12,12 +12,12 @@ Typical savings: 40-60% on mixed workloads.
 """
 
 import uuid
-from typing import Tuple, Optional, List, Dict, Any
 from enum import Enum
+from typing import Any
 
-from app.core.logger import get_logger
-from app.core.embeddings import embedding_service
 from app.core.database import AsyncSessionLocal
+from app.core.embeddings import embedding_service
+from app.core.logger import get_logger
 from app.domains.consumo.models import AICallLog
 
 logger = get_logger(__name__)
@@ -30,7 +30,7 @@ class TaskComplexity(str, Enum):
 
 
 # Predefined task categories (descriptions) for embedding-based classification
-_TASK_CATEGORIES: Dict[TaskComplexity, List[str]] = {
+_TASK_CATEGORIES: dict[TaskComplexity, list[str]] = {
     TaskComplexity.SIMPLE: [
         "simple faq question answer greeting thanks status check short response",
         "how to basic tutorial price plan billing definition hello hi hola",
@@ -66,7 +66,7 @@ TIER_COMPLEX = [
 ]
 
 
-def _cosine_similarity(a: List[float], b: List[float]) -> float:
+def _cosine_similarity(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(x * x for x in b) ** 0.5
@@ -114,7 +114,7 @@ class SmartRouterV2:
     """Embedding-based smart router with task decomposition."""
 
     def __init__(self):
-        self._category_embeddings: Optional[Dict[TaskComplexity, List[List[float]]]] = None
+        self._category_embeddings: dict[TaskComplexity, list[list[float]]] | None = None
 
     async def _load_category_embeddings(self) -> None:
         if self._category_embeddings is not None:
@@ -155,7 +155,7 @@ class SmartRouterV2:
         self,
         prompt: str,
         ollama_available: bool = False,
-    ) -> Tuple[str, str, TaskComplexity]:
+    ) -> tuple[str, str, TaskComplexity]:
         """
         Returns (provider, model, complexity) for the given prompt.
         """
@@ -182,7 +182,7 @@ class SmartRouterV2:
         self,
         prompt: str,
         ollama_available: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Decompose a prompt into sub-tasks and route each.
         Currently treats most prompts as a single sub-task, with
@@ -190,7 +190,7 @@ class SmartRouterV2:
         """
         complexity = await self.classify_task(prompt)
 
-        sub_tasks: List[Dict[str, Any]] = []
+        sub_tasks: list[dict[str, Any]] = []
         if complexity == TaskComplexity.COMPLEX and len(prompt) > 800:
             # Naive decomposition: split by double newline or numbered lists
             parts = [p.strip() for p in prompt.split("\n\n") if p.strip()]
@@ -214,7 +214,7 @@ class SmartRouterV2:
                 "complexity": complexity,
             })
 
-        routed: List[Dict[str, Any]] = []
+        routed: list[dict[str, Any]] = []
         for sub in sub_tasks:
             provider, model, comp = await self.route_model(sub["prompt"], ollama_available)
             sub["provider"] = provider
@@ -227,8 +227,8 @@ class SmartRouterV2:
     async def log_subtask_costs(
         self,
         user_id: uuid.UUID,
-        business_id: Optional[uuid.UUID],
-        sub_tasks: List[Dict[str, Any]],
+        business_id: uuid.UUID | None,
+        sub_tasks: list[dict[str, Any]],
         actual_tokens_input: int,
         actual_tokens_output: int,
         actual_cost: float,
@@ -273,7 +273,7 @@ def estimate_cost_usd(prompt: str, complexity: TaskComplexity) -> float:
 # Module-level convenience functions
 # ---------------------------------------------------------------------------
 
-_router_instance: Optional[SmartRouterV2] = None
+_router_instance: SmartRouterV2 | None = None
 
 
 def _get_router() -> SmartRouterV2:
@@ -289,11 +289,11 @@ async def classify_task(prompt: str) -> TaskComplexity:
 
 async def route_model(
     prompt: str, ollama_available: bool = False
-) -> Tuple[str, str, TaskComplexity]:
+) -> tuple[str, str, TaskComplexity]:
     return await _get_router().route_model(prompt, ollama_available)
 
 
 async def decompose_and_route(
     prompt: str, ollama_available: bool = False
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     return await _get_router().decompose_and_route(prompt, ollama_available)

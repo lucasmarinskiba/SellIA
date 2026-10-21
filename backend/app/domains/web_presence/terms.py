@@ -16,7 +16,8 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 #: Weight per position. A term in the title is a claim about the whole page;
 #: the same term buried in the body is just prose.
@@ -45,14 +46,14 @@ STOPWORDS: set[str] = {
     "su", "sus", "tambien", "tan", "tanto", "te", "tiene", "tienen", "todo", "todos", "tu",
     "tus", "un", "una", "uno", "unos", "usted", "va", "vos", "y", "ya", "yo",
     # english
-    "a", "about", "all", "an", "and", "any", "are", "as", "at", "be", "been", "but", "by",
+    "about", "all", "an", "and", "any", "are", "as", "at", "be", "been", "but", "by",
     "can", "do", "does", "for", "from", "get", "has", "have", "how", "i", "if", "in", "is",
-    "it", "its", "more", "my", "no", "not", "of", "on", "one", "or", "our", "out", "so",
+    "it", "its", "more", "my", "not", "of", "on", "one", "or", "our", "out", "so",
     "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "to",
     "up", "use", "was", "we", "were", "what", "when", "which", "who", "will", "with", "you",
     "your",
     # ruido habitual de e-commerce que no describe el negocio
-    "aqui", "click", "clic", "envio", "gratis", "home", "inicio", "mas", "menu", "pagina",
+    "click", "clic", "envio", "gratis", "home", "inicio", "menu", "pagina",
     "productos", "ver",
     # saludos y muletillas de título: aparecen en el <title> de medio internet y
     # dispararían el chequeo "el título promete algo que la página no dice" sin

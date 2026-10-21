@@ -5,9 +5,7 @@ Usa Brain para razonar, adapta en tiempo real, es genio de negocios.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
-import asyncio
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +23,10 @@ class IntelligentBrowserAgent:
 
     async def intelligent_list_product(
         self,
-        product: Dict[str, Any],
+        product: dict[str, Any],
         platform: str,
-        market_conditions: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        market_conditions: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Lista producto INTELIGENTEMENTE.
 
@@ -79,9 +77,9 @@ class IntelligentBrowserAgent:
 
     async def _optimize_product_copy(
         self,
-        product: Dict[str, Any],
-        decision: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        decision: dict[str, Any],
+    ) -> dict[str, Any]:
         """Optimiza título, descripción, precio basado en decisión brain."""
 
         tactics = decision.get("tactics", {})
@@ -108,7 +106,7 @@ class IntelligentBrowserAgent:
             "strategy": decision.get("strategy"),
         }
 
-    async def _build_description(self, product: Dict[str, Any], structure: List[str]) -> str:
+    async def _build_description(self, product: dict[str, Any], structure: list[str]) -> str:
         """Construye descripción siguiendo estructura."""
         parts = []
 
@@ -135,7 +133,7 @@ class IntelligentBrowserAgent:
 
         return "\n".join(parts)
 
-    async def _execute_listing(self, product: Dict[str, Any], platform: str) -> Dict[str, Any]:
+    async def _execute_listing(self, product: dict[str, Any], platform: str) -> dict[str, Any]:
         """Ejecuta listing via Computer Use."""
 
         if platform == "mercadolibre":
@@ -159,7 +157,7 @@ class IntelligentBrowserAgent:
             "product_id": product.get("id"),
         }
 
-    async def _build_ml_listing_actions(self, product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _build_ml_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
         """Construye acciones MercadoLibre."""
         return [
             {"type": "navigate", "params": {"url": "https://www.mercadolibre.com.ar/vender"}},
@@ -172,7 +170,7 @@ class IntelligentBrowserAgent:
             {"type": "screenshot", "params": {"filename": f"ml_listed_{product.get('id')}.png"}},
         ]
 
-    async def _build_amazon_listing_actions(self, product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _build_amazon_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
         return [
             {"type": "navigate", "params": {"url": "https://sellercentral.amazon.com/products/create"}},
             {"type": "fill_form", "params": {"fields": {
@@ -183,7 +181,7 @@ class IntelligentBrowserAgent:
             {"type": "click", "params": {"selector": "button:has-text('Publish')"}},
         ]
 
-    async def _build_shopify_listing_actions(self, product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _build_shopify_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
         return [
             {"type": "navigate", "params": {"url": "https://admin.shopify.com/products/create"}},
             {"type": "fill_form", "params": {"fields": {
@@ -194,7 +192,7 @@ class IntelligentBrowserAgent:
             {"type": "click", "params": {"selector": "button:has-text('Save')"}},
         ]
 
-    async def _build_tiktok_listing_actions(self, product: Dict[str, Any]) -> List[Dict[str, Any]]:
+    async def _build_tiktok_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
         return [
             {"type": "navigate", "params": {"url": "https://seller.tiktok.com/products/add"}},
             {"type": "fill_form", "params": {"fields": {
@@ -208,10 +206,10 @@ class IntelligentBrowserAgent:
 
     async def intelligent_negotiate(
         self,
-        buyer_profile: Dict[str, Any],
-        product: Dict[str, Any],
+        buyer_profile: dict[str, Any],
+        product: dict[str, Any],
         initial_offer: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Negocia INTELIGENTEMENTE usando Trump tactics + buyer psychology.
 
@@ -258,10 +256,10 @@ class IntelligentBrowserAgent:
 
     async def _execute_negotiation(
         self,
-        buyer_profile: Dict[str, Any],
-        product: Dict[str, Any],
-        decision: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer_profile: dict[str, Any],
+        product: dict[str, Any],
+        decision: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta negociación via Computer Use (WhatsApp, email, etc)."""
 
         buyer_type = buyer_profile.get("type")
@@ -306,8 +304,8 @@ class IntelligentBrowserAgent:
 
     async def adapt_strategy_realtime(
         self,
-        current_performance: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        current_performance: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Adapta estrategia en TIEMPO REAL basado en resultados.
 

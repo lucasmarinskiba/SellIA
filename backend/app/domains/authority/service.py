@@ -9,17 +9,16 @@ is the only way the trend line means anything.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
-from . import automations
+from . import automations, psychology
 from . import pillars as pillar_calc
-from . import psychology
 from .models import ActionMode, ActionStatus, AuthorityAction, AuthoritySnapshot
 
 logger = get_logger(__name__)
@@ -106,7 +105,7 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
 
     # Median first-response time comes from the same analyst engine Analytics
     # uses, so both screens can never disagree about it.
-    median_minutes: Optional[float] = None
+    median_minutes: float | None = None
     try:
         insights = await ds_service.get_insights(db, user, days=90)
         for reading in insights.get("readings", []):
@@ -152,7 +151,7 @@ async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> dict[
     computed, context = await compute_pillars(db, user)
     total = pillar_calc.total_score(computed)
     signals = pillar_calc.flatten_signals(computed)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     last = await _latest_snapshot(db, user.id)
     last_captured_at = last.captured_at if last is not None else None
@@ -179,7 +178,7 @@ async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> dict[
     return {"total_score": total, "captured_at": now, "pillars": computed}
 
 
-async def _latest_snapshot(db: AsyncSession, user_id: uuid.UUID) -> Optional[AuthoritySnapshot]:
+async def _latest_snapshot(db: AsyncSession, user_id: uuid.UUID) -> AuthoritySnapshot | None:
     result = await db.execute(
         select(AuthoritySnapshot)
         .where(AuthoritySnapshot.user_id == user_id)
@@ -236,7 +235,7 @@ async def sync_actions(
     for key, action in existing.items():
         if key not in by_key and action.status in (ActionStatus.SUGGESTED, ActionStatus.IN_PROGRESS):
             action.status = ActionStatus.DONE
-            action.completed_at = datetime.now(timezone.utc)
+            action.completed_at = datetime.now(UTC)
 
     await db.commit()
     return await list_actions(db, user.id)
@@ -291,7 +290,7 @@ def serialize_action(action: AuthorityAction) -> dict[str, Any]:
 
 async def set_action_status(
     db: AsyncSession, user_id: uuid.UUID, action_id: uuid.UUID, status: ActionStatus
-) -> Optional[AuthorityAction]:
+) -> AuthorityAction | None:
     result = await db.execute(
         select(AuthorityAction).where(
             AuthorityAction.id == action_id, AuthorityAction.user_id == user_id
@@ -301,7 +300,7 @@ async def set_action_status(
     if action is None:
         return None
     action.status = status
-    action.completed_at = datetime.now(timezone.utc) if status == ActionStatus.DONE else None
+    action.completed_at = datetime.now(UTC) if status == ActionStatus.DONE else None
     await db.commit()
     await db.refresh(action)
     return action

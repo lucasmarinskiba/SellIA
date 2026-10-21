@@ -5,17 +5,19 @@ and tracks conversion rates end-to-end.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import LeadMagnet, LeadMagnetFormat, InboundLead, InboundLeadSource
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    LeadMagnet,
+    LeadMagnetFormat,
+)
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -315,7 +317,7 @@ Ejemplo de tono: "¡Hola [nombre]! Aquí tienes la guía que pediste. Espero que
 
     # ========== Helpers ==========
 
-    async def _get_magnet(self, magnet_id: uuid.UUID) -> Optional[LeadMagnet]:
+    async def _get_magnet(self, magnet_id: uuid.UUID) -> LeadMagnet | None:
         result = await self.db.execute(
             select(LeadMagnet).where(LeadMagnet.id == magnet_id)
         )

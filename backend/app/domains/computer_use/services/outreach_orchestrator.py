@@ -5,9 +5,9 @@ Envía primer mensaje frío → sigue si no responde → personaliza por lead.
 
 import logging
 import uuid
-from typing import List, Dict, Any, Tuple, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class OutreachCampaign:
             "conversion": 0,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "campaign_id": self.campaign_id,
             "name": self.name,
@@ -110,15 +110,15 @@ We help teams fix this. Worth a quick chat?
 
     def __init__(self):
         self.logger = logger
-        self.campaigns: Dict[str, OutreachCampaign] = {}
-        self.outreach_log: List[Dict[str, Any]] = []
+        self.campaigns: dict[str, OutreachCampaign] = {}
+        self.outreach_log: list[dict[str, Any]] = []
 
     async def create_campaign(
         self,
         name: str,
         target_quality: str,
         channel: OutreachChannel,
-        message_template: Optional[str] = None,
+        message_template: str | None = None,
     ) -> OutreachCampaign:
         """Crea campaña de outreach."""
         try:
@@ -152,7 +152,7 @@ We help teams fix this. Worth a quick chat?
         lead: Any,  # Lead object
         sender_name: str,
         sender_email: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía mensaje inicial a lead."""
         try:
             # Personalizar template
@@ -211,13 +211,13 @@ We help teams fix this. Worth a quick chat?
         campaign: OutreachCampaign,
         lead: Any,
         follow_up_number: int = 1,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía follow-up si no respondió."""
         try:
             follow_up_messages = [
-                f"Just circling back on my earlier message - still interested?",
-                f"Quick follow-up: did you get a chance to look at this?",
-                f"Last one: would love to connect this week",
+                "Just circling back on my earlier message - still interested?",
+                "Quick follow-up: did you get a chance to look at this?",
+                "Last one: would love to connect this week",
             ]
 
             if follow_up_number > len(follow_up_messages):
@@ -286,7 +286,7 @@ We help teams fix this. Worth a quick chat?
         to: str,
         subject: str,
         body: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía email (mock)."""
         # En prod: usar SendGrid, Mailgun, etc
         self.logger.info(f"Email queued: {to} | {subject}")
@@ -296,7 +296,7 @@ We help teams fix this. Worth a quick chat?
         self,
         phone: str,
         message: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía WhatsApp (mock)."""
         self.logger.info(f"WhatsApp queued: {phone}")
         return True, f"whatsapp_{phone}"
@@ -305,7 +305,7 @@ We help teams fix this. Worth a quick chat?
         self,
         profile_url: str,
         message: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Envía LinkedIn message (mock)."""
         self.logger.info(f"LinkedIn queued: {profile_url}")
         return True, f"linkedin_{profile_url}"

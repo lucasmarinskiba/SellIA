@@ -1,22 +1,32 @@
 """Analytics & BI API Router."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from datetime import UTC
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.analytics.models import FunnelMetric, ChurnPrediction, LtvPrediction, InsightAlert
+from app.domains.analytics.adapters import DashboardKPIAdapter
+from app.domains.analytics.models import (
+    ChurnPrediction,
+    FunnelMetric,
+    InsightAlert,
+    LtvPrediction,
+)
 from app.domains.analytics.schemas import (
-    FunnelMetricResponse, ChurnPredictionResponse, LtvPredictionResponse,
-    InsightAlertResponse, DashboardSummaryResponse,
+    ChurnPredictionResponse,
+    DashboardSummaryResponse,
+    FunnelMetricResponse,
+    InsightAlertResponse,
+    LtvPredictionResponse,
 )
 from app.domains.analytics.services import BusinessIntelligenceService
-from app.domains.analytics.adapters import DashboardKPIAdapter
-from app.domains.retention.services import RetentionService
 from app.domains.business_context.models import BusinessContext
+from app.domains.retention.services import RetentionService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/analytics", tags=["Analytics & BI"])
 
@@ -91,8 +101,9 @@ async def get_dashboard(
     retention = RetentionService(db)
 
     # Revenue
-    from app.domains.orders.models import Order
     from sqlalchemy import func
+
+    from app.domains.orders.models import Order
     rev_result = await db.execute(select(func.sum(Order.total_amount), func.count(Order.id)).where(Order.business_id == business_id, Order.is_active == True))
     rev_row = rev_result.first()
     revenue = float(rev_row[0] or 0)
@@ -115,8 +126,8 @@ async def get_dashboard(
     at_risk = churn_result.scalar() or 0
 
     # Insights today
-    from datetime import datetime, timezone, timedelta
-    today = datetime.now(timezone.utc) - timedelta(hours=24)
+    from datetime import datetime, timedelta
+    today = datetime.now(UTC) - timedelta(hours=24)
     insights_result = await db.execute(select(func.count(InsightAlert.id)).where(InsightAlert.business_id == business_id, InsightAlert.created_at >= today))
     insights_today = insights_result.scalar() or 0
 

@@ -1,11 +1,21 @@
 """Location-based inventory models — per-location stock tracking."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -62,8 +72,8 @@ class LocationInventory(Base):
     notes = Column(String(1000), nullable=True)
     inventory_metadata = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -97,7 +107,7 @@ class StockMovement(Base):
     moved_by_staff_id = Column(UUID(as_uuid=True), nullable=True)  # Staff member
     moved_by_system = Column(Boolean, default=False)  # Automated movement
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -128,7 +138,7 @@ class LowStockAlert(Base):
     reorder_initiated = Column(Boolean, default=False)
     reorder_quantity = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -161,8 +171,8 @@ class FulfillmentRoute(Base):
     avg_ship_days = Column(Integer, default=2)
     last_used = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_product", "business_id", "product_id"),

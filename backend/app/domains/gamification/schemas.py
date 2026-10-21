@@ -2,8 +2,8 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional, Any, List, Dict
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -31,7 +31,7 @@ class GamificationProfileResponse(BaseModel):
     garden_state: dict
     companion_name: str
     companion_mood: str
-    user_mood_today: Optional[str]
+    user_mood_today: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -56,7 +56,7 @@ class UserAchievementResponse(BaseModel):
 
     id: uuid.UUID
     achievement_id: uuid.UUID
-    achievement: Optional[AchievementResponse]
+    achievement: AchievementResponse | None
     unlocked_at: datetime
     was_celebrated: bool
 
@@ -67,10 +67,10 @@ class CelebrationEventResponse(BaseModel):
     id: uuid.UUID
     event_type: str
     event_title: str
-    event_description: Optional[str]
-    event_value: Optional[Decimal]
+    event_description: str | None
+    event_value: Decimal | None
     intensity: str
-    companion_message: Optional[str]
+    companion_message: str | None
     companion_emotion: str
     was_shown: bool
     created_at: datetime
@@ -91,7 +91,7 @@ class CompanionMessageResponse(BaseModel):
 class MoodCheckinRequest(BaseModel):
     mood: str
     energy_level: int = 5
-    notes: Optional[str] = ""
+    notes: str | None = ""
 
 
 class MoodCheckinResponse(BaseModel):
@@ -100,22 +100,22 @@ class MoodCheckinResponse(BaseModel):
     id: uuid.UUID
     mood: str
     energy_level: int
-    ai_response: Optional[str]
+    ai_response: str | None
     created_at: datetime
 
 
 class SaleRecordedResponse(BaseModel):
     xp_gained: int
-    new_achievements: List[Dict[str, Any]]
+    new_achievements: list[dict[str, Any]]
     celebration_intensity: str
-    new_level: Optional[int] = None
-    new_level_title: Optional[str] = None
+    new_level: int | None = None
+    new_level_title: str | None = None
 
 
 class LoginResponse(BaseModel):
     streak: int
     xp_gained: int
-    new_achievements: List[Dict[str, Any]]
+    new_achievements: list[dict[str, Any]]
     welcome_message: str
 
 
@@ -134,7 +134,7 @@ class LeaderboardEntryResponse(BaseModel):
 
 
 class UserRankResponse(BaseModel):
-    rank: Optional[int]
+    rank: int | None
     total_members: int
     user_id: str
     full_name: str
@@ -149,9 +149,9 @@ class UserRankResponse(BaseModel):
 
 
 class NearbyUsersResponse(BaseModel):
-    user_rank: Optional[int]
+    user_rank: int | None
     metric: str
-    nearby: List[LeaderboardEntryResponse]
+    nearby: list[LeaderboardEntryResponse]
 
 
 class TeamStatsResponse(BaseModel):
@@ -159,5 +159,5 @@ class TeamStatsResponse(BaseModel):
     total_sales: int
     total_revenue: float
     avg_streak: float
-    top_performer_name: Optional[str]
+    top_performer_name: str | None
     top_performer_xp: int

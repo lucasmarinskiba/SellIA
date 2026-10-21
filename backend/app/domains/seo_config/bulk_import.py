@@ -1,11 +1,12 @@
 """Bulk import listings from platforms → auto-create publication links + FOMO."""
 
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.models import PublicationLink
 
 logger = get_logger(__name__)
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,7 +71,7 @@ async def propose_rotation(db: AsyncSession, channel: ChannelConnection, now: da
 
     The caller commits.
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     if await _already_proposed(db, channel.id, now):
         return False
 
@@ -146,5 +146,5 @@ async def apply_rotation(db: AsyncSession, rec: Recommendation, user_id: uuid.UU
         )
     )
     rec.status = RecommendationStatus.APPLIED
-    rec.applied_at = datetime.now(timezone.utc)
+    rec.applied_at = datetime.now(UTC)
     rec.applied_by_user_id = user_id

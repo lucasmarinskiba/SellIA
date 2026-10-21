@@ -6,18 +6,16 @@ actionable recommendations.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from datetime import UTC, datetime
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.logger import get_logger
-from app.domains.diagnostics.models import DiagnosticRun
-from app.domains.channels.models import ChannelConnection
-from app.domains.channels.models import Conversation, Message
-from app.domains.subscriptions.models import Subscription, UsageTracking
 from app.domains.agents.models import AgentConfig
+from app.domains.channels.models import ChannelConnection, Conversation
+from app.domains.diagnostics.models import DiagnosticRun
+from app.domains.subscriptions.models import Subscription, UsageTracking
 
 logger = get_logger(__name__)
 
@@ -56,15 +54,15 @@ async def run_diagnostic(
             run.severity = "info"
 
         run.status = "completed"
-        run.completed_at = datetime.now(timezone.utc)
+        run.completed_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(run)
 
     except Exception as exc:
         run.status = "failed"
-        run.findings.append({"message": f"Error en diagnóstico: {str(exc)}"})
+        run.findings.append({"message": f"Error en diagnóstico: {exc!s}"})
         run.severity = "critical"
-        run.completed_at = datetime.now(timezone.utc)
+        run.completed_at = datetime.now(UTC)
         await db.commit()
         logger.exception(f"Diagnostic {diagnostic_type} failed for user {user_id}")
 
@@ -111,7 +109,7 @@ async def _diag_agent_offline(db: AsyncSession, user_id: uuid.UUID, run: Diagnos
 
 async def _diag_no_leads(db: AsyncSession, user_id: uuid.UUID, run: DiagnosticRun):
     from datetime import timedelta
-    since = datetime.now(timezone.utc) - timedelta(days=7)
+    since = datetime.now(UTC) - timedelta(days=7)
     convs = await db.execute(
         select(func.count(Conversation.id)).where(
             Conversation.user_id == user_id,
@@ -147,7 +145,7 @@ async def _diag_billing(db: AsyncSession, user_id: uuid.UUID, run: DiagnosticRun
 
     # Check usage
     from datetime import timedelta
-    since = datetime.now(timezone.utc) - timedelta(days=30)
+    since = datetime.now(UTC) - timedelta(days=30)
     usage = await db.execute(
         select(func.sum(UsageTracking.ai_messages_used)).where(
             UsageTracking.user_id == user_id,

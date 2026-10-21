@@ -11,19 +11,24 @@ safe to cache at the edge.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Query, Request, Depends
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.brain import (
-    get_brain_registry, CapabilityKind, get_activity_bus, record_activity, get_cua_store,
+    CapabilityKind,
+    get_activity_bus,
+    get_brain_registry,
+    get_cua_store,
+    record_activity,
 )
 from app.core.brain.toggle_mapping import (
-    brain_id_to_toggle_key, toggle_key_to_brain_id, brain_id_category,
+    brain_id_category,
+    brain_id_to_toggle_key,
+    toggle_key_to_brain_id,
 )
 from app.core.database import get_db
 
@@ -64,7 +69,7 @@ async def _disabled_brain_ids(business_id, db: AsyncSession) -> list[str]:
     result = await db.execute(
         select(AutomationToggle.toggle_key).where(
             AutomationToggle.business_id == business_id,
-            AutomationToggle.is_enabled == False,  # noqa: E712
+            AutomationToggle.is_enabled == False,
         )
     )
     return [toggle_key_to_brain_id(k) for k in result.scalars().all()]
@@ -112,7 +117,7 @@ async def brain_set_toggle(body: ToggleUpdate, request: Request, db: AsyncSessio
     )
     toggle = result.scalar_one_or_none()
     old_enabled = toggle.is_enabled if toggle else True
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if toggle is None:
         toggle = AutomationToggle(
@@ -157,7 +162,7 @@ async def brain_graph() -> dict:
     # La propia consulta del grafo es una interacción real → la registramos.
     record_activity("function", "skill.tool.retrieve_knowledge",
                     "Grafo de capacidades solicitado por el Command Center")
-    g["generated_at"] = datetime.now(timezone.utc).isoformat()
+    g["generated_at"] = datetime.now(UTC).isoformat()
     return g
 
 
@@ -259,7 +264,7 @@ async def brain_cua_dispatch(body: CuaDispatch, request: Request, db: AsyncSessi
     mode = body.mode if body.mode in ("auto", "supervised") else "supervised"
     disabled = set(body.disabled)
 
-    candidates = [cfg for rx, cfg in _CUA_INTENTS if re.search(rx, text, re.I)]
+    candidates = [cfg for rx, cfg in _CUA_INTENTS if re.search(rx, text, re.IGNORECASE)]
     candidates.append(_FALLBACK_INTENT)
 
     intent = None
@@ -310,7 +315,7 @@ async def brain_cua_dispatch(body: CuaDispatch, request: Request, db: AsyncSessi
         record_activity("function", f"skill.tool.{tslug}", f"CU usa {tslug} para: {text[:60]}")
 
     flow = get_cua_store().add({
-        "id": f"cua.{int(datetime.now(timezone.utc).timestamp())}",
+        "id": f"cua.{int(datetime.now(UTC).timestamp())}",
         "name": intent["action"], "instruction": text, "mode": mode,
         "kind": "cua", "status": "running", "steps": steps, "edges": edges,
     })
@@ -319,8 +324,8 @@ async def brain_cua_dispatch(body: CuaDispatch, request: Request, db: AsyncSessi
     # que es global/proceso y se pierde en cada redeploy -- ver ai_activity/models.py).
     user = await _optional_user(request, db)
     if user is not None:
-        from app.domains.businesses.models import Business
         from app.domains.ai_activity.service import log_ai_action
+        from app.domains.businesses.models import Business
         biz_result = await db.execute(
             select(Business.id).where(Business.user_id == user.id).limit(1)
         )
@@ -358,14 +363,14 @@ async def brain_overview() -> dict:
         "counts": snap.counts,
         "health": snap.health,
         "categories": snap.categories(),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
 @router.get("/brain/capabilities")
 async def brain_capabilities(
-    kind: Optional[CapabilityKind] = Query(default=None, description="Filtra por tipo: agent|skill|automation"),
-    q: Optional[str] = Query(default=None, description="Búsqueda libre por nombre/descripción/tag"),
+    kind: CapabilityKind | None = Query(default=None, description="Filtra por tipo: agent|skill|automation"),
+    q: str | None = Query(default=None, description="Búsqueda libre por nombre/descripción/tag"),
 ) -> dict:
     """Full or filtered capability list."""
     caps = get_brain_registry().find(kind=kind, query=q)

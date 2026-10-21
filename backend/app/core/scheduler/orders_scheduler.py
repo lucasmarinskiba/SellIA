@@ -5,10 +5,10 @@ Background job: Mercado Libre, Amazon, Shopify orders sync
 """
 
 import logging
+from typing import Any
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from typing import Dict, Any, Optional
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class OrdersScheduler:
         access_token: str,
         ml_service,  # MercadoLibreAutomation instance
         interval_minutes: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Agenda sync de órdenes Mercado Libre.
 
@@ -71,7 +71,7 @@ class OrdersScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Add ML sync job failed: {str(e)}")
+            logger.error(f"Add ML sync job failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def add_amazon_sync(
@@ -80,7 +80,7 @@ class OrdersScheduler:
         mws_token: str,
         amazon_service,
         interval_minutes: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Agenda sync de órdenes Amazon."""
 
         logger.info(f"Adding Amazon sync job for {seller_id}")
@@ -104,7 +104,7 @@ class OrdersScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Add Amazon sync job failed: {str(e)}")
+            logger.error(f"Add Amazon sync job failed: {e!s}")
             return {"status": "error"}
 
     async def add_shopify_sync(
@@ -113,7 +113,7 @@ class OrdersScheduler:
         access_token: str,
         shopify_service,
         interval_minutes: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Agenda sync de órdenes Shopify."""
 
         logger.info(f"Adding Shopify sync job for {store_url}")
@@ -137,10 +137,10 @@ class OrdersScheduler:
             }
 
         except Exception as e:
-            logger.error(f"Add Shopify sync job failed: {str(e)}")
+            logger.error(f"Add Shopify sync job failed: {e!s}")
             return {"status": "error"}
 
-    def remove_job(self, job_id: str) -> Dict[str, Any]:
+    def remove_job(self, job_id: str) -> dict[str, Any]:
         """Elimina job."""
 
         logger.info(f"Removing job {job_id}")
@@ -151,10 +151,10 @@ class OrdersScheduler:
             return {"status": "success"}
 
         except Exception as e:
-            logger.error(f"Remove job failed: {str(e)}")
+            logger.error(f"Remove job failed: {e!s}")
             return {"status": "error"}
 
-    def list_jobs(self) -> Dict[str, Any]:
+    def list_jobs(self) -> dict[str, Any]:
         """Lista todos los jobs activos."""
 
         jobs = self.scheduler.get_jobs()
@@ -183,7 +183,7 @@ class OrdersScheduler:
             result = await ml_service.sync_orders()
             logger.info(f"ML sync complete: {result.get('orders_synced', 0)} orders")
         except Exception as e:
-            logger.error(f"ML sync wrapper failed: {str(e)}")
+            logger.error(f"ML sync wrapper failed: {e!s}")
 
     @staticmethod
     async def _sync_amazon_orders_wrapper(amazon_service, seller_id: str):
@@ -191,9 +191,9 @@ class OrdersScheduler:
         try:
             logger.info(f"Executing Amazon sync for {seller_id}")
             result = await amazon_service.sync_orders()
-            logger.info(f"Amazon sync complete")
+            logger.info("Amazon sync complete")
         except Exception as e:
-            logger.error(f"Amazon sync wrapper failed: {str(e)}")
+            logger.error(f"Amazon sync wrapper failed: {e!s}")
 
     @staticmethod
     async def _sync_shopify_orders_wrapper(shopify_service, store_url: str):
@@ -201,6 +201,6 @@ class OrdersScheduler:
         try:
             logger.info(f"Executing Shopify sync for {store_url}")
             result = await shopify_service.sync_orders()
-            logger.info(f"Shopify sync complete")
+            logger.info("Shopify sync complete")
         except Exception as e:
-            logger.error(f"Shopify sync wrapper failed: {str(e)}")
+            logger.error(f"Shopify sync wrapper failed: {e!s}")

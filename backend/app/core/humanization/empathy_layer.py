@@ -10,10 +10,10 @@ Detects buyer emotions and responds with appropriate empathy:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class EmpathyResponse(str, Enum):
 class EmpathySignal:
     """Detected emotional signal in buyer communication"""
     emotional_state: EmotionalState
-    trigger_words: List[str] = field(default_factory=list)
+    trigger_words: list[str] = field(default_factory=list)
     confidence: float = 0.8
     urgency_level: int = 5  # 1-10
     detected_at: datetime = field(default_factory=datetime.utcnow)
@@ -58,8 +58,8 @@ class EmpathyScript:
     """Template for empathetic response"""
     emotional_state: EmotionalState
     response_type: EmpathyResponse
-    templates: List[str] = field(default_factory=list)
-    follow_up_action: Optional[str] = None
+    templates: list[str] = field(default_factory=list)
+    follow_up_action: str | None = None
 
 
 class EmpathyLayer:
@@ -357,8 +357,8 @@ class EmpathyLayer:
         self,
         emotional_signal: EmpathySignal,
         language: str = "en",
-        buyer_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        buyer_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Generate empathetic response based on emotional state.
 
@@ -442,7 +442,7 @@ class EmpathyLayer:
         self,
         objection: str,
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Handle specific objections with empathy.
 
@@ -501,7 +501,7 @@ class EmpathyLayer:
         self,
         reason: str = "limited_spots",
         language: str = "en",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create urgency without being pushy — respects buyer emotions.
 

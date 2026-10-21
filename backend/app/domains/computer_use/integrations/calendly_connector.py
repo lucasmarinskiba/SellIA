@@ -4,7 +4,8 @@ Alternativa a Google Calendar para scheduling.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class CalendlyConnector:
         self,
         event_type_id: str,
         date: str,  # YYYY-MM-DD
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Obtiene slots disponibles."""
         try:
             url = f"{self.BASE_URL}/event_type_availability"
@@ -54,7 +55,7 @@ class CalendlyConnector:
         start_time: str,  # ISO format
         invitee_email: str,
         invitee_name: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea evento en Calendly."""
         try:
             url = f"{self.BASE_URL}/scheduled_events"

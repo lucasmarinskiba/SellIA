@@ -1,12 +1,20 @@
 """Customer timeline & activity models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -90,7 +98,7 @@ class CustomerEvent(Base):
 
     # Tracking
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_customer_date", "customer_id", "created_at"),
@@ -109,8 +117,8 @@ class EventTimeline(Base):
 
     # Timeline stats
     total_events = Column(Integer, default=0)
-    last_event_at = Column(DateTime(timezone.utc), nullable=True)
-    first_event_at = Column(DateTime(timezone.utc), nullable=True)
+    last_event_at = Column(DateTime(UTC), nullable=True)
+    first_event_at = Column(DateTime(UTC), nullable=True)
 
     # Event type breakdown
     email_count = Column(Integer, default=0)
@@ -130,7 +138,7 @@ class EventTimeline(Base):
     channel_breakdown = Column(JSONB, nullable=True)  # {"email": 45, "sms": 12, ...}
     event_type_breakdown = Column(JSONB, nullable=True)
 
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_customer", "business_id", "customer_id"),
@@ -164,7 +172,7 @@ class TimelineMetadata(Base):
     # Additional context
     context_json = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_event_id", "event_id"),
@@ -187,15 +195,15 @@ class EventFilter(Base):
     event_types = Column(JSONB, default=list)  # ["email_sent", "order_created", ...]
     channels = Column(JSONB, default=list)     # ["email", "sms", ...]
     outcomes = Column(JSONB, default=list)     # ["success", "failed", ...]
-    date_from = Column(DateTime(timezone.utc), nullable=True)
-    date_to = Column(DateTime(timezone.utc), nullable=True)
+    date_from = Column(DateTime(UTC), nullable=True)
+    date_to = Column(DateTime(UTC), nullable=True)
 
     # Display options
     is_favorite = Column(Boolean, default=False)
     is_default = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_user_business", "user_id", "business_id"),
@@ -231,8 +239,8 @@ class TimelineMetrics(Base):
     total_revenue_impact = Column(Integer, default=0)
     avg_days_to_purchase = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_date", "business_id", "created_at"),

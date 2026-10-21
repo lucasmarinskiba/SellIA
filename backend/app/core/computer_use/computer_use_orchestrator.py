@@ -5,8 +5,8 @@ Ejecuta scripts completos (visit sitio1 → action1 → action2 → visit sitio2
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,9 @@ class ComputerUseOrchestrator:
     async def execute_workflow(
         self,
         workflow_name: str,
-        actions: List[Dict[str, Any]],
+        actions: list[dict[str, Any]],
         max_retries: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta workflow completo (secuencia de acciones).
 
@@ -71,7 +71,7 @@ class ComputerUseOrchestrator:
                     logger.warning(f"Action {i+1} failed: {result.get('error')}")
 
             except Exception as e:
-                logger.error(f"Action {i+1} exception: {str(e)}")
+                logger.error(f"Action {i+1} exception: {e!s}")
                 self.current_workflow["failed"] += 1
                 self.current_workflow["results"].append({
                     "action": i + 1,
@@ -82,7 +82,7 @@ class ComputerUseOrchestrator:
 
                 # Si es crítico, parar
                 if action.get("critical", False):
-                    logger.error(f"Critical action failed, stopping workflow")
+                    logger.error("Critical action failed, stopping workflow")
                     break
 
         self.current_workflow["completed_at"] = datetime.utcnow().isoformat()
@@ -100,8 +100,8 @@ class ComputerUseOrchestrator:
 
     async def list_product_everywhere(
         self,
-        product: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Workflow: Publica producto en todas plataformas (paralelo + secuencial).
 
@@ -145,7 +145,7 @@ class ComputerUseOrchestrator:
         self,
         recipient: str,
         message: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Workflow: Envía mensaje por múltiples canales (WhatsApp, email, LinkedIn, etc).
         """
@@ -190,9 +190,9 @@ class ComputerUseOrchestrator:
 
     async def complete_sales_funnel(
         self,
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        buyer: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Workflow: Ciclo venta COMPLETO end-to-end (list → message → negotiate → close → deliver).
         """
@@ -242,7 +242,7 @@ class ComputerUseOrchestrator:
 
     # ========== REPORTING ==========
 
-    def get_workflow_report(self, workflow_name: Optional[str] = None) -> Dict[str, Any]:
+    def get_workflow_report(self, workflow_name: str | None = None) -> dict[str, Any]:
         """Retorna reporte de workflows ejecutados."""
 
         if workflow_name:

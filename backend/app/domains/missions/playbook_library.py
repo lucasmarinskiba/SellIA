@@ -5,11 +5,11 @@ específicos de negocio. Cada playbook descompone un objetivo en pasos
 executables en múltiples plataformas.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from .schemas import PlaybookRead, PlaybookStep
 
-
-PLAYBOOKS: Dict[str, Dict[str, Any]] = {
+PLAYBOOKS: dict[str, dict[str, Any]] = {
     # ─── Lanzamiento & Contenido ───────────────────────────────────────────────
     "instagram_launch": {
         "name": "Lanzamiento en Instagram",
@@ -819,7 +819,7 @@ PLAYBOOKS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_playbook(slug: str) -> Optional[PlaybookRead]:
+def get_playbook(slug: str) -> PlaybookRead | None:
     """Obtener un playbook por su slug."""
     data = PLAYBOOKS.get(slug)
     if not data:
@@ -835,7 +835,7 @@ def get_playbook(slug: str) -> Optional[PlaybookRead]:
     )
 
 
-def list_playbooks(category: Optional[str] = None) -> List[PlaybookRead]:
+def list_playbooks(category: str | None = None) -> list[PlaybookRead]:
     """Listar todos los playbooks, opcionalmente filtrados por categoría."""
     result = []
     for slug, data in PLAYBOOKS.items():
@@ -855,7 +855,7 @@ def list_playbooks(category: Optional[str] = None) -> List[PlaybookRead]:
     return result
 
 
-def get_recommended_playbooks(diagnostics: List[Any]) -> List[PlaybookRead]:
+def get_recommended_playbooks(diagnostics: list[Any]) -> list[PlaybookRead]:
     """Sugerir playbooks basados en diagnósticos."""
     recommended_slugs = set()
     for diag in diagnostics:

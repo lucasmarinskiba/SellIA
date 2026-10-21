@@ -4,21 +4,25 @@ Leverages existing retention referral infrastructure (ReferralProgram, ReferralC
 while adding viral campaign orchestration, K-factor tracking, and auto-optimization.
 """
 
-import uuid
 import secrets
 import string
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.retention.models import ReferralProgram, ReferralCode, ReferralUse, ReferralStatus
-from app.domains.growth.models import GrowthCampaign, GrowthCampaignType
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.outreach.service import FatigueScoringService
+from app.domains.retention.models import (
+    ReferralCode,
+    ReferralProgram,
+    ReferralStatus,
+    ReferralUse,
+)
 
 logger = get_logger(__name__)
 
@@ -358,12 +362,12 @@ Ejemplo de estructura:
         return {
             **viral_metrics,
             "top_referrers": top_referrers,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
     # ========== Helpers ==========
 
-    async def _get_code_by_string(self, code: str) -> Optional[ReferralCode]:
+    async def _get_code_by_string(self, code: str) -> ReferralCode | None:
         result = await self.db.execute(
             select(ReferralCode).where(ReferralCode.code == code)
         )

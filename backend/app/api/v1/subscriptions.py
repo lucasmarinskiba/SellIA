@@ -1,53 +1,83 @@
-import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Any
-from datetime import datetime, timezone, timedelta
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
+from app.core.encryption import encrypt_value
+from app.core.security import get_password_hash
+from app.domains.security.models import WebhookEventLog
+from app.domains.subscriptions.billing import (
+    cancel_preapproval,
+    create_checkout_preference,
+    create_preapproval,
+    get_preapproval_status,
+    process_mercadopago_webhook,
+    process_preapproval_webhook,
+)
+from app.domains.subscriptions.crypto_billing import (
+    check_crypto_payment_status,
+    generate_crypto_payment,
+)
 from app.domains.subscriptions.models import (
-    SubscriptionPlan, Subscription, UserAPIKey, SubscriptionStatus,
-    PaymentTransaction, Invoice, PaymentStatus, PaymentProvider,
-    BankTransferPayment, BankTransferStatus, CancellationFeedback,
+    BankTransferPayment,
+    BankTransferStatus,
+    CancellationFeedback,
+    Invoice,
+    PaymentProvider,
+    PaymentStatus,
+    PaymentTransaction,
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+    UserAPIKey,
 )
 from app.domains.subscriptions.schemas import (
-    SubscriptionPlanResponse, SubscriptionWithPlanResponse,
-    UserAPIKeyCreate, UserAPIKeyResponse, CheckLimitResponse,
-    CheckoutRequest, CheckoutResponse,
-    CryptoPaymentRequest, CryptoPaymentResponse, CryptoPaymentStatusResponse,
-    RegionDetectResponse, UserRegionUpdate,
-    BillingDetailsUpdate, BillingDetailsResponse,
-    PaymentTransactionResponse, InvoiceResponse,
-    BankTransferOrderCreate, BankTransferOrderResponse,
-    BankTransferConfirmRequest, BankTransferConfirmResponse,
+    AdminSubscriptionResponse,
     BankTransferAdminApproveRequest,
-    CancellationRequest, CancellationFeedbackResponse,
-    PreapprovalCreateRequest, PreapprovalResponse, PreapprovalStatusResponse,
-    RetentionSummary, RevenueSummary, AdminSubscriptionResponse, AdminBankTransferFilter,
+    BankTransferConfirmRequest,
+    BankTransferConfirmResponse,
+    BankTransferOrderCreate,
+    BankTransferOrderResponse,
+    BillingDetailsResponse,
+    BillingDetailsUpdate,
+    CancellationFeedbackResponse,
+    CancellationRequest,
+    CheckLimitResponse,
+    CheckoutRequest,
+    CheckoutResponse,
+    CryptoPaymentRequest,
+    CryptoPaymentResponse,
+    CryptoPaymentStatusResponse,
+    InvoiceResponse,
+    PreapprovalCreateRequest,
+    PreapprovalResponse,
+    PreapprovalStatusResponse,
+    RegionDetectResponse,
+    RetentionSummary,
+    RevenueSummary,
+    SubscriptionPlanResponse,
+    SubscriptionWithPlanResponse,
+    UserAPIKeyCreate,
+    UserAPIKeyResponse,
+    UserRegionUpdate,
 )
 from app.domains.subscriptions.services import (
-    get_or_create_subscription, check_subscription_limit, create_default_plans, track_usage,
-    get_region_from_country, get_plan_price, generate_invoice_number, create_invoice,
-    REGION_MAP,
-)
-from app.domains.subscriptions.billing import (
-    create_checkout_preference, create_preapproval, get_preapproval_status,
-    cancel_preapproval, process_preapproval_webhook, process_mercadopago_webhook,
+    check_subscription_limit,
+    get_or_create_subscription,
+    get_plan_price,
+    get_region_from_country,
 )
 from app.domains.subscriptions.stripe_billing import (
-    construct_webhook_event, process_stripe_webhook,
+    construct_webhook_event,
+    process_stripe_webhook,
 )
-from app.domains.security.models import WebhookEventLog
-from app.domains.subscriptions.crypto_billing import (
-    generate_crypto_payment, check_crypto_payment_status, verify_crypto_payment, get_usdt_contract_address
-)
-from app.core.security import get_password_hash
-from app.core.encryption import encrypt_value
+from app.domains.users.models import User
 
 router = APIRouter()
 settings = get_settings()
@@ -102,11 +132,13 @@ async def get_my_usage(
     current_user: User = Depends(get_current_user),
 ):
     """Get current usage for all limited metrics."""
-    from app.domains.subscriptions.models import UsageTracking
-    from sqlalchemy import func
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    from sqlalchemy import func
+
+    from app.domains.subscriptions.models import UsageTracking
+
+    current_month = datetime.now(UTC).strftime("%Y-%m")
 
     # Get user's subscription plan
     sub = await get_or_create_subscription(db, current_user.id)
@@ -193,7 +225,7 @@ async def create_checkout(
                 init_point=preference.get("init_point"),
                 sandbox_init_point=preference.get("sandbox_init_point"),
             )
-        except Exception as e:
+        except Exception:
             from app.core.logger import get_logger
             get_logger(__name__).exception("Error creating checkout")
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -219,7 +251,7 @@ async def create_checkout(
                 preference_id=str(order.id),
                 init_point=f"/dashboard/transferencia/{order.id}",  # Frontend route
             )
-        except Exception as e:
+        except Exception:
             from app.core.logger import get_logger
             get_logger(__name__).exception("Error creating bank transfer order")
             raise HTTPException(status_code=500, detail="Internal server error")
@@ -267,7 +299,7 @@ async def create_preapproval_subscription(
             user_email=current_user.email,
             billing_cycle=data.billing_cycle,
         )
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -301,7 +333,7 @@ async def get_preapproval(
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error querying MercadoPago")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -344,7 +376,7 @@ async def delete_preapproval(
 
     try:
         await cancel_preapproval(preapproval_id)
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error cancelling preapproval")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -386,7 +418,7 @@ async def create_crypto_payment(
             subscription_id=str(sub.id),
             network=data.crypto_network,
         )
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error generating crypto payment")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -469,7 +501,9 @@ async def get_crypto_payment_status(
 # Moved to app/core/integrations/mercadopago_webhook.py so api/v1/payments.py's
 # webhook handler can share the same real verification instead of trusting
 # its body unconditionally (that handler had none at all -- see that commit).
-from app.core.integrations.mercadopago_webhook import verify_mercadopago_signature as _verify_mercadopago_signature
+from app.core.integrations.mercadopago_webhook import (
+    verify_mercadopago_signature as _verify_mercadopago_signature,
+)
 
 
 @router.post("/webhook/mercadopago")
@@ -539,15 +573,17 @@ async def mercadopago_webhook(
                             sub.billing_cycle = billing_cycle
                             sub.payment_provider = "mercadopago"
                             sub.auto_renew = True
-                            sub.current_period_start = datetime.now(timezone.utc)
-                            sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if billing_cycle == "monthly" else 365)
+                            sub.current_period_start = datetime.now(UTC)
+                            sub.current_period_end = datetime.now(UTC) + timedelta(days=30 if billing_cycle == "monthly" else 365)
                             sub.next_billing_date = preapproval_info.get("next_payment_date")
 
                             user_result = await db.execute(select(User).where(User.id == user_id))
                             user_obj = user_result.scalar_one_or_none()
                             if user_obj and user_obj.email:
                                 from app.core.email_service import send_email
-                                from app.domains.subscriptions.email_templates import preapproval_activated
+                                from app.domains.subscriptions.email_templates import (
+                                    preapproval_activated,
+                                )
                                 price, currency = get_plan_price(new_plan, get_region_from_country(user_obj.country_code), billing_cycle)
                                 subject, html, text = preapproval_activated(
                                     plan_name=new_plan.name,
@@ -564,7 +600,9 @@ async def mercadopago_webhook(
                         user_obj = user_result.scalar_one_or_none()
                         if user_obj and user_obj.email:
                             from app.core.email_service import send_email
-                            from app.domains.subscriptions.email_templates import preapproval_payment_failed
+                            from app.domains.subscriptions.email_templates import (
+                                preapproval_payment_failed,
+                            )
                             plan_result = await db.execute(
                                 select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
                             )
@@ -611,8 +649,8 @@ async def mercadopago_webhook(
                     if new_plan:
                         sub.plan_id = new_plan.id
                         sub.status = SubscriptionStatus.ACTIVE
-                        sub.current_period_start = datetime.now(timezone.utc)
-                        sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30)
+                        sub.current_period_start = datetime.now(UTC)
+                        sub.current_period_end = datetime.now(UTC) + timedelta(days=30)
                 elif payment_status in ("rejected", "cancelled", "refunded"):
                     sub.status = SubscriptionStatus.PAST_DUE
 
@@ -623,7 +661,7 @@ async def mercadopago_webhook(
         return {"status": "processed", "payment_status": payment_status}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("MercadoPago webhook error")
         return {"status": "error", "detail": "Internal server error"}
@@ -681,8 +719,8 @@ async def stripe_webhook(
                         if new_plan:
                             sub.plan_id = new_plan.id
                             sub.status = SubscriptionStatus.ACTIVE
-                            sub.current_period_start = datetime.now(timezone.utc)
-                            sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if result.get("billing_cycle") == "monthly" else 365)
+                            sub.current_period_start = datetime.now(UTC)
+                            sub.current_period_end = datetime.now(UTC) + timedelta(days=30 if result.get("billing_cycle") == "monthly" else 365)
                     elif event_type == "invoice.payment_failed":
                         sub.status = SubscriptionStatus.PAST_DUE
                     elif event_type == "customer.subscription.deleted":
@@ -696,7 +734,7 @@ async def stripe_webhook(
         return {"status": "processed", "event_type": event_type}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Stripe webhook error")
         return {"status": "error", "detail": "Internal server error"}
@@ -761,7 +799,7 @@ async def confirm_bank_transfer(
         raise HTTPException(status_code=400, detail=f"Orden ya está {order.status}")
 
     order.status = BankTransferStatus.PAID.value
-    order.paid_at = datetime.now(timezone.utc)
+    order.paid_at = datetime.now(UTC)
     if data.proof_image_url:
         order.proof_image_url = data.proof_image_url
 
@@ -806,7 +844,7 @@ async def approve_bank_transfer(
 
     if data.approved:
         order.status = BankTransferStatus.CONFIRMED.value
-        order.confirmed_by_admin_at = datetime.now(timezone.utc)
+        order.confirmed_by_admin_at = datetime.now(UTC)
         order.confirmed_by_admin_id = current_user.id
 
         # Activate subscription
@@ -819,8 +857,8 @@ async def approve_bank_transfer(
                 sub.plan_id = plan.id
                 sub.status = SubscriptionStatus.ACTIVE
                 sub.payment_provider = "bank_transfer"
-                sub.current_period_start = datetime.now(timezone.utc)
-                sub.current_period_end = datetime.now(timezone.utc) + timedelta(days=30 if order.billing_cycle == "monthly" else 365)
+                sub.current_period_start = datetime.now(UTC)
+                sub.current_period_end = datetime.now(UTC) + timedelta(days=30 if order.billing_cycle == "monthly" else 365)
                 sub.billing_cycle = order.billing_cycle or "monthly"
     else:
         order.status = BankTransferStatus.CANCELLED.value
@@ -832,7 +870,10 @@ async def approve_bank_transfer(
     order_user = user_result.scalar_one_or_none()
     if order_user and order_user.email:
         from app.core.email_service import send_email
-        from app.domains.subscriptions.email_templates import transfer_approved, transfer_rejected
+        from app.domains.subscriptions.email_templates import (
+            transfer_approved,
+            transfer_rejected,
+        )
         if data.approved:
             plan_result = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.id == order.plan_id))
             plan = plan_result.scalar_one_or_none()
@@ -932,15 +973,16 @@ async def get_retention_dashboard(
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Solo administradores")
 
+    from datetime import datetime
+
     from sqlalchemy import func
-    from datetime import datetime, timezone, timedelta
 
     # Total cancellations
     total_result = await db.execute(select(func.count(CancellationFeedback.id)))
     total = total_result.scalar() or 0
 
     # This month
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_result = await db.execute(
         select(func.count(CancellationFeedback.id))
@@ -1020,10 +1062,11 @@ async def get_admin_revenue(
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Solo administradores")
 
-    from sqlalchemy import func
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    now = datetime.now(timezone.utc)
+    from sqlalchemy import func
+
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Total revenue this month from confirmed bank transfers
@@ -1357,4 +1400,3 @@ async def delete_api_key(
         raise HTTPException(status_code=404, detail="API key no encontrada")
     key.is_active = False
     await db.commit()
-    return None

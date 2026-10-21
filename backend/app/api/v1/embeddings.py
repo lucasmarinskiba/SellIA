@@ -4,20 +4,18 @@ Phase 4: Embeddings layer for content similarity, recommendations
 Uses pgvector for vector storage (requires PostgreSQL extension)
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text, select
-from typing import Optional, Dict, Any, List
-import json
 import hashlib
 from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter(tags=["embeddings"])
 
 SITE_URL = "https://sellia-brain.vercel.app"
 
 
-def get_mock_embedding(text: str) -> List[float]:
+def get_mock_embedding(text: str) -> list[float]:
     """
     Generate deterministic mock embedding (768 dimensions)
     Production: Replace with Ollama, OpenAI, or HuggingFace call
@@ -44,9 +42,9 @@ def get_mock_embedding(text: str) -> List[float]:
 async def embed_content(
     content_id: str,
     text: str,
-    title: Optional[str] = None,
-    url: Optional[str] = None,
-) -> Dict[str, Any]:
+    title: str | None = None,
+    url: str | None = None,
+) -> dict[str, Any]:
     """
     Embed content and store in pgvector
 
@@ -89,7 +87,7 @@ async def get_similar_content(
     content_id: str = Query(..., description="Reference content ID"),
     limit: int = Query(5, ge=1, le=10, description="Number of results"),
     threshold: float = Query(0.7, ge=0.0, le=1.0, description="Similarity threshold"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find semantically similar content using vector similarity
     Uses cosine distance in pgvector (production)
@@ -152,9 +150,9 @@ async def get_similar_content(
 @router.get("/recommendations")
 async def get_recommendations(
     user_context: str = Query("browsing", description="User context: browsing|signup|converting"),
-    current_page: Optional[str] = Query(None, description="Current page ID"),
+    current_page: str | None = Query(None, description="Current page ID"),
     limit: int = Query(3, ge=1, le=5),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get personalized content recommendations based on user context + current page
 
@@ -217,7 +215,7 @@ async def get_recommendations(
 @router.get("/content-cluster")
 async def get_content_cluster(
     cluster_topic: str = Query("sales-automation", description="Topic cluster: sales-automation|ai-features|pricing"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get all content related to a topic cluster
     Useful for: internal linking, topic authority, content gaps
@@ -272,8 +270,8 @@ async def get_content_cluster(
 
 @router.post("/bulk-embed")
 async def bulk_embed_content(
-    content_list: List[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    content_list: list[dict[str, str]] = None,
+) -> dict[str, Any]:
     """
     Batch embed multiple content items
     Useful for: initial indexing, content migration, bulk updates
@@ -314,7 +312,7 @@ async def bulk_embed_content(
 
 
 @router.get("/embedding-stats")
-async def get_embedding_stats() -> Dict[str, Any]:
+async def get_embedding_stats() -> dict[str, Any]:
     """
     Get statistics about embedded content
     Production: Query pgvector tables

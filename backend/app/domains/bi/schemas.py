@@ -1,10 +1,10 @@
 """BI Schemas."""
 
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
 from decimal import Decimal
 from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
 
 
 class FunnelMetricsResponse(BaseModel):
@@ -47,9 +47,9 @@ class ChurnPredictionResponse(BaseModel):
     conversation_id: UUID
     risk_level: str
     churn_probability: Decimal
-    predicted_churn_date: Optional[datetime]
+    predicted_churn_date: datetime | None
     factors: list
-    recommended_action: Optional[str]
+    recommended_action: str | None
     model_version: str
     is_active: bool
     created_at: datetime
@@ -77,11 +77,11 @@ class InsightAlertResponse(BaseModel):
     insight_type: str
     severity: str
     title: str
-    description: Optional[str]
-    metric_name: Optional[str]
-    metric_change_percent: Optional[Decimal]
-    recommended_action: Optional[str]
+    description: str | None
+    metric_name: str | None
+    metric_change_percent: Decimal | None
+    recommended_action: str | None
     action_taken: bool
-    action_result: Optional[str]
+    action_result: str | None
     is_active: bool
     created_at: datetime

@@ -6,9 +6,9 @@ Output: Estrategia única, adaptada, evoluciona con performance.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class StrategyGenerator:
         competition: str,
         price: float,
         price_avg_market: float,
-        business_goals: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        business_goals: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Genera estrategia completa para producto.
 
@@ -92,7 +92,7 @@ class StrategyGenerator:
             return "hybrid"  # Equilibrado
 
     @staticmethod
-    def _select_channels(category: str, segment: str, demand: str) -> Dict[str, str]:
+    def _select_channels(category: str, segment: str, demand: str) -> dict[str, str]:
         """Selecciona canales por categoría + segmento."""
 
         channels = {
@@ -126,7 +126,7 @@ class StrategyGenerator:
     @staticmethod
     def _generate_tactics(
         category: str, segment: str, demand: str, competition: str, price: float
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Genera tácticas específicas."""
 
         tactics = []
@@ -183,7 +183,7 @@ class StrategyGenerator:
         return tactics[:4]  # Top 4
 
     @staticmethod
-    def _generate_roadmap(segment: str, channels: Dict[str, str], tactics: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _generate_roadmap(segment: str, channels: dict[str, str], tactics: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Genera roadmap 90 días."""
 
         return [
@@ -210,7 +210,7 @@ class StrategyGenerator:
         ]
 
     @staticmethod
-    def _define_kpis(segment: str, category: str, market_price_avg: float) -> Dict[str, Any]:
+    def _define_kpis(segment: str, category: str, market_price_avg: float) -> dict[str, Any]:
         """Define KPIs para medir éxito."""
 
         kpis = {
@@ -230,10 +230,10 @@ class StrategyOptimizer:
 
     @staticmethod
     def optimize(
-        current_strategy: Dict[str, Any],
-        performance_data: Dict[str, Any],
+        current_strategy: dict[str, Any],
+        performance_data: dict[str, Any],
         iteration: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimiza estrategia según resultados.
 

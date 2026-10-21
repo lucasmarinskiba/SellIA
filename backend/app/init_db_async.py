@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
 """Initialize database async - Phase 2-5 + Phase 51."""
 import asyncio
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from app.core.database import Base, engine
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
-from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis, CompetitiveIntelligenceFeed
-from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
-from app.domains.locations.models import LocationProfile, BusinessModel, ProximityEvent, OfflineConversion, LocationVisit
-from app.domains.offline_analytics.models import OfflineToOnlineAttribution, OfflineAnalyticsMetrics, LocationFootTrafficHourly, PostVisitSequence, PostVisitSequenceExecution
-from app.domains.channel_integration.models import GoogleBusinessProfileConnection, GoogleMapsLocation, LocationMessage, LocationMessageExecution, LocationReview
-from app.domains.ai_content_generation.models import ContentTemplate, GeneratedContent, ContentPerformance, BulkContentGeneration, ContentVariant
+
 
 async def init_db():
     """Create all tables."""

@@ -11,13 +11,13 @@ extra LLM call, so it stays fast and cheap enough to run on every reply.
 
 import uuid
 
-from sqlalchemy import select, func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
 from app.core.prompts.funnel_specialists import FunnelStage
 from app.domains.channels.models import Conversation, Message, MessageDirection
 from app.domains.orders.models import Order, OrderStatus
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 

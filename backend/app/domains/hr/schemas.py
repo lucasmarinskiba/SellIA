@@ -2,7 +2,6 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,8 +14,8 @@ class CandidateOut(BaseModel):
     email: str
     position: str
     stage: str
-    screening_score: Optional[Decimal] = None
-    offer_salary_aed: Optional[Decimal] = None
+    screening_score: Decimal | None = None
+    offer_salary_aed: Decimal | None = None
 
 
 class EmployeeOut(BaseModel):
@@ -37,8 +36,8 @@ class OnboardingItemOut(BaseModel):
     id: UUID
     category: str
     description: str
-    assigned_to: Optional[str] = None
-    completed_at: Optional[datetime] = None
+    assigned_to: str | None = None
+    completed_at: datetime | None = None
 
 
 class PayrollOut(BaseModel):
@@ -64,4 +63,4 @@ class OfferCreate(BaseModel):
 
 
 class PayrollCalcRequest(BaseModel):
-    allowances_aed: Decimal = Field(default=Decimal("0"), ge=0)
+    allowances_aed: Decimal = Field(default=Decimal(0), ge=0)

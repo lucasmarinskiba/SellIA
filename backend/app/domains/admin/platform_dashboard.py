@@ -1,9 +1,9 @@
 """Phase 20: Admin Dashboard & Platform Metrics."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class PlatformDashboard:
             last_activity=datetime.utcnow()
         )
 
-    def get_trending_metrics(self) -> Dict[str, Any]:
+    def get_trending_metrics(self) -> dict[str, Any]:
         """Get trending metrics"""
 
         return {
@@ -93,7 +93,7 @@ class PlatformDashboard:
             }
         }
 
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> dict[str, Any]:
         """Get system health status"""
 
         return {
@@ -107,7 +107,7 @@ class PlatformDashboard:
             "active_alerts": 0
         }
 
-    def get_top_users(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_top_users(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get top performing users"""
 
         return [
@@ -122,7 +122,7 @@ class PlatformDashboard:
             for i in range(limit)
         ]
 
-    def get_insights(self) -> List[Dict[str, Any]]:
+    def get_insights(self) -> list[dict[str, Any]]:
         """Get actionable insights"""
 
         return [

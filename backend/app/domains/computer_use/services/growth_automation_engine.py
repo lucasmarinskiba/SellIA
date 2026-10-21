@@ -4,20 +4,25 @@ Orquesta: trending detection → content generation → scheduling → analytics
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
+from typing import Any
 
-from app.domains.computer_use.services.trending_analyzer import get_trending_analyzer, TrendingTopic
-from app.domains.computer_use.services.content_generator import get_content_generator, ContentStyle
-from app.domains.computer_use.services.publish_scheduler import (
-    get_publish_scheduler,
-    PublishingStrategy,
-    ScheduledPost,
+from app.domains.computer_use.services.content_generator import (
+    ContentStyle,
+    get_content_generator,
 )
 from app.domains.computer_use.services.growth_analytics import get_growth_analytics
 from app.domains.computer_use.services.platform_automation_engine import (
-    get_platform_automation_engine,
     PlatformAutomationType,
+    get_platform_automation_engine,
+)
+from app.domains.computer_use.services.publish_scheduler import (
+    PublishingStrategy,
+    ScheduledPost,
+    get_publish_scheduler,
+)
+from app.domains.computer_use.services.trending_analyzer import (
+    get_trending_analyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,9 +43,9 @@ class GrowthAutomationEngine:
         self,
         platform: str,  # instagram, tiktok
         account_id: str,
-        product_info: Dict[str, Any],
+        product_info: dict[str, Any],
         posting_strategy: PublishingStrategy = PublishingStrategy.TWICE_DAILY,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta ciclo diario automático:
         1. Detecta trending topics
@@ -151,7 +156,7 @@ class GrowthAutomationEngine:
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Obtiene recomendaciones de crecimiento."""
         try:
             # Analizar performance
@@ -210,7 +215,7 @@ class GrowthAutomationEngine:
         self,
         platform: str,
         post: ScheduledPost,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Publica post usando browser automation."""
         try:
             # Usar platform automation para publicar

@@ -5,15 +5,15 @@ outbound catalog sync (push/pull) and order notes via the Admin REST API.
 Docs: https://shopify.dev/docs/api/admin-rest
 """
 
-import hmac
 import hashlib
+import hmac
 from typing import Any
 
 import httpx
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 _API_VERSION = "2024-01"
 

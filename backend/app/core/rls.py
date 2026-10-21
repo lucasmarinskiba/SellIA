@@ -4,6 +4,7 @@ Sets session variable so RLS policies can enforce business_id isolation.
 """
 
 import uuid
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 

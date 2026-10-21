@@ -1,22 +1,21 @@
 """Lead Qualifier Auto-Agent Service"""
 
-import uuid
 import json
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+import uuid
+from typing import Any
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.agents.lead_qualifier.models import LeadQualification
 from app.domains.agents.lead_qualifier.schemas import BANTScore
-from app.domains.channels.models import Conversation, Message
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.channels.models import Message
 
 logger = get_logger(__name__)
 
@@ -39,8 +38,8 @@ async def qualify_lead(
     db: AsyncSession,
     conversation_id: uuid.UUID,
     business_id: uuid.UUID,
-    customer_id: Optional[uuid.UUID] = None,
-) -> Dict[str, Any]:
+    customer_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
     """
     1. Analyzes conversation history
     2. Extracts BANT via LLM
@@ -201,7 +200,7 @@ async def _generate_qualification_summary(
 async def get_latest_qualification_for_conversation(
     db: AsyncSession,
     conversation_id: uuid.UUID,
-) -> Optional[LeadQualification]:
+) -> LeadQualification | None:
     """Returns the most recent BANT qualification for a conversation, if any."""
     result = await db.execute(
         select(LeadQualification)
@@ -215,7 +214,7 @@ async def get_latest_qualification_for_conversation(
 async def ask_qualifying_question(
     db: AsyncSession,
     conversation_id: uuid.UUID,
-    bant_score: Optional[BANTScore] = None,
+    bant_score: BANTScore | None = None,
 ) -> str:
     """Suggests the next BANT question to ask based on missing dimensions."""
     if bant_score is None:
@@ -246,7 +245,7 @@ async def get_qualified_leads(
     business_id: uuid.UUID,
     min_score: float = 70.0,
     limit: int = 100,
-) -> List[LeadQualification]:
+) -> list[LeadQualification]:
     result = await db.execute(
         select(LeadQualification)
         .where(
@@ -259,7 +258,7 @@ async def get_qualified_leads(
     return result.scalars().all()
 
 
-async def get_qualification(db: AsyncSession, qualification_id: uuid.UUID) -> Optional[LeadQualification]:
+async def get_qualification(db: AsyncSession, qualification_id: uuid.UUID) -> LeadQualification | None:
     result = await db.execute(
         select(LeadQualification).where(LeadQualification.id == qualification_id)
     )

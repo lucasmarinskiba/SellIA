@@ -9,15 +9,14 @@ loyalty-status la lee (404 si nunca se inscribió), y unlock-vip actualiza
 esa misma fila.
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.loyalty_engine.models import LoyaltyProgram, RetentionSequence
-
 
 router = APIRouter(prefix="/api/v1/loyalty-engine", tags=["loyalty-engine"])
 
@@ -131,7 +130,7 @@ async def trigger_retention_sequence(
         step_3_message=steps.get("step_3"),
         step_4_message=steps.get("step_4"),
         step_5_message=steps.get("step_5"),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     db.add(record)
     await db.commit()

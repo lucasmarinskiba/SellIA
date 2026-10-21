@@ -1,9 +1,21 @@
 """Phase 43: Sales Operations Intelligence - Department Management."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class SalesTeamPerformance(Base):
     __tablename__ = "sales_team_performance"
@@ -16,7 +28,7 @@ class SalesTeamPerformance(Base):
     win_rate = Column(Float, default=0)
     average_deal_size = Column(Float, default=0)
     sales_cycle_days = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class PipelineHealth(Base):
     __tablename__ = "pipeline_health"
@@ -28,7 +40,7 @@ class PipelineHealth(Base):
     stage_distribution = Column(JSONB, nullable=True)
     days_sales_outstanding = Column(Integer, default=0)
     pipeline_coverage_ratio = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SalesProcess(Base):
     __tablename__ = "sales_process"
@@ -39,7 +51,7 @@ class SalesProcess(Base):
     avg_duration = Column(Integer, default=0)
     win_rate_by_stage = Column(JSONB, nullable=True)
     bottleneck_stage = Column(String(100), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CompetitiveWinLoss(Base):
     __tablename__ = "competitive_win_loss"
@@ -51,7 +63,7 @@ class CompetitiveWinLoss(Base):
     loss_reason = Column(Text, nullable=True)
     win_reason = Column(Text, nullable=True)
     competitive_factors = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SalesEnablement(Base):
     __tablename__ = "sales_enablement"
@@ -62,7 +74,7 @@ class SalesEnablement(Base):
     training_completed = Column(Boolean, default=False)
     competency_score = Column(Float, default=0)
     recommended_resources = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SalesForecasting(Base):
     __tablename__ = "sales_forecasting"
@@ -74,7 +86,7 @@ class SalesForecasting(Base):
     contributing_deals = Column(JSONB, nullable=True)
     vs_quota = Column(Float, default=0)
     scenario = Column(String(50), default="base")  # base, upside, downside
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SalesOperationsMetrics(Base):
     __tablename__ = "sales_operations_metrics"
@@ -90,4 +102,4 @@ class SalesOperationsMetrics(Base):
     churn_rate = Column(Float, default=0)
     gross_retention_rate = Column(Float, default=0)
     net_retention_rate = Column(Float, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))

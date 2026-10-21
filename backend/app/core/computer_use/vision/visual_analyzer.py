@@ -10,12 +10,12 @@ Responsibilities:
 No selectors needed. Pure visual understanding.
 """
 
+import asyncio
 import base64
 import json
 import logging
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-import asyncio
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class FormField:
     width: int
     height: int
     required: bool = False
-    placeholder: Optional[str] = None
+    placeholder: str | None = None
     confidence: float = 0.9
 
 
@@ -73,16 +73,16 @@ class LayoutRegion:
 class PageAnalysis:
     """Análisis completo de página."""
     page_type: str  # "login", "product", "checkout", "list", "form", "unknown"
-    title: Optional[str] = None
-    url: Optional[str] = None
-    all_text: List[TextRegion] = None
-    buttons: List[ButtonDetection] = None
-    form_fields: List[FormField] = None
-    layout_regions: List[LayoutRegion] = None
-    navigation_items: List[str] = None
+    title: str | None = None
+    url: str | None = None
+    all_text: list[TextRegion] = None
+    buttons: list[ButtonDetection] = None
+    form_fields: list[FormField] = None
+    layout_regions: list[LayoutRegion] = None
+    navigation_items: list[str] = None
     images_detected: int = 0
     confidence_score: float = 0.85
-    raw_response: Optional[Dict[str, Any]] = None
+    raw_response: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.all_text is None:
@@ -123,7 +123,7 @@ class VisualAnalyzer:
     async def analyze_screenshot(
         self,
         screenshot_bytes: bytes,
-        url: Optional[str] = None,
+        url: str | None = None,
         backend: str = "claude"
     ) -> PageAnalysis:
         """Analiza un screenshot completo.
@@ -152,7 +152,7 @@ class VisualAnalyzer:
     async def _analyze_with_claude(
         self,
         screenshot_bytes: bytes,
-        url: Optional[str] = None
+        url: str | None = None
     ) -> PageAnalysis:
         """Claude Vision para análisis profundo."""
         logger.info("Analyzing screenshot with Claude Vision")
@@ -227,7 +227,7 @@ Responde SOLO en JSON válido:
     async def _analyze_with_google_vision(
         self,
         screenshot_bytes: bytes,
-        url: Optional[str] = None
+        url: str | None = None
     ) -> PageAnalysis:
         """Google Cloud Vision API para OCR + object detection."""
         logger.info("Analyzing screenshot with Google Vision API")
@@ -270,15 +270,16 @@ Responde SOLO en JSON válido:
     async def _analyze_with_tesseract(
         self,
         screenshot_bytes: bytes,
-        url: Optional[str] = None
+        url: str | None = None
     ) -> PageAnalysis:
         """Tesseract OCR local para modo offline."""
         logger.info("Analyzing screenshot with Tesseract OCR")
 
         try:
+            import io
+
             import pytesseract
             from PIL import Image
-            import io
 
             image = Image.open(io.BytesIO(screenshot_bytes))
             text = await asyncio.to_thread(pytesseract.image_to_string, image)
@@ -297,8 +298,8 @@ Responde SOLO en JSON válido:
 
     def _parse_claude_response(
         self,
-        data: Dict[str, Any],
-        url: Optional[str] = None
+        data: dict[str, Any],
+        url: str | None = None
     ) -> PageAnalysis:
         """Parsea respuesta JSON de Claude."""
         # Parsear texto
@@ -372,7 +373,7 @@ Responde SOLO en JSON válido:
             raw_response=data
         )
 
-    def _parse_google_text_detection(self, texts) -> List[TextRegion]:
+    def _parse_google_text_detection(self, texts) -> list[TextRegion]:
         """Parsea resultado de Google Text Detection."""
         regions = []
         for text_annotation in texts[1:]:  # Skip first (full text)
@@ -406,7 +407,7 @@ Responde SOLO en JSON válido:
     async def detect_buttons(
         self,
         screenshot_bytes: bytes
-    ) -> List[ButtonDetection]:
+    ) -> list[ButtonDetection]:
         """Detecta solo botones."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.buttons
@@ -414,7 +415,7 @@ Responde SOLO en JSON válido:
     async def detect_form_fields(
         self,
         screenshot_bytes: bytes
-    ) -> List[FormField]:
+    ) -> list[FormField]:
         """Detecta solo campos de formulario."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.form_fields
@@ -430,7 +431,7 @@ Responde SOLO en JSON válido:
     async def get_layout_structure(
         self,
         screenshot_bytes: bytes
-    ) -> List[LayoutRegion]:
+    ) -> list[LayoutRegion]:
         """Obtiene la estructura del layout."""
         analysis = await self.analyze_screenshot(screenshot_bytes)
         return analysis.layout_regions

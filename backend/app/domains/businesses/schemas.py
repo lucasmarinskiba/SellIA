@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
-from datetime import datetime
 from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.businesses.models import BusinessType
 

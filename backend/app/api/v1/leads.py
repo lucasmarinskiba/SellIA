@@ -2,17 +2,17 @@
 Lead Management + Scoring API
 Endpoints para CRUD leads y cálculo automático de score
 """
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional, List
-from datetime import datetime
 import logging
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import get_current_user
 from app.db import get_db
 from app.db.models import Lead as LeadModel
-from app.core.deps import get_current_user
 from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
@@ -37,15 +37,15 @@ router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 class LeadBase(BaseModel):
     name: str
     email: EmailStr
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    industry: Optional[str] = None
-    job_title: Optional[str] = None
-    pain_points: Optional[str] = None
-    budget: Optional[float] = None
-    timeline: Optional[str] = None  # "immediate", "3-6 months", "unknown"
-    source: Optional[str] = None  # "linkedin", "website", "cold-email", "referral"
-    notes: Optional[str] = None
+    phone: str | None = None
+    company: str | None = None
+    industry: str | None = None
+    job_title: str | None = None
+    pain_points: str | None = None
+    budget: float | None = None
+    timeline: str | None = None  # "immediate", "3-6 months", "unknown"
+    source: str | None = None  # "linkedin", "website", "cold-email", "referral"
+    notes: str | None = None
 
     @field_validator('name')
     @classmethod
@@ -56,7 +56,7 @@ class LeadBase(BaseModel):
 
     @field_validator('budget')
     @classmethod
-    def budget_positive(cls, v: Optional[float]) -> Optional[float]:
+    def budget_positive(cls, v: float | None) -> float | None:
         if v is not None and v < 0:
             raise ValueError("Budget must be non-negative")
         return v
@@ -67,30 +67,30 @@ class Lead(LeadBase):
     status: str  # "new", "contacted", "qualified", "negotiating", "closed", "lost"
     created_at: datetime
     updated_at: datetime
-    last_contacted: Optional[datetime] = None
+    last_contacted: datetime | None = None
 
 class LeadCreate(LeadBase):
     pass
 
 class LeadUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    industry: Optional[str] = None
-    job_title: Optional[str] = None
-    pain_points: Optional[str] = None
-    budget: Optional[float] = None
-    timeline: Optional[str] = None
-    status: Optional[str] = None
-    notes: Optional[str] = None
-    last_contacted: Optional[datetime] = None
+    name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    company: str | None = None
+    industry: str | None = None
+    job_title: str | None = None
+    pain_points: str | None = None
+    budget: float | None = None
+    timeline: str | None = None
+    status: str | None = None
+    notes: str | None = None
+    last_contacted: datetime | None = None
 
 class LeadScore(BaseModel):
     lead_id: int
     score: float
     score_breakdown: dict  # {completeness: 0.8, engagement: 0.7, fit: 0.9}
-    reasons: List[str]
+    reasons: list[str]
     scored_at: datetime
 
 
@@ -170,7 +170,7 @@ def calculate_lead_score(lead_data: dict) -> dict:
         'reasons': _generate_score_reasons(lead_data, score_breakdown)
     }
 
-def _generate_score_reasons(lead_data: dict, breakdown: dict) -> List[str]:
+def _generate_score_reasons(lead_data: dict, breakdown: dict) -> list[str]:
     """Explicar por qué score."""
     reasons = []
 
@@ -228,12 +228,12 @@ async def create_lead(lead_data: LeadCreate, db: AsyncSession = Depends(get_db),
     logger.info(f"Lead creado: {lead.email} (score: {lead.score:.1f})")
     return lead
 
-@router.get("/", response_model=List[Lead])
+@router.get("/", response_model=list[Lead])
 async def list_leads(
     skip: int = 0,
     limit: int = 50,
     min_score: float = 0,
-    status: Optional[str] = None,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list:

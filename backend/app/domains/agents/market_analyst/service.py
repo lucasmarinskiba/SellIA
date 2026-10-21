@@ -1,27 +1,29 @@
 """Market Analyst Service"""
 
-import uuid
 import json
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
 import httpx
+from langchain_core.messages import HumanMessage, SystemMessage
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.core.logger import get_logger
-from app.domains.agents.market_analyst.models import MarketAnalysisJob, CompetitorSnapshot
 from app.domains.agents.llm_provider import generate_with_fallback
+from app.domains.agents.market_analyst.models import (
+    CompetitorSnapshot,
+    MarketAnalysisJob,
+)
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
 
 
-async def _scrape_with_httpx(url: str) -> Dict[str, Any]:
+async def _scrape_with_httpx(url: str) -> dict[str, Any]:
     """Scrapeo rápido con httpx (sin JS)."""
     try:
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
@@ -48,13 +50,13 @@ async def _scrape_with_httpx(url: str) -> Dict[str, Any]:
         return {"url": url, "error": str(e), "method": "httpx"}
 
 
-def _extract_title(html: str) -> Optional[str]:
+def _extract_title(html: str) -> str | None:
     import re
     m = re.search(r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
     return m.group(1).strip() if m else None
 
 
-async def _scrape_with_browser(url: str) -> Dict[str, Any]:
+async def _scrape_with_browser(url: str) -> dict[str, Any]:
     """Scrapeo con BrowserService (Playwright) para JS-heavy sites."""
     try:
         from app.domains.computer_use.browser_service import BrowserService
@@ -80,9 +82,9 @@ async def _scrape_with_browser(url: str) -> Dict[str, Any]:
 async def _analyze_competitor_with_llm(
     db: AsyncSession,
     business_id: uuid.UUID,
-    competitor: Dict[str, Any],
-    scrape_data: Dict[str, Any],
-) -> Dict[str, Any]:
+    competitor: dict[str, Any],
+    scrape_data: dict[str, Any],
+) -> dict[str, Any]:
     """Usa LLM para extraer pricing, features, strengths, weaknesses."""
     ctx = await get_agent_prompt_context(db, business_id)
     context_block = format_business_context_for_prompt(ctx)
@@ -144,8 +146,8 @@ async def _generate_market_report_with_llm(
     db: AsyncSession,
     business_id: uuid.UUID,
     target_market: str,
-    snapshots_data: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    snapshots_data: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Genera reporte estructurado con gaps, oportunidades y trends."""
     ctx = await get_agent_prompt_context(db, business_id)
     context_block = format_business_context_for_prompt(ctx)
@@ -204,7 +206,7 @@ async def run_market_analysis(
     db: AsyncSession,
     business_id: uuid.UUID,
     target_market: str,
-    competitors_list: List[Dict[str, Any]],
+    competitors_list: list[dict[str, Any]],
 ) -> MarketAnalysisJob:
     """Orquesta el análisis completo de mercado."""
     job = MarketAnalysisJob(
@@ -219,7 +221,7 @@ async def run_market_analysis(
     await db.commit()
     await db.refresh(job)
 
-    snapshots_data: List[Dict[str, Any]] = []
+    snapshots_data: list[dict[str, Any]] = []
     try:
         for competitor in competitors_list:
             url = competitor.get("url")
@@ -277,7 +279,7 @@ async def run_market_analysis(
     return job
 
 
-async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> dict[str, Any] | None:
     """Retorna el reporte completo con snapshots y charts data."""
     result = await db.execute(
         select(MarketAnalysisJob).where(MarketAnalysisJob.id == job_id)
@@ -317,7 +319,7 @@ async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> Optional[Dic
     }
 
 
-async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> List[MarketAnalysisJob]:
+async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> list[MarketAnalysisJob]:
     result = await db.execute(
         select(MarketAnalysisJob)
         .where(MarketAnalysisJob.business_id == business_id)

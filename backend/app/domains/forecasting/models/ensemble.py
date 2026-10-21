@@ -21,7 +21,7 @@ class EnsembleForecaster(Forecaster):
         self.members = members
         self.weights = weights or {}
 
-    def fit(self, ts: TimeSeries) -> "EnsembleForecaster":
+    def fit(self, ts: TimeSeries) -> EnsembleForecaster:
         self._fitted: list[Forecaster] = []
         for m in self.members:
             try:

@@ -6,22 +6,18 @@ Endpoints para evaluar leads:
 - GET /leads/priority — ordenar por priority
 """
 
-import logging
-from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.computer_use.services.lead_scorer import (
     get_lead_scoring_service,
-    LeadScoringService,
-    LeadTemperature,
 )
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -43,7 +39,7 @@ class LeadScoringRequest(BaseModel):
 
     lead_id: str
     lead_name: str
-    conversation_history: List[MessageHistory]
+    conversation_history: list[MessageHistory]
     customer_profile: dict = Field(default_factory=dict)
     product_info: dict = Field(default_factory=dict)
 
@@ -121,9 +117,9 @@ async def score_lead(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/leads/batch-score", response_model=List[LeadScoreResponse])
+@router.post("/leads/batch-score", response_model=list[LeadScoreResponse])
 async def batch_score_leads(
-    requests: List[LeadScoringRequest],
+    requests: list[LeadScoringRequest],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

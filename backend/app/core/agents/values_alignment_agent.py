@@ -10,9 +10,9 @@ Workflow:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
+from datetime import datetime
 from enum import Enum
-from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +89,10 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def extract_user_values(
-        user_profile: Dict[str, Any],
-        user_behavior: List[Dict[str, Any]],
-        user_feedback: List[str],
-    ) -> Dict[str, Any]:
+        user_profile: dict[str, Any],
+        user_behavior: list[dict[str, Any]],
+        user_feedback: list[str],
+    ) -> dict[str, Any]:
         """
         Extract user values from profile, behavior, and feedback.
 
@@ -120,7 +120,7 @@ class ValuesAlignmentAgent:
                 if keyword_matches > 0:
                     value_scores[value_type.value] += keyword_matches * 10
                     value_confidence[value_type.value] = min(100, keyword_matches * 15)
-                    extraction_sources.append(f"profile")
+                    extraction_sources.append("profile")
 
         # 2. Extract from behavior
         if user_behavior:
@@ -166,9 +166,9 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def score_recommendation_alignment(
-        recommendation: Dict[str, Any],
-        user_values: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        recommendation: dict[str, Any],
+        user_values: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Score how well a recommendation aligns with user values.
 
@@ -262,10 +262,10 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def detect_conflicts(
-        recommendation: Dict[str, Any],
-        user_values: Dict[str, Any],
+        recommendation: dict[str, Any],
+        user_values: dict[str, Any],
         sales_goal: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect conflicts between sales goal and user values.
 
@@ -345,9 +345,9 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def _recommend_ethical_path(
-        conflicts: List[Dict[str, Any]],
-        user_values: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        conflicts: list[dict[str, Any]],
+        user_values: dict[str, Any],
+    ) -> dict[str, Any]:
         """Recommend ethical path forward when conflicts exist."""
 
         if not conflicts:
@@ -369,7 +369,7 @@ class ValuesAlignmentAgent:
         if len(moderate_conflicts) >= 2:
             return {
                 "recommendation": "proceed_with_caution",
-                "reason": f"Multiple moderate conflicts detected",
+                "reason": "Multiple moderate conflicts detected",
                 "conditions": [c["recommendation"] for c in moderate_conflicts],
                 "disclosure": "Be transparent about conflicts and trade-offs",
             }
@@ -385,10 +385,10 @@ class ValuesAlignmentAgent:
     @staticmethod
     def learn_alignment(
         recommendation_id: str,
-        user_values: Dict[str, Any],
+        user_values: dict[str, Any],
         actual_satisfaction: float,
         actual_value_alignment: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Learn from past recommendations to improve alignment.
 
@@ -436,9 +436,9 @@ class ValuesAlignmentAgent:
 
     @staticmethod
     def alignment_report(
-        user_values: Dict[str, Any],
-        recommendations: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        user_values: dict[str, Any],
+        recommendations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Generate comprehensive alignment report."""
 
         scored_recommendations = [

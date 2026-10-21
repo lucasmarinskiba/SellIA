@@ -1,7 +1,7 @@
 """Financial Planner Schemas"""
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -9,10 +9,10 @@ from pydantic import BaseModel, ConfigDict
 
 class FinancialScenario(BaseModel):
     name: str  # optimistic | base | pessimistic
-    monthly_data: List[Dict[str, Any]] = []
-    total_revenue: Optional[float] = None
-    total_expense: Optional[float] = None
-    net_result: Optional[float] = None
+    monthly_data: list[dict[str, Any]] = []
+    total_revenue: float | None = None
+    total_expense: float | None = None
+    net_result: float | None = None
 
 
 class FinancialPlanBase(BaseModel):
@@ -20,8 +20,8 @@ class FinancialPlanBase(BaseModel):
 
 
 class FinancialPlanCreate(FinancialPlanBase):
-    historical_data: Dict[str, Any] = {}  # {revenues: [...], expenses: [...]}
-    assumptions: Dict[str, Any] = {}  # {growth_rate, cac, ltv, churn, ...}
+    historical_data: dict[str, Any] = {}  # {revenues: [...], expenses: [...]}
+    assumptions: dict[str, Any] = {}  # {growth_rate, cac, ltv, churn, ...}
 
 
 class FinancialPlanOut(BaseModel):
@@ -30,13 +30,13 @@ class FinancialPlanOut(BaseModel):
     id: UUID
     business_id: UUID
     plan_name: str
-    revenue_projections: List[Dict[str, Any]] = []
-    expense_projections: List[Dict[str, Any]] = []
-    cash_flow: List[Dict[str, Any]] = []
-    break_even_month: Optional[int] = None
-    scenarios: Dict[str, Any] = {}
-    metrics: Dict[str, Any] = {}
-    assumptions: Dict[str, Any] = {}
+    revenue_projections: list[dict[str, Any]] = []
+    expense_projections: list[dict[str, Any]] = []
+    cash_flow: list[dict[str, Any]] = []
+    break_even_month: int | None = None
+    scenarios: dict[str, Any] = {}
+    metrics: dict[str, Any] = {}
+    assumptions: dict[str, Any] = {}
     created_at: datetime
     updated_at: datetime
 

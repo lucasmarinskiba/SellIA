@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
-from datetime import date, datetime
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -35,8 +33,8 @@ class SeriesSpec:
     level: SeriesLevel
     target: TargetKind = TargetKind.REVENUE
     grain: Grain = Grain.DAILY
-    key: Optional[str] = None          # sku / channel / category value; None for TOTAL
-    label: Optional[str] = None
+    key: str | None = None          # sku / channel / category value; None for TOTAL
+    label: str | None = None
     country: str = "AR"                # for holiday features
 
     @property
@@ -50,8 +48,8 @@ class TimeSeries:
     spec: SeriesSpec
     index: pd.DatetimeIndex
     values: np.ndarray                 # float, non-negative, gaps filled with 0
-    exog: Optional[pd.DataFrame] = None  # aligned known regressors (price, ad_spend, promo)
-    stockout_mask: Optional[np.ndarray] = None  # True where demand was likely censored
+    exog: pd.DataFrame | None = None  # aligned known regressors (price, ad_spend, promo)
+    stockout_mask: np.ndarray | None = None  # True where demand was likely censored
 
     def __post_init__(self) -> None:
         self.values = np.asarray(self.values, dtype=float)
@@ -82,7 +80,7 @@ class ForecastResult:
     quantiles: dict[float, np.ndarray] = field(default_factory=dict)   # {0.1: arr, 0.9: arr}
     diagnostics: dict = field(default_factory=dict)
 
-    def clip_nonnegative(self) -> "ForecastResult":
+    def clip_nonnegative(self) -> ForecastResult:
         self.mean = np.clip(self.mean, 0.0, None)
         for q in self.quantiles:
             self.quantiles[q] = np.clip(self.quantiles[q], 0.0, None)

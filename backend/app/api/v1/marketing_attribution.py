@@ -1,14 +1,13 @@
 """Marketing attribution API — channel ROI + multi-touch attribution."""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
-from app.domains.attribution.attribution_service import ChannelAttributionService
 from app.domains.attribution.attribution_models import AttributionModel
+from app.domains.attribution.attribution_service import ChannelAttributionService
 
 router = APIRouter(prefix="/api/v1", tags=["marketing-attribution"])
 
@@ -34,8 +33,8 @@ def attribute_visits_to_channel(
     location_id: UUID,
     business_id: UUID = Query(...),
     attribution_model: str = Query(AttributionModel.FIRST_TOUCH, description="first_touch, last_touch, linear, time_decay"),
-    date_start: Optional[str] = Query(None, description="YYYY-MM-DD"),
-    date_end: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date_start: str | None = Query(None, description="YYYY-MM-DD"),
+    date_end: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Attribute location visits to channels."""
@@ -53,7 +52,7 @@ def attribute_visits_to_channel(
 @router.get("/businesses/{business_id}/channel-roi-report")
 def get_channel_roi_report(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD, default today"),
+    date: str | None = Query(None, description="YYYY-MM-DD, default today"),
     db: Session = Depends(get_db)
 ):
     """Generate ROI ranking by channel."""

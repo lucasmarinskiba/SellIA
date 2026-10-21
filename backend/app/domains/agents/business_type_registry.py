@@ -4,15 +4,13 @@ Determina qué agentes autónomos y qué herramientas del ReAct orchestrator
 son relevantes según el tipo específico de negocio (BusinessContext).
 """
 
-from typing import Dict, List, Set, Optional
 from app.domains.business_context.models import BusinessType
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Agent relevance by business type
 # ═══════════════════════════════════════════════════════════════════════════
 
-AGENT_RELEVANCE: Dict[BusinessType, Dict[str, int]] = {
+AGENT_RELEVANCE: dict[BusinessType, dict[str, int]] = {
     # Format: {agent_slug: priority_score (0-100)}
     # Agents not listed are considered irrelevant (score 0)
 
@@ -210,7 +208,7 @@ AGENT_RELEVANCE: Dict[BusinessType, Dict[str, int]] = {
 # Tool relevance by business type (for ReAct orchestrator)
 # ═══════════════════════════════════════════════════════════════════════════
 
-TOOL_RELEVANCE: Dict[BusinessType, Dict[str, int]] = {
+TOOL_RELEVANCE: dict[BusinessType, dict[str, int]] = {
     BusinessType.PHYSICAL_PRODUCTS: {
         "SearchProducts": 100,
         "GetCustomerHistory": 90,
@@ -317,7 +315,7 @@ TOOL_RELEVANCE: Dict[BusinessType, Dict[str, int]] = {
 # Prompt adaptations by business type
 # ═══════════════════════════════════════════════════════════════════════════
 
-BUSINESS_TYPE_PROMPT_ADAPTATIONS: Dict[BusinessType, str] = {
+BUSINESS_TYPE_PROMPT_ADAPTATIONS: dict[BusinessType, str] = {
     BusinessType.PHYSICAL_PRODUCTS: (
         "You are assisting a business that sells PHYSICAL PRODUCTS. "
         "Focus on: inventory management, shipping options, product photography, "
@@ -382,7 +380,7 @@ class BusinessTypeRegistry:
     """Registry that provides business-type-aware configurations."""
 
     @staticmethod
-    def get_relevant_agents(business_type: BusinessType, min_priority: int = 50) -> List[str]:
+    def get_relevant_agents(business_type: BusinessType, min_priority: int = 50) -> list[str]:
         """Return agent slugs relevant for this business type, sorted by priority."""
         scores = AGENT_RELEVANCE.get(business_type, AGENT_RELEVANCE[BusinessType.OTHER])
         filtered = {k: v for k, v in scores.items() if v >= min_priority}
@@ -395,7 +393,7 @@ class BusinessTypeRegistry:
         return scores.get(agent_slug, 0)
 
     @staticmethod
-    def get_relevant_tools(business_type: BusinessType, min_priority: int = 30) -> List[str]:
+    def get_relevant_tools(business_type: BusinessType, min_priority: int = 30) -> list[str]:
         """Return tool names relevant for this business type, sorted by priority."""
         scores = TOOL_RELEVANCE.get(business_type, TOOL_RELEVANCE[BusinessType.OTHER])
         filtered = {k: v for k, v in scores.items() if v >= min_priority}

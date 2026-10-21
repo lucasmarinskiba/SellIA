@@ -7,8 +7,8 @@ Docs: https://developers.tiktok.com/doc/webhooks-webhook
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class TikTokConnector(BaseChannelConnector):

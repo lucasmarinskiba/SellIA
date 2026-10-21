@@ -6,15 +6,18 @@ before users notice issues.
 """
 
 import time
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 import aiohttp
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.logger import get_logger
-from app.domains.synthetic.models import SyntheticCheck, SyntheticResult, SystemHealthSnapshot
+from app.domains.synthetic.models import (
+    SyntheticCheck,
+    SyntheticResult,
+    SystemHealthSnapshot,
+)
 
 logger = get_logger(__name__)
 
@@ -79,20 +82,19 @@ async def _run_single_check(check: SyntheticCheck):
     start = time.time()
     try:
         if check.check_type == "http":
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    check.target_url,
-                    timeout=aiohttp.ClientTimeout(total=check.timeout_seconds),
-                    ssl=False,
-                ) as resp:
-                    elapsed = (time.time() - start) * 1000
-                    body = await resp.text()
-                    ok = True
-                    if check.expected_status and resp.status != check.expected_status:
-                        ok = False
-                    if check.expected_keyword and check.expected_keyword not in body:
-                        ok = False
-                    return ok, round(elapsed, 2), resp.status, None
+            async with aiohttp.ClientSession() as session, session.get(
+                check.target_url,
+                timeout=aiohttp.ClientTimeout(total=check.timeout_seconds),
+                ssl=False,
+            ) as resp:
+                elapsed = (time.time() - start) * 1000
+                body = await resp.text()
+                ok = True
+                if check.expected_status and resp.status != check.expected_status:
+                    ok = False
+                if check.expected_keyword and check.expected_keyword not in body:
+                    ok = False
+                return ok, round(elapsed, 2), resp.status, None
         elif check.check_type == "ai_latency":
             elapsed = (time.time() - start) * 1000
             return True, round(elapsed, 2), 200, None
@@ -103,7 +105,7 @@ async def _run_single_check(check: SyntheticCheck):
         return False, round(elapsed, 2), None, str(exc)
 
 
-async def get_latest_health(db: AsyncSession) -> Optional[SystemHealthSnapshot]:
+async def get_latest_health(db: AsyncSession) -> SystemHealthSnapshot | None:
     """Return the most recent health snapshot."""
     result = await db.execute(
         select(SystemHealthSnapshot).order_by(desc(SystemHealthSnapshot.snapshot_at)).limit(1)
@@ -111,9 +113,9 @@ async def get_latest_health(db: AsyncSession) -> Optional[SystemHealthSnapshot]:
     return result.scalar_one_or_none()
 
 
-async def get_check_history(db: AsyncSession, check_id, hours: int = 24) -> List[SyntheticResult]:
+async def get_check_history(db: AsyncSession, check_id, hours: int = 24) -> list[SyntheticResult]:
     """Get results for a specific check in the last N hours."""
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     result = await db.execute(
         select(SyntheticResult)
         .where(SyntheticResult.check_id == check_id, SyntheticResult.checked_at >= since)

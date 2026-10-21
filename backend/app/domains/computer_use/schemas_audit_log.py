@@ -1,7 +1,8 @@
 """Audit Log Schemas — API request/response models."""
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -10,30 +11,30 @@ class AuditLogResponse(BaseModel):
 
     id: str
     user_id: str
-    session_id: Optional[str] = None
+    session_id: str | None = None
 
     created_at: datetime
-    executed_at: Optional[datetime] = None
+    executed_at: datetime | None = None
     duration_ms: int
 
     platform: str
     action_type: str
 
-    agent_name: Optional[str] = None
-    strategy_name: Optional[str] = None
-    tactics: Optional[List[str]] = None
+    agent_name: str | None = None
+    strategy_name: str | None = None
+    tactics: list[str] | None = None
 
     confidence_score: float
     status: str  # success, pending_approval, failed, escalated
 
-    input_data: Optional[str] = None
-    output_data: Optional[str] = None
-    error_message: Optional[str] = None
+    input_data: str | None = None
+    output_data: str | None = None
+    error_message: str | None = None
 
-    user_approved: Optional[bool] = None
-    approval_at: Optional[datetime] = None
+    user_approved: bool | None = None
+    approval_at: datetime | None = None
 
-    extra_data: Optional[Dict[str, Any]] = None
+    extra_data: dict[str, Any] | None = None
 
     class Config:
         from_attributes = True
@@ -42,7 +43,7 @@ class AuditLogResponse(BaseModel):
 class AuditLogListResponse(BaseModel):
     """List of audit logs with pagination."""
 
-    logs: List[AuditLogResponse]
+    logs: list[AuditLogResponse]
     total: int
     limit: int
     offset: int
@@ -51,12 +52,12 @@ class AuditLogListResponse(BaseModel):
 class AuditLogSearchRequest(BaseModel):
     """Search/filter request."""
 
-    platform: Optional[str] = None
-    action_type: Optional[str] = None
-    agent_name: Optional[str] = None
-    status: Optional[str] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    platform: str | None = None
+    action_type: str | None = None
+    agent_name: str | None = None
+    status: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
@@ -66,7 +67,7 @@ class AuditLogApprovalRequest(BaseModel):
 
     log_id: str
     approved: bool
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class AuditLogSummaryResponse(BaseModel):
@@ -74,6 +75,6 @@ class AuditLogSummaryResponse(BaseModel):
 
     period_days: int
     total_actions: int
-    by_platform: Dict[str, Dict[str, Any]]
-    by_action: Dict[str, Dict[str, Any]]
-    by_status: Dict[str, int]
+    by_platform: dict[str, dict[str, Any]]
+    by_action: dict[str, dict[str, Any]]
+    by_status: dict[str, int]

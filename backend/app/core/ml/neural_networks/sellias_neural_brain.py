@@ -2,61 +2,59 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 
-from .base_networks import NetworkConfig, TrainingConfig
-from .prediction_networks import (
-    SalesPredictionNetwork,
-    ChurnPredictionNetwork,
-    DemandForecastingNetwork,
-    LeadQualityNetwork,
-    ContactTimingNetwork,
-    PriceElasticityNetwork,
-)
-from .optimization_networks import (
-    PricingOptimizationNetwork,
-    ChannelOptimizationNetwork,
-    MessageTimingNetwork,
-    BudgetAllocationNetwork,
-    FeatureImportanceNetwork,
-)
-from .pattern_recognition import (
-    MarketPatternRecognizer,
-    CustomerBehaviorRecognizer,
-    CompetitorPatternRecognizer,
-    CommunicationPatternRecognizer,
-    AnomalyDetector,
-)
-from .recommendation_networks import (
-    StrategyRecommender,
-    SalesMethodRecommender,
-    PricingRecommender,
-    ChannelRecommender,
-    MessageToneRecommender,
-)
-from .learning_networks import (
-    OnlineLearningEngine,
-    TransferLearningEngine,
-    MetaLearningEngine,
-    FewShotLearner,
-    ActiveLearner,
-)
 from .attention_mechanisms import (
-    FeatureAttention,
-    TemporalAttention,
-    SpatialAttention,
     CrossModalAttention,
+    FeatureAttention,
+    SpatialAttention,
+    TemporalAttention,
 )
 from .ensemble_networks import (
-    EnsemblePredictor,
-    UncertaintyEstimator,
-    ModelSelector,
-    BoostingEngine,
     BaggingEngine,
+    BoostingEngine,
+    EnsemblePredictor,
+    ModelSelector,
+    UncertaintyEstimator,
+)
+from .learning_networks import (
+    ActiveLearner,
+    FewShotLearner,
+    MetaLearningEngine,
+    OnlineLearningEngine,
+    TransferLearningEngine,
+)
+from .optimization_networks import (
+    BudgetAllocationNetwork,
+    ChannelOptimizationNetwork,
+    FeatureImportanceNetwork,
+    MessageTimingNetwork,
+    PricingOptimizationNetwork,
+)
+from .pattern_recognition import (
+    AnomalyDetector,
+    CommunicationPatternRecognizer,
+    CompetitorPatternRecognizer,
+    CustomerBehaviorRecognizer,
+    MarketPatternRecognizer,
+)
+from .prediction_networks import (
+    ChurnPredictionNetwork,
+    ContactTimingNetwork,
+    DemandForecastingNetwork,
+    LeadQualityNetwork,
+    PriceElasticityNetwork,
+    SalesPredictionNetwork,
+)
+from .recommendation_networks import (
+    ChannelRecommender,
+    MessageToneRecommender,
+    PricingRecommender,
+    SalesMethodRecommender,
+    StrategyRecommender,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,9 +72,9 @@ class BrainState:
     last_update: datetime = field(default_factory=datetime.utcnow)
     total_predictions_made: int = 0
     model_accuracy: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "prediction_models_trained": self.prediction_models_trained,
@@ -97,15 +95,15 @@ class ComprehensiveInsight:
     insight_type: str  # "sales", "churn", "market", "customer", "strategy"
     headline: str
     confidence: float
-    predictions: Dict[str, Any]
-    recommendations: List[str]
-    risks: List[str]
-    opportunities: List[str]
-    patterns_detected: List[str]
-    next_actions: List[str]
+    predictions: dict[str, Any]
+    recommendations: list[str]
+    risks: list[str]
+    opportunities: list[str]
+    patterns_detected: list[str]
+    next_actions: list[str]
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "insight_type": self.insight_type,
             "headline": self.headline,
@@ -177,7 +175,7 @@ class SelliasNeuralBrain:
 
         logger.info("SellIA's Neural Brain initialized - All 47 neural network modules ready")
 
-    def train_all_networks(self, training_data: Dict[str, np.ndarray], validation_data: Optional[Dict[str, np.ndarray]] = None) -> BrainState:
+    def train_all_networks(self, training_data: dict[str, np.ndarray], validation_data: dict[str, np.ndarray] | None = None) -> BrainState:
         """Train all neural networks."""
         try:
             logger.info("Starting comprehensive neural network training...")
@@ -248,7 +246,7 @@ class SelliasNeuralBrain:
             logger.error(f"Error during brain training: {e}")
             raise
 
-    def predict_sales_outcome(self, customer_data: np.ndarray, customer_profile: Dict[str, Any]) -> ComprehensiveInsight:
+    def predict_sales_outcome(self, customer_data: np.ndarray, customer_profile: dict[str, Any]) -> ComprehensiveInsight:
         """Comprehensive sales prediction and recommendations."""
         try:
             # Get predictions
@@ -323,7 +321,7 @@ class SelliasNeuralBrain:
             logger.error(f"Error in sales prediction: {e}")
             raise
 
-    def predict_customer_churn(self, customer_data: np.ndarray, customer_profile: Dict[str, Any]) -> ComprehensiveInsight:
+    def predict_customer_churn(self, customer_data: np.ndarray, customer_profile: dict[str, Any]) -> ComprehensiveInsight:
         """Comprehensive churn analysis."""
         try:
             churn_preds = self.churn_predictor.predict(customer_data)
@@ -414,7 +412,7 @@ class SelliasNeuralBrain:
             logger.error(f"Error in strategy optimization: {e}")
             raise
 
-    def detect_market_anomalies(self, market_data: np.ndarray) -> List[ComprehensiveInsight]:
+    def detect_market_anomalies(self, market_data: np.ndarray) -> list[ComprehensiveInsight]:
         """Detect and analyze market anomalies."""
         try:
             anomalies = self.anomaly_detector.detect_anomalies(market_data)
@@ -440,7 +438,7 @@ class SelliasNeuralBrain:
             logger.error(f"Error detecting anomalies: {e}")
             raise
 
-    def continuous_learning_update(self, new_data: np.ndarray, labels: np.ndarray) -> Dict[str, Any]:
+    def continuous_learning_update(self, new_data: np.ndarray, labels: np.ndarray) -> dict[str, Any]:
         """Update models with new data using online learning."""
         try:
             update_result = self.online_learner.update(new_data, labels)
@@ -459,11 +457,11 @@ class SelliasNeuralBrain:
             logger.error(f"Error in continuous learning: {e}")
             return {"update_success": False, "error": str(e)}
 
-    def get_brain_status(self) -> Dict[str, Any]:
+    def get_brain_status(self) -> dict[str, Any]:
         """Get current status of neural brain."""
         return self.state.to_dict()
 
-    def get_system_metrics(self) -> Dict[str, Any]:
+    def get_system_metrics(self) -> dict[str, Any]:
         """Get system-wide metrics."""
         return {
             "total_predictions": self.state.total_predictions_made,

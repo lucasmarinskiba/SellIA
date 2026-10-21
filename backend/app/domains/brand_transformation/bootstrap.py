@@ -192,7 +192,10 @@ async def ensure_brand_transformation_tables() -> None:
     # tables were never created (the `competitive` feature depends on them too).
     _bridge_tables = []
     try:
-        from app.domains.competitive.models import CompetitiveBattlecard, CompetitiveMonitor
+        from app.domains.competitive.models import (
+            CompetitiveBattlecard,
+            CompetitiveMonitor,
+        )
 
         _bridge_tables += [CompetitiveMonitor.__table__, CompetitiveBattlecard.__table__]
     except Exception as e:  # noqa: BLE001

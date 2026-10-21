@@ -2,16 +2,16 @@
 Task Processor - Executes email scheduler queue.
 Runs in background thread/worker process.
 """
-import logging
 import asyncio
+import logging
 from datetime import datetime
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.scheduler import EmailScheduler, TaskType, TaskStatus
+from sqlalchemy import select
+
 from app.core.email_sender import get_email_sender
+from app.core.scheduler import EmailScheduler, TaskType
 from app.db import AsyncSessionLocal
-from app.db.models import WorkflowExecution, Lead, EmailLog
+from app.db.models import EmailLog, Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
 

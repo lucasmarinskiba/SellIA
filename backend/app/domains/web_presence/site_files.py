@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from app.core.logger import get_logger
@@ -31,16 +31,16 @@ _LOC_RE = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>", re.IGNORECASE)
 class SiteFiles:
     origin: str
     robots_found: bool = False
-    robots_url: Optional[str] = None
-    robots_status: Optional[int] = None
+    robots_url: str | None = None
+    robots_status: int | None = None
     blocks_this_page: bool = False
-    blocking_rule: Optional[str] = None
+    blocking_rule: str | None = None
     sitemaps_declared: list[str] = field(default_factory=list)
-    sitemap_checked: Optional[str] = None
+    sitemap_checked: str | None = None
     sitemap_found: bool = False
     sitemap_is_index: bool = False
     sitemap_url_count: int = 0
-    contains_this_page: Optional[bool] = None
+    contains_this_page: bool | None = None
     notes: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
@@ -87,10 +87,10 @@ def _parse_robots(body: str) -> tuple[list[tuple[str, str]], list[str]]:
     return rules, sitemaps
 
 
-def _path_blocked(rules: list[tuple[str, str]], path: str) -> Optional[str]:
+def _path_blocked(rules: list[tuple[str, str]], path: str) -> str | None:
     """Standard longest-match resolution: the most specific rule wins, and an
     Allow of equal length beats a Disallow."""
-    best: Optional[tuple[int, str, str]] = None
+    best: tuple[int, str, str] | None = None
     for directive, value in rules:
         if value == "":
             # `Disallow:` with an empty value means "allow everything".

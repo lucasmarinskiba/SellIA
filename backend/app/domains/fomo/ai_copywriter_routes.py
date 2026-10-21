@@ -1,9 +1,9 @@
 """Fase A: AI FOMO Copywriter Agent — API routes"""
 
 import uuid
-from typing import Optional, Dict, List, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Body
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
@@ -60,7 +60,7 @@ async def generate_and_rank_copy(
     tone: CopyTone = Query(CopyTone.URGENT),
     language: SupportedLanguage = Query(SupportedLanguage.ES),
     variant_count: int = Query(5, ge=1, le=10),
-    historical_data: Optional[Dict[str, List[Dict[str, Any]]]] = Body(None),
+    historical_data: dict[str, list[dict[str, Any]]] | None = Body(None),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -85,7 +85,7 @@ async def generate_and_rank_copy(
 async def translate_campaign_copy(
     business_id: uuid.UUID = Query(...),
     target_language: SupportedLanguage = Query(...),
-    content: Dict[str, Any] = Body(...),
+    content: dict[str, Any] = Body(...),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):

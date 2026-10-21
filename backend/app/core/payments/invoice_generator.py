@@ -13,21 +13,25 @@ Database model: Invoice (from payment_models.py)
 """
 
 import logging
-import os
-from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
-from io import BytesIO
-import json
 from enum import Enum
+from io import BytesIO
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import (
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
     HAS_REPORTLAB = True
 except ImportError:
     HAS_REPORTLAB = False
@@ -53,14 +57,14 @@ class InvoiceGenerator:
         order_id: str,
         customer_name: str,
         customer_email: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_total: float,
         currency: str = "USD",
         tax_rate: float = 0.0,
         notes: str = "",
         due_days: int = 7,
-        seller_info: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        seller_info: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Generate an invoice.
 
@@ -159,7 +163,7 @@ class InvoiceGenerator:
             return result
 
         except Exception as e:
-            logger.error(f"Invoice generation error: {str(e)}")
+            logger.error(f"Invoice generation error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -169,14 +173,14 @@ class InvoiceGenerator:
         due_date: datetime,
         customer_name: str,
         customer_email: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_subtotal: float,
         tax_rate: float,
         amount_tax: float,
         amount_due: float,
         currency: str = "USD",
         notes: str = "",
-        seller_info: Optional[Dict[str, str]] = None,
+        seller_info: dict[str, str] | None = None,
     ) -> str:
         """Build HTML invoice template."""
 
@@ -312,12 +316,12 @@ class InvoiceGenerator:
         invoice_date: datetime,
         due_date: datetime,
         customer_name: str,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         amount_subtotal: float,
         amount_tax: float,
         amount_due: float,
         currency: str = "USD",
-        seller_info: Optional[Dict[str, str]] = None,
+        seller_info: dict[str, str] | None = None,
     ) -> bytes:
         """Generate PDF invoice using reportlab."""
 
@@ -409,8 +413,8 @@ class InvoiceGenerator:
         customer_name: str,
         invoice_number: str,
         html_content: str,
-        pdf_bytes: Optional[bytes] = None,
-    ) -> Dict[str, Any]:
+        pdf_bytes: bytes | None = None,
+    ) -> dict[str, Any]:
         """
         Send invoice via email.
 
@@ -429,7 +433,9 @@ class InvoiceGenerator:
             }
         """
         try:
-            from app.core.integrations.sendgrid_email import EmailService  # NOTE: sendgrid pip package not installed + no SENDGRID_API_KEY configured -- this call path will still ImportError until that gap is addressed
+            from app.core.integrations.sendgrid_email import (
+                EmailService,  # NOTE: sendgrid pip package not installed + no SENDGRID_API_KEY configured -- this call path will still ImportError until that gap is addressed
+            )
 
             # Send via SendGrid
             subject = f"Invoice {invoice_number}"
@@ -449,5 +455,5 @@ class InvoiceGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Error sending invoice email: {str(e)}")
+            logger.error(f"Error sending invoice email: {e!s}")
             return {"status": "error", "error": str(e)}

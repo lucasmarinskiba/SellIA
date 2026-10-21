@@ -1,20 +1,21 @@
 """Customer Service Auto-Agent Service"""
 
 import uuid
-import json
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
 from app.core.logger import get_logger
-from app.domains.agents.customer_service.models import ServiceBotConfig, ServiceInteraction
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.agents.customer_service.models import (
+    ServiceBotConfig,
+    ServiceInteraction,
+)
 from app.domains.agents.emotion_engine import EmotionDetector
 from app.domains.documents.service import DocumentService
 from app.domains.memory.service import MemoryEngine
-from app.domains.channels.models import Conversation, Message
-from app.domains.agents.ai_reply import generate_raw_ai_response
 
 logger = get_logger(__name__)
 
@@ -22,11 +23,11 @@ logger = get_logger(__name__)
 async def handle_customer_message(
     db: AsyncSession,
     bot_config_id: uuid.UUID,
-    customer_id: Optional[uuid.UUID],
+    customer_id: uuid.UUID | None,
     message: str,
     channel: str,
-    conversation_id: Optional[uuid.UUID] = None,
-) -> Dict[str, Any]:
+    conversation_id: uuid.UUID | None = None,
+) -> dict[str, Any]:
     """
     1. Detect emotion
     2. Search FAQ/docs via RAG
@@ -123,8 +124,8 @@ async def handle_customer_message(
         channel=channel,
         customer_id=customer_id,
         messages=[
-            {"role": "user", "content": message, "created_at": datetime.now(timezone.utc).isoformat()},
-            {"role": "bot", "content": response_text, "created_at": datetime.now(timezone.utc).isoformat()},
+            {"role": "user", "content": message, "created_at": datetime.now(UTC).isoformat()},
+            {"role": "bot", "content": response_text, "created_at": datetime.now(UTC).isoformat()},
         ],
         resolved=not escalated,
         escalated=escalated,
@@ -146,7 +147,7 @@ async def get_faq_answer(
     db: AsyncSession,
     business_id: uuid.UUID,
     query: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Semantic search over business documents for FAQ answers."""
     doc_service = DocumentService(db)
     results = await doc_service.search_documents(business_id, query, k=5)
@@ -165,10 +166,10 @@ async def get_faq_answer(
 
 
 def should_escalate(
-    emotion_result: Dict[str, Any],
+    emotion_result: dict[str, Any],
     query_confidence: float,
     escalation_threshold: float,
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """Decides if human agent is needed."""
     intensity = float(emotion_result.get("intensity", 0.0))
     emotion = emotion_result.get("emotion", "neutral")
@@ -187,10 +188,10 @@ def should_escalate(
 
 async def list_interactions(
     db: AsyncSession,
-    bot_config_id: Optional[uuid.UUID] = None,
+    bot_config_id: uuid.UUID | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> List[ServiceInteraction]:
+) -> list[ServiceInteraction]:
     stmt = select(ServiceInteraction).order_by(desc(ServiceInteraction.created_at))
     if bot_config_id:
         stmt = stmt.where(ServiceInteraction.bot_config_id == bot_config_id)
@@ -199,7 +200,7 @@ async def list_interactions(
     return result.scalars().all()
 
 
-async def get_interaction(db: AsyncSession, interaction_id: uuid.UUID) -> Optional[ServiceInteraction]:
+async def get_interaction(db: AsyncSession, interaction_id: uuid.UUID) -> ServiceInteraction | None:
     result = await db.execute(
         select(ServiceInteraction).where(ServiceInteraction.id == interaction_id)
     )
@@ -209,8 +210,8 @@ async def get_interaction(db: AsyncSession, interaction_id: uuid.UUID) -> Option
 async def create_or_update_config(
     db: AsyncSession,
     business_id: uuid.UUID,
-    data: Dict[str, Any],
-    config_id: Optional[uuid.UUID] = None,
+    data: dict[str, Any],
+    config_id: uuid.UUID | None = None,
 ) -> ServiceBotConfig:
     if config_id:
         result = await db.execute(
@@ -235,7 +236,7 @@ async def create_or_update_config(
     return config
 
 
-async def get_config_by_business(db: AsyncSession, business_id: uuid.UUID) -> Optional[ServiceBotConfig]:
+async def get_config_by_business(db: AsyncSession, business_id: uuid.UUID) -> ServiceBotConfig | None:
     result = await db.execute(
         select(ServiceBotConfig).where(
             ServiceBotConfig.business_id == business_id,

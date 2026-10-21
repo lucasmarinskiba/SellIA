@@ -3,22 +3,21 @@ Multi-tenant system tests: 400+ lines.
 Unit tests for all components: tenant, isolation, API keys, billing, audit.
 """
 
-import pytest
 import uuid
-from datetime import datetime, timezone, timedelta
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy import select
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.database import Base
 from app.domains.users.models import User
-from .models import Tenant, TenantMember, TenantAPIKey, TenantBilling, AuditLog
-from .tenant_manager import TenantService, TenantTier, TIER_LIMITS
-from .tenant_isolation import TenantIsolation, TenantContext
+
 from .api_key_management import APIKeyService
+from .audit_logging import AuditAction, AuditService, AuditStatus
 from .billing_integration import BillingService
-from .audit_logging import AuditService, AuditAction, AuditStatus
+from .tenant_isolation import TenantIsolation
+from .tenant_manager import TIER_LIMITS, TenantService, TenantTier
 from .tenant_migration import MigrationService
+
 
 # Test fixtures
 @pytest.fixture

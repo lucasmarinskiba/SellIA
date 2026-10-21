@@ -4,16 +4,20 @@ Tracks goals, calculates progress, and links to workflows/agents.
 """
 
 import uuid
-from typing import Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.objectives.models import Department, BusinessObjective, KPI, KeyResult, ObjectiveStatus, ObjectivePeriod
-from app.domains.businesses.models import Business
 from app.core.logger import get_logger
+from app.domains.objectives.models import (
+    KPI,
+    BusinessObjective,
+    Department,
+    ObjectivePeriod,
+    ObjectiveStatus,
+)
 
 logger = get_logger(__name__)
 
@@ -50,14 +54,14 @@ class ObjectiveService:
         await self.db.refresh(kpi)
         return kpi
 
-    async def get_objectives_for_business(self, business_id: uuid.UUID, status: Optional[str] = None):
+    async def get_objectives_for_business(self, business_id: uuid.UUID, status: str | None = None):
         query = select(BusinessObjective).where(BusinessObjective.business_id == business_id, BusinessObjective.is_active == True)
         if status:
             query = query.where(BusinessObjective.status == ObjectiveStatus(status))
         result = await self.db.execute(query.order_by(desc(BusinessObjective.created_at)))
         return result.scalars().all()
 
-    async def get_kpis_for_business(self, business_id: uuid.UUID, period: Optional[str] = None):
+    async def get_kpis_for_business(self, business_id: uuid.UUID, period: str | None = None):
         query = select(KPI).where(KPI.business_id == business_id, KPI.is_active == True)
         if period:
             query = query.where(KPI.period == ObjectivePeriod(period))
@@ -70,7 +74,7 @@ class ObjectiveService:
         obj = result.scalar_one_or_none()
         if not obj:
             return
-        obj.current_value = (obj.current_value or Decimal("0")) + delta_value
+        obj.current_value = (obj.current_value or Decimal(0)) + delta_value
         progress = obj.current_value / obj.target_value if obj.target_value else 0
         if progress >= 1:
             obj.status = ObjectiveStatus.ACHIEVED
@@ -80,9 +84,9 @@ class ObjectiveService:
 
     async def calculate_kpi_value(self, kpi: KPI) -> Decimal:
         """Calculate the current value of a KPI from its data source."""
-        from app.domains.orders.models import Order
-        from app.domains.channels.models import Conversation, Message
+        from app.domains.channels.models import Conversation
         from app.domains.crm.models import Deal
+        from app.domains.orders.models import Order
 
         filter_config = kpi.data_source_filter or {}
         platform = filter_config.get("platform")
@@ -126,7 +130,7 @@ class ObjectiveService:
             result = await self.db.execute(query)
             return Decimal(str(result.scalar() or 0))
 
-        return Decimal("0")
+        return Decimal(0)
 
     async def refresh_all_kpis(self, business_id: uuid.UUID):
         """Recalculate all active KPIs for a business. Called by Celery beat."""

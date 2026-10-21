@@ -1,23 +1,28 @@
 """CRM API Router"""
 
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Optional
 
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.crm.models import Pipeline, Deal, LeadScore, LeadStage
-from app.domains.crm.schemas import (
-    PipelineCreate, PipelineUpdate, PipelineResponse,
-    DealCreate, DealUpdate, DealResponse, MoveDealRequest,
-    LeadScoreResponse, CRMSummaryResponse,
-)
 from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal, LeadScore, LeadStage, Pipeline
+from app.domains.crm.schemas import (
+    CRMSummaryResponse,
+    DealCreate,
+    DealResponse,
+    DealUpdate,
+    LeadScoreResponse,
+    MoveDealRequest,
+    PipelineCreate,
+    PipelineResponse,
+    PipelineUpdate,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 
@@ -90,9 +95,9 @@ async def delete_pipeline(
 @router.get("/deals", response_model=list[DealResponse])
 async def list_deals(
     business_id: UUID = Query(...),
-    stage: Optional[str] = None,
-    pipeline_id: Optional[UUID] = None,
-    search: Optional[str] = None,
+    stage: str | None = None,
+    pipeline_id: UUID | None = None,
+    search: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -123,8 +128,8 @@ async def create_deal(
     # Auto-generate title/description from conversation if not provided
     if data.conversation_id and (not data.title or not data.description):
         try:
-            from app.domains.channels.models import Conversation, Message
             from app.domains.agents.ai_reply import generate_ai_response
+            from app.domains.channels.models import Conversation, Message
 
             result = await db.execute(
                 select(Conversation).where(Conversation.id == data.conversation_id)
@@ -264,7 +269,7 @@ async def update_deal(
     if "stage" in update_data:
         new_stage = update_data["stage"]
         if new_stage in (LeadStage.CLOSED_WON.value, LeadStage.CLOSED_LOST.value):
-            update_data["actual_close_date"] = datetime.now(timezone.utc)
+            update_data["actual_close_date"] = datetime.now(UTC)
 
     for field, value in update_data.items():
         setattr(deal, field, value)
@@ -296,7 +301,7 @@ async def move_deal(
         deal.stage_order = data.order
 
     if data.stage in (LeadStage.CLOSED_WON.value, LeadStage.CLOSED_LOST.value):
-        deal.actual_close_date = datetime.now(timezone.utc)
+        deal.actual_close_date = datetime.now(UTC)
 
     await db.commit()
 
@@ -430,7 +435,7 @@ ESTIMATED_CLOSE: <estimación de días para cerrar>"""
         "next_action": "",
         "estimated_close": "",
         "raw": ai_response,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
     current_key = None
@@ -481,8 +486,8 @@ async def delete_deal(
 @router.get("/lead-scores", response_model=list[LeadScoreResponse])
 async def list_lead_scores(
     business_id: UUID = Query(...),
-    classification: Optional[str] = None,
-    min_score: Optional[int] = None,
+    classification: str | None = None,
+    min_score: int | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

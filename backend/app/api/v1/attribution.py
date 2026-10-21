@@ -1,16 +1,17 @@
 """Attribution API."""
 
 from uuid import UUID
-from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
 from app.domains.attribution.attribution_service import AttributionService
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1", tags=["attribution"])
 
@@ -29,7 +30,7 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
 
 class LogTouchpointRequest(BaseModel):
     channel: str
-    source: Optional[str] = None
+    source: str | None = None
     interaction_type: str
 
 

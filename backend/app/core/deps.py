@@ -1,12 +1,11 @@
 import hashlib
 import hmac
 import os
-from typing import Optional
 
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
@@ -104,7 +103,7 @@ async def get_current_user(
 async def get_current_user_optional(
     request: Request,
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Identify the caller when it is signed in, without ever rejecting.
 
     For endpoints that are legitimately public (the /sellia-brain demo) but
@@ -138,7 +137,7 @@ from fastapi_limiter.depends import RateLimiter
 RateLimit = RateLimiter
 
 
-async def get_current_user_ws(token: Optional[str], db: AsyncSession = Depends(get_db)) -> Optional[User]:
+async def get_current_user_ws(token: str | None, db: AsyncSession = Depends(get_db)) -> User | None:
     """Validate user from JWT token for WebSocket connections (no HTTP Request)."""
     if not token:
         return None

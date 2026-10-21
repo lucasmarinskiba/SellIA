@@ -4,34 +4,35 @@ Processes triggers and executes workflow actions sequentially.
 Supports persistent delays via WorkflowExecution state.
 """
 
-import uuid
 import asyncio
-import json
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
-from app.domains.automations.models import (
-    Workflow, WorkflowExecution, WorkflowTriggerType, WorkflowActionType,
-    WorkflowStatus, WorkflowVariant,
-)
-from app.domains.channels.models import Conversation, Message, MessageDirection, MessageStatus, ChannelPlatform, ChannelConnection
-from app.domains.agents.models import AgentConversation, AgentMessage
-from app.domains.agents.services import AgentService
-from app.domains.agents.prompts import get_system_prompt, compose_system_prompt
-from app.domains.agents.context_builder import BusinessContextBuilder
-from app.domains.subscriptions.models import UserAPIKey
-from app.core.encryption import decrypt_value
 from app.core.events import (
-    emit_workflow_completed,
     emit_deal_created,
     emit_human_handoff_required,
+    emit_workflow_completed,
 )
-
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from app.domains.agents.context_builder import BusinessContextBuilder
+from app.domains.agents.prompts import compose_system_prompt
+from app.domains.automations.models import (
+    Workflow,
+    WorkflowActionType,
+    WorkflowExecution,
+    WorkflowStatus,
+    WorkflowTriggerType,
+    WorkflowVariant,
+)
+from app.domains.channels.models import (
+    ChannelConnection,
+    Conversation,
+    Message,
+)
 
 
 class WorkflowEngine:
@@ -44,9 +45,9 @@ class WorkflowEngine:
         self,
         trigger_type: WorkflowTriggerType,
         business_id: uuid.UUID,
-        conversation_id: Optional[uuid.UUID] = None,
-        trigger_data: Optional[Dict[str, Any]] = None,
-    ) -> List[WorkflowExecution]:
+        conversation_id: uuid.UUID | None = None,
+        trigger_data: dict[str, Any] | None = None,
+    ) -> list[WorkflowExecution]:
         """Process a trigger and execute matching workflows."""
         # Find active workflows for this trigger and business
         result = await self.db.execute(
@@ -96,8 +97,8 @@ class WorkflowEngine:
     async def _select_variant(
         self,
         workflow: Workflow,
-        conversation_id: Optional[uuid.UUID],
-    ) -> tuple[Optional[uuid.UUID], Optional[List[Dict[str, Any]]]]:
+        conversation_id: uuid.UUID | None,
+    ) -> tuple[uuid.UUID | None, list[dict[str, Any]] | None]:
         """Select A/B test variant using deterministic hash-based routing.
         
         Returns (variant_id, actions_override) or (None, None) if no variants.
@@ -142,7 +143,7 @@ class WorkflowEngine:
         self.db.add(v)
         return v.id, v.actions if v.actions else None
 
-    def _check_trigger_config(self, config: Dict[str, Any], trigger_data: Dict[str, Any]) -> bool:
+    def _check_trigger_config(self, config: dict[str, Any], trigger_data: dict[str, Any]) -> bool:
         """Check if trigger data matches workflow trigger_config filters."""
         if not config:
             return True
@@ -165,13 +166,13 @@ class WorkflowEngine:
 
         return True
 
-    async def _run_execution(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: Optional[List[Dict[str, Any]]] = None):
+    async def _run_execution(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: list[dict[str, Any]] | None = None):
         """Run a workflow execution in background."""
         async with AsyncSessionLocal() as db:
             engine = WorkflowEngine(db)
             await engine.execute_workflow(execution_id, business_id, selected_actions)
 
-    async def execute_workflow(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: Optional[List[Dict[str, Any]]] = None):
+    async def execute_workflow(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: list[dict[str, Any]] | None = None):
         """Execute workflow actions sequentially."""
         result = await self.db.execute(
             select(WorkflowExecution).where(WorkflowExecution.id == execution_id)
@@ -233,7 +234,7 @@ class WorkflowEngine:
 
     async def _execute_action(
         self,
-        action: Dict[str, Any],
+        action: dict[str, Any],
         workflow: Workflow,
         execution: WorkflowExecution,
         business_id: uuid.UUID,
@@ -244,7 +245,7 @@ class WorkflowEngine:
 
         action_record = {
             "type": action_type,
-            "executed_at": datetime.now(timezone.utc).isoformat(),
+            "executed_at": datetime.now(UTC).isoformat(),
             "status": "success",
         }
 
@@ -264,7 +265,7 @@ class WorkflowEngine:
             delay = self._parse_delay(config)
             if delay > 0:
                 action_record["status"] = "waiting"
-                action_record["resume_at"] = (datetime.now(timezone.utc) + delay).isoformat()
+                action_record["resume_at"] = (datetime.now(UTC) + delay).isoformat()
                 execution.actions_executed = execution.actions_executed + [action_record]
                 await self.db.commit()
                 # Schedule resume
@@ -296,7 +297,7 @@ class WorkflowEngine:
             delay = await self._action_ai_wait(config, execution, business_id)
             if delay > 0:
                 action_record["status"] = "waiting"
-                action_record["resume_at"] = (datetime.now(timezone.utc) + delay).isoformat()
+                action_record["resume_at"] = (datetime.now(UTC) + delay).isoformat()
                 execution.actions_executed = execution.actions_executed + [action_record]
                 await self.db.commit()
                 asyncio.create_task(self._schedule_resume(execution.id, business_id, delay.total_seconds()))
@@ -341,7 +342,7 @@ class WorkflowEngine:
             engine = WorkflowEngine(db)
             await engine.execute_workflow(execution_id, business_id)
 
-    async def _action_send_message(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_message(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Send a message via the conversation's channel, or cross-channel if target_channel is specified."""
         if not execution.conversation_id:
             return
@@ -368,8 +369,8 @@ class WorkflowEngine:
         try:
             if target_channel:
                 # Cross-channel outreach
-                from app.domains.channels.models import ChannelPlatform
                 from app.domains.channels.connectors import get_connector
+                from app.domains.channels.models import ChannelPlatform
 
                 platform = ChannelPlatform(target_channel)
                 result = await self.db.execute(
@@ -411,7 +412,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Failed to send message: {e}")
 
-    async def _action_send_email(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_email(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Send an email using the email connector."""
         if not execution.conversation_id:
             return
@@ -441,7 +442,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Failed to send email: {e}")
 
-    async def _action_ai_reply(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_ai_reply(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Generate an AI response using a specific agent personality and send it."""
         if not execution.conversation_id:
             return
@@ -485,7 +486,7 @@ class WorkflowEngine:
             from app.domains.channels.services import send_outbound_message
             await send_outbound_message(self.db, execution.conversation_id, response_text, generated_by="ai")
 
-    async def _action_add_tag(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_add_tag(self, config: dict[str, Any], execution: WorkflowExecution):
         """Add a tag to the conversation."""
         if not execution.conversation_id:
             return
@@ -504,7 +505,7 @@ class WorkflowEngine:
                 conversation.extra_data["tags"] = tags
                 await self.db.commit()
 
-    async def _action_webhook(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_webhook(self, config: dict[str, Any], execution: WorkflowExecution):
         """Call external webhook."""
         import aiohttp
         url = config.get("url", "")
@@ -526,7 +527,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Webhook failed: {e}")
 
-    async def _action_move_stage(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_move_stage(self, config: dict[str, Any], execution: WorkflowExecution):
         """Move conversation to a different stage."""
         if not execution.conversation_id:
             return
@@ -542,7 +543,7 @@ class WorkflowEngine:
             conversation.extra_data["stage"] = stage
             await self.db.commit()
 
-    async def _action_update_stage(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_update_stage(self, config: dict[str, Any], execution: WorkflowExecution):
         """Update conversation stage in CRM."""
         if not execution.conversation_id:
             return
@@ -559,7 +560,7 @@ class WorkflowEngine:
             conversation.extra_data["stage"] = stage
             await self.db.commit()
 
-    async def _action_update_score(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_update_score(self, config: dict[str, Any], execution: WorkflowExecution):
         """Add/subtract lead score points."""
         if not execution.conversation_id:
             return
@@ -575,7 +576,7 @@ class WorkflowEngine:
             conversation.extra_data["lead_score"] = max(0, min(100, current_score + points))
             await self.db.commit()
 
-    async def _action_create_deal(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_deal(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Create a new deal in the CRM."""
         from app.domains.crm.models import Deal
         result = await self.db.execute(
@@ -613,7 +614,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Deal event error: {e}")
 
-    async def _action_create_shipment(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_shipment(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Create a shipment for the order associated with this conversation/execution."""
         if not execution.conversation_id:
             return
@@ -649,7 +650,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Shipment creation error: {e}")
 
-    async def _action_create_appointment(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_appointment(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Create an appointment for a service order."""
         if not execution.conversation_id:
             return
@@ -703,7 +704,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Appointment creation error: {e}")
 
-    async def _action_send_reminder(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_reminder(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Send reminder for an upcoming appointment."""
         appt_id = config.get("appointment_id")
         if not appt_id:
@@ -717,7 +718,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Send reminder error: {e}")
 
-    async def _action_request_confirmation(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_request_confirmation(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Request appointment confirmation from client."""
         appt_id = config.get("appointment_id")
         if not appt_id:
@@ -731,7 +732,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Request confirmation error: {e}")
 
-    async def _action_request_feedback(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_request_feedback(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Request feedback after service completion."""
         appt_id = config.get("appointment_id")
         if not appt_id:
@@ -745,7 +746,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Request feedback error: {e}")
 
-    async def _action_update_service_status(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_update_service_status(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Update service delivery status."""
         delivery_id = config.get("delivery_id")
         if not delivery_id:
@@ -760,7 +761,7 @@ class WorkflowEngine:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Update service status error: {e}")
 
-    async def _action_set_deal_value(self, config: Dict[str, Any], execution: WorkflowExecution):
+    async def _action_set_deal_value(self, config: dict[str, Any], execution: WorkflowExecution):
         """Set deal value on the conversation."""
         if not execution.conversation_id:
             return
@@ -777,12 +778,12 @@ class WorkflowEngine:
             conversation.extra_data["deal_value"] = value
             await self.db.commit()
 
-    async def _action_send_notification(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_notification(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Send a notification to the business owner with expert voice."""
-        from app.domains.users.models import User
-        from app.domains.businesses.models import Business
         from app.domains.agents.ai_reply import generate_raw_ai_response
+        from app.domains.businesses.models import Business
         from app.domains.channels.connectors.email import EmailConnector
+        from app.domains.users.models import User
 
         result = await self.db.execute(
             select(Business).where(Business.id == business_id)
@@ -859,12 +860,12 @@ Instrucciones:
                 notifications.append({
                     "message": notification_text,
                     "raw_message": raw_message,
-                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                    "sent_at": datetime.now(UTC).isoformat(),
                 })
                 conversation.extra_data["owner_notifications"] = notifications
                 await self.db.commit()
 
-    async def _action_start_sequence(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_start_sequence(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Start an email sequence for the conversation's lead."""
         from app.domains.automations.models import EmailSequence, SequenceSubscription
         sequence_id = config.get("sequence_id")
@@ -918,7 +919,7 @@ Instrucciones:
             from app.core.logger import get_logger
             get_logger(__name__).info(f"Sequence {sequence_id} started for conversation {execution.conversation_id}")
 
-    async def _action_assign_human(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_assign_human(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
         """Assign conversation to human agent (handoff)."""
         if not execution.conversation_id:
             return
@@ -935,7 +936,7 @@ Instrucciones:
             conversation.extra_data = {}
         conversation.extra_data["awaiting_human"] = True
         conversation.extra_data["handoff_reason"] = reason
-        conversation.extra_data["handoff_at"] = datetime.now(timezone.utc).isoformat()
+        conversation.extra_data["handoff_at"] = datetime.now(UTC).isoformat()
         await self.db.commit()
 
         # Find channel platform
@@ -961,7 +962,7 @@ Instrucciones:
             from app.core.logger import get_logger
             get_logger(__name__).error(f"Handoff emit error: {e}")
 
-    async def _action_ai_wait(self, config: Dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID) -> timedelta:
+    async def _action_ai_wait(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID) -> timedelta:
         """Use AI to determine optimal follow-up timing.
 
         Analyzes conversation context to recommend the best delay before next contact.
@@ -1037,7 +1038,7 @@ Respond with JSON only: {{"hours": <number>, "reason": "<brief reason>"}}"""
 
         return default_delay if default_delay.total_seconds() > 0 else timedelta(hours=24)
 
-    def _parse_delay(self, config: Dict[str, Any]) -> timedelta:
+    def _parse_delay(self, config: dict[str, Any]) -> timedelta:
         """Parse delay config into timedelta."""
         if "days" in config:
             return timedelta(days=config["days"])
@@ -1051,10 +1052,10 @@ Respond with JSON only: {{"hours": <number>, "reason": "<brief reason>"}}"""
 
 
 # Global engine instance for background processing
-_engine_instance: Optional[WorkflowEngine] = None
+_engine_instance: WorkflowEngine | None = None
 
 
-def get_engine_instance() -> Optional[WorkflowEngine]:
+def get_engine_instance() -> WorkflowEngine | None:
     return _engine_instance
 
 
@@ -1068,7 +1069,7 @@ class WorkflowScheduler:
 
     def __init__(self, check_interval: int = 30):
         self.check_interval = check_interval
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._running = False
 
     async def start(self):
@@ -1110,7 +1111,7 @@ class WorkflowScheduler:
             )
             executions = result.scalars().all()
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             for execution in executions:
                 # Check if last action was a wait that's now expired
                 actions = execution.actions_executed or []
@@ -1130,7 +1131,9 @@ class WorkflowScheduler:
                             workflow = wf_result.scalar_one_or_none()
                             if workflow:
                                 try:
-                                    from app.tasks.workflow_tasks import execute_workflow_task
+                                    from app.tasks.workflow_tasks import (
+                                        execute_workflow_task,
+                                    )
                                     execute_workflow_task.delay(str(execution.id), str(workflow.business_id))
                                 except Exception as e:
                                     from app.core.logger import get_logger

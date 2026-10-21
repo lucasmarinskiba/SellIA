@@ -1,14 +1,13 @@
 """Predictive FOMO scoring using Claude AI."""
 
 from uuid import UUID
-from datetime import datetime
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-import json
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 
 logger = get_logger(__name__)
 

@@ -1,7 +1,7 @@
 """Query Optimizer — Index strategy, query rewriting, materialized views."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class QueryOptimizer:
         query: str,
         execution_time_ms: float,
         rows_scanned: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze query performance."""
 
         efficiency = (1.0 if execution_time_ms < 100 else 0.5) if rows_scanned > 0 else 0
@@ -59,8 +59,8 @@ class QueryOptimizer:
     @staticmethod
     def recommend_indexes(
         table: str,
-        frequent_filters: List[str],
-    ) -> List[Dict[str, Any]]:
+        frequent_filters: list[str],
+    ) -> list[dict[str, Any]]:
         """Recommend indexes for table."""
 
         recommendations = []
@@ -89,8 +89,8 @@ class QueryOptimizer:
     @staticmethod
     def optimize_query(
         query: str,
-        table_stats: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        table_stats: dict[str, Any],
+    ) -> dict[str, Any]:
         """Rewrite query for optimization."""
 
         optimizations = []
@@ -127,7 +127,7 @@ class QueryOptimizer:
     def cache_strategy(
         table: str,
         row_count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Determine caching strategy."""
 
         if row_count < 100000:
@@ -152,7 +152,7 @@ class QueryOptimizer:
     def batch_operations(
         operation: str,
         count: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend batch size for bulk operations."""
 
         if count < 100:

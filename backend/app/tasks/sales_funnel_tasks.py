@@ -11,9 +11,11 @@ task in it) from being registered at all.
 """
 
 import logging
-from celery import shared_task
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any
+
+from celery import shared_task
+
 from app.core.async_bridge import run_async
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
-def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+def import_and_enrich_leads(self, leads_data: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Fase 11: Importa + enriquece leads.
 
@@ -62,9 +64,9 @@ def import_and_enrich_leads(self, leads_data: List[Dict[str, Any]]) -> Dict[str,
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
 def send_outreach_batch(
     self,
-    leads: List[Dict[str, Any]],
+    leads: list[dict[str, Any]],
     channel: str = "email",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fase 11: Envía outreach a batch de leads.
 
@@ -72,7 +74,10 @@ def send_outreach_batch(
     """
     async def _run():
         from app.domains.computer_use.services.lead_generator import get_lead_generator
-        from app.domains.computer_use.services.outreach_orchestrator import get_outreach_orchestrator, OutreachChannel
+        from app.domains.computer_use.services.outreach_orchestrator import (
+            OutreachChannel,
+            get_outreach_orchestrator,
+        )
 
         lead_gen = get_lead_generator()
         outreach = get_outreach_orchestrator()
@@ -117,7 +122,7 @@ def send_outreach_batch(
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
-def send_follow_ups(self) -> Dict[str, Any]:
+def send_follow_ups(self) -> dict[str, Any]:
     """
     Envía follow-ups automáticos, senior-salesperson style: proactive but
     not spammy. Corre diariamente.
@@ -139,14 +144,20 @@ def send_follow_ups(self) -> Dict[str, Any]:
     stage — not a canned "just checking in" template.
     """
     async def _run():
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.core.database import AsyncSessionLocal
-        from app.domains.channels.models import Conversation, Message, ConversationStatus, MessageDirection
-        from app.domains.channels.services import send_outbound_message
-        from app.domains.agents.models import AgentConfig
+        from app.core.prompts.funnel_specialists import FunnelStage
         from app.domains.agents.ai_reply import generate_ai_response
         from app.domains.agents.funnel_stage_detector import detect_funnel_stage
-        from app.core.prompts.funnel_specialists import FunnelStage
+        from app.domains.agents.models import AgentConfig
+        from app.domains.channels.models import (
+            Conversation,
+            ConversationStatus,
+            Message,
+            MessageDirection,
+        )
+        from app.domains.channels.services import send_outbound_message
 
         sent = 0
         skipped = 0
@@ -242,15 +253,17 @@ def send_follow_ups(self) -> Dict[str, Any]:
 @shared_task(bind=True, max_retries=2, default_retry_delay=300)
 def send_welcome_sequences(
     self,
-    customers: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    customers: list[dict[str, Any]],
+) -> dict[str, Any]:
     """
     Fase 12: Envía email sequences de bienvenida post-compra.
 
     Corre inmediatamente después de nueva compra.
     """
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
@@ -276,14 +289,16 @@ def send_welcome_sequences(
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
-def send_upsell_campaigns(self) -> Dict[str, Any]:
+def send_upsell_campaigns(self) -> dict[str, Any]:
     """
     Fase 12: Envía upsells automáticos a clientes.
 
     Corre cada 7 días para clientes activos.
     """
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
@@ -318,14 +333,16 @@ def send_upsell_campaigns(self) -> Dict[str, Any]:
 
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=600)
-def send_winback_campaigns(self) -> Dict[str, Any]:
+def send_winback_campaigns(self) -> dict[str, Any]:
     """
     Fase 12: Detecta clientes at-risk + envía win-back.
 
     Corre cada 14 días.
     """
     async def _run():
-        from app.domains.computer_use.services.customer_loyalty import get_customer_loyalty_engine
+        from app.domains.computer_use.services.customer_loyalty import (
+            get_customer_loyalty_engine,
+        )
 
         loyalty = get_customer_loyalty_engine()
 
@@ -345,14 +362,16 @@ def send_winback_campaigns(self) -> Dict[str, Any]:
 
 
 @shared_task(bind=True, max_retries=1)
-def daily_growth_cycle(self, product_info: Dict[str, Any]) -> Dict[str, Any]:
+def daily_growth_cycle(self, product_info: dict[str, Any]) -> dict[str, Any]:
     """
     Fase 10: Ciclo diario de crecimiento (trending → content → publish).
 
     Corre diariamente a las 6 AM UTC.
     """
     async def _run():
-        from app.domains.computer_use.services.growth_automation_engine import get_growth_automation_engine
+        from app.domains.computer_use.services.growth_automation_engine import (
+            get_growth_automation_engine,
+        )
 
         growth = get_growth_automation_engine()
 

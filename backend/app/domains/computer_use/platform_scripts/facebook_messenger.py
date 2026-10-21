@@ -1,6 +1,7 @@
 """Facebook Messenger Web Platform Script — Browser automation"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class FacebookMessengerScript(PlatformScript):
     login_url = "https://www.messenger.com/"
     dashboard_url = "https://www.messenger.com/"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "respond_message":
             return self._respond_message(params)
         elif task_type == "send_message":
@@ -19,7 +20,7 @@ class FacebookMessengerScript(PlatformScript):
             return self._check_unread(params)
         return super().get_task_steps(task_type, params)
 
-    def _respond_message(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _respond_message(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Respond to Facebook Messenger message."""
         customer_name = params.get("customer_name", "")
         response_text = params.get("response_text", "")
@@ -49,13 +50,13 @@ class FacebookMessengerScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify message sent"),
         ]
 
-    def _send_message(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _send_message(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Send message to specific contact."""
         customer_id = params.get("customer_id", "")
         message_text = params.get("message_text", "")
 
         return [
-            ScriptStep(action="navigate", target=f"https://www.messenger.com/t/{customer_id}", description=f"Open conversation"),
+            ScriptStep(action="navigate", target=f"https://www.messenger.com/t/{customer_id}", description="Open conversation"),
             ScriptStep(action="wait", wait_ms=3000, description="Wait for conversation to load"),
 
             # Type message
@@ -70,7 +71,7 @@ class FacebookMessengerScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify message sent"),
         ]
 
-    def _check_unread(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _check_unread(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Check unread messages."""
         return [
             ScriptStep(action="navigate", target="https://www.messenger.com/", description="Navigate to Facebook Messenger"),

@@ -1,16 +1,13 @@
 """FOMO Analytics Dashboard - Real-time performance visualization"""
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Any
-from decimal import Decimal
-import statistics
+from typing import Any
 
 
 class AnalyticsDashboard:
     """Comprehensive analytics dashboard for FOMO campaigns"""
 
     @staticmethod
-    async def get_campaign_summary(campaign_id: str) -> Dict[str, Any]:
+    async def get_campaign_summary(campaign_id: str) -> dict[str, Any]:
         """Get high-level campaign summary"""
         return {
             "campaign_id": campaign_id,
@@ -37,7 +34,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_daily_breakdown(campaign_id: str, days: int = 7) -> Dict[str, Any]:
+    async def get_daily_breakdown(campaign_id: str, days: int = 7) -> dict[str, Any]:
         """Get daily performance breakdown"""
         return {
             "campaign_id": campaign_id,
@@ -81,7 +78,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_channel_attribution(campaign_id: str) -> Dict[str, Any]:
+    async def get_channel_attribution(campaign_id: str) -> dict[str, Any]:
         """Get attribution by channel"""
         return {
             "campaign_id": campaign_id,
@@ -121,7 +118,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_widget_performance(campaign_id: str) -> Dict[str, Any]:
+    async def get_widget_performance(campaign_id: str) -> dict[str, Any]:
         """Get performance breakdown by widget type"""
         return {
             "campaign_id": campaign_id,
@@ -168,7 +165,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_ab_test_results(campaign_id: str) -> Dict[str, Any]:
+    async def get_ab_test_results(campaign_id: str) -> dict[str, Any]:
         """Get A/B test results"""
         return {
             "campaign_id": campaign_id,
@@ -215,7 +212,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_customer_segments(campaign_id: str) -> Dict[str, Any]:
+    async def get_customer_segments(campaign_id: str) -> dict[str, Any]:
         """Get performance by customer segment"""
         return {
             "campaign_id": campaign_id,
@@ -262,7 +259,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_conversion_funnel(campaign_id: str) -> Dict[str, Any]:
+    async def get_conversion_funnel(campaign_id: str) -> dict[str, Any]:
         """Get conversion funnel analysis"""
         return {
             "campaign_id": campaign_id,
@@ -307,7 +304,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_real_time_metrics(campaign_id: str) -> Dict[str, Any]:
+    async def get_real_time_metrics(campaign_id: str) -> dict[str, Any]:
         """Get real-time metrics (last 60 minutes)"""
         return {
             "campaign_id": campaign_id,
@@ -333,7 +330,7 @@ class AnalyticsDashboard:
         }
 
     @staticmethod
-    async def get_roi_projection(campaign_id: str) -> Dict[str, Any]:
+    async def get_roi_projection(campaign_id: str) -> dict[str, Any]:
         """Get ROI projections based on current performance"""
         current_revenue = 20460.00
         current_cost = 6000.00
@@ -370,7 +367,7 @@ class AnalyticsDashboard:
         campaign_id: str,
         industry: str,
         campaign_type: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compare performance against industry benchmarks"""
         benchmarks = {
             "ecommerce": {

@@ -1,7 +1,5 @@
 """ML Models: Conversion, churn, LTV prediction"""
 
-import numpy as np
-from typing import Dict, Tuple, List
 from datetime import datetime
 
 
@@ -11,7 +9,7 @@ class FOOMMLModels:
         self.churn_model = None
         self.ltv_model = None
 
-    async def predict_conversion(self, user_history: Dict, campaign_type: str) -> float:
+    async def predict_conversion(self, user_history: dict, campaign_type: str) -> float:
         """Predict: 0.0-1.0 probability user converts"""
         features = self._extract_conversion_features(user_history, campaign_type)
         if not features:
@@ -26,7 +24,7 @@ class FOOMMLModels:
         )
         return min(1.0, max(0.0, score))
 
-    async def predict_churn(self, user_metrics: Dict) -> float:
+    async def predict_churn(self, user_metrics: dict) -> float:
         """Predict: 0.0-1.0 churn risk score"""
         features = self._extract_churn_features(user_metrics)
         if not features:
@@ -39,7 +37,7 @@ class FOOMMLModels:
         churn_score = (inactivity_score * 0.5 + adoption_score * 0.5)
         return min(1.0, max(0.0, churn_score))
 
-    async def predict_ltv(self, user_history: Dict) -> float:
+    async def predict_ltv(self, user_history: dict) -> float:
         """Predict: Lifetime value in USD for 12 months"""
         features = self._extract_ltv_features(user_history)
         if not features:
@@ -53,7 +51,7 @@ class FOOMMLModels:
         ltv = monthly_revenue * 12 * growth_rate
         return max(0, ltv)
 
-    def _extract_conversion_features(self, user_history: Dict, campaign_type: str) -> list:
+    def _extract_conversion_features(self, user_history: dict, campaign_type: str) -> list:
         """15 features for conversion prediction"""
         return [
             user_history.get("avg_order_value", 50),
@@ -73,7 +71,7 @@ class FOOMMLModels:
             user_history.get("referral_source_quality", 0.5),
         ]
 
-    def _extract_churn_features(self, user_metrics: Dict) -> list:
+    def _extract_churn_features(self, user_metrics: dict) -> list:
         """12 features for churn prediction"""
         return [
             user_metrics.get("days_inactive", 14),
@@ -90,7 +88,7 @@ class FOOMMLModels:
             user_metrics.get("months_active", 6),
         ]
 
-    def _extract_ltv_features(self, user_history: Dict) -> list:
+    def _extract_ltv_features(self, user_history: dict) -> list:
         """10 features for LTV prediction"""
         return [
             user_history.get("avg_monthly_revenue", 500),
@@ -105,7 +103,7 @@ class FOOMMLModels:
             user_history.get("feature_upgrade_count", 0),
         ]
 
-    async def segment_by_fomo_sensitivity(self, users_data: List[Dict]) -> Dict:
+    async def segment_by_fomo_sensitivity(self, users_data: list[dict]) -> dict:
         """Segment users into 4 FOMO sensitivity tiers"""
         segments = {"high": [], "medium": [], "low": [], "unresponsive": []}
 

@@ -4,7 +4,6 @@ Docs: https://developers.cloudflare.com/turnstile/
 """
 
 import os
-from typing import Optional
 
 import httpx
 
@@ -12,7 +11,7 @@ TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverif
 TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "")
 
 
-async def verify_turnstile_token(token: str, remote_ip: Optional[str] = None) -> tuple[bool, str]:
+async def verify_turnstile_token(token: str, remote_ip: str | None = None) -> tuple[bool, str]:
     """
     Verifica un token de Cloudflare Turnstile.
     Retorna (success: bool, message: str).
@@ -45,4 +44,4 @@ async def verify_turnstile_token(token: str, remote_ip: Optional[str] = None) ->
         return False, f"Turnstile rechazado: {', '.join(error_codes)}"
 
     except Exception as e:
-        return False, f"Error al verificar Turnstile: {str(e)}"
+        return False, f"Error al verificar Turnstile: {e!s}"

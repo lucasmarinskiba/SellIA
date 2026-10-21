@@ -1,6 +1,7 @@
 """Google Business Profile Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class GoogleBusinessScript(PlatformScript):
     login_url = "https://business.google.com/signin"
     dashboard_url = "https://business.google.com/locations"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "optimize_profile":
             return self._optimize_profile(params)
         elif task_type == "request_reviews":
@@ -21,7 +22,7 @@ class GoogleBusinessScript(PlatformScript):
             return self._add_keywords(params)
         return super().get_task_steps(task_type, params)
 
-    def _optimize_profile(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _optimize_profile(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.google.com/locations", description="Navigate to Google Business locations"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -33,7 +34,7 @@ class GoogleBusinessScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify profile updated"),
         ]
 
-    def _request_reviews(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _request_reviews(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.google.com/locations", description="Navigate to locations"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -42,7 +43,7 @@ class GoogleBusinessScript(PlatformScript):
             ScriptStep(action="screenshot", description="Capture review request URL"),
         ]
 
-    def _add_posts(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _add_posts(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.google.com/locations", description="Navigate to locations"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -53,7 +54,7 @@ class GoogleBusinessScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify post published"),
         ]
 
-    def _add_keywords(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _add_keywords(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.google.com/locations", description="Navigate to locations"),
             ScriptStep(action="wait", wait_ms=3000),

@@ -1,7 +1,7 @@
 """Monitoring Stack — Dashboards, alerts, anomalies."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class MonitoringStack:
     """Production monitoring setup."""
 
     @staticmethod
-    def observability_platform() -> Dict[str, Any]:
+    def observability_platform() -> dict[str, Any]:
         """Complete observability stack."""
 
         return {
@@ -22,7 +22,7 @@ class MonitoringStack:
         }
 
     @staticmethod
-    def key_metrics() -> List[Dict[str, Any]]:
+    def key_metrics() -> list[dict[str, Any]]:
         """Key metrics to monitor."""
 
         return [
@@ -54,7 +54,7 @@ class MonitoringStack:
         ]
 
     @staticmethod
-    def anomaly_detection() -> Dict[str, Any]:
+    def anomaly_detection() -> dict[str, Any]:
         """Anomaly detection configuration."""
 
         return {
@@ -65,7 +65,7 @@ class MonitoringStack:
         }
 
     @staticmethod
-    def distributed_tracing() -> Dict[str, Any]:
+    def distributed_tracing() -> dict[str, Any]:
         """Distributed request tracing."""
 
         return {
@@ -76,7 +76,7 @@ class MonitoringStack:
         }
 
     @staticmethod
-    def user_experience_metrics() -> List[Dict[str, Any]]:
+    def user_experience_metrics() -> list[dict[str, Any]]:
         """User experience metrics (Web Vitals)."""
 
         return [

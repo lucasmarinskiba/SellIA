@@ -4,11 +4,11 @@ Monitors: review sentiment, Q&A responses, directions clicks, local insights.
 """
 
 import logging
-from typing import Any, Optional
 from datetime import datetime
+from typing import Any
 
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.schemas import WebhookPayload
 
 logger = logging.getLogger(__name__)
 

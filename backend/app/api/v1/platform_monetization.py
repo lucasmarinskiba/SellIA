@@ -1,16 +1,15 @@
 """Phase 32 Platform Monetization API (8 endpoints)."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.platform_monetization import (
-    UserSegmentationEngine,
-    UpgradeTriggerEngine,
-    ABTestOrchestrator,
     ConversionAnalytics,
+    UpgradeTriggerEngine,
+    UserSegmentationEngine,
 )
 
 router = APIRouter(prefix="/api/v1/monetization", tags=["monetization"])
@@ -24,7 +23,7 @@ class SegmentResponse(BaseModel):
     user_id: str
     segment: str
     propensity_score: int
-    reasoning: List[str]
+    reasoning: list[str]
 
 
 class TriggerResponse(BaseModel):
@@ -39,7 +38,7 @@ class TriggerResponse(BaseModel):
 class ConversionRequest(BaseModel):
     trigger_id: str
     event_type: str
-    revenue: Optional[float] = None
+    revenue: float | None = None
 
 
 @router.post("/segment/{user_id}", response_model=SegmentResponse)
@@ -74,7 +73,6 @@ def classify_user_segment(user_id: str, db: Session = Depends(get_db)):
 def get_upgrade_trigger(user_id: str, db: Session = Depends(get_db)):
     """Get optimal upgrade trigger for user."""
     try:
-        from app.domains.enterprise.platform_monetization import UserSegment
 
         # Mock: classify user first
         user_data = {

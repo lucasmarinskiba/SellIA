@@ -4,15 +4,14 @@ IP Allowlist Service
 Restricción de login por IP para cuentas Enterprise/Pro.
 """
 
-import uuid
 import ipaddress
-from typing import Optional, List
+import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.security.models import IPAllowlist
 from app.core.logger import get_logger
+from app.domains.security.models import IPAllowlist
 
 logger = get_logger(__name__)
 
@@ -21,7 +20,7 @@ async def add_ip(
     db: AsyncSession,
     user_id: uuid.UUID,
     ip_address: str,
-    label: Optional[str] = None,
+    label: str | None = None,
 ) -> IPAllowlist:
     """Agrega una IP a la lista blanca."""
     entry = IPAllowlist(
@@ -46,7 +45,7 @@ async def remove_ip(db: AsyncSession, entry_id: uuid.UUID) -> bool:
     return True
 
 
-async def list_ips(db: AsyncSession, user_id: uuid.UUID) -> List[IPAllowlist]:
+async def list_ips(db: AsyncSession, user_id: uuid.UUID) -> list[IPAllowlist]:
     """Lista IPs permitidas."""
     result = await db.execute(
         select(IPAllowlist).where(

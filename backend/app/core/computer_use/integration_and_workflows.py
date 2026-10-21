@@ -17,13 +17,12 @@ Workflows completos end-to-end:
 - RETENTION: monitorea clientes → resuelve issues → upsell
 """
 
-import logging
 import asyncio
-import json
-from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timedelta
+import logging
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from enum import Enum
-from dataclasses import dataclass, asdict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class WorkflowConfig:
     """Configuración de workflow."""
     name: str
     phase: WorkflowPhase
-    platforms: List[str]  # ["mercado_libre", "shopify", "facebook"]
+    platforms: list[str]  # ["mercado_libre", "shopify", "facebook"]
     max_parallel_tasks: int = 5
     daily_limit: int = 100
     retry_failed: bool = True
@@ -61,12 +60,12 @@ class WorkflowExecution:
     workflow_id: str
     config: WorkflowConfig
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     status: str = "running"  # "running", "completed", "failed", "paused"
     total_tasks: int = 0
     completed_tasks: int = 0
     failed_tasks: int = 0
-    results: List[Dict[str, Any]] = None
+    results: list[dict[str, Any]] = None
 
     def __post_init__(self):
         if self.results is None:
@@ -93,15 +92,15 @@ class ProspectingWorkflow:
         """Inicializa workflow."""
         self.orchestrator = orchestrator
         self.lead_capture = lead_capture_engine
-        self.captured_leads: List[Dict[str, Any]] = []
-        self.qualified_leads: List[Dict[str, Any]] = []
+        self.captured_leads: list[dict[str, Any]] = []
+        self.qualified_leads: list[dict[str, Any]] = []
 
     async def execute_full_prospecting_cycle(
         self,
-        search_queries: List[str],
-        locations: List[str],
+        search_queries: list[str],
+        locations: list[str],
         daily_limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta ciclo completo de prospecting.
 
@@ -154,7 +153,7 @@ class ProspectingWorkflow:
                         await asyncio.sleep(2)
 
                     except Exception as e:
-                        logger.warning(f"Error searching {query} in {location}: {str(e)}")
+                        logger.warning(f"Error searching {query} in {location}: {e!s}")
 
             logger.info(f"Found {len(all_leads)} leads")
 
@@ -188,7 +187,7 @@ class ProspectingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Prospecting cycle failed: {str(e)}")
+            logger.error(f"Prospecting cycle failed: {e!s}")
             return {"error": str(e)}
 
 
@@ -214,9 +213,9 @@ class SellingWorkflow:
 
     async def complete_sales_cycle(
         self,
-        products: List[Dict[str, Any]],
-        platforms: List[str],
-    ) -> Dict[str, Any]:
+        products: list[dict[str, Any]],
+        platforms: list[str],
+    ) -> dict[str, Any]:
         """
         Ejecuta ciclo completo de venta.
 
@@ -261,7 +260,7 @@ class SellingWorkflow:
                         execution.completed_tasks += 1
 
                     except Exception as e:
-                        logger.error(f"Error listing product: {str(e)}")
+                        logger.error(f"Error listing product: {e!s}")
                         execution.failed_tasks += 1
 
                     # Rate limiting
@@ -287,7 +286,7 @@ class SellingWorkflow:
                         execution.completed_tasks += execution_result.completed_actions
 
                     except Exception as e:
-                        logger.warning(f"Error checking inquiries: {str(e)}")
+                        logger.warning(f"Error checking inquiries: {e!s}")
 
                 # Espera 5 min antes siguiente check
                 if i < 2:
@@ -311,7 +310,7 @@ class SellingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Sales cycle failed: {str(e)}")
+            logger.error(f"Sales cycle failed: {e!s}")
             return {"error": str(e)}
 
     def _string_to_platform(self, platform_str: str):
@@ -347,11 +346,11 @@ class NurturingWorkflow:
 
     async def execute_nurture_campaign(
         self,
-        leads: List[Dict[str, str]],
+        leads: list[dict[str, str]],
         sequence_name: str,
-        emails: List[Dict[str, str]],
+        emails: list[dict[str, str]],
         delay_between_emails: int = 3600,  # 1 hour
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ejecuta campaña de nutrición.
 
@@ -395,7 +394,7 @@ class NurturingWorkflow:
                             await asyncio.sleep(delay_between_emails)
 
                         except Exception as e:
-                            logger.warning(f"Error sending email: {str(e)}")
+                            logger.warning(f"Error sending email: {e!s}")
                             execution.failed_tasks += 1
 
                     results.append({
@@ -405,7 +404,7 @@ class NurturingWorkflow:
                     })
 
                 except Exception as e:
-                    logger.error(f"Error processing lead: {str(e)}")
+                    logger.error(f"Error processing lead: {e!s}")
                     execution.failed_tasks += 1
 
             execution.completed_at = datetime.utcnow()
@@ -422,7 +421,7 @@ class NurturingWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Nurture campaign failed: {str(e)}")
+            logger.error(f"Nurture campaign failed: {e!s}")
             return {"error": str(e)}
 
 
@@ -446,8 +445,8 @@ class RetentionWorkflow:
 
     async def execute_customer_engagement(
         self,
-        customers: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        customers: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Ejecuta engagement con clientes existentes.
 
@@ -482,7 +481,7 @@ class RetentionWorkflow:
             }
 
         except Exception as e:
-            logger.error(f"Customer engagement failed: {str(e)}")
+            logger.error(f"Customer engagement failed: {e!s}")
             return {"error": str(e)}
 
 
@@ -504,16 +503,16 @@ class WorkflowOrchestrator:
         self.nurturing = NurturingWorkflow(computer_use_orchestrator, lead_capture_engine)
         self.retention = RetentionWorkflow(computer_use_orchestrator)
 
-        self.active_workflows: Dict[str, WorkflowExecution] = {}
-        self.workflow_history: List[WorkflowExecution] = []
+        self.active_workflows: dict[str, WorkflowExecution] = {}
+        self.workflow_history: list[WorkflowExecution] = []
 
     async def run_prospecting_and_selling(
         self,
-        search_queries: List[str],
-        locations: List[str],
-        products: List[Dict[str, Any]],
-        platforms: List[str],
-    ) -> Dict[str, Any]:
+        search_queries: list[str],
+        locations: list[str],
+        products: list[dict[str, Any]],
+        platforms: list[str],
+    ) -> dict[str, Any]:
         """
         Ejecuta ciclo completo: Prospecting → Selling.
 
@@ -546,13 +545,13 @@ class WorkflowOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Prospecting-to-selling cycle failed: {str(e)}")
+            logger.error(f"Prospecting-to-selling cycle failed: {e!s}")
             return {"error": str(e)}
 
     async def run_full_sales_machine(
         self,
-        config: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Ejecuta máquina de ventas completa 24/7.
 
@@ -604,7 +603,7 @@ class WorkflowOrchestrator:
             logger.info("Sales machine stopped")
             return {"cycles": cycles, "duration": (datetime.utcnow() - start_time).total_seconds()}
 
-    def get_workflows_report(self) -> Dict[str, Any]:
+    def get_workflows_report(self) -> dict[str, Any]:
         """Retorna reporte de todos workflows ejecutados."""
         return {
             "total_workflows": len(self.workflow_history),

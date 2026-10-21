@@ -3,17 +3,13 @@ Expert Selector - Intelligent Expert Voice Selection
 Analyzes sales context and selects optimal expert(s) for maximum impact
 """
 
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
-from enum import Enum
-import asyncio
 
 from prompt_registry import (
+    CONTEXT_RECOMMENDATIONS,
+    EXPERT_METADATA,
     ExpertType,
     SalesContext,
-    EXPERT_METADATA,
-    CONTEXT_RECOMMENDATIONS,
-    get_best_experts_for_context
 )
 
 
@@ -35,10 +31,10 @@ class SalesScenario:
 class ExpertSelection:
     """Selected experts with reasoning"""
     primary_expert: ExpertType
-    secondary_experts: List[ExpertType]
+    secondary_experts: list[ExpertType]
     reasoning: str
     scenario_fit_score: float
-    recommended_tactics: List[str]
+    recommended_tactics: list[str]
 
 
 class ExpertSelector:
@@ -194,7 +190,7 @@ class ExpertSelector:
 
     def _extract_recommended_tactics(
         self, expert_type: ExpertType, scenario: SalesScenario
-    ) -> List[str]:
+    ) -> list[str]:
         """Extract recommended tactics for this expert in this scenario"""
         tactics = []
 
@@ -344,7 +340,7 @@ class ExpertSelector:
 
         return base_tactics[:3] if base_tactics else ["Apply expert's core methodology"]
 
-    def get_performance_analytics(self) -> Dict:
+    def get_performance_analytics(self) -> dict:
         """Get analytics on selection performance"""
         if not self.selection_history:
             return {"total_selections": 0}
@@ -418,4 +414,4 @@ async def demonstrate_selection():
 
 
 # Export main interface
-__all__ = ["ExpertSelector", "SalesScenario", "ExpertSelection"]
+__all__ = ["ExpertSelection", "ExpertSelector", "SalesScenario"]

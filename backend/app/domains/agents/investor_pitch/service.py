@@ -1,20 +1,19 @@
-import uuid
 import json
 import os
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.investor_pitch.models import PitchDeck, PitchSlide
-from app.domains.businesses.models import Business
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.agents.investor_pitch.models import PitchDeck, PitchSlide
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.businesses.models import Business
 
 logger = get_logger(__name__)
 
@@ -52,7 +51,7 @@ class InvestorPitchService:
         logger.info(f"Pitch deck {deck.id} generated with {len(slides)} slides")
         return deck
 
-    async def _extract_metrics(self, business: Business) -> Dict[str, Any]:
+    async def _extract_metrics(self, business: Business) -> dict[str, Any]:
         config = business.config or {}
         return {
             "mrr": config.get("mrr", 15000),
@@ -68,8 +67,8 @@ class InvestorPitchService:
         self,
         business: Business,
         deck: PitchDeck,
-        metrics: Dict[str, Any],
-    ) -> List[PitchSlide]:
+        metrics: dict[str, Any],
+    ) -> list[PitchSlide]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -142,7 +141,7 @@ class InvestorPitchService:
             )
         return slides
 
-    async def _generate_html_deck(self, deck: PitchDeck, slides: List[PitchSlide]) -> str:
+    async def _generate_html_deck(self, deck: PitchDeck, slides: list[PitchSlide]) -> str:
         html_parts = [
             "<!DOCTYPE html>",
             '<html lang="es">',
@@ -212,7 +211,7 @@ class InvestorPitchService:
         logger.info(f"PDF exported: {pdf_path}")
         return pdf_path
 
-    async def _build_html_for_pdf(self, deck: PitchDeck, slides: List[PitchSlide]) -> str:
+    async def _build_html_for_pdf(self, deck: PitchDeck, slides: list[PitchSlide]) -> str:
         html_parts = [
             "<!DOCTYPE html>",
             '<html lang="es">',
@@ -239,20 +238,20 @@ class InvestorPitchService:
         html_parts.extend(["</body>", "</html>"])
         return "\n".join(html_parts)
 
-    async def list_decks(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    async def list_decks(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> dict[str, Any]:
         result = await self.db.execute(
             select(PitchDeck).where(PitchDeck.business_id == business_id)
         )
         decks = result.scalars().all()
         return {"total": len(decks), "decks": decks[offset:offset + limit]}
 
-    async def get_deck(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> Optional[PitchDeck]:
+    async def get_deck(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> PitchDeck | None:
         deck = await self.db.get(PitchDeck, deck_id)
         if not deck or deck.business_id != business_id:
             return None
         return deck
 
-    async def get_deck_with_slides(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+    async def get_deck_with_slides(self, deck_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any] | None:
         deck = await self.get_deck(deck_id, business_id)
         if not deck:
             return None

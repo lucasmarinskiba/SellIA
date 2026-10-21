@@ -1,14 +1,15 @@
 """Cross-platform FOMO pattern synthesis."""
 
-from uuid import UUID
-from datetime import datetime, timedelta
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 from collections import defaultdict
+from datetime import datetime, timedelta
+from uuid import UUID
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
+from app.domains.seo_config.models import PublicationLinkFOMO
 
 logger = get_logger(__name__)
 

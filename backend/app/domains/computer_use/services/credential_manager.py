@@ -8,13 +8,12 @@ en sitios configurados.
 Now integrated with persistent DB storage via CredentialService.
 """
 
-import re
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlparse
 
+from app.core.encryption import decrypt_value, encrypt_value
 from app.core.logger import get_logger
-from app.core.encryption import encrypt_value, decrypt_value
 
 logger = get_logger(__name__)
 
@@ -25,11 +24,11 @@ class SiteCredential:
     site_domain: str
     username: str
     password_encrypted: str
-    login_url: Optional[str] = None
-    username_selector: Optional[str] = None
-    password_selector: Optional[str] = None
-    submit_selector: Optional[str] = None
-    extra_fields: Optional[Dict[str, str]] = None
+    login_url: str | None = None
+    username_selector: str | None = None
+    password_selector: str | None = None
+    submit_selector: str | None = None
+    extra_fields: dict[str, str] | None = None
 
 
 class CredentialManager:
@@ -40,7 +39,7 @@ class CredentialManager:
     """
 
     def __init__(self, db_session=None, user_id=None):
-        self._credentials: Dict[str, SiteCredential] = {}
+        self._credentials: dict[str, SiteCredential] = {}
         self._db = db_session
         self._user_id = user_id
         self._service = None
@@ -54,7 +53,7 @@ class CredentialManager:
         self._credentials[domain] = credential
         logger.info(f"Credential added for {domain}")
 
-    def get_credential(self, url: str) -> Optional[SiteCredential]:
+    def get_credential(self, url: str) -> SiteCredential | None:
         """Obtiene credenciales para una URL."""
         domain = self._normalize_domain(urlparse(url).hostname or "")
         
@@ -84,11 +83,10 @@ class CredentialManager:
     def _normalize_domain(self, domain: str) -> str:
         """Normaliza un dominio."""
         domain = domain.lower().strip()
-        if domain.startswith("www."):
-            domain = domain[4:]
+        domain = domain.removeprefix("www.")
         return domain
 
-    async def attempt_login(self, page, url: str) -> Dict[str, Any]:
+    async def attempt_login(self, page, url: str) -> dict[str, Any]:
         """Attempt to log in using stored credentials."""
         domain = self._normalize_domain(urlparse(url).hostname or "")
         
@@ -106,7 +104,7 @@ class CredentialManager:
         
         return {"success": False, "reason": "no_credentials"}
 
-    async def _perform_login(self, page, url: str, username: str, password: str, domain: str) -> Dict[str, Any]:
+    async def _perform_login(self, page, url: str, username: str, password: str, domain: str) -> dict[str, Any]:
         """Perform the actual login on the page."""
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=15000)

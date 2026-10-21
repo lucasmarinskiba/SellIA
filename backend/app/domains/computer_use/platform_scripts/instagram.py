@@ -1,6 +1,7 @@
 """Instagram Business Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class InstagramScript(PlatformScript):
     login_url = "https://www.instagram.com/accounts/login/"
     dashboard_url = "https://www.instagram.com/"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "optimize_profile":
             return self._optimize_profile(params)
         elif task_type == "connect_shopping":
@@ -23,7 +24,7 @@ class InstagramScript(PlatformScript):
             return self._publish_post(params)
         return super().get_task_steps(task_type, params)
 
-    def _optimize_profile(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _optimize_profile(self, params: dict[str, Any]) -> list[ScriptStep]:
         bio = params.get("bio", "")
         link = params.get("link", "")
         return [
@@ -38,7 +39,7 @@ class InstagramScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify profile updated"),
         ]
 
-    def _connect_shopping(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _connect_shopping(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.facebook.com/commerce", description="Navigate to Meta Commerce Manager"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -47,7 +48,7 @@ class InstagramScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check shop setup state"),
         ]
 
-    def _schedule_posts(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _schedule_posts(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.facebook.com/creatorstudio", description="Navigate to Creator Studio"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -56,7 +57,7 @@ class InstagramScript(PlatformScript):
             ScriptStep(action="wait", wait_ms=1500),
         ]
 
-    def _respond_dms(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _respond_dms(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Respond to Instagram DM."""
         customer_username = params.get("customer_username", "")
         response_text = params.get("response_text", "")
@@ -86,7 +87,7 @@ class InstagramScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify message sent"),
         ]
 
-    def _publish_post(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _publish_post(self, params: dict[str, Any]) -> list[ScriptStep]:
         caption = params.get("caption", "")
         return [
             ScriptStep(action="navigate", target="https://www.instagram.com/", description="Navigate to Instagram"),

@@ -1,10 +1,10 @@
 """Prompt Orchestrator — Execute prompts with context injection and result parsing."""
 
-from typing import Dict, Any, Optional, List
-from datetime import datetime
-import logging
 import json
+import logging
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +14,13 @@ class PromptExecution:
     """Track a single prompt execution."""
     prompt_id: str
     execution_id: str
-    context_vars: Dict[str, Any]
+    context_vars: dict[str, Any]
     executed_prompt_text: str
     result: str
     execution_timestamp: str
     duration_ms: float
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class PromptOrchestrator:
@@ -29,14 +29,14 @@ class PromptOrchestrator:
     def __init__(self, registry=None):
         """Initialize orchestrator with registry."""
         self.registry = registry
-        self.execution_history: List[PromptExecution] = []
+        self.execution_history: list[PromptExecution] = []
         self.llm_client = None  # Inject your LLM client (Claude API, etc.)
 
     def set_llm_client(self, client):
         """Set the LLM client for prompt execution."""
         self.llm_client = client
 
-    def prepare_prompt(self, prompt: Any, context_vars: Dict[str, Any]) -> str:
+    def prepare_prompt(self, prompt: Any, context_vars: dict[str, Any]) -> str:
         """Inject context variables into prompt template."""
         prompt_text = prompt.prompt_text
 
@@ -55,7 +55,7 @@ class PromptOrchestrator:
 
         return prompt_text
 
-    def validate_context(self, prompt: Any, context_vars: Dict[str, Any]) -> tuple[bool, List[str]]:
+    def validate_context(self, prompt: Any, context_vars: dict[str, Any]) -> tuple[bool, list[str]]:
         """Validate that all required context variables are provided."""
         missing_vars = []
 
@@ -66,10 +66,10 @@ class PromptOrchestrator:
         is_valid = len(missing_vars) == 0
         return is_valid, missing_vars
 
-    def execute(self, prompt: Any, context_vars: Dict[str, Any], execution_id: Optional[str] = None) -> Dict[str, Any]:
+    def execute(self, prompt: Any, context_vars: dict[str, Any], execution_id: str | None = None) -> dict[str, Any]:
         """Execute a prompt with context injection."""
-        import uuid
         import time
+        import uuid
 
         if execution_id is None:
             execution_id = str(uuid.uuid4())
@@ -149,7 +149,7 @@ class PromptOrchestrator:
             logger.error(f"LLM execution error: {e}")
             raise
 
-    def batch_execute(self, prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def batch_execute(self, prompts: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute multiple prompts in sequence."""
         results = []
 
@@ -164,7 +164,7 @@ class PromptOrchestrator:
         logger.info(f"Batch executed {len(results)} prompts")
         return results
 
-    def get_execution_history(self, prompt_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_execution_history(self, prompt_id: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
         """Retrieve execution history."""
         history = self.execution_history
 
@@ -200,21 +200,21 @@ class PromptOrchestrator:
         logger.info(f"Recorded effectiveness: {execution_id} = {effectiveness_score}")
         return True
 
-    def get_suggested_prompts(self, use_case: str) -> List[Dict[str, Any]]:
+    def get_suggested_prompts(self, use_case: str) -> list[dict[str, Any]]:
         """Get suggested prompts for a use case."""
         if not self.registry:
             return []
 
         return self.registry.get_recommended_prompts(use_case)
 
-    def search_prompts(self, query: str, search_type: str = 'tag') -> List[str]:
+    def search_prompts(self, query: str, search_type: str = 'tag') -> list[str]:
         """Search for prompts."""
         if not self.registry:
             return []
 
         return self.registry.search(query, search_type)
 
-    def get_execution_stats(self) -> Dict[str, Any]:
+    def get_execution_stats(self) -> dict[str, Any]:
         """Get statistics on prompt executions."""
         if not self.execution_history:
             return {

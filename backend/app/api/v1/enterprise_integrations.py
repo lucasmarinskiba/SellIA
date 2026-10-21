@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Query, Body
 from datetime import datetime
+
+from fastapi import APIRouter, Body, Query
+
 from app.domains.enterprise.integrations import (
     IntegrationManager,
+    Message,
     Platform,
     PlatformCredentials,
-    Message,
 )
 
 router = APIRouter(tags=["integrations"])
@@ -171,7 +173,7 @@ async def send_message(
         key = f"{user_id}:{platform_enum.value}"
 
         if key not in integration_manager.platforms:
-            return {"status": "error", "message": f"Platform not connected"}
+            return {"status": "error", "message": "Platform not connected"}
 
         agent = integration_manager.platforms[key]
 

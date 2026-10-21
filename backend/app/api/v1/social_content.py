@@ -4,9 +4,11 @@ AI Social Content Generator
 Generates Instagram posts, captions, and hashtag sets with one click.
 """
 
+from datetime import UTC
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
@@ -49,7 +51,7 @@ async def generate_post(
             "best_time": "Miércoles 11:00 AM o Jueves 7:00 PM",
         },
         "reel": {
-            "hook": f"POV: Descubrís que la IA puede vender por vos 🔥",
+            "hook": "POV: Descubrís que la IA puede vender por vos 🔥",
             "script": [
                 "0-3s: Hook visual con texto 'Esto me cambió el negocio'",
                 "3-10s: Mostrar el problema (perdiendo leads)",
@@ -62,7 +64,7 @@ async def generate_post(
             "best_time": "Viernes 7:00 PM o Sábado 10:00 AM",
         },
         "story": {
-            "hook": f"⚡ Tip rápido: duplicá tus ventas en 48hs",
+            "hook": "⚡ Tip rápido: duplicá tus ventas en 48hs",
             "frames": [
                 "Frame 1: '¿Sabías que...?' + encuesta",
                 "Frame 2: El dato (80% abandono)",
@@ -79,12 +81,13 @@ async def generate_post(
 
     # Store in calendar if requested
     if data.get("save_to_calendar"):
+        from datetime import datetime, timedelta
+
         from app.domains.social_growth.models import ContentCalendarSlot
-        from datetime import datetime, timezone, timedelta
         slot = ContentCalendarSlot(
             user_id=current_user.id,
             platform="instagram",
-            scheduled_at=datetime.now(timezone.utc) + timedelta(days=1),
+            scheduled_at=datetime.now(UTC) + timedelta(days=1),
             content_type=content_type,
             topic=topic,
             caption_draft=result["caption"],

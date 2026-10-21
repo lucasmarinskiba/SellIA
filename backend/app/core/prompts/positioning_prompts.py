@@ -1,8 +1,8 @@
 """50 Positioning Prompts — Value prop, messaging, competitive positioning, market positioning."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class PositioningType(str, Enum):
@@ -27,13 +27,13 @@ class PositioningPromptTemplate:
     type: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class PositioningPrompts:
@@ -744,7 +744,7 @@ Retention:
         )
 
     @staticmethod
-    def get_all_positioning_prompts() -> Dict[str, PositioningPromptTemplate]:
+    def get_all_positioning_prompts() -> dict[str, PositioningPromptTemplate]:
         """Return all 50 positioning prompts indexed by ID."""
         return {
             "positioning_001": PositioningPrompts.value_proposition_builder(),

@@ -1,18 +1,18 @@
 """Document Processor — text extraction, chunking, embedding, search."""
 
-import os
-import uuid
 import math
+import os
 import random
+import uuid
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any
 
-from sqlalchemy import select, delete, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.documents.models import BusinessDocument, DocumentChunk, Vector
+from app.domains.documents.models import BusinessDocument, DocumentChunk
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -39,7 +39,7 @@ class EmbeddingService:
         except Exception:
             self._fallback = True
 
-    async def embed(self, texts: List[str]) -> List[List[float]]:
+    async def embed(self, texts: list[str]) -> list[list[float]]:
         if self._client is not None and not self._fallback:
             try:
                 response = await self._client.embeddings.create(
@@ -54,7 +54,7 @@ class EmbeddingService:
         return [self._random_vector(768) for _ in texts]
 
     @staticmethod
-    def _random_vector(dim: int) -> List[float]:
+    def _random_vector(dim: int) -> list[float]:
         vec = [random.gauss(0, 1) for _ in range(dim)]
         norm = math.sqrt(sum(v * v for v in vec))
         return [v / norm for v in vec] if norm > 0 else vec
@@ -123,7 +123,7 @@ def _extract_text(file_path: str, file_type: str) -> str:
     return ""
 
 
-def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> List[Dict[str, Any]]:
+def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> list[dict[str, Any]]:
     """Split text into overlapping chunks by paragraphs."""
     paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
     if not paragraphs:
@@ -206,7 +206,7 @@ class DocumentProcessor:
             doc.extra_data = {**(doc.extra_data or {}), "error": str(exc)}
             await db.commit()
 
-    async def search_documents(self, db: AsyncSession, business_id: uuid.UUID, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    async def search_documents(self, db: AsyncSession, business_id: uuid.UUID, query: str, k: int = 5) -> list[dict[str, Any]]:
         query_embedding = (await embedding_service.embed([query]))[0]
 
         # Use pgvector <=> operator (cosine distance) if available

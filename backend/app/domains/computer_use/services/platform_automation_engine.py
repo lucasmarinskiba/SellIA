@@ -5,11 +5,11 @@ Automatiza envío de respuestas sin dependencia de Computer Use.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
 from enum import Enum
+from typing import Any
 
-from app.domains.computer_use.platform_scripts.registry import get_script_for_task
 from app.domains.computer_use.browser_service import BrowserService
+from app.domains.computer_use.platform_scripts.registry import get_script_for_task
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class PlatformAutomationType(str, Enum):
 class PlatformAutomationEngine:
     """Ejecuta scripts de automatización en plataformas de mensajería."""
 
-    def __init__(self, browser_service: Optional[BrowserService] = None):
+    def __init__(self, browser_service: BrowserService | None = None):
         self.browser_service = browser_service or BrowserService()
         self.logger = logger
 
@@ -36,7 +36,7 @@ class PlatformAutomationEngine:
         platform: PlatformAutomationType,
         recipient_identifier: str,  # nombre, usuario, teléfono, etc
         response_text: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Envía respuesta via browser automation.
 
@@ -82,7 +82,7 @@ class PlatformAutomationEngine:
         post_id: str,
         comment_text: str,
         response_text: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Responde a comentarios en posts."""
         try:
             script = get_script_for_task(platform.value, "respond_comment")
@@ -120,7 +120,7 @@ class PlatformAutomationEngine:
         platform: PlatformAutomationType,
         recipient_identifier: str,
         response_text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepara parámetros según plataforma."""
         if platform == PlatformAutomationType.WHATSAPP_WEB:
             # recipient_identifier puede ser nombre o número
@@ -184,6 +184,6 @@ class PlatformAutomationEngine:
 
 
 def get_platform_automation_engine(
-    browser_service: Optional[BrowserService] = None,
+    browser_service: BrowserService | None = None,
 ) -> PlatformAutomationEngine:
     return PlatformAutomationEngine(browser_service)

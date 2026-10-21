@@ -1,9 +1,21 @@
 """Phase 41: Marketing Intelligence - Department Orchestration."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class MarketSegment(Base):
     __tablename__ = "market_segments"
@@ -14,7 +26,7 @@ class MarketSegment(Base):
     market_size = Column(Integer, default=0)
     growth_rate = Column(Float, default=0)
     market_share = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class CampaignOrchestration(Base):
     __tablename__ = "campaign_orchestration"
@@ -28,7 +40,7 @@ class CampaignOrchestration(Base):
     channels = Column(JSONB, nullable=True)
     messaging = Column(JSONB, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ContentStrategy(Base):
     __tablename__ = "content_strategy"
@@ -41,7 +53,7 @@ class ContentStrategy(Base):
     key_messages = Column(JSONB, nullable=True)
     content_url = Column(String(500), nullable=True)
     engagement_metrics = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class BrandDifferentiation(Base):
     __tablename__ = "brand_differentiation"
@@ -52,7 +64,7 @@ class BrandDifferentiation(Base):
     competitor_comparison = Column(JSONB, nullable=True)
     brand_positioning = Column(Text, nullable=True)
     messaging_framework = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class LeadNurturing(Base):
     __tablename__ = "lead_nurturing"
@@ -63,8 +75,8 @@ class LeadNurturing(Base):
     current_step = Column(Integer, default=0)
     engagement_score = Column(Float, default=0)
     next_action = Column(String(255), nullable=True)
-    last_interaction = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    last_interaction = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class MarketingMetrics(Base):
     __tablename__ = "marketing_metrics"
@@ -78,7 +90,7 @@ class MarketingMetrics(Base):
     campaign_roi = Column(Float, default=0)
     customer_acquisition_cost = Column(Float, default=0)
     marketing_qualified_leads = Column(Integer, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 class PromoStrategy(Base):
     __tablename__ = "promo_strategy"
@@ -87,8 +99,8 @@ class PromoStrategy(Base):
     promo_type = Column(String(100), nullable=False)  # discount, bundle, loyalty, limited_time
     description = Column(Text, nullable=True)
     discount_percentage = Column(Float, default=0)
-    valid_until = Column(DateTime(timezone.utc), nullable=True)
+    valid_until = Column(DateTime(UTC), nullable=True)
     target_segment = Column(String(255), nullable=True)
     expected_lift = Column(Float, default=0)
     revenue_impact = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

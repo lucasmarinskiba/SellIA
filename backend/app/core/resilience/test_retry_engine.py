@@ -8,14 +8,14 @@ Validar:
 4. Decorador @retry funciona
 """
 
-import pytest
-import asyncio
 from datetime import datetime
+
+import pytest
 from retry_engine import (
+    CircuitBreakerState,
+    RetryConfig,
     RetryEngine,
     RetryPolicy,
-    RetryConfig,
-    CircuitBreakerState,
     retry,
 )
 

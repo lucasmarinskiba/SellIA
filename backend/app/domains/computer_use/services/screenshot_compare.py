@@ -6,11 +6,10 @@ para monitorear cambios de estado.
 """
 
 import io
-from typing import Optional, Tuple
 from dataclasses import dataclass
 
-from PIL import Image, ImageChops
 import numpy as np
+from PIL import Image, ImageChops
 
 from app.core.logger import get_logger
 
@@ -25,7 +24,7 @@ class ComparisonResult:
     diff_pixels: int
     total_pixels: int
     diff_percentage: float
-    diff_image: Optional[bytes] = None  # Highlighted diff image
+    diff_image: bytes | None = None  # Highlighted diff image
 
 
 class ScreenshotComparator:

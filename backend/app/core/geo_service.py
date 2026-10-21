@@ -5,11 +5,9 @@ Usa la API gratuita ip-api.com para obtener coordenadas de una IP.
 Para producción, se recomienda MaxMind GeoIP2.
 """
 
-import os
 import math
+
 import aiohttp
-from typing import Optional, Tuple
-from fastapi import HTTPException
 
 GEO_API_URL = "http://ip-api.com/json/{ip}?fields=status,country,countryCode,region,city,lat,lon,query"
 
@@ -41,7 +39,7 @@ def _is_private_ip(ip: str) -> bool:
     return False
 
 
-async def get_ip_geolocation(ip: str) -> Optional[dict]:
+async def get_ip_geolocation(ip: str) -> dict | None:
     """
     Obtiene datos de geolocalización de una IP.
     
@@ -101,12 +99,12 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 def is_geofence_violation(
-    last_lat: Optional[float],
-    last_lon: Optional[float],
-    current_lat: Optional[float],
-    current_lon: Optional[float],
+    last_lat: float | None,
+    last_lon: float | None,
+    current_lat: float | None,
+    current_lon: float | None,
     max_distance_km: float,
-) -> Tuple[bool, float]:
+) -> tuple[bool, float]:
     """
     Verifica si la distancia entre dos coordenadas excede el límite.
     

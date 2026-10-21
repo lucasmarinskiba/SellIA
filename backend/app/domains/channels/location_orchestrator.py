@@ -4,18 +4,22 @@ Coordinates proximity events → message template selection → channel delivery
 """
 
 import logging
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.domains.analytics.offline_models import GeoProximityEvent
-from app.domains.businesses.location_models import Location
-from app.domains.businesses.localization import BusinessLocalizationService, LocalizationStrategy
-from app.domains.channels.location_messaging import (
-    LocationMessageTemplateService, MessageTemplate
+from app.domains.businesses.localization import (
+    BusinessLocalizationService,
 )
-from app.domains.proximity.proximity_engine import ProximityEngine, ProximityTriggerConfig
+from app.domains.businesses.location_models import Location
+from app.domains.channels.location_messaging import (
+    LocationMessageTemplateService,
+    MessageTemplate,
+)
+from app.domains.proximity.proximity_engine import (
+    ProximityEngine,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +32,9 @@ class LocationChannelOrchestrator:
         proximity_event: GeoProximityEvent,
         location: Location,
         channel: str = "sms",
-        business_model: Optional[str] = None,
-        db: Optional[Session] = None
-    ) -> Optional[dict]:
+        business_model: str | None = None,
+        db: Session | None = None
+    ) -> dict | None:
         """
         Build location-based message for proximity event.
 
@@ -141,7 +145,7 @@ class LocationChannelOrchestrator:
         location_id: UUID,
         user_name: str,
         distance_km: float,
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> dict:
         """Build summary message for "proximity check" trigger type."""
         location = db.query(Location).filter(Location.id == location_id).first() if db else None
@@ -182,7 +186,7 @@ class LocationChannelOrchestrator:
     def route_message_to_channels(
         message: dict,
         channels: list[str],
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> list[dict]:
         """Route rendered message to multiple channels.
 

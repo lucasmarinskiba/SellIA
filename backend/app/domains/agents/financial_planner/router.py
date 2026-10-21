@@ -3,19 +3,18 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.financial_planner import service as fp_service
 from app.domains.agents.financial_planner.schemas import (
     FinancialPlanCreate,
     FinancialPlanOut,
-    FinancialPlanExportOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/financial-planner", tags=["financial-planner"])
 
@@ -33,6 +32,7 @@ async def create_plan(
 ):
     """Crea un plan financiero con proyecciones para 12 meses."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
@@ -58,6 +58,7 @@ async def list_plans(
 ):
     """Lista los planes financieros del negocio."""
     from sqlalchemy import select
+
     from app.domains.businesses.models import Business
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)

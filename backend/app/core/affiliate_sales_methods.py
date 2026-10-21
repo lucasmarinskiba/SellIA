@@ -22,9 +22,8 @@ Status: 800L comprehensive method library
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +52,15 @@ class AffiliateMethod:
         self.name = name
         self.category = category
         self.description = description
-        self.steps: List[str] = []
+        self.steps: list[str] = []
         self.timeline: str = ""
         self.monthly_income: int = 0
         self.difficulty: Difficulty = Difficulty.BEGINNER
-        self.required_resources: List[str] = []
-        self.success_metrics: List[str] = []
+        self.required_resources: list[str] = []
+        self.success_metrics: list[str] = []
         self.startup_cost: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -81,7 +80,7 @@ class EmailMethods:
     """Email-based affiliate methods."""
 
     @staticmethod
-    def cold_email_sequences() -> Dict[str, Any]:
+    def cold_email_sequences() -> dict[str, Any]:
         """5-email drip sequences to cold prospects."""
         return {
             "name": "Cold Email Sequences",
@@ -104,7 +103,7 @@ class EmailMethods:
         }
 
     @staticmethod
-    def newsletter_recommendations() -> Dict[str, Any]:
+    def newsletter_recommendations() -> dict[str, Any]:
         """Subtle product recommendations in newsletters."""
         return {
             "name": "Newsletter Recommendations",
@@ -128,7 +127,7 @@ class EmailMethods:
         }
 
     @staticmethod
-    def segmented_campaigns() -> Dict[str, Any]:
+    def segmented_campaigns() -> dict[str, Any]:
         """Segment audience, send targeted campaigns."""
         return {
             "name": "Segmented Email Campaigns",
@@ -151,7 +150,7 @@ class EmailMethods:
         }
 
     @staticmethod
-    def solo_ads() -> Dict[str, Any]:
+    def solo_ads() -> dict[str, Any]:
         """Buy email list access, send affiliate promotions."""
         return {
             "name": "Solo Ads",
@@ -175,7 +174,7 @@ class EmailMethods:
         }
 
     @staticmethod
-    def retargeting_campaigns() -> Dict[str, Any]:
+    def retargeting_campaigns() -> dict[str, Any]:
         """Pixel tracking, retarget interested visitors."""
         return {
             "name": "Email Retargeting",
@@ -202,7 +201,7 @@ class ContentMethods:
     """Content-based affiliate methods."""
 
     @staticmethod
-    def blog_reviews() -> Dict[str, Any]:
+    def blog_reviews() -> dict[str, Any]:
         """Detailed blog reviews ranked by Google."""
         return {
             "name": "Blog Product Reviews",
@@ -226,7 +225,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def youtube_channel() -> Dict[str, Any]:
+    def youtube_channel() -> dict[str, Any]:
         """YouTube channel with reviews, tutorials, unboxings."""
         return {
             "name": "YouTube Channel",
@@ -250,7 +249,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def tiktok_instagram() -> Dict[str, Any]:
+    def tiktok_instagram() -> dict[str, Any]:
         """TikTok & Instagram with trending content."""
         return {
             "name": "TikTok & Instagram Reels",
@@ -274,7 +273,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def podcast_sponsorships() -> Dict[str, Any]:
+    def podcast_sponsorships() -> dict[str, Any]:
         """Podcast host reads & sponsorships."""
         return {
             "name": "Podcast Sponsorships",
@@ -299,7 +298,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def twitter_reddit() -> Dict[str, Any]:
+    def twitter_reddit() -> dict[str, Any]:
         """Twitter & Reddit niche communities."""
         return {
             "name": "Twitter & Reddit Community",
@@ -323,7 +322,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def medium_substack() -> Dict[str, Any]:
+    def medium_substack() -> dict[str, Any]:
         """Long-form content on Medium & Substack."""
         return {
             "name": "Medium & Substack Essays",
@@ -347,7 +346,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def case_studies() -> Dict[str, Any]:
+    def case_studies() -> dict[str, Any]:
         """Detailed before/after case studies."""
         return {
             "name": "Case Studies & Results",
@@ -371,7 +370,7 @@ class ContentMethods:
         }
 
     @staticmethod
-    def webinars() -> Dict[str, Any]:
+    def webinars() -> dict[str, Any]:
         """Live webinars with affiliate pitch."""
         return {
             "name": "Webinars",
@@ -399,7 +398,7 @@ class PaidAdsMethods:
     """Paid advertising affiliate methods."""
 
     @staticmethod
-    def google_ads() -> Dict[str, Any]:
+    def google_ads() -> dict[str, Any]:
         """Google Search & Shopping ads."""
         return {
             "name": "Google Ads (Search & Shopping)",
@@ -425,7 +424,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def facebook_instagram_ads() -> Dict[str, Any]:
+    def facebook_instagram_ads() -> dict[str, Any]:
         """Facebook & Instagram retargeting & lookalike ads."""
         return {
             "name": "Facebook & Instagram Ads",
@@ -451,7 +450,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def tiktok_ads() -> Dict[str, Any]:
+    def tiktok_ads() -> dict[str, Any]:
         """TikTok ads with UGC-style creative."""
         return {
             "name": "TikTok Ads",
@@ -477,7 +476,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def pinterest_ads() -> Dict[str, Any]:
+    def pinterest_ads() -> dict[str, Any]:
         """Pinterest Ads for viral pins."""
         return {
             "name": "Pinterest Ads",
@@ -503,7 +502,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def outbrain_taboola() -> Dict[str, Any]:
+    def outbrain_taboola() -> dict[str, Any]:
         """Native ad platforms for high volume."""
         return {
             "name": "Outbrain & Taboola (Native Ads)",
@@ -529,7 +528,7 @@ class PaidAdsMethods:
         }
 
     @staticmethod
-    def affiliate_network_ads() -> Dict[str, Any]:
+    def affiliate_network_ads() -> dict[str, Any]:
         """Affiliate networks with built-in ads."""
         return {
             "name": "Affiliate Network Ad Platforms",
@@ -558,7 +557,7 @@ class PartnershipMethods:
     """Joint venture & partnership methods."""
 
     @staticmethod
-    def jv_partnerships() -> Dict[str, Any]:
+    def jv_partnerships() -> dict[str, Any]:
         """Joint venture with other creators/businesses."""
         return {
             "name": "JV Partnerships",
@@ -582,7 +581,7 @@ class PartnershipMethods:
         }
 
     @staticmethod
-    def bundle_deals() -> Dict[str, Any]:
+    def bundle_deals() -> dict[str, Any]:
         """Bundle complementary products for higher AOV."""
         return {
             "name": "Product Bundles",
@@ -606,7 +605,7 @@ class PartnershipMethods:
         }
 
     @staticmethod
-    def white_label_integration() -> Dict[str, Any]:
+    def white_label_integration() -> dict[str, Any]:
         """Integrate affiliate product into own offering."""
         return {
             "name": "White-Label Integration",
@@ -630,7 +629,7 @@ class PartnershipMethods:
         }
 
     @staticmethod
-    def influencer_partnerships() -> Dict[str, Any]:
+    def influencer_partnerships() -> dict[str, Any]:
         """Pay influencers to promote affiliate products."""
         return {
             "name": "Influencer Partnerships",
@@ -655,7 +654,7 @@ class PartnershipMethods:
         }
 
     @staticmethod
-    def cross_promotions() -> Dict[str, Any]:
+    def cross_promotions() -> dict[str, Any]:
         """Cross-promote complementary affiliate products."""
         return {
             "name": "Cross-Promotions",
@@ -683,7 +682,7 @@ class OrganicMethods:
     """Organic growth affiliate methods."""
 
     @staticmethod
-    def seo_long_tail() -> Dict[str, Any]:
+    def seo_long_tail() -> dict[str, Any]:
         """SEO for long-tail product keywords."""
         return {
             "name": "SEO & Long-Tail Keywords",
@@ -707,7 +706,7 @@ class OrganicMethods:
         }
 
     @staticmethod
-    def forum_marketing() -> Dict[str, Any]:
+    def forum_marketing() -> dict[str, Any]:
         """Build authority in niche forums."""
         return {
             "name": "Forum Marketing (StackOverflow, Quora, etc.)",
@@ -731,7 +730,7 @@ class OrganicMethods:
         }
 
     @staticmethod
-    def quora_strategy() -> Dict[str, Any]:
+    def quora_strategy() -> dict[str, Any]:
         """Quora answers strategy (huge passive income)."""
         return {
             "name": "Quora Strategy",
@@ -755,7 +754,7 @@ class OrganicMethods:
         }
 
     @staticmethod
-    def community_building() -> Dict[str, Any]:
+    def community_building() -> dict[str, Any]:
         """Build own community, recommend affiliates inside."""
         return {
             "name": "Community Building",
@@ -779,7 +778,7 @@ class OrganicMethods:
         }
 
     @staticmethod
-    def facebook_groups() -> Dict[str, Any]:
+    def facebook_groups() -> dict[str, Any]:
         """Facebook group authority & affiliate sales."""
         return {
             "name": "Facebook Groups",
@@ -803,7 +802,7 @@ class OrganicMethods:
         }
 
     @staticmethod
-    def discord_community() -> Dict[str, Any]:
+    def discord_community() -> dict[str, Any]:
         """Discord community monetization."""
         return {
             "name": "Discord Community",
@@ -832,7 +831,7 @@ class AffiliateMethodsLibrary:
     """Comprehensive library of all affiliate methods."""
 
     def __init__(self):
-        self.methods: Dict[str, Dict[str, Any]] = {}
+        self.methods: dict[str, dict[str, Any]] = {}
         self._load_methods()
 
     def _load_methods(self) -> None:
@@ -877,19 +876,19 @@ class AffiliateMethodsLibrary:
         self.methods["facebook_groups"] = OrganicMethods.facebook_groups()
         self.methods["discord"] = OrganicMethods.discord_community()
 
-    def get_method(self, method_id: str) -> Optional[Dict[str, Any]]:
+    def get_method(self, method_id: str) -> dict[str, Any] | None:
         """Get method by ID."""
         return self.methods.get(method_id)
 
-    def list_all_methods(self) -> List[Dict[str, Any]]:
+    def list_all_methods(self) -> list[dict[str, Any]]:
         """List all methods."""
         return list(self.methods.values())
 
-    def get_methods_by_category(self, category: str) -> List[Dict[str, Any]]:
+    def get_methods_by_category(self, category: str) -> list[dict[str, Any]]:
         """Get methods by category."""
         return [m for m in self.methods.values() if m.get("category") == category]
 
-    def get_quick_start_methods(self) -> List[Dict[str, Any]]:
+    def get_quick_start_methods(self) -> list[dict[str, Any]]:
         """Get easiest methods to start with."""
         easy_methods = [
             "newsletter",
@@ -900,7 +899,7 @@ class AffiliateMethodsLibrary:
         ]
         return [self.methods[m] for m in easy_methods if m in self.methods]
 
-    def get_high_income_methods(self) -> List[Dict[str, Any]]:
+    def get_high_income_methods(self) -> list[dict[str, Any]]:
         """Get methods with highest income potential."""
         methods = sorted(
             self.list_all_methods(),
@@ -920,7 +919,6 @@ def create_methods_library() -> AffiliateMethodsLibrary:
 
 
 if __name__ == "__main__":
-    import json
 
     library = create_methods_library()
 

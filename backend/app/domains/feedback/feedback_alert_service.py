@@ -1,17 +1,19 @@
 """Real-time feedback alerting + NPS monitoring service."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.feedback.feedback_alert_models import (
-    NPSAlert, NPSTrendMetric, SentimentTrend, FeedbackFollowUp,
-    FeedbackSentiment, AlertStatus
+    AlertStatus,
+    FeedbackFollowUp,
+    FeedbackSentiment,
+    NPSAlert,
+    NPSTrendMetric,
+    SentimentTrend,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,7 +85,7 @@ class FeedbackAlertService:
 
         alert.status = AlertStatus.ACKNOWLEDGED
         alert.acknowledged_by = manager_id
-        alert.acknowledged_at = datetime.now(timezone.utc)
+        alert.acknowledged_at = datetime.now(UTC)
 
         db.commit()
         db.refresh(alert)
@@ -114,7 +116,7 @@ class FeedbackAlertService:
 
         alert.status = AlertStatus.ESCALATED
         alert.assigned_to_staff_id = assigned_to_staff_id
-        alert.assigned_at = datetime.now(timezone.utc)
+        alert.assigned_at = datetime.now(UTC)
 
         db.commit()
         db.refresh(alert)
@@ -127,7 +129,7 @@ class FeedbackAlertService:
             visitor_phone=alert.visitor_phone,
             assigned_to_staff_id=assigned_to_staff_id,
             initial_nps=alert.nps_score,
-            resurvey_scheduled_for=datetime.now(timezone.utc) + timedelta(days=7)
+            resurvey_scheduled_for=datetime.now(UTC) + timedelta(days=7)
         )
 
         db.add(follow_up)
@@ -159,7 +161,7 @@ class FeedbackAlertService:
             raise ValueError(f"Alert {alert_id} not found")
 
         alert.status = AlertStatus.RESOLVED
-        alert.resolved_at = datetime.now(timezone.utc)
+        alert.resolved_at = datetime.now(UTC)
         alert.resolution_notes = resolution_notes
 
         # Update follow-up
@@ -193,7 +195,7 @@ class FeedbackAlertService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(NPSAlert).filter(
             NPSAlert.location_id == location_id,
@@ -251,7 +253,7 @@ class NPSDashboardService:
 
         from app.domains.locations.checkin_models import LocationFeedback
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         date_str = now.strftime("%Y-%m-%d")
         hour = now.hour
 
@@ -337,7 +339,7 @@ class NPSDashboardService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         # Get daily metrics
         daily_metrics = db.query(NPSTrendMetric).filter(

@@ -5,28 +5,28 @@ Actualiza automáticamente los agentes IA cuando los modelos ML mejoran.
 Guarda versiones anteriores para rollback.
 """
 
-import uuid
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.agents.models import AgentPersonality
 from app.core.logger import get_logger
+from app.domains.agents.models import AgentPersonality
 
 logger = get_logger(__name__)
 
 
-async def check_and_deploy_model_updates(db: AsyncSession) -> Dict[str, Any]:
+async def check_and_deploy_model_updates(db: AsyncSession) -> dict[str, Any]:
     """
     Verifica si un modelo ML mejoró significativamente y actualiza los agentes.
 
     Returns:
         Dict con las actualizaciones realizadas.
     """
-    from app.core.intelligence.ml_trainer import get_model_status, MODELS_DIR
     import os
+
+    from app.core.intelligence.ml_trainer import MODELS_DIR
 
     updates = {"deployed": [], "skipped": []}
 
@@ -57,7 +57,7 @@ async def check_and_deploy_model_updates(db: AsyncSession) -> Dict[str, Any]:
                         agent.extra_data = {}
                     agent.extra_data["ml_model_version"] = new_version
                     agent.extra_data["ml_model_accuracy"] = new_accuracy
-                    agent.extra_data["last_model_update"] = datetime.now(timezone.utc).isoformat()
+                    agent.extra_data["last_model_update"] = datetime.now(UTC).isoformat()
 
                     await db.commit()
                     updates["deployed"].append({
@@ -89,10 +89,10 @@ def _backup_agent_prompt(agent: AgentPersonality) -> None:
         "slug": agent.slug,
         "description": agent.description,
         "extra_data": agent.extra_data,
-        "backed_up_at": datetime.now(timezone.utc).isoformat(),
+        "backed_up_at": datetime.now(UTC).isoformat(),
     }
 
-    filename = f"{backup_dir}/{agent.slug}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"{backup_dir}/{agent.slug}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
     with open(filename, "w") as f:
         json.dump(backup, f, indent=2)
 

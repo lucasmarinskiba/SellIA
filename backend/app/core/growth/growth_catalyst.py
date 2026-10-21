@@ -1,8 +1,7 @@
 """Growth Catalyst — Actionable tactics, experimentation, hacks."""
 
 import logging
-from typing import Dict, List, Any
-from random import choice
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class GrowthCatalyst:
     def generate_growth_experiment(
         hypothesis: str,
         metric_to_move: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Design A/B test to move growth metric."""
 
         return {
@@ -56,7 +55,7 @@ class GrowthCatalyst:
     @staticmethod
     def get_tactic_for_stage(
         growth_stage: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get recommended tactics for current stage."""
 
         return GrowthCatalyst.GROWTH_HACKS.get(
@@ -66,9 +65,9 @@ class GrowthCatalyst:
 
     @staticmethod
     def prioritize_experiments(
-        potential_experiments: List[Dict[str, Any]],
+        potential_experiments: list[dict[str, Any]],
         resources: int = 100,  # Points to allocate
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Prioritize experiments by expected ROI."""
 
         for exp in potential_experiments:
@@ -106,7 +105,7 @@ class GrowthCatalyst:
         current_users: int,
         viral_coefficient: float,
         retention_rate: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate growth potential."""
 
         # Sustainable growth formula

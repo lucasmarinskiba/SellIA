@@ -5,15 +5,14 @@ Manage feature flags for gradual rollouts and kill-switches.
 """
 
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.feature_flags import service as flag_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/feature-flags", tags=["feature-flags"])
 
@@ -42,6 +41,7 @@ async def check_flag(
     plan_id = None
     # Try to get active subscription plan
     from sqlalchemy import select
+
     from app.domains.subscriptions.models import Subscription
     result = await db.execute(
         select(Subscription).where(

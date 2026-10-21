@@ -1,7 +1,7 @@
 """Market Context Injector — Customize agent instructions per market."""
 
-from typing import Dict, Any
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class MarketContextInjector:
     def inject_market_context(
         prompt: str,
         market_profile: "MarketProfile",
-        rules: Dict[str, Any],
+        rules: dict[str, Any],
     ) -> str:
         """Inject market-specific context into prompt."""
 
@@ -58,7 +58,7 @@ class MarketContextInjector:
     def customize_agent_system_prompt(
         agent_id: str,
         market_profile: "MarketProfile",
-        rules: Dict[str, Any],
+        rules: dict[str, Any],
     ) -> str:
         """Generate market-customized system prompt for agent."""
 
@@ -134,7 +134,7 @@ class MarketContextInjector:
         return base_prompts.get(agent_id, "You are a specialized sales agent.")
 
     @staticmethod
-    def inject_guardrails(prompt: str, market_profile: "MarketProfile", rules: Dict[str, Any]) -> str:
+    def inject_guardrails(prompt: str, market_profile: "MarketProfile", rules: dict[str, Any]) -> str:
         """Inject market-specific guardrails."""
 
         guardrails = []

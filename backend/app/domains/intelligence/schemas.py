@@ -1,10 +1,10 @@
 """Intelligence Schemas."""
 
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MessageAnalysisResponse(BaseModel):
@@ -22,8 +22,8 @@ class MessageAnalysisResponse(BaseModel):
     urgency_level: str = "low"
     language_detected: str = "es"
     key_entities: dict[str, Any] = Field(default_factory=dict)
-    recommended_action: Optional[str] = None
-    recommended_personality: Optional[str] = None
+    recommended_action: str | None = None
+    recommended_personality: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -39,8 +39,8 @@ class ConversationIntelligenceResponse(BaseModel):
     buying_readiness_score: int = 0
     objection_history: list[dict[str, Any]] = Field(default_factory=list)
     churn_risk_signals_count: int = 0
-    next_best_action: Optional[str] = None
-    next_best_action_reason: Optional[str] = None
+    next_best_action: str | None = None
+    next_best_action_reason: str | None = None
     total_messages_analyzed: int = 0
     positive_messages_count: int = 0
     negative_messages_count: int = 0
@@ -55,8 +55,8 @@ class AnalyzeMessageRequest(BaseModel):
 
 
 class ConversationIntelligenceFilter(BaseModel):
-    business_id: Optional[UUID] = None
-    intent_type: Optional[str] = None
-    min_buying_readiness: Optional[int] = None
+    business_id: UUID | None = None
+    intent_type: str | None = None
+    min_buying_readiness: int | None = None
     limit: int = 50
     offset: int = 0

@@ -7,17 +7,20 @@ Endpoints:
 - GET /order/:id: Estado orden
 """
 
-from fastapi import APIRouter, HTTPException, Request, Depends
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
-import logging
 import json
+import logging
+from datetime import datetime
 
-from app.core.integrations.stripe_payment import StripePaymentProcessor, StripeWebhookHandler
-from app.core.integrations.sendgrid_email import EmailService
-from app.core.database.models import get_db, Order, Account
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+from app.core.database.models import Order, get_db
+from app.core.integrations.sendgrid_email import EmailService
+from app.core.integrations.stripe_payment import (
+    StripePaymentProcessor,
+    StripeWebhookHandler,
+)
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 logger = logging.getLogger(__name__)
@@ -93,7 +96,7 @@ async def create_checkout(request: CheckoutRequest, db: Session = Depends(get_db
         }
 
     except Exception as e:
-        logger.error(f"Error creating checkout: {str(e)}")
+        logger.error(f"Error creating checkout: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -150,7 +153,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "webhook_processed"}
 
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
+        logger.error(f"Error processing webhook: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

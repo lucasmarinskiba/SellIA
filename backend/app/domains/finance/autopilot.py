@@ -5,24 +5,22 @@ and tax reports for SellIA businesses.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.crm.models import Deal, LeadStage
 from app.domains.finance.models import (
-    SalesInvoice,
-    PaymentReminder,
-    AccountsReceivableSnapshot,
-    TaxConfig,
     FinanceAutopilotConfig,
+    PaymentReminder,
+    SalesInvoice,
+    TaxConfig,
 )
 from app.domains.orders.models import Order, PaymentStatus
-from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -84,7 +82,7 @@ class FinanceAutopilotEngine:
 
             try:
                 await self._deliver_invoice(inv)
-                extra['delivered_at'] = datetime.now(timezone.utc).isoformat()
+                extra['delivered_at'] = datetime.now(UTC).isoformat()
                 extra['delivery_method'] = 'autopilot'
                 inv.extra_data = extra
                 if inv.status == 'draft':
@@ -116,7 +114,7 @@ class FinanceAutopilotEngine:
         if not config.is_active or config.is_paused or not config.auto_run_dunning:
             return {'reminders_sent': 0, 'reason': 'Autopilot de cobranza inactivo o pausado'}
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await self.db.execute(
             select(SalesInvoice).where(
                 SalesInvoice.business_id == business_id,
@@ -163,7 +161,7 @@ class FinanceAutopilotEngine:
         logger.info(f'Dunning sequence: {reminders_sent} reminders sent for business {business_id}')
         return {'reminders_sent': reminders_sent}
 
-    def _determine_dunning_level(self, days_overdue: int) -> Optional[int]:
+    def _determine_dunning_level(self, days_overdue: int) -> int | None:
         if days_overdue >= 14:
             return 4
         if days_overdue >= 7:
@@ -263,7 +261,7 @@ class FinanceAutopilotEngine:
                 continue
 
             invoice.status = 'paid'
-            invoice.paid_at = order.paid_at or datetime.now(timezone.utc)
+            invoice.paid_at = order.paid_at or datetime.now(UTC)
             invoice.paid_amount = order.total_amount
             reconciled += 1
 
@@ -285,7 +283,7 @@ class FinanceAutopilotEngine:
         await PostingService(self.db).post_order_paid(
             business_id,
             order_id=order.id,
-            total_amount=order.total_amount or Decimal('0'),
+            total_amount=order.total_amount or Decimal(0),
             tax_amount=order.tax_amount,
             discount_amount=order.discount_amount,
             gateway=order.payment_gateway or order.payment_method,
@@ -294,11 +292,11 @@ class FinanceAutopilotEngine:
         )
 
     async def generate_tax_report(self, business_id: uuid.UUID, month: int, year: int) -> dict[str, Any]:
-        start = datetime(year, month, 1, tzinfo=timezone.utc)
+        start = datetime(year, month, 1, tzinfo=UTC)
         if month == 12:
-            end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+            end = datetime(year + 1, 1, 1, tzinfo=UTC)
         else:
-            end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+            end = datetime(year, month + 1, 1, tzinfo=UTC)
 
         result = await self.db.execute(
             select(SalesInvoice).where(
@@ -310,9 +308,9 @@ class FinanceAutopilotEngine:
         )
         invoices = result.scalars().all()
 
-        total_invoiced = Decimal('0')
-        total_tax = Decimal('0')
-        total_net = Decimal('0')
+        total_invoiced = Decimal(0)
+        total_tax = Decimal(0)
+        total_net = Decimal(0)
 
         for inv in invoices:
             total_invoiced += inv.total_amount
@@ -326,7 +324,7 @@ class FinanceAutopilotEngine:
         tax_rate = config.tax_rate if config else Decimal('21.0')
 
         iva_debito = total_tax
-        iva_credito = Decimal('0')
+        iva_credito = Decimal(0)
 
         saldo = iva_debito - iva_credito
 
@@ -343,7 +341,7 @@ class FinanceAutopilotEngine:
         }
 
     async def forecast_cash_flow(self, business_id: uuid.UUID, days: int = 30) -> dict[str, Any]:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         end = now + timedelta(days=days)
 
         invoices_result = await self.db.execute(
@@ -369,7 +367,7 @@ class FinanceAutopilotEngine:
         pipeline_deals = deals_result.scalars().all()
 
         pipeline_weighted = sum(
-            (deal.value or Decimal('0')) * Decimal(deal.probability) / Decimal('100')
+            (deal.value or Decimal(0)) * Decimal(deal.probability) / Decimal(100)
             for deal in pipeline_deals
         )
 
@@ -400,7 +398,7 @@ class FinanceAutopilotEngine:
         }
 
     async def get_finance_dashboard(self, business_id: uuid.UUID) -> dict[str, Any]:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         outstanding_result = await self.db.execute(
             select(
@@ -411,7 +409,7 @@ class FinanceAutopilotEngine:
                 SalesInvoice.status.in_(['sent', 'overdue']),
             )
         )
-        invoice_count, total_receivables = outstanding_result.one() or (0, Decimal('0'))
+        invoice_count, total_receivables = outstanding_result.one() or (0, Decimal(0))
 
         overdue_result = await self.db.execute(
             select(
@@ -422,7 +420,7 @@ class FinanceAutopilotEngine:
                 SalesInvoice.status == 'overdue',
             )
         )
-        overdue_count, total_overdue = overdue_result.one() or (0, Decimal('0'))
+        overdue_count, total_overdue = overdue_result.one() or (0, Decimal(0))
 
         dunning_result = await self.db.execute(
             select(func.count(PaymentReminder.id)).where(
@@ -441,7 +439,7 @@ class FinanceAutopilotEngine:
 
         config = await self.get_or_create_config(business_id)
 
-        collection_rate = Decimal('0')
+        collection_rate = Decimal(0)
         if total_receivables and total_receivables > 0:
             paid_result = await self.db.execute(
                 select(func.sum(SalesInvoice.total_amount)).where(
@@ -450,21 +448,21 @@ class FinanceAutopilotEngine:
                     SalesInvoice.paid_at >= now - timedelta(days=30),
                 )
             )
-            paid_30d = paid_result.scalar() or Decimal('0')
+            paid_30d = paid_result.scalar() or Decimal(0)
             total_billed_result = await self.db.execute(
                 select(func.sum(SalesInvoice.total_amount)).where(
                     SalesInvoice.business_id == business_id,
                     SalesInvoice.created_at >= now - timedelta(days=30),
                 )
             )
-            total_billed_30d = total_billed_result.scalar() or Decimal('0')
+            total_billed_30d = total_billed_result.scalar() or Decimal(0)
             if total_billed_30d > 0:
-                collection_rate = (paid_30d / total_billed_30d) * Decimal('100')
+                collection_rate = (paid_30d / total_billed_30d) * Decimal(100)
 
         return {
             'business_id': str(business_id),
-            'total_receivables': total_receivables or Decimal('0'),
-            'overdue_amount': total_overdue or Decimal('0'),
+            'total_receivables': total_receivables or Decimal(0),
+            'overdue_amount': total_overdue or Decimal(0),
             'invoice_count': invoice_count or 0,
             'overdue_count': overdue_count or 0,
             'dunning_active': dunning_active,
@@ -480,7 +478,7 @@ class FinanceAutopilotEngine:
         }
 
     async def get_dunning_pipeline(self, business_id: uuid.UUID) -> dict[str, Any]:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await self.db.execute(
             select(SalesInvoice).where(
                 SalesInvoice.business_id == business_id,
@@ -492,10 +490,10 @@ class FinanceAutopilotEngine:
         overdue_invoices = result.scalars().all()
 
         pipeline = {
-            'level_1': {'label': 'Amable (Día 1)', 'count': 0, 'amount': Decimal('0')},
-            'level_2': {'label': 'Firme (Día 3)', 'count': 0, 'amount': Decimal('0')},
-            'level_3': {'label': 'Urgente (Día 7)', 'count': 0, 'amount': Decimal('0')},
-            'level_4': {'label': 'Final (Día 14)', 'count': 0, 'amount': Decimal('0')},
+            'level_1': {'label': 'Amable (Día 1)', 'count': 0, 'amount': Decimal(0)},
+            'level_2': {'label': 'Firme (Día 3)', 'count': 0, 'amount': Decimal(0)},
+            'level_3': {'label': 'Urgente (Día 7)', 'count': 0, 'amount': Decimal(0)},
+            'level_4': {'label': 'Final (Día 14)', 'count': 0, 'amount': Decimal(0)},
         }
 
         for inv in overdue_invoices:

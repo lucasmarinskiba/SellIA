@@ -1,10 +1,10 @@
 """Phase 23: Entrepreneurship Coach Agent - guides new entrepreneurs."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class EntrepreneurProfile:
     revenue: float = 0.0
     team_size: int = 1
     motivation_level: float = 0.8  # 0-1
-    challenges: List[str] = field(default_factory=list)
+    challenges: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -52,16 +52,16 @@ class CoachingMessage:
     topic: CoachingTopic
     urgency: str  # high, normal, low
     action_item: str
-    resource_url: Optional[str] = None
+    resource_url: str | None = None
 
 
 class EntrepreneurCoachAgent:
     """Coach that motivates and guides new entrepreneurs"""
 
     def __init__(self):
-        self.profiles: Dict[str, EntrepreneurProfile] = {}
+        self.profiles: dict[str, EntrepreneurProfile] = {}
 
-    def assess_entrepreneur(self, user_id: str, business_data: Dict[str, Any]) -> EntrepreneurProfile:
+    def assess_entrepreneur(self, user_id: str, business_data: dict[str, Any]) -> EntrepreneurProfile:
         """Assess entrepreneur's stage and create profile"""
 
         days_in_business = business_data.get("days_in_business", 0)
@@ -266,7 +266,7 @@ class EntrepreneurCoachAgent:
             action_item="Complete your profile and get started"
         )
 
-    def get_milestone_tracking(self, user_id: str) -> Dict[str, Any]:
+    def get_milestone_tracking(self, user_id: str) -> dict[str, Any]:
         """Track entrepreneur milestones"""
 
         if user_id not in self.profiles:
@@ -291,7 +291,7 @@ class EntrepreneurCoachAgent:
             "next_milestone": self._get_next_milestone(profile)
         }
 
-    def _get_next_milestone(self, profile: EntrepreneurProfile) -> Dict[str, Any]:
+    def _get_next_milestone(self, profile: EntrepreneurProfile) -> dict[str, Any]:
         """Get next milestone to achieve"""
 
         if profile.deals_closed == 0:

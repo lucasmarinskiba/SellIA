@@ -5,11 +5,8 @@ Customizable per business model, location type, funnel stage.
 """
 
 from enum import Enum
-from typing import Optional
-from uuid import UUID
 
 from app.domains.businesses.location_models import LocationType
-from app.domains.proximity.proximity_engine import ProximityTriggerConfig
 
 
 class MessageTemplate(Enum):
@@ -135,7 +132,7 @@ class LocationMessageTemplateService:
     def get_template(
         template_key: MessageTemplate,
         channel: str = "sms"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get message template for given type and channel."""
         if channel == "sms":
             return LocationMessageTemplateService.SMS_TEMPLATES.get(template_key)
@@ -149,8 +146,8 @@ class LocationMessageTemplateService:
     def render_template(
         template_key: MessageTemplate,
         channel: str = "sms",
-        variables: Optional[dict[str, str]] = None
-    ) -> Optional[str]:
+        variables: dict[str, str] | None = None
+    ) -> str | None:
         """Render message template with variables substituted.
 
         Args:
@@ -182,7 +179,7 @@ class LocationMessageTemplateService:
         strategy: str,
         location_type: LocationType,
         channel: str = "sms"
-    ) -> Optional[MessageTemplate]:
+    ) -> MessageTemplate | None:
         """Recommend template based on localization strategy + location type."""
 
         mapping = {

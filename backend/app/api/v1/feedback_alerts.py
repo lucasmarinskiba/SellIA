@@ -1,15 +1,18 @@
 """Real-time feedback alerts API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.domains.feedback.feedback_alert_service import (
+    FeedbackAlertService,
+    NPSDashboardService,
+)
 from app.domains.users.models import User
-from app.domains.feedback.feedback_alert_service import FeedbackAlertService, NPSDashboardService
 
 router = APIRouter(prefix="/api/v1", tags=["feedback-alerts"])
 
@@ -19,11 +22,11 @@ class EvaluateFeedbackRequest(BaseModel):
     feedback_id: UUID
     nps_score: int
     sentiment: str
-    comment: Optional[str] = None
-    topics: Optional[list[str]] = None
-    visitor_email: Optional[str] = None
-    visitor_phone: Optional[str] = None
-    visitor_name: Optional[str] = None
+    comment: str | None = None
+    topics: list[str] | None = None
+    visitor_email: str | None = None
+    visitor_phone: str | None = None
+    visitor_name: str | None = None
 
 
 class AlertActionRequest(BaseModel):
@@ -78,7 +81,7 @@ async def acknowledge_alert(
 async def escalate_alert(
     alert_id: UUID,
     assigned_to_staff_id: UUID = Query(...),
-    resolution_plan: Optional[str] = Query(None),
+    resolution_plan: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -98,7 +101,7 @@ async def escalate_alert(
 @router.post("/alerts/{alert_id}/resolve")
 async def resolve_alert(
     alert_id: UUID,
-    resolution_notes: Optional[str] = Query(None),
+    resolution_notes: str | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -117,7 +120,7 @@ async def resolve_alert(
 @router.get("/locations/{location_id}/alerts")
 async def get_location_alerts(
     location_id: UUID,
-    status: Optional[str] = Query(None),
+    status: str | None = Query(None),
     days: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -196,7 +199,7 @@ async def get_staff_assigned_alerts(
 ) -> dict:
     """Get alerts assigned to staff for follow-up."""
     try:
-        from app.domains.feedback.feedback_alert_models import NPSAlert, AlertStatus
+        from app.domains.feedback.feedback_alert_models import AlertStatus, NPSAlert
 
         alerts = db.query(NPSAlert).filter(
             NPSAlert.assigned_to_staff_id == staff_id,

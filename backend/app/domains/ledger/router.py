@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -35,8 +35,8 @@ router = APIRouter(prefix="/{business_id}/ledger", tags=["Ledger"])
 
 
 def _month_range(month: int, year: int) -> tuple[datetime, datetime]:
-    start = datetime(year, month, 1, tzinfo=timezone.utc)
-    end = datetime(year + 1, 1, 1, tzinfo=timezone.utc) if month == 12 else datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    start = datetime(year, month, 1, tzinfo=UTC)
+    end = datetime(year + 1, 1, 1, tzinfo=UTC) if month == 12 else datetime(year, month + 1, 1, tzinfo=UTC)
     return start, end
 
 
@@ -156,8 +156,8 @@ async def trial_balance(
 @router.get("/reports/income-statement", response_model=IncomeStatementResponse)
 async def income_statement(
     business_id: UUID,
-    month: int = Query(datetime.now(timezone.utc).month, ge=1, le=12),
-    year: int = Query(datetime.now(timezone.utc).year, ge=2020, le=2100),
+    month: int = Query(datetime.now(UTC).month, ge=1, le=12),
+    year: int = Query(datetime.now(UTC).year, ge=2020, le=2100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -178,8 +178,8 @@ async def balance_sheet(
 @router.get("/reports/cash-flow", response_model=CashFlowStatementResponse)
 async def cash_flow(
     business_id: UUID,
-    month: int = Query(datetime.now(timezone.utc).month, ge=1, le=12),
-    year: int = Query(datetime.now(timezone.utc).year, ge=2020, le=2100),
+    month: int = Query(datetime.now(UTC).month, ge=1, le=12),
+    year: int = Query(datetime.now(UTC).year, ge=2020, le=2100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

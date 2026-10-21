@@ -1,10 +1,11 @@
 """Slack integration for alerts and notifications."""
 
-import httpx
 import logging
-from typing import Dict, Any, Optional, List
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class SlackService:
         message_type: SlackMessageType,
         title: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         channel: str = "#sales-alerts",
     ) -> bool:
         """Send formatted message to Slack."""
@@ -76,8 +77,8 @@ class SlackService:
         message_type: SlackMessageType,
         title: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        metadata: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Build Slack message blocks."""
         color = self.color_map.get(message_type, "#CCCCCC")
 

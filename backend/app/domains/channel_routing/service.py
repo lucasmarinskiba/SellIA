@@ -1,10 +1,15 @@
 """Phase 3: Channel Routing Service - Intelligent Message Delivery."""
-from typing import List, Tuple
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.channel_routing.models import (
+    ChannelAffinityModel,
+    ChannelPerformanceMetrics,
+    MessageRouting,
+)
 
 
 class ChannelRoutingService:
@@ -67,7 +72,7 @@ class ChannelRoutingService:
             send_hour = 10
 
         # Create optimal send time (today or tomorrow)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         target_time = now.replace(hour=send_hour, minute=0, second=0, microsecond=0)
         if target_time < now:
             target_time += timedelta(days=1)

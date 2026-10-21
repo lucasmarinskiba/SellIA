@@ -1,21 +1,17 @@
 """Phase 31 - Psychology Sales System (Jordan Belfort Method)."""
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
 import json
-from sqlalchemy import select
+import logging
+from dataclasses import dataclass
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.psychology_sales import (
     DiscoveryResponse,
     NeedNarrative,
-    ObjectionHandling,
-    CloseAttempt,
-    SalesConversation,
 )
 from celery_app import celery_app
-import logging
 
 try:
     from anthropic import Anthropic
@@ -41,7 +37,7 @@ class NeedNarrativeResult:
 
     narrative: str
     financial_impact: float
-    pain_points: List[str]
+    pain_points: list[str]
     urgency_level: float  # 1-10
 
 
@@ -81,11 +77,11 @@ class DiscoveryQuestionsEngine:
         ],
     }
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def generate_questions(self, prospect: Dict, deal_stage: str) -> List[DiscoveryQuestion]:
+    def generate_questions(self, prospect: dict, deal_stage: str) -> list[DiscoveryQuestion]:
         """Generate discovery questions for prospect."""
 
         stage_to_hierarchy = {
@@ -178,7 +174,7 @@ class DiscoveryQuestionsEngine:
 
         return db_response
 
-    def _analyze_response(self, response: str) -> Dict[str, Any]:
+    def _analyze_response(self, response: str) -> dict[str, Any]:
         """Analyze response for pain points, needs, urgency."""
 
         pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain", "problem"]
@@ -222,11 +218,11 @@ class DiscoveryQuestionsEngine:
 class NeedCreationEngine:
     """Create awareness of buyer need through pain amplification."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def create_need_narrative(self, deal_id: str, discovery_responses: List[str]) -> NeedNarrativeResult:
+    def create_need_narrative(self, deal_id: str, discovery_responses: list[str]) -> NeedNarrativeResult:
         """Build narrative that creates urgency and need."""
 
         # Extract pain points
@@ -257,7 +253,7 @@ class NeedCreationEngine:
             urgency_level=urgency,
         )
 
-    def _extract_pain_points(self, responses: List[str]) -> List[str]:
+    def _extract_pain_points(self, responses: list[str]) -> list[str]:
         """Extract pain points from discovery responses."""
 
         pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain"]
@@ -269,7 +265,7 @@ class NeedCreationEngine:
 
         return pain_points[:3]  # Top 3
 
-    def _calculate_financial_impact(self, pain_points: List[str]) -> float:
+    def _calculate_financial_impact(self, pain_points: list[str]) -> float:
         """Calculate annual financial impact."""
 
         # Simplified: extract numbers from pain points
@@ -289,7 +285,7 @@ class NeedCreationEngine:
 
         return max(total_impact, 50000)  # Conservative minimum
 
-    def _generate_claude_narrative(self, pain_points: List[str], impact: float) -> str:
+    def _generate_claude_narrative(self, pain_points: list[str], impact: float) -> str:
         """Generate need narrative using Claude."""
 
         prompt = f"""
@@ -319,7 +315,7 @@ class NeedCreationEngine:
             logger.error(f"Error generating narrative: {e}")
             return self._get_template_narrative(pain_points, impact)
 
-    def _get_template_narrative(self, pain_points: List[str], impact: float) -> str:
+    def _get_template_narrative(self, pain_points: list[str], impact: float) -> str:
         """Template narrative."""
 
         return f"""
@@ -341,7 +337,7 @@ class UrgencyTriggerEngine:
     def __init__(self, db: Session):
         self.db = db
 
-    def generate_urgency_triggers(self, deal: Dict) -> List[Dict[str, Any]]:
+    def generate_urgency_triggers(self, deal: dict) -> list[dict[str, Any]]:
         """Create FOMO triggers (legitimate, not manipulative)."""
 
         triggers = []
@@ -386,7 +382,7 @@ class UrgencyTriggerEngine:
 
         return triggers
 
-    def weave_into_narrative(self, triggers: List[Dict], conversation: str) -> str:
+    def weave_into_narrative(self, triggers: list[dict], conversation: str) -> str:
         """Weave urgency into conversation naturally."""
 
         # Don't say "Limited spots available!" (cringe)
@@ -402,7 +398,7 @@ class UrgencyTriggerEngine:
 class PsychologyObjectionHandler:
     """Handle objections using psychology, not logic."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
@@ -429,7 +425,7 @@ class PsychologyObjectionHandler:
         },
     }
 
-    def handle_objection(self, objection: str, prospect: Dict) -> str:
+    def handle_objection(self, objection: str, prospect: dict) -> str:
         """Generate psychology-based objection response."""
 
         objection_type = self._classify_objection(objection)
@@ -553,7 +549,7 @@ class AssumptiveCloseEngine:
 
 
 @celery_app.task(bind=True, max_retries=3)
-def create_need_narrative_async(self, deal_id: str, responses: List[str]):
+def create_need_narrative_async(self, deal_id: str, responses: list[str]):
     """Create need narrative in background."""
     try:
         from app.core.database import SessionLocal

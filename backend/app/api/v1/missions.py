@@ -4,23 +4,28 @@ Endpoints para crear, ejecutar y monitorear misiones cross-plataforma.
 """
 
 import uuid
-from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.missions.services import MissionService
+from app.domains.missions.ad_spend_assistant import AdSpendAssistant
 from app.domains.missions.schemas import (
-    MissionCreate, MissionRead, MissionUpdate,
-    MissionLaunchRequest, MissionApproveRequest,
-    MissionStepUpdate, BusinessDiagnosticRead,
-    DiagnosticRunRequest, DiagnosticRunResponse,
+    BusinessDiagnosticRead,
+    DiagnosticRunRequest,
+    DiagnosticRunResponse,
+    MissionApproveRequest,
+    MissionCreate,
+    MissionLaunchRequest,
+    MissionRead,
+    MissionStepUpdate,
+    MissionUpdate,
     PlaybookRead,
 )
+from app.domains.missions.services import MissionService
 from app.domains.missions.shipping_assistant import ShippingConnectorAssistant
-from app.domains.missions.ad_spend_assistant import AdSpendAssistant
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/missions", tags=["SellIA Missions"])
 
@@ -57,10 +62,10 @@ async def create_mission_from_playbook(
     )
 
 
-@router.get("", response_model=List[MissionRead])
+@router.get("", response_model=list[MissionRead])
 async def list_missions(
-    status: Optional[str] = Query(None, description="Filtrar por estado"),
-    category: Optional[str] = Query(None, description="Filtrar por categoría"),
+    status: str | None = Query(None, description="Filtrar por estado"),
+    category: str | None = Query(None, description="Filtrar por categoría"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     user: User = Depends(get_current_user),
@@ -98,10 +103,10 @@ async def run_diagnostic(
     )
 
 
-@router.get("/diagnostics/list", response_model=List[BusinessDiagnosticRead])
+@router.get("/diagnostics/list", response_model=list[BusinessDiagnosticRead])
 async def list_diagnostics(
-    business_id: Optional[uuid.UUID] = Query(None),
-    is_resolved: Optional[bool] = Query(None),
+    business_id: uuid.UUID | None = Query(None),
+    is_resolved: bool | None = Query(None),
     user: User = Depends(get_current_user),
     service: MissionService = Depends(get_service),
 ):
@@ -124,9 +129,9 @@ async def resolve_diagnostic(
 
 # ─── Playbooks ─────────────────────────────────────────────────────────────────
 
-@router.get("/playbooks", response_model=List[PlaybookRead])
+@router.get("/playbooks", response_model=list[PlaybookRead])
 async def list_playbooks(
-    category: Optional[str] = Query(None),
+    category: str | None = Query(None),
     user: User = Depends(get_current_user),
     service: MissionService = Depends(get_service),
 ):
@@ -359,6 +364,7 @@ async def delete_mission(
     if not mission:
         raise HTTPException(status_code=404, detail="Misión no encontrada")
     from sqlalchemy import delete
+
     from app.domains.missions.models import Mission as MissionModel
     await service.db.execute(delete(MissionModel).where(MissionModel.id == mission_id))
     await service.db.commit()

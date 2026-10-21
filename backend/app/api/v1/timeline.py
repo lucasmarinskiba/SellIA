@@ -1,9 +1,8 @@
 """Customer timeline API endpoints."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -17,18 +16,18 @@ class LogEventRequest(BaseModel):
     event_type: str
     channel: str
     title: str
-    event_data: Dict
-    description: Optional[str] = None
-    outcome: Optional[str] = "success"
-    revenue_impact: Optional[str] = None
-    estimated_value: Optional[int] = None
+    event_data: dict
+    description: str | None = None
+    outcome: str | None = "success"
+    revenue_impact: str | None = None
+    estimated_value: int | None = None
 
 
 class SaveFilterRequest(BaseModel):
     name: str
-    event_types: Optional[List[str]] = None
-    channels: Optional[List[str]] = None
-    outcomes: Optional[List[str]] = None
+    event_types: list[str] | None = None
+    channels: list[str] | None = None
+    outcomes: list[str] | None = None
 
 
 @router.post("/customers/{customer_id}/events")
@@ -36,7 +35,7 @@ def log_event(
     customer_id: UUID,
     business_id: UUID = Query(...),
     request: LogEventRequest = None,
-    created_by: Optional[UUID] = None,
+    created_by: UUID | None = None,
     db: Session = Depends(get_db)
 ):
     """Log customer event."""
@@ -62,8 +61,8 @@ def get_customer_timeline(
     business_id: UUID = Query(...),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    event_types: Optional[str] = Query(None),
-    channels: Optional[str] = Query(None),
+    event_types: str | None = Query(None),
+    channels: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     """Get customer timeline."""

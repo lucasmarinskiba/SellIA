@@ -10,13 +10,13 @@ Responsibilities:
 No selectors needed. Pure visual verification.
 """
 
-import logging
+import asyncio
 import base64
 import json
-import asyncio
-from typing import Dict, List, Any, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,9 @@ class Confirmation:
     result: ActionResult
     confidence: float
     message: str
-    details: Optional[Dict[str, Any]] = None
-    error_messages: Optional[List[str]] = None
-    loading_indicators: Optional[List[str]] = None
+    details: dict[str, Any] | None = None
+    error_messages: list[str] | None = None
+    loading_indicators: list[str] | None = None
     modal_present: bool = False
 
 
@@ -55,7 +55,7 @@ class VisualConfirmation:
         before_screenshot: bytes,
         after_screenshot: bytes,
         action_description: str,
-        expected_indicators: Optional[List[str]] = None
+        expected_indicators: list[str] | None = None
     ) -> Confirmation:
         """Verifica si una acción tuvo éxito comparando screenshots.
 
@@ -83,7 +83,7 @@ class VisualConfirmation:
         before_screenshot: bytes,
         after_screenshot: bytes,
         action_description: str,
-        expected_indicators: Optional[List[str]] = None
+        expected_indicators: list[str] | None = None
     ) -> Confirmation:
         """Usa Claude Vision para comparar y verificar."""
         logger.info(f"Verifying action: {action_description}")
@@ -172,7 +172,7 @@ Responde SOLO en JSON:
     async def detect_errors(
         self,
         screenshot_bytes: bytes
-    ) -> List[str]:
+    ) -> list[str]:
         """Detecta mensajes de error en pantalla."""
         logger.info("Detecting error messages")
 
@@ -343,7 +343,7 @@ Responde SOLO: {"is_loading": true|false, "type": "spinner|progress|text|overlay
     async def detect_modal_popup(
         self,
         screenshot_bytes: bytes
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detecta si hay un modal/popup abierto."""
         logger.info("Detecting modal/popup")
 
@@ -403,7 +403,7 @@ Responde SOLO: {
     async def detect_form_validation_errors(
         self,
         screenshot_bytes: bytes
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detecta errores de validación en campos de formulario."""
         logger.info("Detecting form validation errors")
 
@@ -461,7 +461,7 @@ Responde SOLO: {
             logger.error(f"Form validation detection failed: {e}")
             return {"has_validation_errors": False}
 
-    def _parse_confirmation_response(self, data: Dict[str, Any]) -> Confirmation:
+    def _parse_confirmation_response(self, data: dict[str, Any]) -> Confirmation:
         """Parsea respuesta de verificación."""
         result_str = data.get("result", "unknown").lower()
         result_map = {

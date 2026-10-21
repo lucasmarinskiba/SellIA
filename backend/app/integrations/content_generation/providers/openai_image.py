@@ -14,11 +14,18 @@ y DALL-E 3 HD o GPT Image 1 High para premium.
 """
 
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
+from ..utils import get_image_size_kb, smart_quality_for_size
 
 settings = get_settings()
 
@@ -66,7 +73,7 @@ class OpenAIImageProvider(BaseProvider):
         model_config = QUALITY_MODELS.get(config.quality, QUALITY_MODELS[ContentQuality.STANDARD])
         return model_config["cost_per_image"] * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "gpt-image-1-mini-low": 0.005,
             "gpt-image-1-mini-high": 0.036,
@@ -137,8 +144,8 @@ class OpenAIImageProvider(BaseProvider):
         self,
         client,
         prompt: str,
-        model_config: Dict[str, Any],
-        negative_prompt: Optional[str] = None,
+        model_config: dict[str, Any],
+        negative_prompt: str | None = None,
         size: str = "1024x1024",
     ) -> GenerationResult:
         """Genera una sola imagen."""
@@ -162,7 +169,7 @@ class OpenAIImageProvider(BaseProvider):
             revised_prompt = response.data[0].revised_prompt or prompt
 
             # Intentamos descargar y comprimir
-            from ..utils import download_url, compress_image, get_image_dimensions
+            from ..utils import compress_image, download_url, get_image_dimensions
             image_bytes = await download_url(image_url)
 
             if image_bytes:
