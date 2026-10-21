@@ -133,6 +133,7 @@ _modules = [
     "app.domains.agents.auto_responder.tasks",
     "app.domains.training.tasks",
     "app.domains.seo_config.tasks",
+    "app.tasks.mercadolibre_tasks",
 ]
 _includes = []
 for mod in _modules:
@@ -167,6 +168,10 @@ celery_app.conf.update(
 
 # Beat schedule para tareas periódicas
 celery_app.conf.beat_schedule = {
+    "sync-mercadolibre-orders": {
+        "task": "app.tasks.mercadolibre_tasks.sync_mercadolibre_orders_task",
+        "schedule": crontab(minute="*/15"),  # cada 15 minutos
+    },
     # Weekly, so the authority trend is real history rather than a redraw of
     # whatever the score happened to be the last time someone opened the page.
     "weekly-authority-snapshot": {
