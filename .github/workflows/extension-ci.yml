@@ -14,9 +14,9 @@ jobs:
   validate-and-package:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -36,7 +36,7 @@ jobs:
           zip -r ../sellia-chrome-$(node -p "require('./manifest.json').version").zip . -x "README.md" -x "icons/README.md"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sellia-chrome-extension
           path: extensions/sellia-chrome-*.zip
