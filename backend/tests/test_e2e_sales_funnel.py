@@ -105,18 +105,17 @@ class TestProductFlow:
 class TestLocationFlow:
     """Test location and QR code generation."""
 
-    def test_generate_qr_codes(self, api_client):
-        """Generate QR codes for location check-in."""
+    def test_generate_qr_codes_requires_a_login(self, api_client):
+        """QR codes are printed for a business's own location: no token, no QR.
+
+        This used to answer 200 to anyone for any location id, without looking the location up.
+        The authorised path (owner / member -> 200 with the payloads) is covered by
+        test_location_checkin_qr_routers_db.py.
+        """
         location_id = "00000000-0000-0000-0000-000000000001"
         response = api_client.get(f"/api/v1/locations/{location_id}/qr-codes")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "qr_codes" in data
-        assert "visitor_checkin" in data["qr_codes"]
-        assert "feedback" in data["qr_codes"]
-        assert "staff_checkin" in data["qr_codes"]
-        assert data["print_ready"] is True
+        assert response.status_code == 401
 
 
 class TestAnalyticsFlow:
@@ -135,16 +134,16 @@ class TestAnalyticsFlow:
 class TestPhase5Integration:
     """Test Phase 5 - Local to Online integration."""
 
-    def test_qr_scan_workflow(self, api_client):
-        """QR scan → location check-in."""
-        # 1. Generate QR code
+    def test_qr_scan_workflow(self, api_client, vendor_account):
+        """QR scan → location check-in: a logged-in user still cannot use a location that is not theirs."""
         location_id = "00000000-0000-0000-0000-000000000001"
-        qr_response = api_client.get(f"/api/v1/locations/{location_id}/qr-codes")
-        assert qr_response.status_code == 200
+        headers = {"Authorization": f"Bearer {vendor_account['token']}"}
 
-        qr_data = qr_response.json()
-        assert qr_data["location_id"] == location_id
-        assert qr_data["print_ready"] is True
+        # No token: rejected before the location is even looked at.
+        assert api_client.get(f"/api/v1/locations/{location_id}/qr-codes").status_code == 401
+        # A valid login, but this location does not exist (and a vendor has none yet): 404, not a QR.
+        qr_response = api_client.get(f"/api/v1/locations/{location_id}/qr-codes", headers=headers)
+        assert qr_response.status_code == 404
 
     def test_offline_conversion_requires_auth(self, api_client):
         """Offline conversion endpoint requires auth."""
@@ -173,11 +172,12 @@ class TestIntegrationFlow:
         health = api_client.get("/api/ping").json()
         assert health["status"] == "ok"
 
-        # 3. QR generation works
-        qr = api_client.get(
-            "/api/v1/locations/00000000-0000-0000-0000-000000000001/qr-codes"
-        ).json()
-        assert "qr_codes" in qr
+        # 3. QR generation is reachable and protected: 401 without a token, 404 for a location that
+        #    does not exist once logged in (200 with the payloads for the business's own locations)
+        qr_url = "/api/v1/locations/00000000-0000-0000-0000-000000000001/qr-codes"
+        assert api_client.get(qr_url).status_code == 401
+        headers = {"Authorization": f"Bearer {vendor_account['token']}"}
+        assert api_client.get(qr_url, headers=headers).status_code == 404
 
         # 4. All components ready
         assert True, "Complete flow components verified"

@@ -131,18 +131,17 @@ test.describe('SellIA E2E Sales Funnel', () => {
       expect(data).toHaveProperty('access_token');
     });
 
-    test('qr generation endpoint works', async ({ page }) => {
+    test('qr generation endpoint requires a login', async ({ page }) => {
+      // QR codes are printed for a business's own location, so generating one takes an account that
+      // belongs to it. It used to answer 200 to anyone, for any location id, without looking it up.
+      // The authorised path (owner / member -> 200 with the payloads) is covered by
+      // backend/tests/test_location_checkin_qr_routers_db.py.
       const locationId = '00000000-0000-0000-0000-000000000001';
       const response = await page.request.get(
         `${API_URL}/api/v1/locations/${locationId}/qr-codes`
       );
 
-      expect(response.status()).toBe(200);
-
-      const data = await response.json();
-      expect(data.qr_codes).toBeDefined();
-      expect(data.qr_codes.visitor_checkin).toBeDefined();
-      expect(data.print_ready).toBe(true);
+      expect(response.status()).toBe(401);
     });
   });
 
