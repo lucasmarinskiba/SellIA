@@ -59,9 +59,13 @@ class ForecastingService:
             r.series_key: r
             for r in (
                 await self.db.execute(
-                    select(ForecastSeries).where(ForecastSeries.business_id == business_id)
+                    select(ForecastSeries).where(
+                        ForecastSeries.business_id == business_id
+                    )
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         }
         created = 0
         for spec in specs:
@@ -81,9 +85,15 @@ class ForecastingService:
             )
             created += 1
         await self.db.commit()
-        return {"discovered": len(specs), "created": created, "total": len(existing) + created}
+        return {
+            "discovered": len(specs),
+            "created": created,
+            "total": len(existing) + created,
+        }
 
-    async def list_series(self, business_id: uuid.UUID, active_only: bool = True) -> list[ForecastSeries]:
+    async def list_series(
+        self, business_id: uuid.UUID, active_only: bool = True
+    ) -> list[ForecastSeries]:
         q = select(ForecastSeries).where(ForecastSeries.business_id == business_id)
         if active_only:
             q = q.where(ForecastSeries.is_active.is_(True))
@@ -105,7 +115,10 @@ class ForecastingService:
             if persist:
                 series_row.last_run_at = _utcnow()
                 await self.db.commit()
-            return {"status": RunStatus.SKIPPED.value, "reason": "serie con datos insuficientes"}
+            return {
+                "status": RunStatus.SKIPPED.value,
+                "reason": "serie con datos insuficientes",
+            }
 
         try:
             out = ForecastPipeline(horizon=horizon, profile=self.profile).run(ts)
@@ -113,9 +126,13 @@ class ForecastingService:
             logger.exception("forecast pipeline failed for %s", spec.series_key)
             if persist:
                 run = ForecastRun(
-                    series_id=series_row.id, business_id=business_id,
-                    origin_date=ts.index[-1].date(), horizon=horizon,
-                    grain=spec.grain.value, status=RunStatus.FAILED.value, error=str(e)[:2000],
+                    series_id=series_row.id,
+                    business_id=business_id,
+                    origin_date=ts.index[-1].date(),
+                    horizon=horizon,
+                    grain=spec.grain.value,
+                    status=RunStatus.FAILED.value,
+                    error=str(e)[:2000],
                     n_history=ts.n,
                 )
                 self.db.add(run)
@@ -194,7 +211,11 @@ class ForecastingService:
 
     # ------------------------------------------------------------------
     async def run_all(
-        self, business_id: uuid.UUID, *, horizon: int = DEFAULT_HORIZON, reconcile: bool = True
+        self,
+        business_id: uuid.UUID,
+        *,
+        horizon: int = DEFAULT_HORIZON,
+        reconcile: bool = True,
     ) -> dict[str, Any]:
         await self.sync_series(business_id)
         rows = await self.list_series(business_id)
@@ -207,7 +228,11 @@ class ForecastingService:
             try:
                 res = await self.run_series(business_id, row, horizon=horizon)
             except Exception as e:  # noqa: BLE001
-                res = {"status": "failed", "error": str(e), "series_key": row.series_key}
+                res = {
+                    "status": "failed",
+                    "error": str(e),
+                    "series_key": row.series_key,
+                }
             results.append(res)
 
         recon_info = None
@@ -226,12 +251,18 @@ class ForecastingService:
     async def _reconcile_revenue_hierarchy(
         self, business_id: uuid.UUID, horizon: int
     ) -> dict | None:
-        total_row = await self._find_series(business_id, level="total", target="revenue")
-        channel_rows = await self._find_series_many(business_id, level="channel", target="revenue")
+        total_row = await self._find_series(
+            business_id, level="total", target="revenue"
+        )
+        channel_rows = await self._find_series_many(
+            business_id, level="channel", target="revenue"
+        )
         if not channel_rows:
             return None
 
-        total_run, total_path = await self._latest_path(total_row) if total_row else (None, None)
+        total_run, total_path = (
+            await self._latest_path(total_row) if total_row else (None, None)
+        )
         child = []
         child_wapes = []
         for cr in channel_rows:
@@ -239,14 +270,21 @@ class ForecastingService:
             if path is None:
                 continue
             child.append((cr, run, path))
-            child_wapes.append(float(cr.last_wape) if cr.last_wape is not None else np.nan)
+            child_wapes.append(
+                float(cr.last_wape) if cr.last_wape is not None else np.nan
+            )
         if not child:
             return None
 
         paths = [c[2] for c in child]
         new_total, new_children = R.reconcile(
-            total_path, paths,
-            total_wape=float(total_row.last_wape) if total_row and total_row.last_wape else None,
+            total_path,
+            paths,
+            total_wape=(
+                float(total_row.last_wape)
+                if total_row and total_row.last_wape
+                else None
+            ),
             child_wapes=child_wapes,
         )
 
@@ -261,7 +299,9 @@ class ForecastingService:
         await self.db.commit()
         return {
             "channels": len(child),
-            "total_before": float(np.sum(total_path)) if total_path is not None else None,
+            "total_before": (
+                float(np.sum(total_path)) if total_path is not None else None
+            ),
             "total_after": float(np.sum(new_total)),
         }
 
@@ -269,11 +309,16 @@ class ForecastingService:
         if run is None:
             return
         pts = (
-            await self.db.execute(
-                select(ForecastPoint).where(ForecastPoint.run_id == run.id)
-                .order_by(ForecastPoint.horizon_step)
+            (
+                await self.db.execute(
+                    select(ForecastPoint)
+                    .where(ForecastPoint.run_id == run.id)
+                    .order_by(ForecastPoint.horizon_step)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for p, v in zip(pts, path):
             old = float(p.yhat) or 1.0
             scale = float(v) / old if old else 1.0
@@ -289,7 +334,9 @@ class ForecastingService:
         rows = await self._find_series_many(business_id, level, target)
         return rows[0] if rows else None
 
-    async def _find_series_many(self, business_id, level, target) -> list[ForecastSeries]:
+    async def _find_series_many(
+        self, business_id, level, target
+    ) -> list[ForecastSeries]:
         return list(
             (
                 await self.db.execute(
@@ -300,7 +347,9 @@ class ForecastingService:
                         ForecastSeries.is_active.is_(True),
                     )
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
 
     async def _latest_run(self, series_row: ForecastSeries) -> ForecastRun | None:
@@ -309,22 +358,32 @@ class ForecastingService:
         return (
             await self.db.execute(
                 select(ForecastRun)
-                .where(ForecastRun.series_id == series_row.id, ForecastRun.status == RunStatus.OK.value)
+                .where(
+                    ForecastRun.series_id == series_row.id,
+                    ForecastRun.status == RunStatus.OK.value,
+                )
                 .order_by(ForecastRun.run_at.desc())
                 .limit(1)
             )
         ).scalar_one_or_none()
 
-    async def _latest_path(self, series_row) -> tuple[ForecastRun | None, np.ndarray | None]:
+    async def _latest_path(
+        self, series_row
+    ) -> tuple[ForecastRun | None, np.ndarray | None]:
         run = await self._latest_run(series_row)
         if not run:
             return None, None
         pts = (
-            await self.db.execute(
-                select(ForecastPoint).where(ForecastPoint.run_id == run.id)
-                .order_by(ForecastPoint.horizon_step)
+            (
+                await self.db.execute(
+                    select(ForecastPoint)
+                    .where(ForecastPoint.run_id == run.id)
+                    .order_by(ForecastPoint.horizon_step)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if not pts:
             return run, None
         return run, np.array([float(p.yhat) for p in pts])
@@ -347,11 +406,16 @@ class ForecastingService:
         if not run:
             return {"series_key": series_key, "status": "no_forecast"}
         pts = (
-            await self.db.execute(
-                select(ForecastPoint).where(ForecastPoint.run_id == run.id)
-                .order_by(ForecastPoint.horizon_step)
+            (
+                await self.db.execute(
+                    select(ForecastPoint)
+                    .where(ForecastPoint.run_id == run.id)
+                    .order_by(ForecastPoint.horizon_step)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         if horizon:
             pts = pts[:horizon]
         return {
@@ -378,60 +442,91 @@ class ForecastingService:
         }
 
     # ------------------------------------------------------------------
-    async def evaluate_accuracy(self, business_id: uuid.UUID, lookback_days: int = 45) -> dict[str, Any]:
+    async def evaluate_accuracy(
+        self, business_id: uuid.UUID, lookback_days: int = 45
+    ) -> dict[str, Any]:
         rows = await self.list_series(business_id)
         cutoff = date.today() - timedelta(days=1)
         written = 0
         for row in rows:
             run = (
                 await self.db.execute(
-                    select(ForecastRun).where(
+                    select(ForecastRun)
+                    .where(
                         ForecastRun.series_id == row.id,
                         ForecastRun.status == RunStatus.OK.value,
                         ForecastRun.origin_date <= cutoff - timedelta(days=7),
-                        ForecastRun.origin_date >= cutoff - timedelta(days=lookback_days),
-                    ).order_by(ForecastRun.run_at.desc()).limit(1)
+                        ForecastRun.origin_date
+                        >= cutoff - timedelta(days=lookback_days),
+                    )
+                    .order_by(ForecastRun.run_at.desc())
+                    .limit(1)
                 )
             ).scalar_one_or_none()
             if not run:
                 continue
             pts = (
-                await self.db.execute(
-                    select(ForecastPoint).where(
-                        ForecastPoint.run_id == run.id,
-                        ForecastPoint.target_date <= cutoff,
-                    ).order_by(ForecastPoint.horizon_step)
+                (
+                    await self.db.execute(
+                        select(ForecastPoint)
+                        .where(
+                            ForecastPoint.run_id == run.id,
+                            ForecastPoint.target_date <= cutoff,
+                        )
+                        .order_by(ForecastPoint.horizon_step)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             if len(pts) < 4:
                 continue
 
             spec = _spec_from_row(row)
-            ts = await self.loader.load(spec, lookback_days=lookback_days + 30, end=_utcnow())
+            ts = await self.loader.load(
+                spec, lookback_days=lookback_days + 30, end=_utcnow()
+            )
             if ts is None:
                 continue
             actual_by_date = {d.date(): float(v) for d, v in zip(ts.index, ts.values)}
             train_tail = ts.values
 
             for label, lo, hi in _HBUCKETS:
-                bucket = [p for p in pts if lo <= p.horizon_step <= hi and p.target_date in actual_by_date]
+                bucket = [
+                    p
+                    for p in pts
+                    if lo <= p.horizon_step <= hi and p.target_date in actual_by_date
+                ]
                 if len(bucket) < 3:
                     continue
                 yt = np.array([actual_by_date[p.target_date] for p in bucket])
                 yp = np.array([float(p.yhat) for p in bucket])
                 q = {
-                    0.1: np.array([float(p.q10) if p.q10 is not None else np.nan for p in bucket]),
-                    0.9: np.array([float(p.q90) if p.q90 is not None else np.nan for p in bucket]),
+                    0.1: np.array(
+                        [float(p.q10) if p.q10 is not None else np.nan for p in bucket]
+                    ),
+                    0.9: np.array(
+                        [float(p.q90) if p.q90 is not None else np.nan for p in bucket]
+                    ),
                 }
-                mt = M.all_metrics(yt, yp, train_tail, season=ts.seasonal_period, quantile_preds=q)
+                mt = M.all_metrics(
+                    yt, yp, train_tail, season=ts.seasonal_period, quantile_preds=q
+                )
                 self.db.add(
                     ForecastAccuracy(
-                        series_id=row.id, business_id=business_id, run_id=run.id,
+                        series_id=row.id,
+                        business_id=business_id,
+                        run_id=run.id,
                         window_start=min(p.target_date for p in bucket),
                         window_end=max(p.target_date for p in bucket),
-                        horizon_bucket=label, n=len(bucket),
-                        wape=_num(mt["wape"]), mape=_num(mt["mape"]), mase=_num(mt["mase"]),
-                        bias=_num(mt["bias"]), rmse=_num(mt["rmse"]), coverage=_num(mt["coverage"]),
+                        horizon_bucket=label,
+                        n=len(bucket),
+                        wape=_num(mt["wape"]),
+                        mape=_num(mt["mape"]),
+                        mase=_num(mt["mase"]),
+                        bias=_num(mt["bias"]),
+                        rmse=_num(mt["rmse"]),
+                        coverage=_num(mt["coverage"]),
                     )
                 )
                 written += 1
@@ -447,11 +542,17 @@ class ForecastingService:
         next30 = None
         if total_run:
             pts = (
-                await self.db.execute(
-                    select(ForecastPoint).where(ForecastPoint.run_id == total_run.id)
-                    .order_by(ForecastPoint.horizon_step).limit(30)
+                (
+                    await self.db.execute(
+                        select(ForecastPoint)
+                        .where(ForecastPoint.run_id == total_run.id)
+                        .order_by(ForecastPoint.horizon_step)
+                        .limit(30)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             next30 = {
                 "sum_mean": float(sum(float(p.yhat) for p in pts)),
                 "sum_q10": float(sum(float(p.q10 or 0) for p in pts)),
@@ -459,13 +560,17 @@ class ForecastingService:
             }
 
         acc = (
-            await self.db.execute(
-                select(ForecastAccuracy)
-                .where(ForecastAccuracy.business_id == business_id)
-                .order_by(ForecastAccuracy.evaluated_at.desc())
-                .limit(50)
+            (
+                await self.db.execute(
+                    select(ForecastAccuracy)
+                    .where(ForecastAccuracy.business_id == business_id)
+                    .order_by(ForecastAccuracy.evaluated_at.desc())
+                    .limit(50)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return {
             "business_id": str(business_id),
@@ -479,8 +584,12 @@ class ForecastingService:
                     "target": r.target,
                     "intermittent": r.intermittent,
                     "last_run_at": r.last_run_at.isoformat() if r.last_run_at else None,
-                    "backtest_wape": float(r.last_wape) if r.last_wape is not None else None,
-                    "backtest_mase": float(r.last_mase) if r.last_mase is not None else None,
+                    "backtest_wape": (
+                        float(r.last_wape) if r.last_wape is not None else None
+                    ),
+                    "backtest_mase": (
+                        float(r.last_mase) if r.last_mase is not None else None
+                    ),
                 }
                 for r in rows
             ],

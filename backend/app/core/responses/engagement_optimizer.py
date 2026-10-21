@@ -12,7 +12,10 @@ class EngagementOptimizer:
     """Optimizes engagement metrics."""
 
     HOOK_TEMPLATES: ClassVar[dict] = {
-        "question": ["Wait, you're asking the real questions", "This deserves a proper answer"],
+        "question": [
+            "Wait, you're asking the real questions",
+            "This deserves a proper answer",
+        ],
         "observation": ["Plot twist:", "Here's the thing:", "This is so true because"],
         "challenge": ["Challenge accepted!", "Let's break this down"],
         "story": ["There's actually a story here:", "Funny you mention this"],
@@ -29,7 +32,9 @@ class EngagementOptimizer:
     @staticmethod
     def craft_hook(comment_text: str, intent: str) -> dict[str, Any]:
         """Craft attention-grabbing opening."""
-        hook_options = EngagementOptimizer.HOOK_TEMPLATES.get(intent, ["Interesting take"])
+        hook_options = EngagementOptimizer.HOOK_TEMPLATES.get(
+            intent, ["Interesting take"]
+        )
         hook = hook_options[0]  # Simplified
 
         return {
@@ -82,7 +87,11 @@ class EngagementOptimizer:
             ("criticism", "any"): "100-150 words",
         }
 
-        key = (intent, audience_type) if (intent, audience_type) in lengths else (intent, "any")
+        key = (
+            (intent, audience_type)
+            if (intent, audience_type) in lengths
+            else (intent, "any")
+        )
         length = lengths.get(key, "100-150 words")
 
         return {

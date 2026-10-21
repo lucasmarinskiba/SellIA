@@ -234,13 +234,15 @@ async def get_revenue_forecast(
 
         for i in range(months):
             month = datetime.now() + timedelta(days=30 * i)
-            projected = base_revenue * (1.12 ** i)  # 12% MoM growth
+            projected = base_revenue * (1.12**i)  # 12% MoM growth
 
-            forecast.append({
-                "month": month.strftime("%B %Y"),
-                "projected_revenue": projected,
-                "confidence": 0.85 - (0.05 * i),  # Decreases farther out
-            })
+            forecast.append(
+                {
+                    "month": month.strftime("%B %Y"),
+                    "projected_revenue": projected,
+                    "confidence": 0.85 - (0.05 * i),  # Decreases farther out
+                }
+            )
 
         return {
             "status": "success",

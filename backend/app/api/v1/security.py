@@ -55,14 +55,21 @@ router = APIRouter()
 
 # ===== Webhooks =====
 
-@router.post("/webhooks", response_model=SecurityWebhookResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/webhooks",
+    response_model=SecurityWebhookResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_webhook(
     data: SecurityWebhookCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     webhook = SecurityWebhook(**data.model_dump())
     db.add(webhook)
@@ -77,7 +84,9 @@ async def list_webhooks(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     result = await db.execute(select(SecurityWebhook))
     return result.scalars().all()
@@ -90,9 +99,13 @@ async def delete_webhook(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
-    result = await db.execute(select(SecurityWebhook).where(SecurityWebhook.id == webhook_id))
+    result = await db.execute(
+        select(SecurityWebhook).where(SecurityWebhook.id == webhook_id)
+    )
     webhook = result.scalar_one_or_none()
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook no encontrado")
@@ -104,13 +117,16 @@ async def delete_webhook(
 
 # ===== Configuración global =====
 
+
 @router.get("/config", response_model=SecurityConfigResponse)
 async def get_security_config(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     result = await db.execute(select(SecurityConfig))
     config = result.scalar_one_or_none()
@@ -129,7 +145,9 @@ async def update_security_config(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     result = await db.execute(select(SecurityConfig))
     config = result.scalar_one_or_none()
@@ -147,6 +165,7 @@ async def update_security_config(
 
 # ===== Login logs (propios) =====
 
+
 @router.get("/login-logs", response_model=list[LoginLogResponse])
 async def get_my_login_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -161,6 +180,7 @@ async def get_my_login_logs(
 
 
 # ===== Push Notifications =====
+
 
 @router.get("/push/vapid-public-key")
 async def get_vapid_key():
@@ -256,11 +276,13 @@ async def test_push(
     except Exception:
         logger.exception("test_push: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error sending push notification")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ===== Sesiones activas =====
+
 
 @router.get("/sessions", response_model=list[UserSessionResponse])
 async def get_my_sessions(
@@ -382,6 +404,7 @@ async def revoke_all_sessions(
 
 # ===== Admin Audit Logs =====
 
+
 @router.get("/audit-logs", response_model=list[AuditLogResponse])
 async def get_audit_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -397,7 +420,9 @@ async def get_audit_logs(
 ):
     """Panel de auditoría: ver todos los logs de todos los usuarios (solo admin)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     query = select(UserLoginLog, User.email).join(User, UserLoginLog.user_id == User.id)
 
@@ -423,17 +448,19 @@ async def get_audit_logs(
 
     logs = []
     for log, email in rows:
-        logs.append({
-            "id": log.id,
-            "user_id": log.user_id,
-            "user_email": email,
-            "ip_address": log.ip_address,
-            "user_agent": log.user_agent,
-            "country": log.country,
-            "city": log.city,
-            "success": log.success,
-            "created_at": log.created_at,
-        })
+        logs.append(
+            {
+                "id": log.id,
+                "user_id": log.user_id,
+                "user_email": email,
+                "ip_address": log.ip_address,
+                "user_agent": log.user_agent,
+                "country": log.country,
+                "city": log.city,
+                "success": log.success,
+                "created_at": log.created_at,
+            }
+        )
 
     return logs
 
@@ -445,7 +472,9 @@ async def get_security_stats(
 ):
     """Estadísticas de seguridad del día (solo admin)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -499,6 +528,7 @@ async def get_security_stats(
 
 # ===== Have I Been Pwned Check (admin) =====
 
+
 @router.post("/check-breach/{user_id}", response_model=BreachCheckResponse)
 async def check_user_breach(
     user_id: UUID,
@@ -507,7 +537,9 @@ async def check_user_breach(
 ):
     """Verifica si el email de un usuario aparece en HIBP (solo admin)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -543,6 +575,7 @@ async def check_user_breach(
 
 # ===== Security Metrics Dashboard =====
 
+
 @router.get("/metrics")
 async def get_security_metrics(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -550,7 +583,9 @@ async def get_security_metrics(
 ):
     """Dashboard metrics: logins, countries, devices, timeline (admin only)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     since = datetime.now(UTC) - timedelta(hours=24)
 
@@ -608,7 +643,11 @@ async def get_security_metrics(
         .order_by(hour_trunc)
     )
     login_timeline = [
-        {"hour": h.isoformat() if h else None, "logins": int(t or 0), "failed": int(f or 0)}
+        {
+            "hour": h.isoformat() if h else None,
+            "logins": int(t or 0),
+            "failed": int(f or 0),
+        }
         for h, t, f in timeline_result.all()
     ]
 
@@ -655,7 +694,9 @@ async def get_audit_report(
 ):
     """Reporte de auditoría de seguridad de los últimos 7 días (solo admin)."""
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
 
     now = datetime.now(UTC)
     week_ago = now - timedelta(days=7)
@@ -673,10 +714,14 @@ async def get_audit_report(
         select(func.count(DataAccessLog.id)).where(DataAccessLog.created_at >= week_ago)
     )
     rotations = await db.scalar(
-        select(func.count(SecretRotationLog.id)).where(SecretRotationLog.created_at >= week_ago)
+        select(func.count(SecretRotationLog.id)).where(
+            SecretRotationLog.created_at >= week_ago
+        )
     )
     cleanups = await db.scalar(
-        select(func.count(DataRetentionLog.id)).where(DataRetentionLog.started_at >= week_ago)
+        select(func.count(DataRetentionLog.id)).where(
+            DataRetentionLog.started_at >= week_ago
+        )
     )
     records_deleted = await db.scalar(
         select(func.coalesce(func.sum(DataRetentionLog.records_deleted), 0)).where(
@@ -694,7 +739,9 @@ async def get_audit_report(
         "period": f"{week_ago.date()} to {now.date()}",
         "total_logins_7d": total_logins or 0,
         "failed_logins_7d": failed_logins or 0,
-        "failed_rate_pct": round((failed_logins / total_logins * 100), 2) if total_logins else 0.0,
+        "failed_rate_pct": (
+            round((failed_logins / total_logins * 100), 2) if total_logins else 0.0
+        ),
         "data_access_logs_7d": data_access_count or 0,
         "secret_rotations_7d": rotations or 0,
         "data_retention_cleanups_7d": cleanups or 0,

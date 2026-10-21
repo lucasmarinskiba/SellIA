@@ -79,9 +79,13 @@ class DiscoveryQuestionsEngine:
 
     def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
-    def generate_questions(self, prospect: dict, deal_stage: str) -> list[DiscoveryQuestion]:
+    def generate_questions(
+        self, prospect: dict, deal_stage: str
+    ) -> list[DiscoveryQuestion]:
         """Generate discovery questions for prospect."""
 
         stage_to_hierarchy = {
@@ -128,7 +132,7 @@ class DiscoveryQuestionsEngine:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=800,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             questions_json = json.loads(message.content[0].text)
@@ -153,7 +157,9 @@ class DiscoveryQuestionsEngine:
                 for q in base_questions
             ]
 
-    def record_response(self, deal_id: str, question: str, response: str) -> DiscoveryResponse:
+    def record_response(
+        self, deal_id: str, question: str, response: str
+    ) -> DiscoveryResponse:
         """Record discovery response and analyze."""
 
         # Extract pain points, needs, urgency
@@ -177,7 +183,15 @@ class DiscoveryQuestionsEngine:
     def _analyze_response(self, response: str) -> dict[str, Any]:
         """Analyze response for pain points, needs, urgency."""
 
-        pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain", "problem"]
+        pain_keywords = [
+            "losing",
+            "wasting",
+            "frustrated",
+            "struggling",
+            "broken",
+            "pain",
+            "problem",
+        ]
         pain_points = []
         for keyword in pain_keywords:
             if keyword in response.lower():
@@ -220,9 +234,13 @@ class NeedCreationEngine:
 
     def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
-    def create_need_narrative(self, deal_id: str, discovery_responses: list[str]) -> NeedNarrativeResult:
+    def create_need_narrative(
+        self, deal_id: str, discovery_responses: list[str]
+    ) -> NeedNarrativeResult:
         """Build narrative that creates urgency and need."""
 
         # Extract pain points
@@ -256,7 +274,14 @@ class NeedCreationEngine:
     def _extract_pain_points(self, responses: list[str]) -> list[str]:
         """Extract pain points from discovery responses."""
 
-        pain_keywords = ["losing", "wasting", "frustrated", "struggling", "broken", "pain"]
+        pain_keywords = [
+            "losing",
+            "wasting",
+            "frustrated",
+            "struggling",
+            "broken",
+            "pain",
+        ]
         pain_points = []
 
         for response in responses:
@@ -273,7 +298,7 @@ class NeedCreationEngine:
 
         total_impact = 0
         for pain in pain_points:
-            matches = re.findall(r'\$?([\d,]+)', pain)
+            matches = re.findall(r"\$?([\d,]+)", pain)
             for match in matches:
                 try:
                     amount = float(match.replace(",", ""))
@@ -308,7 +333,7 @@ class NeedCreationEngine:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=800,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
             return message.content[0].text
         except Exception:
@@ -344,41 +369,49 @@ class UrgencyTriggerEngine:
 
         # 1. Supply scarcity (real capacity limits)
         if deal.get("stage") in ["proposal", "negotiation"]:
-            triggers.append({
-                "type": "supply_scarcity",
-                "trigger": "We're at capacity. Next cohort is April.",
-                "why_true": "Limited onboarding team",
-                "deadline": "End of quarter",
-                "messaging": "Our onboarding team can only take 3 new clients this quarter. After that, we're full until April.",
-            })
+            triggers.append(
+                {
+                    "type": "supply_scarcity",
+                    "trigger": "We're at capacity. Next cohort is April.",
+                    "why_true": "Limited onboarding team",
+                    "deadline": "End of quarter",
+                    "messaging": "Our onboarding team can only take 3 new clients this quarter. After that, we're full until April.",
+                }
+            )
 
         # 2. Price increase (scheduled & real)
-        triggers.append({
-            "type": "price_increase",
-            "trigger": "Pricing increases March 1st",
-            "why_true": "We're raising prices on new customers",
-            "deadline": "Feb 28",
-            "messaging": "We just increased pricing. Current pricing locks in until Feb 28.",
-        })
+        triggers.append(
+            {
+                "type": "price_increase",
+                "trigger": "Pricing increases March 1st",
+                "why_true": "We're raising prices on new customers",
+                "deadline": "Feb 28",
+                "messaging": "We just increased pricing. Current pricing locks in until Feb 28.",
+            }
+        )
 
         # 3. Social proof (actual wins in their space)
         if deal.get("industry"):
-            triggers.append({
-                "type": "social_proof",
-                "trigger": f"We just signed 2 other {deal['industry']} companies",
-                "why_true": "Recent wins in their category",
-                "deadline": "Now",
-                "messaging": "Your competitors are already using this. You'd be the first to [specific advantage].",
-            })
+            triggers.append(
+                {
+                    "type": "social_proof",
+                    "trigger": f"We just signed 2 other {deal['industry']} companies",
+                    "why_true": "Recent wins in their category",
+                    "deadline": "Now",
+                    "messaging": "Your competitors are already using this. You'd be the first to [specific advantage].",
+                }
+            )
 
         # 4. Competitive threat (intelligence-based)
-        triggers.append({
-            "type": "competitive",
-            "trigger": "Your competitors are 6 months ahead",
-            "why_true": "Market intel",
-            "deadline": "Before gap widens",
-            "messaging": "The way sales works is changing. If your team doesn't adapt now, they'll be at a disadvantage.",
-        })
+        triggers.append(
+            {
+                "type": "competitive",
+                "trigger": "Your competitors are 6 months ahead",
+                "why_true": "Market intel",
+                "deadline": "Before gap widens",
+                "messaging": "The way sales works is changing. If your team doesn't adapt now, they'll be at a disadvantage.",
+            }
+        )
 
         return triggers
 
@@ -400,7 +433,9 @@ class PsychologyObjectionHandler:
 
     def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
     OBJECTION_FRAMEWORKS: ClassVar[dict] = {
         "price": {
@@ -429,7 +464,9 @@ class PsychologyObjectionHandler:
         """Generate psychology-based objection response."""
 
         objection_type = self._classify_objection(objection)
-        framework = self.OBJECTION_FRAMEWORKS.get(objection_type, self.OBJECTION_FRAMEWORKS["need"])
+        framework = self.OBJECTION_FRAMEWORKS.get(
+            objection_type, self.OBJECTION_FRAMEWORKS["need"]
+        )
 
         if not self.claude:
             return f"{framework['validate']} {framework['question']}"
@@ -453,7 +490,7 @@ class PsychologyObjectionHandler:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=300,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
             return message.content[0].text
         except Exception:
@@ -465,13 +502,29 @@ class PsychologyObjectionHandler:
 
         objection_lower = objection.lower()
 
-        if "price" in objection_lower or "cost" in objection_lower or "expensive" in objection_lower:
+        if (
+            "price" in objection_lower
+            or "cost" in objection_lower
+            or "expensive" in objection_lower
+        ):
             return "price"
-        elif "time" in objection_lower or "busy" in objection_lower or "implement" in objection_lower:
+        elif (
+            "time" in objection_lower
+            or "busy" in objection_lower
+            or "implement" in objection_lower
+        ):
             return "time"
-        elif "need" in objection_lower or "don't" in objection_lower or "not sure" in objection_lower:
+        elif (
+            "need" in objection_lower
+            or "don't" in objection_lower
+            or "not sure" in objection_lower
+        ):
             return "need"
-        elif "boss" in objection_lower or "team" in objection_lower or "approval" in objection_lower:
+        elif (
+            "boss" in objection_lower
+            or "team" in objection_lower
+            or "approval" in objection_lower
+        ):
             return "authority"
 
         return "need"
@@ -559,10 +612,16 @@ def create_need_narrative_async(self, deal_id: str, responses: list[str]):
 
         result = engine.create_need_narrative(deal_id, responses)
 
-        logger.info(f"Need narrative created for deal {deal_id}: ${result.financial_impact:,.0f} impact")
+        logger.info(
+            f"Need narrative created for deal {deal_id}: ${result.financial_impact:,.0f} impact"
+        )
         db.close()
 
-        return {"status": "complete", "deal_id": deal_id, "impact": result.financial_impact}
+        return {
+            "status": "complete",
+            "deal_id": deal_id,
+            "impact": result.financial_impact,
+        }
 
     except Exception as exc:
         logger.exception("Error creating narrative")

@@ -201,7 +201,9 @@ class StrategyExpansionEngine:
         """
         recommendations = {
             "startup": {
-                "blue_ocean": self.blue_ocean.get_by_difficulty(5.0),  # Simpler elimination
+                "blue_ocean": self.blue_ocean.get_by_difficulty(
+                    5.0
+                ),  # Simpler elimination
                 "sales": self.sales.get_quick_learning(),  # Quick ramp
                 "pricing": self.pricing.get_easy_to_implement(),  # Simple pricing
                 "acquisition": self.acquisition.get_lowest_cac_methods(),  # Low CAC
@@ -238,7 +240,9 @@ class StrategyExpansionEngine:
         """
         recommendations = {
             "small": {
-                "blue_ocean": self.blue_ocean.get_by_replicability(6.0),  # Easier replicate
+                "blue_ocean": self.blue_ocean.get_by_replicability(
+                    6.0
+                ),  # Easier replicate
                 "sales": self.sales.get_quick_learning(),  # Low training cost
                 "pricing": self.pricing.get_easy_to_implement(),  # Low implementation
                 "acquisition": self.acquisition.get_lowest_cac_methods(),  # Organic focus

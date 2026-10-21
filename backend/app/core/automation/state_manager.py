@@ -25,8 +25,12 @@ class StateManager:
 
     def __init__(self):
         self.jobs: dict[str, Any] = {}  # job_id → Job
-        self.job_status_index: dict[str, list[str]] = defaultdict(list)  # status → [job_id, ...]
-        self.job_type_index: dict[str, list[str]] = defaultdict(list)  # job_type → [job_id, ...]
+        self.job_status_index: dict[str, list[str]] = defaultdict(
+            list
+        )  # status → [job_id, ...]
+        self.job_type_index: dict[str, list[str]] = defaultdict(
+            list
+        )  # job_type → [job_id, ...]
         self.lock = asyncio.Lock()
 
     async def create(self, job: Any) -> None:
@@ -55,9 +59,7 @@ class StateManager:
                     self.job_status_index[old_status].remove(job_id)
                 self.job_status_index[job.status.value].append(job_id)
 
-            logger.debug(
-                f"Job updated: {job_id} {old_status} → {job.status.value}"
-            )
+            logger.debug(f"Job updated: {job_id} {old_status} → {job.status.value}")
 
     async def get(self, job_id: str) -> Any | None:
         """Obtiene un job."""
@@ -67,20 +69,22 @@ class StateManager:
     async def count_by_status(self, status: Any) -> int:
         """Cuenta jobs por status."""
         async with self.lock:
-            status_value = status.value if hasattr(status, 'value') else str(status)
+            status_value = status.value if hasattr(status, "value") else str(status)
             return len(self.job_status_index.get(status_value, []))
 
     async def get_by_status(self, status: Any, limit: int = 100) -> list[Any]:
         """Obtiene jobs por status."""
         async with self.lock:
-            status_value = status.value if hasattr(status, 'value') else str(status)
+            status_value = status.value if hasattr(status, "value") else str(status)
             job_ids = self.job_status_index.get(status_value, [])[-limit:]
             return [self.jobs[jid] for jid in job_ids if jid in self.jobs]
 
     async def get_by_type(self, job_type: Any, limit: int = 100) -> list[Any]:
         """Obtiene jobs por type."""
         async with self.lock:
-            job_type_value = job_type.value if hasattr(job_type, 'value') else str(job_type)
+            job_type_value = (
+                job_type.value if hasattr(job_type, "value") else str(job_type)
+            )
             job_ids = self.job_type_index.get(job_type_value, [])[-limit:]
             return [self.jobs[jid] for jid in job_ids if jid in self.jobs]
 
@@ -88,10 +92,7 @@ class StateManager:
         """Obtiene jobs recientes."""
         async with self.lock:
             cutoff = utc_now() - timedelta(hours=hours)
-            recent = [
-                job for job in self.jobs.values()
-                if job.created_at >= cutoff
-            ]
+            recent = [job for job in self.jobs.values() if job.created_at >= cutoff]
             return sorted(
                 recent,
                 key=lambda j: j.created_at,
@@ -112,7 +113,9 @@ class StateManager:
                 "status": job.status.value,
                 "created_at": job.created_at.isoformat(),
                 "started_at": job.started_at.isoformat() if job.started_at else None,
-                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                "completed_at": (
+                    job.completed_at.isoformat() if job.completed_at else None
+                ),
                 "duration_seconds": job.duration_seconds,
                 "attempts": job.attempts,
                 "max_retries": job.max_retries,
@@ -126,8 +129,7 @@ class StateManager:
         async with self.lock:
             cutoff = utc_now() - timedelta(hours=hours)
             recent_jobs = [
-                job for job in self.jobs.values()
-                if job.created_at >= cutoff
+                job for job in self.jobs.values() if job.created_at >= cutoff
             ]
 
             if not recent_jobs:
@@ -158,7 +160,8 @@ class StateManager:
             completed_jobs = [j for j in recent_jobs if j.completed_at]
             avg_duration = (
                 sum(j.duration_seconds for j in completed_jobs) / len(completed_jobs)
-                if completed_jobs else 0.0
+                if completed_jobs
+                else 0.0
             )
 
             return {
@@ -187,7 +190,10 @@ class StateManager:
             # Keep only recent jobs + pending jobs
             new_jobs = {}
             for job_id, job in self.jobs.items():
-                if job.created_at >= cutoff or job.status.value in ["pending", "running"]:
+                if job.created_at >= cutoff or job.status.value in [
+                    "pending",
+                    "running",
+                ]:
                     new_jobs[job_id] = job
                 else:
                     # Remove from indexes
@@ -250,7 +256,9 @@ class JobRecovery:
         """Retorna jobs que requieren atención humana."""
         from automation_engine import JobStatus
 
-        escalated = await self.state_manager.get_by_status(JobStatus.ESCALATED, limit=50)
+        escalated = await self.state_manager.get_by_status(
+            JobStatus.ESCALATED, limit=50
+        )
         failed = await self.state_manager.get_by_status(JobStatus.FAILED, limit=50)
 
         return {

@@ -23,9 +23,13 @@ from app.domains.automations.models import (
 )
 
 
-async def get_or_create_workflow(db: AsyncSession, business_id: uuid.UUID, name: str, **defaults) -> Workflow:
+async def get_or_create_workflow(
+    db: AsyncSession, business_id: uuid.UUID, name: str, **defaults
+) -> Workflow:
     result = await db.execute(
-        select(Workflow).where(Workflow.business_id == business_id, Workflow.name == name)
+        select(Workflow).where(
+            Workflow.business_id == business_id, Workflow.name == name
+        )
     )
     wf = result.scalar_one_or_none()
     if not wf:
@@ -35,9 +39,13 @@ async def get_or_create_workflow(db: AsyncSession, business_id: uuid.UUID, name:
     return wf
 
 
-async def get_or_create_template(db: AsyncSession, business_id: uuid.UUID, name: str, **defaults) -> EmailTemplate:
+async def get_or_create_template(
+    db: AsyncSession, business_id: uuid.UUID, name: str, **defaults
+) -> EmailTemplate:
     result = await db.execute(
-        select(EmailTemplate).where(EmailTemplate.business_id == business_id, EmailTemplate.name == name)
+        select(EmailTemplate).where(
+            EmailTemplate.business_id == business_id, EmailTemplate.name == name
+        )
     )
     tpl = result.scalar_one_or_none()
     if not tpl:
@@ -47,9 +55,13 @@ async def get_or_create_template(db: AsyncSession, business_id: uuid.UUID, name:
     return tpl
 
 
-async def get_or_create_sequence(db: AsyncSession, business_id: uuid.UUID, name: str, **defaults) -> EmailSequence:
+async def get_or_create_sequence(
+    db: AsyncSession, business_id: uuid.UUID, name: str, **defaults
+) -> EmailSequence:
     result = await db.execute(
-        select(EmailSequence).where(EmailSequence.business_id == business_id, EmailSequence.name == name)
+        select(EmailSequence).where(
+            EmailSequence.business_id == business_id, EmailSequence.name == name
+        )
     )
     seq = result.scalar_one_or_none()
     if not seq:
@@ -59,9 +71,13 @@ async def get_or_create_sequence(db: AsyncSession, business_id: uuid.UUID, name:
     return seq
 
 
-async def get_or_create_chatbot_rule(db: AsyncSession, business_id: uuid.UUID, name: str, **defaults) -> ChatbotRule:
+async def get_or_create_chatbot_rule(
+    db: AsyncSession, business_id: uuid.UUID, name: str, **defaults
+) -> ChatbotRule:
     result = await db.execute(
-        select(ChatbotRule).where(ChatbotRule.business_id == business_id, ChatbotRule.name == name)
+        select(ChatbotRule).where(
+            ChatbotRule.business_id == business_id, ChatbotRule.name == name
+        )
     )
     rule = result.scalar_one_or_none()
     if not rule:
@@ -83,8 +99,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.NEW_MESSAGE,
             "trigger_config": {"channel": "amazon"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "amazon-master", "message": "Respond to an Amazon buyer message professionally and concisely. Address their question directly. If pre-sale, qualify gently. If post-sale, resolve or escalate. Keep under 150 words."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "amazon_buyer_msg"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "amazon-master",
+                        "message": "Respond to an Amazon buyer message professionally and concisely. Address their question directly. If pre-sale, qualify gently. If post-sale, resolve or escalate. Keep under 150 words.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "amazon_buyer_msg"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -95,8 +120,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_config": {"tag": "amazon_delivered"},
             "actions": [
                 {"type": WorkflowActionType.WAIT, "config": {"days": 7}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "post-venta", "message": "Send a polite Amazon review request. Thank the buyer. Ask for honest feedback. Do NOT ask for positive reviews or offer incentives. Comply with Amazon TOS."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "amazon_review_requested"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "post-venta",
+                        "message": "Send a polite Amazon review request. Thank the buyer. Ask for honest feedback. Do NOT ask for positive reviews or offer incentives. Comply with Amazon TOS.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "amazon_review_requested"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -104,10 +138,25 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "name": "📦 Amazon: Alerta de Buy Box Lost",
             "description": "Notifica cuando el Buy Box percentage baja de 90% y sugiere acciones.",
             "trigger_type": WorkflowTriggerType.LEAD_SCORE_CHANGED,
-            "trigger_config": {"metric": "buy_box_pct", "threshold": 90, "operator": "less_than"},
+            "trigger_config": {
+                "metric": "buy_box_pct",
+                "threshold": 90,
+                "operator": "less_than",
+            },
             "actions": [
-                {"type": WorkflowActionType.SEND_NOTIFICATION, "config": {"message": "ALERTA: Buy Box % bajó de 90% para un ASIN. Revisar precio, stock, y métricas de seller."}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "amazon-master", "message": "Analyze why Buy Box was lost. Check competitor pricing, stock levels, seller metrics, and FBA status. Provide 3 actionable steps to regain Buy Box."}},
+                {
+                    "type": WorkflowActionType.SEND_NOTIFICATION,
+                    "config": {
+                        "message": "ALERTA: Buy Box % bajó de 90% para un ASIN. Revisar precio, stock, y métricas de seller."
+                    },
+                },
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "amazon-master",
+                        "message": "Analyze why Buy Box was lost. Check competitor pricing, stock levels, seller metrics, and FBA status. Provide 3 actionable steps to regain Buy Box.",
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -118,7 +167,13 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.NEW_MESSAGE,
             "trigger_config": {"channel": "mercadolibre"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "mercadolibre-master", "message": "Respond to a MercadoLibre pregunta quickly and professionally. Answer the specific question. If it's a pre-sale question, add a soft close. Keep it under 100 words."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "mercadolibre-master",
+                        "message": "Respond to a MercadoLibre pregunta quickly and professionally. Answer the specific question. If it's a pre-sale question, add a soft close. Keep it under 100 words.",
+                    },
+                },
                 {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "ml_pregunta"}},
             ],
             "status": WorkflowStatus.DRAFT,
@@ -130,8 +185,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_config": {"tag": "ml_entregado"},
             "actions": [
                 {"type": WorkflowActionType.WAIT, "config": {"hours": 48}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "post-venta", "message": "Send a warm follow-up to ML buyer. Confirm they received the product. Ask if everything is OK. Indirectly encourage a positive rating by expressing how much their opinion helps. Do NOT explicitly ask for 5 stars."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "ml_reputacion_gestionada"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "post-venta",
+                        "message": "Send a warm follow-up to ML buyer. Confirm they received the product. Ask if everything is OK. Indirectly encourage a positive rating by expressing how much their opinion helps. Do NOT explicitly ask for 5 stars.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "ml_reputacion_gestionada"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -139,10 +203,24 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "name": "🛒 ML: Alerta de Competencia de Precio",
             "description": "Alerta cuando un competidor baja el precio debajo del tuyo en un listing ganador.",
             "trigger_type": WorkflowTriggerType.PRICE_INQUIRY,
-            "trigger_config": {"platform": "mercadolibre", "trigger": "competitor_price_drop"},
+            "trigger_config": {
+                "platform": "mercadolibre",
+                "trigger": "competitor_price_drop",
+            },
             "actions": [
-                {"type": WorkflowActionType.SEND_NOTIFICATION, "config": {"message": "Competidor bajó precio en ML. Revisar listing y evaluar ajuste."}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "mercadolibre-master", "message": "Analyze the competitor price drop. Should we match, undercut slightly, or hold price? Consider margin, Buy Box impact, and brand positioning. Provide recommendation with numbers."}},
+                {
+                    "type": WorkflowActionType.SEND_NOTIFICATION,
+                    "config": {
+                        "message": "Competidor bajó precio en ML. Revisar listing y evaluar ajuste."
+                    },
+                },
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "mercadolibre-master",
+                        "message": "Analyze the competitor price drop. Should we match, undercut slightly, or hold price? Consider margin, Buy Box impact, and brand positioning. Provide recommendation with numbers.",
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -153,13 +231,31 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.CART_ABANDONED,
             "trigger_config": {"platform": "shopify", "delay_minutes": 60},
             "actions": [
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "shopify_cart_recovery_1"}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "shopify-master", "message": "Send a friendly abandoned cart reminder via WhatsApp/IG if email not opened. Mention items left behind and offer help."}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "shopify_cart_recovery_1"},
+                },
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "shopify-master",
+                        "message": "Send a friendly abandoned cart reminder via WhatsApp/IG if email not opened. Mention items left behind and offer help.",
+                    },
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"hours": 5}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "shopify_cart_recovery_2"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "shopify_cart_recovery_2"},
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"hours": 18}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "shopify_cart_recovery_3"}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "shopify_recovery_attempted"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "shopify_cart_recovery_3"},
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "shopify_recovery_attempted"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -170,8 +266,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_config": {"tag": "shopify_delivered"},
             "actions": [
                 {"type": WorkflowActionType.WAIT, "config": {"days": 1}},
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "upsell-specialist", "message": "Send a post-purchase upsell email/message. Recommend a complementary product based on what they bought. Offer 15% discount for 48 hours. Make it feel personalized."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "shopify_upsell_sent"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "upsell-specialist",
+                        "message": "Send a post-purchase upsell email/message. Recommend a complementary product based on what they bought. Offer 15% discount for 48 hours. Make it feel personalized.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "shopify_upsell_sent"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -181,10 +286,19 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.NO_REPLY,
             "trigger_config": {"platform": "shopify", "delay_days": 60},
             "actions": [
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "shopify_winback_1"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "shopify_winback_1"},
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"days": 7}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "shopify_winback_2"}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "shopify_winback_attempted"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "shopify_winback_2"},
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "shopify_winback_attempted"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -193,10 +307,27 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "name": "🎓 Hotmart: Affiliate Recruitment DM",
             "description": "Cuando alguien pregunta por ser afiliado, envía DM automático con info y link de aplicación.",
             "trigger_type": WorkflowTriggerType.NEW_MESSAGE,
-            "trigger_config": {"keywords": ["afiliado", "affiliate", "quiero vender", "como ser afiliado", "quero ser afiliado"]},
+            "trigger_config": {
+                "keywords": [
+                    "afiliado",
+                    "affiliate",
+                    "quiero vender",
+                    "como ser afiliado",
+                    "quero ser afiliado",
+                ]
+            },
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "hotmart-master", "message": "Send an enthusiastic affiliate recruitment response. Explain commission structure, promotional materials available, and how to apply. Include application link."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "hotmart_affiliate_lead"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "hotmart-master",
+                        "message": "Send an enthusiastic affiliate recruitment response. Explain commission structure, promotional materials available, and how to apply. Include application link.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "hotmart_affiliate_lead"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -206,14 +337,29 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.TAG_ADDED,
             "trigger_config": {"tag": "hotmart_prelaunch"},
             "actions": [
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "hotmart_prelaunch_day_1"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "hotmart_prelaunch_day_1"},
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"days": 1}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "hotmart_prelaunch_day_3"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "hotmart_prelaunch_day_3"},
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"days": 2}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "hotmart_prelaunch_day_5"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "hotmart_prelaunch_day_5"},
+                },
                 {"type": WorkflowActionType.WAIT, "config": {"days": 2}},
-                {"type": WorkflowActionType.SEND_EMAIL, "config": {"template": "hotmart_prelaunch_day_7"}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "hotmart_launch_sequence_sent"}},
+                {
+                    "type": WorkflowActionType.SEND_EMAIL,
+                    "config": {"template": "hotmart_prelaunch_day_7"},
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "hotmart_launch_sequence_sent"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -224,8 +370,19 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.TAG_ADDED,
             "trigger_config": {"tag": "inventory_sync_check"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "cross-platform-orchestrator", "message": "Analyze inventory discrepancy across platforms. Identify which channel is out of sync. Recommend immediate action to prevent overselling."}},
-                {"type": WorkflowActionType.SEND_NOTIFICATION, "config": {"message": "ALERTA: Discrepancia de inventario detectada entre plataformas. Revisar CatalogSyncService."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "cross-platform-orchestrator",
+                        "message": "Analyze inventory discrepancy across platforms. Identify which channel is out of sync. Recommend immediate action to prevent overselling.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.SEND_NOTIFICATION,
+                    "config": {
+                        "message": "ALERTA: Discrepancia de inventario detectada entre plataformas. Revisar CatalogSyncService."
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -235,8 +392,19 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.PRICE_INQUIRY,
             "trigger_config": {"trigger": "competitor_price_change"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "cross-platform-orchestrator", "message": "Analyze competitor pricing change across channels. Should we adjust our price? Consider margin by channel, Buy Box impact, and brand positioning. Provide data-driven recommendation."}},
-                {"type": WorkflowActionType.SEND_NOTIFICATION, "config": {"message": "Competidor cambió precio. Revisar recomendación del Orchestrator."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "cross-platform-orchestrator",
+                        "message": "Analyze competitor pricing change across channels. Should we adjust our price? Consider margin by channel, Buy Box impact, and brand positioning. Provide data-driven recommendation.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.SEND_NOTIFICATION,
+                    "config": {
+                        "message": "Competidor cambió precio. Revisar recomendación del Orchestrator."
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -247,8 +415,19 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.TAG_ADDED,
             "trigger_config": {"tag": "tiktok_shop_daily_check"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "tiktok-shop-master", "message": "Analyze TikTok Shop health score components. Identify which metric is dragging down the score: fulfillment speed, product quality, return rate, or customer service. Provide 3 immediate fixes."}},
-                {"type": WorkflowActionType.SEND_NOTIFICATION, "config": {"message": "TikTok Shop Health Score requiere atención. Revisar métricas."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "tiktok-shop-master",
+                        "message": "Analyze TikTok Shop health score components. Identify which metric is dragging down the score: fulfillment speed, product quality, return rate, or customer service. Provide 3 immediate fixes.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.SEND_NOTIFICATION,
+                    "config": {
+                        "message": "TikTok Shop Health Score requiere atención. Revisar métricas."
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -258,7 +437,13 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.TAG_ADDED,
             "trigger_config": {"tag": "tiktok_affiliate_review"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "tiktok-shop-master", "message": "Analyze affiliate performance data. Which affiliates are converting? Which are not? Recommend commission adjustments, bonus tiers, or affiliate pruning."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "tiktok-shop-master",
+                        "message": "Analyze affiliate performance data. Which affiliates are converting? Which are not? Recommend commission adjustments, bonus tiers, or affiliate pruning.",
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -269,8 +454,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.NEW_MESSAGE,
             "trigger_config": {"channel": "instagram", "trigger": "product_save"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "instagram-shop-master", "message": "Send a friendly DM to someone who saved an Instagram Shopping product. Acknowledge their interest. Answer potential questions. Offer a limited-time incentive to complete purchase."}},
-                {"type": WorkflowActionType.ADD_TAG, "config": {"tag": "ig_shop_engaged"}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "instagram-shop-master",
+                        "message": "Send a friendly DM to someone who saved an Instagram Shopping product. Acknowledge their interest. Answer potential questions. Offer a limited-time incentive to complete purchase.",
+                    },
+                },
+                {
+                    "type": WorkflowActionType.ADD_TAG,
+                    "config": {"tag": "ig_shop_engaged"},
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -280,7 +474,13 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
             "trigger_type": WorkflowTriggerType.TAG_ADDED,
             "trigger_config": {"tag": "ig_shop_tab_audit"},
             "actions": [
-                {"type": WorkflowActionType.AI_REPLY, "config": {"personality": "instagram-shop-master", "message": "Audit Instagram Shop tab products for algorithmic optimization. Check: image quality, description completeness, price competitiveness, and engagement signals. Recommend changes to boost discovery."}},
+                {
+                    "type": WorkflowActionType.AI_REPLY,
+                    "config": {
+                        "personality": "instagram-shop-master",
+                        "message": "Audit Instagram Shop tab products for algorithmic optimization. Check: image quality, description completeness, price competitiveness, and engagement signals. Recommend changes to boost discovery.",
+                    },
+                },
             ],
             "status": WorkflowStatus.DRAFT,
         },
@@ -431,7 +631,16 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Consulta de Envío",
             "intent": "shipping",
-            "keywords": ["envio", "shipping", "cuanto tarda", "donde esta mi pedido", "tracking", "seguimiento", "cuando llega", "🚚"],
+            "keywords": [
+                "envio",
+                "shipping",
+                "cuanto tarda",
+                "donde esta mi pedido",
+                "tracking",
+                "seguimiento",
+                "cuando llega",
+                "🚚",
+            ],
             "response_template": "Te entiendo — querés saber cuándo llega tu pedido. 🚚\n\nSi ya compraste, podés trackearlo acá: {{tracking_url}}\n\nSi todavía no compraste, estos son nuestros tiempos de envío:\n• Envío standard: {{standard_shipping_time}}\n• Envío express: {{express_shipping_time}}\n\n¿Te gustaría que te reserve una unidad con envío express?",
             "response_type": "text",
             "priority": 20,
@@ -441,7 +650,16 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Consulta de Stock / Disponibilidad",
             "intent": "availability",
-            "keywords": ["tenes stock", "hay disponible", "disponibilidad", "hay", "queda", "stock", "cuando llega", "reponen"],
+            "keywords": [
+                "tenes stock",
+                "hay disponible",
+                "disponibilidad",
+                "hay",
+                "queda",
+                "stock",
+                "cuando llega",
+                "reponen",
+            ],
             "response_template": "Sí, tenemos stock disponible de {{product_name}}. 📦\n\nUnidades restantes: {{stock_count}}\n\nSi querés que te reserve una, confirmame y te paso el link de pago seguro. También puedo avisarte cuando vuelva a stock si se agota. ¿Te sirve?",
             "response_type": "text",
             "priority": 20,
@@ -451,7 +669,16 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Devolución / Reembolso",
             "intent": "return",
-            "keywords": ["devolucion", "reembolso", "quiero devolver", "no me sirvio", "cambio", "return", "refund", "garantia"],
+            "keywords": [
+                "devolucion",
+                "reembolso",
+                "quiero devolver",
+                "no me sirvio",
+                "cambio",
+                "return",
+                "refund",
+                "garantia",
+            ],
             "response_template": "Lamento que necesites hacer una devolución. 😔\n\nNuestra política es simple: {{return_policy_days}} días para devolver sin preguntas.\n\nPara iniciar el proceso, necesito:\n1. Número de orden\n2. Motivo de la devolución\n3. ¿Preferís reembolso o cambio?\n\nUna vez que me pases esos datos, te envío la etiqueta de envío gratuita. Tu satisfacción es lo primero.",
             "response_type": "text",
             "priority": 25,
@@ -461,7 +688,16 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Garantía",
             "intent": "warranty",
-            "keywords": ["garantia", "garantía", "funciona mal", "no funciona", "defecto", "warranty", "falla", "roto"],
+            "keywords": [
+                "garantia",
+                "garantía",
+                "funciona mal",
+                "no funciona",
+                "defecto",
+                "warranty",
+                "falla",
+                "roto",
+            ],
             "response_template": "Entiendo tu preocupación. 🔧\n\nTodos nuestros productos tienen garantía de {{warranty_period}}.\n\nPara ayudarte rápido, necesito:\n1. Número de orden\n2. Descripción del problema\n3. Foto o video del defecto (si aplica)\n\nSi es un defecto de fábrica, te enviamos reemplazo inmediato sin costo. Si es daño por uso, te damos opciones de reparación con descuento. ¿Me pasás los datos?",
             "response_type": "text",
             "priority": 25,
@@ -471,7 +707,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Talla / Color / Especificación",
             "intent": "specs",
-            "keywords": ["talla", "color", "medida", "dimension", "tamaño", "size", "colour", "specs", "especificaciones"],
+            "keywords": [
+                "talla",
+                "color",
+                "medida",
+                "dimension",
+                "tamaño",
+                "size",
+                "colour",
+                "specs",
+                "especificaciones",
+            ],
             "response_template": "¡Buena pregunta! 📏\n\nAcá te paso las especificaciones de {{product_name}}:\n\n{{product_specs}}\n\nSi tenés dudas sobre qué talla/color te conviene, contame un poco más sobre qué buscás y te recomiendo la mejor opción.",
             "response_type": "text",
             "priority": 20,
@@ -481,7 +727,15 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Comparación de Productos",
             "intent": "comparison",
-            "keywords": ["diferencia", "comparar", "cual es mejor", "vs", "versus", "que elegir", "recomendas"],
+            "keywords": [
+                "diferencia",
+                "comparar",
+                "cual es mejor",
+                "vs",
+                "versus",
+                "que elegir",
+                "recomendas",
+            ],
             "response_template": "¡Me encanta que quieras elegir lo mejor! 💡\n\nAcá va la comparación rápida:\n\n{{product_comparison}}\n\nMi recomendación depende de tu situación:\n• Si {{scenario_a}} → te recomiendo {{product_a}}\n• Si {{scenario_b}} → te recomiendo {{product_b}}\n\n¿Cuál se acerca más a lo que necesitás?",
             "response_type": "text",
             "priority": 20,
@@ -491,7 +745,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Pedido Mayorista / B2B",
             "intent": "b2b",
-            "keywords": ["mayorista", "mayor", "bulk", "b2b", "empresa", "negocio", "cantidad", "wholesale", "distribuidor"],
+            "keywords": [
+                "mayorista",
+                "mayor",
+                "bulk",
+                "b2b",
+                "empresa",
+                "negocio",
+                "cantidad",
+                "wholesale",
+                "distribuidor",
+            ],
             "response_template": "¡Me encanta que estés interesado/a en compras al por mayor! 🏢\n\nOfrecemos precios especiales para pedidos mayores a {{min_bulk_quantity}} unidades.\n\nPara darte la mejor cotización, necesito saber:\n1. ¿Qué productos te interesan?\n2. ¿Qué cantidad aproximada necesitás?\n3. ¿Es para reventa o uso interno?\n4. ¿En qué país/ciudad estás?\n\nUna vez que me pases esos datos, te preparo una propuesta personalizada en 24 horas.",
             "response_type": "text",
             "priority": 25,
@@ -501,7 +765,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Descuento / Cupón",
             "intent": "discount",
-            "keywords": ["descuento", "cupon", "codigo", "promo", "oferta", "más barato", "discount", "coupon", "code"],
+            "keywords": [
+                "descuento",
+                "cupon",
+                "codigo",
+                "promo",
+                "oferta",
+                "más barato",
+                "discount",
+                "coupon",
+                "code",
+            ],
             "response_template": "¡Claro que sí! 🎁\n\nAcá tenés nuestros descuentos activos:\n\n• {{active_discount_1}}\n• {{active_discount_2}}\n\nSi ninguno se ajusta a lo que buscás, contame qué producto te interesa y qué cantidad, y veo si puedo conseguirte algo especial.",
             "response_type": "text",
             "priority": 20,
@@ -511,7 +785,16 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Pedido Urgente / Express",
             "intent": "urgent",
-            "keywords": ["urgente", "rapido", "hoy", "ya", "express", "prioritario", "lo necesito ya", " asap"],
+            "keywords": [
+                "urgente",
+                "rapido",
+                "hoy",
+                "ya",
+                "express",
+                "prioritario",
+                "lo necesito ya",
+                " asap",
+            ],
             "response_template": "Entiendo que lo necesitás urgente. ⚡\n\nOpciones de envío express:\n• Same-day delivery: disponible en {{same_day_cities}} (pedir antes de las {{same_day_cutoff}})\n• Express 24-48h: disponible en todo el país\n\nEl costo de express es {{express_cost}}.\n\nSi confirmás ahora, puedo preparar tu pedido para despacho inmediato. ¿Te sirve?",
             "response_type": "text",
             "priority": 25,
@@ -521,7 +804,17 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Métodos de Pago",
             "intent": "payment",
-            "keywords": ["pago", "metodo de pago", "tarjeta", "transferencia", "cuotas", "mercadopago", "stripe", "paypal", "efectivo"],
+            "keywords": [
+                "pago",
+                "metodo de pago",
+                "tarjeta",
+                "transferencia",
+                "cuotas",
+                "mercadopago",
+                "stripe",
+                "paypal",
+                "efectivo",
+            ],
             "response_template": "Aceptamos todos estos métodos de pago seguros: 💳\n\n• Tarjetas de crédito y débito (Visa, Mastercard, Amex)\n• MercadoPago\n• Transferencia bancaria\n• PayPal\n• Cuotas sin interés con {{installment_provider}}\n\n¿Tenés preferencia por alguno? Si necesitás cuotas, te confirmo las opciones disponibles para tu tarjeta.",
             "response_type": "text",
             "priority": 20,
@@ -531,7 +824,15 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Estado de Orden",
             "intent": "order_status",
-            "keywords": ["donde esta mi orden", "estado de mi pedido", "numero de orden", "tracking", "seguimiento", "mi compra", "cuando llega"],
+            "keywords": [
+                "donde esta mi orden",
+                "estado de mi pedido",
+                "numero de orden",
+                "tracking",
+                "seguimiento",
+                "mi compra",
+                "cuando llega",
+            ],
             "response_template": "Te ayudo con tu pedido enseguida. 📦\n\n¿Me podés pasar tu número de orden? Así veo el estado exacto y te doy una fecha estimada de llegada.\n\nSi no tenés el número a mano, también puedo buscarlo con el email que usaste para comprar.",
             "response_type": "text",
             "priority": 20,
@@ -541,7 +842,14 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
         {
             "name": "Platform: Recomendación de Producto",
             "intent": "recommendation",
-            "keywords": ["que me recomendas", "que me sugeris", "no se que elegir", "ayuda para elegir", "recommend", "suggestion"],
+            "keywords": [
+                "que me recomendas",
+                "que me sugeris",
+                "no se que elegir",
+                "ayuda para elegir",
+                "recommend",
+                "suggestion",
+            ],
             "response_template": "¡Con gusto te ayudo a elegir! 🎯\n\nContame un poco más:\n1. ¿Para quién es el producto? (vos, regalo, negocio)\n2. ¿Qué presupuesto tenés?\n3. ¿Hay algo específico que necesitás que haga?\n\nCon esos datos te doy mi recomendación honesta en 30 segundos.",
             "response_type": "text",
             "priority": 15,
@@ -561,6 +869,8 @@ async def seed_platform_automations(db: AsyncSession, business_id: uuid.UUID):
     ]
 
     for rule_data in rules:
-        await get_or_create_chatbot_rule(db, business_id, rule_data["name"], **rule_data)
+        await get_or_create_chatbot_rule(
+            db, business_id, rule_data["name"], **rule_data
+        )
 
     await db.commit()

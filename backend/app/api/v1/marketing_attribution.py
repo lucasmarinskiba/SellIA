@@ -16,16 +16,18 @@ router = APIRouter(prefix="/api/v1", tags=["marketing-attribution"])
 @router.post("/businesses/{business_id}/channel-metrics")
 def calculate_channel_metrics(
     business_id: UUID,
-    channel: Annotated[str, Query(description="Channel: organic_search, paid_search, social_media, email, etc")],
+    channel: Annotated[
+        str,
+        Query(
+            description="Channel: organic_search, paid_search, social_media, email, etc"
+        ),
+    ],
     date: Annotated[str, Query(description="YYYY-MM-DD")],
     db: Annotated[Session, Depends(get_db)],
 ):
     """Calculate attribution metrics for channel on given date."""
     return ChannelAttributionService.calculate_channel_metrics(
-        business_id=business_id,
-        channel=channel,
-        date=date,
-        db=db
+        business_id=business_id, channel=channel, date=date, db=db
     )
 
 
@@ -34,7 +36,9 @@ def attribute_visits_to_channel(
     location_id: UUID,
     business_id: Annotated[UUID, Query()],
     db: Annotated[Session, Depends(get_db)],
-    attribution_model: Annotated[str, Query(description="first_touch, last_touch, linear, time_decay")] = AttributionModel.FIRST_TOUCH,
+    attribution_model: Annotated[
+        str, Query(description="first_touch, last_touch, linear, time_decay")
+    ] = AttributionModel.FIRST_TOUCH,
     date_start: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
     date_end: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
@@ -46,7 +50,7 @@ def attribute_visits_to_channel(
         attribution_model=model,
         date_start=date_start,
         date_end=date_end,
-        db=db
+        db=db,
     )
 
 
@@ -58,9 +62,7 @@ def get_channel_roi_report(
 ):
     """Generate ROI ranking by channel."""
     return ChannelAttributionService.generate_channel_roi_report(
-        business_id=business_id,
-        date=date,
-        db=db
+        business_id=business_id, date=date, db=db
     )
 
 
@@ -73,8 +75,5 @@ def get_top_channels(
 ):
     """Get top performing channels by metric."""
     return ChannelAttributionService.get_top_performing_channels(
-        business_id=business_id,
-        metric=metric,
-        days=days,
-        db=db
+        business_id=business_id, metric=metric, days=days, db=db
     )

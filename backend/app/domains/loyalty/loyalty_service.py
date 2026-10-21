@@ -31,7 +31,7 @@ class LoyaltyProgramService:
         name: str,
         points_per_dollar: Decimal = Decimal("1.0"),
         welcome_bonus: int = 50,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create loyalty program."""
         if not db:
@@ -41,7 +41,7 @@ class LoyaltyProgramService:
             business_id=business_id,
             name=name,
             points_per_dollar=points_per_dollar,
-            welcome_bonus_points=welcome_bonus
+            welcome_bonus_points=welcome_bonus,
         )
 
         db.add(program)
@@ -54,7 +54,7 @@ class LoyaltyProgramService:
             "program_id": str(program.id),
             "name": name,
             "points_per_dollar": float(points_per_dollar),
-            "welcome_bonus": welcome_bonus
+            "welcome_bonus": welcome_bonus,
         }
 
     @staticmethod
@@ -62,7 +62,7 @@ class LoyaltyProgramService:
         business_id: UUID,
         customer_id: UUID,
         loyalty_program_id: UUID,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Enroll customer in loyalty program."""
         if not db:
@@ -76,7 +76,7 @@ class LoyaltyProgramService:
             customer_id=customer_id,
             loyalty_program_id=loyalty_program_id,
             member_number=member_number,
-            current_tier=MembershipTier.BRONZE
+            current_tier=MembershipTier.BRONZE,
         )
 
         db.add(member)
@@ -84,7 +84,11 @@ class LoyaltyProgramService:
         db.refresh(member)
 
         # Award welcome bonus
-        program = db.query(LoyaltyProgram).filter(LoyaltyProgram.id == loyalty_program_id).first()
+        program = (
+            db.query(LoyaltyProgram)
+            .filter(LoyaltyProgram.id == loyalty_program_id)
+            .first()
+        )
         if program and program.welcome_bonus_points > 0:
             LoyaltyProgramService.award_points(
                 member_id=member.id,
@@ -92,7 +96,7 @@ class LoyaltyProgramService:
                 points=program.welcome_bonus_points,
                 transaction_type="bonus",
                 description="Welcome bonus",
-                db=db
+                db=db,
             )
 
         logger.info(f"Member enrolled: {member_number} for {customer_id}")
@@ -101,7 +105,7 @@ class LoyaltyProgramService:
             "member_id": str(member.id),
             "member_number": member_number,
             "tier": "bronze",
-            "current_points": program.welcome_bonus_points if program else 0
+            "current_points": program.welcome_bonus_points if program else 0,
         }
 
     @staticmethod
@@ -112,7 +116,7 @@ class LoyaltyProgramService:
         transaction_type: str = "earn",
         description: str | None = None,
         order_id: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Award points to member."""
         if not db:
@@ -133,7 +137,7 @@ class LoyaltyProgramService:
             balance_before=balance_before,
             balance_after=balance_after,
             order_id=order_id,
-            description=description
+            description=description,
         )
 
         member.current_points_balance = balance_after
@@ -147,15 +151,12 @@ class LoyaltyProgramService:
         return {
             "member_id": str(member_id),
             "points_awarded": points,
-            "new_balance": balance_after
+            "new_balance": balance_after,
         }
 
     @staticmethod
     def redeem_reward(
-        member_id: UUID,
-        reward_id: UUID,
-        business_id: UUID,
-        db: Session = None
+        member_id: UUID, reward_id: UUID, business_id: UUID, db: Session = None
     ) -> dict:
         """Redeem reward for member."""
         if not db:
@@ -188,7 +189,7 @@ class LoyaltyProgramService:
             balance_before=balance_before,
             balance_after=balance_after,
             reward_id=reward_id,
-            description=f"Redeemed: {reward.reward_name}"
+            description=f"Redeemed: {reward.reward_name}",
         )
 
         member.current_points_balance = balance_after
@@ -207,16 +208,22 @@ class LoyaltyProgramService:
             "balance_after": balance_after,
             "reward_value": {
                 "type": reward.reward_type.value,
-                "discount_pct": float(reward.discount_percentage) if reward.discount_percentage else None,
-                "discount_amount": float(reward.discount_fixed_amount) if reward.discount_fixed_amount else None
-            }
+                "discount_pct": (
+                    float(reward.discount_percentage)
+                    if reward.discount_percentage
+                    else None
+                ),
+                "discount_amount": (
+                    float(reward.discount_fixed_amount)
+                    if reward.discount_fixed_amount
+                    else None
+                ),
+            },
         }
 
     @staticmethod
     def update_member_tier(
-        member_id: UUID,
-        lifetime_spend: Decimal,
-        db: Session = None
+        member_id: UUID, lifetime_spend: Decimal, db: Session = None
     ) -> dict:
         """Update member tier based on lifetime spend."""
         if not db:
@@ -226,9 +233,11 @@ class LoyaltyProgramService:
         if not member:
             raise ValueError(f"Member {member_id} not found")
 
-        program = db.query(LoyaltyProgram).filter(
-            LoyaltyProgram.id == member.loyalty_program_id
-        ).first()
+        program = (
+            db.query(LoyaltyProgram)
+            .filter(LoyaltyProgram.id == member.loyalty_program_id)
+            .first()
+        )
 
         old_tier = member.current_tier
 
@@ -247,13 +256,17 @@ class LoyaltyProgramService:
             member.tier_since = datetime.now(UTC)
             db.commit()
 
-            logger.info(f"Tier updated: {member_id} {old_tier.value} -> {new_tier.value}")
+            logger.info(
+                f"Tier updated: {member_id} {old_tier.value} -> {new_tier.value}"
+            )
 
             return {
                 "tier_updated": True,
                 "old_tier": old_tier.value,
                 "new_tier": new_tier.value,
-                "tier_multiplier": float(getattr(program, f"{new_tier.value}_bonus_points", 1))
+                "tier_multiplier": float(
+                    getattr(program, f"{new_tier.value}_bonus_points", 1)
+                ),
             }
 
         return {"tier_updated": False, "current_tier": old_tier.value}
@@ -266,7 +279,7 @@ class LoyaltyProgramService:
         reward_type: str,
         points_required: int,
         value: Decimal | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create reward offer."""
         if not db:
@@ -277,7 +290,7 @@ class LoyaltyProgramService:
             business_id=business_id,
             reward_name=reward_name,
             reward_type=RewardType[reward_type.upper()],
-            points_required=points_required
+            points_required=points_required,
         )
 
         if reward_type == "discount_percentage":
@@ -295,14 +308,11 @@ class LoyaltyProgramService:
             "reward_id": str(reward.id),
             "reward_name": reward_name,
             "points_required": points_required,
-            "type": reward_type
+            "type": reward_type,
         }
 
     @staticmethod
-    def get_member_details(
-        member_id: UUID,
-        db: Session = None
-    ) -> dict:
+    def get_member_details(member_id: UUID, db: Session = None) -> dict:
         """Get member profile + points balance."""
         if not db:
             raise ValueError("Database session required")
@@ -312,9 +322,13 @@ class LoyaltyProgramService:
             raise ValueError(f"Member {member_id} not found")
 
         # Recent transactions
-        recent_txns = db.query(LoyaltyTransaction).filter(
-            LoyaltyTransaction.loyalty_member_id == member_id
-        ).order_by(LoyaltyTransaction.created_at.desc()).limit(10).all()
+        recent_txns = (
+            db.query(LoyaltyTransaction)
+            .filter(LoyaltyTransaction.loyalty_member_id == member_id)
+            .order_by(LoyaltyTransaction.created_at.desc())
+            .limit(10)
+            .all()
+        )
 
         return {
             "member_id": str(member.id),
@@ -327,13 +341,17 @@ class LoyaltyProgramService:
             "points": {
                 "current_balance": member.current_points_balance,
                 "lifetime_earned": member.lifetime_points_earned,
-                "lifetime_redeemed": member.points_redeemed_total
+                "lifetime_redeemed": member.points_redeemed_total,
             },
             "engagement": {
-                "last_purchase": member.last_purchase_date.isoformat() if member.last_purchase_date else None,
+                "last_purchase": (
+                    member.last_purchase_date.isoformat()
+                    if member.last_purchase_date
+                    else None
+                ),
                 "days_since_purchase": member.days_since_purchase,
                 "referral_code": member.referral_code,
-                "referrals_made": member.referral_count
+                "referrals_made": member.referral_count,
             },
             "churn_risk": member.churn_risk,
             "recent_activity": [
@@ -341,17 +359,15 @@ class LoyaltyProgramService:
                     "type": t.transaction_type,
                     "points": t.points_change,
                     "balance": t.balance_after,
-                    "date": t.created_at.isoformat()
+                    "date": t.created_at.isoformat(),
                 }
                 for t in recent_txns
-            ]
+            ],
         }
 
     @staticmethod
     def calculate_loyalty_metrics(
-        business_id: UUID,
-        date: str | None = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Calculate aggregate loyalty program metrics."""
         if not db:
@@ -361,32 +377,51 @@ class LoyaltyProgramService:
             date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Member counts
-        total_members = db.query(LoyaltyMember).filter(
-            LoyaltyMember.business_id == business_id
-        ).count()
+        total_members = (
+            db.query(LoyaltyMember)
+            .filter(LoyaltyMember.business_id == business_id)
+            .count()
+        )
 
-        active_members = db.query(LoyaltyMember).filter(
-            LoyaltyMember.business_id == business_id,
-            LoyaltyMember.is_active == True
-        ).count()
+        active_members = (
+            db.query(LoyaltyMember)
+            .filter(
+                LoyaltyMember.business_id == business_id,
+                LoyaltyMember.is_active == True,
+            )
+            .count()
+        )
 
         # Tier distribution
-        tiers = db.query(LoyaltyMember.current_tier, func.count(LoyaltyMember.id)).filter(
-            LoyaltyMember.business_id == business_id
-        ).group_by(LoyaltyMember.current_tier).all()
+        tiers = (
+            db.query(LoyaltyMember.current_tier, func.count(LoyaltyMember.id))
+            .filter(LoyaltyMember.business_id == business_id)
+            .group_by(LoyaltyMember.current_tier)
+            .all()
+        )
 
         tier_dist = {t[0].value: t[1] for t in tiers}
 
         # Points
-        points_issued = db.query(func.sum(LoyaltyTransaction.points_change)).filter(
-            LoyaltyTransaction.business_id == business_id,
-            LoyaltyTransaction.transaction_type == "earn"
-        ).scalar() or 0
+        points_issued = (
+            db.query(func.sum(LoyaltyTransaction.points_change))
+            .filter(
+                LoyaltyTransaction.business_id == business_id,
+                LoyaltyTransaction.transaction_type == "earn",
+            )
+            .scalar()
+            or 0
+        )
 
-        points_redeemed = db.query(func.sum(LoyaltyTransaction.points_change)).filter(
-            LoyaltyTransaction.business_id == business_id,
-            LoyaltyTransaction.transaction_type == "redeem"
-        ).scalar() or 0
+        points_redeemed = (
+            db.query(func.sum(LoyaltyTransaction.points_change))
+            .filter(
+                LoyaltyTransaction.business_id == business_id,
+                LoyaltyTransaction.transaction_type == "redeem",
+            )
+            .scalar()
+            or 0
+        )
 
         # Create metrics record
         metrics = LoyaltyMetrics(
@@ -399,7 +434,7 @@ class LoyaltyProgramService:
             gold_members=tier_dist.get("gold", 0),
             platinum_members=tier_dist.get("platinum", 0),
             total_points_issued=int(points_issued),
-            total_points_redeemed=abs(int(points_redeemed))
+            total_points_redeemed=abs(int(points_redeemed)),
         )
 
         db.add(metrics)
@@ -416,10 +451,10 @@ class LoyaltyProgramService:
                 "bronze": tier_dist.get("bronze", 0),
                 "silver": tier_dist.get("silver", 0),
                 "gold": tier_dist.get("gold", 0),
-                "platinum": tier_dist.get("platinum", 0)
+                "platinum": tier_dist.get("platinum", 0),
             },
             "points": {
                 "issued": int(points_issued),
-                "redeemed": abs(int(points_redeemed))
-            }
+                "redeemed": abs(int(points_redeemed)),
+            },
         }

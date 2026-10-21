@@ -42,8 +42,7 @@ class FOMADecayService:
 
         # Get current metrics (last 2 days avg)
         result = await self.db.execute(
-            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr"))
-            .where(
+            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr")).where(
                 PublicationLinkMetrics.link_id == link_id,
                 PublicationLinkMetrics.metric_date >= today - timedelta(days=2),
             )
@@ -52,8 +51,7 @@ class FOMADecayService:
 
         # Get baseline (7 days before)
         result = await self.db.execute(
-            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr"))
-            .where(
+            select(func.avg(PublicationLinkMetrics.ctr).label("avg_ctr")).where(
                 PublicationLinkMetrics.link_id == link_id,
                 PublicationLinkMetrics.metric_date >= week_ago - timedelta(days=7),
                 PublicationLinkMetrics.metric_date < week_ago,
@@ -126,8 +124,7 @@ class FOMADecayService:
         """Get all links for business with detected decay."""
         # Get all active links
         result = await self.db.execute(
-            select(PublicationLink)
-            .where(
+            select(PublicationLink).where(
                 PublicationLink.business_id == business_id,
                 PublicationLink.seo_enabled == True,
             )
@@ -141,14 +138,16 @@ class FOMADecayService:
                 decay_threshold_pct=decay_threshold_pct,
             )
             if decay_info:
-                decayed.append({
-                    "link": {
-                        "id": str(link.id),
-                        "url": link.url,
-                        "title": link.title,
-                        "platform": link.platform_source,
-                    },
-                    **decay_info,
-                })
+                decayed.append(
+                    {
+                        "link": {
+                            "id": str(link.id),
+                            "url": link.url,
+                            "title": link.title,
+                            "platform": link.platform_source,
+                        },
+                        **decay_info,
+                    }
+                )
 
         return decayed

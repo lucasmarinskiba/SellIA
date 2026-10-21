@@ -50,7 +50,7 @@ def score_order_fraud(
         device_fingerprint=request.device_fingerprint,
         billing_address=request.billing_address,
         shipping_address=request.shipping_address,
-        db=db
+        db=db,
     )
 
 
@@ -62,9 +62,7 @@ def score_account_fraud(
 ):
     """Score fraud risk for customer account."""
     return FraudDetectionService.score_account_fraud(
-        business_id=business_id,
-        customer_id=request.customer_id,
-        db=db
+        business_id=business_id, customer_id=request.customer_id, db=db
     )
 
 
@@ -80,7 +78,7 @@ def add_to_blacklist(
         entity_type=request.entity_type,
         entity_value=request.entity_value,
         fraud_reason=request.fraud_reason,
-        db=db
+        db=db,
     )
 
 
@@ -92,7 +90,5 @@ def get_fraud_summary(
 ):
     """Get fraud detection summary."""
     return FraudDetectionService.get_fraud_summary(
-        business_id=business_id,
-        date=date,
-        db=db
+        business_id=business_id, date=date, db=db
     )

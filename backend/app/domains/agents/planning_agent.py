@@ -102,7 +102,9 @@ class PlanningAgent:
             data = json.loads(text)
             plan = Plan.model_validate(data)
         except Exception as exc:
-            logger.warning(f"Failed to parse plan JSON: {exc}. Text: {text[:500]}", exc_info=True)
+            logger.warning(
+                f"Failed to parse plan JSON: {exc}. Text: {text[:500]}", exc_info=True
+            )
             # Fallback single-step plan
             plan = Plan(
                 sub_tasks=[
@@ -145,11 +147,13 @@ class PlanningAgent:
         for step in plan.sub_tasks:
             missing = [d for d in step.dependencies if d not in completed_steps]
             if missing:
-                results.append({
-                    "step_id": step.id,
-                    "status": "skipped",
-                    "reason": f"Missing dependencies: {missing}",
-                })
+                results.append(
+                    {
+                        "step_id": step.id,
+                        "status": "skipped",
+                        "reason": f"Missing dependencies: {missing}",
+                    }
+                )
                 continue
 
             step_prompt = (
@@ -161,21 +165,28 @@ class PlanningAgent:
             try:
                 step_result = await react_orchestrator.process(
                     user_input=step_prompt,
-                    business_context={"step_id": step.id, "required_tools": step.required_tools},
+                    business_context={
+                        "step_id": step.id,
+                        "required_tools": step.required_tools,
+                    },
                 )
                 completed_steps[step.id] = step_result
-                results.append({
-                    "step_id": step.id,
-                    "status": "completed",
-                    "result": step_result,
-                })
+                results.append(
+                    {
+                        "step_id": step.id,
+                        "status": "completed",
+                        "result": step_result,
+                    }
+                )
             except Exception as exc:
                 logger.exception(f"Plan step {step.id} failed")
-                results.append({
-                    "step_id": step.id,
-                    "status": "failed",
-                    "error": str(exc),
-                })
+                results.append(
+                    {
+                        "step_id": step.id,
+                        "status": "failed",
+                        "error": str(exc),
+                    }
+                )
 
         return {
             "plan": plan.model_dump(),

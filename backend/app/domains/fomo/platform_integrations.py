@@ -26,9 +26,24 @@ class InstagramIntegration:
             "type": "story",
             "image_url": image_url,
             "elements": [
-                {"type": "text", "content": product_name, "position": "bottom_left", "size": 24},
-                {"type": "text", "content": text, "position": "top", "size": 32, "color": color},
-                {"type": "link_sticker", "url": "https://shop.example.com", "label": "COMPRAR"},
+                {
+                    "type": "text",
+                    "content": product_name,
+                    "position": "bottom_left",
+                    "size": 24,
+                },
+                {
+                    "type": "text",
+                    "content": text,
+                    "position": "top",
+                    "size": 32,
+                    "color": color,
+                },
+                {
+                    "type": "link_sticker",
+                    "url": "https://shop.example.com",
+                    "label": "COMPRAR",
+                },
             ],
         }
 
@@ -39,7 +54,12 @@ class InstagramIntegration:
         return f"post_{product_id}_{int(scheduled_time.timestamp())}"
 
     async def auto_generate_7day_campaign(
-        self, product_id: str, product_name: str, images: list[str], stock: int, price: float
+        self,
+        product_id: str,
+        product_name: str,
+        images: list[str],
+        stock: int,
+        price: float,
     ):
         """Generate 7-day Instagram campaign"""
         campaign = [
@@ -58,7 +78,9 @@ class TikTokIntegration:
     def __init__(self, user_token: str):
         self.token = user_token
 
-    def generate_hook_variants(self, product_name: str, price: float, stock: int) -> list[str]:
+    def generate_hook_variants(
+        self, product_name: str, price: float, stock: int
+    ) -> list[str]:
         return [
             f"Solo {stock} en stock de {product_name} 🔥",
             f"TODOS están comprando {product_name} AHORA 👀",

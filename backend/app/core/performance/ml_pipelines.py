@@ -20,8 +20,12 @@ class MLPipelines:
             "user_id": user_id,
             "engagement_score": len(user_events) / 10,  # Simplified
             "recency_days": 1,
-            "frequency_purchases": sum(1 for e in user_events if e.get("type") == "purchase"),
-            "monetary_value": sum(e.get("amount", 0) for e in user_events if e.get("type") == "purchase"),
+            "frequency_purchases": sum(
+                1 for e in user_events if e.get("type") == "purchase"
+            ),
+            "monetary_value": sum(
+                e.get("amount", 0) for e in user_events if e.get("type") == "purchase"
+            ),
         }
 
         return {

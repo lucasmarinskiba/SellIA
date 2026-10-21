@@ -39,7 +39,9 @@ class FeatureAttention:
         self.attention_scores: np.ndarray | None = None
         self.feature_names: list[str] = []
 
-    def compute_attention(self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None) -> AttentionWeights:
+    def compute_attention(
+        self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None
+    ) -> AttentionWeights:
         """Compute feature importance using attention."""
         if feature_names:
             self.feature_names = feature_names
@@ -55,22 +57,31 @@ class FeatureAttention:
         # Apply softmax to convert to weights
         attention_scores = softmax(np.array(correlations))
 
-        weights = {name: float(score) for name, score in zip(self.feature_names, attention_scores)}
+        weights = {
+            name: float(score)
+            for name, score in zip(self.feature_names, attention_scores)
+        }
 
         # Compute entropy
         entropy = float(-np.sum(attention_scores * np.log(attention_scores + 1e-10)))
 
         # Get top-k features
         top_indices = np.argsort(attention_scores)[-3:][::-1]
-        top_k = [(self.feature_names[i], float(attention_scores[i])) for i in top_indices]
+        top_k = [
+            (self.feature_names[i], float(attention_scores[i])) for i in top_indices
+        ]
 
         result = AttentionWeights(weights=weights, top_k=top_k, entropy=entropy)
 
-        logger.info(f"Feature attention computed. Top features: {[f[0] for f in top_k]}")
+        logger.info(
+            f"Feature attention computed. Top features: {[f[0] for f in top_k]}"
+        )
 
         return result
 
-    def apply_attention(self, X: np.ndarray, attention_weights: dict[str, float]) -> np.ndarray:
+    def apply_attention(
+        self, X: np.ndarray, attention_weights: dict[str, float]
+    ) -> np.ndarray:
         """Apply attention weights to features."""
         X_attended = X.copy()
 
@@ -93,7 +104,9 @@ class TemporalAttention:
         n_timesteps = len(X)
 
         # Exponential decay: recent data has higher weight
-        weights = np.array([self.decay_factor ** (n_timesteps - 1 - i) for i in range(n_timesteps)])
+        weights = np.array(
+            [self.decay_factor ** (n_timesteps - 1 - i) for i in range(n_timesteps)]
+        )
         weights = weights / np.sum(weights)  # Normalize
 
         # Convert to dict for compatibility
@@ -108,14 +121,18 @@ class TemporalAttention:
 
         result = AttentionWeights(weights=weight_dict, top_k=top_k, entropy=entropy)
 
-        logger.info(f"Temporal attention computed. Most important: {[f[0] for f in top_k]}")
+        logger.info(
+            f"Temporal attention computed. Most important: {[f[0] for f in top_k]}"
+        )
 
         return result
 
     def apply_temporal_attention(self, X: np.ndarray) -> np.ndarray:
         """Apply temporal weights to time series."""
         n_timesteps = len(X)
-        weights = np.array([self.decay_factor ** (n_timesteps - 1 - i) for i in range(n_timesteps)])
+        weights = np.array(
+            [self.decay_factor ** (n_timesteps - 1 - i) for i in range(n_timesteps)]
+        )
         weights = weights / np.sum(weights)
 
         X_attended = X.copy()
@@ -134,7 +151,9 @@ class SpatialAttention:
         self.n_regions = n_regions
         self.region_importance: np.ndarray | None = None
 
-    def compute_spatial_attention(self, X: np.ndarray, locality_bias: float = 1.2) -> AttentionWeights:
+    def compute_spatial_attention(
+        self, X: np.ndarray, locality_bias: float = 1.2
+    ) -> AttentionWeights:
         """Compute spatial attention weights."""
         n_samples = len(X)
         region_size = max(1, n_samples // self.n_regions)
@@ -146,7 +165,9 @@ class SpatialAttention:
             end_idx = (i + 1) * region_size if i < self.n_regions - 1 else n_samples
 
             region_data = X[start_idx:end_idx]
-            variance = np.mean(np.var(region_data, axis=0)) if region_data.size > 0 else 0.0
+            variance = (
+                np.mean(np.var(region_data, axis=0)) if region_data.size > 0 else 0.0
+            )
             region_variances.append(variance)
 
         # Regions with higher variance get more attention
@@ -167,11 +188,15 @@ class SpatialAttention:
 
         result = AttentionWeights(weights=weight_dict, top_k=top_k, entropy=entropy)
 
-        logger.info(f"Spatial attention computed. Focus regions: {[f[0] for f in top_k]}")
+        logger.info(
+            f"Spatial attention computed. Focus regions: {[f[0] for f in top_k]}"
+        )
 
         return result
 
-    def apply_spatial_attention(self, X: np.ndarray, region_weights: np.ndarray) -> np.ndarray:
+    def apply_spatial_attention(
+        self, X: np.ndarray, region_weights: np.ndarray
+    ) -> np.ndarray:
         """Apply spatial weights."""
         n_samples = len(X)
         region_size = max(1, n_samples // self.n_regions)
@@ -193,7 +218,9 @@ class CrossModalAttention:
     def __init__(self):
         self.modal_importance: dict[str, float] = {}
 
-    def compute_cross_modal_attention(self, modalities: dict[str, np.ndarray], target: np.ndarray | None = None) -> AttentionWeights:
+    def compute_cross_modal_attention(
+        self, modalities: dict[str, np.ndarray], target: np.ndarray | None = None
+    ) -> AttentionWeights:
         """Compute attention across modalities."""
         modal_scores = {}
 
@@ -203,7 +230,11 @@ class CrossModalAttention:
                 continue
 
             # Compute modal importance based on variance and correlation with target
-            variance = np.mean(np.var(modal_data, axis=0)) if modal_data.ndim > 1 else np.var(modal_data)
+            variance = (
+                np.mean(np.var(modal_data, axis=0))
+                if modal_data.ndim > 1
+                else np.var(modal_data)
+            )
 
             if target is not None:
                 # Simple correlation-based importance
@@ -221,7 +252,9 @@ class CrossModalAttention:
         scores = np.array(list(modal_scores.values()))
         modal_weights = softmax(scores)
 
-        weights = {name: float(w) for name, w in zip(modal_scores.keys(), modal_weights)}
+        weights = {
+            name: float(w) for name, w in zip(modal_scores.keys(), modal_weights)
+        }
         self.modal_importance = weights
 
         # Entropy
@@ -237,7 +270,9 @@ class CrossModalAttention:
 
         return result
 
-    def apply_cross_modal_attention(self, modalities: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    def apply_cross_modal_attention(
+        self, modalities: dict[str, np.ndarray]
+    ) -> dict[str, np.ndarray]:
         """Apply attention weights to each modality."""
         attended_modalities = {}
 
@@ -247,7 +282,9 @@ class CrossModalAttention:
 
         return attended_modalities
 
-    def fuse_modalities(self, modalities: dict[str, np.ndarray], method: str = "concatenate") -> np.ndarray:
+    def fuse_modalities(
+        self, modalities: dict[str, np.ndarray], method: str = "concatenate"
+    ) -> np.ndarray:
         """Fuse multiple modalities into single representation."""
         # Apply attention first
         attended = self.apply_cross_modal_attention(modalities)
@@ -287,7 +324,11 @@ class CrossModalAttention:
 
             # Stack and compute attention gates
             stacked = np.stack(attended_list)
-            gates = softmax(np.sum(stacked, axis=(1, 2)) if stacked.ndim > 2 else np.sum(stacked, axis=1))
+            gates = softmax(
+                np.sum(stacked, axis=(1, 2))
+                if stacked.ndim > 2
+                else np.sum(stacked, axis=1)
+            )
 
             result = None
             for i, gate in enumerate(gates):

@@ -30,7 +30,9 @@ class ThreadsConnector(BaseChannelConnector):
             "Content-Type": "application/json",
         }
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.access_token or not self.user_id:
             raise ValueError("Faltan credenciales de Threads (access_token o user_id)")
 
@@ -45,7 +47,9 @@ class ThreadsConnector(BaseChannelConnector):
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=headers, params=params, timeout=30.0)
+            response = await client.post(
+                url, headers=headers, params=params, timeout=30.0
+            )
             response.raise_for_status()
             data = response.json()
             logger.info("Threads reply sent to %s", recipient_id)

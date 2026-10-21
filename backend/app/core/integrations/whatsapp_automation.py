@@ -53,7 +53,9 @@ class WhatsAppAutomation:
 
     # ========== WEBHOOK HANDLING (API MODE) ==========
 
-    async def handle_incoming_message(self, webhook_payload: dict[str, Any]) -> dict[str, Any]:
+    async def handle_incoming_message(
+        self, webhook_payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Procesa mensaje incoming desde WhatsApp Business API.
 
@@ -73,7 +75,9 @@ class WhatsAppAutomation:
         try:
             # Extraer mensaje
             sender_id = webhook_payload["entry"][0]["messaging"][0]["sender"]["id"]
-            message_text = webhook_payload["entry"][0]["messaging"][0]["message"]["text"]
+            message_text = webhook_payload["entry"][0]["messaging"][0]["message"][
+                "text"
+            ]
             webhook_payload["entry"][0]["messaging"][0]["timestamp"]
 
             logger.info(f"Message from {sender_id}: {message_text}")
@@ -105,11 +109,29 @@ class WhatsAppAutomation:
 
         text_lower = text.lower()
 
-        urgency_keywords = ["urgente", "problema", "no funciona", "reclamar", "abogado", "chargeback", "fraude"]
+        urgency_keywords = [
+            "urgente",
+            "problema",
+            "no funciona",
+            "reclamar",
+            "abogado",
+            "chargeback",
+            "fraude",
+        ]
         if any(keyword in text_lower for keyword in urgency_keywords):
             return "urgency"
 
-        scheduling_keywords = ["mañana", "hoy", "hora", "podemos", "disponible", "cuando", "qué hora", "meeting", "llamada"]
+        scheduling_keywords = [
+            "mañana",
+            "hoy",
+            "hora",
+            "podemos",
+            "disponible",
+            "cuando",
+            "qué hora",
+            "meeting",
+            "llamada",
+        ]
         if any(keyword in text_lower for keyword in scheduling_keywords):
             return "scheduling"
 
@@ -130,14 +152,20 @@ class WhatsAppAutomation:
             "message": message,
         }
 
-    async def _handle_scheduling_request(self, sender_id: str, message: str) -> dict[str, Any]:
+    async def _handle_scheduling_request(
+        self, sender_id: str, message: str
+    ) -> dict[str, Any]:
         """Extrae fecha/hora del mensaje, agendando en Google Calendar."""
 
         logger.info(f"Scheduling request: {message}")
 
         # Extraer fecha/hora con regex
         time_match = re.search(r"(\d{1,2}):(\d{2})", message)
-        date_match = re.search(r"(mañana|hoy|próximo|siguiente|día|lunes|martes|miércoles|jueves|viernes|sábado|domingo)", message, re.IGNORECASE)
+        date_match = re.search(
+            r"(mañana|hoy|próximo|siguiente|día|lunes|martes|miércoles|jueves|viernes|sábado|domingo)",
+            message,
+            re.IGNORECASE,
+        )
 
         if not (time_match and date_match):
             # Pedir clarificación
@@ -213,7 +241,9 @@ class WhatsAppAutomation:
             )
 
             if cv_response["status"] == "success":
-                response_text = cv_response.get("suggestion", {}).get("next_action", "No entiendo, podés reformular?")
+                response_text = cv_response.get("suggestion", {}).get(
+                    "next_action", "No entiendo, podés reformular?"
+                )
                 await self._send_message(sender_id, response_text)
                 return {"status": "cv_response", "response": response_text}
 
@@ -277,7 +307,10 @@ class WhatsAppAutomation:
 
             if response.status_code == 200:
                 logger.info(f"Message sent to {recipient_id}")
-                return {"status": "success", "message_id": response.json().get("messages", [{}])[0].get("id")}
+                return {
+                    "status": "success",
+                    "message_id": response.json().get("messages", [{}])[0].get("id"),
+                }
             else:
                 logger.error(f"Send failed: {response.status_code}")
                 return {"status": "error"}
@@ -286,7 +319,9 @@ class WhatsAppAutomation:
             logger.exception("Send via API failed")
             return {"status": "error"}
 
-    async def _send_via_computer_use(self, recipient_id: str, text: str) -> dict[str, Any]:
+    async def _send_via_computer_use(
+        self, recipient_id: str, text: str
+    ) -> dict[str, Any]:
         """Envía via Computer Use (WhatsApp Web)."""
 
         logger.info(f"Sending via Computer Use to {recipient_id}")
@@ -297,7 +332,11 @@ class WhatsAppAutomation:
         # 3. Clickea, escribe mensaje
         # 4. Envía
 
-        return {"status": "scheduled_for_computer_use", "recipient": recipient_id, "text": text}
+        return {
+            "status": "scheduled_for_computer_use",
+            "recipient": recipient_id,
+            "text": text,
+        }
 
     async def close(self):
         """Cierra conexión HTTP."""

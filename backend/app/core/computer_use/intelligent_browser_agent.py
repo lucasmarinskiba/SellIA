@@ -46,15 +46,27 @@ class IntelligentBrowserAgent:
                 "product_name": product.get("name"),
                 "product_category": product.get("category"),
                 "base_price": product.get("price"),
-                "competition_price": market_conditions.get("competitor_price") if market_conditions else None,
-                "demand": market_conditions.get("demand", "medium") if market_conditions else "medium",
+                "competition_price": (
+                    market_conditions.get("competitor_price")
+                    if market_conditions
+                    else None
+                ),
+                "demand": (
+                    market_conditions.get("demand", "medium")
+                    if market_conditions
+                    else "medium"
+                ),
             },
         }
 
         # 2. Consultar brain
         decision = await self.brain.decide_action(
             situation,
-            available_strategies=["premium_positioning", "value_positioning", "volume_positioning"],
+            available_strategies=[
+                "premium_positioning",
+                "value_positioning",
+                "volume_positioning",
+            ],
         )
 
         # 3. Generar copy optimizado
@@ -106,18 +118,26 @@ class IntelligentBrowserAgent:
             "strategy": decision.get("strategy"),
         }
 
-    async def _build_description(self, product: dict[str, Any], structure: list[str]) -> str:
+    async def _build_description(
+        self, product: dict[str, Any], structure: list[str]
+    ) -> str:
         """Construye descripción siguiendo estructura."""
         parts = []
 
         # Hook
-        parts.append(f"🎯 {product.get('headline', 'Discover the perfect solution for you')}")
+        parts.append(
+            f"🎯 {product.get('headline', 'Discover the perfect solution for you')}"
+        )
 
         # Problem
-        parts.append(f"❌ Tired of: {product.get('problem', 'dealing with subpar products')}")
+        parts.append(
+            f"❌ Tired of: {product.get('problem', 'dealing with subpar products')}"
+        )
 
         # Solution
-        parts.append(f"✅ Our {product.get('category', 'product')}: {product.get('value_prop', 'delivers exceptional quality')}")
+        parts.append(
+            f"✅ Our {product.get('category', 'product')}: {product.get('value_prop', 'delivers exceptional quality')}"
+        )
 
         # Features
         if product.get("features"):
@@ -126,14 +146,18 @@ class IntelligentBrowserAgent:
                 parts.append(f"  • {feature}")
 
         # Proof
-        parts.append(f"⭐ {product.get('rating', '4.9')}/5 stars from {product.get('reviews', '100+')} satisfied customers")
+        parts.append(
+            f"⭐ {product.get('rating', '4.9')}/5 stars from {product.get('reviews', '100+')} satisfied customers"
+        )
 
         # CTA
         parts.append("🚀 Order now and get guaranteed satisfaction!")
 
         return "\n".join(parts)
 
-    async def _execute_listing(self, product: dict[str, Any], platform: str) -> dict[str, Any]:
+    async def _execute_listing(
+        self, product: dict[str, Any], platform: str
+    ) -> dict[str, Any]:
         """Ejecuta listing via Computer Use."""
 
         if platform == "mercadolibre":
@@ -148,7 +172,9 @@ class IntelligentBrowserAgent:
             return {"status": "error", "message": f"Platform {platform} not supported"}
 
         # Ejecutar workflow
-        result = await self.browser.execute_workflow(f"intelligent_list_{product.get('id')}", actions)
+        result = await self.browser.execute_workflow(
+            f"intelligent_list_{product.get('id')}", actions
+        )
 
         return {
             "status": "success" if result.get("completed", 0) > 0 else "partial",
@@ -157,48 +183,91 @@ class IntelligentBrowserAgent:
             "product_id": product.get("id"),
         }
 
-    async def _build_ml_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _build_ml_listing_actions(
+        self, product: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Construye acciones MercadoLibre."""
         return [
-            {"type": "navigate", "params": {"url": "https://www.mercadolibre.com.ar/vender"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='titulo']": product.get("title"),
-                "input[name='precio']": str(product.get("price")),
-                "textarea[name='descripcion']": product.get("description"),
-            }}},
+            {
+                "type": "navigate",
+                "params": {"url": "https://www.mercadolibre.com.ar/vender"},
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[name='titulo']": product.get("title"),
+                        "input[name='precio']": str(product.get("price")),
+                        "textarea[name='descripcion']": product.get("description"),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button:has-text('Publicar')"}},
-            {"type": "screenshot", "params": {"filename": f"ml_listed_{product.get('id')}.png"}},
+            {
+                "type": "screenshot",
+                "params": {"filename": f"ml_listed_{product.get('id')}.png"},
+            },
         ]
 
-    async def _build_amazon_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _build_amazon_listing_actions(
+        self, product: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         return [
-            {"type": "navigate", "params": {"url": "https://sellercentral.amazon.com/products/create"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='title']": product.get("title"),
-                "input[name='price']": str(product.get("price")),
-                "textarea[name='description']": product.get("description"),
-            }}},
+            {
+                "type": "navigate",
+                "params": {"url": "https://sellercentral.amazon.com/products/create"},
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[name='title']": product.get("title"),
+                        "input[name='price']": str(product.get("price")),
+                        "textarea[name='description']": product.get("description"),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button:has-text('Publish')"}},
         ]
 
-    async def _build_shopify_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _build_shopify_listing_actions(
+        self, product: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         return [
-            {"type": "navigate", "params": {"url": "https://admin.shopify.com/products/create"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='title']": product.get("title"),
-                "input[name='price']": str(product.get("price")),
-                "textarea[name='description']": product.get("description"),
-            }}},
+            {
+                "type": "navigate",
+                "params": {"url": "https://admin.shopify.com/products/create"},
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[name='title']": product.get("title"),
+                        "input[name='price']": str(product.get("price")),
+                        "textarea[name='description']": product.get("description"),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button:has-text('Save')"}},
         ]
 
-    async def _build_tiktok_listing_actions(self, product: dict[str, Any]) -> list[dict[str, Any]]:
+    async def _build_tiktok_listing_actions(
+        self, product: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         return [
-            {"type": "navigate", "params": {"url": "https://seller.tiktok.com/products/add"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='product name']": product.get("title"),
-                "input[placeholder*='price']": str(product.get("price")),
-            }}},
+            {
+                "type": "navigate",
+                "params": {"url": "https://seller.tiktok.com/products/add"},
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[placeholder*='product name']": product.get("title"),
+                        "input[placeholder*='price']": str(product.get("price")),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button:has-text('Create')"}},
         ]
 
@@ -219,13 +288,17 @@ class IntelligentBrowserAgent:
         4. Adapta según buyer responses
         """
 
-        logger.info(f"Intelligent negotiation with buyer type: {buyer_profile.get('type')}")
+        logger.info(
+            f"Intelligent negotiation with buyer type: {buyer_profile.get('type')}"
+        )
 
         situation = {
             "platform": "negotiation",
             "action_type": "negotiate_deal",
             "context": {
-                "buyer_type": buyer_profile.get("type"),  # price_sensitive, early_adopter, risk_averse
+                "buyer_type": buyer_profile.get(
+                    "type"
+                ),  # price_sensitive, early_adopter, risk_averse
                 "product_category": product.get("category"),
                 "initial_offer": initial_offer,
                 "budget": buyer_profile.get("budget"),
@@ -273,17 +346,31 @@ class IntelligentBrowserAgent:
         elif buyer_type == "risk_averse":
             opening_message = f"{product.get('name')} con 90-day money-back guarantee. Zero risk. ¿Cuándo te gustaría probarlo?"
         else:
-            opening_message = f"Tengo ${product.get('name')} disponible. ¿Cuál es tu mejor precio?"
+            opening_message = (
+                f"Tengo ${product.get('name')} disponible. ¿Cuál es tu mejor precio?"
+            )
 
         # Enviar mensaje via Computer Use (WhatsApp Web)
         actions = [
             {"type": "navigate", "params": {"url": "https://web.whatsapp.com"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='Buscar']": buyer_profile.get("phone", buyer_profile.get("email")),
-            }}},
-            {"type": "fill_form", "params": {"fields": {
-                "div[contenteditable='true']": opening_message,
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[placeholder*='Buscar']": buyer_profile.get(
+                            "phone", buyer_profile.get("email")
+                        ),
+                    }
+                },
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "div[contenteditable='true']": opening_message,
+                    }
+                },
+            },
             {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
         ]
 
@@ -296,7 +383,7 @@ class IntelligentBrowserAgent:
 
         return {
             "status": "success" if result.get("completed", 0) > 0 else "failed",
-            "opening_price": tactics['parameters'].get('recommended_price', 100),
+            "opening_price": tactics["parameters"].get("recommended_price", 100),
             "final_price": None,  # TODO: Extraer de buyer response
         }
 
@@ -323,25 +410,31 @@ class IntelligentBrowserAgent:
         recommendations = []
 
         if ctr < 0.02:  # <2% CTR is bad
-            recommendations.append({
-                "issue": "Low CTR (interest low)",
-                "action": "Change title (more keywords, emotional benefit)",
-                "expected_impact": "+50% CTR",
-            })
+            recommendations.append(
+                {
+                    "issue": "Low CTR (interest low)",
+                    "action": "Change title (more keywords, emotional benefit)",
+                    "expected_impact": "+50% CTR",
+                }
+            )
 
         if conversion_rate < 0.05:  # <5% conversion is bad
-            recommendations.append({
-                "issue": "Low conversion (buyers hesitant)",
-                "action": "Lower price 10% OR add guarantee",
-                "expected_impact": "+30% conversion",
-            })
+            recommendations.append(
+                {
+                    "issue": "Low conversion (buyers hesitant)",
+                    "action": "Lower price 10% OR add guarantee",
+                    "expected_impact": "+30% conversion",
+                }
+            )
 
         if sentiment_score < 0.5:  # Negative feedback
-            recommendations.append({
-                "issue": "Negative sentiment from reviews",
-                "action": "Address quality issues OR change product positioning",
-                "expected_impact": "Sentiment +0.3",
-            })
+            recommendations.append(
+                {
+                    "issue": "Negative sentiment from reviews",
+                    "action": "Address quality issues OR change product positioning",
+                    "expected_impact": "Sentiment +0.3",
+                }
+            )
 
         return {
             "current_performance": current_performance,

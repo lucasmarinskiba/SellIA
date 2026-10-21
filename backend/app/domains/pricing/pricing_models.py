@@ -24,6 +24,7 @@ from app.core.database import Base
 
 class PricingTier(str, Enum):
     """Location pricing tier."""
+
     FLAGSHIP = "flagship"  # Premium location, higher margins
     STANDARD = "standard"  # Regular satellite location
     DISCOUNT = "discount"  # Budget/promotional location
@@ -31,6 +32,7 @@ class PricingTier(str, Enum):
 
 class DiscountTrigger(str, Enum):
     """When to apply discount."""
+
     PEAK_HOURS = "peak_hours"  # During high-traffic periods
     OFF_PEAK = "off_peak"  # During low-traffic periods
     BULK_PURCHASE = "bulk_purchase"  # Multiple items
@@ -40,6 +42,7 @@ class DiscountTrigger(str, Enum):
 
 class TestVariant(str, Enum):
     """A/B test variants."""
+
     CONTROL = "control"  # Original price
     VARIANT_A = "variant_a"  # Lower price
     VARIANT_B = "variant_b"  # Higher price
@@ -48,15 +51,27 @@ class TestVariant(str, Enum):
 
 class LocationPricingTier(Base):
     """Base pricing tier per location."""
+
     __tablename__ = "location_pricing_tiers"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Tier configuration
     tier = Column(SQLEnum(PricingTier), default=PricingTier.STANDARD)
-    tier_multiplier = Column(Numeric(3, 2), default=Decimal("1.00"))  # 1.2 = +20%, 0.8 = -20%
+    tier_multiplier = Column(
+        Numeric(3, 2), default=Decimal("1.00")
+    )  # 1.2 = +20%, 0.8 = -20%
 
     # Peak hours definition
     peak_hours_start = Column(Integer, default=12)  # Hour 0-23
@@ -74,18 +89,26 @@ class LocationPricingTier(Base):
 
     location = relationship("Location", foreign_keys=[location_id])
 
-    __table_args__ = (
-        Index("idx_location_tier", "location_id", "is_active"),
-    )
+    __table_args__ = (Index("idx_location_tier", "location_id", "is_active"),)
 
 
 class LocationDiscountCode(Base):
     """Discount codes tied to specific location."""
+
     __tablename__ = "location_discount_codes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Code details
     code = Column(String(50), nullable=False, unique=True, index=True)
@@ -107,7 +130,9 @@ class LocationDiscountCode(Base):
 
     # Trigger
     trigger = Column(SQLEnum(DiscountTrigger), default=DiscountTrigger.MANUAL)
-    trigger_condition = Column(String(255), nullable=True)  # e.g., "checkin_at_location"
+    trigger_condition = Column(
+        String(255), nullable=True
+    )  # e.g., "checkin_at_location"
 
     # Flags
     is_active = Column(Boolean, default=True)
@@ -123,11 +148,21 @@ class LocationDiscountCode(Base):
 
 class PricingABTest(Base):
     """A/B test for pricing variants."""
+
     __tablename__ = "pricing_ab_tests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Test config
     test_name = Column(String(255), nullable=False)
@@ -166,18 +201,26 @@ class PricingABTest(Base):
 
     location = relationship("Location", foreign_keys=[location_id])
 
-    __table_args__ = (
-        Index("idx_location_test", "location_id", "is_active"),
-    )
+    __table_args__ = (Index("idx_location_test", "location_id", "is_active"),)
 
 
 class PricingTransaction(Base):
     """Log pricing decisions per transaction."""
+
     __tablename__ = "pricing_transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Order/transaction context
     order_id = Column(String(255), nullable=False)
@@ -213,11 +256,21 @@ class PricingTransaction(Base):
 
 class LocationRevenueImpact(Base):
     """Daily revenue impact summary per location."""
+
     __tablename__ = "location_revenue_impact"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    location_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Date
     date = Column(String(10), nullable=False)  # YYYY-MM-DD
@@ -247,6 +300,4 @@ class LocationRevenueImpact(Base):
 
     location = relationship("Location", foreign_keys=[location_id])
 
-    __table_args__ = (
-        Index("idx_location_date", "location_id", "date"),
-    )
+    __table_args__ = (Index("idx_location_date", "location_id", "date"),)

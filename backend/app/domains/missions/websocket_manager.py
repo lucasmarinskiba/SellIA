@@ -51,14 +51,17 @@ class MissionWebSocketManager:
         data: dict[str, Any] | None = None,
     ):
         """Convenience method to broadcast mission step progress."""
-        await self.broadcast(user_id, {
-            "type": "mission_progress",
-            "mission_id": mission_id,
-            "step_id": step_id,
-            "status": status,
-            "data": data or {},
-            "timestamp": str(__import__('datetime').utc_now()),
-        })
+        await self.broadcast(
+            user_id,
+            {
+                "type": "mission_progress",
+                "mission_id": mission_id,
+                "step_id": step_id,
+                "status": status,
+                "data": data or {},
+                "timestamp": str(__import__("datetime").utc_now()),
+            },
+        )
 
     async def broadcast_mission_status(
         self,
@@ -68,13 +71,16 @@ class MissionWebSocketManager:
         message: str = "",
     ):
         """Broadcast overall mission status change."""
-        await self.broadcast(user_id, {
-            "type": "mission_status",
-            "mission_id": mission_id,
-            "status": status,
-            "message": message,
-            "timestamp": str(__import__('datetime').utc_now()),
-        })
+        await self.broadcast(
+            user_id,
+            {
+                "type": "mission_status",
+                "mission_id": mission_id,
+                "status": status,
+                "message": message,
+                "timestamp": str(__import__("datetime").utc_now()),
+            },
+        )
 
     async def broadcast_step_approval_request(
         self,
@@ -84,13 +90,16 @@ class MissionWebSocketManager:
         step_title: str,
     ):
         """Broadcast when a step requires user approval."""
-        await self.broadcast(user_id, {
-            "type": "step_approval_request",
-            "mission_id": mission_id,
-            "step_id": step_id,
-            "step_title": step_title,
-            "message": f"El paso '{step_title}' requiere tu aprobación para continuar.",
-        })
+        await self.broadcast(
+            user_id,
+            {
+                "type": "step_approval_request",
+                "mission_id": mission_id,
+                "step_id": step_id,
+                "step_title": step_title,
+                "message": f"El paso '{step_title}' requiere tu aprobación para continuar.",
+            },
+        )
 
 
 # Singleton instance

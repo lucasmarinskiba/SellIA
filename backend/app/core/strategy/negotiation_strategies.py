@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class NegotiationType(str, Enum):
     """Negotiation context types."""
+
     SUPPLIER = "supplier"
     CUSTOMER = "customer"
     EMPLOYEE = "employee"
@@ -20,6 +21,7 @@ class NegotiationType(str, Enum):
 @dataclass
 class NegotiationContext:
     """Context for negotiation."""
+
     negotiation_type: NegotiationType
     counterparty: str  # Name of supplier/customer/employee
     current_terms: dict[str, Any]  # Current agreement terms
@@ -30,6 +32,7 @@ class NegotiationContext:
 @dataclass
 class OptimalTerms:
     """Recommended negotiation terms."""
+
     price: float
     payment_terms: str  # 30/60/90 days, etc.
     volume_commitment: str
@@ -42,6 +45,7 @@ class OptimalTerms:
 @dataclass
 class OptimalDeal:
     """Recommended customer deal structure."""
+
     product_bundle: list[str]
     price: float
     payment_plan: str  # One-time, monthly, custom
@@ -55,6 +59,7 @@ class OptimalDeal:
 @dataclass
 class OptimalPackage:
     """Recommended employee compensation package."""
+
     base_salary: float
     equity_percent: float
     equity_vest_months: int
@@ -288,7 +293,9 @@ class NegotiationStrategist:
         benefits = self._select_benefits(business_profile.stage)
 
         # Calculate total comp
-        total_comp = final_salary + (final_salary * bonus_percent) + (equity_percent * 100000)
+        total_comp = (
+            final_salary + (final_salary * bonus_percent) + (equity_percent * 100000)
+        )
 
         return OptimalPackage(
             base_salary=final_salary,
@@ -447,10 +454,14 @@ class NegotiationStrategist:
             base_rate += 0.10
         return min(base_rate, 0.60)
 
-    def _calculate_affordable_salary(self, business_profile: "BusinessProfile", seniority: str) -> float:
+    def _calculate_affordable_salary(
+        self, business_profile: "BusinessProfile", seniority: str
+    ) -> float:
         """Calculate what we can afford to pay."""
         annual_revenue = business_profile.financials.annual_revenue
-        payroll_percent = 0.30 if business_profile.stage in ["startup", "growth"] else 0.35
+        payroll_percent = (
+            0.30 if business_profile.stage in ["startup", "growth"] else 0.35
+        )
 
         available_for_payroll = annual_revenue * payroll_percent
         # Divide by existing team to get per-person average
@@ -459,7 +470,9 @@ class NegotiationStrategist:
         seniority_multiplier = {"junior": 0.8, "mid": 1.0, "senior": 1.3}
         return per_person_budget * seniority_multiplier.get(seniority, 1.0)
 
-    def _optimize_equity(self, business_profile: "BusinessProfile", seniority: str) -> tuple:
+    def _optimize_equity(
+        self, business_profile: "BusinessProfile", seniority: str
+    ) -> tuple:
         """Optimize equity grant."""
         if business_profile.stage == "startup":
             equity_ranges = {"junior": 0.10, "mid": 0.25, "senior": 0.50}
@@ -486,13 +499,21 @@ class NegotiationStrategist:
 
     def _create_growth_path(self, role: str) -> str:
         """Create growth path description."""
-        return f"6-month check-in → potential promotion to {role} lead within 12-18 months"
+        return (
+            f"6-month check-in → potential promotion to {role} lead within 12-18 months"
+        )
 
     def _select_benefits(self, stage: str) -> list[str]:
         """Select benefits package."""
         benefits = ["Health insurance", "401k matching (3%)"]
 
         if stage in ["scale", "mature"]:
-            benefits.extend(["Gym membership", "Conference budget ($2k/year)", "Home office stipend"])
+            benefits.extend(
+                [
+                    "Gym membership",
+                    "Conference budget ($2k/year)",
+                    "Home office stipend",
+                ]
+            )
 
         return benefits

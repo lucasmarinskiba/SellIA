@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class SaleStatus(Enum):
     """Sale status."""
+
     PENDING = "pending"
     APPROVED = "approved"
     PAID = "paid"
@@ -37,6 +38,7 @@ class SaleStatus(Enum):
 
 class MethodCategory(Enum):
     """Affiliate method categories."""
+
     EMAIL = "email"
     CONTENT = "content"
     PAID_ADS = "paid_ads"
@@ -47,6 +49,7 @@ class MethodCategory(Enum):
 @dataclass
 class AffiliateProduct:
     """Affiliate product information."""
+
     product_id: str
     name: str
     platform: str  # hotmart, mercado_libre, amazon
@@ -72,6 +75,7 @@ class AffiliateProduct:
 @dataclass
 class AffiliateSale:
     """Individual affiliate sale."""
+
     sale_id: str
     product_id: str
     method: str  # blog_reviews, email, youtube, etc.
@@ -99,7 +103,11 @@ class AffiliateSale:
             "status": self.status.value,
             "cost": self.cost,
             "profit": self.commission_earned - self.cost,
-            "roi": ((self.commission_earned - self.cost) / self.cost) if self.cost > 0 else None,
+            "roi": (
+                ((self.commission_earned - self.cost) / self.cost)
+                if self.cost > 0
+                else None
+            ),
             "notes": self.notes,
         }
 
@@ -140,7 +148,9 @@ class CommissionTracker:
         """Get all sales with status."""
         return [s for s in self.sales if s.status == status]
 
-    def get_sales_by_date_range(self, start: datetime, end: datetime) -> list[AffiliateSale]:
+    def get_sales_by_date_range(
+        self, start: datetime, end: datetime
+    ) -> list[AffiliateSale]:
         """Get sales in date range."""
         return [s for s in self.sales if start <= s.sale_date <= end]
 
@@ -151,7 +161,9 @@ class CommissionTracker:
             return {}
 
         sales = self.get_sales_by_product(product_id)
-        approved_sales = [s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
+        approved_sales = [
+            s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]
+        ]
 
         total_sales = len(sales)
         total_approved = len(approved_sales)
@@ -172,14 +184,22 @@ class CommissionTracker:
             "total_commission_earned": f"${total_commission:.2f}",
             "total_cost": f"${total_cost:.2f}",
             "net_profit": f"${net_profit:.2f}",
-            "average_commission_per_sale": f"${total_commission / total_approved:.2f}" if total_approved > 0 else "$0",
-            "roi": f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%",
+            "average_commission_per_sale": (
+                f"${total_commission / total_approved:.2f}"
+                if total_approved > 0
+                else "$0"
+            ),
+            "roi": (
+                f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%"
+            ),
         }
 
     def get_method_performance(self, method: str) -> dict[str, Any]:
         """Get performance for a method."""
         sales = self.get_sales_by_method(method)
-        approved_sales = [s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
+        approved_sales = [
+            s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]
+        ]
 
         total_sales = len(sales)
         total_commission = sum(s.commission_earned for s in approved_sales)
@@ -200,15 +220,23 @@ class CommissionTracker:
             "total_commission_earned": f"${total_commission:.2f}",
             "total_cost": f"${total_cost:.2f}",
             "net_profit": f"${net_profit:.2f}",
-            "average_commission_per_sale": f"${total_commission / len(approved_sales):.2f}" if approved_sales else "$0",
-            "roi": f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%",
+            "average_commission_per_sale": (
+                f"${total_commission / len(approved_sales):.2f}"
+                if approved_sales
+                else "$0"
+            ),
+            "roi": (
+                f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%"
+            ),
             "channel_breakdown": methods_breakdown,
         }
 
     def get_channel_performance(self, channel: str) -> dict[str, Any]:
         """Get performance for a channel (email, blog, youtube, etc.)."""
         sales = self.get_sales_by_channel(channel)
-        approved_sales = [s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
+        approved_sales = [
+            s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]
+        ]
 
         total_sales = len(sales)
         total_commission = sum(s.commission_earned for s in approved_sales)
@@ -230,12 +258,18 @@ class CommissionTracker:
             "total_commission_earned": f"${total_commission:.2f}",
             "total_cost": f"${total_cost:.2f}",
             "net_profit": f"${net_profit:.2f}",
-            "average_commission_per_sale": f"${total_commission / len(approved_sales):.2f}" if approved_sales else "$0",
-            "roi": f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%",
+            "average_commission_per_sale": (
+                f"${total_commission / len(approved_sales):.2f}"
+                if approved_sales
+                else "$0"
+            ),
+            "roi": (
+                f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%"
+            ),
             "top_products_by_channel": sorted(
                 [(pid, data["commission"]) for pid, data in by_product.items()],
                 key=lambda x: x[1],
-                reverse=True
+                reverse=True,
             )[:5],
         }
 
@@ -264,11 +298,19 @@ class CommissionTracker:
 
         return {
             "by_method": {
-                m: f"{(data['converted'] / data['total'] * 100):.2f}%" if data['total'] > 0 else "0%"
+                m: (
+                    f"{(data['converted'] / data['total'] * 100):.2f}%"
+                    if data["total"] > 0
+                    else "0%"
+                )
                 for m, data in by_method.items()
             },
             "by_channel": {
-                c: f"{(data['converted'] / data['total'] * 100):.2f}%" if data['total'] > 0 else "0%"
+                c: (
+                    f"{(data['converted'] / data['total'] * 100):.2f}%"
+                    if data["total"] > 0
+                    else "0%"
+                )
                 for c, data in by_channel.items()
             },
         }
@@ -298,15 +340,16 @@ class CommissionTracker:
 
         return {
             "by_month": {
-                m: {
-                    "sales": data["count"],
-                    "commission": f"${data['commission']:.2f}"
-                }
+                m: {"sales": data["count"], "commission": f"${data['commission']:.2f}"}
                 for m, data in sorted(by_month.items())
             },
             "by_season": {
                 m: f"${data['commission']:.2f}"
-                for m, data in sorted(by_month_of_year.items(), key=lambda x: x[1]["commission"], reverse=True)
+                for m, data in sorted(
+                    by_month_of_year.items(),
+                    key=lambda x: x[1]["commission"],
+                    reverse=True,
+                )
             },
         }
 
@@ -324,7 +367,11 @@ class CommissionTracker:
         ltv_values = []
         repeat_customers = 0
         for customer_sales in by_customer.values():
-            approved = [s for s in customer_sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
+            approved = [
+                s
+                for s in customer_sales
+                if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]
+            ]
             if len(approved) > 0:
                 ltv = sum(s.commission_earned for s in approved)
                 ltv_values.append(ltv)
@@ -361,9 +408,10 @@ class CommissionTracker:
         # Top products
         product_commission = {}
         for sale in approved_sales:
-            product_name = self.products.get(sale.product_id, AffiliateProduct(
-                sale.product_id, "Unknown", "", "", 0, 0, ""
-            )).name
+            product_name = self.products.get(
+                sale.product_id,
+                AffiliateProduct(sale.product_id, "Unknown", "", "", 0, 0, ""),
+            ).name
             if product_name not in product_commission:
                 product_commission[product_name] = 0
             product_commission[product_name] += sale.commission_earned
@@ -390,23 +438,31 @@ class CommissionTracker:
                 "total_commission_earned": f"${total_commission:.2f}",
                 "total_cost": f"${total_cost:.2f}",
                 "net_profit": f"${net_profit:.2f}",
-                "approval_rate": f"{(len(approved_sales) / len(self.sales) * 100):.1f}%" if self.sales else "0%",
-                "roi": f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%",
+                "approval_rate": (
+                    f"{(len(approved_sales) / len(self.sales) * 100):.1f}%"
+                    if self.sales
+                    else "0%"
+                ),
+                "roi": (
+                    f"{(net_profit / total_cost * 100):.1f}%"
+                    if total_cost > 0
+                    else "0%"
+                ),
             },
             "top_products": sorted(
                 [(p, f"${c:.2f}") for p, c in product_commission.items()],
                 key=lambda x: float(x[1].replace("$", "")),
-                reverse=True
+                reverse=True,
             )[:5],
             "top_methods": sorted(
                 [(m, f"${c:.2f}") for m, c in method_commission.items()],
                 key=lambda x: float(x[1].replace("$", "")),
-                reverse=True
+                reverse=True,
             )[:5],
             "top_channels": sorted(
                 [(c, f"${com:.2f}") for c, com in channel_commission.items()],
                 key=lambda x: float(x[1].replace("$", "")),
-                reverse=True
+                reverse=True,
             )[:5],
             "ltv": self.estimate_customer_ltv(),
             "conversion_rates": self.get_conversion_rates(),
@@ -421,7 +477,9 @@ class CommissionTracker:
             end = datetime(year, month + 1, 1)
 
         month_sales = self.get_sales_by_date_range(start, end)
-        approved_month = [s for s in month_sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
+        approved_month = [
+            s for s in month_sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]
+        ]
 
         total_commission = sum(s.commission_earned for s in approved_month)
         total_cost = sum(s.cost for s in approved_month)
@@ -441,6 +499,7 @@ class CommissionTracker:
 # FACTORY FUNCTIONS
 # ============================================================================
 
+
 def create_commission_tracker() -> CommissionTracker:
     """Factory to create commission tracker."""
     return CommissionTracker()
@@ -450,8 +509,18 @@ if __name__ == "__main__":
     tracker = create_commission_tracker()
 
     # Add sample products
-    product1 = AffiliateProduct("prod_1", "AI Marketing Course", "hotmart", "courses", 297, 0.40, "https://...")
-    product2 = AffiliateProduct("prod_2", "Social Media Templates", "hotmart", "templates", 47, 0.35, "https://...")
+    product1 = AffiliateProduct(
+        "prod_1", "AI Marketing Course", "hotmart", "courses", 297, 0.40, "https://..."
+    )
+    product2 = AffiliateProduct(
+        "prod_2",
+        "Social Media Templates",
+        "hotmart",
+        "templates",
+        47,
+        0.35,
+        "https://...",
+    )
 
     tracker.add_product(product1)
     tracker.add_product(product2)
@@ -459,20 +528,30 @@ if __name__ == "__main__":
     # Add sample sales
     now = utc_now()
     sale1 = AffiliateSale(
-        "sale_1", "prod_1", "blog_reviews", "blog",
+        "sale_1",
+        "prod_1",
+        "blog_reviews",
+        "blog",
         now - timedelta(days=5),
-        297, 0.40, 118.80,
+        297,
+        0.40,
+        118.80,
         customer_id="cust_1",
         status=SaleStatus.APPROVED,
-        cost=50
+        cost=50,
     )
     sale2 = AffiliateSale(
-        "sale_2", "prod_1", "email", "newsletter",
+        "sale_2",
+        "prod_1",
+        "email",
+        "newsletter",
         now - timedelta(days=3),
-        297, 0.40, 118.80,
+        297,
+        0.40,
+        118.80,
         customer_id="cust_2",
         status=SaleStatus.APPROVED,
-        cost=0
+        cost=0,
     )
 
     tracker.record_sale(sale1)

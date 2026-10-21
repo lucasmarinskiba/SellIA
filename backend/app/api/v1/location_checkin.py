@@ -64,18 +64,20 @@ async def visitor_checkin(
     try:
         checkin = LocationCheckinService.checkin_visitor(
             location_id=request.location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             checkin_type=CheckinType[request.checkin_type.upper()],
             visitor_phone=request.visitor_phone,
             visitor_email=request.visitor_email,
             visitor_name=request.visitor_name,
             qr_code=request.qr_code,
-            db=db
+            db=db,
         )
         return {
             "status": "checked_in",
             "checkin_id": str(checkin.id),
-            "checkin_time": checkin.checkin_time.isoformat()
+            "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
         logger.exception("visitor_checkin: error inesperado")
@@ -92,12 +94,14 @@ async def visitor_checkout(
         checkin = LocationCheckinService.checkout_visitor(
             checkin_id=request.checkin_id,
             visited_sections=request.visited_sections,
-            db=db
+            db=db,
         )
         return {
             "status": "checked_out",
             "dwell_seconds": checkin.dwell_seconds,
-            "dwell_minutes": checkin.dwell_seconds // 60 if checkin.dwell_seconds else 0
+            "dwell_minutes": (
+                checkin.dwell_seconds // 60 if checkin.dwell_seconds else 0
+            ),
         }
     except Exception as e:
         logger.exception("visitor_checkout: error inesperado")
@@ -118,13 +122,13 @@ async def submit_feedback(
             comment=request.comment,
             topics=request.topics,
             checkin_id=request.checkin_id,
-            db=db
+            db=db,
         )
         return {
             "status": "feedback_submitted",
             "feedback_id": str(feedback.id),
             "sentiment": feedback.sentiment,
-            "requires_followup": feedback.requires_followup
+            "requires_followup": feedback.requires_followup,
         }
     except Exception as e:
         logger.exception("submit_feedback: error inesperado")
@@ -145,12 +149,12 @@ async def staff_checkin(
             staff_id=request.staff_id,
             staff_name=request.staff_name,
             staff_role=request.staff_role,
-            db=db
+            db=db,
         )
         return {
             "status": "staff_checked_in",
             "staff_checkin_id": str(checkin.id),
-            "checkin_time": checkin.checkin_time.isoformat()
+            "checkin_time": checkin.checkin_time.isoformat(),
         }
     except Exception as e:
         logger.exception("staff_checkin: error inesperado")
@@ -170,15 +174,19 @@ async def staff_checkout(
             visitors_engaged=request.visitors_engaged,
             demos_conducted=request.demos_conducted,
             sales_assisted=request.sales_assisted,
-            db=db
+            db=db,
         )
-        dwell = (checkin.checkout_time - checkin.checkin_time).total_seconds() / 3600 if checkin.checkout_time else 0
+        dwell = (
+            (checkin.checkout_time - checkin.checkin_time).total_seconds() / 3600
+            if checkin.checkout_time
+            else 0
+        )
         return {
             "status": "staff_checked_out",
             "hours_worked": round(dwell, 2),
             "visitors_engaged": checkin.visitors_engaged,
             "demos": checkin.demos_conducted,
-            "sales": checkin.sales_assisted
+            "sales": checkin.sales_assisted,
         }
     except Exception as e:
         logger.exception("staff_checkout: error inesperado")
@@ -194,9 +202,7 @@ async def get_checkin_summary(
     """Get real-time check-in activity for location."""
     try:
         summary = LocationCheckinService.get_location_checkin_summary(
-            location_id=location_id,
-            hours=hours,
-            db=db
+            location_id=location_id, hours=hours, db=db
         )
         return summary
     except Exception as e:
@@ -215,10 +221,7 @@ async def get_staff_performance(
     """Get staff member's performance metrics."""
     try:
         performance = LocationCheckinService.get_staff_performance(
-            location_id=location_id,
-            staff_id=staff_id,
-            days=days,
-            db=db
+            location_id=location_id, staff_id=staff_id, days=days, db=db
         )
         return performance
     except Exception as e:

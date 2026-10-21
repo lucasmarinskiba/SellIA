@@ -43,29 +43,33 @@ class WarmLeadDetector:
 
         # Find leads who were cold/dormant but showed activity recently
         result = await self.db.execute(
-            select(InboundLead, Conversation).join(
-                Conversation, InboundLead.conversation_id == Conversation.id
-            ).where(
+            select(InboundLead, Conversation)
+            .join(Conversation, InboundLead.conversation_id == Conversation.id)
+            .where(
                 InboundLead.business_id == business_id,
                 InboundLead.is_active == True,
-                InboundLead.nurturing_stage.in_([
-                    NurturingStage.NEW,
-                    NurturingStage.AWARENESS,
-                    NurturingStage.DORMANT,
-                ]),
+                InboundLead.nurturing_stage.in_(
+                    [
+                        NurturingStage.NEW,
+                        NurturingStage.AWARENESS,
+                        NurturingStage.DORMANT,
+                    ]
+                ),
             )
         )
 
         for lead, conv in result.all():
             signals = await self._analyze_warming_signals(lead, conv, since)
             if signals["score"] >= 3:
-                warming_leads.append({
-                    "lead_id": str(lead.id),
-                    "conversation_id": str(conv.id),
-                    "previous_stage": lead.nurturing_stage.value,
-                    "warming_score": signals["score"],
-                    "signals_detected": signals["details"],
-                })
+                warming_leads.append(
+                    {
+                        "lead_id": str(lead.id),
+                        "conversation_id": str(conv.id),
+                        "previous_stage": lead.nurturing_stage.value,
+                        "warming_score": signals["score"],
+                        "signals_detected": signals["details"],
+                    }
+                )
 
                 # Auto-advance stage
                 await self._advance_stage(lead, signals["score"])
@@ -84,22 +88,28 @@ class WarmLeadDetector:
 
         # Signal 1: Replied after long silence (> 7 days)
         last_msg_result = await self.db.execute(
-            select(Message).where(
+            select(Message)
+            .where(
                 Message.conversation_id == conv.id,
                 Message.direction == "inbound",
                 Message.created_at >= since,
-            ).order_by(desc(Message.created_at)).limit(1)
+            )
+            .order_by(desc(Message.created_at))
+            .limit(1)
         )
         last_inbound = last_msg_result.scalar_one_or_none()
 
         if last_inbound:
             # Check gap since previous message
             prev_msg_result = await self.db.execute(
-                select(Message).where(
+                select(Message)
+                .where(
                     Message.conversation_id == conv.id,
                     Message.direction == "inbound",
                     Message.created_at < last_inbound.created_at,
-                ).order_by(desc(Message.created_at)).limit(1)
+                )
+                .order_by(desc(Message.created_at))
+                .limit(1)
             )
             prev_msg = prev_msg_result.scalar_one_or_none()
 
@@ -131,12 +141,31 @@ class WarmLeadDetector:
         # Signal 3: Asked about price/product specifically
         if last_inbound and last_inbound.content:
             content_lower = last_inbound.content.lower()
-            price_keywords = ["precio", "cuanto", "cuánto", "costo", "valor", "price", "cost", "cuanto sale", "precios"]
+            price_keywords = [
+                "precio",
+                "cuanto",
+                "cuánto",
+                "costo",
+                "valor",
+                "price",
+                "cost",
+                "cuanto sale",
+                "precios",
+            ]
             if any(kw in content_lower for kw in price_keywords):
                 score += 3
                 details.append("price_inquiry")
 
-            buy_keywords = ["comprar", "ordenar", "quiero", "me interesa", "disponible", "stock", "buy", "order"]
+            buy_keywords = [
+                "comprar",
+                "ordenar",
+                "quiero",
+                "me interesa",
+                "disponible",
+                "stock",
+                "buy",
+                "order",
+            ]
             if any(kw in content_lower for kw in buy_keywords):
                 score += 2
                 details.append("buying_intent_keywords")
@@ -163,14 +192,19 @@ class WarmLeadDetector:
         await self.db.commit()
 
         # Emit event for autopilot to act
-        await event_bus.emit("lead.warming_detected", {
-            "business_id": str(lead.business_id),
-            "lead_id": str(lead.id),
-            "conversation_id": str(lead.conversation_id) if lead.conversation_id else None,
-            "old_stage": old_stage.value,
-            "new_stage": lead.nurturing_stage.value,
-            "warming_score": warming_score,
-        })
+        await event_bus.emit(
+            "lead.warming_detected",
+            {
+                "business_id": str(lead.business_id),
+                "lead_id": str(lead.id),
+                "conversation_id": (
+                    str(lead.conversation_id) if lead.conversation_id else None
+                ),
+                "old_stage": old_stage.value,
+                "new_stage": lead.nurturing_stage.value,
+                "warming_score": warming_score,
+            },
+        )
 
         logger.info(
             f"Lead {lead.id} warmed up from {old_stage.value} to {lead.nurturing_stage.value} "
@@ -189,10 +223,12 @@ class WarmLeadDetector:
             select(func.count(InboundLead.id)).where(
                 InboundLead.business_id == business_id,
                 InboundLead.last_touch_at >= since,
-                InboundLead.nurturing_stage.in_([
-                    NurturingStage.CONSIDERATION,
-                    NurturingStage.EVALUATION,
-                ]),
+                InboundLead.nurturing_stage.in_(
+                    [
+                        NurturingStage.CONSIDERATION,
+                        NurturingStage.EVALUATION,
+                    ]
+                ),
             )
         )
         warmed_count = result.scalar() or 0
@@ -209,6 +245,10 @@ class WarmLeadDetector:
             "period_days": days,
             "warmed_leads": warmed_count,
             "converted_leads": converted_count,
-            "conversion_rate": round((converted_count / warmed_count * 100), 2) if warmed_count > 0 else 0,
+            "conversion_rate": (
+                round((converted_count / warmed_count * 100), 2)
+                if warmed_count > 0
+                else 0
+            ),
             "trend": "improving" if warmed_count > 5 else "stable",
         }

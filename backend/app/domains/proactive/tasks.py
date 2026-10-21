@@ -47,7 +47,11 @@ def detect_opportunities_task():
                     # Safe here: the loop only holds plain ids, no ORM objects to expire.
                     await db.rollback()
 
-            return {"status": "ok", "businesses_scanned": len(business_ids), "opportunities_created": total_created}
+            return {
+                "status": "ok",
+                "businesses_scanned": len(business_ids),
+                "opportunities_created": total_created,
+            }
 
     return run_async(_run())
 

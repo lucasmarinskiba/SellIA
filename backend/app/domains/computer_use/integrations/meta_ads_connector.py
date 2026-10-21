@@ -50,7 +50,9 @@ class MetaAdsConnector:
         Retorna: (success, campaign_id)
         """
         try:
-            url = f"{self.BASE_URL}/{self.API_VERSION}/act_{self.ad_account_id}/campaigns"
+            url = (
+                f"{self.BASE_URL}/{self.API_VERSION}/act_{self.ad_account_id}/campaigns"
+            )
 
             params = {
                 "access_token": self.access_token,
@@ -194,7 +196,9 @@ class MetaAdsConnector:
         Retorna: (success, creative_id)
         """
         try:
-            url = f"{self.BASE_URL}/{self.API_VERSION}/act_{self.ad_account_id}/creatives"
+            url = (
+                f"{self.BASE_URL}/{self.API_VERSION}/act_{self.ad_account_id}/creatives"
+            )
 
             params = {
                 "access_token": self.access_token,

@@ -73,7 +73,9 @@ class OpenAIImageProvider(BaseProvider):
         return bool(settings.OPENAI_API_KEY)
 
     def estimate_cost(self, config: GenerationConfig) -> float:
-        model_config = QUALITY_MODELS.get(config.quality, QUALITY_MODELS[ContentQuality.STANDARD])
+        model_config = QUALITY_MODELS.get(
+            config.quality, QUALITY_MODELS[ContentQuality.STANDARD]
+        )
         return model_config["cost_per_image"] * config.num_variations
 
     def get_pricing_table(self) -> dict[str, float]:
@@ -96,11 +98,11 @@ class OpenAIImageProvider(BaseProvider):
 
         try:
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             model_config = QUALITY_MODELS.get(
-                config.quality,
-                QUALITY_MODELS[ContentQuality.STANDARD]
+                config.quality, QUALITY_MODELS[ContentQuality.STANDARD]
             )
 
             # Para variaciones, generamos en paralelo
@@ -111,7 +113,9 @@ class OpenAIImageProvider(BaseProvider):
                     prompt=config.prompt,
                     model_config=model_config,
                     negative_prompt=config.negative_prompt,
-                    size=config.extra_params.get("size", model_config.get("size", "1024x1024")),
+                    size=config.extra_params.get(
+                        "size", model_config.get("size", "1024x1024")
+                    ),
                 )
                 tasks.append(task)
 
@@ -174,6 +178,7 @@ class OpenAIImageProvider(BaseProvider):
 
             # Intentamos descargar y comprimir
             from ..utils import compress_image, download_url, get_image_dimensions
+
             image_bytes = await download_url(image_url)
 
             if image_bytes:
@@ -195,13 +200,23 @@ class OpenAIImageProvider(BaseProvider):
                 local_path=compressed,
                 cost_usd=model_config["cost_per_image"],
                 model_used=model_config["model"],
-                quality_tier=ContentQuality.STANDARD if model_config["quality"] == "standard" else ContentQuality.PREMIUM if model_config["quality"] == "hd" else ContentQuality.DRAFT,
+                quality_tier=(
+                    ContentQuality.STANDARD
+                    if model_config["quality"] == "standard"
+                    else (
+                        ContentQuality.PREMIUM
+                        if model_config["quality"] == "hd"
+                        else ContentQuality.DRAFT
+                    )
+                ),
                 width=width,
                 height=height,
                 metadata={
                     "revised_prompt": revised_prompt,
                     "size": size,
-                    "compressed_size_kb": len(compressed) / 1024 if compressed else None,
+                    "compressed_size_kb": (
+                        len(compressed) / 1024 if compressed else None
+                    ),
                 },
             )
 

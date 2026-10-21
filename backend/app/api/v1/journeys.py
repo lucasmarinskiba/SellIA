@@ -18,7 +18,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/api/v1", tags=["journeys"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/payments.py."""
     result = await db.execute(
         select(Business).where(Business.id == business_id, Business.user_id == user.id)
@@ -29,7 +31,9 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
     return business
 
 
-async def _get_owned_journey(journey_id: UUID, user: User, db: AsyncSession) -> CustomerJourney:
+async def _get_owned_journey(
+    journey_id: UUID, user: User, db: AsyncSession
+) -> CustomerJourney:
     """Look up a journey by id alone and verify it belongs to a business the
     caller owns. create_variant/enroll_customer/get_executions/get_ab_test
     only ever took {journey_id} in the URL -- create_variant and
@@ -39,7 +43,9 @@ async def _get_owned_journey(journey_id: UUID, user: User, db: AsyncSession) -> 
     would have worked. Deriving business_id from the journey itself instead
     of trusting the caller's query param.
     """
-    result = await db.execute(select(CustomerJourney).where(CustomerJourney.id == journey_id))
+    result = await db.execute(
+        select(CustomerJourney).where(CustomerJourney.id == journey_id)
+    )
     journey = result.scalar_one_or_none()
     if not journey:
         raise HTTPException(status_code=404, detail="Journey no encontrado")
@@ -72,7 +78,9 @@ async def create_journey(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await JourneyService.create_journey(business_id, request.name, request.nodes, request.edges, db)
+    return await JourneyService.create_journey(
+        business_id, request.name, request.nodes, request.edges, db
+    )
 
 
 @router.post("/journeys/{journey_id}/variants")
@@ -84,7 +92,12 @@ async def create_variant(
 ):
     journey = await _get_owned_journey(journey_id, current_user, db)
     return await JourneyService.create_variant(
-        journey_id, journey.business_id, request.variant_name, request.variant_config, request.traffic_allocation, db
+        journey_id,
+        journey.business_id,
+        request.variant_name,
+        request.variant_config,
+        request.traffic_allocation,
+        db,
     )
 
 
@@ -96,7 +109,9 @@ async def enroll_customer(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     journey = await _get_owned_journey(journey_id, current_user, db)
-    return await JourneyService.enroll_customer(journey_id, request.customer_id, journey.business_id, request.variant_id, db)
+    return await JourneyService.enroll_customer(
+        journey_id, request.customer_id, journey.business_id, request.variant_id, db
+    )
 
 
 @router.get("/journeys/{journey_id}/executions")
@@ -107,7 +122,9 @@ async def get_executions(
     limit: Annotated[int, Query()] = 50,
 ):
     journey = await _get_owned_journey(journey_id, current_user, db)
-    return await JourneyService.get_journey_executions(journey_id, journey.business_id, limit, db)
+    return await JourneyService.get_journey_executions(
+        journey_id, journey.business_id, limit, db
+    )
 
 
 @router.get("/journeys/{journey_id}/ab-test-result")
@@ -119,7 +136,9 @@ async def get_ab_test(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     journey = await _get_owned_journey(journey_id, current_user, db)
-    return await JourneyService.get_ab_test_result(journey_id, journey.business_id, variant_a_id, variant_b_id, db)
+    return await JourneyService.get_ab_test_result(
+        journey_id, journey.business_id, variant_a_id, variant_b_id, db
+    )
 
 
 @router.get("/businesses/{business_id}/journeys/metrics")

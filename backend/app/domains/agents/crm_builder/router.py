@@ -20,7 +20,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/crm-builder", tags=["crm-builder"])
 
 
-@router.post("/generate", response_model=CRMBuildJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=CRMBuildJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_crm(
     data: CRMBuildJobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -60,6 +62,7 @@ async def get_job(
     from sqlalchemy import select
 
     from app.domains.agents.crm_builder.models import CRMModule
+
     result = await db.execute(select(CRMModule).where(CRMModule.job_id == job_id))
     modules = result.scalars().all()
     base = {

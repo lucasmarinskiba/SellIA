@@ -30,7 +30,9 @@ class AmazonAutomation:
 
     BASE_URL = "https://mws.amazonservices.com"
 
-    def __init__(self, mws_key: str, mws_secret: str, seller_id: str, region: str = "NA"):
+    def __init__(
+        self, mws_key: str, mws_secret: str, seller_id: str, region: str = "NA"
+    ):
         self.mws_key = mws_key
         self.mws_secret = mws_secret
         self.seller_id = seller_id
@@ -63,12 +65,14 @@ class AmazonAutomation:
                 # Generar shipping label
                 shipping = await self._generate_label(order_id, order)
 
-                processed.append({
-                    "order_id": order_id,
-                    "confirm": confirm,
-                    "messages": messages,
-                    "shipping": shipping,
-                })
+                processed.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm,
+                        "messages": messages,
+                        "shipping": shipping,
+                    }
+                )
 
             logger.info(f"Synced {len(processed)} Amazon orders")
 
@@ -136,7 +140,9 @@ class AmazonAutomation:
 
         return {"status": "success", "messages_answered": 0}
 
-    async def _generate_label(self, order_id: str, order: dict[str, Any]) -> dict[str, Any]:
+    async def _generate_label(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Genera shipping label."""
 
         logger.info(f"Generating Amazon label for {order_id}")
@@ -192,12 +198,14 @@ class ShopifyAutomation:
                 # Generar shipping label
                 shipping = await self._create_fulfillment(order_id, order)
 
-                processed.append({
-                    "order_id": order_id,
-                    "confirm": confirm,
-                    "messages": messages,
-                    "shipping": shipping,
-                })
+                processed.append(
+                    {
+                        "order_id": order_id,
+                        "confirm": confirm,
+                        "messages": messages,
+                        "shipping": shipping,
+                    }
+                )
 
             logger.info(f"Synced {len(processed)} Shopify orders")
 
@@ -240,7 +248,9 @@ class ShopifyAutomation:
 
         return {"status": "success"}
 
-    async def _send_order_confirmation(self, order_id: str, order: dict[str, Any]) -> dict[str, Any]:
+    async def _send_order_confirmation(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Envía confirmación de orden."""
 
         logger.info(f"Sending confirmation for {order_id}")
@@ -251,7 +261,9 @@ class ShopifyAutomation:
 
         return {"status": "success", "email_sent": buyer_email}
 
-    async def _create_fulfillment(self, order_id: str, order: dict[str, Any]) -> dict[str, Any]:
+    async def _create_fulfillment(
+        self, order_id: str, order: dict[str, Any]
+    ) -> dict[str, Any]:
         """Crea fulfillment (empaquetado + shipping)."""
 
         logger.info(f"Creating fulfillment for {order_id}")

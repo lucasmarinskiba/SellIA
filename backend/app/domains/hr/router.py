@@ -33,7 +33,9 @@ async def add_candidate(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     svc = RecruitmentService(db)
-    return await svc.add_candidate(business_id, body.full_name, body.email, body.position, body.sourced_via)
+    return await svc.add_candidate(
+        business_id, body.full_name, body.email, body.position, body.sourced_via
+    )
 
 
 @router.post("/candidates/{candidate_id}/score", response_model=CandidateOut)
@@ -45,6 +47,7 @@ async def score_candidate(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     from decimal import Decimal
+
     svc = RecruitmentService(db)
     return await svc.score_screening(candidate_id, Decimal(str(score)))
 
@@ -73,7 +76,9 @@ async def accept_offer(
 
 
 # Onboarding
-@router.post("/employees/{employee_id}/onboarding/init", response_model=list[OnboardingItemOut])
+@router.post(
+    "/employees/{employee_id}/onboarding/init", response_model=list[OnboardingItemOut]
+)
 async def init_onboarding(
     business_id: UUID,
     employee_id: UUID,

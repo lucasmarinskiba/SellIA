@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 class CompanySize(str, Enum):
     """Company size segments."""
+
     STARTUP = "startup"  # <50 employees
     SMB = "smb"  # 50-500
     MID_MARKET = "mid_market"  # 500-5000
@@ -18,6 +19,7 @@ class CompanySize(str, Enum):
 
 class NegotiationStrategy(str, Enum):
     """Negotiation strategy selection."""
+
     AGGRESSIVE = "aggressive"  # Max discount authority, aggressive closing
     BALANCED = "balanced"  # Standard playbook
     CONSERVATIVE = "conservative"  # Preserve margin, long-term value
@@ -27,6 +29,7 @@ class NegotiationStrategy(str, Enum):
 @dataclass
 class PricingTier:
     """Pricing option presented to prospect."""
+
     name: str
     annual_price: float
     monthly_price: float
@@ -40,6 +43,7 @@ class PricingTier:
 @dataclass
 class ContractTerms:
     """Contract negotiation parameters."""
+
     annual_price: float
     payment_schedule: str  # "monthly", "quarterly", "annual", "custom"
     contract_duration_months: int
@@ -54,11 +58,14 @@ class ContractTerms:
 @dataclass
 class DiscountAuthority:
     """Permission matrix for discounts by company size & deal stage."""
+
     company_size: CompanySize
     base_discount_max: float  # e.g., 0.20 = 20% max
     volume_bonus_threshold: float  # spending threshold for volume discount
     volume_bonus_max: float
-    expansion_potential_multiplier: float  # if high expansion potential, allow more discount
+    expansion_potential_multiplier: (
+        float  # if high expansion potential, allow more discount
+    )
     legal_review_threshold: float  # if discount > this, escalate to legal
 
 
@@ -174,9 +181,7 @@ class NegotiationEngine:
         final_price = self.base_price * (1.0 - actual_discount)
 
         # Determine if legal review needed
-        needs_legal = (
-            actual_discount >= authority.legal_review_threshold
-        )
+        needs_legal = actual_discount >= authority.legal_review_threshold
 
         return {
             "base_price": self.base_price,

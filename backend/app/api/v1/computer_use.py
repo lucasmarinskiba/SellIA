@@ -54,7 +54,10 @@ router = APIRouter()
 
 # ========== Helpers ==========
 
-async def _get_session_or_404(db: AsyncSession, session_id: UUID, user_id: UUID) -> ComputerUseSession:
+
+async def _get_session_or_404(
+    db: AsyncSession, session_id: UUID, user_id: UUID
+) -> ComputerUseSession:
     result = await db.execute(
         select(ComputerUseSession).where(
             ComputerUseSession.id == session_id,
@@ -79,7 +82,12 @@ async def _auth_ws_token(token: str) -> dict | None:
 
 # ========== REST Endpoints ==========
 
-@router.post("/sessions", response_model=ComputerUseSessionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/sessions",
+    response_model=ComputerUseSessionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_session(
     data: ComputerUseSessionCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -98,12 +106,17 @@ async def create_session(
     )
     active_count = result.scalar() or 0
     if active_count >= 3:
-        raise HTTPException(status_code=429, detail="Tenés 3 sesiones activas. Detené una antes de crear otra.")
+        raise HTTPException(
+            status_code=429,
+            detail="Tenés 3 sesiones activas. Detené una antes de crear otra.",
+        )
 
     # Verify business if provided
     if data.business_id:
         result = await db.execute(
-            select(Business).where(Business.id == data.business_id, Business.owner_id == current_user.id)
+            select(Business).where(
+                Business.id == data.business_id, Business.owner_id == current_user.id
+            )
         )
         if not result.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -164,7 +177,9 @@ async def get_session(
     return session
 
 
-@router.get("/sessions/{session_id}/steps", response_model=list[ComputerUseStepResponse])
+@router.get(
+    "/sessions/{session_id}/steps", response_model=list[ComputerUseStepResponse]
+)
 async def list_session_steps(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -181,7 +196,9 @@ async def list_session_steps(
     return [ComputerUseStepResponse.model_validate(s) for s in steps]
 
 
-@router.get("/sessions/{session_id}/messages", response_model=list[ComputerUseMessageResponse])
+@router.get(
+    "/sessions/{session_id}/messages", response_model=list[ComputerUseMessageResponse]
+)
 async def list_session_messages(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -227,7 +244,10 @@ async def start_session(
     session = await _get_session_or_404(db, session_id, current_user.id)
 
     if session.status not in ("pending", "paused"):
-        raise HTTPException(status_code=400, detail=f"No se puede iniciar una sesión en estado '{session.status}'")
+        raise HTTPException(
+            status_code=400,
+            detail=f"No se puede iniciar una sesión en estado '{session.status}'",
+        )
 
     # Determine API key and provider
     api_key = None
@@ -263,7 +283,10 @@ async def start_session(
             api_key = settings.ANTHROPIC_API_KEY
             provider = "anthropic"
         else:
-            raise HTTPException(status_code=400, detail="No hay API key de IA configurada para Computer Use")
+            raise HTTPException(
+                status_code=400,
+                detail="No hay API key de IA configurada para Computer Use",
+            )
 
     # Create session manager (V2 with all enhancements)
     from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManagerV2
@@ -272,8 +295,11 @@ async def start_session(
     profile = None
     if session.profile_id:
         from app.domains.computer_use.models_extended import ComputerUseBrowserProfile
+
         profile_result = await db.execute(
-            select(ComputerUseBrowserProfile).where(ComputerUseBrowserProfile.id == session.profile_id)
+            select(ComputerUseBrowserProfile).where(
+                ComputerUseBrowserProfile.id == session.profile_id
+            )
         )
         profile_row = profile_result.scalar_one_or_none()
         if profile_row:
@@ -293,8 +319,11 @@ async def start_session(
     if session.proxy_config_id:
         from app.core.encryption import decrypt_value
         from app.domains.computer_use.models_extended import ComputerUseProxyConfig
+
         proxy_result = await db.execute(
-            select(ComputerUseProxyConfig).where(ComputerUseProxyConfig.id == session.proxy_config_id)
+            select(ComputerUseProxyConfig).where(
+                ComputerUseProxyConfig.id == session.proxy_config_id
+            )
         )
         proxy_row = proxy_result.scalar_one_or_none()
         if proxy_row:
@@ -313,6 +342,7 @@ async def start_session(
     webhooks = []
     try:
         from app.domains.computer_use.models_extended import ComputerUseWebhook
+
         wh_result = await db.execute(
             select(ComputerUseWebhook).where(
                 ComputerUseWebhook.user_id == current_user.id,
@@ -340,6 +370,7 @@ async def start_session(
 
     # Start in background (user must connect via WS)
     import asyncio
+
     asyncio.create_task(manager.start())
 
     ws_url = f"/api/v1/ws/computer-use/{session_id}"
@@ -353,6 +384,7 @@ async def start_session(
 
 
 # ========== Orchestrator Integration ==========
+
 
 async def create_computer_use_from_orchestrator(
     db: AsyncSession,
@@ -400,7 +432,11 @@ async def get_screenshot(
     """Sirve un screenshot de un paso específico."""
     await _get_session_or_404(db, session_id, current_user.id)
     screenshot_path = os.path.join(
-        os.getcwd(), "storage", "screenshots", str(session_id), f"step_{step_number}.jpg"
+        os.getcwd(),
+        "storage",
+        "screenshots",
+        str(session_id),
+        f"step_{step_number}.jpg",
     )
     if not os.path.exists(screenshot_path):
         raise HTTPException(status_code=404, detail="Screenshot no encontrado")
@@ -408,6 +444,7 @@ async def get_screenshot(
 
 
 # ========== WebSocket Endpoint ==========
+
 
 @router.websocket("/ws/computer-use/{session_id}")
 async def computer_use_websocket(
@@ -453,10 +490,17 @@ async def computer_use_websocket(
     manager = get_session_manager(str(session_id))
 
     if not manager and session.status == "pending":
-        await websocket.send_json({
-            "type": "status",
-            "data": {"status": "pending", "message": "Iniciando sesión...", "step": 0, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
-        })
+        await websocket.send_json(
+            {
+                "type": "status",
+                "data": {
+                    "status": "pending",
+                    "message": "Iniciando sesión...",
+                    "step": 0,
+                    "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+                },
+            }
+        )
         try:
             await start_session(session_id, db, type("User", (), {"id": user_id})())
             for _ in range(10):
@@ -466,27 +510,36 @@ async def computer_use_websocket(
                     break
         except Exception as e:
             logger.exception("Auto-start failed")
-            await websocket.send_json({"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}})
+            await websocket.send_json(
+                {"type": "error", "data": {"message": f"No se pudo iniciar: {e!s}"}}
+            )
             await ws_manager.disconnect(str(session_id))
             await websocket.close()
             return
 
     if not manager:
-        await websocket.send_json({"type": "error", "data": {"message": "No se pudo iniciar el gestor de sesión"}})
+        await websocket.send_json(
+            {
+                "type": "error",
+                "data": {"message": "No se pudo iniciar el gestor de sesión"},
+            }
+        )
         await ws_manager.disconnect(str(session_id))
         await websocket.close()
         return
 
     # Send current status
-    await websocket.send_json({
-        "type": "status",
-        "data": {
-            "status": manager.status,
-            "message": "Conectado a la Caja de Cristal",
-            "step": manager.current_step,
-            "total_steps": settings.COMPUTER_USE_MAX_STEPS,
-        },
-    })
+    await websocket.send_json(
+        {
+            "type": "status",
+            "data": {
+                "status": manager.status,
+                "message": "Conectado a la Caja de Cristal",
+                "step": manager.current_step,
+                "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+            },
+        }
+    )
 
     # Listen for client messages
     try:
@@ -495,7 +548,9 @@ async def computer_use_websocket(
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_json({"type": "error", "data": {"message": "Mensaje JSON inválido"}})
+                await websocket.send_json(
+                    {"type": "error", "data": {"message": "Mensaje JSON inválido"}}
+                )
                 continue
 
             msg_type = msg.get("type")
@@ -508,24 +563,46 @@ async def computer_use_websocket(
                     await manager.resume()
                 elif action == "stop":
                     await manager.stop()
-                    await websocket.send_json({
-                        "type": "status",
-                        "data": {"status": "stopped", "message": "Sesión detenida", "step": manager.current_step, "total_steps": settings.COMPUTER_USE_MAX_STEPS},
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "status",
+                            "data": {
+                                "status": "stopped",
+                                "message": "Sesión detenida",
+                                "step": manager.current_step,
+                                "total_steps": settings.COMPUTER_USE_MAX_STEPS,
+                            },
+                        }
+                    )
                 else:
-                    await websocket.send_json({"type": "error", "data": {"message": f"Control desconocido: {action}"}})
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "data": {"message": f"Control desconocido: {action}"},
+                        }
+                    )
 
             elif msg_type == "chat":
                 message = msg.get("message", "").strip()
                 if message:
                     await manager.send_chat_message(message)
-                    await websocket.send_json({
-                        "type": "chat",
-                        "data": {"role": "system", "content": "Mensaje enviado al agente"},
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "chat",
+                            "data": {
+                                "role": "system",
+                                "content": "Mensaje enviado al agente",
+                            },
+                        }
+                    )
 
             else:
-                await websocket.send_json({"type": "error", "data": {"message": f"Tipo de mensaje desconocido: {msg_type}"}})
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "data": {"message": f"Tipo de mensaje desconocido: {msg_type}"},
+                    }
+                )
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for session {session_id}")

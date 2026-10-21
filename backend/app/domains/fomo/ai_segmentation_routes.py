@@ -17,9 +17,16 @@ router = APIRouter(prefix="/fomo/ai/segmentation", tags=["fomo-ai-segmentation"]
 
 @router.post("/segment")
 async def segment_customers(
-    customers: Annotated[list[dict[str, Any]], Body(description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]')],
+    customers: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
+        ),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
-    use_clustering: Annotated[bool, Query(description="Use KMeans when data allows, else RFM rules")] = True,
+    use_clustering: Annotated[
+        bool, Query(description="Use KMeans when data allows, else RFM rules")
+    ] = True,
 ):
     """Segment customers via RFM (+ optional KMeans clustering when enough data)"""
     parsed_customers = _parse_purchase_dates(customers)
@@ -33,7 +40,12 @@ async def segment_customers(
 async def analyze_and_recommend(
     customers: Annotated[list[dict[str, Any]], Body()],
     current_user: Annotated[User, Depends(get_current_user)],
-    fatigue_data: Annotated[dict[str, list[dict[str, Any]]] | None, Body(description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}')] = None,
+    fatigue_data: Annotated[
+        dict[str, list[dict[str, Any]]] | None,
+        Body(
+            description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}'
+        ),
+    ] = None,
     use_clustering: Annotated[bool, Query()] = True,
 ):
     """Full pipeline: segment + recommend FOMO campaign per customer + fatigue exclusion"""

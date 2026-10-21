@@ -230,7 +230,9 @@ def get_pricing_recommendation(
         ]
 
         pricing_engine = DynamicPricingEngine(db)
-        recommendation = pricing_engine.calculate_optimal_price(product, competitors, platform_enum)
+        recommendation = pricing_engine.calculate_optimal_price(
+            product, competitors, platform_enum
+        )
 
         return PricingRecommendationResponse(
             product_id=product_id,
@@ -297,7 +299,9 @@ def get_foom_triggers(
         )
 
         foom_engine = FOOMTriggerEngine(db)
-        triggers = foom_engine.generate_listing_urgency(product, platform_enum, inventory, sales_velocity, rank)
+        triggers = foom_engine.generate_listing_urgency(
+            product, platform_enum, inventory, sales_velocity, rank
+        )
 
         return URGENCYResponse(
             platform=platform,
@@ -362,7 +366,11 @@ def optimize_listing(
         seo_engine = SEOOptimizationEngine(db)
         optimized = seo_engine.optimize_listing(product, platform_enum, keywords)
 
-        return {"product_id": product_id, "platform": platform, "optimized_listing": optimized}
+        return {
+            "product_id": product_id,
+            "platform": platform,
+            "optimized_listing": optimized,
+        }
     except Exception as e:
         logger.exception("optimize_listing: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
@@ -399,9 +407,11 @@ def get_dashboard_overview(
     from app.models.platform_integration import Order, PlatformListing, SellerMetrics
 
     # Get seller metrics for each platform
-    metrics = db.query(SellerMetrics).filter(
-        SellerMetrics.metric_date == utc_now().date()
-    ).all()
+    metrics = (
+        db.query(SellerMetrics)
+        .filter(SellerMetrics.metric_date == utc_now().date())
+        .all()
+    )
 
     metrics_by_platform = {m.platform: m for m in metrics}
 
@@ -422,27 +432,51 @@ def get_dashboard_overview(
         "timestamp": utc_now().isoformat(),
         "platforms": {
             "mercado_libre": {
-                "active_listings": metrics_by_platform.get("mercado_libre", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("mercado_libre", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("mercado_libre", {}).avg_rating or 4.8),
+                "active_listings": metrics_by_platform.get(
+                    "mercado_libre", {}
+                ).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "mercado_libre", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("mercado_libre", {}).avg_rating or 4.8
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("mercado_libre", 0)),
             },
             "amazon": {
-                "active_listings": metrics_by_platform.get("amazon", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("amazon", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("amazon", {}).avg_rating or 4.7),
+                "active_listings": metrics_by_platform.get("amazon", {}).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "amazon", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("amazon", {}).avg_rating or 4.7
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("amazon", 0)),
             },
             "hotmart": {
-                "active_listings": metrics_by_platform.get("hotmart", {}).active_listings or 0,
-                "best_seller_rank": metrics_by_platform.get("hotmart", {}).bestseller_count or 0,
-                "avg_rating": float(metrics_by_platform.get("hotmart", {}).avg_rating or 4.9),
+                "active_listings": metrics_by_platform.get(
+                    "hotmart", {}
+                ).active_listings
+                or 0,
+                "best_seller_rank": metrics_by_platform.get(
+                    "hotmart", {}
+                ).bestseller_count
+                or 0,
+                "avg_rating": float(
+                    metrics_by_platform.get("hotmart", {}).avg_rating or 4.9
+                ),
                 "monthly_revenue": int(gmv_by_platform.get("hotmart", 0)),
             },
         },
         "total_gmv": sum(gmv_by_platform.values()),
         "total_active_listings": len(listings),
-        "avg_conversion_rate": total_conversions / len(listings) / 100 if listings else 0.08,
+        "avg_conversion_rate": (
+            total_conversions / len(listings) / 100 if listings else 0.08
+        ),
         "top_performing_category": "Electronics",
     }
 

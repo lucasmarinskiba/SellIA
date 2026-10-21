@@ -34,6 +34,7 @@ class CacheKeyBuilder:
 @dataclass
 class CacheEntry:
     """Cache entry metadata."""
+
     key: str
     value: Any
     ttl_seconds: int
@@ -88,10 +89,7 @@ class LocalCache:
         """Set value in cache."""
         # Evict oldest entry if at max size
         if len(self.cache) >= self.max_size:
-            oldest_key = min(
-                self.cache.keys(),
-                key=lambda k: self.cache[k].accessed_at
-            )
+            oldest_key = min(self.cache.keys(), key=lambda k: self.cache[k].accessed_at)
             del self.cache[oldest_key]
 
         self.cache[key] = CacheEntry(
@@ -191,9 +189,7 @@ class RedisCache:
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total = self.local_stats["hits"] + self.local_stats["misses"]
-        hit_rate = (
-            self.local_stats["hits"] / total if total > 0 else 0
-        )
+        hit_rate = self.local_stats["hits"] / total if total > 0 else 0
 
         return {
             "hits": self.local_stats["hits"],

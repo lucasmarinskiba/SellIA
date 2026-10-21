@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class HumorStyle(str, Enum):
     """Humor style types."""
+
     PUNNY = "punny"  # Wordplay
     WITTY = "witty"  # Clever observation
     RELATABLE = "relatable"  # Common experience
@@ -30,6 +31,7 @@ class HumorStyle(str, Enum):
 
 class HumorTone(str, Enum):
     """Humor tone/intensity."""
+
     LIGHT = "light"  # Gentle, safe
     PLAYFUL = "playful"  # Fun, engaging
     SARCASTIC = "sarcastic"  # Sharp, clever
@@ -313,7 +315,9 @@ class HumorGenerator:
         # If troll, avoid humor (don't feed)
         if audience_type == "troll":
             humor_appropriate = False
-            reasoning = "Troll comment → humor encourages engagement, respond professionally"
+            reasoning = (
+                "Troll comment → humor encourages engagement, respond professionally"
+            )
 
         return {
             "humor_appropriate": humor_appropriate,
@@ -347,13 +351,21 @@ class HumorGenerator:
         emojis_added = []
 
         # Detect emotion/tone from text
-        if any(word in response_text.lower() for word in ["love", "awesome", "great", "thank"]):
+        if any(
+            word in response_text.lower()
+            for word in ["love", "awesome", "great", "thank"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["love"]
         elif any(word in response_text.lower() for word in ["laugh", "funny", "ha"]):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["laugh"]
-        elif any(word in response_text.lower() for word in ["wow", "amazing", "impressive"]):
+        elif any(
+            word in response_text.lower() for word in ["wow", "amazing", "impressive"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["celebration"]
-        elif any(word in response_text.lower() for word in ["think", "consider", "interesting"]):
+        elif any(
+            word in response_text.lower()
+            for word in ["think", "consider", "interesting"]
+        ):
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["thinking"]
         else:
             emojis_to_add = HumorGenerator.REACTION_EMOJIS["approval"]
@@ -363,7 +375,9 @@ class HumorGenerator:
             emoji_response = f"{response_text} {emoji}"
             emojis_added = [emoji]
         elif emoji_strategy == "heavy":
-            selected_emojis = emojis_to_add[:2] if len(emojis_to_add) > 1 else emojis_to_add
+            selected_emojis = (
+                emojis_to_add[:2] if len(emojis_to_add) > 1 else emojis_to_add
+            )
             emoji_response = f"{response_text} {' '.join(selected_emojis)}"
             emojis_added = selected_emojis
         else:
@@ -439,7 +453,11 @@ class HumorGenerator:
         # Add emoji if appropriate
         emoji_result = HumorGenerator.integrate_emoji(
             result["pun"] if "pun" in result else result.get("response", ""),
-            emoji_strategy="enhance" if timing["intensity"] == HumorTone.PLAYFUL.value else "subtle",
+            emoji_strategy=(
+                "enhance"
+                if timing["intensity"] == HumorTone.PLAYFUL.value
+                else "subtle"
+            ),
         )
 
         return {

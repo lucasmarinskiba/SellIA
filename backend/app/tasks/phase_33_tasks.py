@@ -36,11 +36,15 @@ def sync_inventory_task(self, product_id: str):
 
         # Calculate reserved inventory (orders in last 24h, not yet fulfilled)
         twenty_four_hours_ago = utc_now() - timedelta(hours=24)
-        recent_orders = db.query(Order).filter(
-            Order.product_id == product_id,
-            Order.created_at >= twenty_four_hours_ago,
-            Order.order_status != "delivered",
-        ).all()
+        recent_orders = (
+            db.query(Order)
+            .filter(
+                Order.product_id == product_id,
+                Order.created_at >= twenty_four_hours_ago,
+                Order.order_status != "delivered",
+            )
+            .all()
+        )
 
         reserved = sum(o.quantity for o in recent_orders)
         available = max(0, product.stock_total - reserved)
@@ -61,7 +65,7 @@ def sync_inventory_task(self, product_id: str):
     except Exception as exc:
         # Retry with exponential backoff
         logger.exception("sync_inventory_task: error inesperado")
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
     finally:
         db.close()
 
@@ -86,9 +90,11 @@ def reprice_products_task(self, platform: str | None = None):
 
         for plat in platforms:
             # Get all listings for platform
-            listings = db.query(PlatformListing).filter(
-                PlatformListing.platform == plat.value
-            ).all()
+            listings = (
+                db.query(PlatformListing)
+                .filter(PlatformListing.platform == plat.value)
+                .all()
+            )
 
             repriced = 0
             for listing in listings:
@@ -144,11 +150,15 @@ def update_seller_metrics_task():
                 # Calculate metrics
                 active = len([l for l in listings if l.status == "active"])
                 bestseller = len([l for l in listings if l.best_seller_rank == 1])
-                top_5 = len([l for l in listings if l.best_seller_rank and l.best_seller_rank <= 5])
+                top_5 = len(
+                    [
+                        l
+                        for l in listings
+                        if l.best_seller_rank and l.best_seller_rank <= 5
+                    ]
+                )
                 avg_rating = (
-                    sum(l.rating for l in listings) / len(listings)
-                    if listings
-                    else 0
+                    sum(l.rating for l in listings) / len(listings) if listings else 0
                 )
                 total_reviews = sum(l.rating_count for l in listings)
 

@@ -8,13 +8,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Acciones ==========
 
+
 class ComputerUseAction(BaseModel):
-    action_type: str = Field(..., description="Tipo de acción: click, type, scroll, navigate, wait, done, error")
+    action_type: str = Field(
+        ...,
+        description="Tipo de acción: click, type, scroll, navigate, wait, done, error",
+    )
     params: dict[str, Any] = Field(default_factory=dict)
     reason: str = Field(default="", description="Razón por la que se tomó esta acción")
 
 
 # ========== Sesiones ==========
+
 
 class ComputerUseSessionCreate(BaseModel):
     task_description: str = Field(..., min_length=1, max_length=2000)
@@ -59,6 +64,7 @@ class ComputerUseSessionListResponse(BaseModel):
 
 # ========== Steps ==========
 
+
 class ComputerUseStepResponse(BaseModel):
     id: UUID
     session_id: UUID
@@ -77,6 +83,7 @@ class ComputerUseStepResponse(BaseModel):
 
 # ========== Mensajes de supervisión ==========
 
+
 class ComputerUseMessageCreate(BaseModel):
     role: str = Field(..., pattern="^(user|agent|system)$")
     content: str = Field(..., min_length=1, max_length=4000)
@@ -93,6 +100,7 @@ class ComputerUseMessageResponse(BaseModel):
 
 
 # ========== WebSocket Protocol ==========
+
 
 class WSMessageScreenshot(BaseModel):
     type: str = "screenshot"
@@ -135,6 +143,7 @@ class WSClientChat(BaseModel):
 
 
 # ========== Orchestrator Integration ==========
+
 
 class ComputerUseOrchestratorResult(BaseModel):
     action: str = "COMPUTER_USE"

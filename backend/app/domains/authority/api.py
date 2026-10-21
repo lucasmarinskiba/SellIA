@@ -31,7 +31,9 @@ class RunIn(BaseModel):
     conversation_ids: list[str] | None = None
 
 
-async def _get_action(db: AsyncSession, user_id: uuid.UUID, action_id: uuid.UUID) -> AuthorityAction:
+async def _get_action(
+    db: AsyncSession, user_id: uuid.UUID, action_id: uuid.UUID
+) -> AuthorityAction:
     result = await db.execute(
         select(AuthorityAction).where(
             AuthorityAction.id == action_id, AuthorityAction.user_id == user_id

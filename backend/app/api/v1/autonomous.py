@@ -40,6 +40,7 @@ _STRATEGY_CACHE: dict[str, dict[str, Any]] = {}
 
 class EventType(str, Enum):
     """Tipos de eventos que disparan ventas autónomas."""
+
     WHATSAPP_MESSAGE = "whatsapp_message"
     INSTAGRAM_DM = "instagram_dm"
     EMAIL_RECEIVED = "email_received"
@@ -50,6 +51,7 @@ class EventType(str, Enum):
 
 class SalesStage(str, Enum):
     """Etapa de venta donde ocurre el evento."""
+
     FIRST_CONTACT = "first_contact"
     DISCOVERY = "discovery"
     OBJECTION = "objection"
@@ -60,6 +62,7 @@ class SalesStage(str, Enum):
 
 class AutonomousEvent(BaseModel):
     """Evento que dispara vendedor autónomo."""
+
     event_type: EventType
     contact_id: str
     contact_name: str
@@ -76,6 +79,7 @@ class AutonomousEvent(BaseModel):
 
 class SalesResponse(BaseModel):
     """Respuesta del vendedor autónomo."""
+
     contact_id: str
     message: str
     channel: str  # whatsapp, instagram, email
@@ -89,7 +93,9 @@ class StrategySelector:
     """Selecciona estrategia basada en producto + contexto."""
 
     @staticmethod
-    def get_or_generate_strategy(account_id: str, product_info: dict[str, Any]) -> dict[str, Any]:
+    def get_or_generate_strategy(
+        account_id: str, product_info: dict[str, Any]
+    ) -> dict[str, Any]:
         """Obtiene estrategia del cache o genera nueva."""
 
         product_id = product_info.get("id", "default")
@@ -172,7 +178,9 @@ class FlowExecutor:
     """Ejecuta flujos de venta autónomos."""
 
     @staticmethod
-    async def execute(agent_id: str, event: AutonomousEvent, account_id: str) -> SalesResponse:
+    async def execute(
+        agent_id: str, event: AutonomousEvent, account_id: str
+    ) -> SalesResponse:
         """
         Ejecuta flujo del agente seleccionado.
 
@@ -184,7 +192,9 @@ class FlowExecutor:
         5. Loguea resultado
         """
 
-        logger.info(f"[{account_id}] Ejecutando agente {agent_id} para contacto {event.contact_id}")
+        logger.info(
+            f"[{account_id}] Ejecutando agente {agent_id} para contacto {event.contact_id}"
+        )
 
         # TODO: Integración real con `/brain/cua/dispatch`
         # Por ahora, respuesta simulada
@@ -196,7 +206,7 @@ class FlowExecutor:
             strategy_used=agent_id,
             confidence=0.95,
             next_action="follow_up en 24h" if agent_id == "cardone_agent" else None,
-            logged_at=utc_now()
+            logged_at=utc_now(),
         )
 
 
@@ -204,7 +214,9 @@ class EventLogger:
     """Loguea eventos de venta para análisis + optimización."""
 
     @staticmethod
-    def log_event(event: AutonomousEvent, response: SalesResponse, result: str = "sent") -> dict[str, Any]:
+    def log_event(
+        event: AutonomousEvent, response: SalesResponse, result: str = "sent"
+    ) -> dict[str, Any]:
         """
         Loguea evento completo.
 
@@ -240,7 +252,7 @@ class EventLogger:
 async def webhook_whatsapp(
     payload: dict[str, Any],
     x_hub_signature: str | None = Header(None),
-    background_tasks: BackgroundTasks = None
+    background_tasks: BackgroundTasks = None,
 ):
     """
     Webhook de WhatsApp Business API.
@@ -255,7 +267,12 @@ async def webhook_whatsapp(
         #     return {"status": "ok"}  # No revelar si auth falló
 
         # Extraer datos del mensaje
-        messages = payload.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
+        messages = (
+            payload.get("entry", [{}])[0]
+            .get("changes", [{}])[0]
+            .get("value", {})
+            .get("messages", [])
+        )
 
         if not messages:
             return {"status": "ok"}  # Sin mensajes, ignora
@@ -266,12 +283,21 @@ async def webhook_whatsapp(
         for msg in messages:
             try:
                 contact_phone = msg.get("from")
-                contact_name = payload.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("contacts", [{}])[0].get("profile", {}).get("name", "Unknown")
+                contact_name = (
+                    payload.get("entry", [{}])[0]
+                    .get("changes", [{}])[0]
+                    .get("value", {})
+                    .get("contacts", [{}])[0]
+                    .get("profile", {})
+                    .get("name", "Unknown")
+                )
                 message_text = msg.get("text", {}).get("body", "")
 
                 # Validación: rechaza spam/ruido antes de procesar
                 if not contact_phone or not message_text:
-                    logger.warning(f"WhatsApp webhook: missing required fields (phone={contact_phone}, msg_len={len(message_text)})")
+                    logger.warning(
+                        f"WhatsApp webhook: missing required fields (phone={contact_phone}, msg_len={len(message_text)})"
+                    )
                     messages_rejected += 1
                     continue
 
@@ -287,7 +313,7 @@ async def webhook_whatsapp(
                         "sales_stage": SalesStage.FIRST_CONTACT.value,  # TODO: detectar etapa real desde historial
                         "account_id": payload.get("account_id"),
                         "product": payload.get("product_info"),
-                    }
+                    },
                 )
 
                 # Procesar en background (no bloquea webhook)
@@ -304,7 +330,7 @@ async def webhook_whatsapp(
             "status": "received",
             "messages_count": len(messages),
             "processed": messages_processed,
-            "rejected": messages_rejected
+            "rejected": messages_rejected,
         }
 
     except Exception:
@@ -315,8 +341,7 @@ async def webhook_whatsapp(
 
 @router.post("/webhook/instagram", tags=["webhooks"])
 async def webhook_instagram(
-    payload: dict[str, Any],
-    background_tasks: BackgroundTasks = None
+    payload: dict[str, Any], background_tasks: BackgroundTasks = None
 ):
     """
     Webhook de Instagram DMs (vía Meta Graph API).
@@ -325,7 +350,12 @@ async def webhook_instagram(
 
     try:
         # Extraer DMs
-        dms = payload.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("messages", [])
+        dms = (
+            payload.get("entry", [{}])[0]
+            .get("changes", [{}])[0]
+            .get("value", {})
+            .get("messages", [])
+        )
 
         if not dms:
             return {"status": "ok"}
@@ -340,7 +370,7 @@ async def webhook_instagram(
                     "channel": "instagram",
                     "sales_stage": SalesStage.FIRST_CONTACT.value,
                     "account_id": payload.get("account_id"),
-                }
+                },
             )
 
             background_tasks.add_task(process_autonomous_event, event)
@@ -375,18 +405,24 @@ async def process_autonomous_event(event: AutonomousEvent):
                 "email": event.contact_email or "",
                 "phone": event.contact_phone or "",
             },
-            ["product_name", "message"]
+            ["product_name", "message"],
         )
 
         if not validation["valid"]:
-            logger.warning(f"[{account_id}] Input validation failed: {validation['errors']}")
-            EventLogger.log_event(event, SalesResponse(
-                contact_id=event.contact_id,
-                message="[REJECTED] Invalid input",
-                channel=event.context.get("channel", "unknown"),
-                strategy_used="validation_reject",
-                confidence=0.0,
-            ), result="rejected")
+            logger.warning(
+                f"[{account_id}] Input validation failed: {validation['errors']}"
+            )
+            EventLogger.log_event(
+                event,
+                SalesResponse(
+                    contact_id=event.contact_id,
+                    message="[REJECTED] Invalid input",
+                    channel=event.context.get("channel", "unknown"),
+                    strategy_used="validation_reject",
+                    confidence=0.0,
+                ),
+                result="rejected",
+            )
             return
 
         if validation["quarantine"]:
@@ -395,17 +431,23 @@ async def process_autonomous_event(event: AutonomousEvent):
         # 2. Obtener estrategia del producto
         product_info = event.context.get("product_info", {})
         strategy = StrategySelector.get_or_generate_strategy(account_id, product_info)
-        logger.info(f"[{account_id}] Estrategia cargada: {strategy.get('segment', 'unknown')}")
+        logger.info(
+            f"[{account_id}] Estrategia cargada: {strategy.get('segment', 'unknown')}"
+        )
 
         # 3. Seleccionar agente basado en estrategia
         agent_id = AgentSelector.select(event, strategy)
-        logger.info(f"[{account_id}] Agente seleccionado: {agent_id} (estrategia: {strategy.get('segment', 'default')})")
+        logger.info(
+            f"[{account_id}] Agente seleccionado: {agent_id} (estrategia: {strategy.get('segment', 'default')})"
+        )
 
         # 4. Ejecutar flujo con resilience
         try:
             # Circuit breaker: previene martillar agente fallido
             if not health_tracker.is_service_available(agent_id):
-                logger.warning(f"[{account_id}] Agent {agent_id} unavailable (circuit open), falling back to master_seller")
+                logger.warning(
+                    f"[{account_id}] Agent {agent_id} unavailable (circuit open), falling back to master_seller"
+                )
                 agent_id = "master_seller"  # Graceful degradation
 
             # Retry idempotent operation (envío mensaje)
@@ -413,7 +455,7 @@ async def process_autonomous_event(event: AutonomousEvent):
                 FlowExecutor.execute,
                 args=(agent_id, event, account_id),
                 max_retries=3,
-                is_idempotent=True
+                is_idempotent=True,
             )
             health_tracker.record_success(agent_id)
 
@@ -435,7 +477,9 @@ async def process_autonomous_event(event: AutonomousEvent):
         channel = event.context.get("channel", "whatsapp")
         try:
             # TODO: send_by_channel(channel, event.contact_phone, response.message)
-            logger.info(f"[{account_id}] Respuesta enviada por {channel}: {response.message[:100]}...")
+            logger.info(
+                f"[{account_id}] Respuesta enviada por {channel}: {response.message[:100]}..."
+            )
         except Exception:
             logger.exception(f"[{account_id}] Error enviando respuesta por {channel}")
             # No hacer falla aquí: respuesta ya se preparó, si falla envío es problema de canal, no de agente
@@ -444,7 +488,9 @@ async def process_autonomous_event(event: AutonomousEvent):
 
         # 6. Loguear éxito + estrategia usada
         EventLogger.log_event(event, response, result="sent")
-        logger.info(f"[{account_id}] Evento procesado exitosamente con estrategia {strategy.get('segment')}")
+        logger.info(
+            f"[{account_id}] Evento procesado exitosamente con estrategia {strategy.get('segment')}"
+        )
 
     except Exception:
         logger.exception(f"[{account_id}] Excepción no capturada procesando evento")
@@ -516,9 +562,7 @@ async def cron_lead_scoring():
 
 @router.post("/crm/sync", tags=["integrations"])
 async def crm_sync_contact(
-    account_id: str,
-    contact_id: str,
-    contact_data: dict[str, Any]
+    account_id: str, contact_id: str, contact_data: dict[str, Any]
 ):
     """
     Sincroniza contacto con CRM (Salesforce, HubSpot, Pipedrive).
@@ -542,7 +586,9 @@ async def crm_sync_contact(
 
     # Validar input: rechazar ruido
     if not contact_id or not contact_data:
-        logger.warning(f"[{account_id}] CRM sync: invalid input (contact_id={contact_id}, data_len={len(contact_data)})")
+        logger.warning(
+            f"[{account_id}] CRM sync: invalid input (contact_id={contact_id}, data_len={len(contact_data)})"
+        )
         return {"status": "rejected", "reason": "invalid_input"}
 
     # Circuit breaker: previene martillar CRM fallido
@@ -550,7 +596,11 @@ async def crm_sync_contact(
     if not health_tracker.is_service_available(crm_name):
         logger.warning(f"[{account_id}] CRM circuit open, queuing sync para después")
         # TODO: guardar en queue local para retry posterior
-        return {"status": "queued", "contact_id": contact_id, "reason": "crm_unavailable"}
+        return {
+            "status": "queued",
+            "contact_id": contact_id,
+            "reason": "crm_unavailable",
+        }
 
     # Retry idempotent (update/create son idempotentes)
     try:
@@ -558,7 +608,7 @@ async def crm_sync_contact(
             _sync_to_crm_internal,
             args=(account_id, contact_id, contact_data),
             max_retries=3,
-            is_idempotent=True
+            is_idempotent=True,
         )
 
         health_tracker.record_success(crm_name)
@@ -579,7 +629,9 @@ async def crm_sync_contact(
 
         # Degradation: guardar en queue local para retry después
         # TODO: guardar en local_queue.json o DB para retry cada 30min
-        logger.info(f"[{account_id}] Contacto {contact_id} guardado en queue local para retry")
+        logger.info(
+            f"[{account_id}] Contacto {contact_id} guardado en queue local para retry"
+        )
 
         return {
             "status": "queued",
@@ -590,7 +642,9 @@ async def crm_sync_contact(
         }
 
 
-async def _sync_to_crm_internal(account_id: str, contact_id: str, contact_data: dict[str, Any]) -> dict[str, Any]:
+async def _sync_to_crm_internal(
+    account_id: str, contact_id: str, contact_data: dict[str, Any]
+) -> dict[str, Any]:
     """Lógica interna de sync a CRM (reintentable)."""
 
     # TODO: Conectar a CRM API real
@@ -613,9 +667,7 @@ async def _sync_to_crm_internal(account_id: str, contact_id: str, contact_data: 
 
 @router.post("/scheduling/smart_follow_up", tags=["automation"])
 async def smart_follow_up_schedule(
-    contact_id: str,
-    account_id: str,
-    context: dict[str, Any]
+    contact_id: str, account_id: str, context: dict[str, Any]
 ):
     """
     Agenda follow-up inteligente basado en:
@@ -647,7 +699,7 @@ async def smart_follow_up_schedule(
             "next_follow_up": next_optimal.isoformat(),
             "reason": "Patrón de respuesta: miércoles 10-11am",
             "timezone": "America/Argentina/Buenos_Aires",
-            "confidence": 0.85
+            "confidence": 0.85,
         }
 
     except Exception as e:
@@ -656,11 +708,7 @@ async def smart_follow_up_schedule(
 
 
 @router.post("/ab_test/message_variant", tags=["optimization"])
-async def ab_test_variants(
-    account_id: str,
-    contact_segment: str,
-    variants: list[str]
-):
+async def ab_test_variants(account_id: str, contact_segment: str, variants: list[str]):
     """
     A/B test de mensajes/scripts para optimizar conversión.
 
@@ -691,7 +739,7 @@ async def ab_test_variants(
             "variants": len(variants),
             "power": 0.8,
             "sample_size_needed": 100,
-            "estimated_duration": "7-14 days"
+            "estimated_duration": "7-14 days",
         }
 
     except Exception as e:

@@ -22,6 +22,7 @@ from app.core.database import Base
 
 class EventType(str, Enum):
     """Event types for webhooks."""
+
     ORDER_CREATED = "order.created"
     ORDER_UPDATED = "order.updated"
     ORDER_PAID = "order.paid"
@@ -36,10 +37,16 @@ class EventType(str, Enum):
 
 class WebhookEndpoint(Base):
     """Webhook endpoint configuration."""
+
     __tablename__ = "webhook_endpoints"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Endpoint
     url = Column(String(500), nullable=False)
@@ -67,25 +74,35 @@ class WebhookEndpoint(Base):
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_active", "business_id", "is_active"),
-    )
+    __table_args__ = (Index("idx_business_active", "business_id", "is_active"),)
 
 
 class WebhookEvent(Base):
     """Webhook event record."""
+
     __tablename__ = "webhook_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    endpoint_id = Column(UUID(as_uuid=True), ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    endpoint_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Event
     event_type = Column(String(50), nullable=False)
     event_data = Column(JSONB, nullable=False)  # Event payload
 
     # Delivery
-    delivery_status = Column(String(20), default="pending")  # pending, sent, failed, delivered
+    delivery_status = Column(
+        String(20), default="pending"
+    )  # pending, sent, failed, delivered
     delivery_attempts = Column(Integer, default=0)
     last_attempt_at = Column(DateTime(UTC), nullable=True)
     response_status_code = Column(Integer, nullable=True)
@@ -106,11 +123,21 @@ class WebhookEvent(Base):
 
 class WebhookDeliveryLog(Base):
     """Webhook delivery attempt log."""
+
     __tablename__ = "webhook_delivery_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    webhook_event_id = Column(UUID(as_uuid=True), ForeignKey("webhook_events.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    webhook_event_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("webhook_events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Attempt
     attempt_number = Column(Integer, default=1)
@@ -124,17 +151,21 @@ class WebhookDeliveryLog(Base):
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_event_date", "webhook_event_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_event_date", "webhook_event_id", "created_at"),)
 
 
 class EventQueue(Base):
     """Event streaming queue."""
+
     __tablename__ = "event_queue"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Event
     event_type = Column(String(50), nullable=False)

@@ -3,7 +3,6 @@
 Single source of truth for mapping ChannelPlatform -> Connector class.
 """
 
-
 from app.domains.channels.connectors.amazon import AmazonSellerConnector
 from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.channels.connectors.beacons import BeaconsConnector
@@ -90,7 +89,9 @@ CONNECTOR_REGISTRY: dict[ChannelPlatform, type[BaseChannelConnector]] = {
 }
 
 
-def get_connector(platform: ChannelPlatform, credentials: dict, settings: dict) -> BaseChannelConnector:
+def get_connector(
+    platform: ChannelPlatform, credentials: dict, settings: dict
+) -> BaseChannelConnector:
     connector_class = CONNECTOR_REGISTRY.get(platform)
     if not connector_class:
         raise ValueError(f"Plataforma no soportada: {platform}")

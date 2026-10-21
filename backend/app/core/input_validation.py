@@ -48,7 +48,9 @@ class InputValidator:
     }
 
     @classmethod
-    def validate(cls, field_name: str, value: Any) -> tuple[bool, str | None, str | None]:
+    def validate(
+        cls, field_name: str, value: Any
+    ) -> tuple[bool, str | None, str | None]:
         """
         Valida field.
 
@@ -68,7 +70,11 @@ class InputValidator:
 
         # Verificar min/max length
         if "min_length" in rules and len(str(value)) < rules["min_length"]:
-            return False, f"{field_name} too short (min {rules['min_length']})", "reject"
+            return (
+                False,
+                f"{field_name} too short (min {rules['min_length']})",
+                "reject",
+            )
 
         if "max_length" in rules and len(str(value)) > rules["max_length"]:
             return False, f"{field_name} too long (max {rules['max_length']})", "reject"
@@ -88,16 +94,26 @@ class InputValidator:
             try:
                 val = float(value)
                 if "min_value" in rules and val < rules["min_value"]:
-                    return False, f"{field_name} must be >= {rules['min_value']}", "reject"
+                    return (
+                        False,
+                        f"{field_name} must be >= {rules['min_value']}",
+                        "reject",
+                    )
                 if "max_value" in rules and val > rules["max_value"]:
-                    return False, f"{field_name} must be <= {rules['max_value']}", "reject"
+                    return (
+                        False,
+                        f"{field_name} must be <= {rules['max_value']}",
+                        "reject",
+                    )
             except ValueError:
                 return False, f"{field_name} must be a number", "reject"
 
         return True, None, None
 
     @classmethod
-    def validate_batch(cls, data: dict[str, Any], fields_to_check: list[str]) -> dict[str, Any]:
+    def validate_batch(
+        cls, data: dict[str, Any], fields_to_check: list[str]
+    ) -> dict[str, Any]:
         """
         Valida múltiples fields.
 

@@ -53,7 +53,9 @@ class AuditLogEntry:
         self.agent_name = agent_name
         return self
 
-    def with_strategy(self, strategy_name: str, tactics: list[str] | None = None) -> "AuditLogEntry":
+    def with_strategy(
+        self, strategy_name: str, tactics: list[str] | None = None
+    ) -> "AuditLogEntry":
         self.strategy_name = strategy_name
         self.tactics = tactics or []
         return self
@@ -154,7 +156,9 @@ class AuditLogService:
         )
         return result.scalar_one_or_none()
 
-    async def search(self, filter: ComputerUseAuditLogSearchFilter) -> tuple[list[ComputerUseAuditLog], int]:
+    async def search(
+        self, filter: ComputerUseAuditLogSearchFilter
+    ) -> tuple[list[ComputerUseAuditLog], int]:
         """
         Busca logs con filtros.
 
@@ -189,18 +193,26 @@ class AuditLogService:
             query = query.where(and_(*conditions))
 
         # Total
-        count_result = await self.db.execute(select(ComputerUseAuditLog).where(query.whereclause))
+        count_result = await self.db.execute(
+            select(ComputerUseAuditLog).where(query.whereclause)
+        )
         total = len(count_result.all())
 
         # Paginate
-        query = query.order_by(ComputerUseAuditLog.created_at.desc()).limit(filter.limit).offset(filter.offset)
+        query = (
+            query.order_by(ComputerUseAuditLog.created_at.desc())
+            .limit(filter.limit)
+            .offset(filter.offset)
+        )
 
         result = await self.db.execute(query)
         logs = result.scalars().all()
 
         return logs, total
 
-    async def get_recent(self, user_id: str, limit: int = 50) -> list[ComputerUseAuditLog]:
+    async def get_recent(
+        self, user_id: str, limit: int = 50
+    ) -> list[ComputerUseAuditLog]:
         """Últimas acciones del usuario."""
         result = await self.db.execute(
             select(ComputerUseAuditLog)
@@ -223,7 +235,9 @@ class AuditLogService:
         )
         return result.scalars().all()
 
-    async def approve(self, log_id: str, approved_by_user_id: str) -> ComputerUseAuditLog | None:
+    async def approve(
+        self, log_id: str, approved_by_user_id: str
+    ) -> ComputerUseAuditLog | None:
         """Aprueba una acción pendiente."""
         log = await self.get_by_id(log_id)
         if not log:
@@ -239,7 +253,9 @@ class AuditLogService:
 
         return log
 
-    async def reject(self, log_id: str, rejected_by_user_id: str, reason: str | None = None) -> ComputerUseAuditLog | None:
+    async def reject(
+        self, log_id: str, rejected_by_user_id: str, reason: str | None = None
+    ) -> ComputerUseAuditLog | None:
         """Rechaza una acción pendiente."""
         log = await self.get_by_id(log_id)
         if not log:

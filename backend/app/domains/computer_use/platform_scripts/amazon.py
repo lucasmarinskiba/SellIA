@@ -11,7 +11,9 @@ class AmazonScript(PlatformScript):
     login_url = "https://sellercentral.amazon.com/signin"
     dashboard_url = "https://sellercentral.amazon.com/home"
 
-    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
+    def get_task_steps(
+        self, task_type: str, params: dict[str, Any]
+    ) -> list[ScriptStep]:
         if task_type == "create_product_listing":
             return self._create_listing(params)
         elif task_type == "manage_inventory":
@@ -22,26 +24,58 @@ class AmazonScript(PlatformScript):
 
     def _create_listing(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
-            ScriptStep(action="navigate", target="https://sellercentral.amazon.com/listing/create", description="Navigate to create listing"),
+            ScriptStep(
+                action="navigate",
+                target="https://sellercentral.amazon.com/listing/create",
+                description="Navigate to create listing",
+            ),
             ScriptStep(action="wait", wait_ms=3000),
-            ScriptStep(action="type", target="input[name='itemName'], [data-testid='item-name']", value=params.get("title", ""), description="Enter product title"),
-            ScriptStep(action="type", target="textarea[name='description'], [data-testid='description']", value=params.get("description", ""), description="Enter product description"),
-            ScriptStep(action="type", target="input[name='quantity'], [data-testid='quantity']", value=str(params.get("quantity", "1")), description="Enter quantity"),
-            ScriptStep(action="click", target="button:contains('Save and finish'), button:contains('Submit')", description="Save listing", fallback="button"),
+            ScriptStep(
+                action="type",
+                target="input[name='itemName'], [data-testid='item-name']",
+                value=params.get("title", ""),
+                description="Enter product title",
+            ),
+            ScriptStep(
+                action="type",
+                target="textarea[name='description'], [data-testid='description']",
+                value=params.get("description", ""),
+                description="Enter product description",
+            ),
+            ScriptStep(
+                action="type",
+                target="input[name='quantity'], [data-testid='quantity']",
+                value=str(params.get("quantity", "1")),
+                description="Enter quantity",
+            ),
+            ScriptStep(
+                action="click",
+                target="button:contains('Save and finish'), button:contains('Submit')",
+                description="Save listing",
+                fallback="button",
+            ),
             ScriptStep(action="wait", wait_ms=3000),
             ScriptStep(action="screenshot", description="Verify listing created"),
         ]
 
     def _manage_inventory(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
-            ScriptStep(action="navigate", target="https://sellercentral.amazon.com/inventory", description="Navigate to inventory"),
+            ScriptStep(
+                action="navigate",
+                target="https://sellercentral.amazon.com/inventory",
+                description="Navigate to inventory",
+            ),
             ScriptStep(action="wait", wait_ms=3000),
             ScriptStep(action="screenshot", description="Check inventory levels"),
         ]
 
     def _respond_messages(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
-            ScriptStep(action="navigate", target="https://sellercentral.amazon.com/messaging", description="Navigate to buyer messages"),
+            ScriptStep(
+                action="navigate",
+                target="https://sellercentral.amazon.com/messaging",
+                description="Navigate to buyer messages",
+            ),
             ScriptStep(action="wait", wait_ms=3000),
             ScriptStep(action="screenshot", description="Check buyer messages"),
         ]

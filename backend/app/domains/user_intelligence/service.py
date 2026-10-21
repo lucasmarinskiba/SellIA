@@ -1,4 +1,5 @@
 """Phase X9: AI User Intelligence Agent Service."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,8 +26,12 @@ class UserIntelligenceAgent:
         """Create comprehensive user profile from behavior + firmographic data."""
 
         # Personality type inference from behavior
-        email_open_rate = engagement_data.get("email_opens", 0) / max(engagement_data.get("emails_sent", 1), 1)
-        clicks_per_email = engagement_data.get("clicks", 0) / max(engagement_data.get("emails_sent", 1), 1)
+        email_open_rate = engagement_data.get("email_opens", 0) / max(
+            engagement_data.get("emails_sent", 1), 1
+        )
+        clicks_per_email = engagement_data.get("clicks", 0) / max(
+            engagement_data.get("emails_sent", 1), 1
+        )
         case_study_views = engagement_data.get("case_study_views", 0)
         demo_requests = engagement_data.get("demo_requests", 0)
 
@@ -54,13 +59,22 @@ class UserIntelligenceAgent:
 
         # Risk scores (higher = more responsive to certain tactics)
         risk_aversion = 7.0 if company_data.get("company_size") == "enterprise" else 4.0
-        decision_velocity = 8.0 if personality == UserPersonalityType.IMPULSE_BUYER else 4.0
-        social_proof_sensitivity = 7.0 if "mid-market" in company_data.get("company_size", "") else 5.0
+        decision_velocity = (
+            8.0 if personality == UserPersonalityType.IMPULSE_BUYER else 4.0
+        )
+        social_proof_sensitivity = (
+            7.0 if "mid-market" in company_data.get("company_size", "") else 5.0
+        )
         scarcity_responsiveness = 8.0 if email_open_rate > 0.6 else 5.0
         exclusivity_appeal = 7.0 if company_data.get("budget_approved") else 4.0
 
         # Estimate conversion probability
-        engagement_score = (email_open_rate * 0.3 + clicks_per_email * 0.3 + case_study_views * 0.2 + demo_requests * 0.2)
+        engagement_score = (
+            email_open_rate * 0.3
+            + clicks_per_email * 0.3
+            + case_study_views * 0.2
+            + demo_requests * 0.2
+        )
         conversion_prob = min(engagement_score * 0.3, 0.95)
 
         # Next best action recommendation
@@ -116,43 +130,43 @@ class UserIntelligenceAgent:
             "early_adopter": {
                 "subject": "Be first: Exclusive early-access opportunity for innovation leaders",
                 "hook": "Join the 2% of companies leading the AI revolution",
-                "cta": "Get early-access"
+                "cta": "Get early-access",
             },
             "pragmatist": {
                 "subject": "See the ROI: $2.3M avg revenue increase in 6 months",
                 "hook": "Financial impact proven in 500+ companies like yours",
-                "cta": "View ROI calculator"
+                "cta": "View ROI calculator",
             },
             "skeptic": {
                 "subject": "Enterprise-grade proof: Validated by Gartner + Forrester",
                 "hook": "See peer reviews + analyst reports from industry leaders",
-                "cta": "Read analyst report"
+                "cta": "Read analyst report",
             },
             "impulse_buyer": {
                 "subject": "Last slot: Only 3 seats left in cohort ending Friday",
                 "hook": "Limited-time 40% founding member discount (24 hours)",
-                "cta": "Claim your spot"
+                "cta": "Claim your spot",
             },
             "analyst": {
                 "subject": "Deep dive: 87-page technical breakdown vs. competitors",
                 "hook": "Feature-by-feature comparison with implementation details",
-                "cta": "Download comparison"
+                "cta": "Download comparison",
             },
             "social_proof_seeker": {
                 "subject": "Join Slack, HubSpot, Salesforce teams using SellIA",
                 "hook": "See how Fortune 500 companies are scaling with us",
-                "cta": "Watch case study"
+                "cta": "Watch case study",
             },
             "status_conscious": {
                 "subject": "VIP: Exclusive invite to CEO roundtable + private training",
                 "hook": "Premium tier reserved for top-performing companies only",
-                "cta": "Request VIP access"
+                "cta": "Request VIP access",
             },
             "value_maximizer": {
                 "subject": "Compare pricing: SellIA vs. 5 alternatives (full breakdown)",
                 "hook": "See why 73% choose us for better value per feature",
-                "cta": "See pricing comparison"
-            }
+                "cta": "See pricing comparison",
+            },
         }
 
         return messages.get(personality, messages["pragmatist"])
@@ -180,5 +194,7 @@ class UserIntelligenceAgent:
         """Predict churn probability for existing customers (0-1.0)."""
         # Factors: low engagement, long time since last action, support tickets, price sensitivity
         engagement = profile.email_open_rate + profile.click_through_rate
-        engagement_risk = 1.0 - (engagement / 2.0)  # 0 if high engagement, 1 if no engagement
+        engagement_risk = 1.0 - (
+            engagement / 2.0
+        )  # 0 if high engagement, 1 if no engagement
         return min(engagement_risk, 1.0)

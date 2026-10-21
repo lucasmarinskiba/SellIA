@@ -1,4 +1,5 @@
 """Sales Operations Intelligence service."""
+
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -14,15 +15,25 @@ class SalesOperationsService:
         return {"total_opps": 247, "pipeline_value": 1250000, "coverage": 2.78}
 
     @staticmethod
-    def define_sales_process(business_id: UUID, name: str, stages: list, db: Session = None) -> dict:
+    def define_sales_process(
+        business_id: UUID, name: str, stages: list, db: Session = None
+    ) -> dict:
         return {"process_id": "proc_001", "avg_duration": 45}
 
     @staticmethod
-    def win_loss_analysis(business_id: UUID, deal_id: UUID, competitor: str, db: Session = None) -> dict:
-        return {"competitor": competitor, "reason": "better_pricing", "confidence": 0.85}
+    def win_loss_analysis(
+        business_id: UUID, deal_id: UUID, competitor: str, db: Session = None
+    ) -> dict:
+        return {
+            "competitor": competitor,
+            "reason": "better_pricing",
+            "confidence": 0.85,
+        }
 
     @staticmethod
-    def enable_rep(business_id: UUID, user_id: UUID, training: str, db: Session = None) -> dict:
+    def enable_rep(
+        business_id: UUID, user_id: UUID, training: str, db: Session = None
+    ) -> dict:
         return {"training": training, "competency": 0.78}
 
     @staticmethod

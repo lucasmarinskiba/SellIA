@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Channel(str, Enum):
     """Canales de comunicación (en orden de preferencia)."""
+
     WHATSAPP = "whatsapp"  # 1er intento
     EMAIL = "email"  # 2do intento
     SMS = "sms"  # 3er intento
@@ -81,12 +82,14 @@ class FailsafeEngine:
                 channel=channel,
             )
 
-            result["attempts"].append({
-                "channel": channel.value,
-                "attempt": attempt_num,
-                "status": send_result.get("status"),
-                "error": send_result.get("error"),
-            })
+            result["attempts"].append(
+                {
+                    "channel": channel.value,
+                    "attempt": attempt_num,
+                    "status": send_result.get("status"),
+                    "error": send_result.get("error"),
+                }
+            )
 
             # Si éxito, stop
             if send_result.get("status") == "success":
@@ -162,7 +165,11 @@ class FailsafeEngine:
                 }
 
             else:
-                return {"status": "error", "error": "Unknown channel", "retryable": False}
+                return {
+                    "status": "error",
+                    "error": "Unknown channel",
+                    "retryable": False,
+                }
 
         except Exception as e:
             logger.exception(f"Error sending via {channel.value}")
@@ -183,7 +190,9 @@ class FailsafeEngine:
         return channels
 
     @staticmethod
-    async def escalate_if_stuck(campaign_id: str, buyer: dict[str, Any]) -> dict[str, Any]:
+    async def escalate_if_stuck(
+        campaign_id: str, buyer: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Si ciclo atascado (72h+ sin respuesta), escala a humano.
 

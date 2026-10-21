@@ -32,7 +32,14 @@ async def list_items(
     offset: int = Query(0, ge=0),
 ):
     cat = MarketplaceCategory(category) if category else None
-    items = await marketplace_service.list_items(db, category=cat, search=search, featured_only=featured, limit=limit, offset=offset)
+    items = await marketplace_service.list_items(
+        db,
+        category=cat,
+        search=search,
+        featured_only=featured,
+        limit=limit,
+        offset=offset,
+    )
     return [
         {
             "id": i.id,
@@ -41,7 +48,9 @@ async def list_items(
             "short_description": i.short_description,
             "category": i.category.value,
             "price_usd": float(i.price_usd),
-            "compare_price_usd": float(i.compare_price_usd) if i.compare_price_usd else None,
+            "compare_price_usd": (
+                float(i.compare_price_usd) if i.compare_price_usd else None
+            ),
             "thumbnail_url": i.thumbnail_url,
             "rating_avg": float(i.rating_avg),
             "rating_count": i.rating_count,
@@ -66,7 +75,9 @@ async def get_item(item_id: UUID, db: Annotated[AsyncSession, Depends(get_db)]):
         "description": item.description,
         "category": item.category.value,
         "price_usd": float(item.price_usd),
-        "compare_price_usd": float(item.compare_price_usd) if item.compare_price_usd else None,
+        "compare_price_usd": (
+            float(item.compare_price_usd) if item.compare_price_usd else None
+        ),
         "thumbnail_url": item.thumbnail_url,
         "preview_urls": item.preview_urls,
         "demo_url": item.demo_url,
@@ -89,11 +100,21 @@ async def purchase_item(
     item = await marketplace_service.get_item(db, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if item.is_limited and item.stock_remaining is not None and item.stock_remaining <= 0:
+    if (
+        item.is_limited
+        and item.stock_remaining is not None
+        and item.stock_remaining <= 0
+    ):
         raise HTTPException(status_code=400, detail="Item out of stock")
 
-    purchase = await marketplace_service.record_purchase(db, current_user.id, item_id, float(item.price_usd))
-    return {"purchase_id": purchase.id, "status": purchase.status, "delivered_at": purchase.delivered_at}
+    purchase = await marketplace_service.record_purchase(
+        db, current_user.id, item_id, float(item.price_usd)
+    )
+    return {
+        "purchase_id": purchase.id,
+        "status": purchase.status,
+        "delivered_at": purchase.delivered_at,
+    }
 
 
 @router.get("/my-purchases")

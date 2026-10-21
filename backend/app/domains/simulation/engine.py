@@ -27,10 +27,19 @@ class SimulationEngine:
 
     MAX_TURNS = 20
     _CLOSING_KEYWORDS: ClassVar[list] = [
-        "adiós", "adios", "chau", "nos vemos", "hasta luego",
-        "compra confirmada", "pedido realizado", "orden confirmada",
-        "listo, te envío", "gracias por tu compra", "quedamos así",
-        "perfecto, pasame los datos", "te paso el link de pago",
+        "adiós",
+        "adios",
+        "chau",
+        "nos vemos",
+        "hasta luego",
+        "compra confirmada",
+        "pedido realizado",
+        "orden confirmada",
+        "listo, te envío",
+        "gracias por tu compra",
+        "quedamos así",
+        "perfecto, pasame los datos",
+        "te paso el link de pago",
     ]
 
     async def create_scenario(
@@ -94,13 +103,19 @@ class SimulationEngine:
 
         try:
             # Initial customer message (ice breaker)
-            initial_customer = await self._generate_customer_message(db, scenario, messages_history)
+            initial_customer = await self._generate_customer_message(
+                db, scenario, messages_history
+            )
             if initial_customer:
-                messages_history.append({"role": "customer", "content": initial_customer})
+                messages_history.append(
+                    {"role": "customer", "content": initial_customer}
+                )
 
             for turn in range(self.MAX_TURNS):
                 # Agent turn
-                agent_msg = await self._generate_agent_message(db, scenario, messages_history)
+                agent_msg = await self._generate_agent_message(
+                    db, scenario, messages_history
+                )
                 if not agent_msg:
                     break
                 messages_history.append({"role": "agent", "content": agent_msg})
@@ -110,7 +125,9 @@ class SimulationEngine:
                     break
 
                 # Customer turn
-                customer_msg = await self._generate_customer_message(db, scenario, messages_history)
+                customer_msg = await self._generate_customer_message(
+                    db, scenario, messages_history
+                )
                 if not customer_msg:
                     break
                 messages_history.append({"role": "customer", "content": customer_msg})
@@ -121,12 +138,16 @@ class SimulationEngine:
 
                 # Periodic objective check after turn 8 to avoid premature exits
                 if turn >= 8 and turn % 2 == 0:
-                    status = await self._check_objective_status(db, scenario, messages_history)
+                    status = await self._check_objective_status(
+                        db, scenario, messages_history
+                    )
                     if status == "COMPLETE":
                         break
 
             # Evaluate
-            score, outcome, skills, feedback = await self._evaluate_run(db, scenario, messages_history)
+            score, outcome, skills, feedback = await self._evaluate_run(
+                db, scenario, messages_history
+            )
 
             duration = int((datetime.now(UTC) - started).total_seconds())
 
@@ -203,7 +224,9 @@ class SimulationEngine:
         )
 
         transcript = self._build_transcript(messages_history)
-        user_prompt = f"Conversación hasta ahora:\n{transcript}\n\nTu turno como cliente:"
+        user_prompt = (
+            f"Conversación hasta ahora:\n{transcript}\n\nTu turno como cliente:"
+        )
 
         return await generate_raw_ai_response(
             db=db,
@@ -285,7 +308,11 @@ class SimulationEngine:
 
         # Outcome
         status = await self._check_objective_status(db, scenario, messages_history)
-        outcome_map = {"COMPLETE": "success", "PARTIAL": "partial", "INCOMPLETE": "failure"}
+        outcome_map = {
+            "COMPLETE": "success",
+            "PARTIAL": "partial",
+            "INCOMPLETE": "failure",
+        }
         outcome = outcome_map.get(status, "failure")
 
         # Skills
@@ -321,7 +348,9 @@ class SimulationEngine:
 
         return score, outcome, skills, feedback
 
-    def _extract_number(self, text: str | None, default: int = 0, max_val: int = 100) -> int:
+    def _extract_number(
+        self, text: str | None, default: int = 0, max_val: int = 100
+    ) -> int:
         if not text:
             return default
         digits = "".join(c for c in text if c.isdigit())
@@ -331,7 +360,9 @@ class SimulationEngine:
         except ValueError:
             return default
 
-    def _extract_json(self, text: str | None, default: dict[str, Any]) -> dict[str, Any]:
+    def _extract_json(
+        self, text: str | None, default: dict[str, Any]
+    ) -> dict[str, Any]:
         if not text:
             return default
         try:
@@ -407,9 +438,11 @@ class SimulationEngine:
         agent_type: str | None = None,
         limit: int = 50,
     ) -> list[SimulationLeaderboard]:
-        query = select(SimulationLeaderboard).order_by(
-            desc(SimulationLeaderboard.avg_score)
-        ).limit(limit)
+        query = (
+            select(SimulationLeaderboard)
+            .order_by(desc(SimulationLeaderboard.avg_score))
+            .limit(limit)
+        )
         if agent_type:
             query = query.where(SimulationLeaderboard.agent_type == agent_type)
         result = await db.execute(query)

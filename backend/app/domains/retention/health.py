@@ -53,7 +53,9 @@ class HealthScoringService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def calculate_health_for_conversation(self, conversation_id: uuid.UUID) -> CustomerHealthScore:
+    async def calculate_health_for_conversation(
+        self, conversation_id: uuid.UUID
+    ) -> CustomerHealthScore:
         """Calculate health score for a single customer."""
         # Get conversation
         conv_result = await self.db.execute(
@@ -61,17 +63,26 @@ class HealthScoringService:
         )
         conv = conv_result.scalar_one_or_none()
         if not conv:
-            return CustomerHealthScore(conversation_id, 0, "declining", ChurnRiskLevel.CRITICAL, "Cliente no encontrado")
+            return CustomerHealthScore(
+                conversation_id,
+                0,
+                "declining",
+                ChurnRiskLevel.CRITICAL,
+                "Cliente no encontrado",
+            )
 
         now = datetime.now(UTC)
 
         # 1. Recency (30%): days since last order
         order_result = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.conversation_id == conversation_id,
                 Order.is_active == True,
                 Order.status.in_(["paid", "delivered"]),
-            ).order_by(desc(Order.created_at)).limit(1)
+            )
+            .order_by(desc(Order.created_at))
+            .limit(1)
         )
         last_order = order_result.scalar_one_or_none()
 
@@ -118,9 +129,12 @@ class HealthScoringService:
 
         # 3. NPS (25%): latest NPS response
         nps_result = await self.db.execute(
-            select(NpsResponse).where(
+            select(NpsResponse)
+            .where(
                 NpsResponse.conversation_id == conversation_id,
-            ).order_by(desc(NpsResponse.created_at)).limit(1)
+            )
+            .order_by(desc(NpsResponse.created_at))
+            .limit(1)
         )
         nps = nps_result.scalar_one_or_none()
 
@@ -150,18 +164,22 @@ class HealthScoringService:
 
         # Weighted total
         health_score = int(
-            recency_score * 0.30 +
-            engagement_score * 0.25 +
-            nps_score * 0.25 +
-            support_score * 0.20
+            recency_score * 0.30
+            + engagement_score * 0.25
+            + nps_score * 0.25
+            + support_score * 0.20
         )
 
         # Determine trend (compare with previous if exists)
         from app.domains.retention.models import HealthScoreHistory
+
         prev_result = await self.db.execute(
-            select(HealthScoreHistory).where(
+            select(HealthScoreHistory)
+            .where(
                 HealthScoreHistory.conversation_id == conversation_id,
-            ).order_by(desc(HealthScoreHistory.calculated_at)).limit(1)
+            )
+            .order_by(desc(HealthScoreHistory.calculated_at))
+            .limit(1)
         )
         prev = prev_result.scalar_one_or_none()
 
@@ -254,7 +272,9 @@ class HealthScoringService:
             count += 1
 
         await self.db.commit()
-        logger.info(f"Recalculated health scores for {count} customers in business {business_id}")
+        logger.info(
+            f"Recalculated health scores for {count} customers in business {business_id}"
+        )
         return count
 
     def _get_last_order_days(self, conversation_id: uuid.UUID) -> int:
@@ -277,7 +297,9 @@ class ChurnPreventionEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def activate_prevention_for_business(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
+    async def activate_prevention_for_business(
+        self, business_id: uuid.UUID
+    ) -> list[dict[str, Any]]:
         """Activate churn prevention for all at-risk customers of a business."""
         from app.domains.retention.models import HealthScoreRecord
 
@@ -321,9 +343,16 @@ class ChurnPreventionEngine:
                     entity_id=record.conversation_id,
                     reason=f"Churn risk CRITICAL. Health score: {record.health_score}. Action: {record.recommended_action}",
                     status=AutopilotActionStatus.ESCALATED,
-                    context_data={"health_score": record.health_score, "trend": record.trend},
+                    context_data={
+                        "health_score": record.health_score,
+                        "trend": record.trend,
+                    },
                 )
-                return {"conversation_id": str(record.conversation_id), "action": "escalated", "reason": "critical churn risk"}
+                return {
+                    "conversation_id": str(record.conversation_id),
+                    "action": "escalated",
+                    "reason": "critical churn risk",
+                }
             return None
 
         elif record.churn_risk_level == "high":
@@ -358,12 +387,17 @@ class ChurnPreventionEngine:
             entity_id=record.conversation_id,
             reason=f"Churn risk {record.churn_risk_level}. Activated {workflow_type} workflow.",
             status=AutopilotActionStatus.EXECUTED,
-            context_data={"workflow_type": workflow_type, "health_score": record.health_score},
+            context_data={
+                "workflow_type": workflow_type,
+                "health_score": record.health_score,
+            },
         )
 
         # In a real implementation, this would trigger an actual workflow
         # For now, we log it and return
-        logger.info(f"Activated {workflow_type} for conversation {record.conversation_id}")
+        logger.info(
+            f"Activated {workflow_type} for conversation {record.conversation_id}"
+        )
 
         return {
             "conversation_id": str(record.conversation_id),

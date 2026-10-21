@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ChurnRiskLevel(str, Enum):
     """Customer churn risk levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -21,6 +22,7 @@ class ChurnRiskLevel(str, Enum):
 @dataclass
 class ChurnScore:
     """Customer churn risk score."""
+
     customer_id: str
     customer_name: str
     risk_level: ChurnRiskLevel
@@ -35,6 +37,7 @@ class ChurnScore:
 @dataclass
 class HappinessTactic:
     """Specific tactic to increase customer happiness."""
+
     tactic_id: str
     name: str
     description: str
@@ -48,6 +51,7 @@ class HappinessTactic:
 @dataclass
 class ReactivationOffer:
     """Offer to reactivate churned customer."""
+
     customer_id: str
     discount_percent: float
     new_features: list[str]
@@ -85,7 +89,9 @@ class RetentionEngine:
         Returns:
             Churn risk score and recommended actions
         """
-        logger.info(f"Calculating churn risk for customer: {customer_data.get('customer_id')}")
+        logger.info(
+            f"Calculating churn risk for customer: {customer_data.get('customer_id')}"
+        )
 
         # Calculate individual risk factors
         usage_risk = self._analyze_usage_churn(customer_data, historical_data)
@@ -121,7 +127,9 @@ class RetentionEngine:
         # Calculate LTV if retained
         customer_data.get("lifetime_value", 0.0)
         mrr = customer_data.get("monthly_revenue", 0.0)
-        expected_ltv = (mrr * 36) if risk_level != ChurnRiskLevel.CRITICAL else (mrr * 12)
+        expected_ltv = (
+            (mrr * 36) if risk_level != ChurnRiskLevel.CRITICAL else (mrr * 12)
+        )
 
         return ChurnScore(
             customer_id=customer_data.get("customer_id", "unknown"),
@@ -156,7 +164,9 @@ class RetentionEngine:
         Returns:
             Ranked list of happiness tactics
         """
-        logger.info(f"Generating happiness strategy for {customer_data.get('customer_id')}")
+        logger.info(
+            f"Generating happiness strategy for {customer_data.get('customer_id')}"
+        )
 
         nps_score = customer_data.get("nps_score", 0)
         tactics = []
@@ -201,7 +211,9 @@ class RetentionEngine:
         Returns:
             Win-back offer strategy
         """
-        logger.info(f"Creating win-back campaign for: {churned_customer_data.get('customer_id')}")
+        logger.info(
+            f"Creating win-back campaign for: {churned_customer_data.get('customer_id')}"
+        )
 
         # Determine churn reason
         churn_reason = churned_customer_data.get("churn_reason", "unknown")
@@ -214,7 +226,9 @@ class RetentionEngine:
         new_features = self._identify_new_features(business_profile, churn_reason)
 
         # Determine special treatment
-        special_treatment = self._create_special_treatment(customer_ltv, business_profile)
+        special_treatment = self._create_special_treatment(
+            customer_ltv, business_profile
+        )
 
         # Determine offer duration
         days_since_churn = churned_customer_data.get("days_since_churn", 90)
@@ -259,7 +273,8 @@ class RetentionEngine:
 
         # Find complementary products not yet purchased
         upsell_candidates = [
-            p for p in available_products
+            p
+            for p in available_products
             if p["id"] not in current_products and p.get("tier", "basic") != "basic"
         ]
 
@@ -355,7 +370,9 @@ class RetentionEngine:
         """Determine intervention urgency."""
         return str(risk_level.value)
 
-    def _delighter_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
+    def _delighter_tactics(
+        self, customer_data: dict[str, Any]
+    ) -> list[HappinessTactic]:
         """Generate tactics to delight promoters."""
         return [
             HappinessTactic(
@@ -388,7 +405,9 @@ class RetentionEngine:
             ),
         ]
 
-    def _passive_conversion_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
+    def _passive_conversion_tactics(
+        self, customer_data: dict[str, Any]
+    ) -> list[HappinessTactic]:
         """Generate tactics to convert passives to promoters."""
         return [
             HappinessTactic(
@@ -407,7 +426,9 @@ class RetentionEngine:
             ),
         ]
 
-    def _detractor_recovery_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
+    def _detractor_recovery_tactics(
+        self, customer_data: dict[str, Any]
+    ) -> list[HappinessTactic]:
         """Generate tactics to recover detractors."""
         return [
             HappinessTactic(
@@ -484,7 +505,9 @@ class RetentionEngine:
             return ["New advanced analytics", "API access", "Custom integrations"]
         return ["Improved performance", "New dashboard", "Enhanced reporting"]
 
-    def _create_special_treatment(self, ltv: float, business_profile: "BusinessProfile") -> str:
+    def _create_special_treatment(
+        self, ltv: float, business_profile: "BusinessProfile"
+    ) -> str:
         """Create special treatment offer."""
         if ltv > 50_000:
             return "Dedicated customer success manager for 6 months"
@@ -524,7 +547,9 @@ class RetentionEngine:
 
         return min(rate, 0.60)
 
-    def _upsell_fit_score(self, customer_data: dict[str, Any], product: dict[str, Any]) -> float:
+    def _upsell_fit_score(
+        self, customer_data: dict[str, Any], product: dict[str, Any]
+    ) -> float:
         """Calculate fit score for upsell."""
         score = 0.0
 

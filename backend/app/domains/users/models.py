@@ -19,7 +19,11 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     email_verified = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     is_superuser = Column(Boolean, default=False, nullable=False)
     failed_login_attempts = Column(Integer, default=0, nullable=False)
@@ -38,9 +42,18 @@ class User(Base):
     # Region & billing (must match signup.py INSERT schema)
     country_code = Column(String(2), default="AR", nullable=False)
     preferred_currency = Column(String(3), default="ARS", nullable=False)
-    timezone = Column(String(64), default="America/Argentina/Buenos_Aires", nullable=False)
+    timezone = Column(
+        String(64), default="America/Argentina/Buenos_Aires", nullable=False
+    )
     billing_address = Column(JSONB, nullable=True)
     payment_methods = Column(JSONB, nullable=True)
 
-    businesses = relationship("Business", back_populates="user", cascade="all, delete-orphan")
-    subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    businesses = relationship(
+        "Business", back_populates="user", cascade="all, delete-orphan"
+    )
+    subscription = relationship(
+        "Subscription",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

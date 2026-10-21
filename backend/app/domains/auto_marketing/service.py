@@ -1,4 +1,5 @@
 """Phase X8: Auto-Marketing & Growth Agent Service."""
+
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -40,7 +41,12 @@ class AutoMarketingAgent:
         ]
 
         channels_schedule = {
-            MarketingChannel.INSTAGRAM: [0, 1, 3, 5],  # Mon, Tue, Thu, Sat (morning + evening)
+            MarketingChannel.INSTAGRAM: [
+                0,
+                1,
+                3,
+                5,
+            ],  # Mon, Tue, Thu, Sat (morning + evening)
             MarketingChannel.LINKEDIN: [1, 4],  # Tue, Fri (morning)
             MarketingChannel.TIKTOK: [2, 4, 6],  # Wed, Fri, Sun
             MarketingChannel.EMAIL: [3],  # Thu
@@ -52,17 +58,23 @@ class AutoMarketingAgent:
 
             for channel, schedule_days in channels_schedule.items():
                 if day % 7 in schedule_days:
-                    content_calendar.append({
-                        "date": day_date.strftime("%Y-%m-%d"),
-                        "channel": channel,
-                        "pillar": pillar,
-                        "content_type": AutoMarketingAgent._select_content_type(channel, pillar),
-                    })
+                    content_calendar.append(
+                        {
+                            "date": day_date.strftime("%Y-%m-%d"),
+                            "channel": channel,
+                            "pillar": pillar,
+                            "content_type": AutoMarketingAgent._select_content_type(
+                                channel, pillar
+                            ),
+                        }
+                    )
 
         return content_calendar
 
     @staticmethod
-    def _select_content_type(channel: MarketingChannel, pillar: ContentPillar) -> ContentType:
+    def _select_content_type(
+        channel: MarketingChannel, pillar: ContentPillar
+    ) -> ContentType:
         """Select best content type for channel/pillar combo."""
         if channel == MarketingChannel.INSTAGRAM:
             if pillar == ContentPillar.RESULTS:
@@ -134,7 +146,8 @@ class AutoMarketingAgent:
         # Instagram version (short + visual)
         instagram_content = AutoMarketingContent(
             title=f"{story.customer_name} - {story.result_summary}",
-            content=story.short_story or f"Client increased sales by {story.result_metrics.get('sales_increase', 'X%')}",
+            content=story.short_story
+            or f"Client increased sales by {story.result_metrics.get('sales_increase', 'X%')}",
             content_type=ContentType.REEL,
             pillar=ContentPillar.SOCIAL_PROOF,
             primary_channel=MarketingChannel.INSTAGRAM,
@@ -211,21 +224,42 @@ class AutoMarketingAgent:
         # Curated list of micro-influencers by niche
         influencers_by_niche = {
             "SaaS": [
-                {"name": "Sarah Chen", "handle": "@sarahcodes", "followers": 45000, "engagement": 0.082},
-                {"name": "Alex Rivera", "handle": "@alexrivtech", "followers": 32000, "engagement": 0.095},
+                {
+                    "name": "Sarah Chen",
+                    "handle": "@sarahcodes",
+                    "followers": 45000,
+                    "engagement": 0.082,
+                },
+                {
+                    "name": "Alex Rivera",
+                    "handle": "@alexrivtech",
+                    "followers": 32000,
+                    "engagement": 0.095,
+                },
             ],
             "Sales": [
-                {"name": "Mike Thompson", "handle": "@mikesales", "followers": 55000, "engagement": 0.071},
+                {
+                    "name": "Mike Thompson",
+                    "handle": "@mikesales",
+                    "followers": 55000,
+                    "engagement": 0.071,
+                },
             ],
             "Marketing": [
-                {"name": "Lisa Wang", "handle": "@lisamarkets", "followers": 38000, "engagement": 0.088},
+                {
+                    "name": "Lisa Wang",
+                    "handle": "@lisamarkets",
+                    "followers": 38000,
+                    "engagement": 0.088,
+                },
             ],
         }
 
         matching_influencers = influencers_by_niche.get(niche, [])
 
         return [
-            inf for inf in matching_influencers
+            inf
+            for inf in matching_influencers
             if min_followers <= inf.get("followers", 0) <= max_followers
         ]
 
@@ -244,7 +278,7 @@ class AutoMarketingAgent:
         result = await db.execute(
             select(GrowthMetrics).where(
                 GrowthMetrics.channel == channel,
-                GrowthMetrics.date >= date.replace(hour=0, minute=0, second=0)
+                GrowthMetrics.date >= date.replace(hour=0, minute=0, second=0),
             )
         )
         metrics = result.scalar()
@@ -259,7 +293,11 @@ class AutoMarketingAgent:
             "engagement_rate": f"{metrics.engagement_rate*100:.1f}%",
             "conversions": metrics.total_conversions,
             "conversion_rate": f"{metrics.conversion_rate*100:.2f}%",
-            "trend": f"{metrics.trend_vs_yesterday:+.1f}%" if metrics.trend_vs_yesterday else "N/A",
+            "trend": (
+                f"{metrics.trend_vs_yesterday:+.1f}%"
+                if metrics.trend_vs_yesterday
+                else "N/A"
+            ),
         }
 
     @staticmethod
@@ -277,7 +315,7 @@ class AutoMarketingAgent:
             "psychology_layers": {
                 "layer_1": "Emotion (aspiration, urgency, belonging)",
                 "layer_2": "Logic (metrics, proof points)",
-                "layer_3": "Identity (\"be someone who...\")",
+                "layer_3": 'Identity ("be someone who...")',
             },
             "distribution_rules": {
                 "instagram": "Reel > Carousel > Post (video rules)",
@@ -290,5 +328,5 @@ class AutoMarketingAgent:
                 "linkedin": "4-5x/week (morning 8-10am)",
                 "tiktok": "3-5x/week (timing: 6-9pm)",
                 "email": "2x/week (Wed + Fri)",
-            }
+            },
         }

@@ -35,7 +35,9 @@ def update_deal_scores_task():
             )
             conversations = result.scalars().all()
 
-            logger.info(f"Updating deal scores for {len(conversations)} active conversations")
+            logger.info(
+                f"Updating deal scores for {len(conversations)} active conversations"
+            )
 
             service = DealScoringService(db)
             scorer = DealScorer(db)
@@ -50,6 +52,7 @@ def update_deal_scores_task():
 
                     # Find previous score
                     from app.domains.agents.models_scoring import DealScore
+
                     prev_result = await db.execute(
                         select(DealScore)
                         .where(DealScore.conversation_id == conv.id)
@@ -61,6 +64,7 @@ def update_deal_scores_task():
 
                     # Determine customer_id
                     from app.domains.memory.models import ConversationMemoryChunk
+
                     chunk_result = await db.execute(
                         select(ConversationMemoryChunk.user_id)
                         .where(ConversationMemoryChunk.conversation_id == conv.id)
@@ -126,7 +130,9 @@ def update_deal_scores_task():
                             alerts_created += 1
 
                 except Exception as exc:
-                    logger.warning(f"Failed to score conversation {conv.id}: {exc}", exc_info=True)
+                    logger.warning(
+                        f"Failed to score conversation {conv.id}: {exc}", exc_info=True
+                    )
                     continue
 
             logger.info(

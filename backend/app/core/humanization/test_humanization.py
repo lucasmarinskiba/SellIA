@@ -248,9 +248,7 @@ class TestPersonalizationEngine(unittest.TestCase):
             industry="saas",
             role="VP of Sales",
         )
-        profile.past_purchases = [
-            {"product": "Premium Plan", "date": "2024-01-15"}
-        ]
+        profile.past_purchases = [{"product": "Premium Plan", "date": "2024-01-15"}]
         context = PersonalizationContext(
             buyer_profile=profile,
             message_type="follow_up",
@@ -328,8 +326,12 @@ class TestResponseBuilder(unittest.TestCase):
     def test_cta_strength_calculation(self):
         """Test CTA strength calculation"""
         soft_strength = self.builder._calculate_cta_strength(CTAType.SOFT, "message")
-        direct_strength = self.builder._calculate_cta_strength(CTAType.DIRECT, "message")
-        scarcity_strength = self.builder._calculate_cta_strength(CTAType.SCARCITY, "message")
+        direct_strength = self.builder._calculate_cta_strength(
+            CTAType.DIRECT, "message"
+        )
+        scarcity_strength = self.builder._calculate_cta_strength(
+            CTAType.SCARCITY, "message"
+        )
 
         self.assertLess(soft_strength, direct_strength)
         self.assertLess(direct_strength, scarcity_strength)
@@ -355,7 +357,9 @@ class TestResponseBuilder(unittest.TestCase):
 
     def test_validate_response_good(self):
         """Test validation of good response"""
-        response = "Hey John! I think this could really work for you. What do you think?"
+        response = (
+            "Hey John! I think this could really work for you. What do you think?"
+        )
         result = self.builder.validate_response(response, "casual", "en")
         self.assertTrue(result["is_valid"])
 
@@ -431,7 +435,9 @@ class TestABTestingEngine(unittest.TestCase):
         )
         # Add minimal events
         for _ in range(10):
-            self.engine.record_event(test.test_id, test.control_variant.variant_id, "sent")
+            self.engine.record_event(
+                test.test_id, test.control_variant.variant_id, "sent"
+            )
 
         analysis = self.engine.analyze_test(test.test_id)
         self.assertIn("status", analysis)
@@ -446,7 +452,9 @@ class TestABTestingEngine(unittest.TestCase):
             hypothesis="Test humanness",
         )
         control = test.control_variant
-        success = self.engine.record_humanness_feedback(test.test_id, control.variant_id, 0.85)
+        success = self.engine.record_humanness_feedback(
+            test.test_id, control.variant_id, 0.85
+        )
         self.assertTrue(success)
         self.assertGreater(control.humanness_score, 0.5)
 
@@ -480,7 +488,9 @@ class TestEndToEnd(unittest.TestCase):
         )
 
         # Detect emotion
-        emotion = self.empathy_layer.detect_emotion("This sounds interesting, tell me more", "en")
+        emotion = self.empathy_layer.detect_emotion(
+            "This sounds interesting, tell me more", "en"
+        )
 
         # Get tone
         tone = self.tone_engine.suggest_tone(

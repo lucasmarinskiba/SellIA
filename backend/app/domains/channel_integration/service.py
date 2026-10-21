@@ -1,4 +1,5 @@
 """Phase 5C: Channel Integration Service."""
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -68,7 +69,9 @@ class ChannelIntegrationService:
         email: str | None = None,
         content: str | None = None,
     ) -> LocationMessageExecution:
-        result = await db.execute(select(LocationMessage).where(LocationMessage.id == message_id))
+        result = await db.execute(
+            select(LocationMessage).where(LocationMessage.id == message_id)
+        )
         msg = result.scalar()
         if not msg:
             return None
@@ -96,12 +99,14 @@ class ChannelIntegrationService:
         location_id: UUID,
     ) -> list[LocationReview]:
         result = await db.execute(
-            select(LocationReview).where(
+            select(LocationReview)
+            .where(
                 and_(
                     LocationReview.business_id == business_id,
                     LocationReview.location_id == location_id,
                 )
-            ).order_by(LocationReview.review_date.desc())
+            )
+            .order_by(LocationReview.review_date.desc())
         )
         return result.scalars().all()
 

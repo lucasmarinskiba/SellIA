@@ -27,7 +27,10 @@ ALLOWED_TRANSITIONS: dict[str, list[str]] = {
         OrderStatus.CANCELLED.value,
         OrderStatus.REFUNDED.value,
     ],
-    OrderStatus.SHIPPED.value: [OrderStatus.DELIVERED.value, OrderStatus.REFUNDED.value],
+    OrderStatus.SHIPPED.value: [
+        OrderStatus.DELIVERED.value,
+        OrderStatus.REFUNDED.value,
+    ],
     OrderStatus.DELIVERED.value: [OrderStatus.REFUNDED.value],
     OrderStatus.CANCELLED.value: [],
     OrderStatus.REFUNDED.value: [],
@@ -88,7 +91,9 @@ def apply_status(
     if new_status.value == current:
         return {"changed": False, "reason": "La orden ya está en ese estado"}
 
-    if enforce_transitions and new_status.value not in ALLOWED_TRANSITIONS.get(current, []):
+    if enforce_transitions and new_status.value not in ALLOWED_TRANSITIONS.get(
+        current, []
+    ):
         return {
             "changed": False,
             "reason": f"No se puede pasar de '{current}' a '{new_status.value}'",
@@ -101,7 +106,8 @@ def apply_status(
     return {
         "changed": True,
         "updates": {k: str(v) for k, v in updates.items()},
-        "fires_service_paid": new_status == OrderStatus.PAID and _sells_a_service(order),
+        "fires_service_paid": new_status == OrderStatus.PAID
+        and _sells_a_service(order),
     }
 
 
@@ -145,6 +151,9 @@ async def fire_service_paid(db: AsyncSession, payload: dict[str, Any]) -> None:
                 "total_amount": payload["total_amount"],
             },
         )
-    except Exception as e:  # noqa: BLE001 - the payment stands even if the automation does not
-        logger.error(f"service_paid trigger failed for order {payload['order_id']}: {e}")
+    # - the payment stands even if the automation does not
+    except Exception as e:  # noqa: BLE001
+        logger.error(
+            f"service_paid trigger failed for order {payload['order_id']}: {e}"
+        )
         await db.rollback()

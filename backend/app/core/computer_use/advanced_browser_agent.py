@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class BrowserMode(str, Enum):
     """Modos de operación."""
+
     STEALTH = "stealth"  # Parece humano (delays, mouse movements)
     FAST = "fast"  # Velocidad máxima
     ADAPTIVE = "adaptive"  # Ajusta basado en éxito/fallo
@@ -291,7 +292,9 @@ class AdvancedBrowserAgent:
             "url": self.page.url,
             "title": await self.page.title(),
             "visible_text": await self.page.inner_text("body"),
-            "element_count": await self.page.evaluate("document.querySelectorAll('*').length"),
+            "element_count": await self.page.evaluate(
+                "document.querySelectorAll('*').length"
+            ),
         }
 
         return state
@@ -308,7 +311,9 @@ class AdvancedBrowserAgent:
 
     # ========== ADAPTIVE MODE ==========
 
-    async def adaptive_action(self, action_type: str, params: dict[str, Any]) -> dict[str, Any]:
+    async def adaptive_action(
+        self, action_type: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """En modo ADAPTIVE: ajusta velocidad/estrategia basado en éxito/fallo previo."""
 
         if self.mode == BrowserMode.ADAPTIVE:

@@ -38,11 +38,21 @@ FOMO_CALENDAR = [
     {"name": "New Year Sale", "month": 1, "day": 1, "template_type": "flash_sale"},
     {"name": "Valentine's Day", "month": 2, "day": 14, "template_type": "countdown"},
     {"name": "Mother's Day", "month": 5, "day": 11, "template_type": "countdown"},
-    {"name": "Summer Sale Kickoff", "month": 7, "day": 1, "template_type": "flash_sale"},
+    {
+        "name": "Summer Sale Kickoff",
+        "month": 7,
+        "day": 1,
+        "template_type": "flash_sale",
+    },
     {"name": "Back to School", "month": 8, "day": 15, "template_type": "scarcity"},
     {"name": "Black Friday", "month": 11, "day": 29, "template_type": "flash_sale"},
     {"name": "Cyber Monday", "month": 12, "day": 2, "template_type": "flash_sale"},
-    {"name": "Christmas Countdown", "month": 12, "day": 25, "template_type": "countdown"},
+    {
+        "name": "Christmas Countdown",
+        "month": 12,
+        "day": 25,
+        "template_type": "countdown",
+    },
 ]
 
 
@@ -80,8 +90,12 @@ class OpportunityDetector:
         for event in FOMO_CALENDAR:
             try:
                 candidate = reference_date.replace(
-                    month=event["month"], day=event["day"],
-                    hour=0, minute=0, second=0, microsecond=0,
+                    month=event["month"],
+                    day=event["day"],
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0,
                 )
             except ValueError:
                 continue  # e.g. Feb 29 on a non-leap reference year
@@ -91,7 +105,9 @@ class OpportunityDetector:
 
             days_until = (candidate.date() - reference_date.date()).days
 
-            if 0 <= days_until <= lead_time_days and (closest_days is None or days_until < closest_days):
+            if 0 <= days_until <= lead_time_days and (
+                closest_days is None or days_until < closest_days
+            ):
                 closest = event
                 closest_days = days_until
 
@@ -138,7 +154,9 @@ class OpportunityDetector:
         opportunities = []
 
         if real_stock is not None:
-            stock_opp = OpportunityDetector.detect_stock_opportunity(real_stock, product_id)
+            stock_opp = OpportunityDetector.detect_stock_opportunity(
+                real_stock, product_id
+            )
             if stock_opp:
                 opportunities.append(stock_opp)
 
@@ -148,7 +166,9 @@ class OpportunityDetector:
         if seasonal_opp:
             opportunities.append(seasonal_opp)
 
-        competitor_opp = OpportunityDetector.detect_competitor_opportunity(competitor_signal)
+        competitor_opp = OpportunityDetector.detect_competitor_opportunity(
+            competitor_signal
+        )
         if competitor_opp:
             opportunities.append(competitor_opp)
 
@@ -196,7 +216,7 @@ class PerformanceMonitor:
     """Watch live campaign metrics and classify health"""
 
     NEGATIVE_ROI_THRESHOLD = -0.1  # -10% or worse
-    STRONG_ROI_THRESHOLD = 2.0     # 200%+ ROI
+    STRONG_ROI_THRESHOLD = 2.0  # 200%+ ROI
 
     @staticmethod
     def compute_roi(revenue: float, cost: float) -> float:
@@ -234,9 +254,15 @@ class PerformanceMonitor:
     def detect_roi_trend(metrics_history: list[dict[str, float]]) -> dict[str, Any]:
         """metrics_history: daily [{"revenue", "cost"}, ...] ordered oldest to newest"""
         if len(metrics_history) < 2:
-            return {"trend": "insufficient_data", "days_evaluated": len(metrics_history)}
+            return {
+                "trend": "insufficient_data",
+                "days_evaluated": len(metrics_history),
+            }
 
-        rois = [PerformanceMonitor.compute_roi(m.get("revenue", 0), m.get("cost", 0)) for m in metrics_history]
+        rois = [
+            PerformanceMonitor.compute_roi(m.get("revenue", 0), m.get("cost", 0))
+            for m in metrics_history
+        ]
 
         declines = sum(1 for i in range(1, len(rois)) if rois[i] < rois[i - 1])
         decline_ratio = declines / (len(rois) - 1)
@@ -273,7 +299,11 @@ class AutoScaler:
                 "reason": f"ROI at {health['roi']:.1%} is below the pause threshold",
             }
 
-        if trend and trend.get("trend") == "declining" and health["status"] != "strong_performance":
+        if (
+            trend
+            and trend.get("trend") == "declining"
+            and health["status"] != "strong_performance"
+        ):
             return {
                 "action": "auto_pause",
                 "reason": "ROI trending down across recent days even though not yet negative",
@@ -282,7 +312,9 @@ class AutoScaler:
         if health["status"] == "strong_performance":
             new_budget = None
             if current_budget is not None:
-                new_budget = round(current_budget * (1 + AutoScaler.MAX_SCALE_INCREASE), 2)
+                new_budget = round(
+                    current_budget * (1 + AutoScaler.MAX_SCALE_INCREASE), 2
+                )
             return {
                 "action": "auto_scale",
                 "reason": f"ROI at {health['roi']:.1%} exceeds the scale-up threshold",
@@ -291,7 +323,10 @@ class AutoScaler:
                 "recommended_budget": new_budget,
             }
 
-        return {"action": "continue", "reason": "Performance within normal healthy range"}
+        return {
+            "action": "continue",
+            "reason": "Performance within normal healthy range",
+        }
 
 
 class DailyReportGenerator:
@@ -345,7 +380,10 @@ class AIAutonomousCampaignManager:
         opportunities = OpportunityDetector.detect_all(
             real_stock, product_id, reference_date, competitor_signal
         )
-        return {"opportunities_found": len(opportunities), "opportunities": opportunities}
+        return {
+            "opportunities_found": len(opportunities),
+            "opportunities": opportunities,
+        }
 
     @staticmethod
     def create_campaign_from_opportunity(
@@ -382,7 +420,11 @@ class AIAutonomousCampaignManager:
             today_metrics, metrics_history, current_budget
         )
         report = DailyReportGenerator.generate_daily_report(
-            campaign_id, today_metrics, decision["health"], decision["action"], report_date
+            campaign_id,
+            today_metrics,
+            decision["health"],
+            decision["action"],
+            report_date,
         )
         return {**decision, "daily_report": report}
 

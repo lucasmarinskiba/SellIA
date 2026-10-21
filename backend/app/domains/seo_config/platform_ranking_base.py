@@ -59,11 +59,12 @@ class PlatformRankingConnector(ABC):
         ...
 
     @abstractmethod
-    async def validate_credentials(self) -> bool:
-        ...
+    async def validate_credentials(self) -> bool: ...
 
     @abstractmethod
-    def score_signals(self, signal_map: dict[str, "RankingSignal"]) -> dict[str, float | None]:
+    def score_signals(
+        self, signal_map: dict[str, "RankingSignal"]
+    ) -> dict[str, float | None]:
         """Map fetched signals into the composite scorer's sub-score dict
         (reputation_score, conversion_score, price_competitiveness_score,
         listing_quality_score, logistics_score, engagement_score). A pillar
@@ -72,7 +73,9 @@ class PlatformRankingConnector(ABC):
         ...
 
     @abstractmethod
-    def recommendation_rules(self, signal_map: dict[str, "RankingSignal"]) -> list[dict]:
+    def recommendation_rules(
+        self, signal_map: dict[str, "RankingSignal"]
+    ) -> list[dict]:
         """Concrete, platform-specific recommendation rules triggered by
         signal values. Each rule dict: {signal_key, severity, message,
         current_value, target_value}. Messages must be concrete (real

@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class EscalationReason(str, Enum):
     """Reasons for escalation to human rep."""
+
     LOW_INTENT = "low_intent"  # Intent <0.3
     COMPLEX_OBJECTION = "complex_objection"  # Multiple unresolved objections
     BUDGET_NEGOTIATION = "budget_negotiation"  # Needs discount authority override
@@ -25,6 +26,7 @@ class EscalationReason(str, Enum):
 
 class EscalationPriority(str, Enum):
     """Queue priority levels."""
+
     CRITICAL = "critical"  # VIP, legal required, escalated multiple times
     HIGH = "high"  # High deal size, complex objections
     MEDIUM = "medium"  # Standard escalations
@@ -34,6 +36,7 @@ class EscalationPriority(str, Enum):
 @dataclass
 class EscalationTicket:
     """Escalation ticket in queue."""
+
     ticket_id: str
     lead_id: str
     lead_name: str
@@ -55,9 +58,24 @@ class EscalationQueue:
     def __init__(self):
         self.tickets: dict[str, EscalationTicket] = {}
         self.reps: dict[str, dict[str, Any]] = {
-            "rep_001": {"name": "Alice Johnson", "queue": [], "capacity": 10, "current_load": 0},
-            "rep_002": {"name": "Bob Smith", "queue": [], "capacity": 10, "current_load": 0},
-            "rep_003": {"name": "Carol White", "queue": [], "capacity": 8, "current_load": 0},
+            "rep_001": {
+                "name": "Alice Johnson",
+                "queue": [],
+                "capacity": 10,
+                "current_load": 0,
+            },
+            "rep_002": {
+                "name": "Bob Smith",
+                "queue": [],
+                "capacity": 10,
+                "current_load": 0,
+            },
+            "rep_003": {
+                "name": "Carol White",
+                "queue": [],
+                "capacity": 8,
+                "current_load": 0,
+            },
         }
 
     async def create_ticket(
@@ -102,7 +120,9 @@ class EscalationQueue:
             self.reps[assigned_rep]["queue"].append(ticket_id)
             self.reps[assigned_rep]["current_load"] += 1
 
-        logger.info(f"Escalation created: {ticket_id} for {lead_name} (priority={priority.value})")
+        logger.info(
+            f"Escalation created: {ticket_id} for {lead_name} (priority={priority.value})"
+        )
         return ticket
 
     def _find_best_rep(self, priority: EscalationPriority) -> str | None:
@@ -126,7 +146,11 @@ class EscalationQueue:
         """Get escalation queue."""
         if rep_id:
             ticket_ids = self.reps[rep_id]["queue"]
-            return [self.tickets[tid] for tid in ticket_ids if self.tickets[tid].status != "resolved"]
+            return [
+                self.tickets[tid]
+                for tid in ticket_ids
+                if self.tickets[tid].status != "resolved"
+            ]
 
         # Return all pending tickets sorted by priority
         pending = [t for t in self.tickets.values() if t.status != "resolved"]

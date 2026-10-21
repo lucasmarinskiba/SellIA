@@ -39,7 +39,7 @@ async def get_seller_dashboard(seller_id: str) -> dict[str, Any]:
                 "deals_closed": dashboard.current_metrics.deals_closed,
                 "revenue": f"${dashboard.current_metrics.revenue_generated:,.2f}",
                 "avg_deal_size": f"${dashboard.current_metrics.avg_deal_size:,.2f}",
-                "customer_satisfaction": f"{dashboard.current_metrics.customer_satisfaction}/5"
+                "customer_satisfaction": f"{dashboard.current_metrics.customer_satisfaction}/5",
             },
             "channel_performance": [
                 {
@@ -47,7 +47,7 @@ async def get_seller_dashboard(seller_id: str) -> dict[str, Any]:
                     "rank": ch.rank,
                     "roi": f"{ch.roi:.1f}x",
                     "conversion": f"{ch.conversion_rate * 100:.1f}%",
-                    "cost_per_lead": f"${ch.cost_per_lead:.2f}"
+                    "cost_per_lead": f"${ch.cost_per_lead:.2f}",
                 }
                 for ch in dashboard.channel_performance
             ],
@@ -58,9 +58,9 @@ async def get_seller_dashboard(seller_id: str) -> dict[str, Any]:
                 "7_days": f"${dashboard.revenue_forecast['7_days']:,.0f}",
                 "30_days": f"${dashboard.revenue_forecast['30_days']:,.0f}",
                 "90_days": f"${dashboard.revenue_forecast['90_days']:,.0f}",
-                "annual": f"${dashboard.revenue_forecast['annual']:,.0f}"
+                "annual": f"${dashboard.revenue_forecast['annual']:,.0f}",
             },
-            "alerts": dashboard.alerts
+            "alerts": dashboard.alerts,
         }
 
     except Exception as e:
@@ -83,10 +83,14 @@ async def get_channel_rankings(seller_id: str) -> dict[str, Any]:
                 "roi": f"{ch.roi:.1f}x",
                 "leads": ch.leads_generated,
                 "conversion": f"{ch.conversion_rate * 100:.1f}%",
-                "recommendation": "Increase spend" if ch.rank <= 2 else "Maintain" if ch.rank <= 3 else "Reduce"
+                "recommendation": (
+                    "Increase spend"
+                    if ch.rank <= 2
+                    else "Maintain" if ch.rank <= 3 else "Reduce"
+                ),
             }
             for ch in channels
-        ]
+        ],
     }
 
 
@@ -104,7 +108,11 @@ async def recommend_optimization_strategy(
     """Recommend optimization strategy based on performance."""
 
     try:
-        metrics = {"roi": roi, "growth_rate": growth_rate, "market_position": "competitive"}
+        metrics = {
+            "roi": roi,
+            "growth_rate": growth_rate,
+            "market_position": "competitive",
+        }
         strategy = optimizer.analyze_performance(metrics)
 
         return {
@@ -113,7 +121,7 @@ async def recommend_optimization_strategy(
             "current_roi": roi,
             "current_growth": f"{growth_rate * 100:.1f}%",
             "recommended_strategy": strategy.value,
-            "rationale": "High ROI and growth momentum justify increased spend"
+            "rationale": "High ROI and growth momentum justify increased spend",
         }
 
     except Exception as e:
@@ -149,12 +157,12 @@ async def optimize_budget_allocation(
                     "budget": f"${alloc.recommended_budget:,.2f}",
                     "expected_leads": alloc.expected_leads,
                     "expected_revenue": f"${alloc.expected_revenue:,.2f}",
-                    "confidence": f"{alloc.confidence * 100:.0f}%"
+                    "confidence": f"{alloc.confidence * 100:.0f}%",
                 }
                 for alloc in recommendation.channel_allocations
             ],
             "rationale": recommendation.rationale,
-            "actions": recommendation.actions
+            "actions": recommendation.actions,
         }
 
     except Exception as e:
@@ -180,7 +188,7 @@ async def analyze_customer_churn_risk(customer_id: str) -> dict[str, Any]:
             "failed_payment_attempts": 0,
             "viewed_competitor": False,
             "plan": "professional",
-            "monthly_spend": 99
+            "monthly_spend": 99,
         }
 
         plan = retention_engine.generate_retention_plan(customer_id, customer_data)
@@ -193,17 +201,23 @@ async def analyze_customer_churn_risk(customer_id: str) -> dict[str, Any]:
                 "risk_score": f"{plan.churn_risk_score:.2f}",
                 "risk_level": plan.churn_probability,
                 "days_until_churn": plan.days_until_churn,
-                "urgency": "Critical - Act within 24 hours" if plan.churn_probability == "critical" else "High - Act within 7 days"
+                "urgency": (
+                    "Critical - Act within 24 hours"
+                    if plan.churn_probability == "critical"
+                    else "High - Act within 7 days"
+                ),
             },
-            "recommended_actions": [action.value for action in plan.recommended_actions],
+            "recommended_actions": [
+                action.value for action in plan.recommended_actions
+            ],
             "retention_offer": {
                 "upgrade_to": plan.upsell_opportunity,
                 "original_price": f"${plan.upsell_amount:.2f}",
                 "discount": f"{plan.suggested_discount * 100:.0f}%",
                 "final_price": f"${plan.upsell_amount * (1 - plan.suggested_discount):.2f}",
-                "savings": f"${plan.upsell_amount * plan.suggested_discount:.2f}"
+                "savings": f"${plan.upsell_amount * plan.suggested_discount:.2f}",
             },
-            "next_step": plan.next_step
+            "next_step": plan.next_step,
         }
 
     except Exception as e:
@@ -223,7 +237,7 @@ async def get_high_value_at_risk_customers() -> dict[str, Any]:
             "monthly_value": 5000,
             "churn_risk": "critical",
             "days_until_churn": 7,
-            "reason": "3+ unresolved support tickets"
+            "reason": "3+ unresolved support tickets",
         },
         {
             "customer_id": "cust_002",
@@ -231,8 +245,8 @@ async def get_high_value_at_risk_customers() -> dict[str, Any]:
             "monthly_value": 3500,
             "churn_risk": "high",
             "days_until_churn": 14,
-            "reason": "No login in 30 days"
-        }
+            "reason": "No login in 30 days",
+        },
     ]
 
     return {
@@ -240,7 +254,7 @@ async def get_high_value_at_risk_customers() -> dict[str, Any]:
         "total_at_risk": len(at_risk),
         "total_monthly_value_at_risk": 8500,
         "customers": at_risk,
-        "recommended_action": "Initiate retention campaigns immediately"
+        "recommended_action": "Initiate retention campaigns immediately",
     }
 
 
@@ -260,5 +274,5 @@ async def identify_upsell_opportunity(customer_id: str) -> dict[str, Any]:
         "confidence": "85%",
         "trigger": "Customer usage at 95% capacity",
         "recommended_messaging": "You're maximizing your plan. Upgrade to Enterprise for unlimited features.",
-        "expected_close_rate": "45%"
+        "expected_close_rate": "45%",
     }

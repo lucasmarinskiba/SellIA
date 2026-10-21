@@ -34,27 +34,17 @@ from app.core.clock import utc_now
 logger = logging.getLogger(__name__)
 
 # Configuration
-TRON_RPC_URL = os.getenv(
-    "TRON_RPC_URL",
-    "https://api.trongrid.io"
-)
-BSC_RPC_URL = os.getenv(
-    "BSC_RPC_URL",
-    "https://bsc-dataseed.binance.org"
-)
+TRON_RPC_URL = os.getenv("TRON_RPC_URL", "https://api.trongrid.io")
+BSC_RPC_URL = os.getenv("BSC_RPC_URL", "https://bsc-dataseed.binance.org")
 USDT_TRC20_CONTRACT = os.getenv(
-    "USDT_TRC20_CONTRACT",
-    "TR7NHqjeKQxGTCi8q282JBPL8otQmuoEXGm"  # Tron USDT mainnet
+    "USDT_TRC20_CONTRACT", "TR7NHqjeKQxGTCi8q282JBPL8otQmuoEXGm"  # Tron USDT mainnet
 )
 USDT_BEP20_CONTRACT = os.getenv(
     "USDT_BEP20_CONTRACT",
-    "0x55d398326f99059fF775485246999027B3197955"  # BSC USDT mainnet
+    "0x55d398326f99059fF775485246999027B3197955",  # BSC USDT mainnet
 )
 DEPOSIT_WALLET_ADDRESS = os.getenv("DEPOSIT_WALLET_ADDRESS", "")
-EXCHANGE_RATE_API = os.getenv(
-    "EXCHANGE_RATE_API",
-    "https://api.coingecko.com/api/v3"
-)
+EXCHANGE_RATE_API = os.getenv("EXCHANGE_RATE_API", "https://api.coingecko.com/api/v3")
 
 # Confirm thresholds
 MIN_CONFIRMATIONS_TRON = 25
@@ -64,12 +54,14 @@ DUST_ATTACK_THRESHOLD = 1  # Reject if < 1 USDT
 
 class Blockchain(str, Enum):
     """Supported blockchains for USDT."""
+
     TRON = "tron"
     BSC = "bsc"  # Binance Smart Chain
 
 
 class TransactionStatus(str, Enum):
     """Transaction statuses."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     FAILED = "failed"
@@ -236,7 +228,9 @@ class CryptoProcessor:
             amount_raw = int(contract_params.get("amount", 0))
 
             # Convert to USDT (6 decimals)
-            amount_usdt = Decimal(amount_raw) / Decimal(10 ** CryptoProcessor.USDT_DECIMALS)
+            amount_usdt = Decimal(amount_raw) / Decimal(
+                10**CryptoProcessor.USDT_DECIMALS
+            )
 
             # Get block info for confirmations
             block_height = transaction.get("blockNumber", 0)
@@ -412,7 +406,12 @@ class CryptoProcessor:
                 timeout=10,
             )
             if response.status_code == 200:
-                return response.json().get("block_header", {}).get("raw_data", {}).get("number", 0)
+                return (
+                    response.json()
+                    .get("block_header", {})
+                    .get("raw_data", {})
+                    .get("number", 0)
+                )
             return 0
         except Exception:
             logger.exception("Error getting Tron block height")

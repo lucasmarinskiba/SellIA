@@ -50,33 +50,39 @@ class CopyGenerator:
                 f"{business_name} - Respuesta rápida garantizada",
             ],
             descriptions=[
-                ("Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
-                "Presupuesto sin compromiso."),
-                ("Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
-                "Clientes satisfechos."),
-                ("Servicio profesional y confiable. Disponibles 24/7. "
-                "Garantía en todos nuestros trabajos."),
+                (
+                    "Contáctanos hoy para solucionar tu problema. Respuesta en 30 minutos. "
+                    "Presupuesto sin compromiso."
+                ),
+                (
+                    "Somos especialistas en [especialidad]. Más de 10 años de experiencia. "
+                    "Clientes satisfechos."
+                ),
+                (
+                    "Servicio profesional y confiable. Disponibles 24/7. "
+                    "Garantía en todos nuestros trabajos."
+                ),
             ],
             calls_to_action=[
                 "Llama ahora",
                 "Solicita un presupuesto",
                 "WhatsApp",
                 "Agenda una cita",
-                "Envía tu consulta"
+                "Envía tu consulta",
             ],
             sample_posts=[
                 {
                     "title": "Promoción especial",
-                    "content": "¡Descuento 20% en servicios este mes! Llama ahora."
+                    "content": "¡Descuento 20% en servicios este mes! Llama ahora.",
                 },
                 {
                     "title": "Tips útiles",
-                    "content": "¿Cómo mantener [producto/servicio]? Aquí 5 tips para alargar su vida."
+                    "content": "¿Cómo mantener [producto/servicio]? Aquí 5 tips para alargar su vida.",
                 },
                 {
                     "title": "Caso de éxito",
-                    "content": "Transforma tu [espacio/proyecto] con nuestros servicios. Ver antes y después."
-                }
+                    "content": "Transforma tu [espacio/proyecto] con nuestros servicios. Ver antes y después.",
+                },
             ],
             email_templates=[],
             best_practices=[
@@ -84,8 +90,8 @@ class CopyGenerator:
                 "Publica 2 veces por semana",
                 "Solicita reviews regularmente",
                 "Incluye fotos de trabajos realizados",
-                "Destaca garantías y certificados"
-            ]
+                "Destaca garantías y certificados",
+            ],
         )
 
     def _copy_instagram(self, business_name: str) -> CopyKit:
@@ -97,39 +103,43 @@ class CopyGenerator:
                 f"Descubre {business_name} ✨",
                 "Transforma tu [espacio] con nosotros",
                 "Calidad profesional a tu alcance",
-                "Somos tu solución número 1"
+                "Somos tu solución número 1",
             ],
             descriptions=[
-                ("Especialistas en [especialidad]. Síguenos para tips, antes y después, "
-                "y ofertas exclusivas. 👇"),
-                ("Tus [productos/servicios] de confianza. Calidad premium. "
-                "Envío rápido. ¡Síguenos!"),
+                (
+                    "Especialistas en [especialidad]. Síguenos para tips, antes y después, "
+                    "y ofertas exclusivas. 👇"
+                ),
+                (
+                    "Tus [productos/servicios] de confianza. Calidad premium. "
+                    "Envío rápido. ¡Síguenos!"
+                ),
             ],
             calls_to_action=[
                 "Compra ahora",
                 "Conoce nuestros servicios",
                 "Chatea con nosotros",
                 "Mira nuestro catálogo",
-                "Descubre más"
+                "Descubre más",
             ],
             sample_posts=[
                 {
                     "type": "Reel",
                     "content": "30 segundos: before/after del proyecto. Trending music. "
-                    "CTA al final."
+                    "CTA al final.",
                 },
                 {
                     "type": "Carousel",
-                    "content": "5 slides: Step-by-step del proceso. Tips en cada slide."
+                    "content": "5 slides: Step-by-step del proceso. Tips en cada slide.",
                 },
                 {
                     "type": "Story",
-                    "content": "Behind-the-scenes. Equipo trabajando. Customer testimonial."
+                    "content": "Behind-the-scenes. Equipo trabajando. Customer testimonial.",
                 },
                 {
                     "type": "Post",
-                    "content": "Foto del producto/servicio + caption con hashtags + CTA"
-                }
+                    "content": "Foto del producto/servicio + caption con hashtags + CTA",
+                },
             ],
             email_templates=[],
             best_practices=[
@@ -139,8 +149,8 @@ class CopyGenerator:
                 "Usa 20-30 hashtags relevantes",
                 "Crea historias diarias",
                 "Etiqueta a clientes satisfechos",
-                "Colabora con micro-influencers"
-            ]
+                "Colabora con micro-influencers",
+            ],
         )
 
     def _copy_whatsapp(self, business_name: str) -> CopyKit:
@@ -159,24 +169,24 @@ class CopyGenerator:
                 {
                     "name": "Auto-respuesta inicial",
                     "content": "¡Hola! Gracias por tu mensaje. Te respondemos en máximo 2 horas. "
-                    "¿En qué te podemos ayudar? 😊"
+                    "¿En qué te podemos ayudar? 😊",
                 },
                 {
                     "name": "Presupuesto",
                     "content": "Claro, aquí te comparto el presupuesto: [detalles]. "
-                    "¿Te parece bien? ¿Alguna pregunta?"
+                    "¿Te parece bien? ¿Alguna pregunta?",
                 },
                 {
                     "name": "Seguimiento",
                     "content": "Solo quería confirmar que recibiste el presupuesto. "
-                    "¿Tienes dudas? Estoy disponible para aclarlas. ☺️"
+                    "¿Tienes dudas? Estoy disponible para aclarlas. ☺️",
                 },
                 {
                     "name": "Promoción",
                     "content": "⚡ OFERTA ESPECIAL ⚡\n"
                     "Este mes: 20% descuento en [servicio]. "
-                    "Válido hasta fin de mes. ¿Agendamos?"
-                }
+                    "Válido hasta fin de mes. ¿Agendamos?",
+                },
             ],
             best_practices=[
                 "Responde en máx 30 minutos",
@@ -184,8 +194,8 @@ class CopyGenerator:
                 "Confirma datos del cliente",
                 "Envía presupuesto rápido",
                 "Ofrece múltiples opciones de pago",
-                "Crea grupos exclusivos para ofertas"
-            ]
+                "Crea grupos exclusivos para ofertas",
+            ],
         )
 
     def _copy_linkedin(self, business_name: str) -> CopyKit:
@@ -199,28 +209,30 @@ class CopyGenerator:
                 "Expertos en [industria]",
             ],
             descriptions=[
-                ("Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
-                "Conectemos y exploremos oportunidades."),
+                (
+                    "Ayudamos a empresas a [lograr objetivo]. Experiencia de 10+ años. "
+                    "Conectemos y exploremos oportunidades."
+                ),
             ],
             calls_to_action=[
                 "Conectemos",
                 "Solicita una demo",
                 "Agenda una llamada",
-                "Conoce nuestro caso de estudio"
+                "Conoce nuestro caso de estudio",
             ],
             sample_posts=[
                 {
                     "type": "Article",
-                    "content": "10 insights sobre [tema] que todo empresario debe saber"
+                    "content": "10 insights sobre [tema] que todo empresario debe saber",
                 },
                 {
                     "type": "Post",
-                    "content": "Caso de éxito: Cómo [empresa] aumentó sus ventas 200% con nosotros"
+                    "content": "Caso de éxito: Cómo [empresa] aumentó sus ventas 200% con nosotros",
                 },
                 {
                     "type": "Comment",
-                    "content": "Respuesta a post relevante con valor agregado"
-                }
+                    "content": "Respuesta a post relevante con valor agregado",
+                },
             ],
             email_templates=[
                 {
@@ -229,7 +241,7 @@ class CopyGenerator:
                     "He visto que trabajas en [empresa] y noté que [observación relevante].\n"
                     "En [company], ayudamos a empresas como la tuya a [beneficio].\n"
                     "¿Podríamos charlar 15 minutos para explorar oportunidades?\n\n"
-                    "Saludos,\n[Tu nombre]"
+                    "Saludos,\n[Tu nombre]",
                 }
             ],
             best_practices=[
@@ -238,8 +250,8 @@ class CopyGenerator:
                 "Responde a comentarios con valor",
                 "Conecta con decisores en tu target",
                 "Personaliza mensajes de conexión",
-                "Comparte estudios de caso"
-            ]
+                "Comparte estudios de caso",
+            ],
         )
 
     def _copy_email(self, business_name: str) -> CopyKit:
@@ -258,7 +270,7 @@ class CopyGenerator:
                 "Ver oferta",
                 "Solicita tu demo gratuita",
                 "Aprende más",
-                "Reclama tu descuento"
+                "Reclama tu descuento",
             ],
             sample_posts=[],
             email_templates=[
@@ -277,7 +289,7 @@ class CopyGenerator:
                     "name": "Re-engagement",
                     "subject": "Te echamos de menos 😔",
                     "content": "Notamos que no has abierto nuestros últimos emails...",
-                }
+                },
             ],
             best_practices=[
                 "Subject line corto y llamativo",
@@ -286,8 +298,8 @@ class CopyGenerator:
                 "CTA claro y en alto",
                 "Test A/B de subject lines",
                 "Segmenta tu lista",
-                "Envía 1-2 emails por semana"
-            ]
+                "Envía 1-2 emails por semana",
+            ],
         )
 
     def _copy_generic(self, business_name: str) -> CopyKit:
@@ -300,5 +312,5 @@ class CopyGenerator:
             calls_to_action=["Contacta con nosotros"],
             sample_posts=[],
             email_templates=[],
-            best_practices=[]
+            best_practices=[],
         )

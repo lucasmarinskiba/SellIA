@@ -6,6 +6,7 @@ implementado con el algoritmo/dato público real. Lo que sí requiere el
 certificado (razón social real del padrón, CAE de facturación) devuelve un
 estado `requires_certificate` explícito — nunca un dato inventado.
 """
+
 import os
 
 from app.domains.arca_compliance.reference_data import (
@@ -37,9 +38,15 @@ def validate_cuit_checksum(cuit: str) -> dict:
         check_digit = 11 - remainder
 
     is_valid = check_digit == nums[10]
-    tipo_map = {20: "Persona física - masculino", 23: "Persona física", 24: "Persona física",
-                27: "Persona física - femenino", 30: "Persona jurídica", 33: "Persona jurídica",
-                34: "Persona jurídica"}
+    tipo_map = {
+        20: "Persona física - masculino",
+        23: "Persona física",
+        24: "Persona física",
+        27: "Persona física - femenino",
+        30: "Persona jurídica",
+        33: "Persona jurídica",
+        34: "Persona jurídica",
+    }
     prefix = int("".join(digits[0:2]))
 
     return {
@@ -55,7 +62,11 @@ class ARCAComplianceService:
     @staticmethod
     def is_afip_configured() -> bool:
         """AFIP/ARCA requiere certificado digital (.crt/.key) registrado sobre el CUIT del emisor."""
-        return bool(os.getenv("AFIP_CERT_PATH") and os.getenv("AFIP_KEY_PATH") and os.getenv("AFIP_CUIT"))
+        return bool(
+            os.getenv("AFIP_CERT_PATH")
+            and os.getenv("AFIP_KEY_PATH")
+            and os.getenv("AFIP_CUIT")
+        )
 
     @classmethod
     def consultar_padron(cls, cuit: str) -> dict:
@@ -87,7 +98,9 @@ class ARCAComplianceService:
         }
 
     @staticmethod
-    def sugerir_categoria_monotributo(facturacion_12m: float, vende_bienes: bool) -> dict:
+    def sugerir_categoria_monotributo(
+        facturacion_12m: float, vende_bienes: bool
+    ) -> dict:
         """Cálculo real contra la escala vigente de categorías Monotributo."""
         if facturacion_12m < 0:
             raise ValueError("facturacion_12m no puede ser negativa")
@@ -112,9 +125,13 @@ class ARCAComplianceService:
                 "vigencia_escala": MONOTRIBUTO_CATEGORIAS["vigencia"],
             }
 
-        cuota = sugerida["cuota_bienes"] if vende_bienes else sugerida["cuota_servicios"]
+        cuota = (
+            sugerida["cuota_bienes"] if vende_bienes else sugerida["cuota_servicios"]
+        )
         margen_para_recategorizar = sugerida["facturacion_max_anual"] - facturacion_12m
-        alerta_tope = margen_para_recategorizar < (sugerida["facturacion_max_anual"] * 0.1)
+        alerta_tope = margen_para_recategorizar < (
+            sugerida["facturacion_max_anual"] * 0.1
+        )
 
         return {
             "facturacion_12m": facturacion_12m,
@@ -156,7 +173,8 @@ class ARCAComplianceService:
             "formatted": f"{digits[0:4]}.{digits[4:6]}.{digits[6:8]}",
             "valid_format": True,
             "capitulo_sa": chapter,
-            "capitulo_descripcion": chapter_desc or "Capítulo no reconocido en el Sistema Armonizado",
+            "capitulo_descripcion": chapter_desc
+            or "Capítulo no reconocido en el Sistema Armonizado",
             "descripcion_completa_8_digitos": None,
             "message": (
                 "Formato válido y capítulo SA resuelto. La descripción completa a 8 dígitos "

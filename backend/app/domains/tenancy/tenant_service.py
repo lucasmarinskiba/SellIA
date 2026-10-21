@@ -28,15 +28,17 @@ class TenantIsolationService:
         audit_enabled: bool = True,
         gdpr_mode: bool = False,
         ccpa_mode: bool = False,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Configure tenant isolation policy."""
         if not db:
             raise ValueError("Database session required")
 
-        policy = db.query(TenantIsolationPolicy).filter(
-            TenantIsolationPolicy.business_id == business_id
-        ).first()
+        policy = (
+            db.query(TenantIsolationPolicy)
+            .filter(TenantIsolationPolicy.business_id == business_id)
+            .first()
+        )
 
         if policy:
             policy.isolation_level = isolation_level
@@ -49,20 +51,22 @@ class TenantIsolationService:
                 isolation_level=isolation_level,
                 audit_enabled=audit_enabled,
                 gdpr_compliance_mode=gdpr_mode,
-                ccpa_compliance_mode=ccpa_mode
+                ccpa_compliance_mode=ccpa_mode,
             )
             db.add(policy)
 
         db.commit()
 
-        logger.info(f"Isolation policy set: {business_id} - level={isolation_level}, audit={audit_enabled}")
+        logger.info(
+            f"Isolation policy set: {business_id} - level={isolation_level}, audit={audit_enabled}"
+        )
 
         return {
             "business_id": str(business_id),
             "isolation_level": isolation_level,
             "audit_enabled": audit_enabled,
             "gdpr_mode": gdpr_mode,
-            "ccpa_mode": ccpa_mode
+            "ccpa_mode": ccpa_mode,
         }
 
     @staticmethod
@@ -78,16 +82,18 @@ class TenantIsolationService:
         endpoint: str | None = None,
         action_status: str = "success",
         error_message: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Log user action for audit trail."""
         if not db:
             raise ValueError("Database session required")
 
         # Check if audit enabled for this tenant
-        policy = db.query(TenantIsolationPolicy).filter(
-            TenantIsolationPolicy.business_id == business_id
-        ).first()
+        policy = (
+            db.query(TenantIsolationPolicy)
+            .filter(TenantIsolationPolicy.business_id == business_id)
+            .first()
+        )
 
         if policy and not policy.audit_enabled:
             return {"audit_logged": False, "reason": "Audit disabled for tenant"}
@@ -107,7 +113,7 @@ class TenantIsolationService:
             api_key_id=api_key_id,
             endpoint=endpoint,
             action_status=action_status,
-            error_message=error_message
+            error_message=error_message,
         )
 
         db.add(audit_log)
@@ -121,7 +127,7 @@ class TenantIsolationService:
             "action": action,
             "resource_type": resource_type,
             "status": action_status,
-            "logged_at": audit_log.created_at.isoformat()
+            "logged_at": audit_log.created_at.isoformat(),
         }
 
     @staticmethod
@@ -130,7 +136,7 @@ class TenantIsolationService:
         email: str,
         role: str = "member",
         permissions: list[str] | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Add user to business tenant."""
         if not db:
@@ -140,7 +146,7 @@ class TenantIsolationService:
             business_id=business_id,
             email=email,
             role=role,
-            permissions=permissions or []
+            permissions=permissions or [],
         )
 
         db.add(user)
@@ -153,7 +159,7 @@ class TenantIsolationService:
             "user_id": str(user.id),
             "email": email,
             "role": role,
-            "permissions": permissions or []
+            "permissions": permissions or [],
         }
 
     @staticmethod
@@ -165,7 +171,7 @@ class TenantIsolationService:
         user_ip: str | None = None,
         rows_accessed: int | None = None,
         pii_included: bool = False,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Log data access event (export, download, api)."""
         if not db:
@@ -179,13 +185,15 @@ class TenantIsolationService:
             user_ip=user_ip,
             rows_accessed=rows_accessed,
             pii_fields_included=pii_included,
-            encrypted_in_transit=True
+            encrypted_in_transit=True,
         )
 
         db.add(access_log)
         db.commit()
 
-        logger.info(f"Data access logged: {business_id} - {access_type} of {data_type} by {user_email}")
+        logger.info(
+            f"Data access logged: {business_id} - {access_type} of {data_type} by {user_email}"
+        )
 
         return {
             "access_id": str(access_log.id),
@@ -193,7 +201,7 @@ class TenantIsolationService:
             "data_type": data_type,
             "rows_accessed": rows_accessed,
             "pii_included": pii_included,
-            "logged_at": access_log.created_at.isoformat()
+            "logged_at": access_log.created_at.isoformat(),
         }
 
     @staticmethod
@@ -202,7 +210,7 @@ class TenantIsolationService:
         days: int = 30,
         action_filter: str | None = None,
         user_filter: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Get audit trail for tenant."""
         if not db:
@@ -211,8 +219,7 @@ class TenantIsolationService:
         cutoff = datetime.now(UTC) - timedelta(days=days)
 
         query = db.query(AuditLog).filter(
-            AuditLog.business_id == business_id,
-            AuditLog.created_at >= cutoff
+            AuditLog.business_id == business_id, AuditLog.created_at >= cutoff
         )
 
         if action_filter:
@@ -242,18 +249,15 @@ class TenantIsolationService:
                     "resource": l.resource_type,
                     "user": l.user_id,
                     "status": l.action_status,
-                    "timestamp": l.created_at.isoformat()
+                    "timestamp": l.created_at.isoformat(),
                 }
                 for l in logs[:50]
-            ]
+            ],
         }
 
     @staticmethod
     def generate_compliance_report(
-        business_id: UUID,
-        report_type: str,
-        days: int = 30,
-        db: Session = None
+        business_id: UUID, report_type: str, days: int = 30, db: Session = None
     ) -> dict:
         """Generate compliance report (audit, GDPR, CCPA)."""
         if not db:
@@ -265,10 +269,13 @@ class TenantIsolationService:
 
         # Collect metrics
         if report_type == "audit_trail":
-            logs = db.query(AuditLog).filter(
-                AuditLog.business_id == business_id,
-                AuditLog.created_at >= cutoff
-            ).all()
+            logs = (
+                db.query(AuditLog)
+                .filter(
+                    AuditLog.business_id == business_id, AuditLog.created_at >= cutoff
+                )
+                .all()
+            )
 
             total_actions = len(logs)
             failed_actions = len([l for l in logs if l.action_status == "error"])
@@ -276,13 +283,19 @@ class TenantIsolationService:
 
         elif report_type in ["gdpr_dsar", "ccpa_dsar"]:
             # Data Subject Access Request report
-            access_logs = db.query(DataAccessLog).filter(
-                DataAccessLog.business_id == business_id,
-                DataAccessLog.created_at >= cutoff
-            ).all()
+            access_logs = (
+                db.query(DataAccessLog)
+                .filter(
+                    DataAccessLog.business_id == business_id,
+                    DataAccessLog.created_at >= cutoff,
+                )
+                .all()
+            )
 
             total_actions = len(access_logs)
-            data_accesses = len([a for a in access_logs if a.access_type in ["export", "download"]])
+            data_accesses = len(
+                [a for a in access_logs if a.access_type in ["export", "download"]]
+            )
             len([a for a in access_logs if a.pii_fields_included])
             users_active = len({a.user_email for a in access_logs})
 
@@ -299,8 +312,10 @@ class TenantIsolationService:
             report_period_end=period_end,
             total_actions=total_actions,
             data_accesses=data_accesses if report_type != "audit_trail" else 0,
-            failed_access_attempts=failed_actions if report_type == "audit_trail" else 0,
-            users_active=users_active
+            failed_access_attempts=(
+                failed_actions if report_type == "audit_trail" else 0
+            ),
+            users_active=users_active,
         )
 
         db.add(report)
@@ -315,26 +330,30 @@ class TenantIsolationService:
             "total_actions": total_actions,
             "data_accesses": data_accesses,
             "failed_actions": failed_actions,
-            "users_active": users_active
+            "users_active": users_active,
         }
 
     @staticmethod
     def verify_cross_tenant_access_blocked(
-        business_id: UUID,
-        request_business_id: UUID,
-        db: Session = None
+        business_id: UUID, request_business_id: UUID, db: Session = None
     ) -> tuple[bool, str | None]:
         """Verify request is not accessing another tenant's data."""
         if not db:
             raise ValueError("Database session required")
 
         # Check if tenant isolation is enforced
-        policy = db.query(TenantIsolationPolicy).filter(
-            TenantIsolationPolicy.business_id == business_id
-        ).first()
+        policy = (
+            db.query(TenantIsolationPolicy)
+            .filter(TenantIsolationPolicy.business_id == business_id)
+            .first()
+        )
 
-        if (policy and policy.cross_tenant_data_access_blocked) and business_id != request_business_id:
-            logger.warning(f"Cross-tenant access attempt: {business_id} -> {request_business_id}")
+        if (
+            policy and policy.cross_tenant_data_access_blocked
+        ) and business_id != request_business_id:
+            logger.warning(
+                f"Cross-tenant access attempt: {business_id} -> {request_business_id}"
+            )
             return False, "Cross-tenant access denied"
 
         return True, None

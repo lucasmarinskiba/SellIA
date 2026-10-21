@@ -22,12 +22,19 @@ class BrainOrchestratorV3:
         self.learner = ContinuousLearner()
         self.context_map: dict[str, dict[str, Any]] = {}
 
-    def initialize_for_seller(self, seller_id: str, user_input: str, company_data: dict[str, Any] | None = None) -> dict[str, Any]:
+    def initialize_for_seller(
+        self,
+        seller_id: str,
+        user_input: str,
+        company_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Initialize market detection & agent loading for seller."""
 
         # Detect market
         market_profile = MarketDetector.detect_market(user_input, company_data)
-        logger.info(f"Market detected for {seller_id}: {market_profile.industry.value} ({market_profile.confidence_score:.2%})")
+        logger.info(
+            f"Market detected for {seller_id}: {market_profile.industry.value} ({market_profile.confidence_score:.2%})"
+        )
 
         # Load agents
         agents = AgentLoader.load_agents_for_market(market_profile)
@@ -59,7 +66,9 @@ class BrainOrchestratorV3:
         """Get market context for seller."""
         return self.context_map.get(seller_id)
 
-    def customize_prompt(self, seller_id: str, prompt: str, agent_id: str = "sellIA_base") -> str:
+    def customize_prompt(
+        self, seller_id: str, prompt: str, agent_id: str = "sellIA_base"
+    ) -> str:
         """Customize prompt with market context."""
         context = self.get_market_context(seller_id)
         if not context:
@@ -69,7 +78,9 @@ class BrainOrchestratorV3:
         rules = context["rules"]
 
         # Inject market context
-        prompt = MarketContextInjector.inject_market_context(prompt, market_profile, rules)
+        prompt = MarketContextInjector.inject_market_context(
+            prompt, market_profile, rules
+        )
 
         # Inject guardrails
         prompt = MarketContextInjector.inject_guardrails(prompt, market_profile, rules)

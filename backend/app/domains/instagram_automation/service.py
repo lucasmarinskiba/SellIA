@@ -7,6 +7,7 @@ FOMOStrategyApplication real (escasez_real / prueba_social / exclusividad /
 transparencia), registrada con su dato real, y el caption sale de esa
 `generated_message` validada — no de un diccionario hardcodeado.
 """
+
 import uuid
 from datetime import UTC, datetime
 
@@ -93,9 +94,13 @@ class InstagramAutomationAgent:
             publisher = InstagramGraphPublisher()
             try:
                 if content_type == "reel":
-                    result = await publisher.publish_reel(video_url=media_url, caption=caption)
+                    result = await publisher.publish_reel(
+                        video_url=media_url, caption=caption
+                    )
                 else:
-                    result = await publisher.publish_image(image_url=media_url, caption=caption)
+                    result = await publisher.publish_image(
+                        image_url=media_url, caption=caption
+                    )
                 post.ig_media_id = result["media_id"]
                 post.ig_permalink = result["permalink"]
                 post.publish_status = "published"
@@ -128,7 +133,7 @@ class InstagramAutomationAgent:
         frequency_map = {7: "daily", 14: "3x_weekly", 30: "daily"}
 
         campaign = InstagramCampaign(
-            id="camp_" + __import__('uuid').uuid4().hex[:8],
+            id="camp_" + __import__("uuid").uuid4().hex[:8],
             name=campaign_name,
             theme=theme,
             target_audience=target_audience,
@@ -155,7 +160,7 @@ class InstagramAutomationAgent:
         """Track user journey: Instagram → SellIA funnel."""
 
         path = InstagramConversionPath(
-            id="igpath_" + __import__('uuid').uuid4().hex[:8],
+            id="igpath_" + __import__("uuid").uuid4().hex[:8],
             user_id=user_id,
             instagram_interaction_at=datetime.now(UTC),
             instagram_post_id=instagram_post_id,

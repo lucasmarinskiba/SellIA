@@ -111,7 +111,11 @@ class ProactiveService:
             stmt = stmt.where(OutreachOpportunity.status == status)
         if priority:
             stmt = stmt.where(OutreachOpportunity.priority == priority)
-        stmt = stmt.order_by(desc(OutreachOpportunity.created_at)).offset(offset).limit(limit)
+        stmt = (
+            stmt.order_by(desc(OutreachOpportunity.created_at))
+            .offset(offset)
+            .limit(limit)
+        )
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
@@ -164,7 +168,9 @@ class ProactiveService:
                 "text",
             )
         except Exception as e:
-            logger.exception(f"Failed to send outreach for opportunity {opportunity_id}")
+            logger.exception(
+                f"Failed to send outreach for opportunity {opportunity_id}"
+            )
             return {"status": "error", "detail": str(e)}
 
         opp.status = "sent"

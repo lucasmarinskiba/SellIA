@@ -84,10 +84,12 @@ async def collect_intent_accuracy(db: AsyncSession) -> int:
 
         # Mensajes donde una regla de chatbot hizo match = clasificación correcta
         result = await db.execute(
-            select(Message).where(
+            select(Message)
+            .where(
                 Message.created_at >= datetime.now(UTC) - timedelta(days=1),
                 Message.extra_data.isnot(None),
-            ).limit(100)
+            )
+            .limit(100)
         )
 
         count = 0
@@ -96,8 +98,13 @@ async def collect_intent_accuracy(db: AsyncSession) -> int:
             if "matched_rule_id" in extra:
                 data = MLTrainingData(
                     data_type="intent_accuracy",
-                    features={"message_content": msg.content[:200], "matched_rule": extra.get("matched_rule_id")},
-                    label="correct" if extra.get("user_satisfied", True) else "incorrect",
+                    features={
+                        "message_content": msg.content[:200],
+                        "matched_rule": extra.get("matched_rule_id"),
+                    },
+                    label=(
+                        "correct" if extra.get("user_satisfied", True) else "incorrect"
+                    ),
                 )
                 db.add(data)
                 count += 1

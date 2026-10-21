@@ -35,6 +35,7 @@ def import_and_enrich_leads(self, leads_data: list[dict[str, Any]]) -> dict[str,
 
     Retries: 3 intentos con delay de 5 minutos.
     """
+
     async def _run():
         from app.domains.computer_use.services.lead_generator import get_lead_generator
 
@@ -58,7 +59,7 @@ def import_and_enrich_leads(self, leads_data: list[dict[str, Any]]) -> dict[str,
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error importing leads")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
@@ -72,6 +73,7 @@ def send_outreach_batch(
 
     Retries: 3 intentos.
     """
+
     async def _run():
         from app.domains.computer_use.services.lead_generator import get_lead_generator
         from app.domains.computer_use.services.outreach_orchestrator import (
@@ -118,7 +120,7 @@ def send_outreach_batch(
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error in outreach")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
@@ -143,6 +145,7 @@ def send_follow_ups(self) -> dict[str, Any]:
     non-repetitive nudge appropriate to the conversation's current funnel
     stage — not a canned "just checking in" template.
     """
+
     async def _run():
         from sqlalchemy import func, select
 
@@ -197,7 +200,9 @@ def send_follow_ups(self) -> dict[str, Any]:
 
                 # Don't nag an already-converted/retention-stage customer —
                 # that's a different job (RETENTION/EXPANSION messaging).
-                stage = await detect_funnel_stage(db, conversation.business_id, conversation)
+                stage = await detect_funnel_stage(
+                    db, conversation.business_id, conversation
+                )
                 if stage in (FunnelStage.RETENTION, FunnelStage.EXPANSION):
                     skipped += 1
                     continue
@@ -237,7 +242,10 @@ def send_follow_ups(self) -> dict[str, Any]:
                     else:
                         skipped += 1
                 except Exception as e:
-                    logger.warning(f"Follow-up failed for conversation {conversation.id}: {e}", exc_info=True)
+                    logger.warning(
+                        f"Follow-up failed for conversation {conversation.id}: {e}",
+                        exc_info=True,
+                    )
                     skipped += 1
 
         logger.info(f"Follow-ups: sent={sent} skipped={skipped}")
@@ -247,7 +255,7 @@ def send_follow_ups(self) -> dict[str, Any]:
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error in follow-ups")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=300)
@@ -260,6 +268,7 @@ def send_welcome_sequences(
 
     Corre inmediatamente después de nueva compra.
     """
+
     async def _run():
         from app.domains.computer_use.services.customer_loyalty import (
             get_customer_loyalty_engine,
@@ -285,7 +294,7 @@ def send_welcome_sequences(
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error in welcome sequences")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=600)
@@ -295,6 +304,7 @@ def send_upsell_campaigns(self) -> dict[str, Any]:
 
     Corre cada 7 días para clientes activos.
     """
+
     async def _run():
         from app.domains.computer_use.services.customer_loyalty import (
             get_customer_loyalty_engine,
@@ -329,7 +339,7 @@ def send_upsell_campaigns(self) -> dict[str, Any]:
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error in upsells")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=600)
@@ -339,6 +349,7 @@ def send_winback_campaigns(self) -> dict[str, Any]:
 
     Corre cada 14 días.
     """
+
     async def _run():
         from app.domains.computer_use.services.customer_loyalty import (
             get_customer_loyalty_engine,
@@ -358,7 +369,7 @@ def send_winback_campaigns(self) -> dict[str, Any]:
         return run_async(_run())
     except Exception as exc:
         logger.exception("Error in win-back")
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
 
 @shared_task(bind=True, max_retries=1)
@@ -368,6 +379,7 @@ def daily_growth_cycle(self, product_info: dict[str, Any]) -> dict[str, Any]:
 
     Corre diariamente a las 6 AM UTC.
     """
+
     async def _run():
         from app.domains.computer_use.services.growth_automation_engine import (
             get_growth_automation_engine,

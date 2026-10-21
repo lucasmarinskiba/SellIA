@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AdPlatform(str, Enum):
     """Advertising platforms."""
+
     GOOGLE_SEARCH = "google_search"
     GOOGLE_DISPLAY = "google_display"
     GOOGLE_SHOPPING = "google_shopping"
@@ -30,6 +31,7 @@ class AdPlatform(str, Enum):
 
 class BidStrategy(str, Enum):
     """Bid strategies."""
+
     MANUAL_CPC = "manual_cpc"
     AUTOMATED_BIDDING = "automated_bidding"
     MAXIMIZE_CLICKS = "maximize_clicks"
@@ -52,7 +54,10 @@ class AdvertisingAgent:
                 "Search - Performance Max",
                 "Search - App",
             ],
-            "bidding_strategies": [BidStrategy.MANUAL_CPC, BidStrategy.MAXIMIZE_CONVERSIONS],
+            "bidding_strategies": [
+                BidStrategy.MANUAL_CPC,
+                BidStrategy.MAXIMIZE_CONVERSIONS,
+            ],
         },
         AdPlatform.FACEBOOK: {
             "best_for": "Awareness, lead generation, retargeting",
@@ -66,7 +71,13 @@ class AdvertisingAgent:
                 "Lookalike audiences",
                 "Retargeting",
             ],
-            "ad_formats": ["Image", "Video", "Carousel", "Collection", "Instant Experience"],
+            "ad_formats": [
+                "Image",
+                "Video",
+                "Carousel",
+                "Collection",
+                "Instant Experience",
+            ],
         },
         AdPlatform.LINKEDIN: {
             "best_for": "B2B lead generation, brand awareness",
@@ -87,7 +98,11 @@ class AdvertisingAgent:
             "audience_size": "1.5B+ users (70% under 40)",
             "avg_cpc": "$0.50-$2.00",
             "key_metrics": ["Video view rate", "CTR", "ROAS"],
-            "ad_formats": ["In-feed ads", "Branded hashtag challenge", "Branded effect"],
+            "ad_formats": [
+                "In-feed ads",
+                "Branded hashtag challenge",
+                "Branded effect",
+            ],
         },
     }
 
@@ -294,7 +309,11 @@ class AdvertisingAgent:
             "description": "Google automatically optimizes for conversions",
             "best_for": "High-volume conversion tracking, established budgets",
             "pros": ["Automated optimization", "No manual tuning", "Scalable"],
-            "cons": ["Requires conversion data", "Less transparent", "CPA not guaranteed"],
+            "cons": [
+                "Requires conversion data",
+                "Less transparent",
+                "CPA not guaranteed",
+            ],
             "requirements": ["At least 50 conversions in past 30 days"],
         },
         BidStrategy.TARGET_ROAS: {
@@ -313,10 +332,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def recommend_platform(
-        target_audience: str,
-        campaign_goal: str,
-        budget: float,
-        timeline_days: int
+        target_audience: str, campaign_goal: str, budget: float, timeline_days: int
     ) -> dict[str, Any]:
         """Recommend best advertising platform(s) for campaign."""
         recommendations = {
@@ -347,9 +363,7 @@ class AdvertisingAgent:
 
         if platform_scores:
             sorted_platforms = sorted(
-                platform_scores.items(),
-                key=lambda x: x[1],
-                reverse=True
+                platform_scores.items(), key=lambda x: x[1], reverse=True
             )
             recommendations["primary_platform"] = sorted_platforms[0][0].value
             recommendations["secondary_platforms"] = [
@@ -360,8 +374,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def create_audience_segments(
-        target_market: str,
-        segment_criteria: dict[str, Any]
+        target_market: str, segment_criteria: dict[str, Any]
     ) -> dict[str, Any]:
         """Create detailed audience segments."""
         segments = {
@@ -376,8 +389,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def design_creative_test(
-        test_type: str,
-        variations_count: int = 3
+        test_type: str, variations_count: int = 3
     ) -> dict[str, Any]:
         """Design A/B test for ad creative."""
         test_framework = AdvertisingAgent.CREATIVE_TESTING_FRAMEWORK.get(test_type, {})
@@ -399,7 +411,7 @@ class AdvertisingAgent:
     def optimize_budget(
         monthly_budget: float,
         current_spending: dict[str, float],
-        channel_performance: dict[str, dict[str, float]]
+        channel_performance: dict[str, dict[str, float]],
     ) -> dict[str, Any]:
         """Optimize budget allocation across channels."""
         return {
@@ -413,9 +425,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def get_bid_strategy_recommendation(
-        monthly_budget: float,
-        conversion_volume: int,
-        revenue_tracking: bool
+        monthly_budget: float, conversion_volume: int, revenue_tracking: bool
     ) -> dict[str, Any]:
         """Recommend optimal bid strategy."""
         recommendation = {
@@ -426,7 +436,9 @@ class AdvertisingAgent:
         }
 
         if monthly_budget > 10000 and conversion_volume > 50:
-            recommendation["recommended_strategy"] = BidStrategy.MAXIMIZE_CONVERSIONS.value
+            recommendation["recommended_strategy"] = (
+                BidStrategy.MAXIMIZE_CONVERSIONS.value
+            )
         elif revenue_tracking and conversion_volume > 50:
             recommendation["recommended_strategy"] = BidStrategy.TARGET_ROAS.value
         else:
@@ -436,10 +448,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def create_campaign_structure(
-        campaign_name: str,
-        platform: str,
-        audience_segments: list[str],
-        budget: float
+        campaign_name: str, platform: str, audience_segments: list[str], budget: float
     ) -> dict[str, Any]:
         """Create campaign structure and organization."""
         return {
@@ -466,9 +475,7 @@ class AdvertisingAgent:
         }
 
     @staticmethod
-    def analyze_campaign_performance(
-        campaign_data: dict[str, Any]
-    ) -> dict[str, Any]:
+    def analyze_campaign_performance(campaign_data: dict[str, Any]) -> dict[str, Any]:
         """Analyze and provide insights on campaign performance."""
         return {
             "campaign": campaign_data.get("name", ""),
@@ -490,9 +497,7 @@ class AdvertisingAgent:
 
     @staticmethod
     def create_testing_roadmap(
-        current_roas: float,
-        target_roas: float,
-        timeline_months: int
+        current_roas: float, target_roas: float, timeline_months: int
     ) -> dict[str, Any]:
         """Create testing roadmap to improve performance."""
         return {

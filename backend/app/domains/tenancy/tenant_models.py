@@ -22,6 +22,7 @@ from app.core.database import Base
 
 class AuditActionType(str, Enum):
     """Audit log action types."""
+
     CREATE = "create"
     READ = "read"
     UPDATE = "update"
@@ -37,6 +38,7 @@ class AuditActionType(str, Enum):
 
 class DataClassification(str, Enum):
     """Data sensitivity classification."""
+
     PUBLIC = "public"  # Can be shared
     INTERNAL = "internal"  # Business use only
     CONFIDENTIAL = "confidential"  # Restricted access
@@ -45,14 +47,25 @@ class DataClassification(str, Enum):
 
 class TenantIsolationPolicy(Base):
     """Configure isolation level per business."""
+
     __tablename__ = "tenant_isolation_policies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Isolation
-    isolation_level = Column(String(20), default="row_level")  # row_level, schema_level, database_level
-    enforce_row_level_security = Column(Boolean, default=True)  # Filter rows by business_id
+    isolation_level = Column(
+        String(20), default="row_level"
+    )  # row_level, schema_level, database_level
+    enforce_row_level_security = Column(
+        Boolean, default=True
+    )  # Filter rows by business_id
     cross_tenant_data_access_blocked = Column(Boolean, default=True)
 
     # Audit
@@ -62,7 +75,9 @@ class TenantIsolationPolicy(Base):
     log_data_changes = Column(Boolean, default=True)
 
     # Compliance
-    gdpr_compliance_mode = Column(Boolean, default=False)  # Extra data handling controls
+    gdpr_compliance_mode = Column(
+        Boolean, default=False
+    )  # Extra data handling controls
     ccpa_compliance_mode = Column(Boolean, default=False)
     pii_encryption_enabled = Column(Boolean, default=False)  # Encrypt sensitive fields
     right_to_be_forgotten_supported = Column(Boolean, default=True)
@@ -88,10 +103,16 @@ class AuditLog(Base):
     renamed defensively — confirmed via direct import test that loading
     this alongside compliance raises InvalidRequestError otherwise.
     """
+
     __tablename__ = "tenant_audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # User
     user_id = Column(String(255), nullable=True)  # User email or ID
@@ -99,12 +120,18 @@ class AuditLog(Base):
     user_agent = Column(String(500), nullable=True)  # Browser info
 
     # Action
-    action = Column(String(50), nullable=False)  # create, read, update, delete, export, login
-    resource_type = Column(String(50), nullable=False)  # customers, orders, segments, etc
+    action = Column(
+        String(50), nullable=False
+    )  # create, read, update, delete, export, login
+    resource_type = Column(
+        String(50), nullable=False
+    )  # customers, orders, segments, etc
     resource_id = Column(String(255), nullable=True)  # UUID of affected resource
 
     # Change tracking
-    change_details = Column(JSONB, nullable=True)  # {"field": "status", "old": "active", "new": "inactive"}
+    change_details = Column(
+        JSONB, nullable=True
+    )  # {"field": "status", "old": "active", "new": "inactive"}
     data_classification = Column(String(20), default=DataClassification.INTERNAL)
 
     # Result
@@ -127,10 +154,16 @@ class AuditLog(Base):
 
 class TenantUser(Base):
     """User access control per business."""
+
     __tablename__ = "tenant_users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Identity
     email = Column(String(255), nullable=False)
@@ -138,7 +171,9 @@ class TenantUser(Base):
 
     # Role-based access
     role = Column(String(50), default="member")  # owner, admin, analyst, member
-    permissions = Column(JSONB, default=list)  # ["read_customers", "export_data", "manage_users"]
+    permissions = Column(
+        JSONB, default=list
+    )  # ["read_customers", "export_data", "manage_users"]
 
     # Resource access
     can_access_all_locations = Column(Boolean, default=False)
@@ -161,13 +196,21 @@ class TenantUser(Base):
 
 class DataAccessLog(Base):
     """Track data exports/downloads per tenant."""
+
     __tablename__ = "data_access_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Access
-    access_type = Column(String(50), nullable=False)  # export, download, api_access, report_view
+    access_type = Column(
+        String(50), nullable=False
+    )  # export, download, api_access, report_view
     data_type = Column(String(50), nullable=False)  # customers, orders, segments, etc
     rows_accessed = Column(Integer, nullable=True)
 
@@ -177,11 +220,15 @@ class DataAccessLog(Base):
 
     # Details
     reason = Column(String(255), nullable=True)  # Why was data accessed?
-    access_approval_id = Column(String(255), nullable=True)  # Approval request ID if needed
+    access_approval_id = Column(
+        String(255), nullable=True
+    )  # Approval request ID if needed
     was_approved = Column(Boolean, default=False)
 
     # Data security
-    pii_fields_included = Column(Boolean, default=False)  # Contains personally identifiable info
+    pii_fields_included = Column(
+        Boolean, default=False
+    )  # Contains personally identifiable info
     encrypted_in_transit = Column(Boolean, default=True)
 
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
@@ -194,13 +241,21 @@ class DataAccessLog(Base):
 
 class ComplianceReport(Base):
     """Generate compliance reports."""
+
     __tablename__ = "compliance_reports"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Report
-    report_type = Column(String(50), nullable=False)  # audit_trail, data_access, gdpr_dsar, ccpa_dsar
+    report_type = Column(
+        String(50), nullable=False
+    )  # audit_trail, data_access, gdpr_dsar, ccpa_dsar
     report_period_start = Column(String(10), nullable=False)  # YYYY-MM-DD
     report_period_end = Column(String(10), nullable=False)
 
@@ -220,5 +275,10 @@ class ComplianceReport(Base):
     generated_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
-        Index("idx_business_type_date", "business_id", "report_type", "report_period_start"),
+        Index(
+            "idx_business_type_date",
+            "business_id",
+            "report_type",
+            "report_period_start",
+        ),
     )

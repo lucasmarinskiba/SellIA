@@ -37,8 +37,12 @@ from app.domains.users.models import User
 router = APIRouter(tags=["testing"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -58,11 +62,18 @@ async def _get_owned_experiment(test_id: UUID, user: User, db: AsyncSession):
 async def create_test(
     business_id: Annotated[UUID, Query()],
     test_name: Annotated[str, Query()],
-    agent_type: Annotated[str, Query(description="Personality slug being tested, e.g. 'vendedor', 'captador'")],
+    agent_type: Annotated[
+        str,
+        Query(description="Personality slug being tested, e.g. 'vendedor', 'captador'"),
+    ],
     variant_a_name: Annotated[str, Query()],
-    variant_a_prompt: Annotated[str, Query(description="Full system prompt text for variant A")],
+    variant_a_prompt: Annotated[
+        str, Query(description="Full system prompt text for variant A")
+    ],
     variant_b_name: Annotated[str, Query()],
-    variant_b_prompt: Annotated[str, Query(description="Full system prompt text for variant B")],
+    variant_b_prompt: Annotated[
+        str, Query(description="Full system prompt text for variant B")
+    ],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     hypothesis: Annotated[str, Query()] = "",
@@ -72,9 +83,14 @@ async def create_test(
     """Create a new A/B test on the sales agent's messages/prompt for this business."""
     await _get_business_for_user(business_id, current_user, db)
 
-    personality_result = await db.execute(select(AgentPersonality).where(AgentPersonality.slug == agent_type))
+    personality_result = await db.execute(
+        select(AgentPersonality).where(AgentPersonality.slug == agent_type)
+    )
     if not personality_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail=f"agent_type '{agent_type}' no es una personalidad de agente válida")
+        raise HTTPException(
+            status_code=400,
+            detail=f"agent_type '{agent_type}' no es una personalidad de agente válida",
+        )
 
     experiment = await ABTestEngine.create_experiment(
         db,
@@ -167,11 +183,16 @@ async def list_tests(
     business_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    status: Annotated[str | None, Query(description="draft, running, paused, completed, auto_promoted")] = None,
+    status: Annotated[
+        str | None,
+        Query(description="draft, running, paused, completed, auto_promoted"),
+    ] = None,
 ):
     """List A/B tests for this business."""
     await _get_business_for_user(business_id, current_user, db)
-    listing = await ABTestEngine.list_experiments(db, status=status, business_id=business_id)
+    listing = await ABTestEngine.list_experiments(
+        db, status=status, business_id=business_id
+    )
 
     return {
         "business_id": str(business_id),
@@ -198,7 +219,9 @@ async def get_active_tests(
 ):
     """Get currently running tests for this business."""
     await _get_business_for_user(business_id, current_user, db)
-    listing = await ABTestEngine.list_experiments(db, status="running", business_id=business_id)
+    listing = await ABTestEngine.list_experiments(
+        db, status="running", business_id=business_id
+    )
 
     return {
         "business_id": str(business_id),
@@ -209,7 +232,9 @@ async def get_active_tests(
                 "name": t.name,
                 "agent_type": t.agent_type,
                 "variants": [t.variant_a_name, t.variant_b_name],
-                "days_running": (datetime.now(UTC) - t.started_at).days if t.started_at else 0,
+                "days_running": (
+                    (datetime.now(UTC) - t.started_at).days if t.started_at else 0
+                ),
             }
             for t in listing["experiments"]
         ],
@@ -238,8 +263,20 @@ async def get_test_results(
         "winning_variant": experiment.winner_variant or analysis["winner"],
         "is_significant": analysis["is_significant"],
         "sample_size": analysis["n_a"] + analysis["n_b"],
-        "variant_a": {"name": experiment.variant_a_name, "n": analysis["n_a"], "conversions": analysis["conversions_a"], "rate": f"{analysis['rate_a'] * 100:.2f}%", "revenue": f"${analysis['revenue_a']:,.2f}"},
-        "variant_b": {"name": experiment.variant_b_name, "n": analysis["n_b"], "conversions": analysis["conversions_b"], "rate": f"{analysis['rate_b'] * 100:.2f}%", "revenue": f"${analysis['revenue_b']:,.2f}"},
+        "variant_a": {
+            "name": experiment.variant_a_name,
+            "n": analysis["n_a"],
+            "conversions": analysis["conversions_a"],
+            "rate": f"{analysis['rate_a'] * 100:.2f}%",
+            "revenue": f"${analysis['revenue_a']:,.2f}",
+        },
+        "variant_b": {
+            "name": experiment.variant_b_name,
+            "n": analysis["n_b"],
+            "conversions": analysis["conversions_b"],
+            "rate": f"{analysis['rate_b'] * 100:.2f}%",
+            "revenue": f"${analysis['revenue_b']:,.2f}",
+        },
         "p_value": analysis["p_value"],
         "confidence_threshold": f"{experiment.confidence_threshold * 100:.0f}%",
     }
@@ -253,7 +290,9 @@ async def get_portfolio_status(
 ):
     """Overall testing portfolio health for this business, from real recorded outcomes."""
     await _get_business_for_user(business_id, current_user, db)
-    listing = await ABTestEngine.list_experiments(db, business_id=business_id, limit=1000)
+    listing = await ABTestEngine.list_experiments(
+        db, business_id=business_id, limit=1000
+    )
     tests = listing["experiments"]
 
     completed = [t for t in tests if t.status in ("completed", "auto_promoted")]
@@ -263,7 +302,9 @@ async def get_portfolio_status(
         analysis = await ABTestEngine.analyze_experiment(db, t.id)
         total_revenue += analysis["revenue_a"] + analysis["revenue_b"]
         if analysis["rate_a"] > 0:
-            uplifts.append(((analysis["rate_b"] - analysis["rate_a"]) / analysis["rate_a"]) * 100)
+            uplifts.append(
+                ((analysis["rate_b"] - analysis["rate_a"]) / analysis["rate_a"]) * 100
+            )
 
     return {
         "business_id": str(business_id),

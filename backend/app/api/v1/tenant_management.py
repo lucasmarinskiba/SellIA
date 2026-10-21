@@ -46,7 +46,7 @@ def setup_isolation_policy(
         audit_enabled=request.audit_enabled,
         gdpr_mode=request.gdpr_mode,
         ccpa_mode=request.ccpa_mode,
-        db=db
+        db=db,
     )
 
 
@@ -62,7 +62,7 @@ def add_tenant_user(
         email=request.email,
         role=request.role,
         permissions=request.permissions,
-        db=db
+        db=db,
     )
 
 
@@ -83,7 +83,7 @@ def log_data_access(
         user_ip=user_ip,
         rows_accessed=request.rows_accessed,
         pii_included=request.pii_included,
-        db=db
+        db=db,
     )
 
 
@@ -101,7 +101,7 @@ def get_audit_trail(
         days=days,
         action_filter=action_filter,
         user_filter=user_filter,
-        db=db
+        db=db,
     )
 
 
@@ -114,8 +114,5 @@ def generate_compliance_report(
 ):
     """Generate compliance report."""
     return TenantIsolationService.generate_compliance_report(
-        business_id=business_id,
-        report_type=report_type,
-        days=days,
-        db=db
+        business_id=business_id, report_type=report_type, days=days, db=db
     )

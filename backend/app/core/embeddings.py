@@ -108,8 +108,7 @@ class EmbeddingService:
                 # by averaging adjacent pairs so it lives in the same space
                 # as the primary nomic-embed-text cache.
                 projected = [
-                    (embedding[i] + embedding[i + 1]) / 2.0
-                    for i in range(0, 1536, 2)
+                    (embedding[i] + embedding[i + 1]) / 2.0 for i in range(0, 1536, 2)
                 ]
                 return projected
             return embedding

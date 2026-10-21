@@ -11,6 +11,7 @@ from app.domains.analytics.offline_models import DemographicSource, VisitType
 
 class OfflineConversionCreate(BaseModel):
     """Create offline conversion record."""
+
     location_id: UUID
     visit_type: VisitType = VisitType.WALK_IN
     visitor_phone: str | None = None
@@ -30,6 +31,7 @@ class OfflineConversionCreate(BaseModel):
 
 class OfflineConversionUpdate(BaseModel):
     """End visit or update conversion details."""
+
     exit_time: datetime | None = None
     purchased: bool | None = None
     purchase_amount: Decimal | None = None
@@ -38,6 +40,7 @@ class OfflineConversionUpdate(BaseModel):
 
 class OfflineConversionResponse(BaseModel):
     """Offline conversion response."""
+
     id: UUID
     business_id: UUID
     location_id: UUID | None
@@ -63,6 +66,7 @@ class OfflineConversionResponse(BaseModel):
 
 class ProximityEventCreate(BaseModel):
     """Log proximity trigger event."""
+
     location_id: UUID
     conversation_id: UUID
     user_latitude: float
@@ -76,6 +80,7 @@ class ProximityEventCreate(BaseModel):
 
 class ProximityEventResponse(BaseModel):
     """Proximity event response."""
+
     id: UUID
     business_id: UUID
     location_id: UUID
@@ -94,6 +99,7 @@ class ProximityEventResponse(BaseModel):
 
 class LocationVisitMetricsResponse(BaseModel):
     """Daily metrics for a location."""
+
     location_id: UUID
     metric_date: str
     total_visits: int
@@ -113,6 +119,7 @@ class LocationVisitMetricsResponse(BaseModel):
 
 class FootTrafficHeatmapResponse(BaseModel):
     """Hourly foot traffic heatmap."""
+
     location_id: UUID
     period_days: int
     hourly_heatmap: dict  # {"09": 5, "10": 8, ...}
@@ -120,6 +127,7 @@ class FootTrafficHeatmapResponse(BaseModel):
 
 class ConversionFunnelResponse(BaseModel):
     """Online→Offline→Purchase funnel metrics."""
+
     period_days: int
     total_visits: int
     visits_linked_to_online: int
@@ -131,6 +139,7 @@ class ConversionFunnelResponse(BaseModel):
 
 class ProximityEffectivenessResponse(BaseModel):
     """Effectiveness metrics for a proximity trigger."""
+
     trigger_name: str
     period_days: int
     total_proximity_events: int

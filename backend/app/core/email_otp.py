@@ -93,7 +93,9 @@ async def verify_email_otp(
     return True
 
 
-async def invalidate_previous_otps(db: AsyncSession, user_id: uuid.UUID, purpose: str) -> None:
+async def invalidate_previous_otps(
+    db: AsyncSession, user_id: uuid.UUID, purpose: str
+) -> None:
     """Invalida OTPs anteriores del mismo propósito."""
     result = await db.execute(
         select(EmailOTP).where(
@@ -147,7 +149,9 @@ async def send_otp_email(email: str, code: str, purpose: str) -> bool:
         # import had resolved.
         delivered = await send_email(to_email=email, subject=subject, body_html=html)
         if not delivered:
-            logger.warning("OTP email for %s was not delivered by the mail service", email)
+            logger.warning(
+                "OTP email for %s was not delivered by the mail service", email
+            )
         return bool(delivered)
     except Exception:
         logger.exception("Failed to send OTP email")

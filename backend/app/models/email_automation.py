@@ -77,7 +77,9 @@ class ProposalDraft(Base):
     __tablename__ = "proposal_drafts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     html_content = Column(Text, nullable=False)
     word_count = Column(Integer)
@@ -107,7 +109,11 @@ class ProposalView(Base):
     __tablename__ = "proposal_views"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    draft_id = Column(UUID(as_uuid=True), ForeignKey("proposal_drafts.id", ondelete="CASCADE"), nullable=False)
+    draft_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("proposal_drafts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     viewed_by = Column(String(255), nullable=False)
     viewed_at = Column(DateTime, default=utc_now, nullable=False)
@@ -126,7 +132,9 @@ class CompetitorMention(Base):
     __tablename__ = "competitor_mentions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     person_id = Column(String(255), nullable=False)
 
     competitor_name = Column(String(255), nullable=False)
@@ -148,7 +156,11 @@ class CompetitorResponse(Base):
     __tablename__ = "competitor_responses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    mention_id = Column(UUID(as_uuid=True), ForeignKey("competitor_mentions.id", ondelete="CASCADE"), nullable=False)
+    mention_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("competitor_mentions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     response_type = Column(String(50))  # ai_generated, template, manual
     response_text = Column(Text)

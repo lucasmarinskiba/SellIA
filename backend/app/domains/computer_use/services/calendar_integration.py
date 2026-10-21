@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class CalendarProvider(str, Enum):
     """Proveedores de calendario soportados."""
+
     GOOGLE_CALENDAR = "google_calendar"
     CALENDLY = "calendly"
 
@@ -185,8 +186,12 @@ class CalendarIntegrationService:
         google_credentials: dict[str, Any] | None = None,
         calendly_token: str | None = None,
     ):
-        self.google_client = GoogleCalendarClient(google_credentials) if google_credentials else None
-        self.calendly_client = CalendlyClient(calendly_token) if calendly_token else None
+        self.google_client = (
+            GoogleCalendarClient(google_credentials) if google_credentials else None
+        )
+        self.calendly_client = (
+            CalendlyClient(calendly_token) if calendly_token else None
+        )
 
     async def get_available_slots(
         self,

@@ -86,7 +86,10 @@ class DemandForecast:
             "next_30_days_revenue": float(self.next_30_days_revenue),
             "next_30_days_transactions": int(self.next_30_days_transactions),
             "daily_forecast": [float(x) for x in self.daily_forecast],
-            "confidence_interval": (float(self.confidence_interval[0]), float(self.confidence_interval[1])),
+            "confidence_interval": (
+                float(self.confidence_interval[0]),
+                float(self.confidence_interval[1]),
+            ),
             "growth_trend": float(self.growth_trend),
             "seasonality_factor": float(self.seasonality_factor),
             "external_factors": self.external_factors,
@@ -170,8 +173,12 @@ class PriceElasticity:
             "current_price": float(self.current_price),
             "price_sensitivity": self.price_sensitivity,
             "demand_curve": [(float(p), float(d)) for p, d in self.demand_curve],
-            "revenue_impact_if_increase_10pct": float(self.revenue_impact_if_increase_10pct),
-            "revenue_impact_if_decrease_10pct": float(self.revenue_impact_if_decrease_10pct),
+            "revenue_impact_if_increase_10pct": float(
+                self.revenue_impact_if_increase_10pct
+            ),
+            "revenue_impact_if_decrease_10pct": float(
+                self.revenue_impact_if_decrease_10pct
+            ),
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -180,13 +187,25 @@ class SalesPredictionNetwork:
     """Predicts if customer will close and timeline."""
 
     def __init__(self):
-        self.close_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.timeline_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.deal_size_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.close_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
+        self.timeline_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
+        self.deal_size_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_close: np.ndarray, y_timeline: np.ndarray, y_deal: np.ndarray) -> "SalesPredictionNetwork":
+    def fit(
+        self,
+        X: np.ndarray,
+        y_close: np.ndarray,
+        y_timeline: np.ndarray,
+        y_deal: np.ndarray,
+    ) -> "SalesPredictionNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.close_classifier.fit(X_scaled, y_close)
@@ -249,12 +268,18 @@ class ChurnPredictionNetwork:
     """Predicts customer churn and timing."""
 
     def __init__(self):
-        self.churn_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.timeline_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.churn_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
+        self.timeline_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_churn: np.ndarray, y_timeline: np.ndarray) -> "ChurnPredictionNetwork":
+    def fit(
+        self, X: np.ndarray, y_churn: np.ndarray, y_timeline: np.ndarray
+    ) -> "ChurnPredictionNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.churn_classifier.fit(X_scaled, y_churn)
@@ -331,7 +356,10 @@ class DemandForecastingNetwork:
         predictions = []
         for i in range(len(X)):
             total_revenue = max(0, forecasts[i])
-            daily = [max(0, total_revenue / 30 * (1 + np.random.normal(0, 0.1))) for _ in range(30)]
+            daily = [
+                max(0, total_revenue / 30 * (1 + np.random.normal(0, 0.1)))
+                for _ in range(30)
+            ]
             transactions = int(total_revenue / 100) if total_revenue > 0 else 0
 
             trend = np.mean(daily[-7:]) - np.mean(daily[:7])
@@ -341,7 +369,10 @@ class DemandForecastingNetwork:
                 next_30_days_revenue=float(total_revenue),
                 next_30_days_transactions=transactions,
                 daily_forecast=daily,
-                confidence_interval=(float(total_revenue * 0.8), float(total_revenue * 1.2)),
+                confidence_interval=(
+                    float(total_revenue * 0.8),
+                    float(total_revenue * 1.2),
+                ),
                 growth_trend=float(trend),
                 seasonality_factor=1.0,
             )
@@ -354,12 +385,18 @@ class LeadQualityNetwork:
     """Scores lead quality using BANT framework."""
 
     def __init__(self):
-        self.quality_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.close_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+        self.quality_regressor = RandomForestRegressor(
+            n_estimators=100, random_state=42
+        )
+        self.close_classifier = RandomForestClassifier(
+            n_estimators=100, random_state=42
+        )
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_quality: np.ndarray, y_close: np.ndarray) -> "LeadQualityNetwork":
+    def fit(
+        self, X: np.ndarray, y_quality: np.ndarray, y_close: np.ndarray
+    ) -> "LeadQualityNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.quality_regressor.fit(X_scaled, y_quality)
@@ -388,7 +425,11 @@ class LeadQualityNetwork:
             need = 80 + np.random.normal(0, 10)
 
             recommendation = "hot" if score > 75 else ("warm" if score > 50 else "cold")
-            action = "Schedule demo" if score > 75 else ("Nurture relationship" if score > 50 else "Re-qualify")
+            action = (
+                "Schedule demo"
+                if score > 75
+                else ("Nurture relationship" if score > 50 else "Re-qualify")
+            )
 
             pred = LeadQuality(
                 quality_score=float(np.clip(score, 0, 100)),
@@ -416,7 +457,9 @@ class ContactTimingNetwork:
         self.is_trained = False
         self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray, y_hour: np.ndarray, y_day: np.ndarray) -> "ContactTimingNetwork":
+    def fit(
+        self, X: np.ndarray, y_hour: np.ndarray, y_day: np.ndarray
+    ) -> "ContactTimingNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
         self.hour_classifier.fit(X_scaled, y_hour)
@@ -434,7 +477,15 @@ class ContactTimingNetwork:
         hours = self.hour_classifier.predict(X_scaled)
         days = self.day_classifier.predict(X_scaled)
 
-        days_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        days_names = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
 
         predictions = []
         for i in range(len(X)):
@@ -443,7 +494,11 @@ class ContactTimingNetwork:
 
             alt_times = [
                 {"hour": (best_hour + 2) % 24, "day": best_day, "probability": 0.65},
-                {"hour": best_hour, "day": days_names[(int(days[i]) + 1) % 7], "probability": 0.60},
+                {
+                    "hour": best_hour,
+                    "day": days_names[(int(days[i]) + 1) % 7],
+                    "probability": 0.60,
+                },
             ]
 
             avoid = [
@@ -490,18 +545,34 @@ class PriceElasticityNetwork:
         predictions = []
         for i in range(len(X)):
             demand = demands[i]
-            elasticity = -1.5 + np.random.normal(0, 0.3)  # Typical elasticity -0.5 to -2.5
+            elasticity = -1.5 + np.random.normal(
+                0, 0.3
+            )  # Typical elasticity -0.5 to -2.5
 
             demand_10_up = demand * (1 + elasticity * 0.1)
             demand_10_down = demand * (1 - elasticity * 0.1)
 
-            revenue_impact_up = (current_price * 1.1 * demand_10_up - current_price * demand) / (current_price * demand)
-            revenue_impact_down = (current_price * 0.9 * demand_10_down - current_price * demand) / (current_price * demand)
+            revenue_impact_up = (
+                current_price * 1.1 * demand_10_up - current_price * demand
+            ) / (current_price * demand)
+            revenue_impact_down = (
+                current_price * 0.9 * demand_10_down - current_price * demand
+            ) / (current_price * demand)
 
-            sensitivity = "high" if abs(elasticity) > 1.5 else ("medium" if abs(elasticity) > 0.8 else "low")
+            sensitivity = (
+                "high"
+                if abs(elasticity) > 1.5
+                else ("medium" if abs(elasticity) > 0.8 else "low")
+            )
             optimal = current_price * 1.05 if elasticity > -1 else current_price
 
-            curve = [(current_price * (0.8 + i * 0.1), demand / (1 + abs(elasticity) * (i - 2) * 0.1)) for i in range(5)]
+            curve = [
+                (
+                    current_price * (0.8 + i * 0.1),
+                    demand / (1 + abs(elasticity) * (i - 2) * 0.1),
+                )
+                for i in range(5)
+            ]
 
             pred = PriceElasticity(
                 elasticity_coefficient=float(elasticity),

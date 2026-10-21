@@ -54,15 +54,23 @@ async def send_email(
         from_name=from_name or SMTP_FROM_NAME,
     )
     if result.get("status") == "sent":
-        logger.info("Email enviado a %s vía %s: %s", to_email, result.get("provider"), subject)
+        logger.info(
+            "Email enviado a %s vía %s: %s", to_email, result.get("provider"), subject
+        )
         return True
-    logger.error("Error enviando email a %s vía %s: %s", to_email, result.get("provider"), result.get("error"))
+    logger.error(
+        "Error enviando email a %s vía %s: %s",
+        to_email,
+        result.get("provider"),
+        result.get("error"),
+    )
     return False
 
 
 def _html_to_text(html: str) -> str:
     """Conversión naive HTML → texto plano."""
     import re
+
     text = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
     text = re.sub(r"</p>", "\n\n", text, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", "", text)

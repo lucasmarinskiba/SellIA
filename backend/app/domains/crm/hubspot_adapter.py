@@ -68,12 +68,26 @@ class HubSpotAdapter(CRMAdapter):
             email=props.get("email", ""),
             phone=props.get("phone"),
             industry=props.get("industry"),
-            company_size=int(props.get("numberofemployees", 0)) if props.get("numberofemployees") else None,
-            annual_revenue=float(props.get("annualrevenue", 0)) if props.get("annualrevenue") else None,
-            lead_score=int(props.get("hs_lead_status", 0)) if props.get("hs_lead_status") else None,
+            company_size=(
+                int(props.get("numberofemployees", 0))
+                if props.get("numberofemployees")
+                else None
+            ),
+            annual_revenue=(
+                float(props.get("annualrevenue", 0))
+                if props.get("annualrevenue")
+                else None
+            ),
+            lead_score=(
+                int(props.get("hs_lead_status", 0))
+                if props.get("hs_lead_status")
+                else None
+            ),
             source=props.get("source"),
             stage=props.get("lifecyclestage"),
-            estimated_value=float(props.get("deal_amount", 0)) if props.get("deal_amount") else None,
+            estimated_value=(
+                float(props.get("deal_amount", 0)) if props.get("deal_amount") else None
+            ),
             budget=props.get("budget"),
             email_opens=emails_opened,
             demo_attended=demo_attended,
@@ -92,9 +106,7 @@ class HubSpotAdapter(CRMAdapter):
             logger.exception(f"HubSpot fetch_lead failed: {lead_id}")
             return None
 
-    async def fetch_leads(
-        self, filters: dict[str, Any] | None = None
-    ) -> list[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple contacts from HubSpot with optional filtering."""
         try:
             # Build filter query

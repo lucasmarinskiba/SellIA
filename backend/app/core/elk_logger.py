@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import aiohttp
+
     AIOHTTP_AVAILABLE = True
 except ImportError:
     aiohttp = None
@@ -54,7 +55,7 @@ def format_elk_document(
 ) -> dict:
     """
     Format a security event as an Elasticsearch-compatible JSON document.
-    
+
     Uses ECS (Elastic Common Schema) fields where applicable.
     """
     doc = {
@@ -63,7 +64,11 @@ def format_elk_document(
             "kind": "event",
             "category": ["authentication" if "login" in event_type else "security"],
             "type": [event_type],
-            "outcome": "success" if level == "info" else "failure" if level == "error" else "unknown",
+            "outcome": (
+                "success"
+                if level == "info"
+                else "failure" if level == "error" else "unknown"
+            ),
         },
         "message": message,
         "log": {
@@ -71,14 +76,22 @@ def format_elk_document(
         },
         "source": {
             "ip": ip_address,
-            "geo": {
-                "country_iso_code": country,
-            } if country else {},
+            "geo": (
+                {
+                    "country_iso_code": country,
+                }
+                if country
+                else {}
+            ),
         },
-        "user": {
-            "id": user_id,
-            "email": email,
-        } if user_id or email else {},
+        "user": (
+            {
+                "id": user_id,
+                "email": email,
+            }
+            if user_id or email
+            else {}
+        ),
         "service": {
             "name": "sellia",
             "environment": os.getenv("ENVIRONMENT", "development"),
@@ -87,14 +100,14 @@ def format_elk_document(
             "app": "sellia-security",
         },
     }
-    
+
     # Clean empty fields
     doc["source"] = {k: v for k, v in doc["source"].items() if v}
     doc["user"] = {k: v for k, v in doc["user"].items() if v}
-    
+
     if extra:
         doc["sellia"] = extra
-    
+
     return doc
 
 
@@ -107,6 +120,7 @@ def write_to_file(document: dict) -> bool:
     except Exception as e:
         logger.exception("write_to_file: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Failed to write log file: {e}")
         return False
 
@@ -115,13 +129,13 @@ async def push_to_elasticsearch(document: dict) -> bool:
     """Push a document directly to Elasticsearch."""
     if not AIOHTTP_AVAILABLE or not ELK_HOST or not ELK_API_KEY:
         return False
-    
+
     url = f"{ELK_HOST}/{ELK_INDEX}/_doc"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"ApiKey {ELK_API_KEY}",
     }
-    
+
     try:
         async with (
             aiohttp.ClientSession() as session,
@@ -137,11 +151,15 @@ async def push_to_elasticsearch(document: dict) -> bool:
             else:
                 body = await resp.text()
                 from app.core.logger import get_logger
-                get_logger(__name__).error(f"Elasticsearch error {resp.status}: {body[:200]}")
+
+                get_logger(__name__).error(
+                    f"Elasticsearch error {resp.status}: {body[:200]}"
+                )
                 return False
     except Exception as e:
         logger.exception("push_to_elasticsearch: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Failed to push to Elasticsearch: {e}")
         return False
 
@@ -158,13 +176,13 @@ async def log_security_event(
 ) -> bool:
     """
     Log a security event to ELK.
-    
+
     If ELK_USE_FILEBEAT is true, writes to a JSON line file.
     Otherwise, pushes directly to Elasticsearch.
     """
     if not ELK_ENABLED:
         return False
-    
+
     document = format_elk_document(
         event_type=event_type,
         message=message,
@@ -175,7 +193,7 @@ async def log_security_event(
         country=country,
         extra=extra,
     )
-    
+
     if ELK_USE_FILEBEAT:
         return write_to_file(document)
     else:
@@ -183,6 +201,7 @@ async def log_security_event(
 
 
 # Convenience methods for common event types
+
 
 async def log_login(
     email: str,

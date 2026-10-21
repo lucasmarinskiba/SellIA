@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class FacebookOrderStatus(Enum):
     """Facebook Shop order statuses."""
+
     CREATED = "CREATED"
     CONFIRMED = "CONFIRMED"
     PROCESSING = "PROCESSING"
@@ -91,11 +92,12 @@ class FacebookShopAutomation:
             bool: True if signature is valid
         """
         try:
-            expected_signature = "sha1=" + hmac.new(
-                self.webhook_verify_token.encode(),
-                payload_body,
-                hashlib.sha1
-            ).hexdigest()
+            expected_signature = (
+                "sha1="
+                + hmac.new(
+                    self.webhook_verify_token.encode(), payload_body, hashlib.sha1
+                ).hexdigest()
+            )
 
             return hmac.compare_digest(signature, expected_signature)
         except Exception:
@@ -284,7 +286,9 @@ class FacebookShopAutomation:
 
     # ========== PRODUCT CATALOG MANAGEMENT ==========
 
-    async def sync_products_from_facebook(self, limit: int = 100) -> list[dict[str, Any]]:
+    async def sync_products_from_facebook(
+        self, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """
         Sync products from Facebook Shop to local DB.
 

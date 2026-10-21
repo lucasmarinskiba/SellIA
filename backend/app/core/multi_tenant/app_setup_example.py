@@ -22,6 +22,7 @@ from app.core.multi_tenant.tenant_context import TenantContext
 # Application Setup
 # ============================================================================
 
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application with multi-tenant support."""
 
@@ -153,6 +154,7 @@ def create_app() -> FastAPI:
 # Dependency Injection Patterns
 # ============================================================================
 
+
 async def get_current_tenant_id(
     tenant_context: Annotated["TenantContext", Depends(get_tenant_context)],
 ) -> str:
@@ -184,6 +186,7 @@ async def get_current_tenant_isolation(
 # ============================================================================
 # Example Endpoint Integration
 # ============================================================================
+
 
 def add_multi_tenant_endpoints(app: FastAPI):
     """
@@ -296,6 +299,7 @@ def add_multi_tenant_endpoints(app: FastAPI):
 # Scheduled Tasks Setup (Celery)
 # ============================================================================
 
+
 def setup_celery_tasks():
     """
     Configure Celery beat tasks for multi-tenant maintenance.
@@ -312,21 +316,18 @@ def setup_celery_tasks():
             "schedule": crontab(hour=0, minute=0),  # Daily at midnight
             "options": {"expires": 3600},  # 1 hour timeout
         },
-
         # Billing: finalize monthly billing cycle
         "finalize-billing-cycles": {
             "task": "app.core.multi_tenant.tasks.finalize_billing_cycles",
             "schedule": crontab(day_of_month=1, hour=0, minute=0),  # 1st of month
             "options": {"expires": 86400},  # 24 hour timeout
         },
-
         # Audit cleanup: delete logs older than 365 days
         "cleanup-old-audit-logs": {
             "task": "app.core.multi_tenant.tasks.cleanup_audit_logs",
             "schedule": crontab(day_of_week=0, hour=2, minute=0),  # Weekly, Sunday 2 AM
             "options": {"expires": 86400},
         },
-
         # Usage sync: sync usage from cache to DB hourly
         "sync-usage-metrics": {
             "task": "app.core.multi_tenant.tasks.sync_usage_metrics",
@@ -341,6 +342,7 @@ def setup_celery_tasks():
 # ============================================================================
 # Testing Setup
 # ============================================================================
+
 
 async def get_test_app() -> FastAPI:
     """

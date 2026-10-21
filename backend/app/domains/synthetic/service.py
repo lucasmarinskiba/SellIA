@@ -50,26 +50,32 @@ async def run_all_checks(db: AsyncSession) -> SystemHealthSnapshot:
         if response_time:
             total_response_time += response_time
 
-        details.append({
-            "check": check.name,
-            "type": check.check_type,
-            "ok": ok,
-            "response_time_ms": response_time,
-            "status": status,
-            "error": error,
-        })
+        details.append(
+            {
+                "check": check.name,
+                "type": check.check_type,
+                "ok": ok,
+                "response_time_ms": response_time,
+                "status": status,
+                "error": error,
+            }
+        )
 
         if not ok:
             logger.warning(f"Synthetic check FAILED: {check.name} — {error}")
 
     await db.commit()
 
-    overall = "healthy" if passed == len(checks) else ("degraded" if passed > 0 else "down")
+    overall = (
+        "healthy" if passed == len(checks) else ("degraded" if passed > 0 else "down")
+    )
     snapshot = SystemHealthSnapshot(
         overall_status=overall,
         checks_total=len(checks),
         checks_passed=passed,
-        avg_response_time_ms=round(total_response_time / len(checks), 2) if checks else None,
+        avg_response_time_ms=(
+            round(total_response_time / len(checks), 2) if checks else None
+        ),
         details=details,
     )
     db.add(snapshot)
@@ -109,17 +115,23 @@ async def _run_single_check(check: SyntheticCheck):
 async def get_latest_health(db: AsyncSession) -> SystemHealthSnapshot | None:
     """Return the most recent health snapshot."""
     result = await db.execute(
-        select(SystemHealthSnapshot).order_by(desc(SystemHealthSnapshot.snapshot_at)).limit(1)
+        select(SystemHealthSnapshot)
+        .order_by(desc(SystemHealthSnapshot.snapshot_at))
+        .limit(1)
     )
     return result.scalar_one_or_none()
 
 
-async def get_check_history(db: AsyncSession, check_id, hours: int = 24) -> list[SyntheticResult]:
+async def get_check_history(
+    db: AsyncSession, check_id, hours: int = 24
+) -> list[SyntheticResult]:
     """Get results for a specific check in the last N hours."""
     since = datetime.now(UTC) - timedelta(hours=hours)
     result = await db.execute(
         select(SyntheticResult)
-        .where(SyntheticResult.check_id == check_id, SyntheticResult.checked_at >= since)
+        .where(
+            SyntheticResult.check_id == check_id, SyntheticResult.checked_at >= since
+        )
         .order_by(desc(SyntheticResult.checked_at))
     )
     return result.scalars().all()

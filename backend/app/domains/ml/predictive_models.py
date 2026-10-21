@@ -98,9 +98,7 @@ class DealClosePredictor:
         # Feature importance
         importance_dict = {
             name: float(imp)
-            for name, imp in zip(
-                self.feature_names, self.model.feature_importances_
-            )
+            for name, imp in zip(self.feature_names, self.model.feature_importances_)
         }
 
         return probability, importance_dict
@@ -164,9 +162,7 @@ class ChurnPredictor:
         )
         logger.info("Initialized GradientBoosting model for churn prediction")
 
-    def train(
-        self, training_data: list[dict[str, Any]], labels: list[int]
-    ):
+    def train(self, training_data: list[dict[str, Any]], labels: list[int]):
         """Train on historical customer data."""
         if not training_data:
             logger.warning("No training data provided")

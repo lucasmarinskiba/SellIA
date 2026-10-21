@@ -52,10 +52,14 @@ class PlaybookRecommendation:
 class VoiceCallManager:
     """Manage AI voice calls via Twilio + Claude."""
 
-    def __init__(self, db: Session, twilio_client=None, claude_api_key: str | None = None):
+    def __init__(
+        self, db: Session, twilio_client=None, claude_api_key: str | None = None
+    ):
         self.db = db
         self.twilio = twilio_client
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
     def initiate_call(self, prospect_id: str, deal_id: str) -> VoiceCallResult:
         """Initiate AI voice call with prospect."""
@@ -99,7 +103,9 @@ class VoiceCallManager:
             self.db.add(voice_call)
             self.db.commit()
 
-            logger.info(f"Voice call initiated for prospect {prospect_id}, deal {deal_id}")
+            logger.info(
+                f"Voice call initiated for prospect {prospect_id}, deal {deal_id}"
+            )
 
             return VoiceCallResult(
                 call_id=str(voice_call.id),
@@ -152,7 +158,7 @@ class VoiceCallManager:
                 message = self.claude.messages.create(
                     model="claude-opus",
                     max_tokens=300,
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[{"role": "user", "content": prompt}],
                 )
                 response_text = message.content[0].text
 
@@ -189,11 +195,15 @@ class VoiceCallManager:
                 return {"error": "Call not found"}
 
             # 1. Get full transcript
-            transcript_turns = self.db.query(CallTranscript).filter(
-                CallTranscript.call_id == call_id
-            ).all()
+            transcript_turns = (
+                self.db.query(CallTranscript)
+                .filter(CallTranscript.call_id == call_id)
+                .all()
+            )
 
-            full_transcript = "\n".join([f"{t.speaker}: {t.text}" for t in transcript_turns])
+            full_transcript = "\n".join(
+                [f"{t.speaker}: {t.text}" for t in transcript_turns]
+            )
 
             # 2. Analyze call (sentiment, objections, decision)
             analysis = self._analyze_call(full_transcript)
@@ -203,14 +213,18 @@ class VoiceCallManager:
             call.transcript = full_transcript
             call.outcome = outcome  # or analysis["decision"]
             call.status = "completed"
-            call.duration_seconds = int((call.ended_at - call.started_at).total_seconds())
+            call.duration_seconds = int(
+                (call.ended_at - call.started_at).total_seconds()
+            )
 
             # 4. Store metrics
             metrics = VoiceCallMetrics(
                 call_id=call_id,
                 objections_raised=analysis.get("objections_count", 0),
                 objections_handled=analysis.get("objections_handled", 0),
-                questions_asked=len([t for t in transcript_turns if t.speaker == "ai" and "?" in t.text]),
+                questions_asked=len(
+                    [t for t in transcript_turns if t.speaker == "ai" and "?" in t.text]
+                ),
             )
             self.db.add(metrics)
 
@@ -258,9 +272,12 @@ class VoiceCallManager:
     def _get_conversation_history(self, call_id: str) -> list[dict[str, str]]:
         """Get conversation turn history."""
 
-        turns = self.db.query(CallTranscript).filter(
-            CallTranscript.call_id == call_id
-        ).order_by(CallTranscript.timestamp).all()
+        turns = (
+            self.db.query(CallTranscript)
+            .filter(CallTranscript.call_id == call_id)
+            .order_by(CallTranscript.timestamp)
+            .all()
+        )
 
         return [{"speaker": t.speaker, "text": t.text} for t in turns]
 
@@ -293,7 +310,7 @@ class VoiceCallManager:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=500,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return json.loads(message.content[0].text)
@@ -307,17 +324,24 @@ class PlaybookExtractor:
 
     def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
-        self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        self.claude = (
+            Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
+        )
 
     def extract_playbooks(self, top_performer_ids: list[str]) -> list[dict[str, Any]]:
         """Extract playbooks from top 20% performers."""
 
         try:
             # 1. Get successful calls from top performers
-            successful_calls = self.db.query(VoiceCall).filter(
-                (VoiceCall.outcome == "meeting_booked") |
-                (VoiceCall.outcome == "qualified")
-            ).limit(100).all()
+            successful_calls = (
+                self.db.query(VoiceCall)
+                .filter(
+                    (VoiceCall.outcome == "meeting_booked")
+                    | (VoiceCall.outcome == "qualified")
+                )
+                .limit(100)
+                .all()
+            )
 
             if not successful_calls:
                 logger.warning("No successful calls to extract from")
@@ -340,7 +364,9 @@ class PlaybookExtractor:
                 if consolidated:
                     master_playbooks.append(consolidated)
 
-            logger.info(f"Extracted {len(master_playbooks)} playbooks from {len(successful_calls)} calls")
+            logger.info(
+                f"Extracted {len(master_playbooks)} playbooks from {len(successful_calls)} calls"
+            )
 
             return master_playbooks
 
@@ -374,7 +400,7 @@ class PlaybookExtractor:
             message = self.claude.messages.create(
                 model="claude-opus",
                 max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return json.loads(message.content[0].text)
@@ -433,10 +459,15 @@ class PlaybookRecommender:
                 return None
 
             # 1. Find matching playbooks (by industry/stage)
-            candidates = self.db.query(SalesPlaybook).filter(
-                (SalesPlaybook.industry.ilike(f"%{deal.industry}%")) |
-                (SalesPlaybook.deal_stage == deal.stage)
-            ).order_by(SalesPlaybook.win_rate.desc()).first()
+            candidates = (
+                self.db.query(SalesPlaybook)
+                .filter(
+                    (SalesPlaybook.industry.ilike(f"%{deal.industry}%"))
+                    | (SalesPlaybook.deal_stage == deal.stage)
+                )
+                .order_by(SalesPlaybook.win_rate.desc())
+                .first()
+            )
 
             if not candidates:
                 return None

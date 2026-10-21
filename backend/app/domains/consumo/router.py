@@ -34,6 +34,7 @@ async def get_db():
 
 # ===== COST ATTRIBUTION =====
 
+
 @router.get("/cost-attribution", response_model=CostAttributionSummary)
 async def get_cost_attribution(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -59,13 +60,16 @@ async def get_admin_margins(
 
 # ===== QUALITY GATE =====
 
+
 @router.get("/quality-gate", response_model=QualityGateConfigOut)
 async def get_quality_gate(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Get quality gate configuration for AI support."""
-    config = await consumo_service.get_or_create_quality_gate_config(db, current_user.id)
+    config = await consumo_service.get_or_create_quality_gate_config(
+        db, current_user.id
+    )
     return config
 
 
@@ -84,6 +88,7 @@ async def update_quality_gate(
 
 # ===== PLAN RECOMMENDATION =====
 
+
 @router.get("/plan-recommendation", response_model=PlanRecommendationOut)
 async def get_plan_recommendation(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -94,6 +99,7 @@ async def get_plan_recommendation(
 
 
 # ===== ONBOARDING =====
+
 
 @router.get("/onboarding", response_model=OnboardingProgressOut)
 async def get_onboarding_progress(
@@ -131,6 +137,7 @@ async def request_onboarding_help(
 
 # ===== ADVANCED ANALYTICS =====
 
+
 @router.get("/heatmap")
 async def get_heatmap(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -161,6 +168,7 @@ async def get_cost_per_lead(
 
 
 # ===== INTERNAL: CHURN SHIELD (admin only) =====
+
 
 @router.get("/admin/churn-signals")
 async def get_churn_signals(

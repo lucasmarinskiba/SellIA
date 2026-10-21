@@ -77,7 +77,11 @@ Responde en JSON estructurado con análisis, recomendaciones, confianza.
                 import re
 
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                analysis = json.loads(json_match.group(0)) if json_match else {"reasoning": response_text}
+                analysis = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"reasoning": response_text}
+                )
 
             return {
                 "status": "success",
@@ -140,7 +144,11 @@ Responde en JSON con copy estructurado.
                 copy = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                copy = json.loads(json_match.group(0)) if json_match else {"copy": response_text}
+                copy = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"copy": response_text}
+                )
 
             return {"status": "success", "copy": copy}
 
@@ -192,7 +200,11 @@ Responde con estrategia de venta PERSONALIZADA.
                 strategy = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                strategy = json.loads(json_match.group(0)) if json_match else {"strategy": response_text}
+                strategy = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"strategy": response_text}
+                )
 
             return {"status": "success", "strategy": strategy}
 
@@ -285,7 +297,11 @@ Responde con evaluación profesional.
                 evaluation = json.loads(response_text)
             except json.JSONDecodeError:
                 json_match = re.search(r"\{.*\}", response_text, re.DOTALL)
-                evaluation = json.loads(json_match.group(0)) if json_match else {"evaluation": response_text}
+                evaluation = (
+                    json.loads(json_match.group(0))
+                    if json_match
+                    else {"evaluation": response_text}
+                )
 
             return {"status": "success", "evaluation": evaluation}
 

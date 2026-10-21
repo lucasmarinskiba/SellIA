@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # ========== DATADOG SETUP ==========
 
+
 def setup_datadog():
     """Configura Datadog para APM + metrics."""
 
@@ -64,6 +65,7 @@ def track_metric(metric_name: str, value: float, tags: list | None = None):
 
 
 # ========== SENTRY SETUP ==========
+
 
 def setup_sentry():
     """Configura Sentry para error tracking."""
@@ -111,6 +113,7 @@ def track_exception(exc: Exception, extra: dict | None = None):
 
 # ========== PERFORMANCE MONITORING ==========
 
+
 def monitor_performance(func: Callable) -> Callable:
     """
     Decorator que trackea performance de function.
@@ -131,7 +134,9 @@ def monitor_performance(func: Callable) -> Callable:
             result = await func(*args, **kwargs)
 
             latency = (time.time() - start_time) * 1000  # ms
-            track_metric("sellias.function.latency", latency, tags=[f"function:{func_name}"])
+            track_metric(
+                "sellias.function.latency", latency, tags=[f"function:{func_name}"]
+            )
             track_metric("sellias.function.success", 1, tags=[f"function:{func_name}"])
 
             if latency > 1000:  # Si > 1 segundo
@@ -153,7 +158,9 @@ def monitor_performance(func: Callable) -> Callable:
             result = func(*args, **kwargs)
 
             latency = (time.time() - start_time) * 1000
-            track_metric("sellias.function.latency", latency, tags=[f"function:{func_name}"])
+            track_metric(
+                "sellias.function.latency", latency, tags=[f"function:{func_name}"]
+            )
             track_metric("sellias.function.success", 1, tags=[f"function:{func_name}"])
 
             if latency > 1000:
@@ -168,6 +175,7 @@ def monitor_performance(func: Callable) -> Callable:
 
     # Detectar async/sync
     import asyncio
+
     if asyncio.iscoroutinefunction(func):
         return async_wrapper
     else:
@@ -176,10 +184,13 @@ def monitor_performance(func: Callable) -> Callable:
 
 # ========== ALERTS ==========
 
+
 class AlertManager:
     """Maneja alertas via Slack + PagerDuty."""
 
-    def __init__(self, slack_webhook: str | None = None, pagerduty_token: str | None = None):
+    def __init__(
+        self, slack_webhook: str | None = None, pagerduty_token: str | None = None
+    ):
         self.slack_webhook = slack_webhook
         self.pagerduty_token = pagerduty_token
 
@@ -249,6 +260,7 @@ class AlertManager:
             }
 
             import httpx
+
             try:
                 await httpx.AsyncClient().post(self.slack_webhook, json=payload)
             except Exception:
@@ -286,6 +298,7 @@ class AlertManager:
 
 # ========== HEALTH CHECK ==========
 
+
 async def health_check_database() -> bool:
     """Verifica database connectivity."""
 
@@ -308,6 +321,7 @@ async def health_check_stripe() -> bool:
 
     try:
         import stripe
+
         stripe.Account.retrieve()
         return True
 
@@ -321,6 +335,7 @@ async def health_check_mercadolibre() -> bool:
 
     try:
         import httpx
+
         async with httpx.AsyncClient() as client:
             resp = await client.get("https://api.mercadolibre.com/sites/MLA")
             return resp.status_code == 200
@@ -342,6 +357,7 @@ async def health_check_all() -> dict:
 
 
 # ========== SETUP FUNCTION ==========
+
 
 def setup_monitoring():
     """Inicializa todo monitoring."""

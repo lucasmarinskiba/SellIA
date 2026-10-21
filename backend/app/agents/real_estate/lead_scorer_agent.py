@@ -72,7 +72,9 @@ class LeadScorerAgent:
         lead_id = lead_data.get("lead_id", "unknown")
         self.scores_history[lead_id] = breakdown
 
-        logger.info(f"Lead {lead_id} scored: {overall_score:.1f}/100 - {recommendation}")
+        logger.info(
+            f"Lead {lead_id} scored: {overall_score:.1f}/100 - {recommendation}"
+        )
         return breakdown
 
     def _evaluate_budget(self, lead_data: dict[str, Any]) -> float:
@@ -274,7 +276,9 @@ class LeadScorerAgent:
 
         return min(score, 100.0)
 
-    def _generate_recommendation(self, overall_score: float, lead_data: dict[str, Any]) -> str:
+    def _generate_recommendation(
+        self, overall_score: float, lead_data: dict[str, Any]
+    ) -> str:
         """Generate recommendation based on score."""
         if overall_score >= 80:
             return "HIGHLY QUALIFIED - Priority lead, ready to show properties"

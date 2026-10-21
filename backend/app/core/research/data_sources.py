@@ -17,6 +17,7 @@ logger = logging.getLogger("data_sources")
 @dataclass
 class DataSource:
     """Data source configuration"""
+
     name: str
     endpoint: str
     auth_type: str  # "api_key", "oauth", "bearer", "none"
@@ -28,6 +29,7 @@ class DataSource:
 # ============================================================================
 # MARKET DATA SOURCES
 # ============================================================================
+
 
 class GoogleTrendsConnector:
     """Google Trends real-time data"""
@@ -108,7 +110,9 @@ class TwitterConnector:
             },
         ]
 
-    async def get_trending_hashtags(self, category: str = "sales") -> list[dict[str, Any]]:
+    async def get_trending_hashtags(
+        self, category: str = "sales"
+    ) -> list[dict[str, Any]]:
         """Get trending hashtags"""
         return [
             {"hashtag": "#SalesAutomation", "volume": 42500, "trend": "rising"},
@@ -129,7 +133,9 @@ class TwitterConnector:
 class LinkedInConnector:
     """LinkedIn for B2B insights and professional networks"""
 
-    async def search_professionals(self, criteria: dict[str, Any]) -> list[dict[str, Any]]:
+    async def search_professionals(
+        self, criteria: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Search professionals matching criteria"""
         return [
             {
@@ -196,7 +202,9 @@ class CrunchBaseConnector:
 class NewsAPIConnector:
     """News API for real-time news monitoring"""
 
-    async def search_news(self, query: str, language: str = "en") -> list[dict[str, Any]]:
+    async def search_news(
+        self, query: str, language: str = "en"
+    ) -> list[dict[str, Any]]:
         """Search news articles"""
         return [
             {
@@ -231,7 +239,9 @@ class NewsAPIConnector:
 class RedditConnector:
     """Reddit for community insights and discussions"""
 
-    async def search_discussions(self, query: str, subreddits: list[str] | None = None) -> list[dict[str, Any]]:
+    async def search_discussions(
+        self, query: str, subreddits: list[str] | None = None
+    ) -> list[dict[str, Any]]:
         """Search Reddit discussions"""
         return [
             {
@@ -281,6 +291,7 @@ class AltMetricsConnector:
 # ============================================================================
 # PRICING & MARKET DATA
 # ============================================================================
+
 
 class PricingDataConnector:
     """Real-time pricing data from competitors"""
@@ -337,6 +348,7 @@ class MarketDataConnector:
 # SOCIAL LISTENING & SENTIMENT
 # ============================================================================
 
+
 class SocialListeningConnector:
     """Aggregated social listening and sentiment analysis"""
 
@@ -354,7 +366,9 @@ class SocialListeningConnector:
             "volume": 5420,
         }
 
-    async def get_competitor_sentiment(self, competitors: list[str]) -> dict[str, dict[str, Any]]:
+    async def get_competitor_sentiment(
+        self, competitors: list[str]
+    ) -> dict[str, dict[str, Any]]:
         """Get sentiment for multiple competitors"""
         return {
             comp: {"sentiment": 0.65 + (i * 0.05), "volume": 2000 + (i * 500)}
@@ -364,7 +378,11 @@ class SocialListeningConnector:
     async def get_trending_complaints(self, category: str) -> list[dict[str, Any]]:
         """Get trending complaints/issues"""
         return [
-            {"complaint": "Poor integration support", "frequency": 150, "impact": "high"},
+            {
+                "complaint": "Poor integration support",
+                "frequency": 150,
+                "impact": "high",
+            },
             {"complaint": "Steep learning curve", "frequency": 120, "impact": "medium"},
         ]
 
@@ -372,6 +390,7 @@ class SocialListeningConnector:
 # ============================================================================
 # CUSTOMER DATA
 # ============================================================================
+
 
 class CustomerDataConnector:
     """Aggregated customer data and behavior"""
@@ -410,6 +429,7 @@ class CustomerDataConnector:
 # ============================================================================
 # DATA SOURCE ORCHESTRATOR
 # ============================================================================
+
 
 class DataSourceOrchestrator:
     """Manage all data sources and coordinate updates"""
@@ -457,7 +477,9 @@ class DataSourceOrchestrator:
         """Get comprehensive keyword intelligence"""
         seo_data = await self.sources["semrush"].get_keyword_research(keyword)
         search_volume = await self.sources["google_trends"].get_search_volume(keyword)
-        related_queries = await self.sources["google_trends"].get_related_queries(keyword)
+        related_queries = await self.sources["google_trends"].get_related_queries(
+            keyword
+        )
 
         return {
             "keyword": keyword,
@@ -466,9 +488,13 @@ class DataSourceOrchestrator:
             "related_queries": related_queries,
         }
 
-    async def get_competitor_intelligence(self, competitor_domain: str) -> dict[str, Any]:
+    async def get_competitor_intelligence(
+        self, competitor_domain: str
+    ) -> dict[str, Any]:
         """Get comprehensive competitor intelligence"""
-        keywords = await self.sources["semrush"].get_competitor_keywords(competitor_domain)
+        keywords = await self.sources["semrush"].get_competitor_keywords(
+            competitor_domain
+        )
         backlinks = await self.sources["semrush"].get_backlink_data(competitor_domain)
         mentions = await self.sources["altmetrics"].get_web_mentions(competitor_domain)
 
@@ -520,21 +546,27 @@ class DataSourceOrchestrator:
         trends = await self.get_trending_topics()
         for trend in trends[:3]:
             if trend.get("trend") == "rising":
-                alerts.append({
-                    "type": "trend",
-                    "message": f"Rising trend: {trend['topic']}",
-                    "urgency": "high",
-                })
+                alerts.append(
+                    {
+                        "type": "trend",
+                        "message": f"Rising trend: {trend['topic']}",
+                        "urgency": "high",
+                    }
+                )
 
         # News alerts
         news = await self.sources["newsapi"].search_news("competitor launch")
         for article in news[:2]:
-            alerts.append({
-                "type": "news",
-                "message": f"News alert: {article['title']}",
-                "source": article["source"],
-                "urgency": "high" if "launch" in article["title"].lower() else "medium",
-            })
+            alerts.append(
+                {
+                    "type": "news",
+                    "message": f"News alert: {article['title']}",
+                    "source": article["source"],
+                    "urgency": (
+                        "high" if "launch" in article["title"].lower() else "medium"
+                    ),
+                }
+            )
 
         return alerts
 
@@ -549,7 +581,10 @@ class DataSourceOrchestrator:
         for name in self.sources:
             try:
                 # Simple connectivity check
-                health["sources"][name] = {"status": "active", "last_check": utc_now().isoformat()}
+                health["sources"][name] = {
+                    "status": "active",
+                    "last_check": utc_now().isoformat(),
+                }
             except Exception as e:
                 logger.exception("health_check: error inesperado")
                 health["sources"][name] = {"status": "error", "error": str(e)}
@@ -561,6 +596,7 @@ class DataSourceOrchestrator:
 # ============================================================================
 # EXPORT & INITIALIZATION
 # ============================================================================
+
 
 async def initialize_data_sources() -> DataSourceOrchestrator:
     """Initialize data source orchestrator"""

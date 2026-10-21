@@ -46,7 +46,8 @@ class SecretsManager:
                 token=self.vault_token,
             )
 
-    @lru_cache(maxsize=256)  # noqa: B019 - gestor de instancia única; el cache vive con el proceso
+    # Gestor de instancia única: el cache vive con el proceso.
+    @lru_cache(maxsize=256)  # noqa: B019
     def get_secret(self, path: str, key: str | None = None) -> str:
         """
         Get secret by path.
@@ -155,6 +156,7 @@ class SecretsManager:
 
             # Generate new secret (implementation depends on type)
             import secrets
+
             new_secret = secrets.token_urlsafe(32)
 
             # Mark old secret for deprecation (custom metadata)
@@ -226,10 +228,13 @@ def example_usage():
     secrets.get_secret("integrations/twilio", "auth_token")
 
     # Store new secret
-    secrets.set_secret("integrations/slack", {
-        "webhook_url": "https://hooks.slack.com/...",
-        "signing_secret": "xoxb-...",
-    })
+    secrets.set_secret(
+        "integrations/slack",
+        {
+            "webhook_url": "https://hooks.slack.com/...",
+            "signing_secret": "xoxb-...",
+        },
+    )
 
     # Rotate API key
     new_key = secrets.rotate_secret("integrations/github")

@@ -44,4 +44,8 @@ async def update_current_user(
     current_user.full_name = name
     await db.commit()
     await db.refresh(current_user)
-    return {"id": str(current_user.id), "full_name": current_user.full_name, "email": current_user.email}
+    return {
+        "id": str(current_user.id),
+        "full_name": current_user.full_name,
+        "email": current_user.email,
+    }

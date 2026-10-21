@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class InstagramCheckoutStatus(Enum):
     """Instagram checkout order statuses."""
+
     CHECKOUT_STARTED = "CHECKOUT_STARTED"
     PAYMENT_PENDING = "PAYMENT_PENDING"
     PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED"
@@ -85,11 +86,12 @@ class InstagramShopAutomation:
             bool: True if signature is valid
         """
         try:
-            expected_signature = "sha256=" + hmac.new(
-                self.webhook_verify_token.encode(),
-                payload_body,
-                hashlib.sha256
-            ).hexdigest()
+            expected_signature = (
+                "sha256="
+                + hmac.new(
+                    self.webhook_verify_token.encode(), payload_body, hashlib.sha256
+                ).hexdigest()
+            )
 
             return hmac.compare_digest(signature, expected_signature)
         except Exception:

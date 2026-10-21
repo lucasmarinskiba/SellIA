@@ -1,4 +1,5 @@
 """Phase 5: Performance Optimization Endpoints."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -8,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.performance_optimization.service import PerformanceOptimizationService
 
-router = APIRouter(prefix="/api/v1/performance-optimization", tags=["performance-optimization"])
+router = APIRouter(
+    prefix="/api/v1/performance-optimization", tags=["performance-optimization"]
+)
 
 
 @router.post("/record-metrics")

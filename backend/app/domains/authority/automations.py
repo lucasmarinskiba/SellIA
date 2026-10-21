@@ -119,7 +119,10 @@ async def review_campaign_recipients(
             ChannelConnection.id,
             ChannelConnection.platform,
         )
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(
             Conversation.business_id.in_(business_ids),
             # last_message_at is NULL on every conversation created before it
@@ -127,7 +130,10 @@ async def review_campaign_recipients(
             # recency falls back to when the conversation itself started.
             or_(
                 Conversation.last_message_at >= since,
-                and_(Conversation.last_message_at.is_(None), Conversation.created_at >= since),
+                and_(
+                    Conversation.last_message_at.is_(None),
+                    Conversation.created_at >= since,
+                ),
             ),
             ChannelConnection.is_active.is_(True),
         )
@@ -141,8 +147,9 @@ async def review_campaign_recipients(
             continue  # already asked
 
         counts = await db.execute(
-            select(Message.direction, Message.id)
-            .where(Message.conversation_id == conv_id)
+            select(Message.direction, Message.id).where(
+                Message.conversation_id == conv_id
+            )
         )
         directions = [row[0] for row in counts.all()]
         has_inbound = any(d == MessageDirection.INBOUND for d in directions)
@@ -150,14 +157,18 @@ async def review_campaign_recipients(
         if not (has_inbound and has_outbound):
             continue  # never a real exchange: nothing to review
 
-        candidates.append({
-            "conversation_id": str(conv_id),
-            "channel_connection_id": str(channel_id),
-            "name": name or "cliente",
-            "contact": phone,
-            "platform": platform.value if hasattr(platform, "value") else str(platform),
-            "last_message_at": last_at.isoformat() if last_at else None,
-        })
+        candidates.append(
+            {
+                "conversation_id": str(conv_id),
+                "channel_connection_id": str(channel_id),
+                "name": name or "cliente",
+                "contact": phone,
+                "platform": (
+                    platform.value if hasattr(platform, "value") else str(platform)
+                ),
+                "last_message_at": last_at.isoformat() if last_at else None,
+            }
+        )
         if len(candidates) >= limit:
             break
 
@@ -207,9 +218,13 @@ async def send_review_campaign(
                 extra[REVIEW_CAMPAIGN_TAG] = datetime.now(UTC).isoformat()
                 conv.extra_data = extra
             sent += 1
-        except Exception as e:  # noqa: BLE001 -- one bad recipient must not sink the batch
-            logger.warning("review campaign: send failed for %s: %s",
-                           recipient["conversation_id"], str(e)[:200])
+        # one bad recipient must not sink the batch
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "review campaign: send failed for %s: %s",
+                recipient["conversation_id"],
+                str(e)[:200],
+            )
             last_error = str(e)[:200]
             failed += 1
 

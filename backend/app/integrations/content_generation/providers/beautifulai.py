@@ -4,7 +4,6 @@ Pricing: Plan-based, ~$0.05/slide
 Strengths: Auto-layout, smart templates, professional decks
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -22,7 +21,9 @@ class BeautifulAIProvider(BaseProvider):
 
     name = "Beautiful.ai"
     slug = "beautifulai"
-    supports: ClassVar[list] = [ContentType.COPY]  # Genera presentaciones, pero usamos COPY como proxy
+    supports: ClassVar[list] = [
+        ContentType.COPY
+    ]  # Genera presentaciones, pero usamos COPY como proxy
 
     @property
     def is_available(self) -> bool:
@@ -36,7 +37,9 @@ class BeautifulAIProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="BEAUTIFULAI_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="BEAUTIFULAI_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -60,7 +63,9 @@ class BeautifulAIProvider(BaseProvider):
 
             deck_url = data.get("url") or data.get("presentation", {}).get("url")
             if not deck_url:
-                return GenerationResult(success=False, error_message="Beautiful.ai no devolvió presentación")
+                return GenerationResult(
+                    success=False, error_message="Beautiful.ai no devolvió presentación"
+                )
 
             return GenerationResult(
                 success=True,

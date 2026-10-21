@@ -202,9 +202,13 @@ async def register(
     # Validar Turnstile si está configurado
     if verify_turnstile_token and settings.TURNSTILE_SECRET_KEY:
         turnstile_token = request.headers.get("X-Turnstile-Token")
-        valid, msg = await verify_turnstile_token(turnstile_token, request.state.client_ip)
+        valid, msg = await verify_turnstile_token(
+            turnstile_token, request.state.client_ip
+        )
         if not valid:
-            raise HTTPException(status_code=400, detail=f"Verificación de seguridad fallida: {msg}")
+            raise HTTPException(
+                status_code=400, detail=f"Verificación de seguridad fallida: {msg}"
+            )
 
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing = result.scalar_one_or_none()
@@ -282,7 +286,9 @@ async def login(
         user.last_failed_login = datetime.now(UTC)
 
         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
-            user.locked_until = datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            user.locked_until = datetime.now(UTC) + timedelta(
+                minutes=LOCKOUT_DURATION_MINUTES
+            )
             # Revocar todas las sesiones activas al bloquear cuenta
             if UserSession is not None:
                 await db.execute(
@@ -293,9 +299,12 @@ async def login(
                 )
                 # Mark all active sessions as revoked
                 from sqlalchemy import update
+
                 await db.execute(
                     update(UserSession)
-                    .where(UserSession.user_id == user.id, UserSession.is_revoked == False)
+                    .where(
+                        UserSession.user_id == user.id, UserSession.is_revoked == False
+                    )
                     .values(is_revoked=True)
                 )
 
@@ -326,13 +335,13 @@ async def login(
     # Verificar 2FA
     if user.is_2fa_enabled and user.totp_secret:
         tfa_code = request.headers.get("X-2FA-Code")
-        
+
         # Primero intentar TOTP
         totp_valid = False
         if tfa_code and pyotp:
             totp = pyotp.TOTP(user.totp_secret)
             totp_valid = totp.verify(tfa_code, valid_window=1)
-        
+
         # Si TOTP falla, intentar backup code
         backup_valid = False
         if not totp_valid and tfa_code and TwoFABackupCode is not None:
@@ -377,7 +386,7 @@ async def login(
     config = await _get_or_create_security_config(db)
     geofence_violation = False
     distance_km = 0.0
-    
+
     if config and config.max_distance_km and is_geofence_violation:
         # Buscar último login exitoso con coordenadas
         last_login_result = await db.execute(
@@ -391,7 +400,7 @@ async def login(
             .limit(1)
         )
         last_login = last_login_result.scalar_one_or_none()
-        
+
         if last_login and last_login.latitude and last_login.longitude:
             geofence_violation, distance_km = is_geofence_violation(
                 last_login.latitude,
@@ -410,7 +419,10 @@ async def login(
             request.headers.get("accept-language"),
         )
 
-    is_new_device = user.last_device_fingerprint and user.last_device_fingerprint != current_fingerprint
+    is_new_device = (
+        user.last_device_fingerprint
+        and user.last_device_fingerprint != current_fingerprint
+    )
     if is_new_device and SELLIA_NEW_DEVICES:
         SELLIA_NEW_DEVICES.inc()
 
@@ -563,6 +575,7 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
         except Exception as e:
             logger.exception("login: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Push notification error: {e}")
 
     # HIBP check en login
@@ -573,10 +586,12 @@ Si no fuiste vos, cambiá tu contraseña inmediatamente.
     if SELLIA_ACTIVE_SESSIONS and UserSession is not None:
         try:
             result = await db.execute(
-                select(func.count()).select_from(UserSession).where(
+                select(func.count())
+                .select_from(UserSession)
+                .where(
                     UserSession.user_id == user.id,
                     UserSession.is_revoked == False,
-                    UserSession.expires_at > datetime.now(UTC)
+                    UserSession.expires_at > datetime.now(UTC),
                 )
             )
             SELLIA_ACTIVE_SESSIONS.set(result.scalar() or 0)
@@ -664,12 +679,14 @@ async def logout(
 
 # ===== 2FA Endpoints =====
 
+
 @router.post("/2fa/setup")
 async def setup_2fa(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
+
     user = await get_current_user(request, db)
 
     if user.is_2fa_enabled:
@@ -711,10 +728,13 @@ async def verify_2fa_setup(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
+
     user = await get_current_user(request, db)
 
     if not user.totp_secret:
-        raise HTTPException(status_code=400, detail="No hay configuración de 2FA pendiente")
+        raise HTTPException(
+            status_code=400, detail="No hay configuración de 2FA pendiente"
+        )
 
     if not pyotp:
         raise HTTPException(status_code=500, detail="Módulo 2FA no disponible")
@@ -753,6 +773,7 @@ async def disable_2fa(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     from app.core.deps import get_current_user
+
     user = await get_current_user(request, db)
 
     if not user.is_2fa_enabled or not user.totp_secret:
@@ -776,7 +797,10 @@ async def disable_2fa(
         )
         # SQLAlchemy delete
         from sqlalchemy import delete
-        await db.execute(delete(TwoFABackupCode).where(TwoFABackupCode.user_id == user.id))
+
+        await db.execute(
+            delete(TwoFABackupCode).where(TwoFABackupCode.user_id == user.id)
+        )
         await db.commit()
 
     return {"message": "2FA desactivado correctamente"}
@@ -789,6 +813,7 @@ async def list_backup_codes_status(
 ):
     """Devuelve cuántos códigos de backup quedan disponibles."""
     from app.core.deps import get_current_user
+
     user = await get_current_user(request, db)
 
     if not user.is_2fa_enabled:
@@ -811,24 +836,26 @@ async def list_backup_codes_status(
 #  Email OTP
 # ============================================================
 
+
 async def _send_verification_email(to_email: str, full_name: str, verify_url: str):
     """Envía email de verificación de cuenta."""
     try:
         from app.core.email_service import send_email
+
         subject = "Verificá tu cuenta de SellIA"
-        html = f'''<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;">
+        html = f"""<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;">
   <h2 style="color:#4f46e5;">¡Bienvenido a SellIA, {full_name}!</h2>
   <p>Para activar tu cuenta, hacé clic en el siguiente botón:</p>
   <a href="{verify_url}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:4px;">Verificar mi cuenta</a>
   <p style="margin-top:16px;color:#666;font-size:12px;">El link expira en 24 horas. Si no creaste esta cuenta, ignorá este email.</p>
-</div>'''
-        text = f'''Hola {full_name},
+</div>"""
+        text = f"""Hola {full_name},
 
 Para activar tu cuenta de SellIA, visitá este link (válido por 24 horas):
 {verify_url}
 
 Si no creaste esta cuenta, ignorá este email.
-'''
+"""
         await send_email(to_email, subject, html, text)
     except Exception:
         logger.exception("_send_verification_email: error inesperado")
@@ -838,33 +865,38 @@ async def _send_password_reset_email(to_email: str, full_name: str, reset_url: s
     """Envía email para restablecer contraseña."""
     try:
         from app.core.email_service import send_email
+
         subject = "Restablecer tu contraseña de SellIA"
-        html = f'''<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;">
+        html = f"""<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:8px;">
   <h2 style="color:#4f46e5;">Restablecer contraseña</h2>
   <p>Hola {full_name}, pediste restablecer la contraseña de tu cuenta SellIA. Hacé clic para elegir una nueva:</p>
   <a href="{reset_url}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:4px;">Restablecer contraseña</a>
   <p style="margin-top:16px;color:#666;font-size:12px;">El link expira en 1 hora. Si no pediste esto, ignorá este email -- tu contraseña actual sigue siendo válida.</p>
-</div>'''
-        text = f'''Hola {full_name},
+</div>"""
+        text = f"""Hola {full_name},
 
 Pediste restablecer la contraseña de tu cuenta SellIA. Visitá este link (válido por 1 hora):
 {reset_url}
 
 Si no pediste esto, ignorá este email.
-'''
+"""
         await send_email(to_email, subject, html, text)
     except Exception:
         logger.exception("_send_password_reset_email: error inesperado")
 
 
-@router.post("/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+@router.post(
+    "/forgot-password", dependencies=[Depends(RateLimiter(times=3, seconds=300))]
+)
 async def forgot_password(
     db: Annotated[AsyncSession, Depends(get_db)],
     email: Annotated[str, Body(embed=True)],
 ):
     """Pide un link para restablecer contraseña. La respuesta nunca revela
     si ese email tiene cuenta, para no filtrar emails registrados."""
-    generic_response = {"message": "Si el email está registrado, te enviamos un link para restablecer tu contraseña."}
+    generic_response = {
+        "message": "Si el email está registrado, te enviamos un link para restablecer tu contraseña."
+    }
 
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
@@ -888,7 +920,9 @@ async def reset_password(
 ):
     """Restablece la contraseña con un token de /forgot-password."""
     if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
+        raise HTTPException(
+            status_code=400, detail="La contraseña debe tener al menos 8 caracteres"
+        )
 
     payload = decode_access_token(token)
     if not payload or payload.get("scope") != "password_reset":
@@ -934,7 +968,9 @@ async def verify_email(
     return {"message": "Email verificado correctamente. Ya podés iniciar sesión."}
 
 
-@router.post("/resend-verification", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+@router.post(
+    "/resend-verification", dependencies=[Depends(RateLimiter(times=3, seconds=300))]
+)
 async def resend_verification(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -955,10 +991,13 @@ async def resend_verification(
         user = result.scalar_one_or_none()
     else:
         from app.core.deps import get_current_user
+
         user = await get_current_user(request, db)
 
     if not user:
-        return {"message": "Si el email está registrado, te enviamos el enlace de verificación."}
+        return {
+            "message": "Si el email está registrado, te enviamos el enlace de verificación."
+        }
     if user.email_verified:
         return {"message": "Email ya verificado"}
 
@@ -968,7 +1007,9 @@ async def resend_verification(
     )
     verify_url = f"{settings.FRONTEND_URL or 'http://localhost:3000'}/verify-email?token={verify_token}"
     await _send_verification_email(user.email, user.full_name, verify_url)
-    return {"message": "Si el email está registrado, te enviamos el enlace de verificación."}
+    return {
+        "message": "Si el email está registrado, te enviamos el enlace de verificación."
+    }
 
 
 #: Only these purposes are accepted, so a caller cannot mint a code for an
@@ -1000,7 +1041,9 @@ async def email_otp_status(
     }
 
 
-@router.post("/2fa/email/setup", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+@router.post(
+    "/2fa/email/setup", dependencies=[Depends(RateLimiter(times=3, seconds=300))]
+)
 async def setup_email_otp(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1019,7 +1062,9 @@ async def setup_email_otp(
     if getattr(user, "email_otp_enabled", False):
         return {"message": "La verificación por email ya está activa", "enabled": True}
 
-    code = await create_email_otp(db, user.id, "setup", ip_address=request.state.client_ip)
+    code = await create_email_otp(
+        db, user.id, "setup", ip_address=request.state.client_ip
+    )
     delivered = await send_otp_email(user.email, code, "setup")
     if not delivered:
         # Saying "te enviamos un código" when the mail service refused it leaves
@@ -1053,7 +1098,10 @@ async def disable_email_otp(
 
     user = await get_current_user(request, db)
     if not getattr(user, "email_otp_enabled", False):
-        return {"message": "La verificación por email ya estaba desactivada", "enabled": False}
+        return {
+            "message": "La verificación por email ya estaba desactivada",
+            "enabled": False,
+        }
 
     user.email_otp_enabled = False
     await db.commit()
@@ -1077,15 +1125,20 @@ async def disable_email_otp(
             # reach the person whose protection was just removed.
             user_email=user.email,
         )
-    except Exception as e:  # noqa: BLE001 -- the setting change stands either way
+    # the setting change stands either way
+    except Exception as e:  # noqa: BLE001
         import logging
 
-        logging.getLogger(__name__).warning("2fa disable notification failed: %s", str(e)[:160])
+        logging.getLogger(__name__).warning(
+            "2fa disable notification failed: %s", str(e)[:160]
+        )
 
     return {"message": "Verificación por email desactivada", "enabled": False}
 
 
-@router.post("/2fa/email/send", dependencies=[Depends(RateLimiter(times=3, seconds=300))])
+@router.post(
+    "/2fa/email/send", dependencies=[Depends(RateLimiter(times=3, seconds=300))]
+)
 async def send_email_otp(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1097,7 +1150,9 @@ async def send_email_otp(
 
     user = await get_current_user(request, db)
     chosen = _otp_purpose(purpose)
-    code = await create_email_otp(db, user.id, chosen, ip_address=request.state.client_ip)
+    code = await create_email_otp(
+        db, user.id, chosen, ip_address=request.state.client_ip
+    )
     delivered = await send_otp_email(user.email, code, chosen)
     if not delivered:
         raise HTTPException(
@@ -1133,12 +1188,16 @@ async def verify_email_otp_endpoint(
         await db.commit()
         return {"message": "Verificación por email activada", "enabled": True}
 
-    return {"message": "Código verificado correctamente", "enabled": bool(getattr(user, "email_otp_enabled", False))}
+    return {
+        "message": "Código verificado correctamente",
+        "enabled": bool(getattr(user, "email_otp_enabled", False)),
+    }
 
 
 # ============================================================
 #  WebAuthn / Passkeys
 # ============================================================
+
 
 @router.post("/webauthn/register-begin")
 async def webauthn_register_begin(
@@ -1167,7 +1226,9 @@ async def webauthn_register_finish(
     from app.core.webauthn_service import register_credential
 
     user = await get_current_user(request, db)
-    await register_credential(db, user.id, credential_id, public_key, device_name=device_name)
+    await register_credential(
+        db, user.id, credential_id, public_key, device_name=device_name
+    )
     return {"message": "Passkey registrado correctamente"}
 
 
@@ -1175,6 +1236,7 @@ async def webauthn_register_finish(
 async def webauthn_login_begin():
     """Inicia login con passkey."""
     from app.core.webauthn_service import generate_authentication_options
+
     return generate_authentication_options()
 
 
@@ -1190,7 +1252,12 @@ async def list_webauthn_credentials(
     user = await get_current_user(request, db)
     creds = await get_user_credentials(db, user.id)
     return [
-        {"id": str(c.id), "device_name": c.device_name, "last_used": c.last_used_at, "created_at": c.created_at}
+        {
+            "id": str(c.id),
+            "device_name": c.device_name,
+            "last_used": c.last_used_at,
+            "created_at": c.created_at,
+        }
         for c in creds
     ]
 
@@ -1215,6 +1282,7 @@ async def delete_webauthn_credential(
 # ============================================================
 #  Trusted Devices
 # ============================================================
+
 
 @router.get("/devices")
 async def list_trusted_devices(
@@ -1282,6 +1350,7 @@ async def block_device_endpoint(
 #  Data Export / Deletion
 # ============================================================
 
+
 @router.get("/me/export-data")
 async def export_my_data(
     request: Request,
@@ -1331,7 +1400,9 @@ async def security_status(
             status_payload["unknown"].append(label)
             import logging
 
-            logging.getLogger(__name__).warning("security-status %s: %s", label, str(e)[:160])
+            logging.getLogger(__name__).warning(
+                "security-status %s: %s", label, str(e)[:160]
+            )
             return None
 
     if UserSession is not None:
@@ -1363,7 +1434,9 @@ async def security_status(
         from app.core.trusted_devices import list_user_devices
 
         devices = await list_user_devices(db, user.id)
-        status_payload["trusted_devices"] = sum(1 for d in devices if getattr(d, "is_trusted", False))
+        status_payload["trusted_devices"] = sum(
+            1 for d in devices if getattr(d, "is_trusted", False)
+        )
         status_payload["known_devices"] = len(devices)
     except Exception as e:  # noqa: BLE001
         await db.rollback()
@@ -1377,26 +1450,32 @@ async def security_status(
     # What is actually missing, in the order worth fixing it.
     recommendations: list[dict] = []
     if not status_payload["totp_enabled"] and not status_payload["email_otp_enabled"]:
-        recommendations.append({
-            "key": "second_factor",
-            "title": "Activá un segundo factor",
-            "detail": (
-                "Hoy tu cuenta se abre solo con la contraseña. Con tu negocio, tus ventas y los "
-                "datos de tus clientes adentro, eso es lo único que separa a un tercero de todo."
-            ),
-        })
+        recommendations.append(
+            {
+                "key": "second_factor",
+                "title": "Activá un segundo factor",
+                "detail": (
+                    "Hoy tu cuenta se abre solo con la contraseña. Con tu negocio, tus ventas y los "
+                    "datos de tus clientes adentro, eso es lo único que separa a un tercero de todo."
+                ),
+            }
+        )
     if not status_payload["email_verified"]:
-        recommendations.append({
-            "key": "verify_email",
-            "title": "Verificá tu email",
-            "detail": "Sin eso no podés recuperar la cuenta si perdés la contraseña.",
-        })
+        recommendations.append(
+            {
+                "key": "verify_email",
+                "title": "Verificá tu email",
+                "detail": "Sin eso no podés recuperar la cuenta si perdés la contraseña.",
+            }
+        )
     if status_payload.get("active_sessions") and status_payload["active_sessions"] > 3:
-        recommendations.append({
-            "key": "review_sessions",
-            "title": f"Revisá tus {status_payload['active_sessions']} sesiones abiertas",
-            "detail": "Cerrá las que no reconozcas: cada una puede operar tu cuenta.",
-        })
+        recommendations.append(
+            {
+                "key": "review_sessions",
+                "title": f"Revisá tus {status_payload['active_sessions']} sesiones abiertas",
+                "detail": "Cerrá las que no reconozcas: cada una puede operar tu cuenta.",
+            }
+        )
     status_payload["recommendations"] = recommendations
     return status_payload
 
@@ -1429,7 +1508,10 @@ async def revoke_device(
 
     device.is_trusted = False
     await db.commit()
-    return {"message": "El dispositivo ya no es de confianza", "device_id": str(device_id)}
+    return {
+        "message": "El dispositivo ya no es de confianza",
+        "device_id": str(device_id),
+    }
 
 
 @router.post("/me/delete-account")
@@ -1462,14 +1544,17 @@ logger = logging.getLogger(__name__)
 class Enable2FARequest(BaseModel):
     user_id: str
 
+
 class Verify2FARequest(BaseModel):
     user_id: str
     secret: str
     totp_code: str
 
+
 class Disable2FARequest(BaseModel):
     user_id: str
     password: str
+
 
 @router.post("/2fa/enable")
 async def enable_2fa(
@@ -1479,7 +1564,7 @@ async def enable_2fa(
     """Generate 2FA secret and QR code."""
     if not pyotp:
         raise HTTPException(status_code=501, detail="2FA not available")
-    
+
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
     provisioning_uri = totp.provisioning_uri(name=req.user_id, issuer_name="SellIA")
@@ -1499,6 +1584,7 @@ async def enable_2fa(
         "message": "Scan QR code with authenticator app",
     }
 
+
 @router.post("/2fa/verify")
 async def verify_2fa(
     request: Verify2FARequest,
@@ -1507,18 +1593,14 @@ async def verify_2fa(
     """Verify 2FA code and enable 2FA for user."""
     if not pyotp:
         raise HTTPException(status_code=501, detail="2FA not available")
-    
+
     try:
         totp = pyotp.TOTP(request.secret)
         if not totp.verify(request.totp_code, valid_window=1):
             raise HTTPException(status_code=400, detail="Invalid 2FA code")
 
-        await db.execute(
-            select(User).where(User.id == request.user_id)
-        )
-        result = await db.execute(
-            select(User).where(User.id == request.user_id)
-        )
+        await db.execute(select(User).where(User.id == request.user_id))
+        result = await db.execute(select(User).where(User.id == request.user_id))
         user = result.scalars().first()
         if user:
             user.totp_secret = request.secret
@@ -1531,6 +1613,7 @@ async def verify_2fa(
     except Exception as e:
         logger.exception("verify_2fa: error inesperado")
         raise HTTPException(status_code=500, detail=f"2FA verify failed: {e!s}")
+
 
 # NOTE: a second `POST /2fa/disable` used to live here, taking a raw
 # `user_id` + password in the body with no auth dependency at all (not even

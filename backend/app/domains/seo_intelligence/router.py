@@ -78,7 +78,11 @@ async def get_trending_keywords(
     """Get rising trend keywords (cached 15min)."""
     svc = KeywordService(db)
     keywords = await svc.get_trending_keywords(business_id)
-    return {"trending_keywords": [{"keyword": k.keyword, "trend": k.trend} for k in keywords]}
+    return {
+        "trending_keywords": [
+            {"keyword": k.keyword, "trend": k.trend} for k in keywords
+        ]
+    }
 
 
 # Page Optimization
@@ -144,7 +148,9 @@ async def analyze_competitor(
 ):
     """Analyze competitor."""
     svc = CompetitorAnalysisService(db)
-    return await svc.analyze_competitor(business_id, body.competitor_name, body.competitor_url)
+    return await svc.analyze_competitor(
+        business_id, body.competitor_name, body.competitor_url
+    )
 
 
 @router.get("/competitors", response_model=list[CompetitorAnalysisOut])

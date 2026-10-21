@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class ToneType(str, Enum):
     """10 core tone types"""
+
     FORMAL = "formal"
     CASUAL = "casual"
     FRIENDLY = "friendly"
@@ -46,6 +47,7 @@ class ToneType(str, Enum):
 
 class Market(str, Enum):
     """Market regions"""
+
     LATIN_AMERICA = "es_MX"  # Mexico
     SPAIN = "es_ES"
     ARGENTINA = "es_AR"
@@ -55,6 +57,7 @@ class Market(str, Enum):
 
 class Industry(str, Enum):
     """Industry types"""
+
     REAL_ESTATE = "real_estate"
     SAAS = "saas"
     ECOMMERCE = "ecommerce"
@@ -65,6 +68,7 @@ class Industry(str, Enum):
 @dataclass
 class ToneProfile:
     """Definition of a tone"""
+
     tone_type: ToneType
     market: Market
     industry: Industry
@@ -110,8 +114,12 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.0,
             vocabulary_markers=[
-                "le presentamos", "cordialmente", "con gusto",
-                "profesional", "confidencial", "propiedad premium"
+                "le presentamos",
+                "cordialmente",
+                "con gusto",
+                "profesional",
+                "confidencial",
+                "propiedad premium",
             ],
             forbidden_words=["hey", "dude", "lol", "jaja"],
             avg_sentence_length=16,
@@ -142,8 +150,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.3,
             vocabulary_markers=[
-                "hey", "cool", "awesome", "totally", "basically",
-                "super easy", "no problem", "what's up"
+                "hey",
+                "cool",
+                "awesome",
+                "totally",
+                "basically",
+                "super easy",
+                "no problem",
+                "what's up",
             ],
             forbidden_words=["endeavor", "facilitate", "pursuant"],
             avg_sentence_length=10,
@@ -176,8 +190,12 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.4,
             vocabulary_markers=[
-                "con cariño", "para ti", "querido/a", "amigo/a",
-                "te encantará", "seguro que te gusta"
+                "con cariño",
+                "para ti",
+                "querido/a",
+                "amigo/a",
+                "te encantará",
+                "seguro que te gusta",
             ],
             forbidden_words=["indiferente", "insignificante"],
             avg_sentence_length=11,
@@ -208,8 +226,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.05,
             vocabulary_markers=[
-                "streamline", "optimize", "leverage", "stakeholder",
-                "innovative", "scalable", "enterprise-grade"
+                "streamline",
+                "optimize",
+                "leverage",
+                "stakeholder",
+                "innovative",
+                "scalable",
+                "enterprise-grade",
             ],
             forbidden_words=["gonna", "kinda", "thingy"],
             avg_sentence_length=14,
@@ -240,8 +263,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.6,
             vocabulary_markers=[
-                "literally", "honestly", "plot twist", "ngl",
-                "same energy", "no cap", "periodt", "vibes"
+                "literally",
+                "honestly",
+                "plot twist",
+                "ngl",
+                "same energy",
+                "no cap",
+                "periodt",
+                "vibes",
             ],
             forbidden_words=["boring", "forgettable"],
             avg_sentence_length=9,
@@ -272,8 +301,13 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.2,
             vocabulary_markers=[
-                "let's learn", "here's how", "important to understand",
-                "key points", "breakdown", "pro tip", "best practice"
+                "let's learn",
+                "here's how",
+                "important to understand",
+                "key points",
+                "breakdown",
+                "pro tip",
+                "best practice",
             ],
             forbidden_words=["you wouldn't understand"],
             avg_sentence_length=13,
@@ -304,8 +338,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.3,
             vocabulary_markers=[
-                "immediately", "don't miss out", "limited time",
-                "act now", "today only", "last chance", "hurry"
+                "immediately",
+                "don't miss out",
+                "limited time",
+                "act now",
+                "today only",
+                "last chance",
+                "hurry",
             ],
             forbidden_words=["maybe", "eventually", "later"],
             avg_sentence_length=8,
@@ -336,8 +375,13 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.1,
             vocabulary_markers=[
-                "exquisito", "exclusivo", "elegancia", "prestigio",
-                "obra maestra", "incomparable", "distinguido"
+                "exquisito",
+                "exclusivo",
+                "elegancia",
+                "prestigio",
+                "obra maestra",
+                "incomparable",
+                "distinguido",
             ],
             forbidden_words=["barato", "ordinario"],
             avg_sentence_length=15,
@@ -368,8 +412,14 @@ class ToneEngine:
             humor_appropriate=True,
             emoji_density=0.4,
             vocabulary_markers=[
-                "save", "deal", "unbeatable", "value", "steal",
-                "bargain", "score", "bang for your buck"
+                "save",
+                "deal",
+                "unbeatable",
+                "value",
+                "steal",
+                "bargain",
+                "score",
+                "bang for your buck",
             ],
             forbidden_words=["premium pricing"],
             avg_sentence_length=10,
@@ -400,8 +450,12 @@ class ToneEngine:
             humor_appropriate=False,
             emoji_density=0.2,
             vocabulary_markers=[
-                "entiendo", "comprendo", "te acompañamos", "sentimos",
-                "estamos aquí para ti", "te escuchamos"
+                "entiendo",
+                "comprendo",
+                "te acompañamos",
+                "sentimos",
+                "estamos aquí para ti",
+                "te escuchamos",
             ],
             forbidden_words=["tu culpa"],
             avg_sentence_length=12,
@@ -564,7 +618,9 @@ class ToneEngine:
                 }
                 if word.lower() in formal_alternatives:
                     toned_words.append(formal_alternatives[word.lower()])
-                    modifications.append(f"'{word}' → '{formal_alternatives[word.lower()]}'")
+                    modifications.append(
+                        f"'{word}' → '{formal_alternatives[word.lower()]}'"
+                    )
                 else:
                     toned_words.append(word)
             else:
@@ -592,12 +648,14 @@ class ToneEngine:
         seen = set()
         for profile in self.TONE_REGISTRY.values():
             if profile.tone_type.value not in seen:
-                tones.append({
-                    "tone": profile.tone_type.value,
-                    "formality": profile.formality_level,
-                    "energy": profile.energy_level,
-                    "humor_appropriate": profile.humor_appropriate,
-                })
+                tones.append(
+                    {
+                        "tone": profile.tone_type.value,
+                        "formality": profile.formality_level,
+                        "energy": profile.energy_level,
+                        "humor_appropriate": profile.humor_appropriate,
+                    }
+                )
                 seen.add(profile.tone_type.value)
         return tones
 
@@ -620,11 +678,15 @@ class ToneEngine:
         text_lower = text.lower()
 
         # Vocabulary match
-        vocabulary_matches = sum(1 for marker in tone_profile.vocabulary_markers if marker in text_lower)
+        vocabulary_matches = sum(
+            1 for marker in tone_profile.vocabulary_markers if marker in text_lower
+        )
         score += min(vocabulary_matches * 0.05, 0.3)
 
         # Forbidden words
-        forbidden_count = sum(1 for word in tone_profile.forbidden_words if word in text_lower)
+        forbidden_count = sum(
+            1 for word in tone_profile.forbidden_words if word in text_lower
+        )
         score -= min(forbidden_count * 0.1, 0.2)
 
         # Sentence length check
@@ -639,7 +701,12 @@ class ToneEngine:
 
         # Emoji check
         emoji_count = sum(1 for char in text if ord(char) > 127)
-        if tone_profile.emoji_density > 0.3 and emoji_count > 0 or tone_profile.emoji_density < 0.1 and emoji_count == 0:
+        if (
+            tone_profile.emoji_density > 0.3
+            and emoji_count > 0
+            or tone_profile.emoji_density < 0.1
+            and emoji_count == 0
+        ):
             score += 0.1
 
         return min(max(score, 0.0), 1.0)

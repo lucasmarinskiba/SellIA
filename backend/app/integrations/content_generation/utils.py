@@ -70,7 +70,9 @@ def get_image_size_kb(image_bytes: bytes) -> float:
 async def download_url(url: str, timeout: int = 60) -> bytes | None:
     """Descarga contenido de una URL."""
     try:
-        async with aiohttp.ClientSession() as session, session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
+        async with aiohttp.ClientSession() as session, session.get(
+            url, timeout=aiohttp.ClientTimeout(total=timeout)
+        ) as resp:
             if resp.status == 200:
                 return await resp.read()
             return None
@@ -112,5 +114,5 @@ def sanitize_filename(name: str) -> str:
     """Sanitiza nombre de archivo."""
     invalid = '<>:"/\\|?*'
     for char in invalid:
-        name = name.replace(char, '_')
+        name = name.replace(char, "_")
     return name.strip()[:100]

@@ -22,6 +22,7 @@ from app.core.database import Base
 
 class PaymentMethod(str, Enum):
     """Payment methods."""
+
     MERCADOPAGO = "mercadopago"
     CREDIT_CARD = "credit_card"
     DEBIT_CARD = "debit_card"
@@ -32,6 +33,7 @@ class PaymentMethod(str, Enum):
 
 class TransactionStatus(str, Enum):
     """Transaction statuses."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     APPROVED = "approved"
@@ -46,6 +48,7 @@ class TransactionStatus(str, Enum):
 
 class RefundStatus(str, Enum):
     """Refund statuses."""
+
     REQUESTED = "requested"
     APPROVED = "approved"
     PROCESSING = "processing"
@@ -56,22 +59,44 @@ class RefundStatus(str, Enum):
 
 class Transaction(Base):
     """Payment transaction."""
+
     __tablename__ = "transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Customer & Order
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
-    order_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # FK to orders table
-    location_id = Column(UUID(as_uuid=True), nullable=True)  # Which location (if multi-location)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)  # Chat that generated this sale
+    customer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )  # FK to orders table
+    location_id = Column(
+        UUID(as_uuid=True), nullable=True
+    )  # Which location (if multi-location)
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )  # Chat that generated this sale
 
     # Payment details
     amount = Column(Numeric(12, 2), nullable=False)  # Transaction amount
     currency = Column(String(3), default="USD")  # ISO 4217 code (USD, ARS, BRL, etc)
     method = Column(String(50), nullable=False)  # PaymentMethod value
-    status = Column(String(20), default=TransactionStatus.PENDING)  # TransactionStatus value
+    status = Column(
+        String(20), default=TransactionStatus.PENDING
+    )  # TransactionStatus value
 
     # MercadoPago integration
     mercadopago_payment_id = Column(String(255), nullable=True, unique=True, index=True)
@@ -86,7 +111,9 @@ class Transaction(Base):
     # Metadata
     description = Column(String(500), nullable=True)
     reference_id = Column(String(255), nullable=True, index=True)  # Internal reference
-    transaction_metadata = Column(JSONB, nullable=True)  # Extra data (e.g., item breakdown, promo codes)
+    transaction_metadata = Column(
+        JSONB, nullable=True
+    )  # Extra data (e.g., item breakdown, promo codes)
 
     # Fees & Settlement
     gateway_fee = Column(Numeric(12, 2), default=0)  # Fees charged by payment gateway
@@ -113,11 +140,22 @@ class Transaction(Base):
 
 class Refund(Base):
     """Refund record."""
+
     __tablename__ = "refunds"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    transaction_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("transactions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Refund details
     amount = Column(Numeric(12, 2), nullable=False)  # Refund amount (full or partial)
@@ -143,10 +181,16 @@ class Refund(Base):
 
 class Settlement(Base):
     """Payment settlement (payout to bank account)."""
+
     __tablename__ = "settlements"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     location_id = Column(UUID(as_uuid=True), nullable=True)  # If settling per location
 
     # Settlement period
@@ -160,7 +204,9 @@ class Settlement(Base):
     net_amount = Column(Numeric(12, 2), nullable=False)  # Amount to pay out
 
     # Status
-    status = Column(String(20), default="pending")  # pending, processing, completed, failed
+    status = Column(
+        String(20), default="pending"
+    )  # pending, processing, completed, failed
 
     # Bank details
     bank_account_id = Column(UUID(as_uuid=True), nullable=True)
@@ -182,17 +228,29 @@ class Settlement(Base):
 
 class PaymentReconciliation(Base):
     """Reconciliation record (match orders ↔ payments)."""
+
     __tablename__ = "payment_reconciliations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Order & Transaction
     order_id = Column(UUID(as_uuid=True), nullable=True)
-    transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True)
+    transaction_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("transactions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Reconciliation result
-    status = Column(String(20), default="pending")  # pending, matched, mismatched, partial
+    status = Column(
+        String(20), default="pending"
+    )  # pending, matched, mismatched, partial
     matched = Column(Boolean, default=False)
     match_confidence = Column(Integer, default=0)  # 0-100 confidence score
 
@@ -202,7 +260,9 @@ class PaymentReconciliation(Base):
     discrepancy = Column(Numeric(12, 2), nullable=True)  # Difference if mismatched
 
     # Reconciliation logic
-    match_reason = Column(String(255), nullable=True)  # How matched (exact, fuzzy, manual)
+    match_reason = Column(
+        String(255), nullable=True
+    )  # How matched (exact, fuzzy, manual)
     notes = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
@@ -217,10 +277,17 @@ class PaymentReconciliation(Base):
 
 class PaymentMetrics(Base):
     """Payment metrics for analytics."""
+
     __tablename__ = "payment_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Volume
     total_transactions = Column(Integer, default=0)
@@ -246,6 +313,4 @@ class PaymentMetrics(Base):
 
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
-    __table_args__ = (
-        Index("idx_business_metrics", "business_id"),
-    )
+    __table_args__ = (Index("idx_business_metrics", "business_id"),)

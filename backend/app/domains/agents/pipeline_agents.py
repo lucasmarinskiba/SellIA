@@ -38,6 +38,7 @@ class PipelineStage(str, Enum):
 @dataclass
 class PipelineContext:
     """Contexto compartido entre todos los agentes del pipeline."""
+
     lead_id: str | None = None
     deal_id: str | None = None
     business_id: str | None = None
@@ -55,11 +56,13 @@ class PipelineContext:
     custom_data: dict[str, Any] = field(default_factory=dict)
 
     def advance_to(self, stage: PipelineStage) -> None:
-        self.stage_history.append({
-            "from": self.current_stage,
-            "to": stage,
-            "timestamp": datetime.now(UTC).isoformat(),
-        })
+        self.stage_history.append(
+            {
+                "from": self.current_stage,
+                "to": stage,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
         self.current_stage = stage
 
 
@@ -68,7 +71,6 @@ class PipelineContext:
 # ─────────────────────────────────────────────
 
 STAGE_PROMPTS: dict[PipelineStage, str] = {
-
     PipelineStage.PROSPECTING: """Eres el AGENTE CAPTADOR de SellIA. Tu única misión es identificar y capturar prospectos calificados para el embudo de ventas.
 
 ROL Y MENTALIDAD:
@@ -107,7 +109,6 @@ SEÑALES DE PASE AL SIGUIENTE AGENTE:
 ✓ Tiene interés real (hace preguntas de vuelta)
 ✓ Tiene autoridad de decisión o puede conectarte con quien decide
 """,
-
     PipelineStage.QUALIFYING: """Eres el AGENTE CALIFICADOR de SellIA. Usas el framework BANT + MEDDIC adaptado para determinar si este prospecto merece el tiempo del equipo de ventas.
 
 ROL Y MENTALIDAD:
@@ -158,7 +159,6 @@ REGLAS:
 - Registra el score exacto en el CRM con justificación.
 - Los prospectos fríos entran a secuencia de nurturing automatizada.
 """,
-
     PipelineStage.NURTURING: """Eres el AGENTE NUTRIDOR de SellIA. Tu misión es calentar prospectos fríos/tibios hasta que estén listos para comprar, sin presionar nunca.
 
 ROL Y MENTALIDAD:
@@ -203,7 +203,6 @@ REGLAS:
 - SIEMPRE personalizar con algo específico que compartieron.
 - Si no responde en 30 días continuos → mover a lista fría para contacto mensual.
 """,
-
     PipelineStage.DISCOVERY: """Eres el AGENTE DE DIAGNÓSTICO de SellIA. Usas SPIN Selling (Neil Rackham) + CustomerCentric Selling (Mike Bosworth) para descubrir el dolor real y construir el caso de negocio.
 
 ROL Y MENTALIDAD:
@@ -256,7 +255,6 @@ SEÑAL DE PASE A PROPUESTA:
 ✓ Conoces el dolor, el costo y el resultado deseado
 ✓ El prospecto ha expresado deseo de avanzar
 """,
-
     PipelineStage.PROPOSAL: """Eres el AGENTE DE PROPUESTA de SellIA. Usas el framework de Hormozi (Value Stack + Grand Slam Offer) para construir propuestas irresistibles.
 
 ROL Y MENTALIDAD:
@@ -308,7 +306,6 @@ REGLAS:
 - Si el precio es el único obstáculo, hay un problema de percepción de valor — reconstruir el stack.
 - Las propuestas deben ser visuales, simples y de máximo 2 páginas o una sola propuesta en pantalla.
 """,
-
     PipelineStage.OBJECTION: """Eres el AGENTE DE OBJECIONES de SellIA. Manejas objeciones usando el sistema combinado de Jordan Belfort (Looping) + Robert Cialdini (7 principios) + Chris Voss (empatía táctica).
 
 ROL Y MENTALIDAD:
@@ -358,7 +355,6 @@ REGLAS:
 - NUNCA concedas en precio sin obtener algo a cambio (compromiso, pago por adelantado, referidos).
 - Máximo 3 loops — si después de 3 respuestas la objeción persiste, hay un problema de calificación, no de manejo de objeciones.
 """,
-
     PipelineStage.CLOSING: """Eres el AGENTE CERRADOR de SellIA. Tu única misión es convertir la intención de compra en compromiso concreto. Usas los mejores cierres de Belfort, Ziglar, Cardone y Hormozi.
 
 ROL Y MENTALIDAD:
@@ -411,7 +407,6 @@ REGLAS:
 - NUNCA presiones emocionalmente o con falsedad.
 - Una vez que digan sí, PARA de vender. Cierra y pasa a onboarding.
 """,
-
     PipelineStage.ONBOARDING: """Eres el AGENTE DE ONBOARDING de SellIA. Tu misión es transformar un comprador en un cliente exitoso y leal desde las primeras 72 horas.
 
 ROL Y MENTALIDAD:
@@ -460,7 +455,6 @@ REGLAS:
 - La velocidad de respuesta en onboarding es el factor #1 de satisfacción.
 - Si un cliente tiene problemas y NO contacta, contáctalos tú PROACTIVAMENTE.
 """,
-
     PipelineStage.RETENTION: """Eres el AGENTE RETENTOR de SellIA. Tu misión es maximizar el LTV (Lifetime Value) de cada cliente mediante retención activa, upsells estratégicos y programa de referidos.
 
 ROL Y MENTALIDAD:
@@ -545,11 +539,17 @@ class PipelineAgentEngine:
             if context.pain_points:
                 parts.append(f"Dolores identificados: {', '.join(context.pain_points)}")
             if context.objections_raised:
-                parts.append(f"Objeciones previas: {', '.join(context.objections_raised)}")
+                parts.append(
+                    f"Objeciones previas: {', '.join(context.objections_raised)}"
+                )
             if context.qualification_score:
-                parts.append(f"Score de calificación: {context.qualification_score}/100")
+                parts.append(
+                    f"Score de calificación: {context.qualification_score}/100"
+                )
             if parts:
-                context_block = "\n\nCONTEXTO DEL PROSPECTO ACTUAL:\n" + "\n".join(f"- {p}" for p in parts)
+                context_block = "\n\nCONTEXTO DEL PROSPECTO ACTUAL:\n" + "\n".join(
+                    f"- {p}" for p in parts
+                )
 
         business_block = ""
         if business_context:
@@ -557,12 +557,15 @@ class PipelineAgentEngine:
 
         return base_prompt + context_block + business_block
 
-    def get_next_stage(self, current: PipelineStage, qualification_score: int = 0) -> PipelineStage:
+    def get_next_stage(
+        self, current: PipelineStage, qualification_score: int = 0
+    ) -> PipelineStage:
         """Determina la siguiente etapa lógica del pipeline."""
         progression = {
             PipelineStage.PROSPECTING: PipelineStage.QUALIFYING,
             PipelineStage.QUALIFYING: (
-                PipelineStage.DISCOVERY if qualification_score >= 70
+                PipelineStage.DISCOVERY
+                if qualification_score >= 70
                 else PipelineStage.NURTURING
             ),
             PipelineStage.NURTURING: PipelineStage.DISCOVERY,

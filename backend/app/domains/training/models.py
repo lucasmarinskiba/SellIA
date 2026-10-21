@@ -26,33 +26,63 @@ from app.core.database import Base
 
 class TrainingScenario(Base):
     """A predefined training scenario with customer persona and objective."""
+
     __tablename__ = "training_scenarios"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    difficulty = Column(String(20), nullable=False, default="medium")  # easy, medium, hard, expert
-    customer_persona = Column(JSONB, default=dict)  # personality, objections, budget, urgency
-    objective = Column(String(100), nullable=False, default="close_sale")  # close_sale, set_appointment, gather_info, handle_complaint
+    difficulty = Column(
+        String(20), nullable=False, default="medium"
+    )  # easy, medium, hard, expert
+    customer_persona = Column(
+        JSONB, default=dict
+    )  # personality, objections, budget, urgency
+    objective = Column(
+        String(100), nullable=False, default="close_sale"
+    )  # close_sale, set_appointment, gather_info, handle_complaint
     success_criteria = Column(JSONB, default=dict)
-    agent_type = Column(String(50), nullable=False, default="general")  # which agent to test
+    agent_type = Column(
+        String(50), nullable=False, default="general"
+    )  # which agent to test
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
-    runs = relationship("TrainingRun", back_populates="scenario", cascade="all, delete-orphan")
+    runs = relationship(
+        "TrainingRun", back_populates="scenario", cascade="all, delete-orphan"
+    )
 
 
 class TrainingRun(Base):
     """A single execution of a simulation scenario."""
+
     __tablename__ = "training_runs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    scenario_id = Column(UUID(as_uuid=True), ForeignKey("training_scenarios.id", ondelete="CASCADE"), nullable=False, index=True)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agent_configs.id", ondelete="SET NULL"), nullable=True)
-    status = Column(String(20), nullable=False, default="running")  # running, completed, failed
-    messages = Column(JSONB, default=list)  # conversation log [{role, content, turn, timestamp}, ...]
+    scenario_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("training_scenarios.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    agent_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("agent_configs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    status = Column(
+        String(20), nullable=False, default="running"
+    )  # running, completed, failed
+    messages = Column(
+        JSONB, default=list
+    )  # conversation log [{role, content, turn, timestamp}, ...]
     score = Column(Integer, nullable=True)  # 0-100
     objective_achieved = Column(Boolean, nullable=True)
     time_to_close_seconds = Column(Integer, nullable=True)

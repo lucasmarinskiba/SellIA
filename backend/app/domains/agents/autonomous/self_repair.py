@@ -69,7 +69,9 @@ class SelfRepairEngine:
         self._active_faults: dict[str, FaultReport] = {}
         self._repair_history: list[FaultReport] = []
 
-    async def run_repair_cycle(self, business_id: uuid.UUID | None = None) -> dict[str, Any]:
+    async def run_repair_cycle(
+        self, business_id: uuid.UUID | None = None
+    ) -> dict[str, Any]:
         """Ejecuta un ciclo completo de diagnóstico y reparación."""
         logger.info("[SelfRepair] Iniciando ciclo de auto-reparación")
 
@@ -125,7 +127,9 @@ class SelfRepairEngine:
             ],
         }
 
-        logger.info(f"[SelfRepair] Ciclo: detectadas={len(detected)}, reparadas={len(repaired)}, escaladas={len(escalated)}")
+        logger.info(
+            f"[SelfRepair] Ciclo: detectadas={len(detected)}, reparadas={len(repaired)}, escaladas={len(escalated)}"
+        )
         return summary
 
     # ─────────────────────────────────────────────
@@ -142,6 +146,7 @@ class SelfRepairEngine:
                 WorkflowExecution,
                 WorkflowExecutionStatus,
             )
+
             threshold = datetime.now(UTC) - timedelta(
                 minutes=self.STUCK_WORKFLOW_THRESHOLD_MINUTES
             )
@@ -159,15 +164,19 @@ class SelfRepairEngine:
             stuck = result.scalars().all()
 
             for exe in stuck:
-                faults.append(FaultReport(
-                    fault_type=FaultType.WORKFLOW_STUCK,
-                    severity="medium",
-                    description=f"Workflow execution {exe.id} atascado por +{self.STUCK_WORKFLOW_THRESHOLD_MINUTES} min",
-                    affected_id=str(exe.id),
-                    business_id=str(exe.business_id) if exe.business_id else None,
-                ))
+                faults.append(
+                    FaultReport(
+                        fault_type=FaultType.WORKFLOW_STUCK,
+                        severity="medium",
+                        description=f"Workflow execution {exe.id} atascado por +{self.STUCK_WORKFLOW_THRESHOLD_MINUTES} min",
+                        affected_id=str(exe.id),
+                        business_id=str(exe.business_id) if exe.business_id else None,
+                    )
+                )
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando workflows atascados: {e}", exc_info=True)
+            logger.warning(
+                f"[SelfRepair] Error detectando workflows atascados: {e}", exc_info=True
+            )
         return faults
 
     async def _detect_orphaned_deals(
@@ -177,6 +186,7 @@ class SelfRepairEngine:
         faults = []
         try:
             from app.domains.crm.models import Deal
+
             threshold = datetime.now(UTC) - timedelta(
                 days=self.ORPHANED_DEAL_THRESHOLD_DAYS
             )
@@ -194,15 +204,19 @@ class SelfRepairEngine:
             orphaned = result.scalars().all()
 
             for deal in orphaned:
-                faults.append(FaultReport(
-                    fault_type=FaultType.DEAL_ORPHANED,
-                    severity="high",
-                    description=f"Deal '{deal.title}' sin actividad hace +{self.ORPHANED_DEAL_THRESHOLD_DAYS} días",
-                    affected_id=str(deal.id),
-                    business_id=str(deal.business_id) if deal.business_id else None,
-                ))
+                faults.append(
+                    FaultReport(
+                        fault_type=FaultType.DEAL_ORPHANED,
+                        severity="high",
+                        description=f"Deal '{deal.title}' sin actividad hace +{self.ORPHANED_DEAL_THRESHOLD_DAYS} días",
+                        affected_id=str(deal.id),
+                        business_id=str(deal.business_id) if deal.business_id else None,
+                    )
+                )
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando deals huérfanos: {e}", exc_info=True)
+            logger.warning(
+                f"[SelfRepair] Error detectando deals huérfanos: {e}", exc_info=True
+            )
         return faults
 
     async def _detect_stuck_conversations(
@@ -212,6 +226,7 @@ class SelfRepairEngine:
         faults = []
         try:
             from app.domains.channels.models import Conversation
+
             threshold = datetime.now(UTC) - timedelta(
                 hours=self.STUCK_CONVERSATION_THRESHOLD_HOURS
             )
@@ -230,15 +245,20 @@ class SelfRepairEngine:
             stuck = result.scalars().all()
 
             for conv in stuck:
-                faults.append(FaultReport(
-                    fault_type=FaultType.CONVERSATION_STUCK,
-                    severity="medium",
-                    description=f"Conversación sin actividad hace +{self.STUCK_CONVERSATION_THRESHOLD_HOURS}h",
-                    affected_id=str(conv.id),
-                    business_id=str(conv.business_id) if conv.business_id else None,
-                ))
+                faults.append(
+                    FaultReport(
+                        fault_type=FaultType.CONVERSATION_STUCK,
+                        severity="medium",
+                        description=f"Conversación sin actividad hace +{self.STUCK_CONVERSATION_THRESHOLD_HOURS}h",
+                        affected_id=str(conv.id),
+                        business_id=str(conv.business_id) if conv.business_id else None,
+                    )
+                )
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando conversaciones atascadas: {e}", exc_info=True)
+            logger.warning(
+                f"[SelfRepair] Error detectando conversaciones atascadas: {e}",
+                exc_info=True,
+            )
         return faults
 
     async def _detect_failed_sequences(
@@ -248,6 +268,7 @@ class SelfRepairEngine:
         faults = []
         try:
             from app.domains.automations.models import SequenceEmailLog
+
             threshold = datetime.now(UTC) - timedelta(hours=6)
 
             query = select(SequenceEmailLog).where(
@@ -260,14 +281,18 @@ class SelfRepairEngine:
             failed_logs = result.scalars().all()
 
             if len(failed_logs) > 5:
-                faults.append(FaultReport(
-                    fault_type=FaultType.SEQUENCE_FAILED,
-                    severity="high" if len(failed_logs) > 20 else "medium",
-                    description=f"{len(failed_logs)} envíos de secuencia fallaron en las últimas 6h",
-                    business_id=str(business_id) if business_id else None,
-                ))
+                faults.append(
+                    FaultReport(
+                        fault_type=FaultType.SEQUENCE_FAILED,
+                        severity="high" if len(failed_logs) > 20 else "medium",
+                        description=f"{len(failed_logs)} envíos de secuencia fallaron en las últimas 6h",
+                        business_id=str(business_id) if business_id else None,
+                    )
+                )
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando secuencias fallidas: {e}", exc_info=True)
+            logger.warning(
+                f"[SelfRepair] Error detectando secuencias fallidas: {e}", exc_info=True
+            )
         return faults
 
     async def _detect_channel_issues(
@@ -277,6 +302,7 @@ class SelfRepairEngine:
         faults = []
         try:
             from app.domains.channels.models import ChannelConnection
+
             query = select(ChannelConnection).where(
                 ChannelConnection.is_active == True,
                 ChannelConnection.status == "error",
@@ -288,15 +314,19 @@ class SelfRepairEngine:
             errored = result.scalars().all()
 
             for ch in errored:
-                faults.append(FaultReport(
-                    fault_type=FaultType.CHANNEL_DISCONNECTED,
-                    severity="high",
-                    description=f"Canal {ch.platform} en estado de error",
-                    affected_id=str(ch.id),
-                    business_id=str(ch.business_id) if ch.business_id else None,
-                ))
+                faults.append(
+                    FaultReport(
+                        fault_type=FaultType.CHANNEL_DISCONNECTED,
+                        severity="high",
+                        description=f"Canal {ch.platform} en estado de error",
+                        affected_id=str(ch.id),
+                        business_id=str(ch.business_id) if ch.business_id else None,
+                    )
+                )
         except Exception as e:
-            logger.warning(f"[SelfRepair] Error detectando problemas de canal: {e}", exc_info=True)
+            logger.warning(
+                f"[SelfRepair] Error detectando problemas de canal: {e}", exc_info=True
+            )
         return faults
 
     # ─────────────────────────────────────────────
@@ -326,13 +356,19 @@ class SelfRepairEngine:
             if success:
                 fault.status = RepairStatus.REPAIRED
                 fault.resolved_at = datetime.now(UTC)
-                fault.repair_log.append(f"Reparado exitosamente en intento #{fault.repair_attempts}")
-                logger.info(f"[SelfRepair] Falla {fault.fault_type} reparada: {fault.fault_id}")
+                fault.repair_log.append(
+                    f"Reparado exitosamente en intento #{fault.repair_attempts}"
+                )
+                logger.info(
+                    f"[SelfRepair] Falla {fault.fault_type} reparada: {fault.fault_id}"
+                )
                 return RepairStatus.REPAIRED
             else:
                 if fault.repair_attempts >= self.MAX_REPAIR_ATTEMPTS:
                     fault.status = RepairStatus.ESCALATED
-                    fault.repair_log.append(f"Escalado tras {fault.repair_attempts} intentos fallidos")
+                    fault.repair_log.append(
+                        f"Escalado tras {fault.repair_attempts} intentos fallidos"
+                    )
                     return RepairStatus.ESCALATED
                 fault.status = RepairStatus.FAILED
                 return RepairStatus.FAILED
@@ -349,6 +385,7 @@ class SelfRepairEngine:
                 WorkflowExecution,
                 WorkflowExecutionStatus,
             )
+
             await self.db.execute(
                 update(WorkflowExecution)
                 .where(WorkflowExecution.id == uuid.UUID(fault.affected_id))
@@ -370,6 +407,7 @@ class SelfRepairEngine:
         """Reactiva un deal huérfano con una alerta y seguimiento."""
         try:
             from app.domains.crm.models import Deal
+
             await self.db.execute(
                 update(Deal)
                 .where(Deal.id == uuid.UUID(fault.affected_id))
@@ -390,6 +428,7 @@ class SelfRepairEngine:
         """Envía mensaje de reactivación a conversación atascada."""
         try:
             from app.domains.channels.models import Conversation
+
             await self.db.execute(
                 update(Conversation)
                 .where(Conversation.id == uuid.UUID(fault.affected_id))
@@ -407,6 +446,7 @@ class SelfRepairEngine:
         """Reinicia los envíos fallidos de secuencias recientes."""
         try:
             from app.domains.automations.models import SequenceEmailLog
+
             threshold = datetime.now(UTC) - timedelta(hours=6)
 
             await self.db.execute(
@@ -434,6 +474,7 @@ class SelfRepairEngine:
         """Intenta reconectar un canal de comunicación desconectado."""
         try:
             from app.domains.channels.models import ChannelConnection
+
             await self.db.execute(
                 update(ChannelConnection)
                 .where(ChannelConnection.id == uuid.UUID(fault.affected_id))
@@ -471,7 +512,10 @@ class SelfRepairEngine:
             from app.domains.alerts.factory import alert_sent_recently, build_alert
 
             if await alert_sent_recently(
-                self.db, business_id, "self_repair_fault", self.FAULT_ALERT_REPEAT_AFTER,
+                self.db,
+                business_id,
+                "self_repair_fault",
+                self.FAULT_ALERT_REPEAT_AFTER,
                 dedupe_key=fault.fault_type,
             ):
                 return
@@ -488,7 +532,9 @@ class SelfRepairEngine:
             async with self.db.begin_nested():
                 self.db.add(alert)
             await self.db.commit()
-            logger.info(f"[SelfRepair] Alerta de falla enviada al dueño: {fault.fault_type}")
+            logger.info(
+                f"[SelfRepair] Alerta de falla enviada al dueño: {fault.fault_type}"
+            )
         except Exception:
             logger.exception("[SelfRepair] Error notificando falla")
 
@@ -497,10 +543,16 @@ class SelfRepairEngine:
 
     def get_repair_stats(self) -> dict[str, Any]:
         total = len(self._repair_history)
-        repaired = sum(1 for f in self._repair_history if f.status == RepairStatus.REPAIRED)
+        repaired = sum(
+            1 for f in self._repair_history if f.status == RepairStatus.REPAIRED
+        )
         return {
             "total_repairs": total,
             "success_rate": round(repaired / total * 100, 1) if total > 0 else 100,
             "active_faults": len(self._active_faults),
-            "last_repair": self._repair_history[-1].detected_at.isoformat() if self._repair_history else None,
+            "last_repair": (
+                self._repair_history[-1].detected_at.isoformat()
+                if self._repair_history
+                else None
+            ),
         }

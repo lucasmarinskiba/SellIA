@@ -117,29 +117,43 @@ class RedisCopyTradeStore:
             logger.error(f"copy-trade pending redis error: {e}")
             return []
 
-    async def approve(self, user_id: str, proposal_id: str, now: datetime | None = None) -> dict:
+    async def approve(
+        self, user_id: str, proposal_id: str, now: datetime | None = None
+    ) -> dict:
         try:
             p = await self._load(user_id, proposal_id)
             if p is None:
                 return {"ok": False, "reason": "Propuesta no encontrada."}
             if not await self.is_active(user_id):
-                return {"ok": False, "reason": "Usuario inactivo: no se puede aprobar sin presencia."}
+                return {
+                    "ok": False,
+                    "reason": "Usuario inactivo: no se puede aprobar sin presencia.",
+                }
             if p.is_expired(now):
                 p.status = ProposalStatus.EXPIRED
                 await self._save(user_id, p)
-                return {"ok": False, "reason": "Propuesta expirada; el mercado se movió."}
+                return {
+                    "ok": False,
+                    "reason": "Propuesta expirada; el mercado se movió.",
+                }
             if p.status != ProposalStatus.PENDING:
                 return {"ok": False, "reason": f"Propuesta ya {p.status.value}."}
             p.status = ProposalStatus.APPROVED
             p.decided_at = now or datetime.now(p.created_at.tzinfo)
             await self._save(user_id, p)
             # Invariante: NO se ejecuta la orden. Se devuelve el handoff al usuario.
-            return {"ok": True, "status": p.status.value, "handoff": p.execution_handoff()}
+            return {
+                "ok": True,
+                "status": p.status.value,
+                "handoff": p.execution_handoff(),
+            }
         except RedisError as e:
             logger.error(f"copy-trade approve redis error: {e}")
             return {"ok": False, "reason": _UNAVAILABLE}
 
-    async def reject(self, user_id: str, proposal_id: str, now: datetime | None = None) -> dict:
+    async def reject(
+        self, user_id: str, proposal_id: str, now: datetime | None = None
+    ) -> dict:
         try:
             p = await self._load(user_id, proposal_id)
             if p is None:

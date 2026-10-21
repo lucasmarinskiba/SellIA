@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class FacebookMarketplaceConnector(BaseChannelConnector):
     """Conector para Facebook Marketplace (Meta Commerce orders + mensajería)."""
+
     platform = "facebook_marketplace"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -30,12 +31,15 @@ class FacebookMarketplaceConnector(BaseChannelConnector):
         self.catalog_id = credentials.get("catalog_id")
         self.app_secret = credentials.get("app_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Send a message via the Page's Graph API (same transport as Messenger)."""
         if not self.page_access_token:
             return {"status": "error", "detail": "page_access_token no configurado"}
         try:
             import httpx
+
             url = f"https://graph.facebook.com/v18.0/{self.page_id}/messages"
             payload = {
                 "recipient": {"id": recipient_id},
@@ -48,7 +52,10 @@ class FacebookMarketplaceConnector(BaseChannelConnector):
                     json=payload,
                     timeout=10,
                 )
-                return {"status": "sent" if response.status_code == 200 else "error", "response": response.json()}
+                return {
+                    "status": "sent" if response.status_code == 200 else "error",
+                    "response": response.json(),
+                }
         except Exception as e:
             logger.exception("send_message: error inesperado")
             return {"status": "error", "detail": str(e)}
@@ -114,6 +121,7 @@ class FacebookMarketplaceConnector(BaseChannelConnector):
             return False
         try:
             import httpx
+
             url = f"https://graph.facebook.com/v18.0/{self.page_id}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(

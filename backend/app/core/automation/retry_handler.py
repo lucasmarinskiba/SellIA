@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class RetryPolicy(Enum):
     """Políticas de retry."""
+
     AGGRESSIVE = "aggressive"  # 5 retries, fast backoff
     DEFAULT = "default"  # 3 retries, normal backoff
     CONSERVATIVE = "conservative"  # 1 retry, long waits
@@ -128,6 +129,7 @@ class RetryHandler:
 
         # Add jitter (±10%)
         import random
+
         jitter = random.uniform(0.9, 1.1)
         return delay * jitter
 

@@ -1,4 +1,5 @@
 """Phase 3: Smart Channel Routing - Intelligent Message Delivery."""
+
 import uuid
 from datetime import UTC, datetime
 
@@ -11,7 +12,12 @@ from app.core.database import Base
 class ChannelAffinityModel(Base):
     __tablename__ = "channel_affinity_models"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
@@ -37,7 +43,7 @@ class ChannelAffinityModel(Base):
 
     # Optimal send windows (hours, 0-23)
     email_best_hour = Column(Integer, default=10)  # 10 AM
-    sms_best_hour = Column(Integer, default=14)    # 2 PM
+    sms_best_hour = Column(Integer, default=14)  # 2 PM
     whatsapp_best_hour = Column(Integer, default=20)  # 8 PM
     phone_best_hour = Column(Integer, default=15)  # 3 PM
 
@@ -56,15 +62,24 @@ class ChannelAffinityModel(Base):
 class MessageRouting(Base):
     __tablename__ = "message_routings"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     # No ForeignKey: there is no `customers` table. The id is supplied by the caller (a user, lead or
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     customer_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     message_template_id = Column(UUID(as_uuid=True), nullable=True)
 
     # Routing decision
-    routed_to_channel = Column(String(20), nullable=False)  # email, sms, whatsapp, phone, in_app
-    routed_reason = Column(String(100), nullable=True)  # "highest_affinity", "optimal_time", "preferred_channel"
+    routed_to_channel = Column(
+        String(20), nullable=False
+    )  # email, sms, whatsapp, phone, in_app
+    routed_reason = Column(
+        String(100), nullable=True
+    )  # "highest_affinity", "optimal_time", "preferred_channel"
     confidence_score = Column(Float, default=0)  # 0-1
 
     # Fallback channels if primary fails
@@ -85,7 +100,9 @@ class MessageRouting(Base):
 
     # Learning feedback
     response_time_seconds = Column(Integer, nullable=True)
-    feedback_positive = Column(Boolean, nullable=True)  # True = good, False = bad, None = neutral
+    feedback_positive = Column(
+        Boolean, nullable=True
+    )  # True = good, False = bad, None = neutral
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
@@ -94,8 +111,15 @@ class MessageRouting(Base):
 class ChannelPerformanceMetrics(Base):
     __tablename__ = "channel_performance_metrics"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    channel = Column(String(20), nullable=False, index=True)  # email, sms, whatsapp, phone, in_app
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    channel = Column(
+        String(20), nullable=False, index=True
+    )  # email, sms, whatsapp, phone, in_app
 
     # Aggregate metrics
     total_messages_sent = Column(Integer, default=0)

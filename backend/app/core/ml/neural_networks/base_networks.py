@@ -95,7 +95,9 @@ class TrainingMetrics:
 class NeuralNetworkBase(ABC):
     """Base class for neural networks in SellIA Brain."""
 
-    def __init__(self, config: NetworkConfig, training_config: TrainingConfig | None = None):
+    def __init__(
+        self, config: NetworkConfig, training_config: TrainingConfig | None = None
+    ):
         self.config = config
         self.training_config = training_config or TrainingConfig()
         self.weights: list[np.ndarray] = []
@@ -108,7 +110,11 @@ class NeuralNetworkBase(ABC):
 
     def _initialize_weights(self) -> None:
         """Initialize network weights using He initialization."""
-        layers = [self.config.input_size] + self.config.hidden_layers + [self.config.output_size]
+        layers = (
+            [self.config.input_size]
+            + self.config.hidden_layers
+            + [self.config.output_size]
+        )
 
         for i in range(len(layers) - 1):
             # He initialization for ReLU
@@ -131,7 +137,9 @@ class NeuralNetworkBase(ABC):
         else:  # LINEAR
             return x
 
-    def _activation_derivative(self, x: np.ndarray, activation: ActivationFunction) -> np.ndarray:
+    def _activation_derivative(
+        self, x: np.ndarray, activation: ActivationFunction
+    ) -> np.ndarray:
         """Compute activation function derivative."""
         if activation == ActivationFunction.RELU:
             return (x > 0).astype(float)
@@ -169,7 +177,9 @@ class NeuralNetworkBase(ABC):
 
         return activations[-1], activations[:-1]
 
-    def backward(self, X: np.ndarray, y: np.ndarray, predictions: np.ndarray) -> dict[str, np.ndarray]:
+    def backward(
+        self, X: np.ndarray, y: np.ndarray, predictions: np.ndarray
+    ) -> dict[str, np.ndarray]:
         """Backward pass through network.
 
         Args:
@@ -196,7 +206,11 @@ class NeuralNetworkBase(ABC):
         # Backpropagate through layers
         for i in range(len(self.weights) - 1, 0, -1):
             delta = np.dot(deltas[0], self.weights[i].T)
-            self.config.activation if i < len(self.weights) - 1 else self.config.output_activation
+            (
+                self.config.activation
+                if i < len(self.weights) - 1
+                else self.config.output_activation
+            )
             # Simple gradient approximation (not full backprop for efficiency)
             deltas.insert(0, delta * 0.1)
 
@@ -313,7 +327,9 @@ class SimpleFeedForwardNetwork(NeuralNetworkBase):
             self.training_history.append(metrics)
 
             if epoch % 10 == 0:
-                logger.info(f"Epoch {epoch}: Loss={train_loss:.6f}, Score={train_score:.6f}")
+                logger.info(
+                    f"Epoch {epoch}: Loss={train_loss:.6f}, Score={train_score:.6f}"
+                )
 
             # Early stopping
             if train_loss < best_val_loss:
@@ -322,7 +338,10 @@ class SimpleFeedForwardNetwork(NeuralNetworkBase):
             else:
                 patience_counter += 1
 
-            if self.training_config.early_stopping and patience_counter >= self.training_config.early_stopping_patience:
+            if (
+                self.training_config.early_stopping
+                and patience_counter >= self.training_config.early_stopping_patience
+            ):
                 logger.info(f"Early stopping at epoch {epoch}")
                 break
 

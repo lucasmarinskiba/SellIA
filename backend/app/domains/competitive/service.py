@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.competitive.models import CompetitiveBattlecard
 
 
-async def list_battlecards(db: AsyncSession, user_id: uuid.UUID) -> list[CompetitiveBattlecard]:
+async def list_battlecards(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[CompetitiveBattlecard]:
     result = await db.execute(
         select(CompetitiveBattlecard)
         .where(CompetitiveBattlecard.user_id == user_id)
@@ -19,7 +21,9 @@ async def list_battlecards(db: AsyncSession, user_id: uuid.UUID) -> list[Competi
     return result.scalars().all()
 
 
-async def get_battlecard(db: AsyncSession, battlecard_id: uuid.UUID, user_id: uuid.UUID) -> CompetitiveBattlecard | None:
+async def get_battlecard(
+    db: AsyncSession, battlecard_id: uuid.UUID, user_id: uuid.UUID
+) -> CompetitiveBattlecard | None:
     result = await db.execute(
         select(CompetitiveBattlecard).where(
             CompetitiveBattlecard.id == battlecard_id,
@@ -29,7 +33,9 @@ async def get_battlecard(db: AsyncSession, battlecard_id: uuid.UUID, user_id: uu
     return result.scalar_one_or_none()
 
 
-async def create_battlecard(db: AsyncSession, user_id: uuid.UUID, data: dict) -> CompetitiveBattlecard:
+async def create_battlecard(
+    db: AsyncSession, user_id: uuid.UUID, data: dict
+) -> CompetitiveBattlecard:
     battlecard = CompetitiveBattlecard(user_id=user_id, **data)
     db.add(battlecard)
     await db.commit()
@@ -37,7 +43,9 @@ async def create_battlecard(db: AsyncSession, user_id: uuid.UUID, data: dict) ->
     return battlecard
 
 
-async def update_battlecard(db: AsyncSession, battlecard: CompetitiveBattlecard, data: dict) -> CompetitiveBattlecard:
+async def update_battlecard(
+    db: AsyncSession, battlecard: CompetitiveBattlecard, data: dict
+) -> CompetitiveBattlecard:
     for field, value in data.items():
         if value is not None and hasattr(battlecard, field):
             setattr(battlecard, field, value)
@@ -46,15 +54,21 @@ async def update_battlecard(db: AsyncSession, battlecard: CompetitiveBattlecard,
     return battlecard
 
 
-async def delete_battlecard(db: AsyncSession, battlecard: CompetitiveBattlecard) -> None:
+async def delete_battlecard(
+    db: AsyncSession, battlecard: CompetitiveBattlecard
+) -> None:
     await db.delete(battlecard)
     await db.commit()
 
 
 async def get_comparison_data(battlecard: CompetitiveBattlecard) -> dict:
     """Return structured comparison data for a battlecard."""
-    our_score = len(battlecard.our_strengths or []) - len(battlecard.our_weaknesses or [])
-    their_score = len(battlecard.their_strengths or []) - len(battlecard.their_weaknesses or [])
+    our_score = len(battlecard.our_strengths or []) - len(
+        battlecard.our_weaknesses or []
+    )
+    their_score = len(battlecard.their_strengths or []) - len(
+        battlecard.their_weaknesses or []
+    )
 
     return {
         "competitor_name": battlecard.competitor_name,
@@ -70,7 +84,11 @@ async def get_comparison_data(battlecard: CompetitiveBattlecard) -> dict:
         "comparison_summary": {
             "our_net_score": our_score,
             "their_net_score": their_score,
-            "advantage": "us" if our_score > their_score else "them" if their_score > our_score else "tie",
+            "advantage": (
+                "us"
+                if our_score > their_score
+                else "them" if their_score > our_score else "tie"
+            ),
             "strength_gap": abs(our_score - their_score),
         },
     }

@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowTrigger(Enum):
     """Triggers para iniciar workflows."""
+
     SCHEDULE = "schedule"  # Cron-based
     EVENT = "event"  # Event-driven
     MANUAL = "manual"  # Manual trigger
@@ -52,6 +53,7 @@ class WorkflowTrigger(Enum):
 
 class WorkflowStatus(Enum):
     """Estado del workflow."""
+
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
@@ -61,6 +63,7 @@ class WorkflowStatus(Enum):
 @dataclass
 class WorkflowStep:
     """Un paso en el workflow."""
+
     id: str
     name: str
     action: str  # Job type (post_product, send_email, etc)
@@ -75,6 +78,7 @@ class WorkflowStep:
 @dataclass
 class WorkflowCondition:
     """Condición para ejecución condicional."""
+
     field: str
     operator: str  # eq, gt, lt, in, contains
     value: Any
@@ -84,6 +88,7 @@ class WorkflowCondition:
 @dataclass
 class Workflow:
     """Define un workflow completo."""
+
     id: str
     name: str
     description: str
@@ -313,12 +318,14 @@ class WorkflowExecutor:
         await self.automation_engine.job_queue.enqueue(job)
 
         # Track step
-        execution_result["steps_executed"].append({
-            "step_id": step.id,
-            "step_name": step.name,
-            "job_id": job.id,
-            "executed_at": utc_now().isoformat(),
-        })
+        execution_result["steps_executed"].append(
+            {
+                "step_id": step.id,
+                "step_name": step.name,
+                "job_id": job.id,
+                "executed_at": utc_now().isoformat(),
+            }
+        )
 
         # TODO: Wait for job completion (implement future/promise pattern)
 

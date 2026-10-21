@@ -41,7 +41,12 @@ async def route_event(
 
 @router.post("/resolve-conflicts")
 async def resolve_conflicts(
-    proposals: Annotated[list[dict[str, Any]], Body(description='[{"agent": str, "channel": str, "urgency": float}] for ONE customer, ONE day')],
+    proposals: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description='[{"agent": str, "channel": str, "urgency": float}] for ONE customer, ONE day'
+        ),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     max_per_day: Annotated[int, Query(ge=1)] = ConflictResolver.DEFAULT_MAX_PER_DAY,
 ):
@@ -56,7 +61,9 @@ async def resolve_conflicts_batch(
     max_per_day: Annotated[int, Query(ge=1)] = ConflictResolver.DEFAULT_MAX_PER_DAY,
 ):
     """Resolve conflicts across a batch of customers at once"""
-    return AIOrchestratorAgent.resolve_conflicts_batch(proposals_by_customer, max_per_day)
+    return AIOrchestratorAgent.resolve_conflicts_batch(
+        proposals_by_customer, max_per_day
+    )
 
 
 @router.post("/dashboard")
@@ -79,5 +86,8 @@ async def handle_event_with_conflict_check(
 ):
     """Route an event for one customer and check it against today's existing proposals"""
     return AIOrchestratorAgent.handle_event_with_conflict_check(
-        event_type, customer_id, existing_proposals_today=existing_proposals_today, max_per_day=max_per_day
+        event_type,
+        customer_id,
+        existing_proposals_today=existing_proposals_today,
+        max_per_day=max_per_day,
     )

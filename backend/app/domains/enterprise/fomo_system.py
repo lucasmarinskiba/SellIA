@@ -29,6 +29,7 @@ client_anthropic = Anthropic()
 
 class FOOMLevel(Enum):
     """FOMO intensity levels."""
+
     LOW = 1
     MEDIUM = 2
     HIGH = 3
@@ -38,6 +39,7 @@ class FOOMLevel(Enum):
 @dataclass
 class FOOMTrigger:
     """Single FOOM trigger with metadata."""
+
     type: str
     trigger: str
     psychology: str
@@ -60,41 +62,47 @@ class ScarcityEngine:
         # 1. Limited slots (real capacity)
         capacity = deal.get("remaining_slots", 5)
         if capacity <= 3:
-            triggers.append(FOOMTrigger(
-                type="limited_slots",
-                trigger=f"Only {capacity} implementation slots left in Q2",
-                psychology="Capacity scarcity makes access feel valuable",
-                urgency_level=9,
-                deployment=f"We can only onboard {capacity} more clients this quarter. After that, waitlist.",
-                channel="in_app",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="limited_slots",
+                    trigger=f"Only {capacity} implementation slots left in Q2",
+                    psychology="Capacity scarcity makes access feel valuable",
+                    urgency_level=9,
+                    deployment=f"We can only onboard {capacity} more clients this quarter. After that, waitlist.",
+                    channel="in_app",
+                    duration_minutes=1440,
+                )
+            )
 
         # 2. Pricing increase countdown
         days_until_increase = deal.get("days_to_price_increase", 0)
         if days_until_increase > 0 and days_until_increase <= 14:
-            triggers.append(FOOMTrigger(
-                type="price_increase",
-                trigger=f"Price increases in {days_until_increase} days",
-                psychology="Loss aversion: current price is temporary benefit",
-                urgency_level=9,
-                deployment=f"Current tier is ${deal.get('current_price', 5000)}/mo. Next tier up is ${deal.get('next_price', 7500)}/mo starting {days_until_increase} days from now.",
-                channel="in_app",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="price_increase",
+                    trigger=f"Price increases in {days_until_increase} days",
+                    psychology="Loss aversion: current price is temporary benefit",
+                    urgency_level=9,
+                    deployment=f"Current tier is ${deal.get('current_price', 5000)}/mo. Next tier up is ${deal.get('next_price', 7500)}/mo starting {days_until_increase} days from now.",
+                    channel="in_app",
+                    duration_minutes=1440,
+                )
+            )
 
         # 3. Feature rollback countdown
         beta_end = deal.get("beta_feature_days_left", 0)
         if beta_end > 0 and beta_end <= 7:
-            triggers.append(FOOMTrigger(
-                type="beta_feature_sunset",
-                trigger=f"Premium features at 50% off for {beta_end} more days",
-                psychology="Temporary discount makes offer feel scarce",
-                urgency_level=8,
-                deployment=f"We're sunsetting the 50% intro discount {beta_end} days from today. After that: full pricing.",
-                channel="in_app",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="beta_feature_sunset",
+                    trigger=f"Premium features at 50% off for {beta_end} more days",
+                    psychology="Temporary discount makes offer feel scarce",
+                    urgency_level=8,
+                    deployment=f"We're sunsetting the 50% intro discount {beta_end} days from today. After that: full pricing.",
+                    channel="in_app",
+                    duration_minutes=1440,
+                )
+            )
 
         return triggers
 
@@ -104,6 +112,7 @@ class ScarcityEngine:
         from app.domains.crm.models import (
             Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         )
+
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if deal:
             return getattr(deal, "remaining_slots", 10)
@@ -123,41 +132,47 @@ class SocialProofEngine:
         # 1. "X people bought this week"
         weekly_buyers = deal.get("customers_this_week", 0)
         if weekly_buyers > 0:
-            triggers.append(FOOMTrigger(
-                type="social_proof_activity",
-                trigger=f"{weekly_buyers} companies joined this week",
-                psychology="Social proof: 'If they're doing it, I should too'",
-                urgency_level=7,
-                deployment=f"{weekly_buyers} companies implemented this week. You don't want to be left behind.",
-                channel="social",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="social_proof_activity",
+                    trigger=f"{weekly_buyers} companies joined this week",
+                    psychology="Social proof: 'If they're doing it, I should too'",
+                    urgency_level=7,
+                    deployment=f"{weekly_buyers} companies implemented this week. You don't want to be left behind.",
+                    channel="social",
+                    duration_minutes=1440,
+                )
+            )
 
         # 2. Customer testimonials + results
         top_result = deal.get("top_customer_result", {})
         if top_result:
-            triggers.append(FOOMTrigger(
-                type="customer_success",
-                trigger=f"Customer saw {top_result.get('metric', '50%')} improvement",
-                psychology="Social proof + authority: real results from similar company",
-                urgency_level=8,
-                deployment=f"{top_result.get('company', 'Similar company')} improved {top_result.get('area', 'sales')} by {top_result.get('metric', '50%')} in {top_result.get('timeframe', '90 days')}.",
-                channel="social",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="customer_success",
+                    trigger=f"Customer saw {top_result.get('metric', '50%')} improvement",
+                    psychology="Social proof + authority: real results from similar company",
+                    urgency_level=8,
+                    deployment=f"{top_result.get('company', 'Similar company')} improved {top_result.get('area', 'sales')} by {top_result.get('metric', '50%')} in {top_result.get('timeframe', '90 days')}.",
+                    channel="social",
+                    duration_minutes=2880,
+                )
+            )
 
         # 3. Industry adoption rate
         adoption_rate = deal.get("industry_adoption_rate", 0)
         if adoption_rate > 30:
-            triggers.append(FOOMTrigger(
-                type="industry_adoption",
-                trigger=f"{adoption_rate}% of {deal.get('industry', 'your industry')} already using this",
-                psychology="Bandwagon effect + conformity",
-                urgency_level=7,
-                deployment=f"{adoption_rate}% of companies in your industry have adopted this. Are you staying competitive?",
-                channel="social",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="industry_adoption",
+                    trigger=f"{adoption_rate}% of {deal.get('industry', 'your industry')} already using this",
+                    psychology="Bandwagon effect + conformity",
+                    urgency_level=7,
+                    deployment=f"{adoption_rate}% of companies in your industry have adopted this. Are you staying competitive?",
+                    channel="social",
+                    duration_minutes=2880,
+                )
+            )
 
         return triggers
 
@@ -185,7 +200,9 @@ class CostOfDelayCalculator:
             "urgency_message": f"Every day you wait costs ${daily_cost:,.0f}. Every week: ${daily_cost * 7:,.0f}.",
         }
 
-    def generate_cost_of_delay_trigger(self, prospect_pain: dict[str, Any]) -> FOOMTrigger:
+    def generate_cost_of_delay_trigger(
+        self, prospect_pain: dict[str, Any]
+    ) -> FOOMTrigger:
         """Convert delay cost into FOOM trigger."""
         cost = self.calculate_delay_cost(prospect_pain)
 
@@ -206,48 +223,56 @@ class LossAversionEngine:
     def __init__(self, db):
         self.db = db
 
-    def generate_loss_aversion_triggers(self, deal: dict[str, Any]) -> list[FOOMTrigger]:
+    def generate_loss_aversion_triggers(
+        self, deal: dict[str, Any]
+    ) -> list[FOOMTrigger]:
         """Generate triggers based on what they'll LOSE."""
         triggers = []
 
         # 1. Competitor activity
         competitor_wins = deal.get("competitor_wins_this_month", 0)
         if competitor_wins > 0:
-            triggers.append(FOOMTrigger(
-                type="competitor_threat",
-                trigger=f"Competitors won {competitor_wins} deals this month",
-                psychology="Loss aversion: fear of losing market share",
-                urgency_level=9,
-                deployment=f"Your competitors are moving faster. {competitor_wins} similar companies already adopted this. You're losing ground every day.",
-                channel="in_app",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="competitor_threat",
+                    trigger=f"Competitors won {competitor_wins} deals this month",
+                    psychology="Loss aversion: fear of losing market share",
+                    urgency_level=9,
+                    deployment=f"Your competitors are moving faster. {competitor_wins} similar companies already adopted this. You're losing ground every day.",
+                    channel="in_app",
+                    duration_minutes=1440,
+                )
+            )
 
         # 2. Market share erosion
         market_share_risk = deal.get("market_share_at_risk_percent", 0)
         if market_share_risk > 5:
-            triggers.append(FOOMTrigger(
-                type="market_share_loss",
-                trigger=f"Risking {market_share_risk}% market share",
-                psychology="Loss aversion + status quo bias",
-                urgency_level=9,
-                deployment=f"Projections show you could lose {market_share_risk}% market share if you don't move now. Cost: ${deal.get('market_share_value', 1000000) * market_share_risk / 100:,.0f}.",
-                channel="in_app",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="market_share_loss",
+                    trigger=f"Risking {market_share_risk}% market share",
+                    psychology="Loss aversion + status quo bias",
+                    urgency_level=9,
+                    deployment=f"Projections show you could lose {market_share_risk}% market share if you don't move now. Cost: ${deal.get('market_share_value', 1000000) * market_share_risk / 100:,.0f}.",
+                    channel="in_app",
+                    duration_minutes=2880,
+                )
+            )
 
         # 3. Talent retention risk
         talent_churn_risk = deal.get("talent_churn_risk_percent", 0)
         if talent_churn_risk > 10:
-            triggers.append(FOOMTrigger(
-                type="talent_loss",
-                trigger=f"Risk of {talent_churn_risk}% team turnover",
-                psychology="Fear of losing key people",
-                urgency_level=8,
-                deployment=f"Top talent leaves when tools/processes are outdated. {talent_churn_risk}% churn risk = ${deal.get('churn_cost', 500000):,.0f} in replacement costs.",
-                channel="personal",
-                duration_minutes=1440,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="talent_loss",
+                    trigger=f"Risk of {talent_churn_risk}% team turnover",
+                    psychology="Fear of losing key people",
+                    urgency_level=8,
+                    deployment=f"Top talent leaves when tools/processes are outdated. {talent_churn_risk}% churn risk = ${deal.get('churn_cost', 500000):,.0f} in replacement costs.",
+                    channel="personal",
+                    duration_minutes=1440,
+                )
+            )
 
         return triggers
 
@@ -265,41 +290,47 @@ class AuthoritySignalsEngine:
         # 1. Expert endorsement
         expert_endorsement = deal.get("expert_endorsement", None)
         if expert_endorsement:
-            triggers.append(FOOMTrigger(
-                type="expert_endorsement",
-                trigger=f"Endorsed by {expert_endorsement['name']}",
-                psychology="Authority: if expert says it, it must be good",
-                urgency_level=7,
-                deployment=f"{expert_endorsement['name']} ({expert_endorsement['title']}) calls this a '{expert_endorsement['quote']}'",
-                channel="social",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="expert_endorsement",
+                    trigger=f"Endorsed by {expert_endorsement['name']}",
+                    psychology="Authority: if expert says it, it must be good",
+                    urgency_level=7,
+                    deployment=f"{expert_endorsement['name']} ({expert_endorsement['title']}) calls this a '{expert_endorsement['quote']}'",
+                    channel="social",
+                    duration_minutes=2880,
+                )
+            )
 
         # 2. Certifications/Awards
         awards = deal.get("awards", [])
         if awards:
-            triggers.append(FOOMTrigger(
-                type="awards",
-                trigger=f"{len(awards)} industry awards",
-                psychology="Third-party validation",
-                urgency_level=6,
-                deployment=f"Won: {', '.join([a['name'] for a in awards[:3]])}. Proven track record.",
-                channel="social",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="awards",
+                    trigger=f"{len(awards)} industry awards",
+                    psychology="Third-party validation",
+                    urgency_level=6,
+                    deployment=f"Won: {', '.join([a['name'] for a in awards[:3]])}. Proven track record.",
+                    channel="social",
+                    duration_minutes=2880,
+                )
+            )
 
         # 3. Enterprise customer count
         enterprise_customers = deal.get("enterprise_customer_count", 0)
         if enterprise_customers > 50:
-            triggers.append(FOOMTrigger(
-                type="enterprise_adoption",
-                trigger=f"Used by {enterprise_customers}+ Fortune 500 companies",
-                psychology="Authority: if Fortune 500 uses it, it's safe",
-                urgency_level=7,
-                deployment=f"Trusted by {enterprise_customers}+ enterprise customers. No implementation risk.",
-                channel="social",
-                duration_minutes=2880,
-            ))
+            triggers.append(
+                FOOMTrigger(
+                    type="enterprise_adoption",
+                    trigger=f"Used by {enterprise_customers}+ Fortune 500 companies",
+                    psychology="Authority: if Fortune 500 uses it, it's safe",
+                    urgency_level=7,
+                    deployment=f"Trusted by {enterprise_customers}+ enterprise customers. No implementation risk.",
+                    channel="social",
+                    duration_minutes=2880,
+                )
+            )
 
         return triggers
 
@@ -365,7 +396,9 @@ class FOOMContentGenerator:
     def __init__(self, db):
         self.db = db
 
-    def generate_social_post(self, trigger: FOOMTrigger, user_context: dict[str, Any]) -> str:
+    def generate_social_post(
+        self, trigger: FOOMTrigger, user_context: dict[str, Any]
+    ) -> str:
         """Generate social media post using trigger."""
         prompt = f"""Create a viral-worthy LinkedIn/Twitter post that creates FOOM about: {trigger.trigger}
 
@@ -412,7 +445,9 @@ Generate ONLY subject line."""
         )
         return response.content[0].text
 
-    def generate_video_script(self, trigger: FOOMTrigger, duration_seconds: int = 30) -> str:
+    def generate_video_script(
+        self, trigger: FOOMTrigger, duration_seconds: int = 30
+    ) -> str:
         """Generate short video script."""
         prompt = f"""Create a {duration_seconds}-second video script that creates FOOM about: {trigger.trigger}
 
@@ -448,10 +483,15 @@ class CompetitiveIntelligenceTracker:
         from app.domains.crm.models import (
             Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         )
-        recent_deals = self.db.query(Deal).filter(
-            Deal.industry == industry,
-            Deal.created_at >= utc_now() - timedelta(days=days),
-        ).count()
+
+        recent_deals = (
+            self.db.query(Deal)
+            .filter(
+                Deal.industry == industry,
+                Deal.created_at >= utc_now() - timedelta(days=days),
+            )
+            .count()
+        )
         return recent_deals
 
     def get_market_share_trends(self, company: str, industry: str) -> dict[str, Any]:
@@ -469,14 +509,24 @@ class CompetitiveIntelligenceTracker:
         from app.domains.crm.models import (
             Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         )
-        total_companies = self.db.query(Deal).filter(
-            Deal.industry == industry,
-        ).count() or 1
 
-        adopters = self.db.query(Deal).filter(
-            Deal.industry == industry,
-            Deal.status == "won",
-        ).count()
+        total_companies = (
+            self.db.query(Deal)
+            .filter(
+                Deal.industry == industry,
+            )
+            .count()
+            or 1
+        )
+
+        adopters = (
+            self.db.query(Deal)
+            .filter(
+                Deal.industry == industry,
+                Deal.status == "won",
+            )
+            .count()
+        )
 
         adoption_rate = (adopters / total_companies) * 100
         return int(adoption_rate)
@@ -496,6 +546,7 @@ class RealTimeFOMODashboard:
         from app.domains.crm.models import (
             Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
         )
+
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if not deal:
             return {}
@@ -504,20 +555,34 @@ class RealTimeFOMODashboard:
             "id": deal.id,
             "remaining_slots": getattr(deal, "remaining_slots", 10),
             "days_to_price_increase": getattr(deal, "days_to_price_increase", 0),
-            "competitor_wins_this_month": self.loss_aversion_engine.db.query(Deal).count() % 3,
+            "competitor_wins_this_month": self.loss_aversion_engine.db.query(
+                Deal
+            ).count()
+            % 3,
         }
 
         scarcity = self.scarcity_engine.generate_scarcity_triggers(deal_dict)
-        social_proof = self.social_proof_engine.generate_social_proof_triggers(deal_dict)
-        loss_aversion = self.loss_aversion_engine.generate_loss_aversion_triggers(deal_dict)
+        social_proof = self.social_proof_engine.generate_social_proof_triggers(
+            deal_dict
+        )
+        loss_aversion = self.loss_aversion_engine.generate_loss_aversion_triggers(
+            deal_dict
+        )
 
         all_triggers = scarcity + social_proof + loss_aversion
-        max_urgency = max([t.urgency_level for t in all_triggers]) if all_triggers else 0
+        max_urgency = (
+            max([t.urgency_level for t in all_triggers]) if all_triggers else 0
+        )
 
-        foom_level = FOOMLevel.CRITICAL if max_urgency >= 9 else \
-                     FOOMLevel.HIGH if max_urgency >= 7 else \
-                     FOOMLevel.MEDIUM if max_urgency >= 5 else \
-                     FOOMLevel.LOW
+        foom_level = (
+            FOOMLevel.CRITICAL
+            if max_urgency >= 9
+            else (
+                FOOMLevel.HIGH
+                if max_urgency >= 7
+                else FOOMLevel.MEDIUM if max_urgency >= 5 else FOOMLevel.LOW
+            )
+        )
 
         return {
             "deal_id": deal_id,
@@ -550,9 +615,13 @@ class RealTimeFOMODashboard:
         close_rate = (closed_deals / total_deals * 100) if total_deals > 0 else 0
 
         # Platform FOOM: "X users just upgraded"
-        recent_upgrades = self.db.query(User).filter(
-            User.upgraded_at >= utc_now() - timedelta(days=7),
-        ).count()
+        recent_upgrades = (
+            self.db.query(User)
+            .filter(
+                User.upgraded_at >= utc_now() - timedelta(days=7),
+            )
+            .count()
+        )
 
         return {
             "platform_foom_level": "CRITICAL" if close_rate > 50 else "HIGH",

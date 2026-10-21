@@ -1,4 +1,5 @@
 """Phase X10: FOMO Generation Agent Service."""
+
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession

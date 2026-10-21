@@ -37,6 +37,7 @@ async def get_db():
 
 # ===== Scenarios =====
 
+
 @router.get("/scenarios", response_model=list[SimulationScenarioOut])
 async def list_scenarios(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -45,7 +46,9 @@ async def list_scenarios(
     difficulty: str | None = Query(None, pattern=r"^(easy|medium|hard|expert)$"),
 ):
     """List active simulation scenarios for a business."""
-    scenarios = await training_service.list_scenarios(db, business_id, difficulty=difficulty)
+    scenarios = await training_service.list_scenarios(
+        db, business_id, difficulty=difficulty
+    )
     return scenarios
 
 
@@ -88,6 +91,7 @@ async def delete_scenario(
 
 # ===== Simulations =====
 
+
 @router.post("/simulations", response_model=SimulationRunOut, status_code=202)
 async def start_simulation(
     req: SimulationStartRequest,
@@ -121,6 +125,7 @@ async def get_simulation_results(
 
 
 # ===== Leaderboard =====
+
 
 @router.get("/leaderboard", response_model=list[LeaderboardEntry])
 async def get_leaderboard(

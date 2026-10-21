@@ -28,7 +28,9 @@ async def _resolve_business(
 
     if business_id:
         result = await db.execute(
-            select(Business.id).where(Business.id == business_id, Business.user_id == user.id)
+            select(Business.id).where(
+                Business.id == business_id, Business.user_id == user.id
+            )
         )
         owned = result.scalar_one_or_none()
         if not owned:
@@ -117,6 +119,10 @@ async def platform_suggestions(
     """Platforms that fit this seller, with the reason each one is on the list."""
     resolved = await _resolve_business(db, current_user, business_id)
     if not resolved:
-        return {"connected": [], "suggestions": [], "unknowns": ["Todavía no creaste un negocio."]}
+        return {
+            "connected": [],
+            "suggestions": [],
+            "unknowns": ["Todavía no creaste un negocio."],
+        }
     profile = await service.load_profile(db, current_user.id, resolved)
     return await service.suggest_platforms(db, resolved, profile)

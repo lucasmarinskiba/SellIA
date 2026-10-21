@@ -12,7 +12,9 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # Derive a Fernet key from the app's secret key
 # In production, this should be a dedicated encryption key
-SECRET_KEY = os.environ.get("FERNET_SECRET", os.environ.get("SECRET_KEY", "sellia-default-secret-key-change-me"))
+SECRET_KEY = os.environ.get(
+    "FERNET_SECRET", os.environ.get("SECRET_KEY", "sellia-default-secret-key-change-me")
+)
 
 
 def _get_fernet() -> Fernet:

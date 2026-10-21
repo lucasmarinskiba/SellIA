@@ -5,6 +5,7 @@ Redis-based Email Scheduler
 - Retry queue
 - Task persistence
 """
+
 import json
 import logging
 import os
@@ -14,6 +15,7 @@ from enum import Enum
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # TASK ENUMS
@@ -25,12 +27,14 @@ class TaskType(str, Enum):
     PROGRESS_WORKFLOW = "progress_workflow"
     CHECK_NO_ENGAGEMENT = "check_no_engagement"
 
+
 class TaskStatus(str, Enum):
     QUEUED = "queued"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     RETRY = "retry"
+
 
 # ============================================================
 # REDIS SCHEDULER
@@ -39,10 +43,7 @@ class EmailScheduler:
     """Redis-based task scheduler for emails."""
 
     def __init__(self, redis_url: str | None = None):
-        self.redis_url = redis_url or os.getenv(
-            "REDIS_URL",
-            "redis://localhost:6379/0"
-        )
+        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.redis: redis.Redis | None = None
         self.queue_key = "sellia:queue"
         self.delayed_key = "sellia:delayed"
@@ -75,7 +76,7 @@ class EmailScheduler:
         subject: str,
         body: str,
         send_at: datetime | None = None,
-        priority: int = 5
+        priority: int = 5,
     ) -> str:
         """
         Queue email for sending.
@@ -91,7 +92,7 @@ class EmailScheduler:
             "priority": priority,
             "attempts": 0,
             "created_at": datetime.now().isoformat(),
-            "status": TaskStatus.QUEUED
+            "status": TaskStatus.QUEUED,
         }
 
         task_id = f"task_{workflow_execution_id}_{datetime.now().timestamp()}"
@@ -123,7 +124,7 @@ class EmailScheduler:
         self,
         workflow_id: int,
         lead_emails: list[dict],  # [{ id, email, subject, body }, ...]
-        send_at: datetime | None = None
+        send_at: datetime | None = None,
     ) -> str:
         """Queue batch of emails."""
         task = {
@@ -133,7 +134,7 @@ class EmailScheduler:
             "send_at": (send_at or datetime.now()).isoformat(),
             "count": len(lead_emails),
             "created_at": datetime.now().isoformat(),
-            "status": TaskStatus.QUEUED
+            "status": TaskStatus.QUEUED,
         }
 
         task_id = f"batch_{workflow_id}_{datetime.now().timestamp()}"
@@ -166,7 +167,7 @@ class EmailScheduler:
                 "delayed": 0,
                 "processing": 0,
                 "failed": 0,
-                "provider": "mock"
+                "provider": "mock",
             }
 
         try:
@@ -180,7 +181,7 @@ class EmailScheduler:
                 "delayed": delayed,
                 "processing": processing,
                 "failed": failed,
-                "provider": "redis"
+                "provider": "redis",
             }
 
         except Exception as e:
@@ -196,11 +197,7 @@ class EmailScheduler:
             now = datetime.now().timestamp()
 
             # Get all tasks ready to send
-            tasks = await self.redis.zrangebyscore(
-                self.delayed_key,
-                0,
-                now
-            )
+            tasks = await self.redis.zrangebyscore(self.delayed_key, 0, now)
 
             if not tasks:
                 return 0
@@ -276,18 +273,27 @@ class EmailScheduler:
             if retry and task["attempts"] < self.max_retries:
                 # Exponential backoff: 2^attempt minutes
                 backoff_minutes = 2 ** task["attempts"]
-                retry_at = (datetime.now() + timedelta(minutes=backoff_minutes)).timestamp()
-                await self.redis.zadd(self.delayed_key, {f"{task_id}:retry:{task['attempts']}": retry_at})
-                logger.warning(f"⚠️ Task failed, retry #{task['attempts']} in {backoff_minutes}min: {task_id}")
+                retry_at = (
+                    datetime.now() + timedelta(minutes=backoff_minutes)
+                ).timestamp()
+                await self.redis.zadd(
+                    self.delayed_key, {f"{task_id}:retry:{task['attempts']}": retry_at}
+                )
+                logger.warning(
+                    f"⚠️ Task failed, retry #{task['attempts']} in {backoff_minutes}min: {task_id}"
+                )
             else:
                 # Max retries exceeded → move to DLQ
                 await self.redis.lpush(self.dead_letter_key, task_json)
-                logger.error(f"❌ Task DLQ (max retries {self.max_retries}): {task_id} - {error}")
+                logger.error(
+                    f"❌ Task DLQ (max retries {self.max_retries}): {task_id} - {error}"
+                )
 
             await self.redis.lrem(self.processing_key, 1, task_json)
 
         except Exception:
             logger.exception("Mark failed error")
+
 
 # ============================================================
 # FACTORY

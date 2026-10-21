@@ -143,7 +143,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _welcome_sequence(to_email: str, context: dict[str, Any]) -> list[dict[str, Any]]:
+    def _welcome_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Welcome sequence: 3 emails en 5 días."""
 
         results = []
@@ -174,7 +176,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _cart_abandonment_sequence(to_email: str, context: dict[str, Any]) -> list[dict[str, Any]]:
+    def _cart_abandonment_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Cart abandonment: 3 emails."""
 
         results = []
@@ -194,7 +198,9 @@ class EmailService:
         return results
 
     @staticmethod
-    def _nurture_sequence(to_email: str, context: dict[str, Any]) -> list[dict[str, Any]]:
+    def _nurture_sequence(
+        to_email: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Nurture sequence: educación + valor."""
 
         results = []

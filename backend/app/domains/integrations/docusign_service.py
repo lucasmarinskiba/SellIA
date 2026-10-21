@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 class DocusignService:
     """Docusign eSignature integration."""
 
-    def __init__(self, account_id: str, api_key: str, base_uri: str = "https://demo.docusign.net"):
+    def __init__(
+        self, account_id: str, api_key: str, base_uri: str = "https://demo.docusign.net"
+    ):
         """
         Initialize Docusign service.
 
@@ -105,7 +107,9 @@ class DocusignService:
                 "recipient_email": recipient_email,
                 "signing_link": f"https://demo.docusign.net/signing/envelope/{datetime.now().timestamp()}",
                 "created_at": utc_now().isoformat(),
-                "deadline": (utc_now() + timedelta(days=signing_deadline_days)).isoformat(),
+                "deadline": (
+                    utc_now() + timedelta(days=signing_deadline_days)
+                ).isoformat(),
             }
 
         except Exception:

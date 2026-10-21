@@ -214,7 +214,9 @@ async def get_growth_summary():
             },
             "partnerships": {
                 "total_channels": len(partnerships),
-                "estimated_mau": sum(_parse_mau(p.get("expected_mau", 0)) for p in partnerships),
+                "estimated_mau": sum(
+                    _parse_mau(p.get("expected_mau", 0)) for p in partnerships
+                ),
             },
             "influencer_seeding": {
                 "estimated_mau": "2000-3000",

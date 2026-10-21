@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class AuthenticityDimension(str, Enum):
     """Authenticity check dimensions."""
+
     PERSONALITY = "personality"  # Consistent persona
     TONE = "tone"  # Real vs corporate
     STORIES = "stories"  # True narratives
@@ -30,12 +31,22 @@ class AuthenticityEngine:
 
     # Corporate/robotic phrases to avoid
     CORPORATE_PHRASES: ClassVar[list] = [
-        "synergize", "leverage", "optimize", "paradigm shift",
-        "circle back", "move the needle", "drill down",
-        "at the end of the day", "it goes without saying",
-        "in this day and age", "take it to the next level",
-        "achieve maximum efficiency", "disruptive innovation",
-        "reach out", "touch base", "deep dive",
+        "synergize",
+        "leverage",
+        "optimize",
+        "paradigm shift",
+        "circle back",
+        "move the needle",
+        "drill down",
+        "at the end of the day",
+        "it goes without saying",
+        "in this day and age",
+        "take it to the next level",
+        "achieve maximum efficiency",
+        "disruptive innovation",
+        "reach out",
+        "touch base",
+        "deep dive",
     ]
 
     # Authentic language patterns
@@ -55,7 +66,12 @@ class AuthenticityEngine:
         },
         "expert": {
             "traits": ["knowledgeable", "analytical", "evidence-based", "experienced"],
-            "phrases": ["research shows", "based on data", "I've seen", "the pattern is"],
+            "phrases": [
+                "research shows",
+                "based on data",
+                "I've seen",
+                "the pattern is",
+            ],
             "voice_level": "professional_approachable",
         },
         "friend": {
@@ -91,7 +107,10 @@ class AuthenticityEngine:
 
         # Detect personality archetype in current message
         archetype_scores = {}
-        for archetype, archetype_data in AuthenticityEngine.PERSONALITY_ARCHETYPES.items():
+        for (
+            archetype,
+            archetype_data,
+        ) in AuthenticityEngine.PERSONALITY_ARCHETYPES.items():
             traits = archetype_data["traits"]
             phrases = archetype_data["phrases"]
 
@@ -122,37 +141,51 @@ class AuthenticityEngine:
         # Check tone consistency
         tone_profile_current = AuthenticityEngine._analyze_tone(current_message)
         if historical_messages:
-            tone_profile_historical = AuthenticityEngine._analyze_tone(" ".join(historical_messages))
-            tone_differences = abs(tone_profile_current["formality"] - tone_profile_historical["formality"])
+            tone_profile_historical = AuthenticityEngine._analyze_tone(
+                " ".join(historical_messages)
+            )
+            tone_differences = abs(
+                tone_profile_current["formality"] - tone_profile_historical["formality"]
+            )
             if tone_differences > 30:
-                inconsistencies.append({
-                    "type": "tone_shift",
-                    "previous_formality": tone_profile_historical["formality"],
-                    "current_formality": tone_profile_current["formality"],
-                    "severity": "medium",
-                })
+                inconsistencies.append(
+                    {
+                        "type": "tone_shift",
+                        "previous_formality": tone_profile_historical["formality"],
+                        "current_formality": tone_profile_current["formality"],
+                        "severity": "medium",
+                    }
+                )
 
         # Check vocabulary consistency
         corporate_count_current = sum(
-            1 for phrase in AuthenticityEngine.CORPORATE_PHRASES
+            1
+            for phrase in AuthenticityEngine.CORPORATE_PHRASES
             if phrase.lower() in current_message.lower()
         )
 
         if historical_messages:
             corporate_count_historical = sum(
-                1 for message in historical_messages
+                1
+                for message in historical_messages
                 for phrase in AuthenticityEngine.CORPORATE_PHRASES
                 if phrase.lower() in message.lower()
             )
-            avg_corporate_historical = corporate_count_historical / len(historical_messages) if historical_messages else 0
+            avg_corporate_historical = (
+                corporate_count_historical / len(historical_messages)
+                if historical_messages
+                else 0
+            )
 
             if corporate_count_current > avg_corporate_historical * 2:
-                inconsistencies.append({
-                    "type": "corporate_language_increase",
-                    "previous_avg": avg_corporate_historical,
-                    "current": corporate_count_current,
-                    "severity": "low",
-                })
+                inconsistencies.append(
+                    {
+                        "type": "corporate_language_increase",
+                        "previous_avg": avg_corporate_historical,
+                        "current": corporate_count_current,
+                        "severity": "low",
+                    }
+                )
 
         personality_score = alignment
         if inconsistencies:
@@ -169,7 +202,8 @@ class AuthenticityEngine:
             "alignment_with_declared": alignment,
             "inconsistencies": inconsistencies,
             "recommendation": (
-                "Personality aligned" if personality_score >= 70
+                "Personality aligned"
+                if personality_score >= 70
                 else f"Address inconsistencies: {'; '.join(inc['type'] for inc in inconsistencies[:2])}"
             ),
         }
@@ -226,7 +260,8 @@ class AuthenticityEngine:
 
         # Count corporate phrases
         corporate_count = sum(
-            1 for phrase in AuthenticityEngine.CORPORATE_PHRASES
+            1
+            for phrase in AuthenticityEngine.CORPORATE_PHRASES
             if phrase.lower() in message.lower()
         )
 
@@ -256,18 +291,23 @@ class AuthenticityEngine:
 
         # List detected corporate phrases
         corporate_detected = [
-            phrase for phrase in AuthenticityEngine.CORPORATE_PHRASES
+            phrase
+            for phrase in AuthenticityEngine.CORPORATE_PHRASES
             if phrase.lower() in message.lower()
         ]
 
         improvement = ""
         if not tone_match:
             if expected_tone == "casual" and tone_profile["formality"] >= 40:
-                improvement = "Use more conversational language: 'yeah', 'honestly', 'totally'"
+                improvement = (
+                    "Use more conversational language: 'yeah', 'honestly', 'totally'"
+                )
             elif expected_tone == "warm" and tone_profile["warmth"] == 0:
                 improvement = "Add warmth: 'love', 'appreciate', 'care about'"
             elif corporate_detected:
-                improvement = f"Avoid corporate speak: {', '.join(corporate_detected[:3])}"
+                improvement = (
+                    f"Avoid corporate speak: {', '.join(corporate_detected[:3])}"
+                )
 
         return {
             "authentic": authenticity_score >= 60 and tone_match,
@@ -317,66 +357,89 @@ class AuthenticityEngine:
             "I'll never forget",
         ]
         if any(phrase in story_text for phrase in generic_phrases):
-            validation["red_flags"].append({
-                "type": "generic_opening",
-                "message": "Story starts with generic phrase",
-                "severity": "low",
-            })
+            validation["red_flags"].append(
+                {
+                    "type": "generic_opening",
+                    "message": "Story starts with generic phrase",
+                    "severity": "low",
+                }
+            )
             validation["confidence"] -= 10
 
         # Red flag 2: Perfect ending
-        perfect_ending_phrases = ["and we all lived happily", "and that's how we became friends"]
+        perfect_ending_phrases = [
+            "and we all lived happily",
+            "and that's how we became friends",
+        ]
         if any(phrase in story_text for phrase in perfect_ending_phrases):
-            validation["red_flags"].append({
-                "type": "too_perfect_ending",
-                "message": "Ending seems too neat",
-                "severity": "medium",
-            })
+            validation["red_flags"].append(
+                {
+                    "type": "too_perfect_ending",
+                    "message": "Ending seems too neat",
+                    "severity": "medium",
+                }
+            )
             validation["confidence"] -= 15
 
         # Red flag 3: Lots of dialogue (often fabricated)
         dialogue_density = story_text.count('"') / len(story_text.split())
         if dialogue_density > 0.1:
-            validation["red_flags"].append({
-                "type": "high_dialogue_density",
-                "message": "Very high dialogue-to-narrative ratio",
-                "severity": "low",
-            })
+            validation["red_flags"].append(
+                {
+                    "type": "high_dialogue_density",
+                    "message": "Very high dialogue-to-narrative ratio",
+                    "severity": "low",
+                }
+            )
 
         # Red flag 4: Embellishment indicators
-        exaggeration_words = ["literally", "absolutely", "insanely", "totally", "completely"]
+        exaggeration_words = [
+            "literally",
+            "absolutely",
+            "insanely",
+            "totally",
+            "completely",
+        ]
         exaggeration_count = sum(
             1 for word in exaggeration_words if f" {word} " in f" {story_text} "
         )
         if exaggeration_count > 3:
-            validation["red_flags"].append({
-                "type": "excessive_embellishment",
-                "message": f"Story uses {exaggeration_count} intensifiers",
-                "severity": "low",
-            })
+            validation["red_flags"].append(
+                {
+                    "type": "excessive_embellishment",
+                    "message": f"Story uses {exaggeration_count} intensifiers",
+                    "severity": "low",
+                }
+            )
             validation["confidence"] -= 5
 
         # Check 5: Timeline consistency
         if story_date:
             present_dates = story.get("mentioned_dates", [])
             if any(date > story_date for date in present_dates):
-                validation["red_flags"].append({
-                    "type": "timeline_inconsistency",
-                    "message": "Story mentions future events",
-                    "severity": "high",
-                })
+                validation["red_flags"].append(
+                    {
+                        "type": "timeline_inconsistency",
+                        "message": "Story mentions future events",
+                        "severity": "high",
+                    }
+                )
                 validation["likely_real"] = False
                 validation["confidence"] -= 30
 
         # Check 6: Repeated story (overuse)
         if story_database:
-            similar_stories = [s for s in story_database if s.get("theme") == story.get("theme")]
+            similar_stories = [
+                s for s in story_database if s.get("theme") == story.get("theme")
+            ]
             if len(similar_stories) > 5:
-                validation["red_flags"].append({
-                    "type": "overused_story",
-                    "message": f"Similar story told {len(similar_stories)} times",
-                    "severity": "medium",
-                })
+                validation["red_flags"].append(
+                    {
+                        "type": "overused_story",
+                        "message": f"Similar story told {len(similar_stories)} times",
+                        "severity": "medium",
+                    }
+                )
                 validation["confidence"] -= 10
 
         validation["confidence"] = max(0, min(100, validation["confidence"]))
@@ -409,10 +472,12 @@ class AuthenticityEngine:
         for admission_type, keywords in vulnerability_indicators.items():
             for keyword in keywords:
                 if keyword in message.lower():
-                    admissions.append({
-                        "type": admission_type,
-                        "keyword": keyword,
-                    })
+                    admissions.append(
+                        {
+                            "type": admission_type,
+                            "keyword": keyword,
+                        }
+                    )
 
         vulnerability_score = min(100, len(admissions) * 15)
 
@@ -459,10 +524,12 @@ class AuthenticityEngine:
         for indicator_type, keywords in growth_indicators.items():
             for keyword in keywords:
                 if keyword in message.lower():
-                    found_indicators.append({
-                        "type": indicator_type,
-                        "keyword": keyword,
-                    })
+                    found_indicators.append(
+                        {
+                            "type": indicator_type,
+                            "keyword": keyword,
+                        }
+                    )
 
         growth_score = min(100, len(found_indicators) * 18)
 
@@ -472,9 +539,13 @@ class AuthenticityEngine:
             "indicator_count": len(found_indicators),
             "indicators": found_indicators,
             "assessment": (
-                "Strong growth mindset" if growth_score >= 70
-                else "Limited growth mindset" if growth_score < 30
-                else "Moderate growth mindset"
+                "Strong growth mindset"
+                if growth_score >= 70
+                else (
+                    "Limited growth mindset"
+                    if growth_score < 30
+                    else "Moderate growth mindset"
+                )
             ),
         }
 
@@ -537,8 +608,8 @@ class AuthenticityEngine:
                 "story_validity": story_score,
             },
             "issues": (
-                personality_check.get("inconsistencies", []) +
-                ([d for d in tone_check.get("corporate_language_detected", [])][:2])
+                personality_check.get("inconsistencies", [])
+                + ([d for d in tone_check.get("corporate_language_detected", [])][:2])
             ),
             "recommendations": [
                 tone_check.get("improvement", ""),

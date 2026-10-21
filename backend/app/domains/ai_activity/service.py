@@ -57,19 +57,23 @@ async def log_ai_action(
         from .models import AIActionLog
 
         async with AsyncSessionLocal() as db:
-            db.add(AIActionLog(
-                user_id=user_id,
-                business_id=business_id,
-                actor_type=actor_type,
-                actor_id=actor_id,
-                action=action,
-                summary=summary[:2000],
-                payload=payload or {},
-                status=status,
-            ))
+            db.add(
+                AIActionLog(
+                    user_id=user_id,
+                    business_id=business_id,
+                    actor_type=actor_type,
+                    actor_id=actor_id,
+                    action=action,
+                    summary=summary[:2000],
+                    payload=payload or {},
+                    status=status,
+                )
+            )
             await db.commit()
     except Exception as e:  # noqa: BLE001
-        logger.warning("log_ai_action failed (%s/%s): %s", action, actor_id, str(e)[:200])
+        logger.warning(
+            "log_ai_action failed (%s/%s): %s", action, actor_id, str(e)[:200]
+        )
 
 
 async def list_recent_actions(
@@ -167,7 +171,9 @@ async def get_account_kpis(db: AsyncSession, user) -> dict[str, Any]:
     messages_ai = ai_msgs_result.scalar() or 0
 
     actions_result = await db.execute(
-        select(func.count()).select_from(AIActionLog).where(AIActionLog.user_id == user.id)
+        select(func.count())
+        .select_from(AIActionLog)
+        .where(AIActionLog.user_id == user.id)
     )
     ai_actions_total = actions_result.scalar() or 0
 
@@ -239,12 +245,19 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
         },
         "channels": [],
         "conversations": {
-            "total": 0, "inbound": 0, "answered": 0, "ai_answered": 0,
-            "response_rate": 0.0, "ai_share": 0.0,
+            "total": 0,
+            "inbound": 0,
+            "answered": 0,
+            "ai_answered": 0,
+            "response_rate": 0.0,
+            "ai_share": 0.0,
         },
         "revenue": {
-            "orders_total": 0, "orders_paid": 0,
-            "gross_amount": 0.0, "paid_amount": 0.0, "currency": None,
+            "orders_total": 0,
+            "orders_paid": 0,
+            "gross_amount": 0.0,
+            "paid_amount": 0.0,
+            "currency": None,
         },
         "generated_at": now.isoformat(),
     }
@@ -263,7 +276,9 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
         row = site_rows.first()
         if row:
             status, subdomain, verified = row
-            snapshot["verification"]["website_published"] = str(getattr(status, "value", status)).lower() == "published"
+            snapshot["verification"]["website_published"] = (
+                str(getattr(status, "value", status)).lower() == "published"
+            )
             snapshot["verification"]["subdomain"] = subdomain
             snapshot["verification"]["domain_verified"] = bool(verified)
     except Exception as e:  # noqa: BLE001
@@ -282,27 +297,39 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
                 Conversation.channel_connection_id == conn.id,
                 Conversation.is_active.is_(True),
             )
-            conv_count = (await db.execute(
-                select(func.count()).select_from(conv_ids_q.subquery())
-            )).scalar() or 0
-            ai_count = (await db.execute(
-                select(func.count()).select_from(Message).where(
-                    Message.conversation_id.in_(conv_ids_q),
-                    Message.direction == MessageDirection.OUTBOUND,
-                    Message.extra_data["generated_by"].astext == "ai",
+            conv_count = (
+                await db.execute(
+                    select(func.count()).select_from(conv_ids_q.subquery())
                 )
-            )).scalar() or 0
-            last_msg = (await db.execute(
-                select(func.max(Message.created_at)).where(Message.conversation_id.in_(conv_ids_q))
-            )).scalar()
-            snapshot["channels"].append({
-                "platform": getattr(conn.platform, "value", str(conn.platform)),
-                "name": conn.name,
-                "status": getattr(conn.status, "value", str(conn.status)),
-                "conversations": conv_count,
-                "ai_replies": ai_count,
-                "last_message_at": last_msg.isoformat() if last_msg else None,
-            })
+            ).scalar() or 0
+            ai_count = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(Message)
+                    .where(
+                        Message.conversation_id.in_(conv_ids_q),
+                        Message.direction == MessageDirection.OUTBOUND,
+                        Message.extra_data["generated_by"].astext == "ai",
+                    )
+                )
+            ).scalar() or 0
+            last_msg = (
+                await db.execute(
+                    select(func.max(Message.created_at)).where(
+                        Message.conversation_id.in_(conv_ids_q)
+                    )
+                )
+            ).scalar()
+            snapshot["channels"].append(
+                {
+                    "platform": getattr(conn.platform, "value", str(conn.platform)),
+                    "name": conn.name,
+                    "status": getattr(conn.status, "value", str(conn.status)),
+                    "conversations": conv_count,
+                    "ai_replies": ai_count,
+                    "last_message_at": last_msg.isoformat() if last_msg else None,
+                }
+            )
     except Exception as e:  # noqa: BLE001
         logger.warning("business snapshot: channels lookup failed: %s", str(e)[:200])
         await _safe_rollback(db)
@@ -313,26 +340,48 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
             Conversation.business_id.in_(business_ids),
             Conversation.is_active.is_(True),
         )
-        total = (await db.execute(select(func.count()).select_from(conv_ids_q.subquery()))).scalar() or 0
+        total = (
+            await db.execute(select(func.count()).select_from(conv_ids_q.subquery()))
+        ).scalar() or 0
 
-        inbound_convs = select(Message.conversation_id).where(
-            Message.conversation_id.in_(conv_ids_q),
-            Message.direction == MessageDirection.INBOUND,
-        ).distinct()
-        inbound = (await db.execute(select(func.count()).select_from(inbound_convs.subquery()))).scalar() or 0
+        inbound_convs = (
+            select(Message.conversation_id)
+            .where(
+                Message.conversation_id.in_(conv_ids_q),
+                Message.direction == MessageDirection.INBOUND,
+            )
+            .distinct()
+        )
+        inbound = (
+            await db.execute(select(func.count()).select_from(inbound_convs.subquery()))
+        ).scalar() or 0
 
-        answered_convs = select(Message.conversation_id).where(
-            Message.conversation_id.in_(inbound_convs),
-            Message.direction == MessageDirection.OUTBOUND,
-        ).distinct()
-        answered = (await db.execute(select(func.count()).select_from(answered_convs.subquery()))).scalar() or 0
+        answered_convs = (
+            select(Message.conversation_id)
+            .where(
+                Message.conversation_id.in_(inbound_convs),
+                Message.direction == MessageDirection.OUTBOUND,
+            )
+            .distinct()
+        )
+        answered = (
+            await db.execute(
+                select(func.count()).select_from(answered_convs.subquery())
+            )
+        ).scalar() or 0
 
-        ai_convs = select(Message.conversation_id).where(
-            Message.conversation_id.in_(inbound_convs),
-            Message.direction == MessageDirection.OUTBOUND,
-            Message.extra_data["generated_by"].astext == "ai",
-        ).distinct()
-        ai_answered = (await db.execute(select(func.count()).select_from(ai_convs.subquery()))).scalar() or 0
+        ai_convs = (
+            select(Message.conversation_id)
+            .where(
+                Message.conversation_id.in_(inbound_convs),
+                Message.direction == MessageDirection.OUTBOUND,
+                Message.extra_data["generated_by"].astext == "ai",
+            )
+            .distinct()
+        )
+        ai_answered = (
+            await db.execute(select(func.count()).select_from(ai_convs.subquery()))
+        ).scalar() or 0
 
         snapshot["conversations"] = {
             "total": total,
@@ -343,7 +392,9 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
             "ai_share": round(ai_answered / answered * 100, 1) if answered else 0.0,
         }
     except Exception as e:  # noqa: BLE001
-        logger.warning("business snapshot: conversations lookup failed: %s", str(e)[:200])
+        logger.warning(
+            "business snapshot: conversations lookup failed: %s", str(e)[:200]
+        )
         await _safe_rollback(db)
 
     # ── Revenue: real orders only (no projections, no "avg ticket" guesses) ──
@@ -358,9 +409,13 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
         orders_total, gross, currency = rows.one()
 
         paid_rows = await db.execute(
-            select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)).where(
+            select(
+                func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)
+            ).where(
                 Order.business_id.in_(business_ids),
-                Order.status.in_([OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED]),
+                Order.status.in_(
+                    [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+                ),
             )
         )
         orders_paid, paid_amount = paid_rows.one()
@@ -417,11 +472,15 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             "industry": ctx.industry,
         }
     except Exception as e:  # noqa: BLE001
-        logger.warning("get_account_summary: questionnaire lookup failed: %s", str(e)[:200])
+        logger.warning(
+            "get_account_summary: questionnaire lookup failed: %s", str(e)[:200]
+        )
         await _safe_rollback(db)
 
     total_result = await db.execute(
-        select(func.count()).select_from(AIActionLog).where(AIActionLog.user_id == user.id)
+        select(func.count())
+        .select_from(AIActionLog)
+        .where(AIActionLog.user_id == user.id)
     )
     total_actions = total_result.scalar() or 0
 
@@ -470,7 +529,9 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             setup["has_subdomain"] = subdomain is not None
             setup["subdomain"] = subdomain
     except Exception as e:  # noqa: BLE001
-        logger.warning("get_account_summary: setup/subdomain lookup failed: %s", str(e)[:200])
+        logger.warning(
+            "get_account_summary: setup/subdomain lookup failed: %s", str(e)[:200]
+        )
         await _safe_rollback(db)
 
     if questionnaire.get("has_context"):
@@ -485,7 +546,9 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             channels = ctx_result.scalar_one_or_none() or {}
             setup["has_channel_declared"] = any(bool(v) for v in channels.values())
         except Exception as e:  # noqa: BLE001
-            logger.warning("get_account_summary: channels lookup failed: %s", str(e)[:200])
+            logger.warning(
+                "get_account_summary: channels lookup failed: %s", str(e)[:200]
+            )
             await _safe_rollback(db)
 
     setup["setup_complete"] = (

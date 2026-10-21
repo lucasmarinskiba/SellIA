@@ -44,7 +44,9 @@ class CausalAnalysis(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     business_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    deal_outcome = Column(String(50), nullable=False)  # 'lost', 'stalled', 'objection_unresolved'
+    deal_outcome = Column(
+        String(50), nullable=False
+    )  # 'lost', 'stalled', 'objection_unresolved'
     surface_reason = Column(Text, nullable=True)
     root_cause = Column(Text, nullable=True)
     contributing_factors = Column(JSONB, default=list)

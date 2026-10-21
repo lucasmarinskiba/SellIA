@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PlatformAction(str, Enum):
     """Acciones en plataformas."""
+
     NAVIGATE = "navigate"  # Ir a URL
     FILL_FORM = "fill_form"  # Llenar formulario
     CLICK = "click"  # Click botón
@@ -60,7 +61,9 @@ class BrowserAgent:
                         self.browser = await p.webkit.launch()
             else:
                 # Usar ruta específica
-                self.browser = await p.chromium.launch(executable_path=self.browser_path)
+                self.browser = await p.chromium.launch(
+                    executable_path=self.browser_path
+                )
 
             self.page = await self.browser.new_page()
             logger.info("Browser started successfully")
@@ -95,7 +98,10 @@ class BrowserAgent:
             elif action_type == PlatformAction.SCREENSHOT.value.upper():
                 result = await self._screenshot(action["params"])
             else:
-                result = {"status": "error", "message": f"Unknown action: {action_type}"}
+                result = {
+                    "status": "error",
+                    "message": f"Unknown action: {action_type}",
+                }
 
             self.action_history.append({"action": action, "result": result})
             return result
@@ -183,7 +189,9 @@ class BrowserAgent:
             logger.exception("_screenshot: error inesperado")
             return {"status": "error", "error": str(e)}
 
-    async def run_automation_script(self, script: list[dict[str, Any]]) -> dict[str, Any]:
+    async def run_automation_script(
+        self, script: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Ejecuta secuencia de acciones (guión automático)."""
         logger.info(f"Running automation script with {len(script)} actions")
 
@@ -199,7 +207,11 @@ class BrowserAgent:
                 break
 
         return {
-            "status": "completed" if all(r.get("status") == "success" for r in results) else "partial",
+            "status": (
+                "completed"
+                if all(r.get("status") == "success" for r in results)
+                else "partial"
+            ),
             "actions_total": len(script),
             "actions_completed": len(results),
             "results": results,

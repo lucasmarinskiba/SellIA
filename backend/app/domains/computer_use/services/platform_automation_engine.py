@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class PlatformAutomationType(str, Enum):
     """Tipos de automation disponibles."""
+
     WHATSAPP_WEB = "whatsapp_web"
     FACEBOOK_MESSENGER = "messenger"
     INSTAGRAM_DM = "instagram_dm"
@@ -60,14 +61,18 @@ class PlatformAutomationEngine:
             steps = script.get_task_steps("respond_message", params)
 
             # Ejecutar steps en navegador
-            await self.browser_service.start(headless=False)  # No headless para user browser
+            await self.browser_service.start(
+                headless=False
+            )  # No headless para user browser
 
             success = await self._execute_steps(steps)
 
             await self.browser_service.stop()
 
             if success:
-                self.logger.info(f"Message sent to {recipient_identifier} via {platform.value}")
+                self.logger.info(
+                    f"Message sent to {recipient_identifier} via {platform.value}"
+                )
                 return True, f"sent_{platform.value}_{recipient_identifier}"
             else:
                 return False, None
@@ -104,7 +109,9 @@ class PlatformAutomationEngine:
             await self.browser_service.stop()
 
             if success:
-                self.logger.info(f"Comment response posted to {post_id} via {platform.value}")
+                self.logger.info(
+                    f"Comment response posted to {post_id} via {platform.value}"
+                )
                 return True, f"replied_{platform.value}_{post_id}"
 
             return False, None
@@ -125,18 +132,33 @@ class PlatformAutomationEngine:
         if platform == PlatformAutomationType.WHATSAPP_WEB:
             # recipient_identifier puede ser nombre o número
             if recipient_identifier.isdigit():
-                return {"phone_number": recipient_identifier, "message_text": response_text}
+                return {
+                    "phone_number": recipient_identifier,
+                    "message_text": response_text,
+                }
             else:
-                return {"customer_name": recipient_identifier, "response_text": response_text}
+                return {
+                    "customer_name": recipient_identifier,
+                    "response_text": response_text,
+                }
 
         elif platform == PlatformAutomationType.FACEBOOK_MESSENGER:
-            return {"customer_name": recipient_identifier, "response_text": response_text}
+            return {
+                "customer_name": recipient_identifier,
+                "response_text": response_text,
+            }
 
         elif platform == PlatformAutomationType.INSTAGRAM_DM:
-            return {"customer_username": recipient_identifier, "response_text": response_text}
+            return {
+                "customer_username": recipient_identifier,
+                "response_text": response_text,
+            }
 
         elif platform == PlatformAutomationType.TIKTOK_DM:
-            return {"creator_username": recipient_identifier, "message_text": response_text}
+            return {
+                "creator_username": recipient_identifier,
+                "message_text": response_text,
+            }
 
         else:
             return {"recipient": recipient_identifier, "message": response_text}
@@ -150,8 +172,8 @@ class PlatformAutomationEngine:
 
                 action = step.action
                 target = step.target
-                value = step.value if hasattr(step, 'value') else None
-                wait_ms = step.wait_ms if hasattr(step, 'wait_ms') else None
+                value = step.value if hasattr(step, "value") else None
+                wait_ms = step.wait_ms if hasattr(step, "wait_ms") else None
                 description = step.description
 
                 self.logger.debug(f"Step {i + 1}: {description}")
@@ -162,6 +184,7 @@ class PlatformAutomationEngine:
 
                 elif action == "wait":
                     import asyncio
+
                     await asyncio.sleep((wait_ms or 1000) / 1000.0)
 
                 elif action == "click":

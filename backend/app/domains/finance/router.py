@@ -28,7 +28,11 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/{business_id}/finance", tags=["Finance"])
 
 
-@router.post("/invoices", response_model=SalesInvoiceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/invoices",
+    response_model=SalesInvoiceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_invoice(
     business_id: UUID,
     inv_in: SalesInvoiceCreate,
@@ -60,7 +64,11 @@ async def list_pending_reminders(
     return await service.get_pending_reminders(business_id)
 
 
-@router.post("/ar-snapshot", response_model=AccountsReceivableSnapshotResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/ar-snapshot",
+    response_model=AccountsReceivableSnapshotResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def generate_ar_snapshot(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -83,6 +91,7 @@ async def get_tax_config(
 # ---------------------------------------------------------------------------
 # Finance Autopilot
 # ---------------------------------------------------------------------------
+
 
 @router.get("/autopilot/status", response_model=FinanceAutopilotStatusResponse)
 async def get_finance_autopilot_status(
@@ -118,8 +127,12 @@ async def toggle_finance_autopilot(
     await db.commit()
     await db.refresh(config)
     return {
-        'is_active': config.is_active,
-        'message': 'Autopilot financiero activado' if config.is_active else 'Autopilot financiero desactivado',
+        "is_active": config.is_active,
+        "message": (
+            "Autopilot financiero activado"
+            if config.is_active
+            else "Autopilot financiero desactivado"
+        ),
     }
 
 

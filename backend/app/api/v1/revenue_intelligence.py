@@ -74,9 +74,13 @@ async def forecast_deal_close(
                 "key_drivers": forecast.key_drivers,
                 "risk_factors": forecast.risk_factors,
                 "recommendation": (
-                    "PUSH TO CLOSE" if forecast.close_probability > 0.7
-                    else "NURTURE" if forecast.close_probability > 0.4
-                    else "REASSESS FIT"
+                    "PUSH TO CLOSE"
+                    if forecast.close_probability > 0.7
+                    else (
+                        "NURTURE"
+                        if forecast.close_probability > 0.4
+                        else "REASSESS FIT"
+                    )
                 ),
             },
             "timestamp": utc_now().isoformat(),
@@ -200,13 +204,15 @@ async def predict_churn(
                         "Business review call",
                     ]
                     if forecast.churn_probability > 0.7
-                    else [
-                        "Check-in call",
-                        "Feature training",
-                        "Usage optimization",
-                    ]
-                    if forecast.churn_probability > 0.4
-                    else ["Monitor engagement", "Quarterly business review"]
+                    else (
+                        [
+                            "Check-in call",
+                            "Feature training",
+                            "Usage optimization",
+                        ]
+                        if forecast.churn_probability > 0.4
+                        else ["Monitor engagement", "Quarterly business review"]
+                    )
                 ),
             },
             "timestamp": utc_now().isoformat(),
@@ -220,7 +226,9 @@ async def predict_churn(
 @router.post("/intelligence/score-expansion")
 async def score_expansion(
     customer_id: str = Query(...),
-    current_tier: str = Query("professional", regex="^(starter|professional|enterprise)$"),
+    current_tier: str = Query(
+        "professional", regex="^(starter|professional|enterprise)$"
+    ),
     monthly_active_users: int = Query(10, ge=1),
     feature_adoption_percent: float = Query(50, ge=0, le=100),
     annual_revenue_with_us: float = Query(..., gt=0),
@@ -260,9 +268,11 @@ async def score_expansion(
                 "approach": (
                     "IMMEDIATE UPSELL"
                     if score.expansion_probability > 0.8
-                    else "PITCH NEXT QUARTER"
-                    if score.expansion_probability > 0.6
-                    else "Monitor growth"
+                    else (
+                        "PITCH NEXT QUARTER"
+                        if score.expansion_probability > 0.6
+                        else "Monitor growth"
+                    )
                 ),
             },
             "timestamp": utc_now().isoformat(),

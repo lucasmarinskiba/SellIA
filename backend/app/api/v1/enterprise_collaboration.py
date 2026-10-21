@@ -41,7 +41,9 @@ async def _verify_deal_access(deal_id: str, user: User, db: AsyncSession) -> Dea
     if not deal:
         raise HTTPException(status_code=404, detail="Deal no encontrado")
     biz_result = await db.execute(
-        select(Business).where(Business.id == deal.business_id, Business.user_id == user.id)
+        select(Business).where(
+            Business.id == deal.business_id, Business.user_id == user.id
+        )
     )
     if not biz_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Deal no encontrado")
@@ -109,7 +111,9 @@ async def share_deal(
 ):
     """Share deal with team member."""
     await _verify_deal_access(deal_id, current_user, db)
-    share = await collab_manager.share_deal(db, deal_id, str(current_user.id), shared_with, permissions)
+    share = await collab_manager.share_deal(
+        db, deal_id, str(current_user.id), shared_with, permissions
+    )
 
     return {
         "status": "shared",
@@ -124,7 +128,10 @@ async def share_deal(
 async def create_approval(
     action_id: Annotated[str, Query()],
     action_type: Annotated[CollaborationActionEnum, Query()],
-    deal_id: Annotated[str, Query(description="Deal this action applies to, for ownership verification")],
+    deal_id: Annotated[
+        str,
+        Query(description="Deal this action applies to, for ownership verification"),
+    ],
     approvers: Annotated[list[str], Body()],
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -132,7 +139,12 @@ async def create_approval(
     """Create approval chain for action."""
     await _verify_deal_access(deal_id, current_user, db)
     approval = await collab_manager.request_approval(
-        db, action_id, action_type, str(current_user.id), current_user.full_name, approvers
+        db,
+        action_id,
+        action_type,
+        str(current_user.id),
+        current_user.full_name,
+        approvers,
     )
 
     return {
@@ -156,7 +168,9 @@ async def approve_action(
     on this action can decide it -- collab_manager.approve_action raises if
     current_user isn't one of the chain's approvers."""
     try:
-        approval = await collab_manager.approve_action(db, action_id, str(current_user.id), decision, rejection_reason)
+        approval = await collab_manager.approve_action(
+            db, action_id, str(current_user.id), decision, rejection_reason
+        )
     except ValueError:
         return {"status": "not_found"}
 
@@ -165,7 +179,9 @@ async def approve_action(
         "action_id": action_id,
         "decision": decision,
         "decided_by": str(current_user.id),
-        "decided_at": approval.decision_at.isoformat() if approval.decision_at else None,
+        "decided_at": (
+            approval.decision_at.isoformat() if approval.decision_at else None
+        ),
     }
 
 
@@ -177,7 +193,9 @@ async def get_pending_approvals(
 ):
     """Get pending approvals for user."""
     if user_id != str(current_user.id):
-        raise HTTPException(status_code=403, detail="No puede ver aprobaciones de otro usuario")
+        raise HTTPException(
+            status_code=403, detail="No puede ver aprobaciones de otro usuario"
+        )
     pending = await collab_manager.get_pending_approvals(db, user_id)
 
     return {
@@ -216,12 +234,13 @@ async def get_activity_feed(
                 "id": a["id"],
                 "user_id": a["user_id"],
                 "timestamp": a["timestamp"].isoformat(),
-                **({
-                    "content": a.get("content"),
-                    "mentions": a.get("mentions", [])
-                } if a["type"] == "comment" else {
-                    "shared_with": a.get("shared_with"),
-                }),
+                **(
+                    {"content": a.get("content"), "mentions": a.get("mentions", [])}
+                    if a["type"] == "comment"
+                    else {
+                        "shared_with": a.get("shared_with"),
+                    }
+                ),
             }
             for a in activity
         ],
@@ -251,21 +270,25 @@ async def websocket_deal(websocket: WebSocket, deal_id: str):
 
             if data.startswith("comment:"):
                 comment_content = data.replace("comment:", "")
-                await websocket.send_json({
-                    "type": "comment_added",
-                    "deal_id": deal_id,
-                    "content": comment_content,
-                    "timestamp": datetime.now().isoformat(),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "comment_added",
+                        "deal_id": deal_id,
+                        "content": comment_content,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
             elif data.startswith("approval:"):
                 decision = data.replace("approval:", "")
-                await websocket.send_json({
-                    "type": "approval_updated",
-                    "deal_id": deal_id,
-                    "decision": decision,
-                    "timestamp": datetime.now().isoformat(),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "approval_updated",
+                        "deal_id": deal_id,
+                        "decision": decision,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
     except Exception as e:
         logger.exception("websocket_deal: error inesperado")

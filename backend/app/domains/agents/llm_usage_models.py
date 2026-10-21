@@ -18,11 +18,22 @@ class LLMDailyUsage(Base):
     __tablename__ = "llm_daily_usage"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     usage_date = Column(Date, nullable=False)
     call_count = Column(Integer, default=0, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
-        UniqueConstraint("business_id", "usage_date", name="uq_llm_daily_usage_business_date"),
+        UniqueConstraint(
+            "business_id", "usage_date", name="uq_llm_daily_usage_business_date"
+        ),
     )

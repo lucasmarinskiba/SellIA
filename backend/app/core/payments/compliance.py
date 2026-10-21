@@ -30,12 +30,15 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 HIGH_VALUE_THRESHOLD = float(os.getenv("HIGH_VALUE_THRESHOLD", "5000.0"))
-SUSPICIOUS_ACTIVITY_THRESHOLD = float(os.getenv("SUSPICIOUS_ACTIVITY_THRESHOLD", "10000.0"))
+SUSPICIOUS_ACTIVITY_THRESHOLD = float(
+    os.getenv("SUSPICIOUS_ACTIVITY_THRESHOLD", "10000.0")
+)
 ENABLE_AML_CHECKS = os.getenv("ENABLE_AML_CHECKS", "true").lower() == "true"
 
 
 class ComplianceRisk(str, Enum):
     """Risk levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -100,7 +103,9 @@ class ComplianceChecker:
                 warnings.append("Invalid phone format")
 
             # Check country restrictions
-            if customer_country and ComplianceChecker._is_restricted_country(customer_country):
+            if customer_country and ComplianceChecker._is_restricted_country(
+                customer_country
+            ):
                 issues.append(f"Country {customer_country} restricted")
                 risk_level = ComplianceRisk.CRITICAL
 
@@ -114,7 +119,8 @@ class ComplianceChecker:
                 "risk_level": risk_level.value,
                 "issues": issues,
                 "warnings": warnings,
-                "requires_kyc": risk_level in [ComplianceRisk.HIGH, ComplianceRisk.CRITICAL],
+                "requires_kyc": risk_level
+                in [ComplianceRisk.HIGH, ComplianceRisk.CRITICAL],
             }
 
         except Exception as e:
@@ -287,7 +293,7 @@ class ComplianceChecker:
             logger.log(
                 logging.WARNING if severity == "warning" else logging.INFO,
                 f"Compliance event: {event_type} | Customer: {customer_email} | "
-                f"TX: {transaction_id} | Severity: {severity}"
+                f"TX: {transaction_id} | Severity: {severity}",
             )
 
             # TODO: Store event in compliance audit log database table
@@ -324,8 +330,15 @@ class ComplianceChecker:
     def _is_suspicious_name(name: str) -> bool:
         """Check for suspicious patterns in name."""
         suspicious_patterns = [
-            "test", "demo", "admin", "user", "123", "aaa",
-            "xxx", "123456", "password"
+            "test",
+            "demo",
+            "admin",
+            "user",
+            "123",
+            "aaa",
+            "xxx",
+            "123456",
+            "password",
         ]
         name_lower = name.lower()
         return any(pattern in name_lower for pattern in suspicious_patterns)
@@ -334,8 +347,12 @@ class ComplianceChecker:
     def _is_disposable_email(email: str) -> bool:
         """Check if email domain is disposable."""
         disposable_domains = [
-            "tempmail.com", "guerrillamail.com", "10minutemail.com",
-            "throwaway.email", "mailinator.com", "temp-mail.org"
+            "tempmail.com",
+            "guerrillamail.com",
+            "10minutemail.com",
+            "throwaway.email",
+            "mailinator.com",
+            "temp-mail.org",
         ]
         domain = email.split("@")[1].lower() if "@" in email else ""
         return domain in disposable_domains
@@ -382,32 +399,32 @@ class PciDssCompliance:
             {
                 "requirement": "1.1: Network segmentation",
                 "status": "pass",
-                "details": "Database isolated from public internet"
+                "details": "Database isolated from public internet",
             },
             {
                 "requirement": "2.1: Default credentials changed",
                 "status": "pass",
-                "details": "All default passwords changed"
+                "details": "All default passwords changed",
             },
             {
                 "requirement": "3.2: Encryption at rest",
                 "status": "pass",
-                "details": "Sensitive data encrypted in database"
+                "details": "Sensitive data encrypted in database",
             },
             {
                 "requirement": "4.1: Encryption in transit",
                 "status": "pass",
-                "details": "TLS 1.2+ for all connections"
+                "details": "TLS 1.2+ for all connections",
             },
             {
                 "requirement": "6.2: Patch management",
                 "status": "pass",
-                "details": "Regular security updates applied"
+                "details": "Regular security updates applied",
             },
             {
                 "requirement": "10.1: Audit logging",
                 "status": "pass",
-                "details": "All access logged and monitored"
+                "details": "All access logged and monitored",
             },
         ]
 
@@ -444,5 +461,5 @@ class PciDssCompliance:
         return {
             "compliant": len(issues) == 0,
             "issues": issues,
-            "recommendation": "Use Stripe payment elements or tokenization"
+            "recommendation": "Use Stripe payment elements or tokenization",
         }

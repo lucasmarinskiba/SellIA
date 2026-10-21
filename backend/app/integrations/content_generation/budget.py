@@ -14,6 +14,7 @@ from .cache import ContentCache
 @dataclass
 class BudgetPolicy:
     """Política de presupuesto para un negocio."""
+
     daily_budget_usd: float = 5.0
     daily_image_budget_usd: float = 3.0
     daily_video_budget_usd: float = 2.0
@@ -130,25 +131,45 @@ class BudgetController:
         # Check total daily budget
         total_spend = await cache.get_daily_spend(business_id, "total")
         if total_spend + estimated_cost > policy.daily_budget_usd:
-            return False, f"Presupuesto diario excedido: ${total_spend:.2f}/${policy.daily_budget_usd:.2f}"
+            return (
+                False,
+                f"Presupuesto diario excedido: ${total_spend:.2f}/${policy.daily_budget_usd:.2f}",
+            )
 
         # Check type-specific budget
         type_budget_map = {
-            ContentType.IMAGE: (policy.daily_image_budget_usd, policy.max_images_per_day),
-            ContentType.VIDEO: (policy.daily_video_budget_usd, policy.max_videos_per_day),
-            ContentType.AUDIO: (policy.daily_video_budget_usd, policy.max_videos_per_day),
+            ContentType.IMAGE: (
+                policy.daily_image_budget_usd,
+                policy.max_images_per_day,
+            ),
+            ContentType.VIDEO: (
+                policy.daily_video_budget_usd,
+                policy.max_videos_per_day,
+            ),
+            ContentType.AUDIO: (
+                policy.daily_video_budget_usd,
+                policy.max_videos_per_day,
+            ),
             ContentType.COPY: (policy.daily_copy_budget_usd, policy.max_copies_per_day),
         }
 
-        type_budget, type_max = type_budget_map.get(content_type, (policy.daily_budget_usd, 9999))
+        type_budget, type_max = type_budget_map.get(
+            content_type, (policy.daily_budget_usd, 9999)
+        )
         type_spend = await cache.get_daily_spend(business_id, content_type.value)
         type_count = await cache.get_daily_generations(business_id, content_type.value)
 
         if type_spend + estimated_cost > type_budget:
-            return False, f"Presupuesto de {content_type.value} excedido: ${type_spend:.2f}/${type_budget:.2f}"
+            return (
+                False,
+                f"Presupuesto de {content_type.value} excedido: ${type_spend:.2f}/${type_budget:.2f}",
+            )
 
         if type_count + 1 > type_max:
-            return False, f"Límite diario de {content_type.value} alcanzado: {type_count}/{type_max}"
+            return (
+                False,
+                f"Límite diario de {content_type.value} alcanzado: {type_count}/{type_max}",
+            )
 
         return True, None
 
@@ -198,10 +219,22 @@ class BudgetController:
         cache = self.cache
         return {
             "total_spend": await cache.get_daily_spend(business_id, "total"),
-            "image_spend": await cache.get_daily_spend(business_id, ContentType.IMAGE.value),
-            "video_spend": await cache.get_daily_spend(business_id, ContentType.VIDEO.value),
-            "copy_spend": await cache.get_daily_spend(business_id, ContentType.COPY.value),
-            "image_count": await cache.get_daily_generations(business_id, ContentType.IMAGE.value),
-            "video_count": await cache.get_daily_generations(business_id, ContentType.VIDEO.value),
-            "copy_count": await cache.get_daily_generations(business_id, ContentType.COPY.value),
+            "image_spend": await cache.get_daily_spend(
+                business_id, ContentType.IMAGE.value
+            ),
+            "video_spend": await cache.get_daily_spend(
+                business_id, ContentType.VIDEO.value
+            ),
+            "copy_spend": await cache.get_daily_spend(
+                business_id, ContentType.COPY.value
+            ),
+            "image_count": await cache.get_daily_generations(
+                business_id, ContentType.IMAGE.value
+            ),
+            "video_count": await cache.get_daily_generations(
+                business_id, ContentType.VIDEO.value
+            ),
+            "copy_count": await cache.get_daily_generations(
+                business_id, ContentType.COPY.value
+            ),
         }

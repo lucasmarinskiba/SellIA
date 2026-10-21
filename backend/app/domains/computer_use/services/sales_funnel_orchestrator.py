@@ -73,7 +73,9 @@ class SalesFunnelOrchestrator:
         Ejecuta pipeline completo: Find → Contact → Response → Close → Pay → Grow → Loyalty
         """
         try:
-            self.campaign_id = f"campaign_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            self.campaign_id = (
+                f"campaign_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            )
 
             self.logger.info(f"Starting pipeline: {self.campaign_id}")
 
@@ -185,7 +187,7 @@ class SalesFunnelOrchestrator:
         """Fase 1-2: Auto-responder a replies."""
         # En prod: webhook detecta respuestas
         # Mock: asumir 30% responden
-        responded = leads[:int(len(leads) * 0.3)]
+        responded = leads[: int(len(leads) * 0.3)]
 
         self.metrics["leads_responded"] = len(responded)
 
@@ -301,7 +303,8 @@ class SalesFunnelOrchestrator:
         return {
             "campaign_id": self.campaign_id,
             "metrics": self.metrics,
-            "roi": self.metrics.get("revenue", 0) / max(self.metrics.get("leads_imported", 1), 1),
+            "roi": self.metrics.get("revenue", 0)
+            / max(self.metrics.get("leads_imported", 1), 1),
         }
 
 

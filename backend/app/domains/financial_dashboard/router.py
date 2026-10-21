@@ -17,7 +17,9 @@ from app.domains.financial_dashboard.schemas import FinancialDashboardOut
 from app.domains.financial_dashboard.service import FinancialDashboardService
 from app.domains.users.models import User
 
-router = APIRouter(prefix="/{business_id}/financial-dashboard", tags=["Financial Dashboard"])
+router = APIRouter(
+    prefix="/{business_id}/financial-dashboard", tags=["Financial Dashboard"]
+)
 
 
 @router.get("", response_model=FinancialDashboardOut)

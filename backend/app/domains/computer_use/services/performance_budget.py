@@ -154,10 +154,17 @@ class PerformanceBudget:
             "alerts_triggered": len(self._alerts),
             "alerts_by_level": {
                 "info": sum(1 for a in self._alerts if a.level == AlertLevel.INFO),
-                "warning": sum(1 for a in self._alerts if a.level == AlertLevel.WARNING),
-                "critical": sum(1 for a in self._alerts if a.level == AlertLevel.CRITICAL),
+                "warning": sum(
+                    1 for a in self._alerts if a.level == AlertLevel.WARNING
+                ),
+                "critical": sum(
+                    1 for a in self._alerts if a.level == AlertLevel.CRITICAL
+                ),
             },
             "stale_count": self._stale_count,
             "total_retries": self._total_retries,
-            "within_budget": len([a for a in self._alerts if a.level == AlertLevel.CRITICAL]) == 0,
+            "within_budget": len(
+                [a for a in self._alerts if a.level == AlertLevel.CRITICAL]
+            )
+            == 0,
         }

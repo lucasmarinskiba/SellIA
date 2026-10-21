@@ -34,11 +34,11 @@ class MarkdownExportService:
         lines.append("")
 
         # Summary
-        result = session_data.get('result_data') or {}
-        if result.get('summary'):
+        result = session_data.get("result_data") or {}
+        if result.get("summary"):
             lines.append("## 📋 Resumen")
             lines.append("")
-            lines.append(result['summary'])
+            lines.append(result["summary"])
             lines.append("")
 
         # Steps
@@ -46,11 +46,11 @@ class MarkdownExportService:
         lines.append("")
 
         for step in steps:
-            step_num = step.get('step_number', 0)
-            action_type = step.get('action_type', 'unknown')
-            params = step.get('action_params') or {}
-            reason = step.get('reason', '')
-            result_text = step.get('execution_result', 'N/A')
+            step_num = step.get("step_number", 0)
+            action_type = step.get("action_type", "unknown")
+            params = step.get("action_params") or {}
+            reason = step.get("reason", "")
+            result_text = step.get("execution_result", "N/A")
 
             lines.append(f"### Paso #{step_num}: `{action_type}`")
             lines.append("")
@@ -62,7 +62,7 @@ class MarkdownExportService:
             if params:
                 lines.append("**Parámetros:**")
                 lines.append("```json")
-                lines.append(str(params).replace("'", '\"'))
+                lines.append(str(params).replace("'", '"'))
                 lines.append("```")
                 lines.append("")
 
@@ -70,7 +70,7 @@ class MarkdownExportService:
             lines.append("")
 
             # Annotations for this step
-            step_anns = [a for a in annotations if a.get('step_number') == step_num]
+            step_anns = [a for a in annotations if a.get("step_number") == step_num]
             if step_anns:
                 lines.append("**Anotaciones:**")
                 for ann in step_anns:
@@ -81,7 +81,9 @@ class MarkdownExportService:
             lines.append("")
 
         # Footer
-        lines.append(f"*Generado por SellIA Caja de Cristal — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
+        lines.append(
+            f"*Generado por SellIA Caja de Cristal — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*"
+        )
 
         return "\n".join(lines)
 
@@ -92,7 +94,7 @@ class MarkdownExportService:
         lines.append("|------|--------|------------|-----------|")
 
         for step in steps:
-            params = str(step.get('action_params', {})).replace('|', '\\|')[:50]
+            params = str(step.get("action_params", {})).replace("|", "\\|")[:50]
             lines.append(
                 f"| {step.get('step_number', 0)} | "
                 f"`{step.get('action_type', 'unknown')}` | "

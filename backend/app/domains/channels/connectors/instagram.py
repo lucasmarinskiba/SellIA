@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class InstagramConnector(BaseChannelConnector):
     """Conector para Instagram Direct Messages usando Meta Graph API."""
+
     platform = "instagram"
     BASE_URL = "https://graph.facebook.com/v18.0"
 
@@ -23,7 +24,9 @@ class InstagramConnector(BaseChannelConnector):
         self.instagram_account_id = credentials.get("instagram_account_id")
         self.page_id = credentials.get("page_id")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.api_token or not self.instagram_account_id:
             raise ValueError("Faltan credenciales de Instagram")
 

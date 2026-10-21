@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class JobStatus(Enum):
     """Job status states."""
+
     PENDING = "pending"
     QUEUED = "queued"
     RUNNING = "running"
@@ -27,6 +28,7 @@ class JobStatus(Enum):
 
 class JobPriority(Enum):
     """Job priority levels."""
+
     CRITICAL = 0
     HIGH = 1
     NORMAL = 2
@@ -37,6 +39,7 @@ class JobPriority(Enum):
 @dataclass
 class Job:
     """Async job definition."""
+
     id: str
     name: str
     task: Callable
@@ -70,7 +73,9 @@ class Job:
             "error": self.error,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "retries": self.retries,
             "execution_time_seconds": (
                 (self.completed_at - self.started_at).total_seconds()
@@ -128,7 +133,10 @@ class AsyncJobQueue:
         # Sort by priority (lower number = higher priority)
         self.queue.append(job)
         self.queue.sort(
-            key=lambda j: (j.scheduled_for > utc_now() if j.scheduled_for else False, j.priority.value)
+            key=lambda j: (
+                j.scheduled_for > utc_now() if j.scheduled_for else False,
+                j.priority.value,
+            )
         )
 
         self.stats["total_jobs"] += 1
@@ -147,8 +155,7 @@ class AsyncJobQueue:
             # Execute with timeout if specified
             if job.timeout_seconds:
                 job.result = await asyncio.wait_for(
-                    self._execute_task(job),
-                    timeout=job.timeout_seconds
+                    self._execute_task(job), timeout=job.timeout_seconds
                 )
             else:
                 job.result = await self._execute_task(job)
@@ -174,7 +181,9 @@ class AsyncJobQueue:
                 job.retries += 1
                 job.status = JobStatus.RETRYING
                 self.queue.append(job)
-                logger.warning(f"Job failed, retrying: {job.id} (attempt {job.retries})")
+                logger.warning(
+                    f"Job failed, retrying: {job.id} (attempt {job.retries})"
+                )
             else:
                 job.status = JobStatus.FAILED
                 self._handle_job_failure(job)
@@ -211,8 +220,7 @@ class AsyncJobQueue:
 
         # Create worker tasks
         workers = [
-            asyncio.create_task(self._worker_loop())
-            for _ in range(self.worker_count)
+            asyncio.create_task(self._worker_loop()) for _ in range(self.worker_count)
         ]
 
         try:
@@ -268,9 +276,7 @@ class AsyncJobQueue:
     def get_stats(self) -> dict[str, Any]:
         """Get queue statistics."""
         total = self.stats["completed"] + self.stats["failed"]
-        success_rate = (
-            self.stats["completed"] / total if total > 0 else 0
-        )
+        success_rate = self.stats["completed"] / total if total > 0 else 0
 
         avg_execution_time = 0.0
         if self.completed_jobs:
@@ -309,7 +315,8 @@ class AsyncJobQueue:
 
         # Clear completed jobs
         keys_to_remove = [
-            k for k, v in self.completed_jobs.items()
+            k
+            for k, v in self.completed_jobs.items()
             if v.completed_at and v.completed_at < cutoff
         ]
         for k in keys_to_remove:
@@ -318,7 +325,8 @@ class AsyncJobQueue:
 
         # Clear failed jobs
         keys_to_remove = [
-            k for k, v in self.failed_jobs.items()
+            k
+            for k, v in self.failed_jobs.items()
             if v.completed_at and v.completed_at < cutoff
         ]
         for k in keys_to_remove:

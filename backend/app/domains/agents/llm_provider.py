@@ -21,7 +21,10 @@ logger = get_logger(__name__)
 
 class LLMResponse:
     """Standardized response from any LLM provider."""
-    def __init__(self, content: str, model: str, provider: str, tokens_used: int | None = None):
+
+    def __init__(
+        self, content: str, model: str, provider: str, tokens_used: int | None = None
+    ):
         self.content = content
         self.model = model
         self.provider = provider
@@ -30,6 +33,7 @@ class LLMResponse:
 
 class BaseLLMProvider:
     """Abstract base for LLM providers."""
+
     provider_name: str = "base"
 
     async def generate(
@@ -56,6 +60,7 @@ class OpenAIProvider(BaseLLMProvider):
     ) -> LLMResponse | None:
         try:
             from langchain_openai import ChatOpenAI
+
             llm = ChatOpenAI(
                 model=model,
                 api_key=api_key,
@@ -75,6 +80,7 @@ class OpenAIProvider(BaseLLMProvider):
 
 class OllamaProvider(BaseLLMProvider):
     """Local Ollama provider. Free, runs on your own hardware."""
+
     provider_name = "ollama"
 
     async def generate(
@@ -86,6 +92,7 @@ class OllamaProvider(BaseLLMProvider):
         max_tokens: int = 1500,
     ) -> LLMResponse | None:
         from app.core.config import get_settings
+
         settings = get_settings()
         base_url = settings.OLLAMA_BASE_URL.rstrip("/")
 
@@ -132,7 +139,8 @@ class OllamaProvider(BaseLLMProvider):
                 content=content,
                 model=model,
                 provider=self.provider_name,
-                tokens_used=data.get("eval_count", 0) + data.get("prompt_eval_count", 0),
+                tokens_used=data.get("eval_count", 0)
+                + data.get("prompt_eval_count", 0),
             )
 
         except Exception:
@@ -142,6 +150,7 @@ class OllamaProvider(BaseLLMProvider):
 
 class KimiProvider(BaseLLMProvider):
     """Moonshot AI (Kimi) provider. Uses OpenAI-compatible API."""
+
     provider_name = "kimi"
 
     async def generate(
@@ -154,6 +163,7 @@ class KimiProvider(BaseLLMProvider):
     ) -> LLMResponse | None:
         try:
             from langchain_openai import ChatOpenAI
+
             llm = ChatOpenAI(
                 model=model,
                 api_key=api_key,
@@ -174,6 +184,7 @@ class KimiProvider(BaseLLMProvider):
 
 class GroqProvider(BaseLLMProvider):
     """Groq provider — free/ultra-fast Llama/Mixtral. OpenAI-compatible API."""
+
     provider_name = "groq"
 
     async def generate(
@@ -188,6 +199,7 @@ class GroqProvider(BaseLLMProvider):
             from langchain_openai import ChatOpenAI
 
             from app.core.config import get_settings
+
             base_url = get_settings().GROQ_BASE_URL.rstrip("/")
             llm = ChatOpenAI(
                 model=model,
@@ -220,6 +232,7 @@ class AnthropicProvider(BaseLLMProvider):
     ) -> LLMResponse | None:
         try:
             from langchain_anthropic import ChatAnthropic
+
             llm = ChatAnthropic(
                 model=model,
                 api_key=api_key,
@@ -239,6 +252,7 @@ class AnthropicProvider(BaseLLMProvider):
 
 class FallbackProvider(BaseLLMProvider):
     """Tries Ollama first (free/local), then Groq (free/fast), then Kimi, then OpenAI, then Anthropic."""
+
     provider_name = "fallback"
 
     def __init__(self):
@@ -262,15 +276,23 @@ class FallbackProvider(BaseLLMProvider):
     ) -> LLMResponse | None:
         # Try Ollama first (free, local)
         if ollama_available:
-            result = await self.ollama.generate(messages, "", model, temperature, max_tokens)
+            result = await self.ollama.generate(
+                messages, "", model, temperature, max_tokens
+            )
             if result:
                 return result
             logger.warning("Ollama failed, trying Groq fallback...")
 
         # Fallback to Groq (free, ultra-fast cloud)
         if groq_key:
-            groq_model = model if model.startswith(("llama", "mixtral")) else "llama-3.3-70b-versatile"
-            result = await self.groq.generate(messages, groq_key, groq_model, temperature, max_tokens)
+            groq_model = (
+                model
+                if model.startswith(("llama", "mixtral"))
+                else "llama-3.3-70b-versatile"
+            )
+            result = await self.groq.generate(
+                messages, groq_key, groq_model, temperature, max_tokens
+            )
             if result:
                 return result
             logger.warning("Groq failed, trying Kimi fallback...")
@@ -278,22 +300,30 @@ class FallbackProvider(BaseLLMProvider):
         # Fallback to Kimi (cheapest cloud provider)
         if kimi_key:
             kimi_model = model if not model.startswith("llama") else "kimi-k2-5"
-            result = await self.kimi.generate(messages, kimi_key, kimi_model, temperature, max_tokens)
+            result = await self.kimi.generate(
+                messages, kimi_key, kimi_model, temperature, max_tokens
+            )
             if result:
                 return result
             logger.warning("Kimi failed, trying OpenAI fallback...")
 
         # Fallback to OpenAI
         if openai_key:
-            openai_model = "gpt-4o-mini" if model.startswith(("kimi", "llama")) else model
-            result = await self.openai.generate(messages, openai_key, openai_model, temperature, max_tokens)
+            openai_model = (
+                "gpt-4o-mini" if model.startswith(("kimi", "llama")) else model
+            )
+            result = await self.openai.generate(
+                messages, openai_key, openai_model, temperature, max_tokens
+            )
             if result:
                 return result
             logger.warning("OpenAI failed, trying Anthropic fallback...")
 
         # Fallback to Anthropic
         if anthropic_key:
-            result = await self.anthropic.generate(messages, anthropic_key, temperature=temperature, max_tokens=max_tokens)
+            result = await self.anthropic.generate(
+                messages, anthropic_key, temperature=temperature, max_tokens=max_tokens
+            )
             if result:
                 return result
 
@@ -304,11 +334,15 @@ class FallbackProvider(BaseLLMProvider):
 async def _is_ollama_available() -> bool:
     """Check if Ollama server is reachable."""
     from app.core.config import get_settings
+
     settings = get_settings()
     base_url = settings.OLLAMA_BASE_URL.rstrip("/")
     try:
         import aiohttp
-        async with aiohttp.ClientSession() as session, session.get(f"{base_url}/api/tags", timeout=aiohttp.ClientTimeout(total=3)) as resp:
+
+        async with aiohttp.ClientSession() as session, session.get(
+            f"{base_url}/api/tags", timeout=aiohttp.ClientTimeout(total=3)
+        ) as resp:
             return resp.status == 200
     except Exception:
         logger.exception("_is_ollama_available: error inesperado")
@@ -320,11 +354,10 @@ async def resolve_api_keys(
     business_id: uuid.UUID,
 ) -> dict[str, Any]:
     """Resolve API keys for a business. Returns {"kimi": key, "openai": key, "anthropic": key, "ollama": bool}."""
-    result = await db.execute(
-        select(Business).where(Business.id == business_id)
-    )
+    result = await db.execute(select(Business).where(Business.id == business_id))
     business = result.scalar_one_or_none()
     from app.core.config import get_settings
+
     # .strip(): a trailing \r/\n on a platform-pasted env var breaks the
     # "Authorization: Bearer <token>" header outright (same class of bug
     # found and fixed in MERCADOPAGO_ACCESS_TOKEN — see mercadopago_processor.py)
@@ -341,8 +374,11 @@ async def resolve_api_keys(
 
     if not business:
         return {
-            "kimi": None, "openai": env_openai, "anthropic": env_anthropic,
-            "groq": env_groq, "ollama": False,
+            "kimi": None,
+            "openai": env_openai,
+            "anthropic": env_anthropic,
+            "groq": env_groq,
+            "ollama": False,
         }
 
     keys: dict[str, Any] = {
@@ -373,7 +409,10 @@ async def resolve_api_keys(
                 except Exception:
                     logger.exception(f"Failed to decrypt {provider} key")
     except Exception as e:
-        logger.warning(f"Per-business API keys unavailable, using platform keys: {e}", exc_info=True)
+        logger.warning(
+            f"Per-business API keys unavailable, using platform keys: {e}",
+            exc_info=True,
+        )
         try:
             await db.rollback()
         except Exception:
@@ -419,7 +458,9 @@ def _inject_business_context_into_messages(
         messages.insert(0, SystemMessage(content=context_block))
 
 
-async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.UUID) -> bool:
+async def _check_and_increment_daily_usage(
+    db: AsyncSession, business_id: uuid.UUID
+) -> bool:
     """Task 6 — daily LLM call cap. Returns True (and counts the call) when
     under the business's configured limit, False when the cap is hit.
 
@@ -462,7 +503,9 @@ async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.U
             return False
 
         if usage is None:
-            db.add(LLMDailyUsage(business_id=business_id, usage_date=today, call_count=1))
+            db.add(
+                LLMDailyUsage(business_id=business_id, usage_date=today, call_count=1)
+            )
         else:
             usage.call_count += 1
 
@@ -498,6 +541,7 @@ async def generate_with_fallback(
     if business_context is None and business_id:
         try:
             from app.domains.agents.context_builder import BusinessContextBuilder
+
             builder = BusinessContextBuilder(db)
             business_context = await builder.build_system_prompt_context(business_id)
         except Exception as exc:
@@ -540,8 +584,16 @@ async def generate_with_fallback(
     # 2. Resolve keys
     keys = await resolve_api_keys(db, business_id)
 
-    if not keys["ollama"] and not keys["kimi"] and not keys["openai"] and not keys["anthropic"] and not keys.get("groq"):
-        logger.warning("No LLM providers available (Ollama offline and no API keys configured)")
+    if (
+        not keys["ollama"]
+        and not keys["kimi"]
+        and not keys["openai"]
+        and not keys["anthropic"]
+        and not keys.get("groq")
+    ):
+        logger.warning(
+            "No LLM providers available (Ollama offline and no API keys configured)"
+        )
         return None
 
     # 2.5 Daily call cap (Task 6) — counted once per logical request, before
@@ -579,7 +631,9 @@ async def generate_with_fallback(
     # 5. Cache the response
     if response and use_semantic_cache:
         try:
-            await semantic_cache.set(prompt_text, response.content, business_id=business_id)
+            await semantic_cache.set(
+                prompt_text, response.content, business_id=business_id
+            )
         except Exception as e:
             logger.warning(f"Semantic cache store failed: {e}", exc_info=True)
 

@@ -36,7 +36,11 @@ async def get_db():
         yield session
 
 
-@router.post("/scenarios", response_model=SimulationScenarioOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/scenarios",
+    response_model=SimulationScenarioOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_scenario(
     data: SimulationScenarioCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -176,7 +180,10 @@ async def quick_simulation(
             objective="close_sale",
             customer_persona=default_persona,
             agent_type=data.agent_type,
-            success_criteria={"min_score": 60, "required_actions": ["qualify", "close"]},
+            success_criteria={
+                "min_score": 60,
+                "required_actions": ["qualify", "close"],
+            },
         )
 
     run = await engine.run_simulation(

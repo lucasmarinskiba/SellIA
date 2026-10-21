@@ -4,7 +4,6 @@ Pricing: ~$0.005/generation
 Strengths: Ads, headlines, social captions, quick marketing copy
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class CopyAIProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="COPYAI_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="COPYAI_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -59,9 +60,15 @@ class CopyAIProvider(BaseProvider):
             ) as resp:
                 data = await resp.json()
 
-            text = data.get("data", {}).get("text") if isinstance(data.get("data"), dict) else data.get("text")
+            text = (
+                data.get("data", {}).get("text")
+                if isinstance(data.get("data"), dict)
+                else data.get("text")
+            )
             if not text:
-                return GenerationResult(success=False, error_message="Copy.ai no devolvió texto")
+                return GenerationResult(
+                    success=False, error_message="Copy.ai no devolvió texto"
+                )
 
             return GenerationResult(
                 success=True,

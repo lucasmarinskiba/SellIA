@@ -24,7 +24,11 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/{business_id}/objectives", tags=["Objectives & KPIs"])
 
 
-@router.post("/departments", response_model=DepartmentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/departments",
+    response_model=DepartmentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_department(
     business_id: UUID,
     dept_in: DepartmentCreate,
@@ -32,7 +36,9 @@ async def create_department(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = ObjectiveService(db)
-    dept = await service.create_department(business_id=business_id, **dept_in.model_dump())
+    dept = await service.create_department(
+        business_id=business_id, **dept_in.model_dump()
+    )
     return dept
 
 
@@ -42,11 +48,17 @@ async def list_departments(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(Department).where(Department.business_id == business_id, Department.is_active == True))
+    result = await db.execute(
+        select(Department).where(
+            Department.business_id == business_id, Department.is_active == True
+        )
+    )
     return result.scalars().all()
 
 
-@router.post("", response_model=BusinessObjectiveResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=BusinessObjectiveResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_objective(
     business_id: UUID,
     obj_in: BusinessObjectiveCreate,

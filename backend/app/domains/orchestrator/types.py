@@ -8,6 +8,7 @@ from enum import Enum
 
 class Priority(str, Enum):
     """Decision priority hierarchy."""
+
     PRESERVE_CASH = "preserve_cash"  # runway < 30 days
     STABILIZE = "stabilize"  # runway 30–60 days
     BALANCED = "balanced"  # runway 60–90 days
@@ -16,6 +17,7 @@ class Priority(str, Enum):
 
 class Action(str, Enum):
     """Executable actions."""
+
     REALLOCATE_AD_BUDGET = "reallocate_ad_budget"  # shift across channels
     REDUCE_AD_SPEND = "reduce_ad_spend"  # lower daily budget %
     CUT_OPEX = "cut_opex"  # reduce operating expense
@@ -26,6 +28,7 @@ class Action(str, Enum):
 @dataclass
 class BusinessMetrics:
     """Real-time snapshot of business state."""
+
     cash_balance: Decimal
     runway_days: int | None
     forecast_revenue_30d: Decimal
@@ -41,6 +44,7 @@ class BusinessMetrics:
 @dataclass
 class Recommendation:
     """Single action recommendation."""
+
     action: Action
     rationale: str
     target_value: Decimal | None = None  # e.g., new budget % or OpEx reduction %
@@ -52,6 +56,7 @@ class Recommendation:
 @dataclass
 class OrchestratorPlan:
     """Complete decision plan."""
+
     business_id: str
     metrics: BusinessMetrics
     priority: Priority
@@ -65,6 +70,7 @@ class OrchestratorPlan:
 @dataclass
 class Scenario:
     """What-if scenario for planning."""
+
     name: str  # e.g., "ad_spend_+25%", "opex_-15%"
     description: str
     changes: dict  # {"ad_spend_daily": 0.25, "opex_pct": -0.15}

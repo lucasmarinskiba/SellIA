@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class Platform(Enum):
     """Supported marketplace platforms."""
+
     MERCADO_LIBRE = "mercado_libre"
     AMAZON = "amazon"
     HOTMART = "hotmart"
@@ -27,6 +28,7 @@ class Platform(Enum):
 
 class PricingStrategy(Enum):
     """Dynamic pricing strategies."""
+
     UNDERCUT_COMPETITOR = "undercut_competitor"  # -5% to -15%
     MAINTAIN_MARGIN = "maintain_margin"  # cost * 1.5-2x
     SCARCITY_PREMIUM = "scarcity_premium"  # cost * 2.5-3x (low stock)
@@ -37,6 +39,7 @@ class PricingStrategy(Enum):
 @dataclass
 class Product:
     """Master product catalog."""
+
     id: str
     sku: str
     title: str
@@ -53,6 +56,7 @@ class Product:
 @dataclass
 class PlatformListing:
     """Per-platform listing mapping."""
+
     id: str
     product_id: str
     platform: Platform
@@ -70,6 +74,7 @@ class PlatformListing:
 @dataclass
 class CompetitorPrice:
     """Competitor price data."""
+
     competitor_name: str
     platform: Platform
     product_name: str
@@ -83,6 +88,7 @@ class CompetitorPrice:
 @dataclass
 class PricingRecommendation:
     """AI-optimized price recommendation."""
+
     product_id: str
     platform: Platform
     recommended_price: float
@@ -98,7 +104,9 @@ class PlatformSyncEngine:
     def __init__(self, db):
         self.db = db
 
-    def create_product(self, product: Product, platforms: list[Platform]) -> dict[str, Any]:
+    def create_product(
+        self, product: Product, platforms: list[Platform]
+    ) -> dict[str, Any]:
         """Create product on specified platforms."""
         results = {}
 
@@ -166,7 +174,9 @@ class PlatformSyncEngine:
         for platform in platforms:
             try:
                 # Distribute stock proportionally across platforms
-                platform_allocation = self._allocate_stock(product_id, platform, available)
+                platform_allocation = self._allocate_stock(
+                    product_id, platform, available
+                )
                 sync_results[platform.value] = self._push_stock_to_platform(
                     product_id, platform, platform_allocation
                 )
@@ -183,7 +193,9 @@ class PlatformSyncEngine:
         # Usually ships within 24-48h
         return 50  # Mock: typically 50 units reserved
 
-    def _allocate_stock(self, product_id: str, platform: Platform, available: int) -> int:
+    def _allocate_stock(
+        self, product_id: str, platform: Platform, available: int
+    ) -> int:
         """Allocate stock based on platform performance."""
         # Mercado Libre: 40% (LATAM leader)
         # Amazon: 35% (global, but region-limited)
@@ -195,7 +207,9 @@ class PlatformSyncEngine:
         }
         return int(available * allocation_map[platform])
 
-    def _push_stock_to_platform(self, product_id: str, platform: Platform, quantity: int) -> bool:
+    def _push_stock_to_platform(
+        self, product_id: str, platform: Platform, quantity: int
+    ) -> bool:
         """Push stock update to platform API."""
         # Mock: would call actual platform API
         return True
@@ -307,7 +321,8 @@ class DynamicPricingEngine:
             strategy=strategy,
             reasoning=reasoning,
             expected_conversion_lift=expected_lift,
-            margin_impact=margin_pct - (((product.price_base - product.cost) / product.cost) * 100),
+            margin_impact=margin_pct
+            - (((product.price_base - product.cost) / product.cost) * 100),
         )
 
     def _run_pricing_strategy(
@@ -323,7 +338,9 @@ class DynamicPricingEngine:
             lowest_competitor = product.price_base
 
         # Check inventory level
-        stock_level = product.stock_total - (product.stock_total * 0.10)  # Account for reserved
+        stock_level = product.stock_total - (
+            product.stock_total * 0.10
+        )  # Account for reserved
         is_high_stock = stock_level > 200
 
         # Check sales velocity (mock: daily units)
@@ -351,7 +368,9 @@ class DynamicPricingEngine:
 
         else:
             # Maintain margin: balanced inventory + moderate demand
-            price = max(product.cost * 1.8, lowest_competitor * 0.98)  # Maintain 80% margin minimum
+            price = max(
+                product.cost * 1.8, lowest_competitor * 0.98
+            )  # Maintain 80% margin minimum
             strategy = PricingStrategy.MAINTAIN_MARGIN
             reasoning = "Balanced conditions - optimize for margin"
 
@@ -375,7 +394,9 @@ class DynamicPricingEngine:
         else:
             return max(-0.5, pct_change * -2)  # Cap at -50% drop
 
-    def reprice_all_products(self, platform: Platform, frequency: str = "hourly") -> dict[str, Any]:
+    def reprice_all_products(
+        self, platform: Platform, frequency: str = "hourly"
+    ) -> dict[str, Any]:
         """Batch reprice all active listings on platform."""
         # Mock: would fetch all products + competitor prices
         results = {
@@ -400,14 +421,21 @@ class FOOMTriggerEngine:
         self.db = db
 
     def generate_listing_urgency(
-        self, product: Product, platform: Platform, inventory: int, sales_velocity: float, rank: int | None = None
+        self,
+        product: Product,
+        platform: Platform,
+        inventory: int,
+        sales_velocity: float,
+        rank: int | None = None,
     ) -> dict[str, str]:
         """Generate platform-optimized urgency messages."""
 
         if platform == Platform.MERCADO_LIBRE:
             return self._generate_ml_urgency(product, inventory, sales_velocity, rank)
         elif platform == Platform.AMAZON:
-            return self._generate_amazon_urgency(product, inventory, sales_velocity, rank)
+            return self._generate_amazon_urgency(
+                product, inventory, sales_velocity, rank
+            )
         elif platform == Platform.HOTMART:
             return self._generate_hotmart_urgency(product, inventory, sales_velocity)
 
@@ -429,7 +457,9 @@ class FOOMTriggerEngine:
             urgency_lines.append(f"🥇 #{rank} MEJOR VENDEDOR en categoría")
 
         return {
-            "urgency_badge": "🔥 OFERTA LIMITADA" if inventory < 30 else "⭐ BESTSELLER",
+            "urgency_badge": (
+                "🔥 OFERTA LIMITADA" if inventory < 30 else "⭐ BESTSELLER"
+            ),
             "scarcity_message": urgency_lines[0] if urgency_lines else None,
             "social_proof": urgency_lines[1] if len(urgency_lines) > 1 else None,
             "authority": urgency_lines[2] if len(urgency_lines) > 2 else None,
@@ -443,8 +473,16 @@ class FOOMTriggerEngine:
         return {
             "badge": "Best Seller" if rank and rank <= 1 else "Limited Stock",
             "stock_countdown": f"Only {max(1, inventory // 10)} left at this price",
-            "sales_velocity": f"{int(sales_velocity)}/day selling fast" if sales_velocity > 50 else None,
-            "choice_badge": "Amazon's Choice" if rank and rank <= 5 and sales_velocity > 50 else None,
+            "sales_velocity": (
+                f"{int(sales_velocity)}/day selling fast"
+                if sales_velocity > 50
+                else None
+            ),
+            "choice_badge": (
+                "Amazon's Choice"
+                if rank and rank <= 5 and sales_velocity > 50
+                else None
+            ),
             "lightning_deal": "Limited Time Offer" if inventory < 20 else None,
             "call_to_action": "✓ Secure your order before stock runs out",
         }
@@ -575,7 +613,9 @@ class SEOOptimizationEngine:
         else:  # HOTMART
             return self._optimize_hotmart_listing(product, keywords)
 
-    def _optimize_ml_listing(self, product: Product, keywords: list[str]) -> dict[str, str]:
+    def _optimize_ml_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Mercado Libre ranking (sales velocity + reviews)."""
         primary_keyword = keywords[0] if keywords else product.category
 
@@ -590,7 +630,9 @@ class SEOOptimizationEngine:
             ],
         }
 
-    def _optimize_amazon_listing(self, product: Product, keywords: list[str]) -> dict[str, str]:
+    def _optimize_amazon_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Amazon A9 algorithm (keywords + conversion)."""
         primary_kw = keywords[0] if keywords else product.category
         secondary_kw = keywords[1] if len(keywords) > 1 else "bestseller"
@@ -605,7 +647,9 @@ class SEOOptimizationEngine:
             "backend_search_terms": ",".join(keywords),
         }
 
-    def _optimize_hotmart_listing(self, product: Product, keywords: list[str]) -> dict[str, str]:
+    def _optimize_hotmart_listing(
+        self, product: Product, keywords: list[str]
+    ) -> dict[str, str]:
         """Optimize for Hotmart pre-launch (urgency + affiliate appeal)."""
         return {
             "title": f"🚀 {product.title} | Early Bird -40% | {keywords[0] if keywords else 'Digital Course'}",

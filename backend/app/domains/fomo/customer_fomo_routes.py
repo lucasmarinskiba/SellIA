@@ -118,7 +118,9 @@ async def generate_widget_embed_code(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Generate embed code for widget"""
-    embed_code = await CustomerFOMOCampaignService.generate_embed_code(campaign_id, widget_type)
+    embed_code = await CustomerFOMOCampaignService.generate_embed_code(
+        campaign_id, widget_type
+    )
     return {
         "campaign_id": campaign_id,
         "widget_type": widget_type,
@@ -200,6 +202,7 @@ async def export_campaign_analytics(
         }
     else:
         import json
+
         return json.loads(data)
 
 
@@ -214,9 +217,12 @@ async def get_industry_benchmarks(
         "industry": industry,
         "benchmarks": benchmarks,
         "your_potential": {
-            "potential_conversion_rate": benchmarks["avg_conversion_rate"] * (1 + benchmarks["fomo_lift_potential"]),
-            "potential_ctr": benchmarks["avg_ctr"] * (1 + benchmarks["fomo_lift_potential"] * 0.5),
-            "potential_cart_recovery": benchmarks["avg_cart_recovery_rate"] * (1 + benchmarks["fomo_lift_potential"]),
+            "potential_conversion_rate": benchmarks["avg_conversion_rate"]
+            * (1 + benchmarks["fomo_lift_potential"]),
+            "potential_ctr": benchmarks["avg_ctr"]
+            * (1 + benchmarks["fomo_lift_potential"] * 0.5),
+            "potential_cart_recovery": benchmarks["avg_cart_recovery_rate"]
+            * (1 + benchmarks["fomo_lift_potential"]),
         },
     }
 

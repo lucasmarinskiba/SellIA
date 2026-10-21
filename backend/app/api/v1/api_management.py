@@ -44,7 +44,7 @@ def create_api_key(
         tier=request.tier,
         custom_limit=request.custom_limit,
         expires_at=expires,
-        db=db
+        db=db,
     )
 
 
@@ -54,10 +54,7 @@ def get_rate_limit_status(
     db: Annotated[Session, Depends(get_db)],
 ):
     """Get current rate limit status."""
-    return RateLimitService.get_rate_limit_status(
-        api_key_id=api_key_id,
-        db=db
-    )
+    return RateLimitService.get_rate_limit_status(api_key_id=api_key_id, db=db)
 
 
 @router.post("/businesses/{business_id}/cache-policy")
@@ -72,7 +69,7 @@ def set_cache_policy(
         endpoint_path=request.endpoint_path,
         ttl_seconds=request.ttl_seconds,
         cache_by=request.cache_by,
-        db=db
+        db=db,
     )
 
 
@@ -83,8 +80,4 @@ def get_api_metrics(
     date: Annotated[str | None, Query(description="YYYY-MM-DD")] = None,
 ):
     """Get API performance metrics."""
-    return RateLimitService.get_api_metrics(
-        business_id=business_id,
-        date=date,
-        db=db
-    )
+    return RateLimitService.get_api_metrics(business_id=business_id, date=date, db=db)

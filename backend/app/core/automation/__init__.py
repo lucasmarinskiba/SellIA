@@ -151,7 +151,9 @@ async def setup_automation_engine(db=None, cache=None) -> AutomationEngine:
     state_manager = StateManager()
     retry_handler = RetryHandler(job_queue, state_manager)
     escalation_handler = EscalationHandler()
-    monitoring = MonitoringDashboard(state_manager, job_queue, scheduler, escalation_handler)
+    monitoring = MonitoringDashboard(
+        state_manager, job_queue, scheduler, escalation_handler
+    )
 
     # Create engine
     engine = AutomationEngine(

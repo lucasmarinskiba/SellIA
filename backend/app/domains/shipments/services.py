@@ -29,7 +29,10 @@ logger = logging.getLogger(__name__)
 # SHIPMENT CONFIG
 # ============================================================
 
-async def list_shipment_configs(db: AsyncSession, business_id: uuid.UUID) -> list[ShipmentConfig]:
+
+async def list_shipment_configs(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[ShipmentConfig]:
     result = await db.execute(
         select(ShipmentConfig)
         .where(ShipmentConfig.business_id == business_id)
@@ -38,11 +41,15 @@ async def list_shipment_configs(db: AsyncSession, business_id: uuid.UUID) -> lis
     return result.scalars().all()
 
 
-async def get_shipment_config(db: AsyncSession, config_id: uuid.UUID) -> ShipmentConfig | None:
+async def get_shipment_config(
+    db: AsyncSession, config_id: uuid.UUID
+) -> ShipmentConfig | None:
     return await db.get(ShipmentConfig, config_id)
 
 
-async def create_shipment_config(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> ShipmentConfig:
+async def create_shipment_config(
+    db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]
+) -> ShipmentConfig:
     # Encrypt sensitive credentials
     creds = data.get("credentials", {})
     encrypted_creds = {}
@@ -68,18 +75,29 @@ async def create_shipment_config(db: AsyncSession, business_id: uuid.UUID, data:
     return config
 
 
-async def update_shipment_config(db: AsyncSession, config: ShipmentConfig, data: dict[str, Any]) -> ShipmentConfig:
+async def update_shipment_config(
+    db: AsyncSession, config: ShipmentConfig, data: dict[str, Any]
+) -> ShipmentConfig:
     if "credentials" in data:
         creds = data["credentials"]
         encrypted_creds = {}
         for key, value in creds.items():
-            if key in ("password", "api_key", "secret", "token", "private_key") and value:
+            if (
+                key in ("password", "api_key", "secret", "token", "private_key")
+                and value
+            ):
                 encrypted_creds[key] = encrypt_value(str(value))
             else:
                 encrypted_creds[key] = value
         config.credentials = encrypted_creds
 
-    for field in ["label", "is_test_mode", "is_active", "default_service_type", "default_from_address"]:
+    for field in [
+        "label",
+        "is_test_mode",
+        "is_active",
+        "default_service_type",
+        "default_from_address",
+    ]:
         if field in data:
             setattr(config, field, data[field])
 
@@ -93,13 +111,19 @@ async def delete_shipment_config(db: AsyncSession, config: ShipmentConfig):
     await db.commit()
 
 
-async def test_shipment_config(db: AsyncSession, config: ShipmentConfig) -> dict[str, Any]:
+async def test_shipment_config(
+    db: AsyncSession, config: ShipmentConfig
+) -> dict[str, Any]:
     """Test a carrier connection by creating a dummy shipment and checking tracking."""
     try:
         connector = _get_connector_from_config(config)
         # Test with dummy data
         test_result = await connector.get_tracking("TEST123")
-        return {"success": True, "message": f"Conexión exitosa con {config.carrier.value}", "details": test_result}
+        return {
+            "success": True,
+            "message": f"Conexión exitosa con {config.carrier.value}",
+            "details": test_result,
+        }
     except Exception as e:
         logger.exception("test_shipment_config: error inesperado")
         return {"success": False, "message": f"Error de conexión: {e!s}"}
@@ -122,6 +146,7 @@ def _get_connector_from_config(config: ShipmentConfig):
 # SHIPMENTS
 # ============================================================
 
+
 async def list_shipments(
     db: AsyncSession,
     business_id: uuid.UUID,
@@ -131,7 +156,9 @@ async def list_shipments(
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[Shipment], int]:
-    query = select(Shipment).where(Shipment.business_id == business_id, Shipment.is_active == True)
+    query = select(Shipment).where(
+        Shipment.business_id == business_id, Shipment.is_active == True
+    )
 
     if status:
         query = query.where(Shipment.status == status)
@@ -139,8 +166,8 @@ async def list_shipments(
         query = query.where(Shipment.carrier == carrier)
     if search:
         query = query.where(
-            (Shipment.tracking_number.ilike(f"%{search}%")) |
-            (Shipment.notes.ilike(f"%{search}%"))
+            (Shipment.tracking_number.ilike(f"%{search}%"))
+            | (Shipment.notes.ilike(f"%{search}%"))
         )
 
     total_result = await db.execute(select(func.count()).select_from(query.subquery()))
@@ -155,7 +182,9 @@ async def get_shipment(db: AsyncSession, shipment_id: uuid.UUID) -> Shipment | N
     return await db.get(Shipment, shipment_id)
 
 
-async def get_shipment_with_events(db: AsyncSession, shipment_id: uuid.UUID) -> Shipment | None:
+async def get_shipment_with_events(
+    db: AsyncSession, shipment_id: uuid.UUID
+) -> Shipment | None:
     shipment = await db.get(Shipment, shipment_id)
     if not shipment:
         return None
@@ -169,7 +198,9 @@ async def get_shipment_with_events(db: AsyncSession, shipment_id: uuid.UUID) -> 
     return shipment
 
 
-async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> Shipment:
+async def create_shipment(
+    db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]
+) -> Shipment:
     """Create a shipment, optionally generating label with carrier and notifying customer."""
     order_id = data["order_id"]
     order = await db.get(Order, order_id)
@@ -186,13 +217,22 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
     service_type = data.get("service_type", "standard")
 
     # Build addresses
-    from_addr = data.get("from_address") or (config.default_from_address if config else {})
+    from_addr = data.get("from_address") or (
+        config.default_from_address if config else {}
+    )
     to_addr = data.get("to_address") or order.shipping_address or {}
 
     # Build package from order items if not provided
     package = data.get("package", {})
     if not package.get("items") and order.items:
-        package["items"] = [{"name": item.get("name", ""), "qty": item.get("qty", 1), "sku": item.get("sku")} for item in order.items]
+        package["items"] = [
+            {
+                "name": item.get("name", ""),
+                "qty": item.get("qty", 1),
+                "sku": item.get("sku"),
+            }
+            for item in order.items
+        ]
 
     # Create shipment record
     shipment = Shipment(
@@ -239,20 +279,34 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
                     event_code=ev.get("event_code"),
                     event_description=ev.get("event_description"),
                     location=ev.get("location"),
-                    event_at=datetime.fromisoformat(ev["event_at"]) if isinstance(ev.get("event_at"), str) else datetime.now(UTC),
+                    event_at=(
+                        datetime.fromisoformat(ev["event_at"])
+                        if isinstance(ev.get("event_at"), str)
+                        else datetime.now(UTC)
+                    ),
                 )
                 db.add(event)
 
             # Update order with shipping info
             order.shipping_provider = carrier
             order.tracking_number = shipment.tracking_number
-            if shipment.status in (ShipmentStatus.LABEL_CREATED, ShipmentStatus.PICKED_UP, ShipmentStatus.IN_TRANSIT) and order.status == OrderStatus.PAID:
+            if (
+                shipment.status
+                in (
+                    ShipmentStatus.LABEL_CREATED,
+                    ShipmentStatus.PICKED_UP,
+                    ShipmentStatus.IN_TRANSIT,
+                )
+                and order.status == OrderStatus.PAID
+            ):
                 order.status = OrderStatus.SHIPPED
                 order.shipped_at = datetime.now(UTC)
 
         except Exception as e:
             logger.exception("create_shipment: error inesperado")
-            shipment.notes = f"{shipment.notes or ''}\nError al generar etiqueta: {e!s}".strip()
+            shipment.notes = (
+                f"{shipment.notes or ''}\nError al generar etiqueta: {e!s}".strip()
+            )
             shipment.status = ShipmentStatus.EXCEPTION
 
     await db.commit()
@@ -263,20 +317,35 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
         await notify_customer(db, shipment, channel=data.get("notification_channel"))
 
     # Emit event
-    await emit_event("shipment_created", {
-        "shipment_id": str(shipment.id),
-        "order_id": str(order_id),
-        "business_id": str(business_id),
-        "carrier": carrier,
-        "tracking_number": shipment.tracking_number,
-    })
+    await emit_event(
+        "shipment_created",
+        {
+            "shipment_id": str(shipment.id),
+            "order_id": str(order_id),
+            "business_id": str(business_id),
+            "carrier": carrier,
+            "tracking_number": shipment.tracking_number,
+        },
+    )
 
     return shipment
 
 
-async def update_shipment(db: AsyncSession, shipment: Shipment, data: dict[str, Any]) -> Shipment:
-    for field in ["tracking_number", "tracking_url", "status", "label_url", "label_data",
-                  "shipping_cost", "estimated_delivery_date", "actual_delivery_date", "notes", "is_active"]:
+async def update_shipment(
+    db: AsyncSession, shipment: Shipment, data: dict[str, Any]
+) -> Shipment:
+    for field in [
+        "tracking_number",
+        "tracking_url",
+        "status",
+        "label_url",
+        "label_data",
+        "shipping_cost",
+        "estimated_delivery_date",
+        "actual_delivery_date",
+        "notes",
+        "is_active",
+    ]:
         if field in data and data[field] is not None:
             setattr(shipment, field, data[field])
 
@@ -286,10 +355,13 @@ async def update_shipment(db: AsyncSession, shipment: Shipment, data: dict[str, 
         if order and order.status != OrderStatus.DELIVERED:
             order.status = OrderStatus.DELIVERED
             order.delivered_at = datetime.now(UTC)
-            await emit_event("order_delivered", {
-                "order_id": str(order.id),
-                "shipment_id": str(shipment.id),
-            })
+            await emit_event(
+                "order_delivered",
+                {
+                    "order_id": str(order.id),
+                    "shipment_id": str(shipment.id),
+                },
+            )
 
     # If status changed to picked_up
     if data.get("status") == ShipmentStatus.PICKED_UP.value:
@@ -303,7 +375,12 @@ async def update_shipment(db: AsyncSession, shipment: Shipment, data: dict[str, 
 async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, Any]:
     """Fetch latest tracking from carrier and update events."""
     if not shipment.tracking_number:
-        return {"success": False, "message": "Sin número de tracking", "new_events_count": 0, "current_status": shipment.status.value}
+        return {
+            "success": False,
+            "message": "Sin número de tracking",
+            "new_events_count": 0,
+            "current_status": shipment.status.value,
+        }
 
     config = None
     if shipment.config_id:
@@ -328,7 +405,8 @@ async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, An
             existing = await db.execute(
                 select(ShipmentTrackingEvent).where(
                     ShipmentTrackingEvent.shipment_id == shipment.id,
-                    ShipmentTrackingEvent.event_description == ev_data.get("event_description"),
+                    ShipmentTrackingEvent.event_description
+                    == ev_data.get("event_description"),
                     ShipmentTrackingEvent.event_at == event_at,
                 )
             )
@@ -359,7 +437,10 @@ async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, An
 
         shipment.last_tracking_check_at = datetime.now(UTC)
 
-        if shipment.status == ShipmentStatus.DELIVERED and not shipment.actual_delivery_date:
+        if (
+            shipment.status == ShipmentStatus.DELIVERED
+            and not shipment.actual_delivery_date
+        ):
             shipment.actual_delivery_date = datetime.now(UTC)
             order = await db.get(Order, shipment.order_id)
             if order and order.status != OrderStatus.DELIVERED:
@@ -373,15 +454,22 @@ async def refresh_tracking(db: AsyncSession, shipment: Shipment) -> dict[str, An
             "success": True,
             "new_events_count": new_events,
             "current_status": shipment.status.value,
-            "message": f"Tracking actualizado. {new_events} eventos nuevos."
+            "message": f"Tracking actualizado. {new_events} eventos nuevos.",
         }
 
     except Exception as e:
         logger.exception("refresh_tracking: error inesperado")
-        return {"success": False, "message": f"Error: {e!s}", "new_events_count": 0, "current_status": shipment.status.value}
+        return {
+            "success": False,
+            "message": f"Error: {e!s}",
+            "new_events_count": 0,
+            "current_status": shipment.status.value,
+        }
 
 
-async def notify_customer(db: AsyncSession, shipment: Shipment, channel: str | None = None) -> dict[str, Any]:
+async def notify_customer(
+    db: AsyncSession, shipment: Shipment, channel: str | None = None
+) -> dict[str, Any]:
     """Send shipping notification to customer via their preferred channel."""
     order = await db.get(Order, shipment.order_id)
     if not order:
@@ -394,7 +482,9 @@ async def notify_customer(db: AsyncSession, shipment: Shipment, channel: str | N
 
     # Build message
     tracking_url = shipment.tracking_url or ""
-    tracking_text = f"\n📦 Tracking: {shipment.tracking_number}" if shipment.tracking_number else ""
+    tracking_text = (
+        f"\n📦 Tracking: {shipment.tracking_number}" if shipment.tracking_number else ""
+    )
     url_text = f"\n🔗 Seguir envío: {tracking_url}" if tracking_url else ""
 
     message = (
@@ -415,6 +505,7 @@ async def notify_customer(db: AsyncSession, shipment: Shipment, channel: str | N
         elif channel in ("whatsapp", "sms", "telegram") and order.customer_phone:
             # Try to find active channel connection
             from app.domains.channels.models import ChannelConnection, ChannelPlatform
+
             result = await db.execute(
                 select(ChannelConnection).where(
                     ChannelConnection.business_id == shipment.business_id,
@@ -435,10 +526,18 @@ async def notify_customer(db: AsyncSession, shipment: Shipment, channel: str | N
         shipment.notification_channel = channel
         await db.commit()
 
-        return {"success": True, "channel": channel, "message": "Notificación enviada al cliente"}
+        return {
+            "success": True,
+            "channel": channel,
+            "message": "Notificación enviada al cliente",
+        }
     except Exception as e:
         logger.exception("notify_customer: error inesperado")
-        return {"success": False, "channel": channel, "message": f"Error al notificar: {e!s}"}
+        return {
+            "success": False,
+            "channel": channel,
+            "message": f"Error al notificar: {e!s}",
+        }
 
 
 async def cancel_shipment(db: AsyncSession, shipment: Shipment) -> bool:

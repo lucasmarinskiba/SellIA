@@ -113,14 +113,16 @@ async def list_conversations(
             conv = integration_manager.get_conversation(
                 user_id, platform_enum, contact_id
             )
-            conversations.append({
-                "contact_id": conv.contact_id,
-                "contact_name": conv.contact_name,
-                "last_message_at": conv.last_message_at.isoformat(),
-                "message_count": conv.message_count,
-                "unread_count": conv.unread_count,
-                "status": conv.status,
-            })
+            conversations.append(
+                {
+                    "contact_id": conv.contact_id,
+                    "contact_name": conv.contact_name,
+                    "last_message_at": conv.last_message_at.isoformat(),
+                    "message_count": conv.message_count,
+                    "unread_count": conv.unread_count,
+                    "status": conv.status,
+                }
+            )
 
         return {
             "platform": platform,

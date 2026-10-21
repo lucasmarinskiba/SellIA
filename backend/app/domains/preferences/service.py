@@ -53,7 +53,9 @@ async def _safe_rollback(db: AsyncSession) -> None:
         logger.warning("preferences rollback failed: %s", str(e)[:160])
 
 
-async def _get_or_create_prefs(db: AsyncSession, business_id: uuid.UUID) -> SellerPreferences:
+async def _get_or_create_prefs(
+    db: AsyncSession, business_id: uuid.UUID
+) -> SellerPreferences:
     result = await db.execute(
         select(SellerPreferences).where(SellerPreferences.business_id == business_id)
     )
@@ -65,13 +67,17 @@ async def _get_or_create_prefs(db: AsyncSession, business_id: uuid.UUID) -> Sell
     return prefs
 
 
-async def _get_context(db: AsyncSession, user_id: uuid.UUID, business_id: uuid.UUID | None):
+async def _get_context(
+    db: AsyncSession, user_id: uuid.UUID, business_id: uuid.UUID | None
+):
     from app.domains.business_context.models import BusinessContext
 
     query = select(BusinessContext).where(BusinessContext.user_id == user_id)
     if business_id:
         query = query.where(BusinessContext.business_id == business_id)
-    result = await db.execute(query.order_by(BusinessContext.created_at.desc()).limit(1))
+    result = await db.execute(
+        query.order_by(BusinessContext.created_at.desc()).limit(1)
+    )
     return result.scalar_one_or_none()
 
 
@@ -123,8 +129,12 @@ async def load_profile(
 
     profile: dict[str, Any] = {
         # Identity of the business — BusinessContext owns these.
-        "business_type": context.business_type.value if context and context.business_type else None,
-        "sales_model": context.sales_model.value if context and context.sales_model else None,
+        "business_type": (
+            context.business_type.value if context and context.business_type else None
+        ),
+        "sales_model": (
+            context.sales_model.value if context and context.sales_model else None
+        ),
         "niche": context.industry if context else None,
         "target_audience": context.target_audience if context else None,
         "value_proposition": context.value_proposition if context else None,
@@ -211,7 +221,9 @@ async def save_profile(
     known_markets = {item["code"] for item in catalog.MARKETS}
 
     if "target_platforms" in payload:
-        prefs.target_platforms = _clean_list(payload["target_platforms"], allowed=known_platforms)
+        prefs.target_platforms = _clean_list(
+            payload["target_platforms"], allowed=known_platforms
+        )
     if "languages" in payload:
         prefs.languages = _clean_list(payload["languages"], allowed=known_languages)
     if "markets" in payload:
@@ -240,7 +252,10 @@ async def save_profile(
         "country": "country",
         "city": "city",
     }
-    touches_context = any(key in payload for key in list(context_fields) + ["business_type", "sales_model", "markets"])
+    touches_context = any(
+        key in payload
+        for key in list(context_fields) + ["business_type", "sales_model", "markets"]
+    )
     if touches_context:
         if context is None:
             context = BusinessContext(user_id=user_id, business_id=business_id)
@@ -248,12 +263,18 @@ async def save_profile(
         for incoming, column in context_fields.items():
             if incoming in payload:
                 value = payload[incoming]
-                setattr(context, column, (str(value).strip()[:500] or None) if value else None)
+                setattr(
+                    context,
+                    column,
+                    (str(value).strip()[:500] or None) if value else None,
+                )
         if payload.get("business_type"):
             try:
                 context.business_type = BusinessType(payload["business_type"])
             except ValueError:
-                logger.warning(f"Unknown business_type ignored: {payload['business_type']}")
+                logger.warning(
+                    f"Unknown business_type ignored: {payload['business_type']}"
+                )
         if payload.get("sales_model"):
             try:
                 context.sales_model = SalesModel(payload["sales_model"])
@@ -266,7 +287,10 @@ async def save_profile(
 
     # --- UserMemory ---
     memory = await _get_memory(db, user_id)
-    touches_memory = any(key in payload for key in ("primary_language", "tone", "interests", "challenges"))
+    touches_memory = any(
+        key in payload
+        for key in ("primary_language", "tone", "interests", "challenges")
+    )
     if touches_memory:
         if memory is None:
             memory = UserMemory(user_id=user_id)
@@ -289,7 +313,9 @@ async def connected_platforms(db: AsyncSession, business_id: uuid.UUID) -> set[s
     from app.domains.channels.models import ChannelConnection
 
     result = await db.execute(
-        select(ChannelConnection.platform).where(ChannelConnection.business_id == business_id)
+        select(ChannelConnection.platform).where(
+            ChannelConnection.business_id == business_id
+        )
     )
     return {
         (row[0].value if hasattr(row[0], "value") else str(row[0]))
@@ -318,9 +344,13 @@ async def suggest_platforms(
 
     unknowns: list[str] = []
     if not markets:
-        unknowns.append("No configuraste mercados, así que no se puede saber qué marketplace te llega.")
+        unknowns.append(
+            "No configuraste mercados, así que no se puede saber qué marketplace te llega."
+        )
     if not niche:
-        unknowns.append("No configuraste el tipo de negocio, así que la afinidad por rubro no se evaluó.")
+        unknowns.append(
+            "No configuraste el tipo de negocio, así que la afinidad por rubro no se evaluó."
+        )
 
     suggestions: list[dict[str, Any]] = []
     for platform, fit in catalog.PLATFORM_FIT.items():
@@ -342,18 +372,20 @@ async def suggest_platforms(
 
         caps = capabilities.capabilities_for(platform)
         available = [key for key, ok in caps.items() if ok]
-        suggestions.append({
-            "platform": platform,
-            "label": fit["label"],
-            "kind": fit["kind"],
-            "note": fit["note"],
-            "reasons": reasons,
-            # What SellIA can really automate there once it is connected, read
-            # off the connector — not a promise from this table.
-            "capabilities": available,
-            "can_import_orders": "orders" in available,
-            "can_answer_messages": "messages" in available,
-        })
+        suggestions.append(
+            {
+                "platform": platform,
+                "label": fit["label"],
+                "kind": fit["kind"],
+                "note": fit["note"],
+                "reasons": reasons,
+                # What SellIA can really automate there once it is connected, read
+                # off the connector — not a promise from this table.
+                "capabilities": available,
+                "can_import_orders": "orders" in available,
+                "can_answer_messages": "messages" in available,
+            }
+        )
 
     suggestions.sort(key=lambda item: (-len(item["reasons"]), item["label"].lower()))
     return {

@@ -1,4 +1,5 @@
 """Phase 45: Product Management & Inventory."""
+
 import uuid
 from datetime import UTC, datetime
 
@@ -20,7 +21,12 @@ from app.core.database import Base
 class Product(Base):
     __tablename__ = "products"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     sku = Column(String(255), nullable=False, unique=True)
     name = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
@@ -35,11 +41,20 @@ class Product(Base):
     seo_keywords = Column(ARRAY(String), nullable=True)
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class Inventory(Base):
     __tablename__ = "inventory"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     warehouse_id = Column(UUID(as_uuid=True), nullable=True)
     quantity_on_hand = Column(Integer, default=0)
     quantity_reserved = Column(Integer, default=0)
@@ -49,11 +64,20 @@ class Inventory(Base):
     stockout_alert = Column(Boolean, default=False)
     updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
+
 class ProductVariant(Base):
     __tablename__ = "product_variants"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     variant_sku = Column(String(255), nullable=False)
     variant_name = Column(String(255), nullable=False)
     attributes = Column(JSONB, nullable=True)  # size, color, etc
@@ -61,22 +85,38 @@ class ProductVariant(Base):
     stock_quantity = Column(Integer, default=0)
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class ContentTemplate(Base):
     __tablename__ = "content_templates"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     platform = Column(String(50), nullable=False)
-    template_type = Column(String(50), nullable=False)  # product_title, description, social_post
+    template_type = Column(
+        String(50), nullable=False
+    )  # product_title, description, social_post
     template_name = Column(String(255), nullable=False)
     content_template = Column(Text, nullable=False)
     variables = Column(ARRAY(String), nullable=True)
     created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
+
 class ProductPerformance(Base):
     __tablename__ = "product_performance"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     platform = Column(String(50), nullable=False)
     views = Column(Integer, default=0)
     clicks = Column(Integer, default=0)

@@ -15,5 +15,5 @@ __all__ = [
     "LocationCheckin",
     "LocationCheckinService",
     "LocationFeedback",
-    "StaffCheckin"
+    "StaffCheckin",
 ]

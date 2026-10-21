@@ -22,7 +22,9 @@ async def hourly_system_analysis():
 
     async with AsyncSessionLocal() as db:
         report = await generate_health_report(db)
-        logger.info(f"Hourly system analysis: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes")
+        logger.info(
+            f"Hourly system analysis: {report.unresolved_tickets} unresolved tickets, {len(report.top_feedback_themes)} feedback themes"
+        )
         return report.to_dict()
 
 
@@ -64,7 +66,9 @@ async def weekly_feedback_synthesis():
         ideas, _ = await svc.list_feedback(type=FeedbackType.IDEA)
         complaints, _ = await svc.list_feedback(type=FeedbackType.COMPLAINT)
 
-        logger.info(f"Weekly synthesis: {len(bugs)} bugs, {len(ideas)} ideas, {len(complaints)} complaints")
+        logger.info(
+            f"Weekly synthesis: {len(bugs)} bugs, {len(ideas)} ideas, {len(complaints)} complaints"
+        )
         return {
             "bugs": len(bugs),
             "ideas": len(ideas),
@@ -149,6 +153,8 @@ async def notify_users_of_new_features():
             if imp.source_feedback_ids:
                 for fb_id in imp.source_feedback_ids:
                     # TODO: Send email/push notification to the user who submitted this feedback
-                    logger.info(f"Would notify user about shipped improvement {imp.id} from feedback {fb_id}")
+                    logger.info(
+                        f"Would notify user about shipped improvement {imp.id} from feedback {fb_id}"
+                    )
 
         return {"notifications_sent": len(improvements)}

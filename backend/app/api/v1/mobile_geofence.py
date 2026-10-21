@@ -52,7 +52,9 @@ async def check_geofence(
 
     def _check(db: Session) -> dict:
         # Get location records (assuming locations stored in Location table)
-        locations = db.query(Location).filter(Location.business_id == request.business_id).all()
+        locations = (
+            db.query(Location).filter(Location.business_id == request.business_id).all()
+        )
 
         return GeofenceTriggerService.check_geofence_triggers(
             user_id=current_user.id,
@@ -60,7 +62,7 @@ async def check_geofence(
             user_lng=request.longitude,
             business_id=request.business_id,
             locations=locations,
-            db=db
+            db=db,
         )
 
     try:
@@ -73,7 +75,7 @@ async def check_geofence(
             "checkin_id": result.get("checkin_id"),
             "distance_km": result.get("distance_km"),
             "message": result.get("message"),
-            "error": result.get("error")
+            "error": result.get("error"),
         }
     except Exception as e:
         logger.exception("check_geofence: error inesperado")
@@ -90,7 +92,9 @@ async def get_nearby_locations(
     await get_owned_business(db, request.business_id, current_user)
 
     def _load(db: Session) -> list:
-        return db.query(Location).filter(Location.business_id == request.business_id).all()
+        return (
+            db.query(Location).filter(Location.business_id == request.business_id).all()
+        )
 
     try:
         locations = await db.run_sync(_load)
@@ -100,17 +104,17 @@ async def get_nearby_locations(
             user_lng=request.longitude,
             business_id=request.business_id,
             locations=locations,
-            radius_km=0.5
+            radius_km=0.5,
         )
 
         return {
             "user_location": {
                 "latitude": request.latitude,
                 "longitude": request.longitude,
-                "accuracy_meters": request.accuracy_meters
+                "accuracy_meters": request.accuracy_meters,
             },
             "nearby_locations": nearby,
-            "count": len(nearby)
+            "count": len(nearby),
         }
     except Exception as e:
         logger.exception("get_nearby_locations: error inesperado")
@@ -139,15 +143,17 @@ async def subscribe_to_geofence(
 
         geofences = []
         for loc in locations:
-            geofences.append({
-                "id": str(loc.id),
-                "name": loc.name,
-                "latitude": loc.latitude,
-                "longitude": loc.longitude,
-                "radius_meters": int(radius_km * 1000),
-                "trigger_on_enter": True,
-                "trigger_on_exit": False
-            })
+            geofences.append(
+                {
+                    "id": str(loc.id),
+                    "name": loc.name,
+                    "latitude": loc.latitude,
+                    "longitude": loc.longitude,
+                    "radius_meters": int(radius_km * 1000),
+                    "trigger_on_enter": True,
+                    "trigger_on_exit": False,
+                }
+            )
 
         return {
             "subscription_active": True,
@@ -155,7 +161,7 @@ async def subscribe_to_geofence(
             "geofences": geofences,
             "polling_interval_seconds": 30,
             "background_enabled": True,
-            "note": "iOS requires location permission 'Always'. Android requires 'Allow all the time'."
+            "note": "iOS requires location permission 'Always'. Android requires 'Allow all the time'.",
         }
     except Exception as e:
         logger.exception("subscribe_to_geofence: error inesperado")

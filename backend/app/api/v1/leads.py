@@ -2,6 +2,7 @@
 Lead Management + Scoring API
 Endpoints para CRUD leads y cálculo automático de score
 """
+
 import logging
 from datetime import datetime
 from typing import Annotated
@@ -32,6 +33,7 @@ router = APIRouter(prefix="/api/v1/leads", tags=["leads"])
 # nobody and are treated as the platform's demo data (see brain_live.py),
 # never as some account's leads.
 
+
 # ============================================================
 # MODELOS
 # ============================================================
@@ -48,19 +50,20 @@ class LeadBase(BaseModel):
     source: str | None = None  # "linkedin", "website", "cold-email", "referral"
     notes: str | None = None
 
-    @field_validator('name')
+    @field_validator("name")
     @classmethod
     def name_not_empty(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("Name cannot be empty")
         return v.strip()
 
-    @field_validator('budget')
+    @field_validator("budget")
     @classmethod
     def budget_positive(cls, v: float | None) -> float | None:
         if v is not None and v < 0:
             raise ValueError("Budget must be non-negative")
         return v
+
 
 class Lead(LeadBase):
     id: int
@@ -70,8 +73,10 @@ class Lead(LeadBase):
     updated_at: datetime
     last_contacted: datetime | None = None
 
+
 class LeadCreate(LeadBase):
     pass
+
 
 class LeadUpdate(BaseModel):
     name: str | None = None
@@ -86,6 +91,7 @@ class LeadUpdate(BaseModel):
     status: str | None = None
     notes: str | None = None
     last_contacted: datetime | None = None
+
 
 class LeadScore(BaseModel):
     lead_id: int
@@ -110,89 +116,96 @@ def calculate_lead_score(lead_data: dict) -> dict:
 
     # 1. COMPLETENESS (10%)
     completeness_fields = [
-        'email', 'phone', 'company', 'job_title', 'industry', 'budget'
+        "email",
+        "phone",
+        "company",
+        "job_title",
+        "industry",
+        "budget",
     ]
     filled = sum(1 for f in completeness_fields if lead_data.get(f))
     completeness_score = (filled / len(completeness_fields)) * 100
-    score_breakdown['completeness'] = completeness_score / 100
+    score_breakdown["completeness"] = completeness_score / 100
 
     # 2. ENGAGEMENT (30%)
     engagement_score = 0
-    if lead_data.get('status') == 'contacted':
+    if lead_data.get("status") == "contacted":
         engagement_score += 50
-    if lead_data.get('last_contacted'):
+    if lead_data.get("last_contacted"):
         engagement_score += 25
-    if lead_data.get('source') in ['website', 'referral']:
+    if lead_data.get("source") in ["website", "referral"]:
         engagement_score += 25
-    score_breakdown['engagement'] = engagement_score / 100
+    score_breakdown["engagement"] = engagement_score / 100
 
     # 3. FIT SCORE (60%) - Ideal Customer Profile
     fit_score = 0
 
     # Budget fit
-    if lead_data.get('budget'):
-        if lead_data['budget'] >= 5000:
+    if lead_data.get("budget"):
+        if lead_data["budget"] >= 5000:
             fit_score += 30
-        elif lead_data['budget'] >= 1000:
+        elif lead_data["budget"] >= 1000:
             fit_score += 20
         else:
             fit_score += 10
 
     # Timeline fit
-    if lead_data.get('timeline') == 'immediate':
+    if lead_data.get("timeline") == "immediate":
         fit_score += 25
-    elif lead_data.get('timeline') == '3-6 months':
+    elif lead_data.get("timeline") == "3-6 months":
         fit_score += 15
 
     # Industry fit (SaaS > Tech > Others)
-    industry = (lead_data.get('industry') or '').lower()
-    if any(x in industry for x in ['saas', 'software', 'tech', 'startup']):
+    industry = (lead_data.get("industry") or "").lower()
+    if any(x in industry for x in ["saas", "software", "tech", "startup"]):
         fit_score += 20
     else:
         fit_score += 5
 
     # Company size fit (SMB/Mid-market preferred)
-    company = lead_data.get('company', '').lower()
-    if any(x in company for x in ['inc', 'llc', 'corp']):
+    company = lead_data.get("company", "").lower()
+    if any(x in company for x in ["inc", "llc", "corp"]):
         fit_score += 5
 
-    score_breakdown['fit'] = fit_score / 100
+    score_breakdown["fit"] = fit_score / 100
 
     # TOTAL SCORE
     total = (
-        score_breakdown['completeness'] * 0.10 +
-        score_breakdown['engagement'] * 0.30 +
-        score_breakdown['fit'] * 0.60
+        score_breakdown["completeness"] * 0.10
+        + score_breakdown["engagement"] * 0.30
+        + score_breakdown["fit"] * 0.60
     ) * 100
 
     return {
-        'score': total,
-        'breakdown': score_breakdown,
-        'reasons': _generate_score_reasons(lead_data, score_breakdown)
+        "score": total,
+        "breakdown": score_breakdown,
+        "reasons": _generate_score_reasons(lead_data, score_breakdown),
     }
+
 
 def _generate_score_reasons(lead_data: dict, breakdown: dict) -> list[str]:
     """Explicar por qué score."""
     reasons = []
 
-    if breakdown['completeness'] > 0.8:
+    if breakdown["completeness"] > 0.8:
         reasons.append("✅ Datos completos")
-    elif breakdown['completeness'] < 0.5:
+    elif breakdown["completeness"] < 0.5:
         reasons.append("⚠️ Faltan datos clave")
 
-    if breakdown['fit'] > 0.7:
+    if breakdown["fit"] > 0.7:
         reasons.append("✅ Buen fit con perfil ideal")
 
-    if lead_data.get('budget', 0) >= 5000:
+    if lead_data.get("budget", 0) >= 5000:
         reasons.append(f"💰 Budget: ${lead_data['budget']:,.0f}")
 
-    if lead_data.get('timeline') == 'immediate':
+    if lead_data.get("timeline") == "immediate":
         reasons.append("⚡ Timeline inmediato")
 
-    if not lead_data.get('last_contacted'):
+    if not lead_data.get("last_contacted"):
         reasons.append("📞 Sin contacto aún")
 
     return reasons
+
 
 # ============================================================
 # ENDPOINTS
@@ -222,9 +235,9 @@ async def create_lead(
         timeline=lead_data.timeline,
         source=lead_data.source,
         notes=lead_data.notes,
-        status='new',
-        score=score_result['score'],
-        score_breakdown=score_result['breakdown']
+        status="new",
+        score=score_result["score"],
+        score_breakdown=score_result["breakdown"],
     )
     db.add(lead)
     await db.commit()
@@ -232,6 +245,7 @@ async def create_lead(
 
     logger.info(f"Lead creado: {lead.email} (score: {lead.score:.1f})")
     return lead
+
 
 @router.get("/", response_model=list[Lead])
 async def list_leads(
@@ -246,7 +260,7 @@ async def list_leads(
     query = select(LeadModel).where(
         LeadModel.user_id == current_user.id,
         LeadModel.score >= min_score,
-        LeadModel.deleted_at == None  # Exclude soft-deleted
+        LeadModel.deleted_at == None,  # Exclude soft-deleted
     )
 
     if status:
@@ -258,6 +272,7 @@ async def list_leads(
     leads = result.scalars().all()
     return leads
 
+
 @router.get("/{lead_id}", response_model=Lead)
 async def get_lead(
     lead_id: int,
@@ -265,14 +280,17 @@ async def get_lead(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Obtener detalles de un lead."""
-    result = await db.execute(select(LeadModel).where(
-        LeadModel.id == lead_id, LeadModel.user_id == current_user.id
-    ))
+    result = await db.execute(
+        select(LeadModel).where(
+            LeadModel.id == lead_id, LeadModel.user_id == current_user.id
+        )
+    )
     lead = result.scalar_one_or_none()
 
     if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
     return lead
+
 
 @router.put("/{lead_id}", response_model=Lead)
 async def update_lead(
@@ -283,10 +301,13 @@ async def update_lead(
 ):
     """Actualizar lead."""
     from sqlalchemy import select as sa_select
+
     # Row-level lock to prevent concurrent updates
-    result = await db.execute(sa_select(LeadModel).where(
-        LeadModel.id == lead_id, LeadModel.user_id == current_user.id
-    ).with_for_update())
+    result = await db.execute(
+        sa_select(LeadModel)
+        .where(LeadModel.id == lead_id, LeadModel.user_id == current_user.id)
+        .with_for_update()
+    )
     lead = result.scalar_one_or_none()
 
     if not lead:
@@ -303,8 +324,8 @@ async def update_lead(
     try:
         lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
         score_result = calculate_lead_score(lead_dict)
-        lead.score = score_result['score']
-        lead.score_breakdown = score_result['breakdown']
+        lead.score = score_result["score"]
+        lead.score_breakdown = score_result["breakdown"]
 
         await db.commit()
         await db.refresh(lead)
@@ -316,6 +337,7 @@ async def update_lead(
 
     return lead
 
+
 @router.post("/{lead_id}/score", response_model=LeadScore)
 async def rescore_lead(
     lead_id: int,
@@ -323,9 +345,11 @@ async def rescore_lead(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Recalcular score de un lead (útil después de engagement)."""
-    result = await db.execute(select(LeadModel).where(
-        LeadModel.id == lead_id, LeadModel.user_id == current_user.id
-    ))
+    result = await db.execute(
+        select(LeadModel).where(
+            LeadModel.id == lead_id, LeadModel.user_id == current_user.id
+        )
+    )
     lead = result.scalar_one_or_none()
 
     if not lead:
@@ -333,19 +357,20 @@ async def rescore_lead(
 
     lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
     score_result = calculate_lead_score(lead_dict)
-    lead.score = score_result['score']
-    lead.score_breakdown = score_result['breakdown']
+    lead.score = score_result["score"]
+    lead.score_breakdown = score_result["breakdown"]
 
     await db.commit()
     await db.refresh(lead)
 
     return {
-        'lead_id': lead_id,
-        'score': score_result['score'],
-        'score_breakdown': score_result['breakdown'],
-        'reasons': score_result['reasons'],
-        'scored_at': datetime.now()
+        "lead_id": lead_id,
+        "score": score_result["score"],
+        "score_breakdown": score_result["breakdown"],
+        "reasons": score_result["reasons"],
+        "scored_at": datetime.now(),
     }
+
 
 @router.post("/{lead_id}/contact")
 async def mark_contacted(
@@ -354,15 +379,17 @@ async def mark_contacted(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Marcar lead como contactado."""
-    result = await db.execute(select(LeadModel).where(
-        LeadModel.id == lead_id, LeadModel.user_id == current_user.id
-    ))
+    result = await db.execute(
+        select(LeadModel).where(
+            LeadModel.id == lead_id, LeadModel.user_id == current_user.id
+        )
+    )
     lead = result.scalar_one_or_none()
 
     if not lead:
         raise HTTPException(status_code=404, detail="Lead no encontrado")
 
-    lead.status = 'contacted'
+    lead.status = "contacted"
     lead.last_contacted = datetime.now()
     lead.updated_at = datetime.now()
 
@@ -370,8 +397,8 @@ async def mark_contacted(
     try:
         lead_dict = {f.name: getattr(lead, f.name) for f in lead.__table__.columns}
         score_result = calculate_lead_score(lead_dict)
-        lead.score = score_result['score']
-        lead.score_breakdown = score_result['breakdown']
+        lead.score = score_result["score"]
+        lead.score_breakdown = score_result["breakdown"]
 
         await db.commit()
         await db.refresh(lead)
@@ -382,6 +409,7 @@ async def mark_contacted(
 
     return lead
 
+
 @router.delete("/{lead_id}")
 async def delete_lead(
     lead_id: int,
@@ -389,9 +417,11 @@ async def delete_lead(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Soft delete a lead (mark as deleted, don't remove data)."""
-    result = await db.execute(select(LeadModel).where(
-        LeadModel.id == lead_id, LeadModel.user_id == current_user.id
-    ))
+    result = await db.execute(
+        select(LeadModel).where(
+            LeadModel.id == lead_id, LeadModel.user_id == current_user.id
+        )
+    )
     lead = result.scalar_one_or_none()
 
     if not lead:
@@ -402,6 +432,7 @@ async def delete_lead(
     logger.info(f"Lead {lead_id} soft deleted")
     return {"status": "deleted", "lead_id": lead_id}
 
+
 @router.get("/stats/summary")
 async def get_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -409,19 +440,22 @@ async def get_stats(
 ):
     """Resumen de leads (solo activos)."""
     # Only count non-deleted leads
-    result = await db.execute(select(LeadModel).where(
-        LeadModel.user_id == current_user.id, LeadModel.deleted_at == None
-    ))
+    result = await db.execute(
+        select(LeadModel).where(
+            LeadModel.user_id == current_user.id, LeadModel.deleted_at == None
+        )
+    )
     leads_list = result.scalars().all()
 
-    statuses = ['new', 'contacted', 'qualified', 'negotiating', 'closed', 'lost']
+    statuses = ["new", "contacted", "qualified", "negotiating", "closed", "lost"]
 
     return {
-        'total': len(leads_list),
-        'by_status': {
-            st: len([l for l in leads_list if l.status == st])
-            for st in statuses
+        "total": len(leads_list),
+        "by_status": {
+            st: len([l for l in leads_list if l.status == st]) for st in statuses
         },
-        'avg_score': sum(l.score for l in leads_list) / len(leads_list) if leads_list else 0,
-        'high_quality': len([l for l in leads_list if l.score >= 70]),
+        "avg_score": (
+            sum(l.score for l in leads_list) / len(leads_list) if leads_list else 0
+        ),
+        "high_quality": len([l for l in leads_list if l.score >= 70]),
     }

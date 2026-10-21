@@ -28,6 +28,7 @@ except Exception as _import_exc:  # pragma: no cover
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _get_stripe_client() -> Any:
     """Return an initialized Stripe client or raise a clear error."""
     if stripe_lib is None:
@@ -53,6 +54,7 @@ def _cents_from_usd(amount_usd: float) -> int:
 # ---------------------------------------------------------------------------
 # Customers
 # ---------------------------------------------------------------------------
+
 
 @stripe_breaker
 async def create_stripe_customer(
@@ -106,6 +108,7 @@ async def create_stripe_customer(
 # Checkout Sessions
 # ---------------------------------------------------------------------------
 
+
 @stripe_breaker
 async def create_checkout_session(
     plan_name: str,
@@ -137,7 +140,10 @@ async def create_checkout_session(
     settings = get_settings()
 
     frontend_url = getattr(settings, "FRONTEND_URL", None) or "http://localhost:3000"
-    success_url = success_url or f"{frontend_url}/dashboard/planes?status=success&session_id={{CHECKOUT_SESSION_ID}}"
+    success_url = (
+        success_url
+        or f"{frontend_url}/dashboard/planes?status=success&session_id={{CHECKOUT_SESSION_ID}}"
+    )
     cancel_url = cancel_url or f"{frontend_url}/dashboard/planes?status=cancelled"
 
     interval = "month" if billing_cycle == "monthly" else "year"
@@ -154,7 +160,9 @@ async def create_checkout_session(
 
         if price_list and price_list.data:
             price = price_list.data[0]
-            logger.debug("Reusing existing Stripe Price %s for %s", price.id, lookup_key)
+            logger.debug(
+                "Reusing existing Stripe Price %s for %s", price.id, lookup_key
+            )
         else:
             # 2. Create a Product (idempotent via idempotency_key).
             product = await asyncio.to_thread(
@@ -209,13 +217,17 @@ async def create_checkout_session(
     except stripe.error.StripeError as exc:
         logger.error(
             "Stripe error creating checkout session for user %s plan %s: %s",
-            user_id, plan_slug, exc,
+            user_id,
+            plan_slug,
+            exc,
         )
         raise
     except Exception as exc:
         logger.error(
             "Unexpected error creating checkout session for user %s plan %s: %s",
-            user_id, plan_slug, exc,
+            user_id,
+            plan_slug,
+            exc,
         )
         raise
 
@@ -229,7 +241,9 @@ async def create_checkout_session(
     }
     logger.info(
         "Stripe Checkout Session created: %s for user %s plan %s",
-        session.id, user_id, plan_slug,
+        session.id,
+        user_id,
+        plan_slug,
     )
     return result
 
@@ -237,6 +251,7 @@ async def create_checkout_session(
 # ---------------------------------------------------------------------------
 # Customer Portal
 # ---------------------------------------------------------------------------
+
 
 @stripe_breaker
 async def create_billing_portal_session(
@@ -255,9 +270,11 @@ async def create_billing_portal_session(
     stripe = _get_stripe_client()
     settings = get_settings()
 
-    return_url = return_url or (
-        getattr(settings, "FRONTEND_URL", None) or "http://localhost:3000"
-    ) + "/dashboard/billing"
+    return_url = (
+        return_url
+        or (getattr(settings, "FRONTEND_URL", None) or "http://localhost:3000")
+        + "/dashboard/billing"
+    )
 
     try:
         session = await asyncio.to_thread(
@@ -268,13 +285,15 @@ async def create_billing_portal_session(
     except stripe.error.StripeError as exc:
         logger.error(
             "Stripe error creating billing portal for customer %s: %s",
-            customer_id, exc,
+            customer_id,
+            exc,
         )
         raise
     except Exception as exc:
         logger.error(
             "Unexpected error creating billing portal for customer %s: %s",
-            customer_id, exc,
+            customer_id,
+            exc,
         )
         raise
 
@@ -289,6 +308,7 @@ async def create_billing_portal_session(
 # ---------------------------------------------------------------------------
 # Webhooks
 # ---------------------------------------------------------------------------
+
 
 def construct_webhook_event(
     payload: bytes,
@@ -330,7 +350,9 @@ def construct_webhook_event(
         logger.error("Unexpected error constructing Stripe webhook event: %s", exc)
         raise ValueError(f"Webhook construction failed: {exc}") from exc
 
-    logger.debug("Stripe webhook event constructed: type=%s id=%s", event.type, event.id)
+    logger.debug(
+        "Stripe webhook event constructed: type=%s id=%s", event.type, event.id
+    )
     return event
 
 
@@ -389,7 +411,9 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
         )
         logger.info(
             "Checkout session completed: session=%s subscription=%s customer=%s",
-            result["session_id"], subscription_id, customer_id,
+            result["session_id"],
+            subscription_id,
+            customer_id,
         )
 
     # ------------------------------------------------------------------
@@ -420,11 +444,11 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "billing_reason": getattr(invoice, "billing_reason", None),
                 "period_start": (
                     datetime.fromtimestamp(period_start, tz=UTC)
-                    if period_start else None
+                    if period_start
+                    else None
                 ),
                 "period_end": (
-                    datetime.fromtimestamp(period_end, tz=UTC)
-                    if period_end else None
+                    datetime.fromtimestamp(period_end, tz=UTC) if period_end else None
                 ),
                 "hosted_invoice_url": getattr(invoice, "hosted_invoice_url", None),
                 "invoice_pdf": getattr(invoice, "invoice_pdf", None),
@@ -432,7 +456,9 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
         )
         logger.info(
             "Invoice paid: invoice=%s subscription=%s customer=%s",
-            result["invoice_id"], subscription_id, customer_id,
+            result["invoice_id"],
+            subscription_id,
+            customer_id,
         )
 
     # ------------------------------------------------------------------
@@ -459,7 +485,12 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                         "message": getattr(last_charge, "message", None),
                     }
             except Exception as exc:
-                logger.debug("Could not retrieve payment intent %s: %s", payment_intent, exc, exc_info=True)
+                logger.debug(
+                    "Could not retrieve payment intent %s: %s",
+                    payment_intent,
+                    exc,
+                    exc_info=True,
+                )
 
         result.update(
             {
@@ -473,14 +504,17 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "attempt_count": attempt_count,
                 "next_payment_attempt": (
                     datetime.fromtimestamp(next_payment_attempt, tz=UTC)
-                    if next_payment_attempt else None
+                    if next_payment_attempt
+                    else None
                 ),
                 "last_error": last_error,
             }
         )
         logger.warning(
             "Invoice payment failed: invoice=%s subscription=%s attempt=%s",
-            result["invoice_id"], subscription_id, attempt_count,
+            result["invoice_id"],
+            subscription_id,
+            attempt_count,
         )
 
     # ------------------------------------------------------------------
@@ -504,21 +538,22 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "plan_name": metadata.get("plan_name"),
                 "billing_cycle": metadata.get("billing_cycle"),
                 "status": "cancelled",
-                "cancel_at_period_end": getattr(subscription, "cancel_at_period_end", False),
+                "cancel_at_period_end": getattr(
+                    subscription, "cancel_at_period_end", False
+                ),
                 "canceled_at": (
-                    datetime.fromtimestamp(canceled_at, tz=UTC)
-                    if canceled_at else None
+                    datetime.fromtimestamp(canceled_at, tz=UTC) if canceled_at else None
                 ),
                 "ended_at": (
-                    datetime.fromtimestamp(ended_at, tz=UTC)
-                    if ended_at else None
+                    datetime.fromtimestamp(ended_at, tz=UTC) if ended_at else None
                 ),
                 "metadata": metadata,
             }
         )
         logger.info(
             "Subscription deleted: subscription=%s customer=%s",
-            result["stripe_subscription_id"], customer_id,
+            result["stripe_subscription_id"],
+            customer_id,
         )
 
     else:

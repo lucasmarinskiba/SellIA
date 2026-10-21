@@ -8,6 +8,7 @@ from decimal import Decimal
 @dataclass
 class CashFlowAssumptions:
     """Input assumptions for cash projection."""
+
     avg_payment_delay_days: int  # days after sale before cash received
     cogs_pct_revenue: Decimal  # cost of goods as % of revenue
     opex_daily: Decimal  # fixed daily operating expense
@@ -18,6 +19,7 @@ class CashFlowAssumptions:
 @dataclass
 class CashFlowPoint:
     """Day-level cash forecast point."""
+
     date: date
     revenue_forecast: Decimal
     cogs_forecast: Decimal
@@ -34,6 +36,7 @@ class CashFlowPoint:
 @dataclass
 class CashFlowForecast:
     """Complete cash projection for a horizon."""
+
     business_id: str
     start_date: date
     horizon_days: int

@@ -62,7 +62,9 @@ class ShippingAutomation:
         if carrier.lower() == "dhl":
             return await self._generate_dhl_label(order_id, recipient, sender, package)
         elif carrier.lower() == "fedex":
-            return await self._generate_fedex_label(order_id, recipient, sender, package)
+            return await self._generate_fedex_label(
+                order_id, recipient, sender, package
+            )
         else:
             return {"status": "error", "error": f"Carrier {carrier} not supported"}
 
@@ -144,13 +146,19 @@ class ShippingAutomation:
                 data = response.json()
                 shipment = data.get("shipments", [{}])[0]
 
-                logger.info(f"DHL label generated: {shipment.get('shipmentTrackingNumber')}")
+                logger.info(
+                    f"DHL label generated: {shipment.get('shipmentTrackingNumber')}"
+                )
 
                 return {
                     "status": "success",
                     "carrier": "DHL",
                     "tracking_number": shipment.get("shipmentTrackingNumber"),
-                    "label_url": shipment.get("documents", [{}])[0].get("content") if shipment.get("documents") else None,
+                    "label_url": (
+                        shipment.get("documents", [{}])[0].get("content")
+                        if shipment.get("documents")
+                        else None
+                    ),
                     "label_format": "PDF",
                 }
             else:
@@ -237,8 +245,13 @@ class ShippingAutomation:
                 return {
                     "status": "success",
                     "carrier": "FedEx",
-                    "tracking_number": data.get("shipmentDetails", [{}])[0].get("trackingIds", [{}])[0].get("trackingNumber", ""),
-                    "label_url": data.get("output", {}).get("transactionShipments", [{}])[0].get("shipmentDocuments", [{}])[0].get("url", ""),
+                    "tracking_number": data.get("shipmentDetails", [{}])[0]
+                    .get("trackingIds", [{}])[0]
+                    .get("trackingNumber", ""),
+                    "label_url": data.get("output", {})
+                    .get("transactionShipments", [{}])[0]
+                    .get("shipmentDocuments", [{}])[0]
+                    .get("url", ""),
                     "label_format": "PDF",
                 }
             else:

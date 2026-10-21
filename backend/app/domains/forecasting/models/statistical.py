@@ -16,19 +16,24 @@ class SeasonalNaiveForecaster(Forecaster):
         self.y = ts.values.astype(float)
         self.m = ts.seasonal_period if ts.n > 2 * ts.seasonal_period else 1
         if len(self.y) > self.m:
-            resid = self.y[self.m:] - self.y[:-self.m]
+            resid = self.y[self.m :] - self.y[: -self.m]
         else:
             resid = np.diff(self.y) if len(self.y) > 1 else np.array([0.0])
         self.sigma = self._residual_sigma(resid)
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         m = self.m
         tail = self.y[-m:] if len(self.y) >= m else np.full(m, self.y.mean())
         mean = np.array([tail[i % m] for i in range(horizon)], dtype=float)
         mean = np.clip(mean, 0.0, None)
         return ForecastResult(
-            self.name, horizon, future_index, mean,
+            self.name,
+            horizon,
+            future_index,
+            mean,
             self._normal_quantiles(mean, self.sigma, quantiles),
         )
 
@@ -59,8 +64,10 @@ class HoltWintersForecaster(Forecaster):
                         if best is None or sse < best[0]:
                             best = (sse, a, b, g, phi, state)
         self.sse, self.a, self.b, self.g, self.phi, self.state = best
-        _, self._fitted = self._run(self.a, self.b, self.g, self.phi, return_fitted=True)[1:]
-        resid = self.y[-len(self._fitted):] - self._fitted
+        _, self._fitted = self._run(
+            self.a, self.b, self.g, self.phi, return_fitted=True
+        )[1:]
+        resid = self.y[-len(self._fitted) :] - self._fitted
         self.sigma = self._residual_sigma(resid)
         return self
 
@@ -69,7 +76,9 @@ class HoltWintersForecaster(Forecaster):
         m = self.m
         n = len(y)
         level = y[:m].mean() if m > 1 else y[0]
-        trend = (y[m:2 * m].mean() - y[:m].mean()) / m if (m > 1 and n >= 2 * m) else 0.0
+        trend = (
+            (y[m : 2 * m].mean() - y[:m].mean()) / m if (m > 1 and n >= 2 * m) else 0.0
+        )
         season = (y[:m] - level).tolist() if m > 1 else [0.0]
         fitted = []
         sse = 0.0
@@ -91,21 +100,31 @@ class HoltWintersForecaster(Forecaster):
             return sse, state, np.array(fitted[m:]) if n > m else np.array(fitted)
         return sse, state
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         level, trend, season = self.state
         m = self.m
         phi = self.phi
         mean = np.empty(horizon)
         damp_sum = 0.0
         for h in range(1, horizon + 1):
-            damp_sum += phi ** h
+            damp_sum += phi**h
             s = season[(len(self.y) + h - 1) % m] if m > 1 else 0.0
             mean[h - 1] = level + damp_sum * trend + s
         mean = np.clip(mean, 0.0, None)
         return ForecastResult(
-            self.name, horizon, future_index, mean,
+            self.name,
+            horizon,
+            future_index,
+            mean,
             self._normal_quantiles(mean, self.sigma, quantiles),
-            diagnostics={"alpha": self.a, "beta": self.b, "gamma": self.g, "phi": self.phi},
+            diagnostics={
+                "alpha": self.a,
+                "beta": self.b,
+                "gamma": self.g,
+                "phi": self.phi,
+            },
         )
 
 
@@ -139,8 +158,10 @@ class ThetaForecaster(Forecaster):
         fitted_lin = self.intercept + self.slope * t
         fitted = 0.5 * fitted_lin + 0.5 * self._ses_fitted(work, self.alpha)
         if self.m > 1:
-            fitted = fitted * np.tile(self.seasonal, int(np.ceil(self.n / self.m)))[: self.n]
-        resid = y[self.m:] - fitted[self.m:] if self.n > self.m else y - fitted
+            fitted = (
+                fitted * np.tile(self.seasonal, int(np.ceil(self.n / self.m)))[: self.n]
+            )
+        resid = y[self.m :] - fitted[self.m :] if self.n > self.m else y - fitted
         self.sigma = self._residual_sigma(resid)
         return self
 
@@ -183,18 +204,25 @@ class ThetaForecaster(Forecaster):
                 best_sse, best_a = sse, a
         return float(best_a)
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         h = np.arange(1, horizon + 1)
         lin = self.intercept + self.slope * (self.n - 1 + h)
         # Theta reduces to: SES level + 0.5 * slope * (h - 1 + ...) drift term
         drift = self.slope * (h - 1) * 0.5
         mean = 0.5 * lin + 0.5 * (self.ses_level + drift)
         if self.m > 1:
-            season_tail = np.array([self.seasonal[(self.n + i) % self.m] for i in range(horizon)])
+            season_tail = np.array(
+                [self.seasonal[(self.n + i) % self.m] for i in range(horizon)]
+            )
             mean = mean * season_tail
         mean = np.clip(mean, 0.0, None)
         return ForecastResult(
-            self.name, horizon, future_index, mean,
+            self.name,
+            horizon,
+            future_index,
+            mean,
             self._normal_quantiles(mean, self.sigma, quantiles),
             diagnostics={"alpha": self.alpha, "slope": float(self.slope)},
         )
@@ -218,7 +246,9 @@ class CrostonForecaster(Forecaster):
             self.sigma = 1.0
             return self
         sizes = y[nz_idx]
-        intervals = np.diff(np.concatenate([[nz_idx[0] - (nz_idx[0] or 1) + 0], nz_idx]))
+        intervals = np.diff(
+            np.concatenate([[nz_idx[0] - (nz_idx[0] or 1) + 0], nz_idx])
+        )
         intervals = np.where(intervals <= 0, 1, intervals).astype(float)
 
         z = sizes[0]
@@ -238,7 +268,9 @@ class CrostonForecaster(Forecaster):
         self.sigma = self._residual_sigma(y - self.rate)
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         mean = np.full(horizon, self.rate, dtype=float)
         # widen intervals: intermittent demand is highly dispersed
         sigma = max(self.sigma, np.sqrt(max(self.rate, 1e-6)))
@@ -246,5 +278,11 @@ class CrostonForecaster(Forecaster):
         for k in q:
             if k <= 0.5:
                 q[k] = np.clip(q[k], 0.0, None)
-        return ForecastResult(self.name, horizon, future_index, mean, q,
-                              diagnostics={"rate": self.rate, "variant": self.variant})
+        return ForecastResult(
+            self.name,
+            horizon,
+            future_index,
+            mean,
+            q,
+            diagnostics={"rate": self.rate, "variant": self.variant},
+        )

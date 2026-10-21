@@ -46,8 +46,12 @@ async def analyze(
                     "rationale": r.rationale,
                     "target_value": float(r.target_value) if r.target_value else None,
                     "confidence": float(r.confidence),
-                    "impact_cash_30d": float(r.impact_cash_30d) if r.impact_cash_30d else None,
-                    "impact_revenue_30d": float(r.impact_revenue_30d) if r.impact_revenue_30d else None,
+                    "impact_cash_30d": (
+                        float(r.impact_cash_30d) if r.impact_cash_30d else None
+                    ),
+                    "impact_revenue_30d": (
+                        float(r.impact_revenue_30d) if r.impact_revenue_30d else None
+                    ),
                 }
                 for r in plan.recommendations
             ],

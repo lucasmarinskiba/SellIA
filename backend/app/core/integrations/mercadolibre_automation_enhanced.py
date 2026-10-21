@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class OrderStatus(Enum):
     """Estados de orden en Mercado Libre."""
+
     UNSHIPPED = "unshipped"
     SHIPPED = "shipped"
     CANCELLED = "cancelled"
@@ -33,6 +34,7 @@ class OrderStatus(Enum):
 
 class MessageType(Enum):
     """Tipos de mensaje."""
+
     BUYER_QUESTION = "buyer_question"
     ORDER_STATUS = "order_status"
     COMPLAINT = "complaint"
@@ -143,7 +145,11 @@ class MercadoLibreAutomationEnhanced:
             # Obtener detalles
             order_details = await self._fetch_order_details(order_id)
             if not order_details:
-                return {"status": "error", "order_id": order_id, "error": "Failed to fetch details"}
+                return {
+                    "status": "error",
+                    "order_id": order_id,
+                    "error": "Failed to fetch details",
+                }
 
             # Confirmar compra
             await self._confirm_purchase(order_id)
@@ -282,13 +288,11 @@ class MercadoLibreAutomationEnhanced:
             "tiempo de envío": "Envío estándar: 3-7 días hábiles. Tenemos opción express en algunas zonas.",
             "costo envío": "El costo de envío aparece al confirmar tu compra. Varía según tu ubicación.",
             "envío gratis": "Ofrecemos envío gratis en compras mayores a $500. Revisa las condiciones.",
-
             # Producto
             "especificaciones": "¿Qué específicamente deseas saber del producto? Estoy aquí para ayudarte.",
             "disponibilidad": "El producto está en stock. ¿Deseas comprarlo ahora?",
             "color": "Tenemos disponibles varios colores. ¿Cuál te interesa?",
             "garantía": "Todos nuestros productos vienen con garantía de 12 meses.",
-
             # Pago
             "métodos de pago": "Aceptamos tarjeta de crédito, débito, billetera virtual y efectivo contra entrega.",
             "promoción": "Tenemos promociones especiales. Verificaré las actuales para ti.",
@@ -402,7 +406,11 @@ class MercadoLibreAutomationEnhanced:
             response.raise_for_status()
             logger.info(f"Product {product_id} price updated to ${new_price:.2f}")
 
-            return {"status": "success", "product_id": product_id, "new_price": new_price}
+            return {
+                "status": "success",
+                "product_id": product_id,
+                "new_price": new_price,
+            }
 
         except Exception as e:
             logger.exception("Failed to update price")

@@ -23,7 +23,9 @@ class MetaAdsConnector(BaseConnector):
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/me"
-                async with session.get(url, params={"access_token": self.access_token}) as resp:
+                async with session.get(
+                    url, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         self.authenticated = True
                         return True
@@ -41,10 +43,12 @@ class MetaAdsConnector(BaseConnector):
                 "status": "PAUSED",  # Start paused for review
                 "special_ad_categories": ["none"],
             }
-            
+
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.ad_account_id}/campaigns"
-                async with session.post(url, data={**payload, "access_token": self.access_token}) as resp:
+                async with session.post(
+                    url, data={**payload, "access_token": self.access_token}
+                ) as resp:
                     if resp.status == 201:
                         data = await resp.json()
                         logger.info(f"Campaign created: {data.get('id')}")
@@ -68,7 +72,9 @@ class MetaAdsConnector(BaseConnector):
         try:
             async with aiohttp.ClientSession() as session:
                 url = f"{self.base_url}/{self.ad_account_id}/insights"
-                async with session.get(url, params={"access_token": self.access_token}) as resp:
+                async with session.get(
+                    url, params={"access_token": self.access_token}
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         results = data.get("data", [{}])[0]

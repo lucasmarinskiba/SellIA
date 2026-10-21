@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 # INITIALIZATION
 # ============================================================================
 
-def setup_performance_stack(app: FastAPI, redis_client: Any | None = None) -> dict[str, Any]:
+
+def setup_performance_stack(
+    app: FastAPI, redis_client: Any | None = None
+) -> dict[str, Any]:
     """
     Set up the complete performance stack.
 
@@ -70,6 +73,7 @@ def setup_performance_stack(app: FastAPI, redis_client: Any | None = None) -> di
 # ============================================================================
 # MIDDLEWARE FOR AUTOMATIC PERFORMANCE TRACKING
 # ============================================================================
+
 
 async def performance_tracking_middleware(app: FastAPI, performance: dict[str, Any]):
     """
@@ -115,10 +119,13 @@ async def performance_tracking_middleware(app: FastAPI, performance: dict[str, A
 # EXAMPLE: DATABASE OPTIMIZATION
 # ============================================================================
 
+
 async def get_agents_with_optimization(
     db: Annotated[AsyncSession, Depends(get_db)],
     cache: Annotated[CacheLayer, Depends(lambda: Depends(get_cache_layer))],
-    db_optimizer: Annotated[DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))],
+    db_optimizer: Annotated[
+        DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))
+    ],
 ) -> list:
     """
     Example endpoint that uses caching and database optimization.
@@ -164,6 +171,7 @@ async def get_agents_with_optimization(
 # EXAMPLE: ASYNC JOB PROCESSING
 # ============================================================================
 
+
 async def enqueue_agent_import(
     file_path: str,
     user_id: str,
@@ -193,7 +201,7 @@ async def enqueue_agent_import(
     return {
         "job_id": job.id,
         "status": "queued",
-        "message": "Agent import started in background"
+        "message": "Agent import started in background",
     }
 
 
@@ -225,6 +233,7 @@ async def process_agent_csv_import(file_path: str, user_id: str) -> None:
 # EXAMPLE: PERFORMANCE MONITORING
 # ============================================================================
 
+
 async def get_performance_dashboard(
     monitor: Annotated[PerformanceMonitor, Depends(lambda: Depends(get_monitor))],
 ) -> dict[str, Any]:
@@ -247,7 +256,9 @@ async def get_performance_dashboard(
 
 
 async def get_slow_queries(
-    db_optimizer: Annotated[DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))],
+    db_optimizer: Annotated[
+        DatabaseOptimizer, Depends(lambda: Depends(get_db_optimizer))
+    ],
     limit: int = 50,
 ) -> dict[str, Any]:
     """
@@ -268,6 +279,7 @@ async def get_slow_queries(
 # ============================================================================
 # EXAMPLE: LOAD TESTING
 # ============================================================================
+
 
 async def run_load_test(
     load_tester: Annotated[LoadTestRunner, Depends(lambda: Depends(get_load_tester))],
@@ -301,7 +313,7 @@ async def run_load_test(
         return {
             "endpoint": "/api/agents/search",
             "method": "POST",
-            "params": {"query": "test"}
+            "params": {"query": "test"},
         }
 
     # Run test
@@ -320,6 +332,7 @@ async def simulate_api_request(**kwargs) -> dict[str, Any]:
 # ============================================================================
 # DEPENDENCY INJECTION HELPERS
 # ============================================================================
+
 
 async def get_cache_layer() -> CacheLayer:
     """Get cache layer from app state."""
@@ -349,6 +362,7 @@ async def get_load_tester() -> LoadTestRunner:
 # ============================================================================
 # EXAMPLE ROUTES
 # ============================================================================
+
 
 def setup_performance_routes(app: FastAPI) -> None:
     """Set up performance monitoring routes."""
@@ -410,6 +424,7 @@ def setup_performance_routes(app: FastAPI) -> None:
 # MAIN APPLICATION SETUP
 # ============================================================================
 
+
 def create_app() -> FastAPI:
     """Create FastAPI application with performance stack."""
 
@@ -419,6 +434,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def startup():
         import redis
+
         # Initialize Redis client (or None for local cache only)
         try:
             redis_client = redis.asyncio.from_url("redis://localhost:6379")

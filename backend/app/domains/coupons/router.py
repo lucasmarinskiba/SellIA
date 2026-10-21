@@ -30,5 +30,7 @@ async def validate_coupon(
     code = data.get("code", "")
     amount = data.get("amount", 0)
     plan_id = data.get("plan_id")
-    result = await coupon_service.validate_coupon(db, code, current_user.id, plan_id, amount)
+    result = await coupon_service.validate_coupon(
+        db, code, current_user.id, plan_id, amount
+    )
     return result

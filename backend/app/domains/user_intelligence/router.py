@@ -1,4 +1,5 @@
 """Phase X9: AI User Intelligence Agent API."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends
@@ -80,6 +81,6 @@ async def get_churn_risk(
         "suggested_actions": [
             "Schedule QBR with account manager",
             "Send success metrics report",
-            "Invite to VIP training webinar"
+            "Invite to VIP training webinar",
         ],
     }

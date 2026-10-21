@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ActionType(Enum):
     """Tipo de acción a ejecutar."""
+
     CLICK = "click"
     FILL = "fill"
     SELECT = "select"
@@ -40,6 +41,7 @@ class ActionType(Enum):
 @dataclass
 class ExecutionPlan:
     """Plan de ejecución visual."""
+
     action_type: ActionType
     description: str
     target_element: ElementMatch | None = None
@@ -57,7 +59,7 @@ class VisualAutomationExecutor:
         visual_analyzer: VisualAnalyzer,
         vision_navigator: VisionNavigator,
         visual_confirmation: VisualConfirmation,
-        browser_controller=None  # Responsable de clicks/typing
+        browser_controller=None,  # Responsable de clicks/typing
     ):
         self.analyzer = visual_analyzer
         self.navigator = vision_navigator
@@ -69,7 +71,7 @@ class VisualAutomationExecutor:
         screenshot_bytes: bytes,
         action_description: str,
         expected_result: str | None = None,
-        verify_success: bool = True
+        verify_success: bool = True,
     ) -> dict[str, Any]:
         """Ejecuta una acción basada en descripción natural.
 
@@ -92,13 +94,14 @@ class VisualAutomationExecutor:
 
         try:
             # Parsear descripción y encontrar elemento
-            action_type, element_desc, value = self._parse_action_description(action_description)
+            action_type, element_desc, value = self._parse_action_description(
+                action_description
+            )
 
             element = None
             if action_type in [ActionType.CLICK, ActionType.FILL, ActionType.SELECT]:
                 element = await self.navigator.find_element_by_description(
-                    screenshot_bytes,
-                    element_desc
+                    screenshot_bytes, element_desc
                 )
 
                 if not element:
@@ -110,11 +113,7 @@ class VisualAutomationExecutor:
                     }
 
             # Ejecutar acción
-            result = await self._execute_action_internal(
-                action_type,
-                element,
-                value
-            )
+            result = await self._execute_action_internal(action_type, element, value)
 
             if not result["success"]:
                 return result
@@ -130,7 +129,7 @@ class VisualAutomationExecutor:
                     before_screenshot,
                     after_screenshot,
                     action_description,
-                    [expected_result] if expected_result else None
+                    [expected_result] if expected_result else None,
                 )
 
                 result["confirmation"] = confirmation
@@ -148,10 +147,7 @@ class VisualAutomationExecutor:
             }
 
     async def execute_action_sequence(
-        self,
-        screenshot_getter: Callable,
-        actions: list[str],
-        verify_each: bool = False
+        self, screenshot_getter: Callable, actions: list[str], verify_each: bool = False
     ) -> list[dict[str, Any]]:
         """Ejecuta una secuencia de acciones.
 
@@ -170,9 +166,7 @@ class VisualAutomationExecutor:
 
             screenshot = await screenshot_getter()
             result = await self.execute_action(
-                screenshot,
-                action,
-                verify_success=verify_each
+                screenshot, action, verify_success=verify_each
             )
 
             results.append(result)
@@ -191,7 +185,7 @@ class VisualAutomationExecutor:
         self,
         screenshot_bytes: bytes,
         form_data: dict[str, str],
-        verify_success: bool = True
+        verify_success: bool = True,
     ) -> dict[str, Any]:
         """Rellena un formulario usando etiquetas visuales.
 
@@ -217,8 +211,7 @@ class VisualAutomationExecutor:
             try:
                 # Encontrar campo por label
                 field = await self.navigator.find_form_field_by_label(
-                    screenshot_bytes,
-                    field_label
+                    screenshot_bytes, field_label
                 )
 
                 if not field:
@@ -239,14 +232,16 @@ class VisualAutomationExecutor:
                         height=field.height,
                         confidence=0.9,
                     ),
-                    value
+                    value,
                 )
 
                 if action_result["success"]:
                     results["filled_fields"].append(field_label)
                 else:
                     results["failed_fields"].append(field_label)
-                    results["errors"].append(action_result.get("error", "Unknown error"))
+                    results["errors"].append(
+                        action_result.get("error", "Unknown error")
+                    )
 
                 await asyncio.sleep(0.2)
 
@@ -260,10 +255,7 @@ class VisualAutomationExecutor:
         return results
 
     async def click_element_by_description(
-        self,
-        screenshot_bytes: bytes,
-        description: str,
-        verify_success: bool = True
+        self, screenshot_bytes: bytes, description: str, verify_success: bool = True
     ) -> dict[str, Any]:
         """Clickea un elemento por descripción.
 
@@ -276,9 +268,7 @@ class VisualAutomationExecutor:
             Resultado
         """
         element = await self.navigator.find_element_by_description(
-            screenshot_bytes,
-            description,
-            ElementType.BUTTON
+            screenshot_bytes, description, ElementType.BUTTON
         )
 
         if not element:
@@ -288,10 +278,7 @@ class VisualAutomationExecutor:
                 "error": f"Element not found: {description}",
             }
 
-        result = await self._execute_action_internal(
-            ActionType.CLICK,
-            element
-        )
+        result = await self._execute_action_internal(ActionType.CLICK, element)
 
         if verify_success and self.browser and result["success"]:
             before = screenshot_bytes
@@ -310,9 +297,7 @@ class VisualAutomationExecutor:
         return result
 
     async def navigate_by_landmark(
-        self,
-        screenshot_bytes: bytes,
-        landmark_description: str
+        self, screenshot_bytes: bytes, landmark_description: str
     ) -> dict[str, Any]:
         """Navega a un landmark visual (ej: "footer link to contact").
 
@@ -327,9 +312,7 @@ class VisualAutomationExecutor:
 
         # Buscar elemento que corresponde al landmark
         element = await self.navigator.find_element_by_description(
-            screenshot_bytes,
-            landmark_description,
-            ElementType.LINK
+            screenshot_bytes, landmark_description, ElementType.LINK
         )
 
         if not element:
@@ -339,10 +322,7 @@ class VisualAutomationExecutor:
                 "error": f"Landmark not found: {landmark_description}",
             }
 
-        return await self._execute_action_internal(
-            ActionType.NAVIGATE,
-            element
-        )
+        return await self._execute_action_internal(ActionType.NAVIGATE, element)
 
     def _parse_action_description(self, description: str) -> tuple:
         """Parsea una descripción de acción.
@@ -359,9 +339,15 @@ class VisualAutomationExecutor:
         elif desc_lower.startswith(("fill", "type")):
             # "Fill email field with user@example.com"
             # "Type password: 123456"
-            parts = description.split(" with ") if " with " in description else description.split(": ")
+            parts = (
+                description.split(" with ")
+                if " with " in description
+                else description.split(": ")
+            )
             if len(parts) == 2:
-                element_desc = parts[0][5:].strip("the ").strip()  # Remove "Fill"/"Type"
+                element_desc = (
+                    parts[0][5:].strip("the ").strip()
+                )  # Remove "Fill"/"Type"
                 value = parts[1].strip()
                 return ActionType.FILL, element_desc, value
             else:
@@ -405,7 +391,7 @@ class VisualAutomationExecutor:
         self,
         action_type: ActionType,
         element: ElementMatch | None = None,
-        value: str | None = None
+        value: str | None = None,
     ) -> dict[str, Any]:
         """Ejecuta acción interna."""
         if not self.browser:
@@ -526,7 +512,7 @@ class VisualAutomationExecutor:
         screenshot_getter: Callable,
         action_description: str,
         max_retries: int = 3,
-        confirmation_timeout: float = 10
+        confirmation_timeout: float = 10,
     ) -> dict[str, Any]:
         """Ejecuta acción con reintentos si falla.
 
@@ -543,9 +529,7 @@ class VisualAutomationExecutor:
             screenshot = await screenshot_getter()
 
             result = await self.execute_action(
-                screenshot,
-                action_description,
-                verify_success=True
+                screenshot, action_description, verify_success=True
             )
 
             if result["success"] and result.get("verified", False):

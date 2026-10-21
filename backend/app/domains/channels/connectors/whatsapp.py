@@ -20,7 +20,9 @@ class WhatsAppConnector(BaseChannelConnector):
         self.phone_number_id = credentials.get("phone_number_id")
         self.business_account_id = credentials.get("business_account_id")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.api_token or not self.phone_number_id:
             raise ValueError("Faltan credenciales de WhatsApp Business API")
 

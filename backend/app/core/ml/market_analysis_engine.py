@@ -69,7 +69,9 @@ class CompetitiveIntelligence:
         self.competitors[profile.competitor_id] = profile
         logger.info(f"Added competitor: {profile.name}")
 
-    def track_price_change(self, competitor_id: str, price: float, timestamp: datetime | None = None) -> None:
+    def track_price_change(
+        self, competitor_id: str, price: float, timestamp: datetime | None = None
+    ) -> None:
         """Track price changes over time."""
         if competitor_id not in self.price_history:
             self.price_history[competitor_id] = []
@@ -82,9 +84,15 @@ class CompetitiveIntelligence:
             prev_price = self.price_history[competitor_id][-2][1]
             change_pct = ((price - prev_price) / prev_price) * 100
             if abs(change_pct) > 5:
-                self.log_move(competitor_id, "price_change", {"from": prev_price, "to": price, "change_pct": change_pct})
+                self.log_move(
+                    competitor_id,
+                    "price_change",
+                    {"from": prev_price, "to": price, "change_pct": change_pct},
+                )
 
-    def log_move(self, competitor_id: str, move_type: str, details: dict[str, Any]) -> None:
+    def log_move(
+        self, competitor_id: str, move_type: str, details: dict[str, Any]
+    ) -> None:
         """Log strategic move."""
         move = {
             "competitor_id": competitor_id,
@@ -99,7 +107,9 @@ class CompetitiveIntelligence:
 
         logger.info(f"Logged move for {competitor_id}: {move_type}")
 
-    def get_price_trends(self, competitor_id: str, days: int = 30) -> dict[str, Any] | None:
+    def get_price_trends(
+        self, competitor_id: str, days: int = 30
+    ) -> dict[str, Any] | None:
         """Analyze price trends for competitor."""
         if competitor_id not in self.price_history:
             return None
@@ -124,7 +134,9 @@ class CompetitiveIntelligence:
             "price_volatility": float(np.std(prices)),
             "trend_slope": float(slope),
             "r_squared": float(r_value**2),
-            "direction": "uptrend" if slope > 0 else "downtrend" if slope < 0 else "stable",
+            "direction": (
+                "uptrend" if slope > 0 else "downtrend" if slope < 0 else "stable"
+            ),
         }
 
     def competitive_positioning(self) -> dict[str, Any]:
@@ -138,13 +150,23 @@ class CompetitiveIntelligence:
         return {
             "num_competitors": len(self.competitors),
             "hhi_index": float(sum(s**2 for s in market_shares)),  # Herfindahl index
-            "market_concentration": "concentrated" if total_share > 0.8 else "fragmented",
+            "market_concentration": (
+                "concentrated" if total_share > 0.8 else "fragmented"
+            ),
             "top_competitors": [
-                c.name for c in sorted(self.competitors.values(), key=lambda x: x.market_share, reverse=True)[:3]
+                c.name
+                for c in sorted(
+                    self.competitors.values(),
+                    key=lambda x: x.market_share,
+                    reverse=True,
+                )[:3]
             ],
-            "competitive_intensity": len(self.move_log) / max(1, (utc_now() - self.move_log[0]["timestamp"]).days)
-            if self.move_log
-            else 0,
+            "competitive_intensity": (
+                len(self.move_log)
+                / max(1, (utc_now() - self.move_log[0]["timestamp"]).days)
+                if self.move_log
+                else 0
+            ),
         }
 
 
@@ -189,11 +211,15 @@ class MarketTrendsAnalyzer:
         )
 
         self.trends[metric_name] = trend
-        logger.info(f"Added trend: {metric_name} ({direction.value}, strength={trend_strength:.2f})")
+        logger.info(
+            f"Added trend: {metric_name} ({direction.value}, strength={trend_strength:.2f})"
+        )
 
         return trend
 
-    def detect_seasonality(self, metric_name: str, period: int = 12) -> dict[str, float]:
+    def detect_seasonality(
+        self, metric_name: str, period: int = 12
+    ) -> dict[str, float]:
         """Detect seasonal patterns (e.g., monthly for annual data)."""
         if metric_name not in self.trends:
             return {}
@@ -291,14 +317,17 @@ class OwnAnalyzer:
         self.conversion_rate = (total_sales / total_leads) if total_leads > 0 else 0.0
 
         # Average deal value
-        deal_values = [s.get("value", 0) for s in self.sales_history if s.get("type") == "sale"]
+        deal_values = [
+            s.get("value", 0) for s in self.sales_history if s.get("type") == "sale"
+        ]
         self.avg_deal_value = float(np.mean(deal_values)) if deal_values else 0.0
 
         # Sales velocity
         if self.sales_history:
-            time_span = (self.sales_history[-1].get("timestamp", utc_now()) - self.sales_history[0].get(
-                "timestamp", utc_now()
-            )).days
+            time_span = (
+                self.sales_history[-1].get("timestamp", utc_now())
+                - self.sales_history[0].get("timestamp", utc_now())
+            ).days
             self.sales_velocity = total_sales / max(1, time_span)
 
         # Customer satisfaction
@@ -330,7 +359,9 @@ class OwnAnalyzer:
         historical = self.sales_history[:-5]
 
         recent_rate = len([s for s in recent if s.get("type") == "sale"]) / len(recent)
-        hist_rate = len([s for s in historical if s.get("type") == "sale"]) / len(historical)
+        hist_rate = len([s for s in historical if s.get("type") == "sale"]) / len(
+            historical
+        )
 
         if recent_rate > hist_rate * 1.1:
             return "improving"
@@ -345,8 +376,13 @@ class SWOTAnalyzer:
     def __init__(self):
         self.swot_analyses: dict[str, dict[str, list[str]]] = {}
 
-    def analyze_market(self, market_id: str, seller_profile: dict[str, Any], competitive_intel: CompetitiveIntelligence,
-                       market_trends: MarketTrendsAnalyzer) -> dict[str, list[str]]:
+    def analyze_market(
+        self,
+        market_id: str,
+        seller_profile: dict[str, Any],
+        competitive_intel: CompetitiveIntelligence,
+        market_trends: MarketTrendsAnalyzer,
+    ) -> dict[str, list[str]]:
         """Comprehensive SWOT analysis for seller in market."""
 
         swot = {
@@ -389,7 +425,9 @@ class SWOTAnalyzer:
                 swot["threats"].append(f"Dominant competitor: {competitor.name}")
 
         self.swot_analyses[market_id] = swot
-        logger.info(f"SWOT analysis for {market_id}: {len(swot['opportunities'])} opportunities, {len(swot['threats'])} threats")
+        logger.info(
+            f"SWOT analysis for {market_id}: {len(swot['opportunities'])} opportunities, {len(swot['threats'])} threats"
+        )
 
         return swot
 
@@ -401,7 +439,9 @@ class ForecastingEngine:
         self.forecast_models: dict[str, Any] = {}
         self.predictions: dict[str, list[float]] = {}
 
-    def forecast_demand(self, historical_demand: list[float], periods: int = 90) -> dict[str, Any]:
+    def forecast_demand(
+        self, historical_demand: list[float], periods: int = 90
+    ) -> dict[str, Any]:
         """Forecast demand using exponential smoothing."""
         if len(historical_demand) < 3:
             return {"error": "Insufficient historical data"}
@@ -412,7 +452,9 @@ class ForecastingEngine:
         last_value = historical_demand[-1]
 
         for _ in range(periods):
-            forecast = alpha * last_value + (1 - alpha) * (np.mean(historical_demand[-3:]))
+            forecast = alpha * last_value + (1 - alpha) * (
+                np.mean(historical_demand[-3:])
+            )
             forecasts.append(float(forecast))
             last_value = forecast
 
@@ -425,10 +467,16 @@ class ForecastingEngine:
             "mean_forecast": float(np.mean(forecasts[:30])),
             "confidence_lower": float(np.mean(forecasts[:30]) - 1.96 * std_error),
             "confidence_upper": float(np.mean(forecasts[:30]) + 1.96 * std_error),
-            "trend": "uptrend" if np.mean(forecasts[:15]) > np.mean(forecasts[15:30]) else "downtrend",
+            "trend": (
+                "uptrend"
+                if np.mean(forecasts[:15]) > np.mean(forecasts[15:30])
+                else "downtrend"
+            ),
         }
 
-    def forecast_prices(self, historical_prices: list[float], periods: int = 90) -> dict[str, Any]:
+    def forecast_prices(
+        self, historical_prices: list[float], periods: int = 90
+    ) -> dict[str, Any]:
         """Forecast price movements."""
         if len(historical_prices) < 3:
             return {"error": "Insufficient historical data"}
@@ -447,10 +495,14 @@ class ForecastingEngine:
             "forecast": forecasts[:30],
             "mean_price": float(np.mean(forecasts[:30])),
             "price_volatility": float(volatility),
-            "risk_level": "high" if volatility > np.mean(historical_prices) * 0.1 else "moderate",
+            "risk_level": (
+                "high" if volatility > np.mean(historical_prices) * 0.1 else "moderate"
+            ),
         }
 
-    def forecast_market_phase(self, growth_rate: float, market_maturity: float) -> MarketPhase:
+    def forecast_market_phase(
+        self, growth_rate: float, market_maturity: float
+    ) -> MarketPhase:
         """Predict current/future market phase."""
         if growth_rate > 20:
             return MarketPhase.GROWTH

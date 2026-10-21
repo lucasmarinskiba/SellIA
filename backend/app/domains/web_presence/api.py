@@ -60,7 +60,11 @@ async def suggested_links(
     from app.domains.authority.service import business_ids_for
 
     business_ids = await business_ids_for(db, user.id)
-    return {"suggestions": await suggestions.suggest_links_from_channels(db, user.id, business_ids)}
+    return {
+        "suggestions": await suggestions.suggest_links_from_channels(
+            db, user.id, business_ids
+        )
+    }
 
 
 @router.get("/links")
@@ -170,9 +174,9 @@ async def compare_with_competitor(
     never mentions. No estimated 'domain authority' anywhere: that number needs
     a paid backlink index (see docs/INTEGRACIONES.md)."""
     links = await service.list_links(db, user.id)
-    mine = next((link for link in links if link.is_primary and link.audit), None) or next(
-        (link for link in links if link.audit), None
-    )
+    mine = next(
+        (link for link in links if link.is_primary and link.audit), None
+    ) or next((link for link in links if link.audit), None)
     if mine is None:
         raise HTTPException(
             status_code=400,
@@ -191,7 +195,9 @@ async def compare_with_competitor(
     theirs_dict = theirs.as_dict()
     mine_dict = mine.audit or {}
 
-    def row(label: str, mine_value: Any, their_value: Any, higher_is_better: bool = True) -> dict[str, Any]:
+    def row(
+        label: str, mine_value: Any, their_value: Any, higher_is_better: bool = True
+    ) -> dict[str, Any]:
         return {
             "label": label,
             "mine": mine_value,
@@ -200,26 +206,51 @@ async def compare_with_competitor(
         }
 
     my_terms = {t["term"] for t in (mine_dict.get("terms") or {}).get("top_terms", [])}
-    their_terms = [t["term"] for t in (theirs_dict.get("terms") or {}).get("top_terms", [])]
+    their_terms = [
+        t["term"] for t in (theirs_dict.get("terms") or {}).get("top_terms", [])
+    ]
 
     return {
         "ok": True,
-        "mine": {"url": mine.url, "score": mine.seo_score, "title": mine_dict.get("title")},
+        "mine": {
+            "url": mine.url,
+            "score": mine.seo_score,
+            "title": mine_dict.get("title"),
+        },
         "theirs": {
             "url": result.final_url,
             "score": analyzer.score_page(theirs, result.elapsed_ms),
             "title": theirs_dict.get("title"),
         },
         "rows": [
-            row("Palabras de contenido", mine_dict.get("word_count"), theirs_dict.get("word_count")),
-            row("Tipos de datos estructurados",
-                len(mine_dict.get("json_ld_types", [])), len(theirs_dict.get("json_ld_types", []))),
-            row("Enlaces internos", mine_dict.get("internal_links"), theirs_dict.get("internal_links")),
-            row("Imágenes sin alt",
-                mine_dict.get("images_without_alt"), theirs_dict.get("images_without_alt"), False),
+            row(
+                "Palabras de contenido",
+                mine_dict.get("word_count"),
+                theirs_dict.get("word_count"),
+            ),
+            row(
+                "Tipos de datos estructurados",
+                len(mine_dict.get("json_ld_types", [])),
+                len(theirs_dict.get("json_ld_types", [])),
+            ),
+            row(
+                "Enlaces internos",
+                mine_dict.get("internal_links"),
+                theirs_dict.get("internal_links"),
+            ),
+            row(
+                "Imágenes sin alt",
+                mine_dict.get("images_without_alt"),
+                theirs_dict.get("images_without_alt"),
+                False,
+            ),
             row("Tiempo de respuesta (ms)", mine.response_ms, result.elapsed_ms, False),
-            row("Hallazgos abiertos",
-                len(mine_dict.get("issues", [])), len(theirs_dict.get("issues", [])), False),
+            row(
+                "Hallazgos abiertos",
+                len(mine_dict.get("issues", [])),
+                len(theirs_dict.get("issues", [])),
+                False,
+            ),
         ],
         "topics_they_cover": [t for t in their_terms if t not in my_terms][:10],
         "their_schema": theirs_dict.get("json_ld_types", []),
@@ -262,7 +293,9 @@ async def get_structured_data(
             ),
         }
 
-    business_name = user.full_name or (user.email.split("@")[0] if user.email else "Mi negocio")
+    business_name = user.full_name or (
+        user.email.split("@")[0] if user.email else "Mi negocio"
+    )
     city = country = description = None
     has_physical = False
     try:

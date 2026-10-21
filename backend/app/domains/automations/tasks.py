@@ -37,9 +37,9 @@ async def send_toggle_notification(
         # Find matching notification rules
         result = await db.execute(
             select(ToggleNotificationRule).where(
-                (ToggleNotificationRule.toggle_id == toggle_id) &
-                (ToggleNotificationRule.event_type == event_type) &
-                (ToggleNotificationRule.is_active == True)
+                (ToggleNotificationRule.toggle_id == toggle_id)
+                & (ToggleNotificationRule.event_type == event_type)
+                & (ToggleNotificationRule.is_active == True)
             )
         )
         rules = result.scalars().all()
@@ -69,11 +69,13 @@ async def send_toggle_notification(
             if rule.notify_via_webhook and rule.webhook_url:
                 try:
                     import httpx
+
                     async with httpx.AsyncClient(timeout=5) as client:
                         headers = {}
                         if rule.webhook_secret:
                             import hashlib
                             import hmac
+
                             signature = hmac.new(
                                 rule.webhook_secret.encode(),
                                 str(payload).encode(),
@@ -129,8 +131,8 @@ async def _execute_schedules():
         # Find all active schedules due for execution
         result = await db.execute(
             select(ToggleSchedule).where(
-                (ToggleSchedule.is_active == True) &
-                (ToggleSchedule.next_execution_at <= now)
+                (ToggleSchedule.is_active == True)
+                & (ToggleSchedule.next_execution_at <= now)
             )
         )
         schedules = result.scalars().all()
@@ -142,12 +144,16 @@ async def _execute_schedules():
             try:
                 # Execute the toggle action
                 toggle_result = await db.execute(
-                    select(AutomationToggle).where(AutomationToggle.id == schedule.toggle_id)
+                    select(AutomationToggle).where(
+                        AutomationToggle.id == schedule.toggle_id
+                    )
                 )
                 toggle = toggle_result.scalar_one_or_none()
 
                 if not toggle:
-                    logger.warning(f"Toggle {schedule.toggle_id} not found for schedule {schedule.id}")
+                    logger.warning(
+                        f"Toggle {schedule.toggle_id} not found for schedule {schedule.id}"
+                    )
                     schedule.failed_count += 1
                     schedule.last_error = "Toggle not found"
                     await db.commit()
@@ -187,9 +193,13 @@ async def _execute_schedules():
                         else:
                             # No more occurrences, disable schedule
                             schedule.is_active = False
-                            logger.info(f"Schedule {schedule.id} has no more occurrences, disabling")
+                            logger.info(
+                                f"Schedule {schedule.id} has no more occurrences, disabling"
+                            )
                     except Exception as e:
-                        logger.exception(f"Error parsing recurrence rule for schedule {schedule.id}")
+                        logger.exception(
+                            f"Error parsing recurrence rule for schedule {schedule.id}"
+                        )
                         schedule.failed_count += 1
                         schedule.last_error = f"Recurrence parsing error: {e!s}"
                         failed += 1
@@ -211,7 +221,9 @@ async def _execute_schedules():
                     toggle_name=toggle.display_name,
                 )
 
-                logger.info(f"Executed schedule {schedule.id}: {schedule.action} for toggle {schedule.toggle_id}")
+                logger.info(
+                    f"Executed schedule {schedule.id}: {schedule.action} for toggle {schedule.toggle_id}"
+                )
 
             except Exception as e:
                 logger.exception(f"Error executing schedule {schedule.id}")

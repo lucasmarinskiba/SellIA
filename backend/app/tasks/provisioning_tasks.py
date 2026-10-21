@@ -48,7 +48,9 @@ async def _process_resource_request_async(task_self, request_id: str):
             elif request.resource_type == "dns_record":
                 await _provision_dns_record(db, request)
             else:
-                raise ValueError(f"Tipo de recurso no soportado: {request.resource_type}")
+                raise ValueError(
+                    f"Tipo de recurso no soportado: {request.resource_type}"
+                )
 
             request.status = "completed"
             request.completed_at = datetime.now(UTC)
@@ -87,18 +89,29 @@ async def _provision_ssl_certificate(db, request: ResourceRequest):
         response = acm.request_certificate(
             DomainName=domain,
             ValidationMethod="DNS",
-            SubjectAlternativeNames=[f"*.{domain}"] if not domain.startswith("*.") else [],
-            Tags=[{"Key": "Name", "Value": request.name}, {"Key": "ManagedBy", "Value": "sellia-service-broker"}],
+            SubjectAlternativeNames=(
+                [f"*.{domain}"] if not domain.startswith("*.") else []
+            ),
+            Tags=[
+                {"Key": "Name", "Value": request.name},
+                {"Key": "ManagedBy", "Value": "sellia-service-broker"},
+            ],
         )
         cert_arn = response["CertificateArn"]
         request.provider_reference = cert_arn
 
         await provisioning_service.update_job(
-            db, job, "completed", result={"domain": domain, "arn": cert_arn, "region": region}
+            db,
+            job,
+            "completed",
+            result={"domain": domain, "arn": cert_arn, "region": region},
         )
         await provisioning_service.add_event(
-            db, request.id, "step_completed", f"Certificado SSL solicitado en ACM para {domain}",
-            {"domain": domain, "arn": cert_arn, "region": region}
+            db,
+            request.id,
+            "step_completed",
+            f"Certificado SSL solicitado en ACM para {domain}",
+            {"domain": domain, "arn": cert_arn, "region": region},
         )
     except Exception as exc:
         await provisioning_service.update_job(db, job, "failed", error_message=str(exc))
@@ -147,7 +160,9 @@ async def _provision_s3_bucket(db, request: ResourceRequest):
         s3.put_bucket_encryption(
             Bucket=bucket_name,
             ServerSideEncryptionConfiguration={
-                "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+                "Rules": [
+                    {"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}
+                ]
             },
         )
 
@@ -157,8 +172,11 @@ async def _provision_s3_bucket(db, request: ResourceRequest):
             db, job, "completed", result={"bucket": bucket_name, "region": region}
         )
         await provisioning_service.add_event(
-            db, request.id, "step_completed", f"Bucket S3 creado: {bucket_name}",
-            {"bucket": bucket_name, "region": region}
+            db,
+            request.id,
+            "step_completed",
+            f"Bucket S3 creado: {bucket_name}",
+            {"bucket": bucket_name, "region": region},
         )
     except Exception as exc:
         await provisioning_service.update_job(db, job, "failed", error_message=str(exc))
@@ -179,7 +197,9 @@ async def _provision_dns_record(db, request: ResourceRequest):
     ttl = request.parameters.get("ttl", 300)
 
     if not all([zone_id, record_name, record_value]):
-        raise ValueError("Los parámetros 'zone_id', 'record_name' y 'record_value' son requeridos")
+        raise ValueError(
+            "Los parámetros 'zone_id', 'record_name' y 'record_value' son requeridos"
+        )
 
     try:
         route53 = boto3.client("route53")
@@ -205,17 +225,28 @@ async def _provision_dns_record(db, request: ResourceRequest):
         request.provider_reference = change_id
 
         await provisioning_service.update_job(
-            db, job, "completed", result={
+            db,
+            job,
+            "completed",
+            result={
                 "zone_id": zone_id,
                 "name": record_name,
                 "type": record_type,
                 "value": record_value,
                 "change_id": change_id,
-            }
+            },
         )
         await provisioning_service.add_event(
-            db, request.id, "step_completed", f"Registro DNS creado: {record_name}",
-            {"zone_id": zone_id, "name": record_name, "type": record_type, "change_id": change_id}
+            db,
+            request.id,
+            "step_completed",
+            f"Registro DNS creado: {record_name}",
+            {
+                "zone_id": zone_id,
+                "name": record_name,
+                "type": record_type,
+                "change_id": change_id,
+            },
         )
     except Exception as exc:
         await provisioning_service.update_job(db, job, "failed", error_message=str(exc))

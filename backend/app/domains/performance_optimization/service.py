@@ -1,4 +1,5 @@
 """Phase 5: Performance Optimization Service - Query, Cache, Index Strategy."""
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -100,19 +101,29 @@ class PerformanceOptimizationService:
         else:
             # Update existing record
             slow_query.execution_count += execution_count
-            slow_query.total_execution_time_ms += avg_execution_time_ms * execution_count
-            slow_query.avg_execution_time_ms = slow_query.total_execution_time_ms / slow_query.execution_count
-            slow_query.max_execution_time_ms = max(slow_query.max_execution_time_ms, max_execution_time_ms)
+            slow_query.total_execution_time_ms += (
+                avg_execution_time_ms * execution_count
+            )
+            slow_query.avg_execution_time_ms = (
+                slow_query.total_execution_time_ms / slow_query.execution_count
+            )
+            slow_query.max_execution_time_ms = max(
+                slow_query.max_execution_time_ms, max_execution_time_ms
+            )
             slow_query.last_seen_at = datetime.now(UTC)
 
         # Auto-suggest optimization if query is > 1 second
         if avg_execution_time_ms > 1000:
             slow_query.optimization_urgency = 80
             if "SELECT" in query_signature and "JOIN" in query_signature:
-                slow_query.recommended_optimization = "Consider adding composite index on join columns"
+                slow_query.recommended_optimization = (
+                    "Consider adding composite index on join columns"
+                )
                 slow_query.optimization_impact = 0.4  # 40% improvement expected
             elif "SELECT" in query_signature:
-                slow_query.recommended_optimization = "Consider adding index on WHERE clause columns"
+                slow_query.recommended_optimization = (
+                    "Consider adding index on WHERE clause columns"
+                )
                 slow_query.optimization_impact = 0.3
 
         await db.commit()
@@ -206,7 +217,11 @@ class PerformanceOptimizationService:
         strategy.cache_type = cache_type
         strategy.ttl_seconds = ttl_seconds
         strategy.max_size_mb = max_size_mb
-        strategy.cache_patterns = cache_patterns or ["user_*", "business_*", "product_*"]
+        strategy.cache_patterns = cache_patterns or [
+            "user_*",
+            "business_*",
+            "product_*",
+        ]
         strategy.status = "active"
 
         # Estimate impact
@@ -246,21 +261,29 @@ class PerformanceOptimizationService:
         for query in slow_queries[:5]:
             # Detect N+1 pattern
             if "SELECT" in query.query_signature and query.execution_count > 100:
-                opportunities.append({
-                    "type": "n_plus_one",
-                    "description": f"Query executed {query.execution_count} times - potential N+1",
-                    "improvement_percent": 60,
-                    "complexity": "medium",
-                })
+                opportunities.append(
+                    {
+                        "type": "n_plus_one",
+                        "description": f"Query executed {query.execution_count} times - potential N+1",
+                        "improvement_percent": 60,
+                        "complexity": "medium",
+                    }
+                )
 
             # Detect missing index
             if query.avg_execution_time_ms > 1000:
-                opportunities.append({
-                    "type": "missing_index",
-                    "description": f"Slow query ({query.avg_execution_time_ms}ms avg) - add index",
-                    "improvement_percent": query.optimization_impact * 100 if query.optimization_impact else 30,
-                    "complexity": "low",
-                })
+                opportunities.append(
+                    {
+                        "type": "missing_index",
+                        "description": f"Slow query ({query.avg_execution_time_ms}ms avg) - add index",
+                        "improvement_percent": (
+                            query.optimization_impact * 100
+                            if query.optimization_impact
+                            else 30
+                        ),
+                        "complexity": "low",
+                    }
+                )
 
         # Add cache opportunity
         result = await db.execute(
@@ -269,17 +292,21 @@ class PerformanceOptimizationService:
         cache = result.scalar()
 
         if not cache or cache.hit_rate < 0.5:
-            opportunities.append({
-                "type": "cache_strategy",
-                "description": "Implement or improve caching layer",
-                "improvement_percent": 35,
-                "complexity": "medium",
-            })
+            opportunities.append(
+                {
+                    "type": "cache_strategy",
+                    "description": "Implement or improve caching layer",
+                    "improvement_percent": 35,
+                    "complexity": "medium",
+                }
+            )
 
         return {
             "business_id": business_id,
             "opportunities": opportunities[:5],
-            "total_improvement_potential": sum([o["improvement_percent"] for o in opportunities]),
+            "total_improvement_potential": sum(
+                [o["improvement_percent"] for o in opportunities]
+            ),
             "recommendation": f"Implement {len(opportunities)} optimizations for ~{sum([o['improvement_potential'] for o in opportunities])}% improvement",
         }
 
@@ -319,14 +346,28 @@ class PerformanceOptimizationService:
         return {
             "business_id": business_id,
             "performance_score": latest.performance_score if latest else 100,
-            "avg_response_time_ms": round(latest.avg_response_time_ms, 2) if latest else 0,
+            "avg_response_time_ms": (
+                round(latest.avg_response_time_ms, 2) if latest else 0
+            ),
             "error_rate": round(latest.error_rate * 100, 2) if latest else 0,
             "cache_hit_rate": round(latest.cache_hit_rate * 100, 2) if latest else 0,
             "critical_slow_queries": len(critical_queries),
             "pending_index_recommendations": len(pending_indexes),
             "next_actions": [
-                f"Optimize {len(critical_queries)} critical queries" if critical_queries else None,
-                f"Implement {len(pending_indexes)} recommended indexes" if pending_indexes else None,
-                "Configure caching strategy" if not latest or latest.cache_hit_rate < 0.5 else None,
+                (
+                    f"Optimize {len(critical_queries)} critical queries"
+                    if critical_queries
+                    else None
+                ),
+                (
+                    f"Implement {len(pending_indexes)} recommended indexes"
+                    if pending_indexes
+                    else None
+                ),
+                (
+                    "Configure caching strategy"
+                    if not latest or latest.cache_hit_rate < 0.5
+                    else None
+                ),
             ],
         }

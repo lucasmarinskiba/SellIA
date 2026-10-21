@@ -32,10 +32,19 @@ router = APIRouter()
 class StrategyRequest(BaseModel):
     """Solicitud de estrategia al Brain."""
 
-    platform: str = Field(..., description="Plataforma: whatsapp, email, instagram, etc")
-    stage: str = Field(..., description="Etapa de venta: awareness, consideration, decision, closure, etc")
-    customer_profile: dict | None = Field(default=None, description="Perfil del cliente")
-    product_info: dict | None = Field(default=None, description="Información del producto")
+    platform: str = Field(
+        ..., description="Plataforma: whatsapp, email, instagram, etc"
+    )
+    stage: str = Field(
+        ...,
+        description="Etapa de venta: awareness, consideration, decision, closure, etc",
+    )
+    customer_profile: dict | None = Field(
+        default=None, description="Perfil del cliente"
+    )
+    product_info: dict | None = Field(
+        default=None, description="Información del producto"
+    )
     objections: list | None = Field(default=[], description="Objeciones del cliente")
 
 

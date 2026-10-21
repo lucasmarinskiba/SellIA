@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class CalendlyEventStatus(Enum):
     """Calendly event statuses."""
+
     SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
     COMPLETED = "completed"

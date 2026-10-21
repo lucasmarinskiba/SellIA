@@ -51,9 +51,12 @@ class AnthropicNativeProvider(ComputerUseProvider):
         if self._client is None:
             try:
                 from anthropic import AsyncAnthropic
+
                 self._client = AsyncAnthropic(api_key=self.api_key)
             except ImportError:
-                logger.error("anthropic package not installed. Run: pip install anthropic")
+                logger.error(
+                    "anthropic package not installed. Run: pip install anthropic"
+                )
                 raise
         return self._client
 
@@ -96,24 +99,28 @@ Previous actions:
         # If there's history, add it as previous turns
         # For simplicity, we keep a single-turn approach with history in context
         # The Anthropic API handles multi-turn with tool_use/tool_result
-        messages.append({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": content},
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": screenshot_base64,
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": content},
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": screenshot_base64,
+                        },
                     },
-                },
-            ],
-        })
+                ],
+            }
+        )
 
         return messages
 
-    def _parse_tool_use(self, content_blocks: list[dict[str, Any]]) -> ComputerUseAction:
+    def _parse_tool_use(
+        self, content_blocks: list[dict[str, Any]]
+    ) -> ComputerUseAction:
         """Parsea tool_use blocks de Anthropic a ComputerUseAction."""
         for block in content_blocks:
             if block.get("type") == "tool_use" and block.get("name") == "computer":
@@ -124,26 +131,36 @@ Previous actions:
 
                 # Map Anthropic actions to internal format
                 if action == "screenshot":
-                    return ComputerUseAction(action_type="screenshot", params={}, reason=reason)
+                    return ComputerUseAction(
+                        action_type="screenshot", params={}, reason=reason
+                    )
 
                 elif action in ("left_click", "click"):
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="click", params=params, reason=reason
+                    )
 
                 elif action == "right_click":
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="right_click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="right_click", params=params, reason=reason
+                    )
 
                 elif action == "double_click":
                     coord = input_data.get("coordinate", [0, 0])
                     params = {"x": coord[0], "y": coord[1]}
-                    return ComputerUseAction(action_type="double_click", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="double_click", params=params, reason=reason
+                    )
 
                 elif action == "type":
                     params = {"text": input_data.get("text", "")}
-                    return ComputerUseAction(action_type="type", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="type", params=params, reason=reason
+                    )
 
                 elif action == "key":
                     # Map common keys
@@ -156,27 +173,44 @@ Previous actions:
                     key = input_data.get("text", "")
                     mapped = key_map.get(key, key)
                     params = {"text": mapped}
-                    return ComputerUseAction(action_type="type", params=params, reason=f"Key press: {mapped}")
+                    return ComputerUseAction(
+                        action_type="type", params=params, reason=f"Key press: {mapped}"
+                    )
 
                 elif action == "scroll":
                     coord = input_data.get("coordinate", [0, 0])
                     scroll_amount = input_data.get("scroll_amount", 3)
                     direction = "down" if scroll_amount > 0 else "up"
-                    params = {"direction": direction, "amount": abs(scroll_amount) * 100}
-                    return ComputerUseAction(action_type="scroll", params=params, reason=reason)
+                    params = {
+                        "direction": direction,
+                        "amount": abs(scroll_amount) * 100,
+                    }
+                    return ComputerUseAction(
+                        action_type="scroll", params=params, reason=reason
+                    )
 
                 elif action == "wait":
                     params = {"seconds": input_data.get("duration", 2)}
-                    return ComputerUseAction(action_type="wait", params=params, reason=reason)
+                    return ComputerUseAction(
+                        action_type="wait", params=params, reason=reason
+                    )
 
                 elif action == "cursor_position":
                     # Just take another screenshot
-                    return ComputerUseAction(action_type="screenshot", params={}, reason="Checking cursor position")
+                    return ComputerUseAction(
+                        action_type="screenshot",
+                        params={},
+                        reason="Checking cursor position",
+                    )
 
             elif block.get("type") == "text":
                 # Claude responded with text - might be done or error
                 text = block.get("text", "")
-                if "done" in text.lower() or "complete" in text.lower() or "finished" in text.lower():
+                if (
+                    "done" in text.lower()
+                    or "complete" in text.lower()
+                    or "finished" in text.lower()
+                ):
                     return ComputerUseAction(
                         action_type="done",
                         params={"summary": text[:500]},
@@ -185,7 +219,9 @@ Previous actions:
 
         # No tool use found - treat as done if it looks like completion
         text_content = " ".join(
-            block.get("text", "") for block in content_blocks if block.get("type") == "text"
+            block.get("text", "")
+            for block in content_blocks
+            if block.get("type") == "text"
         )
         if text_content and len(text_content) > 10:
             return ComputerUseAction(
@@ -221,7 +257,9 @@ Previous actions:
             )
 
         screenshot_base64 = self._encode_image(screenshot_bytes)
-        messages = self._build_messages(screenshot_base64, task, history, user_message, page_info)
+        messages = self._build_messages(
+            screenshot_base64, task, history, user_message, page_info
+        )
 
         try:
             response = await client.messages.create(
@@ -261,6 +299,7 @@ Previous actions:
         screenshot_base64 = self._encode_image(screenshot_bytes)
 
         from app.domains.computer_use.prompts import COMPUTER_USE_SYSTEM_PROMPT
+
         system_prompt = COMPUTER_USE_SYSTEM_PROMPT
         messages = [SystemMessage(content=system_prompt)]
 

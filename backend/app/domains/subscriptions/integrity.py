@@ -55,7 +55,10 @@ async def validate_subscription_access(
         if feature_name in ["basic_agent"] and plan.slug != "free":
             pass
         else:
-            return False, f"La feature '{feature_name}' no está incluida en tu plan {plan.name}"
+            return (
+                False,
+                f"La feature '{feature_name}' no está incluida en tu plan {plan.name}",
+            )
 
     # Check if subscription period is active
     if sub.current_period_end and sub.current_period_end < datetime.now(UTC):

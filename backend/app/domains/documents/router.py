@@ -22,6 +22,7 @@ router = APIRouter(tags=["documents"])
 
 # ========== Documents ==========
 
+
 @router.post(
     "/businesses/{business_id}/documents",
     response_model=BusinessDocumentResponse,
@@ -42,7 +43,9 @@ async def upload_document(
     return doc
 
 
-@router.get("/businesses/{business_id}/documents", response_model=list[BusinessDocumentResponse])
+@router.get(
+    "/businesses/{business_id}/documents", response_model=list[BusinessDocumentResponse]
+)
 async def list_documents(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -52,7 +55,10 @@ async def list_documents(
     return await svc.list_documents(business_id)
 
 
-@router.get("/businesses/{business_id}/documents/{document_id}", response_model=BusinessDocumentDetailResponse)
+@router.get(
+    "/businesses/{business_id}/documents/{document_id}",
+    response_model=BusinessDocumentDetailResponse,
+)
 async def get_document(
     business_id: UUID,
     document_id: UUID,
@@ -62,7 +68,9 @@ async def get_document(
     svc = DocumentService(db)
     doc = await svc.get_document(document_id)
     if not doc or doc.business_id != business_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado"
+        )
     return doc
 
 
@@ -76,14 +84,19 @@ async def delete_document(
     svc = DocumentService(db)
     doc = await svc.get_document(document_id)
     if not doc or doc.business_id != business_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado"
+        )
     await svc.delete_document(document_id)
     return {"message": "Documento eliminado"}
 
 
 # ========== Semantic Search ==========
 
-@router.post("/businesses/{business_id}/documents/search", response_model=DocumentSearchResponse)
+
+@router.post(
+    "/businesses/{business_id}/documents/search", response_model=DocumentSearchResponse
+)
 async def search_documents(
     business_id: UUID,
     data: DocumentSearchRequest,

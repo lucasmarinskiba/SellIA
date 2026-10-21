@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class MethodCategory(Enum):
     """Affiliate method categories."""
+
     EMAIL = "email"
     CONTENT = "content"
     PAID_ADS = "paid_ads"
@@ -39,6 +40,7 @@ class MethodCategory(Enum):
 
 class Difficulty(Enum):
     """Implementation difficulty."""
+
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -98,8 +100,16 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 15000,
             "difficulty": "intermediate",
-            "resources": ["Email platform (Mailchimp, ConvertKit)", "Prospect list", "Time to write"],
-            "metrics": ["Open rate (20-40%)", "Click rate (5-10%)", "Conversion rate (1-3%)"],
+            "resources": [
+                "Email platform (Mailchimp, ConvertKit)",
+                "Prospect list",
+                "Time to write",
+            ],
+            "metrics": [
+                "Open rate (20-40%)",
+                "Click rate (5-10%)",
+                "Conversion rate (1-3%)",
+            ],
         }
 
     @staticmethod
@@ -121,8 +131,17 @@ class EmailMethods:
             "timeline": "2-3 months to first sales",
             "monthly_income": 25000,
             "difficulty": "intermediate",
-            "resources": ["Newsletter platform", "Email list (500+)", "Content creation time"],
-            "metrics": ["List growth rate", "Open rate (30-50%)", "Click-through rate", "Affiliate revenue"],
+            "resources": [
+                "Newsletter platform",
+                "Email list (500+)",
+                "Content creation time",
+            ],
+            "metrics": [
+                "List growth rate",
+                "Open rate (30-50%)",
+                "Click-through rate",
+                "Affiliate revenue",
+            ],
             "startup_cost": 0,
         }
 
@@ -145,8 +164,16 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["Email platform with segmentation", "List 1000+", "Automation setup time"],
-            "metrics": ["Segment-specific conversion rates", "Revenue per segment", "ROI"],
+            "resources": [
+                "Email platform with segmentation",
+                "List 1000+",
+                "Automation setup time",
+            ],
+            "metrics": [
+                "Segment-specific conversion rates",
+                "Revenue per segment",
+                "ROI",
+            ],
         }
 
     @staticmethod
@@ -169,7 +196,12 @@ class EmailMethods:
             "monthly_income": 10000,
             "difficulty": "beginner",
             "resources": ["$500-2000 budget", "Affiliate link", "Email copy"],
-            "metrics": ["Cost per email sent", "Conversion rate", "ROI", "Breakeven analysis"],
+            "metrics": [
+                "Cost per email sent",
+                "Conversion rate",
+                "ROI",
+                "Breakeven analysis",
+            ],
             "startup_cost": 500,
         }
 
@@ -192,8 +224,17 @@ class EmailMethods:
             "timeline": "1-2 months",
             "monthly_income": 20000,
             "difficulty": "intermediate",
-            "resources": ["Email platform (Klaviyo, ConvertKit+)", "Website", "Traffic"],
-            "metrics": ["Pixel fire rate", "Retargeting reach", "Conversion rate", "Revenue"],
+            "resources": [
+                "Email platform (Klaviyo, ConvertKit+)",
+                "Website",
+                "Traffic",
+            ],
+            "metrics": [
+                "Pixel fire rate",
+                "Retargeting reach",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
 
@@ -221,7 +262,12 @@ class ContentMethods:
             "monthly_income": 35000,
             "difficulty": "intermediate",
             "resources": ["Blog/website", "SEO knowledge", "Time to write & optimize"],
-            "metrics": ["Google ranking position", "Organic traffic", "Conversion rate", "Revenue"],
+            "metrics": [
+                "Google ranking position",
+                "Organic traffic",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
@@ -244,8 +290,17 @@ class ContentMethods:
             "timeline": "6-12 months to $1000+/month",
             "monthly_income": 50000,
             "difficulty": "advanced",
-            "resources": ["Camera/phone", "Editing software", "Consistent time commitment"],
-            "metrics": ["Subscriber growth", "Views per video", "Watch time", "Click-through rate on links"],
+            "resources": [
+                "Camera/phone",
+                "Editing software",
+                "Consistent time commitment",
+            ],
+            "metrics": [
+                "Subscriber growth",
+                "Views per video",
+                "Watch time",
+                "Click-through rate on links",
+            ],
         }
 
     @staticmethod
@@ -269,7 +324,12 @@ class ContentMethods:
             "monthly_income": 15000,
             "difficulty": "beginner",
             "resources": ["Phone camera", "Content ideas", "Consistency"],
-            "metrics": ["Follower growth", "Video views", "Engagement rate", "Bio link clicks"],
+            "metrics": [
+                "Follower growth",
+                "Video views",
+                "Engagement rate",
+                "Bio link clicks",
+            ],
         }
 
     @staticmethod
@@ -292,8 +352,17 @@ class ContentMethods:
             "timeline": "1-2 months",
             "monthly_income": 20000,
             "difficulty": "intermediate",
-            "resources": ["$500-2000 per podcast", "Affiliate product", "Tracking setup"],
-            "metrics": ["Cost per sponsor", "Conversion rate by podcast", "ROI", "Total revenue"],
+            "resources": [
+                "$500-2000 per podcast",
+                "Affiliate product",
+                "Tracking setup",
+            ],
+            "metrics": [
+                "Cost per sponsor",
+                "Conversion rate by podcast",
+                "ROI",
+                "Total revenue",
+            ],
             "startup_cost": 500,
         }
 
@@ -317,8 +386,17 @@ class ContentMethods:
             "timeline": "3-4 months",
             "monthly_income": 12000,
             "difficulty": "intermediate",
-            "resources": ["Daily time commitment", "Community knowledge", "Authenticity"],
-            "metrics": ["Community karma/reputation", "Recommendations made", "Conversions", "Revenue"],
+            "resources": [
+                "Daily time commitment",
+                "Community knowledge",
+                "Authenticity",
+            ],
+            "metrics": [
+                "Community karma/reputation",
+                "Recommendations made",
+                "Conversions",
+                "Revenue",
+            ],
         }
 
     @staticmethod
@@ -342,7 +420,12 @@ class ContentMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["Writing skills", "Niche expertise", "Time to write"],
-            "metrics": ["Subscriber growth", "Open rate (Substack)", "Click rate", "Revenue"],
+            "metrics": [
+                "Subscriber growth",
+                "Open rate (Substack)",
+                "Click rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
@@ -366,7 +449,12 @@ class ContentMethods:
             "monthly_income": 25000,
             "difficulty": "intermediate",
             "resources": ["Product access", "Documentation", "Writing ability"],
-            "metrics": ["Case study views", "Credibility perception", "Conversion rate", "Revenue"],
+            "metrics": [
+                "Case study views",
+                "Credibility perception",
+                "Conversion rate",
+                "Revenue",
+            ],
         }
 
     @staticmethod
@@ -389,8 +477,17 @@ class ContentMethods:
             "timeline": "1-2 months",
             "monthly_income": 22000,
             "difficulty": "advanced",
-            "resources": ["Webinar platform (Zoom, Demio)", "Audience (500+)", "Pitch skills"],
-            "metrics": ["Webinar attendance", "Conversion rate", "Average deal value", "Revenue"],
+            "resources": [
+                "Webinar platform (Zoom, Demio)",
+                "Audience (500+)",
+                "Pitch skills",
+            ],
+            "metrics": [
+                "Webinar attendance",
+                "Conversion rate",
+                "Average deal value",
+                "Revenue",
+            ],
         }
 
 
@@ -418,8 +515,19 @@ class PaidAdsMethods:
             "timeline": "Immediate results (may take 1-2 weeks to optimize)",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["$1000-5000 monthly budget", "Landing page", "Ad copy skills", "Analytics"],
-            "metrics": ["Cost per click", "Conversion rate", "Cost per acquisition", "ROAS", "Revenue"],
+            "resources": [
+                "$1000-5000 monthly budget",
+                "Landing page",
+                "Ad copy skills",
+                "Analytics",
+            ],
+            "metrics": [
+                "Cost per click",
+                "Conversion rate",
+                "Cost per acquisition",
+                "ROAS",
+                "Revenue",
+            ],
             "startup_cost": 1000,
         }
 
@@ -471,7 +579,12 @@ class PaidAdsMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["$300-1000 budget", "Video creation", "Tracking setup"],
-            "metrics": ["Cost per click", "Video completion rate", "Conversion rate", "ROAS"],
+            "metrics": [
+                "Cost per click",
+                "Video completion rate",
+                "Conversion rate",
+                "ROAS",
+            ],
             "startup_cost": 300,
         }
 
@@ -497,7 +610,12 @@ class PaidAdsMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["$500+ budget", "Pin design skills", "Affiliate link"],
-            "metrics": ["Pin impressions", "Click rate", "Cost per save", "Conversion rate"],
+            "metrics": [
+                "Pin impressions",
+                "Click rate",
+                "Cost per save",
+                "Conversion rate",
+            ],
             "startup_cost": 500,
         }
 
@@ -548,7 +666,12 @@ class PaidAdsMethods:
             "monthly_income": 22000,
             "difficulty": "advanced",
             "resources": ["$500+ budget", "Ad network account", "Traffic source"],
-            "metrics": ["Cost per click", "Conversion rate", "Cost per acquisition", "Profit per offer"],
+            "metrics": [
+                "Cost per click",
+                "Conversion rate",
+                "Cost per acquisition",
+                "Profit per offer",
+            ],
             "startup_cost": 500,
         }
 
@@ -577,7 +700,12 @@ class PartnershipMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["Partner relationships", "Email list or audience"],
-            "metrics": ["Partners acquired", "Total reach", "Conversion rate per partner", "Revenue split"],
+            "metrics": [
+                "Partners acquired",
+                "Total reach",
+                "Conversion rate per partner",
+                "Revenue split",
+            ],
         }
 
     @staticmethod
@@ -601,7 +729,12 @@ class PartnershipMethods:
             "monthly_income": 35000,
             "difficulty": "advanced",
             "resources": ["Product relationships", "Landing page", "Marketing reach"],
-            "metrics": ["Bundle price", "Individual product commissions", "Total revenue per sale", "Conversion rate"],
+            "metrics": [
+                "Bundle price",
+                "Individual product commissions",
+                "Total revenue per sale",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
@@ -625,7 +758,11 @@ class PartnershipMethods:
             "monthly_income": 40000,
             "difficulty": "expert",
             "resources": ["Own product", "Integration capability", "Customer base"],
-            "metrics": ["Adoption rate of integrated product", "Lifetime value lift", "Affiliate revenue per customer"],
+            "metrics": [
+                "Adoption rate of integrated product",
+                "Lifetime value lift",
+                "Affiliate revenue per customer",
+            ],
         }
 
     @staticmethod
@@ -649,7 +786,12 @@ class PartnershipMethods:
             "monthly_income": 35000,
             "difficulty": "intermediate",
             "resources": ["$500-5000 per influencer", "Affiliate tracking setup"],
-            "metrics": ["Cost per influencer", "Reach per influencer", "Conversion rate", "ROI per influencer"],
+            "metrics": [
+                "Cost per influencer",
+                "Reach per influencer",
+                "Conversion rate",
+                "ROI per influencer",
+            ],
             "startup_cost": 1000,
         }
 
@@ -666,7 +808,7 @@ class PartnershipMethods:
                 "Email your list about product A, mention product B as complement",
                 "Natural bundle: solves bigger problem together",
                 "Earn commissions from both",
-                "Create \"solution stack\" content (how tools work together)",
+                'Create "solution stack" content (how tools work together)',
                 "Highest relevance = highest conversion",
                 "Customers see you as solution architect, not salesperson",
             ],
@@ -674,7 +816,11 @@ class PartnershipMethods:
             "monthly_income": 25000,
             "difficulty": "intermediate",
             "resources": ["Email list", "Audience", "Product knowledge"],
-            "metrics": ["Complementary product adoption", "AOV increase", "Revenue per customer"],
+            "metrics": [
+                "Complementary product adoption",
+                "AOV increase",
+                "Revenue per customer",
+            ],
         }
 
 
@@ -702,7 +848,12 @@ class OrganicMethods:
             "monthly_income": 45000,
             "difficulty": "intermediate",
             "resources": ["Website", "SEO knowledge", "Time to create content"],
-            "metrics": ["Keyword rankings", "Organic traffic", "CTR from search", "Conversion rate"],
+            "metrics": [
+                "Keyword rankings",
+                "Organic traffic",
+                "CTR from search",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
@@ -725,8 +876,16 @@ class OrganicMethods:
             "timeline": "2-4 months to revenue",
             "monthly_income": 16000,
             "difficulty": "intermediate",
-            "resources": ["Niche expertise", "Time to answer questions", "Daily commitment"],
-            "metrics": ["Question answers", "Answer upvotes/followers", "Conversion rate from answers"],
+            "resources": [
+                "Niche expertise",
+                "Time to answer questions",
+                "Daily commitment",
+            ],
+            "metrics": [
+                "Question answers",
+                "Answer upvotes/followers",
+                "Conversion rate from answers",
+            ],
         }
 
     @staticmethod
@@ -750,7 +909,12 @@ class OrganicMethods:
             "monthly_income": 20000,
             "difficulty": "beginner",
             "resources": ["Writing ability", "Niche expertise"],
-            "metrics": ["Answer views", "Upvotes/followers", "CTR on affiliate links", "Revenue from Quora + affiliates"],
+            "metrics": [
+                "Answer views",
+                "Upvotes/followers",
+                "CTR on affiliate links",
+                "Revenue from Quora + affiliates",
+            ],
         }
 
     @staticmethod
@@ -773,8 +937,17 @@ class OrganicMethods:
             "timeline": "6-12 months to 5k members",
             "monthly_income": 30000,
             "difficulty": "advanced",
-            "resources": ["Community building skills", "Time to moderate", "Marketing reach to grow"],
-            "metrics": ["Community size", "Engagement rate", "Product recommendations", "Conversion rate"],
+            "resources": [
+                "Community building skills",
+                "Time to moderate",
+                "Marketing reach to grow",
+            ],
+            "metrics": [
+                "Community size",
+                "Engagement rate",
+                "Product recommendations",
+                "Conversion rate",
+            ],
         }
 
     @staticmethod
@@ -798,7 +971,12 @@ class OrganicMethods:
             "monthly_income": 20000,
             "difficulty": "intermediate",
             "resources": ["Group building skills", "Niche expertise", "Time to engage"],
-            "metrics": ["Group members", "Post engagement", "Recommendations made", "Affiliate conversions"],
+            "metrics": [
+                "Group members",
+                "Post engagement",
+                "Recommendations made",
+                "Affiliate conversions",
+            ],
         }
 
     @staticmethod
@@ -823,7 +1001,12 @@ class OrganicMethods:
             "monthly_income": 18000,
             "difficulty": "intermediate",
             "resources": ["Community building", "Daily presence", "Marketing to grow"],
-            "metrics": ["Server members", "Channel activity", "Recommendations", "Conversion rate"],
+            "metrics": [
+                "Server members",
+                "Channel activity",
+                "Recommendations",
+                "Conversion rate",
+            ],
         }
 
 
@@ -904,7 +1087,7 @@ class AffiliateMethodsLibrary:
         methods = sorted(
             self.list_all_methods(),
             key=lambda m: int(m.get("monthly_income", 0)),
-            reverse=True
+            reverse=True,
         )
         return methods[:10]  # Top 10
 
@@ -912,6 +1095,7 @@ class AffiliateMethodsLibrary:
 # ============================================================================
 # FACTORY FUNCTIONS
 # ============================================================================
+
 
 def create_methods_library() -> AffiliateMethodsLibrary:
     """Factory to create methods library."""

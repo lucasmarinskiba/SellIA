@@ -50,7 +50,12 @@ async def list_funnel_metrics(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(FunnelMetric).where(FunnelMetric.business_id == business_id).order_by(FunnelMetric.period.desc()).limit(12))
+    result = await db.execute(
+        select(FunnelMetric)
+        .where(FunnelMetric.business_id == business_id)
+        .order_by(FunnelMetric.period.desc())
+        .limit(12)
+    )
     return result.scalars().all()
 
 
@@ -64,7 +69,9 @@ async def predict_churn(
     service = BusinessIntelligenceService(db)
     prediction = await service.predict_churn(business_id, conversation_id)
     if not prediction:
-        raise HTTPException(status_code=404, detail="Conversation not found or insufficient data")
+        raise HTTPException(
+            status_code=404, detail="Conversation not found or insufficient data"
+        )
     return prediction
 
 
@@ -78,7 +85,9 @@ async def predict_ltv(
     service = BusinessIntelligenceService(db)
     prediction = await service.predict_ltv(business_id, conversation_id)
     if not prediction:
-        raise HTTPException(status_code=404, detail="Conversation not found or insufficient data")
+        raise HTTPException(
+            status_code=404, detail="Conversation not found or insufficient data"
+        )
     return prediction
 
 
@@ -88,7 +97,12 @@ async def list_insights(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    result = await db.execute(select(InsightAlert).where(InsightAlert.business_id == business_id, InsightAlert.is_active == True).order_by(InsightAlert.created_at.desc()).limit(50))
+    result = await db.execute(
+        select(InsightAlert)
+        .where(InsightAlert.business_id == business_id, InsightAlert.is_active == True)
+        .order_by(InsightAlert.created_at.desc())
+        .limit(50)
+    )
     return result.scalars().all()
 
 
@@ -105,14 +119,24 @@ async def get_dashboard(
     from sqlalchemy import func
 
     from app.domains.orders.models import Order
-    rev_result = await db.execute(select(func.sum(Order.total_amount), func.count(Order.id)).where(Order.business_id == business_id, Order.is_active == True))
+
+    rev_result = await db.execute(
+        select(func.sum(Order.total_amount), func.count(Order.id)).where(
+            Order.business_id == business_id, Order.is_active == True
+        )
+    )
     rev_row = rev_result.first()
     revenue = float(rev_row[0] or 0)
     orders = rev_row[1] or 0
 
     # Leads
     from app.domains.channels.models import Conversation
-    leads_result = await db.execute(select(func.count(Conversation.id)).where(Conversation.business_id == business_id, Conversation.is_active == True))
+
+    leads_result = await db.execute(
+        select(func.count(Conversation.id)).where(
+            Conversation.business_id == business_id, Conversation.is_active == True
+        )
+    )
     leads = leads_result.scalar() or 0
 
     # NPS
@@ -123,23 +147,39 @@ async def get_dashboard(
     top_segment = max(segments, key=segments.get) if segments else "unknown"
 
     # Churn risk
-    churn_result = await db.execute(select(func.count(ChurnPrediction.id)).where(ChurnPrediction.business_id == business_id, ChurnPrediction.risk_level.in_(["high", "critical"])))
+    churn_result = await db.execute(
+        select(func.count(ChurnPrediction.id)).where(
+            ChurnPrediction.business_id == business_id,
+            ChurnPrediction.risk_level.in_(["high", "critical"]),
+        )
+    )
     at_risk = churn_result.scalar() or 0
 
     # Insights today
     from datetime import datetime, timedelta
+
     today = datetime.now(UTC) - timedelta(hours=24)
-    insights_result = await db.execute(select(func.count(InsightAlert.id)).where(InsightAlert.business_id == business_id, InsightAlert.created_at >= today))
+    insights_result = await db.execute(
+        select(func.count(InsightAlert.id)).where(
+            InsightAlert.business_id == business_id, InsightAlert.created_at >= today
+        )
+    )
     insights_today = insights_result.scalar() or 0
 
     # Avg LTV
-    ltv_result = await db.execute(select(func.avg(LtvPrediction.predicted_ltv)).where(LtvPrediction.business_id == business_id))
+    ltv_result = await db.execute(
+        select(func.avg(LtvPrediction.predicted_ltv)).where(
+            LtvPrediction.business_id == business_id
+        )
+    )
     avg_ltv = float(ltv_result.scalar() or 0)
 
     conversion = (orders / leads * 100) if leads else 0
 
     # Business-type-aware KPIs
-    bc_result = await db.execute(select(BusinessContext).where(BusinessContext.business_id == business_id))
+    bc_result = await db.execute(
+        select(BusinessContext).where(BusinessContext.business_id == business_id)
+    )
     bc = bc_result.scalar_one_or_none()
     kpis = DashboardKPIAdapter.get_kpis(bc.business_type if bc else None)
 

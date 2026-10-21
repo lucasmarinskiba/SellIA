@@ -41,7 +41,9 @@ async def update_config(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await AdBudgetService(db).update_config(business_id, **body.model_dump(exclude_unset=True))
+    return await AdBudgetService(db).update_config(
+        business_id, **body.model_dump(exclude_unset=True)
+    )
 
 
 @router.get("/channels", response_model=list[ChannelResponse])
@@ -53,14 +55,18 @@ async def list_channels(
     return await AdBudgetService(db).list_channels(business_id)
 
 
-@router.post("/channels", response_model=ChannelResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/channels", response_model=ChannelResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_channel(
     business_id: UUID,
     body: ChannelCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await AdBudgetService(db).create_channel(business_id, **body.model_dump(exclude_none=True))
+    return await AdBudgetService(db).create_channel(
+        business_id, **body.model_dump(exclude_none=True)
+    )
 
 
 @router.patch("/channels/{channel_id}", response_model=ChannelResponse)

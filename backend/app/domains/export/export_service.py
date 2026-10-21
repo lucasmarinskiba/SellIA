@@ -32,7 +32,7 @@ class ExportBIService:
         date_end: str | None = None,
         filters: dict | None = None,
         requested_by: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Request data export."""
         if not db:
@@ -47,14 +47,16 @@ class ExportBIService:
             date_end=date_end,
             filters=filters or {},
             requested_by=requested_by,
-            status="pending"
+            status="pending",
         )
 
         db.add(export)
         db.commit()
         db.refresh(export)
 
-        logger.info(f"Export requested: {export_name} ({export_type}) - {export_format}")
+        logger.info(
+            f"Export requested: {export_name} ({export_type}) - {export_format}"
+        )
 
         return {
             "export_id": str(export.id),
@@ -62,7 +64,7 @@ class ExportBIService:
             "export_type": export_type,
             "format": export_format,
             "status": "pending",
-            "requested_at": export.requested_at.isoformat()
+            "requested_at": export.requested_at.isoformat(),
         }
 
     @staticmethod
@@ -71,7 +73,7 @@ class ExportBIService:
         file_url: str,
         file_size_bytes: int,
         row_count: int,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Mark export as complete."""
         if not db:
@@ -90,14 +92,16 @@ class ExportBIService:
 
         db.commit()
 
-        logger.info(f"Export completed: {export_id} - {row_count} rows, {file_size_bytes} bytes")
+        logger.info(
+            f"Export completed: {export_id} - {row_count} rows, {file_size_bytes} bytes"
+        )
 
         return {
             "export_id": str(export.id),
             "status": "completed",
             "file_url": file_url,
             "row_count": row_count,
-            "expires_at": export.expires_at.isoformat()
+            "expires_at": export.expires_at.isoformat(),
         }
 
     @staticmethod
@@ -108,7 +112,7 @@ class ExportBIService:
         frequency: str,
         schedule_time: str = "06:00",
         recipients: list[str] | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create scheduled report."""
         if not db:
@@ -137,7 +141,7 @@ class ExportBIService:
             frequency=frequency,
             schedule_time=schedule_time,
             recipients=recipients or [],
-            next_send_at=next_send
+            next_send_at=next_send,
         )
 
         db.add(report)
@@ -150,8 +154,10 @@ class ExportBIService:
             "report_id": str(report.id),
             "report_name": report_name,
             "frequency": frequency,
-            "next_send_at": report.next_send_at.isoformat() if report.next_send_at else None,
-            "recipients": recipients or []
+            "next_send_at": (
+                report.next_send_at.isoformat() if report.next_send_at else None
+            ),
+            "recipients": recipients or [],
         }
 
     @staticmethod
@@ -161,7 +167,7 @@ class ExportBIService:
         warehouse_name: str,
         connection_string: str,
         tables_to_sync: list[str] | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Configure data warehouse integration."""
         if not db:
@@ -170,9 +176,11 @@ class ExportBIService:
         # Encrypt connection string (placeholder - use real encryption in production)
         encrypted_conn = f"encrypted_{connection_string[:10]}..."
 
-        sync = db.query(DataWarehouseSync).filter(
-            DataWarehouseSync.business_id == business_id
-        ).first()
+        sync = (
+            db.query(DataWarehouseSync)
+            .filter(DataWarehouseSync.business_id == business_id)
+            .first()
+        )
 
         if sync:
             sync.warehouse_type = warehouse_type
@@ -187,7 +195,7 @@ class ExportBIService:
                 warehouse_name=warehouse_name,
                 connection_string_encrypted=encrypted_conn,
                 tables_synced=tables_to_sync or [],
-                connection_status="testing"
+                connection_status="testing",
             )
             db.add(sync)
 
@@ -201,26 +209,28 @@ class ExportBIService:
             "warehouse_type": warehouse_type,
             "warehouse_name": warehouse_name,
             "connection_status": "testing",
-            "tables_synced": tables_to_sync or []
+            "tables_synced": tables_to_sync or [],
         }
 
     @staticmethod
     def complete_warehouse_sync(
-        sync_id: UUID,
-        rows_synced: int,
-        db: Session = None
+        sync_id: UUID, rows_synced: int, db: Session = None
     ) -> dict:
         """Mark warehouse sync complete."""
         if not db:
             raise ValueError("Database session required")
 
-        sync = db.query(DataWarehouseSync).filter(DataWarehouseSync.id == sync_id).first()
+        sync = (
+            db.query(DataWarehouseSync).filter(DataWarehouseSync.id == sync_id).first()
+        )
         if not sync:
             raise ValueError(f"Sync {sync_id} not found")
 
         sync.connection_status = "connected"
         sync.last_sync_at = datetime.now(UTC)
-        sync.next_sync_at = datetime.now(UTC) + timedelta(hours=sync.sync_interval_hours)
+        sync.next_sync_at = datetime.now(UTC) + timedelta(
+            hours=sync.sync_interval_hours
+        )
         sync.rows_synced_total += rows_synced
 
         db.commit()
@@ -231,7 +241,7 @@ class ExportBIService:
             "sync_id": str(sync.id),
             "connection_status": "connected",
             "rows_synced": rows_synced,
-            "next_sync_at": sync.next_sync_at.isoformat()
+            "next_sync_at": sync.next_sync_at.isoformat(),
         }
 
     @staticmethod
@@ -240,7 +250,7 @@ class ExportBIService:
         dashboard_name: str,
         dashboard_type: str,
         charts: list[dict] | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Create BI dashboard."""
         if not db:
@@ -250,7 +260,7 @@ class ExportBIService:
             business_id=business_id,
             dashboard_name=dashboard_name,
             dashboard_type=dashboard_type,
-            charts=charts or []
+            charts=charts or [],
         )
 
         db.add(dashboard)
@@ -263,14 +273,11 @@ class ExportBIService:
             "dashboard_id": str(dashboard.id),
             "dashboard_name": dashboard_name,
             "dashboard_type": dashboard_type,
-            "chart_count": len(charts or [])
+            "chart_count": len(charts or []),
         }
 
     @staticmethod
-    def get_export_status(
-        export_id: UUID,
-        db: Session = None
-    ) -> dict:
+    def get_export_status(export_id: UUID, db: Session = None) -> dict:
         """Get export status."""
         if not db:
             raise ValueError("Database session required")
@@ -288,15 +295,15 @@ class ExportBIService:
             "row_count": export.row_count,
             "file_size_bytes": export.file_size_bytes,
             "requested_at": export.requested_at.isoformat(),
-            "completed_at": export.completed_at.isoformat() if export.completed_at else None,
-            "expires_at": export.expires_at.isoformat() if export.expires_at else None
+            "completed_at": (
+                export.completed_at.isoformat() if export.completed_at else None
+            ),
+            "expires_at": export.expires_at.isoformat() if export.expires_at else None,
         }
 
     @staticmethod
     def get_export_metrics(
-        business_id: UUID,
-        date: str | None = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Get export & BI metrics."""
         if not db:
@@ -309,11 +316,15 @@ class ExportBIService:
         date_end = date_start + timedelta(days=1)
 
         # Count exports
-        exports = db.query(DataExport).filter(
-            DataExport.business_id == business_id,
-            DataExport.requested_at >= date_start,
-            DataExport.requested_at < date_end
-        ).all()
+        exports = (
+            db.query(DataExport)
+            .filter(
+                DataExport.business_id == business_id,
+                DataExport.requested_at >= date_start,
+                DataExport.requested_at < date_end,
+            )
+            .all()
+        )
 
         if not exports:
             return {"metrics_available": False}
@@ -330,16 +341,22 @@ class ExportBIService:
             format_counts[fmt] = format_counts.get(fmt, 0) + 1
 
         # Scheduled reports
-        reports_sent = db.query(ScheduledReport).filter(
-            ScheduledReport.business_id == business_id,
-            ScheduledReport.last_sent_at >= date_start,
-            ScheduledReport.last_sent_at < date_end
-        ).count()
+        reports_sent = (
+            db.query(ScheduledReport)
+            .filter(
+                ScheduledReport.business_id == business_id,
+                ScheduledReport.last_sent_at >= date_start,
+                ScheduledReport.last_sent_at < date_end,
+            )
+            .count()
+        )
 
         # Dashboard views
-        dashboards = db.query(BIDashboardConfig).filter(
-            BIDashboardConfig.business_id == business_id
-        ).all()
+        dashboards = (
+            db.query(BIDashboardConfig)
+            .filter(BIDashboardConfig.business_id == business_id)
+            .all()
+        )
 
         dashboard_views = sum(d.view_count for d in dashboards)
 
@@ -356,7 +373,7 @@ class ExportBIService:
             json_exports=format_counts.get(ExportFormat.JSON, 0),
             parquet_exports=format_counts.get(ExportFormat.PARQUET, 0),
             scheduled_reports_sent=reports_sent,
-            dashboard_views=dashboard_views
+            dashboard_views=dashboard_views,
         )
 
         db.add(metrics)
@@ -370,17 +387,10 @@ class ExportBIService:
             "exports": {
                 "total_requested": len(exports),
                 "successful": successful,
-                "failed": failed
+                "failed": failed,
             },
-            "data_volume": {
-                "total_rows": total_rows,
-                "total_bytes": total_bytes
-            },
+            "data_volume": {"total_rows": total_rows, "total_bytes": total_bytes},
             "formats": format_counts,
-            "reports": {
-                "scheduled_sent": reports_sent
-            },
-            "bi": {
-                "dashboard_views": dashboard_views
-            }
+            "reports": {"scheduled_sent": reports_sent},
+            "bi": {"dashboard_views": dashboard_views},
         }

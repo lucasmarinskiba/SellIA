@@ -6,7 +6,6 @@ Endpoints para evaluar leads:
 - GET /leads/priority — ordenar por priority
 """
 
-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query

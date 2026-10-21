@@ -117,9 +117,12 @@ async def get_business_metadata(
                 "contactType": "Sales",
                 "email": business.contact_email or "sales@example.com",
             },
-            "foundingDate": business.created_at.isoformat() if business.created_at else None,
+            "foundingDate": (
+                business.created_at.isoformat() if business.created_at else None
+            ),
             "sameAs": [
-                url for url in [
+                url
+                for url in [
                     business.website_url,
                     business.linkedin_url,
                     business.twitter_url,
@@ -186,15 +189,17 @@ async def get_breadcrumb_metadata(
     breadcrumbs = []
 
     for i, part in enumerate(parts):
-        url_path = "/" + "/".join(parts[:i+1])
+        url_path = "/" + "/".join(parts[: i + 1])
         label = part.replace("-", " ").title()
 
-        breadcrumbs.append({
-            "@type": "ListItem",
-            "position": i + 1,
-            "name": label,
-            "item": f"{SITE_URL}{url_path}",
-        })
+        breadcrumbs.append(
+            {
+                "@type": "ListItem",
+                "position": i + 1,
+                "name": label,
+                "item": f"{SITE_URL}{url_path}",
+            }
+        )
 
     return {
         "@context": "https://schema.org",

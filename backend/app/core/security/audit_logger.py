@@ -91,7 +91,9 @@ class AuditLog(Base):
     seller_id = Column(String(255), nullable=False, index=True)
     user_id = Column(String(255), nullable=True, index=True)  # Who performed action
     event_type = Column(String(50), nullable=False, index=True)
-    resource_type = Column(String(50), nullable=True)  # e.g., "order", "user", "settings"
+    resource_type = Column(
+        String(50), nullable=True
+    )  # e.g., "order", "user", "settings"
     resource_id = Column(String(255), nullable=True)
     action = Column(String(100), nullable=False)  # e.g., "GET", "POST", "DELETE"
     status = Column(String(20), nullable=False)  # success, failure, pending
@@ -286,7 +288,9 @@ class AuditLogger:
             query = query.filter(AuditLog.created_at <= end_date)
 
         total = query.count()
-        events = query.order_by(AuditLog.created_at.desc()).limit(limit).offset(offset).all()
+        events = (
+            query.order_by(AuditLog.created_at.desc()).limit(limit).offset(offset).all()
+        )
 
         return events, total
 

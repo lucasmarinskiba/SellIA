@@ -371,7 +371,9 @@ class FeedIAPartnerIntegration:
         Feedback loop: FeedIA optimiza basado en ROI real.
         """
 
-        logger.info(f"Reporting sale attribution for content {content_id}: ${sale_amount}")
+        logger.info(
+            f"Reporting sale attribution for content {content_id}: ${sale_amount}"
+        )
 
         try:
             payload = {
@@ -422,7 +424,9 @@ class FeedIAPartnerIntegration:
 
             if response.status_code == 200:
                 services = response.json()
-                logger.info(f"FeedIA services available: {len(services.get('services', []))}")
+                logger.info(
+                    f"FeedIA services available: {len(services.get('services', []))}"
+                )
 
                 return {
                     "status": "success",

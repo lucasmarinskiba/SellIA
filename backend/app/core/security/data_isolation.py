@@ -22,7 +22,6 @@ class DataIsolationError(Exception):
     """Raised when data isolation is violated."""
 
 
-
 class DataIsolationService:
     """Service for enforcing row-level security (RLS)."""
 
@@ -160,6 +159,7 @@ async def get_seller_context(
 
 # Data isolation middleware for automatic enforcement
 
+
 class DataIsolationMiddleware:
     """Middleware to attach seller_context to request."""
 
@@ -178,6 +178,7 @@ class DataIsolationMiddleware:
 
 
 # Audit log for data access violations
+
 
 async def log_isolation_violation(
     seller_id: str,

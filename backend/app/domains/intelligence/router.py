@@ -38,7 +38,9 @@ async def get_message_analysis(
     return MessageAnalysisResponse.model_validate(analysis)
 
 
-@router.get("/conversation/{conversation_id}", response_model=ConversationIntelligenceResponse)
+@router.get(
+    "/conversation/{conversation_id}", response_model=ConversationIntelligenceResponse
+)
 async def get_conversation_intelligence(
     conversation_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -51,7 +53,9 @@ async def get_conversation_intelligence(
     return ConversationIntelligenceResponse.model_validate(intel)
 
 
-@router.get("/hot-leads/{business_id}", response_model=list[ConversationIntelligenceResponse])
+@router.get(
+    "/hot-leads/{business_id}", response_model=list[ConversationIntelligenceResponse]
+)
 async def get_hot_leads(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -63,7 +67,9 @@ async def get_hot_leads(
     return [ConversationIntelligenceResponse.model_validate(l) for l in leads]
 
 
-@router.get("/at-risk/{business_id}", response_model=list[ConversationIntelligenceResponse])
+@router.get(
+    "/at-risk/{business_id}", response_model=list[ConversationIntelligenceResponse]
+)
 async def get_at_risk_conversations(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -83,5 +89,7 @@ async def analyze_message_manual(
     service = MessageIntelligenceService(db)
     analysis = await service.analyze_message(message_id)
     if not analysis:
-        raise HTTPException(status_code=404, detail="Message not found or already analyzed")
+        raise HTTPException(
+            status_code=404, detail="Message not found or already analyzed"
+        )
     return MessageAnalysisResponse.model_validate(analysis)

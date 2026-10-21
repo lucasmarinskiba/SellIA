@@ -121,7 +121,9 @@ def seed_phase_33(db: Session) -> dict:
         base_prices = [99.99, 49.99, 12.99, 99.99]
         listings = []
 
-        for prod_idx, (prod_id, platform, sku, rating, sales, count) in enumerate(listing_specs):
+        for prod_idx, (prod_id, platform, sku, rating, sales, count) in enumerate(
+            listing_specs
+        ):
             listing = PlatformListing(
                 id=uuid4(),
                 product_id=prod_id,
@@ -182,9 +184,9 @@ def seed_phase_33(db: Session) -> dict:
                     price=listing.current_price,
                     quantity=1,
                     order_status="delivered",
-                    created_at=utc_now() - timedelta(days=30-i),
-                    shipped_at=utc_now() - timedelta(days=28-i),
-                    delivered_at=utc_now() - timedelta(days=25-i),
+                    created_at=utc_now() - timedelta(days=30 - i),
+                    shipped_at=utc_now() - timedelta(days=28 - i),
+                    delivered_at=utc_now() - timedelta(days=25 - i),
                 )
                 db.add(order)
         db.flush()
@@ -196,7 +198,17 @@ def seed_phase_33(db: Session) -> dict:
             ("hotmart", 80, 1, 5, 4.9, 200, 30, 4000.0, 0.15),
         ]
 
-        for platform, active, bestseller, top5, rating, reviews, orders, gmv, conv_rate in metrics_data:
+        for (
+            platform,
+            active,
+            bestseller,
+            top5,
+            rating,
+            reviews,
+            orders,
+            gmv,
+            conv_rate,
+        ) in metrics_data:
             metric = SellerMetrics(
                 id=uuid4(),
                 seller_id="seller-sellbot-001",

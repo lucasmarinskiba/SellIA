@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ContentType(str, Enum):
     """Educational content types."""
+
     TUTORIAL = "tutorial"
     DOCUMENTATION = "documentation"
     BLOG_ARTICLE = "blog_article"
@@ -82,7 +83,14 @@ class EducationalResponder:
         # Topic detection
         topics = {
             "pricing": ["cost", "price", "fee", "expensive", "discount", "refund"],
-            "integration": ["integrate", "connect", "api", "zapier", "plugin", "webhook"],
+            "integration": [
+                "integrate",
+                "connect",
+                "api",
+                "zapier",
+                "plugin",
+                "webhook",
+            ],
             "features": ["feature", "does it", "can i", "how to", "work with"],
             "setup": ["setup", "install", "configure", "start", "begin"],
         }
@@ -166,15 +174,19 @@ class EducationalResponder:
                 words_in_question = set(question_lower.split())
                 words_in_faq = set(faq_q.lower().split())
                 overlap = len(words_in_question & words_in_faq)
-                score = (overlap / len(words_in_question)) * 100 if words_in_question else 0
+                score = (
+                    (overlap / len(words_in_question)) * 100 if words_in_question else 0
+                )
 
                 if score > 40:
-                    faq_matches.append({
-                        "category": category,
-                        "question": faq_q,
-                        "answer": faq_a,
-                        "relevance_score": int(score),
-                    })
+                    faq_matches.append(
+                        {
+                            "category": category,
+                            "question": faq_q,
+                            "answer": faq_a,
+                            "relevance_score": int(score),
+                        }
+                    )
                     best_score = max(best_score, score)
 
         faq_matches.sort(key=lambda x: x["relevance_score"], reverse=True)
@@ -270,7 +282,9 @@ class EducationalResponder:
                 }
                 for item in learning_path["path"]
             ],
-            "faq_reference": faq_result["faq_matches"][0] if faq_result["found"] else None,
+            "faq_reference": (
+                faq_result["faq_matches"][0] if faq_result["found"] else None
+            ),
             "learning_path": learning_path,
             "confidence": min(100, faq_result.get("relevance_score", 50) + 25),
         }
@@ -287,7 +301,11 @@ class EducationalResponder:
             ],
             "integration": [
                 {"type": "docs", "title": "API Docs", "url": "/docs/api"},
-                {"type": "tutorial", "title": "Integration Guide", "url": "/guides/integration"},
+                {
+                    "type": "tutorial",
+                    "title": "Integration Guide",
+                    "url": "/guides/integration",
+                },
                 {"type": "video", "title": "Zapier Setup", "url": "/videos/zapier"},
             ],
             "features": [

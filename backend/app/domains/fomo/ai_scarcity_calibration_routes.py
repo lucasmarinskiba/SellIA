@@ -19,7 +19,9 @@ async def calibrate_stock_display(
     critical_threshold: Annotated[int, Query()] = 5,
 ):
     """Decide what tier of scarcity messaging is truthfully justified by real stock"""
-    return AIScarcityCalibrationAgent.calibrate_stock_display(real_stock, low_threshold, critical_threshold)
+    return AIScarcityCalibrationAgent.calibrate_stock_display(
+        real_stock, low_threshold, critical_threshold
+    )
 
 
 @router.get("/audit-message")
@@ -29,23 +31,35 @@ async def audit_scarcity_message(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Check a scarcity message's numeric/urgency claims against real stock (compliance audit)"""
-    return AIScarcityCalibrationAgent.audit_scarcity_message(displayed_message, real_stock)
+    return AIScarcityCalibrationAgent.audit_scarcity_message(
+        displayed_message, real_stock
+    )
 
 
 @router.post("/calibrate-discount")
 async def calibrate_discount(
-    historical_data: Annotated[list[dict[str, float]], Body(description='[{"discount_percent": float, "conversion_rate": float}]')],
+    historical_data: Annotated[
+        list[dict[str, float]],
+        Body(description='[{"discount_percent": float, "conversion_rate": float}]'),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     min_discount: Annotated[int, Query()] = 10,
     max_discount: Annotated[int, Query()] = 50,
 ):
     """Recommend the revenue-maximizing discount % from historical elasticity data"""
-    return AIScarcityCalibrationAgent.calibrate_discount(historical_data, min_discount, max_discount)
+    return AIScarcityCalibrationAgent.calibrate_discount(
+        historical_data, min_discount, max_discount
+    )
 
 
 @router.post("/check-urgency-fatigue")
 async def check_urgency_fatigue(
-    campaign_history: Annotated[list[dict[str, Any]], Body(description='[{"sent_at": iso8601, "urgency_intensity": str, "conversion_rate": float}]')],
+    campaign_history: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description='[{"sent_at": iso8601, "urgency_intensity": str, "conversion_rate": float}]'
+        ),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Detect whether urgency-intensity messaging is losing effect across campaigns"""
@@ -54,13 +68,19 @@ async def check_urgency_fatigue(
 
 @router.post("/ab-test-analysis")
 async def run_ab_test_analysis(
-    variant_low: Annotated[dict[str, int], Body(description='{"conversions": int, "visitors": int}')],
-    variant_high: Annotated[dict[str, int], Body(description='{"conversions": int, "visitors": int}')],
+    variant_low: Annotated[
+        dict[str, int], Body(description='{"conversions": int, "visitors": int}')
+    ],
+    variant_high: Annotated[
+        dict[str, int], Body(description='{"conversions": int, "visitors": int}')
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     min_sample_size: Annotated[int, Query()] = 100,
 ):
     """Two-proportion z-test: does the high-intensity urgency variant significantly beat low-intensity?"""
-    return AIScarcityCalibrationAgent.run_ab_test_analysis(variant_low, variant_high, min_sample_size)
+    return AIScarcityCalibrationAgent.run_ab_test_analysis(
+        variant_low, variant_high, min_sample_size
+    )
 
 
 @router.post("/full-calibration")

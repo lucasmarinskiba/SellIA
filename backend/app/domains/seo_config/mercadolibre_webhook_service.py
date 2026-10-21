@@ -99,7 +99,9 @@ async def authenticate_channel(
     return match
 
 
-def parse_notification(payload: Any, channel: ChannelConnection) -> OrderNotification | None:
+def parse_notification(
+    payload: Any, channel: ChannelConnection
+) -> OrderNotification | None:
     """Validate an already-authenticated notification.
 
     Returns None for topics that are not order notifications (questions, messages,
@@ -118,7 +120,9 @@ def parse_notification(payload: Any, channel: ChannelConnection) -> OrderNotific
 
     channel_seller = str((channel.credentials or {}).get("seller_id") or "")
     if not channel_seller or str(payload.get("user_id")) != channel_seller:
-        raise NotificationRejected(403, "La notificación no corresponde al vendedor de este canal")
+        raise NotificationRejected(
+            403, "La notificación no corresponde al vendedor de este canal"
+        )
 
     return OrderNotification(order_id=match.group(1), seller_id=channel_seller)
 
@@ -139,7 +143,9 @@ def extract_paid_items(order: dict[str, Any], seller_id: str) -> list[dict[str, 
         if not item_id:
             continue
         try:
-            value = float(line.get("unit_price") or 0) * float(line.get("quantity") or 1)
+            value = float(line.get("unit_price") or 0) * float(
+                line.get("quantity") or 1
+            )
         except (TypeError, ValueError):
             value = 0.0
         items.append({"item_id": str(item_id), "value": value})
@@ -156,7 +162,10 @@ async def _refresh_channel_token(db: AsyncSession, channel: ChannelConnection) -
     try:
         data = await MercadoLibreOAuth.refresh_token(refresh_token)
     except Exception as e:
-        logger.warning(f"ML token refresh failed for channel {channel.id}: {str(e)[:100]}", exc_info=True)
+        logger.warning(
+            f"ML token refresh failed for channel {channel.id}: {str(e)[:100]}",
+            exc_info=True,
+        )
         return False
     if not data.get("access_token"):
         return False
@@ -167,7 +176,9 @@ async def _refresh_channel_token(db: AsyncSession, channel: ChannelConnection) -
     return True
 
 
-async def fetch_order(db: AsyncSession, channel: ChannelConnection, order_id: str) -> dict[str, Any] | None:
+async def fetch_order(
+    db: AsyncSession, channel: ChannelConnection, order_id: str
+) -> dict[str, Any] | None:
     """Fetch the order from ML with the seller's token.
 
     None -> ML says it isn't there / isn't ours (404/403): nothing to record.
@@ -180,7 +191,9 @@ async def fetch_order(db: AsyncSession, channel: ChannelConnection, order_id: st
             raise MercadoLibreUnavailable("el canal no tiene access_token")
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=10)
+                resp = await client.get(
+                    url, headers={"Authorization": f"Bearer {token}"}, timeout=10
+                )
         except httpx.HTTPError as e:
             raise MercadoLibreUnavailable(str(e)[:100]) from e
 
@@ -188,7 +201,11 @@ async def fetch_order(db: AsyncSession, channel: ChannelConnection, order_id: st
             return resp.json()
         if resp.status_code in (404, 403):
             return None
-        if resp.status_code == 401 and attempt == 1 and await _refresh_channel_token(db, channel):
+        if (
+            resp.status_code == 401
+            and attempt == 1
+            and await _refresh_channel_token(db, channel)
+        ):
             continue
         raise MercadoLibreUnavailable(f"ML devolvió {resp.status_code}")
     raise MercadoLibreUnavailable("no se pudo verificar la orden")
@@ -209,12 +226,19 @@ def url_matches_item(url: str, item_id: str) -> bool:
     if not match:
         return item_id in url
     prefix, digits = match.groups()
-    return re.search(rf"(?<![A-Za-z0-9]){prefix}-?{digits}(?!\d)", url, re.IGNORECASE) is not None
+    return (
+        re.search(rf"(?<![A-Za-z0-9]){prefix}-?{digits}(?!\d)", url, re.IGNORECASE)
+        is not None
+    )
 
 
-async def _find_link(db: AsyncSession, business_id: UUID, item_id: str) -> PublicationLink | None:
+async def _find_link(
+    db: AsyncSession, business_id: UUID, item_id: str
+) -> PublicationLink | None:
     match = _ITEM_ID_RE.match(item_id)
-    needle = match.group(2) if match else item_id  # the digits are spelled the same in every URL form
+    needle = (
+        match.group(2) if match else item_id
+    )  # the digits are spelled the same in every URL form
     result = await db.execute(
         select(PublicationLink)
         .where(
@@ -223,10 +247,19 @@ async def _find_link(db: AsyncSession, business_id: UUID, item_id: str) -> Publi
         )
         .limit(50)
     )
-    return next((link for link in result.scalars().all() if url_matches_item(link.url, item_id)), None)
+    return next(
+        (
+            link
+            for link in result.scalars().all()
+            if url_matches_item(link.url, item_id)
+        ),
+        None,
+    )
 
 
-async def _already_recorded(db: AsyncSession, business_id: UUID, link_id: UUID, order_id: str, item_id: str) -> bool:
+async def _already_recorded(
+    db: AsyncSession, business_id: UUID, link_id: UUID, order_id: str, item_id: str
+) -> bool:
     cutoff = datetime.now(UTC) - DEDUPE_WINDOW
     result = await db.execute(
         select(ConversionEvent.raw_event_data).where(
@@ -240,7 +273,9 @@ async def _already_recorded(db: AsyncSession, business_id: UUID, link_id: UUID, 
     return any((raw or {}).get("order_id") == order_id for (raw,) in result.all())
 
 
-async def process_order_notification(db: AsyncSession, channel_id: UUID, order_id: str) -> dict[str, Any]:
+async def process_order_notification(
+    db: AsyncSession, channel_id: UUID, order_id: str
+) -> dict[str, Any]:
     """Confirm the order with Mercado Libre and log one conversion per tracked item.
 
     Only items that map to one of the business's PublicationLinks count: a
@@ -256,11 +291,17 @@ async def process_order_notification(db: AsyncSession, channel_id: UUID, order_i
 
     order = await fetch_order(db, channel, order_id)
     if order is None:
-        return {"status": "ignored", "reason": "Mercado Libre no reconoce la orden para este vendedor"}
+        return {
+            "status": "ignored",
+            "reason": "Mercado Libre no reconoce la orden para este vendedor",
+        }
 
     items = extract_paid_items(order, seller_id)
     if not items:
-        return {"status": "ignored", "reason": f"orden en estado '{order.get('status')}', no pagada"}
+        return {
+            "status": "ignored",
+            "reason": f"orden en estado '{order.get('status')}', no pagada",
+        }
 
     recorded = 0
     service = FOMAConversionService(db)
@@ -284,17 +325,25 @@ async def process_order_notification(db: AsyncSession, channel_id: UUID, order_i
             conversion_value=item["value"],
             external_listing_id=item["item_id"],
             external_event_id=order_id,
-            raw_event_data={"source": "mercado-libre", "order_id": order_id, "verified": True},
+            raw_event_data={
+                "source": "mercado-libre",
+                "order_id": order_id,
+                "verified": True,
+            },
         )
         if event is not None:
             recorded += 1
-            await WebhookService.broadcast(business_id, 'conversion', {
-                'id': str(event.id),
-                'platform': PLATFORM_NAME,
-                'amount': item["value"],
-                'email': None,
-                'timestamp': event.created_at.isoformat(),
-            })
+            await WebhookService.broadcast(
+                business_id,
+                "conversion",
+                {
+                    "id": str(event.id),
+                    "platform": PLATFORM_NAME,
+                    "amount": item["value"],
+                    "email": None,
+                    "timestamp": event.created_at.isoformat(),
+                },
+            )
 
     return {"status": "recorded" if recorded else "ignored", "conversions": recorded}
 
@@ -314,6 +363,9 @@ async def run_order_notification(channel_id: UUID, order_id: str) -> None:
     except NotificationRejected as e:
         logger.warning(f"ML order {order_id} rejected after verification: {e.reason}")
     except MercadoLibreUnavailable as e:
-        logger.warning(f"ML order {order_id} could not be verified, conversion NOT recorded: {e}")
-    except Exception as e:  # noqa: BLE001 -- a background task must never raise
+        logger.warning(
+            f"ML order {order_id} could not be verified, conversion NOT recorded: {e}"
+        )
+    # a background task must never raise
+    except Exception as e:  # noqa: BLE001
         logger.error(f"ML order {order_id} processing failed: {str(e)[:200]}")

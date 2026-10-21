@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class SchedulingIntent(str, Enum):
     """Intención detectada en mensaje."""
+
     SCHEDULE_REQUEST = "schedule_request"  # "Quiero agendar una cita"
     PROVIDE_DATE = "provide_date"  # "Martes"
     PROVIDE_TIME = "provide_time"  # "3pm"
@@ -49,10 +50,14 @@ class SchedulingState:
         return {
             "customer_id": self.customer_id,
             "requested_at": self.requested_at.isoformat(),
-            "preferred_date": self.preferred_date.isoformat() if self.preferred_date else None,
+            "preferred_date": (
+                self.preferred_date.isoformat() if self.preferred_date else None
+            ),
             "preferred_time": self.preferred_time,
             "duration_minutes": self.duration_minutes,
-            "proposed_slot": self.proposed_slot.to_dict() if self.proposed_slot else None,
+            "proposed_slot": (
+                self.proposed_slot.to_dict() if self.proposed_slot else None
+            ),
             "confirmed": self.confirmed,
             "event_id": self.event_id,
         }
@@ -63,7 +68,16 @@ class SchedulingOrchestrator:
 
     # Keywords para detectar intención
     SCHEDULE_KEYWORDS: ClassVar[dict] = {
-        "es": ["agendar", "cita", "horario", "fecha", "hora", "reunión", "llamada", "reservar"],
+        "es": [
+            "agendar",
+            "cita",
+            "horario",
+            "fecha",
+            "hora",
+            "reunión",
+            "llamada",
+            "reservar",
+        ],
         "en": ["schedule", "appointment", "time", "date", "meeting", "call", "book"],
     }
 
@@ -175,21 +189,49 @@ class SchedulingOrchestrator:
         """Detecta intención en mensaje."""
         msg_lower = message.lower()
 
-        if any(kw in msg_lower for kw in self.SCHEDULE_KEYWORDS.get("es", []) + self.SCHEDULE_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.SCHEDULE_KEYWORDS.get("es", [])
+            + self.SCHEDULE_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.SCHEDULE_REQUEST
 
-        if any(kw in msg_lower for kw in self.CONFIRM_KEYWORDS.get("es", []) + self.CONFIRM_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.CONFIRM_KEYWORDS.get("es", [])
+            + self.CONFIRM_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.CONFIRM
 
-        if any(kw in msg_lower for kw in self.CANCEL_KEYWORDS.get("es", []) + self.CANCEL_KEYWORDS.get("en", [])):
+        if any(
+            kw in msg_lower
+            for kw in self.CANCEL_KEYWORDS.get("es", [])
+            + self.CANCEL_KEYWORDS.get("en", [])
+        ):
             return SchedulingIntent.CANCEL
 
         # Heurística: si es solo palabra corta = probablemente hora
-        if re.match(r"^\d{1,2}(:?[0-5][0-9])?\s*(am|pm|a\.m\.|p\.m\.)?$", msg_lower.strip()):
+        if re.match(
+            r"^\d{1,2}(:?[0-5][0-9])?\s*(am|pm|a\.m\.|p\.m\.)?$", msg_lower.strip()
+        ):
             return SchedulingIntent.PROVIDE_TIME
 
         # Palabras de día/fecha
-        if any(day in msg_lower for day in ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo", "monday", "tuesday", "wednesday"]):
+        if any(
+            day in msg_lower
+            for day in [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo",
+                "monday",
+                "tuesday",
+                "wednesday",
+            ]
+        ):
             return SchedulingIntent.PROVIDE_DATE
 
         return SchedulingIntent.SCHEDULE_REQUEST
@@ -238,7 +280,9 @@ class SchedulingOrchestrator:
     def _parse_time(self, message: str) -> str | None:
         """Extrae hora del mensaje."""
         # Match: 10am, 3:30pm, 14:00, etc
-        match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?", message.lower())
+        match = re.search(
+            r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?", message.lower()
+        )
         if match:
             hour = match.group(1)
             minute = match.group(2) or "00"
@@ -248,7 +292,9 @@ class SchedulingOrchestrator:
 
         return None
 
-    def _find_matching_slot(self, slots: list[TimeSlot], time_str: str) -> TimeSlot | None:
+    def _find_matching_slot(
+        self, slots: list[TimeSlot], time_str: str
+    ) -> TimeSlot | None:
         """Encuentra slot que match con hora proporcionada."""
         # Parse time_str to hour:minute format
         time_parts = re.match(r"(\d{1,2}):(\d{2})", time_str)

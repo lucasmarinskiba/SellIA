@@ -21,6 +21,7 @@ settings = get_settings()
 @dataclass
 class BrowserInstance:
     """Una instancia de navegador del pool."""
+
     instance_id: str
     browser_type: str  # chromium, firefox, webkit
     browser: Any
@@ -61,7 +62,9 @@ class BrowserPoolManager:
             # Check pool capacity
             available = sum(1 for i in self._instances.values() if not i.in_use)
             if available == 0 and len(self._instances) >= self.max_instances:
-                raise RuntimeError(f"Pool lleno: {self.max_instances} instancias máximas")
+                raise RuntimeError(
+                    f"Pool lleno: {self.max_instances} instancias máximas"
+                )
 
             playwright = await self._get_playwright()
 
@@ -93,7 +96,11 @@ class BrowserPoolManager:
                     "height": profile.get("viewport_height", 720) if profile else 720,
                 },
                 "locale": profile.get("locale", "es-ES") if profile else "es-ES",
-                "timezone_id": profile.get("timezone_id", "America/Argentina/Buenos_Aires") if profile else "America/Argentina/Buenos_Aires",
+                "timezone_id": (
+                    profile.get("timezone_id", "America/Argentina/Buenos_Aires")
+                    if profile
+                    else "America/Argentina/Buenos_Aires"
+                ),
             }
             if profile and profile.get("user_agent"):
                 context_args["user_agent"] = profile["user_agent"]
@@ -112,7 +119,9 @@ class BrowserPoolManager:
             # Inject localStorage
             if profile and profile.get("local_storage"):
                 for key, value in profile["local_storage"].items():
-                    await page.evaluate(f"""localStorage.setItem({json.dumps(key)}, {json.dumps(value)});""")
+                    await page.evaluate(
+                        f"""localStorage.setItem({json.dumps(key)}, {json.dumps(value)});"""
+                    )
 
             instance_id = f"{browser_type}_{os.urandom(4).hex()}"
             instance = BrowserInstance(
@@ -165,7 +174,10 @@ class BrowserPoolManager:
                     instance.session_id = None
                     logger.info(f"BrowserPool: recycled instance {instance_id}")
                 except Exception as e:
-                    logger.warning(f"BrowserPool: failed to recycle {instance_id}: {e}", exc_info=True)
+                    logger.warning(
+                        f"BrowserPool: failed to recycle {instance_id}: {e}",
+                        exc_info=True,
+                    )
                     await self._destroy_instance(instance_id)
             else:
                 await self._destroy_instance(instance_id)
@@ -180,7 +192,9 @@ class BrowserPoolManager:
             await instance.browser.close()
             logger.info(f"BrowserPool: destroyed instance {instance_id}")
         except Exception as e:
-            logger.warning(f"BrowserPool: error destroying {instance_id}: {e}", exc_info=True)
+            logger.warning(
+                f"BrowserPool: error destroying {instance_id}: {e}", exc_info=True
+            )
 
     async def get_instance_for_session(self, session_id: str) -> BrowserInstance | None:
         """Obtiene la instancia asociada a una sesión."""

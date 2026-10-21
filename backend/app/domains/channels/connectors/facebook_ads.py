@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class FacebookAdsConnector(BaseChannelConnector):
     """Conector para capturar leads de anuncios de Facebook e Instagram."""
+
     platform = "facebook_ads"
     BASE_URL = "https://graph.facebook.com/v18.0"
 
@@ -28,7 +29,9 @@ class FacebookAdsConnector(BaseChannelConnector):
         self.ad_account_id = credentials.get("ad_account_id")
         self.app_secret = credentials.get("app_secret")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """Send follow-up message via Messenger if the lead has opted in."""
         if not self.access_token:
             raise ValueError("Falta access_token de Facebook")
@@ -51,7 +54,7 @@ class FacebookAdsConnector(BaseChannelConnector):
 
     async def parse_webhook(self, raw_payload: dict[str, Any]) -> WebhookPayload:
         """Parse Facebook Lead Ads webhook payload.
-        
+
         Meta sends leadgen webhooks with structure:
         {
             "entry": [{
@@ -92,10 +95,12 @@ class FacebookAdsConnector(BaseChannelConnector):
         page_id = value.get("page_id", "")
         form_id = value.get("form_id", "")
 
-        full_name = lead_fields.get("full_name", lead_fields.get("name", "Lead Facebook"))
+        full_name = lead_fields.get(
+            "full_name", lead_fields.get("name", "Lead Facebook")
+        )
         email = lead_fields.get("email", "")
         phone = lead_fields.get("phone_number", lead_fields.get("phone", ""))
-        
+
         # Build content from available fields
         content_parts = ["Nuevo lead desde Facebook Ads"]
         if full_name:
@@ -104,7 +109,7 @@ class FacebookAdsConnector(BaseChannelConnector):
             content_parts.append(f"Email: {email}")
         if phone:
             content_parts.append(f"Teléfono: {phone}")
-        
+
         # Add any other fields as extra context
         for key, val in lead_fields.items():
             if key not in ("full_name", "name", "email", "phone_number", "phone"):

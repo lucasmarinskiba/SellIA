@@ -18,7 +18,9 @@ from app.domains.workflows.workflow_models import Workflow
 router = APIRouter(prefix="/api/v1", tags=["workflows"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/conversations.py."""
     result = await db.execute(
         select(Business).where(Business.id == business_id, Business.user_id == user.id)
@@ -29,7 +31,9 @@ async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession
     return business
 
 
-async def _get_owned_workflow(workflow_id: UUID, user: User, db: AsyncSession) -> Workflow:
+async def _get_owned_workflow(
+    workflow_id: UUID, user: User, db: AsyncSession
+) -> Workflow:
     """Look up a workflow by id alone and verify it belongs to a business the
     caller owns. Needed because activate/pause/execute/executions/metrics
     only ever took {workflow_id} in the URL, with no business_id to check
@@ -94,7 +98,7 @@ async def create_workflow(
         trigger_config=request.trigger_config,
         conditions=conditions,
         actions=actions,
-        db=db
+        db=db,
     )
 
 
@@ -108,9 +112,7 @@ async def get_workflows(
     """Get workflows."""
     await _get_business_for_user(business_id, current_user, db)
     return await WorkflowEngine.get_workflows(
-        business_id=business_id,
-        active_only=active_only,
-        db=db
+        business_id=business_id, active_only=active_only, db=db
     )
 
 
@@ -123,9 +125,7 @@ async def activate_workflow(
     """Activate workflow."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
     return await WorkflowEngine.activate_workflow(
-        workflow_id=workflow_id,
-        business_id=workflow.business_id,
-        db=db
+        workflow_id=workflow_id, business_id=workflow.business_id, db=db
     )
 
 
@@ -138,9 +138,7 @@ async def pause_workflow(
     """Pause workflow."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
     return await WorkflowEngine.pause_workflow(
-        workflow_id=workflow_id,
-        business_id=workflow.business_id,
-        db=db
+        workflow_id=workflow_id, business_id=workflow.business_id, db=db
     )
 
 
@@ -158,7 +156,7 @@ async def execute_workflow(
         business_id=workflow.business_id,
         customer_id=request.customer_id,
         trigger_data=request.trigger_data,
-        db=db
+        db=db,
     )
 
 
@@ -172,10 +170,7 @@ async def get_workflow_executions(
     """Get workflow execution history."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
     return await WorkflowEngine.get_workflow_executions(
-        workflow_id=workflow_id,
-        business_id=workflow.business_id,
-        limit=limit,
-        db=db
+        workflow_id=workflow_id, business_id=workflow.business_id, limit=limit, db=db
     )
 
 
@@ -188,7 +183,5 @@ async def get_workflow_metrics(
     """Get workflow metrics."""
     workflow = await _get_owned_workflow(workflow_id, current_user, db)
     return await WorkflowEngine.get_workflow_metrics(
-        workflow_id=workflow_id,
-        business_id=workflow.business_id,
-        db=db
+        workflow_id=workflow_id, business_id=workflow.business_id, db=db
     )

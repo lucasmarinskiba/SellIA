@@ -13,6 +13,7 @@ from app.domains.autopilot.models import AutopilotActionStatus, AutopilotActionT
 # AutopilotConfig
 # ---------------------------------------------------------------------------
 
+
 class AutopilotConfigBase(BaseModel):
     auto_qualify_leads: bool = False
     auto_move_deals: bool = False
@@ -76,6 +77,7 @@ class AutopilotConfigResponse(AutopilotConfigBase):
 # AutopilotActionLog
 # ---------------------------------------------------------------------------
 
+
 class AutopilotActionLogResponse(BaseModel):
     id: UUID
     business_id: UUID
@@ -122,6 +124,7 @@ class AutopilotActionRejectRequest(BaseModel):
 # AutopilotDailyReport
 # ---------------------------------------------------------------------------
 
+
 class AutopilotDailyReportResponse(BaseModel):
     id: UUID
     business_id: UUID
@@ -149,6 +152,7 @@ class AutopilotDailyReportResponse(BaseModel):
 # Status & Overview
 # ---------------------------------------------------------------------------
 
+
 class AutopilotStatusResponse(BaseModel):
     business_id: UUID
     is_active: bool
@@ -173,6 +177,7 @@ class AutopilotOverviewResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Overnight Report (Mientras Dormías)
 # ---------------------------------------------------------------------------
+
 
 class OvernightSaleItem(BaseModel):
     seller_name: str

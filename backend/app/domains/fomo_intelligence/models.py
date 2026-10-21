@@ -11,6 +11,7 @@ Regla de integridad: toda aplicación de estrategia debe declarar
 (el dato real capturado en ese momento). Sin eso, no se registra:
 FOMO fabricado destruye confianza y viola la estrategia de Transparencia.
 """
+
 import enum
 import uuid
 from datetime import UTC, datetime
@@ -39,6 +40,7 @@ class FOMOStrategyType(str, enum.Enum):
 
 class FOMOStrategyApplication(Base):
     """Un uso concreto de una estrategia FOMO, con el dato real que la respalda."""
+
     __tablename__ = "fomo_strategy_applications"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -46,10 +48,16 @@ class FOMOStrategyApplication(Base):
     strategy_type = Column(Enum(FOMOStrategyType), nullable=False, index=True)
 
     # Contexto de aplicación
-    target_type = Column(String(50), nullable=False)  # product, campaign, cohort, landing_page
+    target_type = Column(
+        String(50), nullable=False
+    )  # product, campaign, cohort, landing_page
     target_id = Column(String(36), nullable=False, index=True)
-    channel = Column(String(50), nullable=True)  # instagram, email, whatsapp, landing_page
-    personality_target = Column(String(50), nullable=True)  # de X9: pragmatist, impulse_buyer, etc
+    channel = Column(
+        String(50), nullable=True
+    )  # instagram, email, whatsapp, landing_page
+    personality_target = Column(
+        String(50), nullable=True
+    )  # de X9: pragmatist, impulse_buyer, etc
 
     # Integridad del dato: obligatorio declarar la fuente real
     real_data_source = Column(String(200), nullable=False)
@@ -65,6 +73,7 @@ class FOMOStrategyApplication(Base):
 
 class FOMOStrategyOutcome(Base):
     """Resultado medido de una aplicación de estrategia (impresiones -> conversión)."""
+
     __tablename__ = "fomo_strategy_outcomes"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -83,18 +92,27 @@ class FOMOStrategyOutcome(Base):
 
 class FOMOStrategyIntelligence(Base):
     """Conocimiento agregado: qué estrategia funciona mejor para qué segmento."""
+
     __tablename__ = "fomo_strategy_intelligence"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     strategy_type = Column(Enum(FOMOStrategyType), nullable=False, index=True)
-    personality_type = Column(String(50), nullable=True, index=True)  # null = agregado general
+    personality_type = Column(
+        String(50), nullable=True, index=True
+    )  # null = agregado general
 
     sample_size = Column(Integer, default=0)
     total_impressions = Column(Integer, default=0)
     total_conversions = Column(Integer, default=0)
     avg_conversion_rate = Column(Float, default=0.0)
     trust_score = Column(Float, default=0.0)  # % perceived_as_genuine=True
-    confidence_level = Column(String(20), default="low")  # low, medium, high (según sample_size)
+    confidence_level = Column(
+        String(20), default="low"
+    )  # low, medium, high (según sample_size)
 
     recommendation = Column(Text, nullable=True)
-    last_updated = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    last_updated = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

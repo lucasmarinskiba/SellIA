@@ -62,9 +62,21 @@ async def get_my_memory(
             satisfaction_score=memory.satisfaction_score,
             churn_risk_score=memory.churn_risk_score,
             lifetime_value_estimate=memory.lifetime_value_estimate,
-            last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-            last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-            last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+            last_active_business_id=(
+                str(memory.last_active_business_id)
+                if memory.last_active_business_id
+                else None
+            ),
+            last_active_conversation_id=(
+                str(memory.last_active_conversation_id)
+                if memory.last_active_conversation_id
+                else None
+            ),
+            last_active_agent_id=(
+                str(memory.last_active_agent_id)
+                if memory.last_active_agent_id
+                else None
+            ),
             created_at=memory.created_at,
             updated_at=memory.updated_at,
             last_activity_at=memory.last_activity_at,
@@ -108,9 +120,21 @@ async def update_my_memory(
             satisfaction_score=memory.satisfaction_score,
             churn_risk_score=memory.churn_risk_score,
             lifetime_value_estimate=memory.lifetime_value_estimate,
-            last_active_business_id=str(memory.last_active_business_id) if memory.last_active_business_id else None,
-            last_active_conversation_id=str(memory.last_active_conversation_id) if memory.last_active_conversation_id else None,
-            last_active_agent_id=str(memory.last_active_agent_id) if memory.last_active_agent_id else None,
+            last_active_business_id=(
+                str(memory.last_active_business_id)
+                if memory.last_active_business_id
+                else None
+            ),
+            last_active_conversation_id=(
+                str(memory.last_active_conversation_id)
+                if memory.last_active_conversation_id
+                else None
+            ),
+            last_active_agent_id=(
+                str(memory.last_active_agent_id)
+                if memory.last_active_agent_id
+                else None
+            ),
             created_at=memory.created_at,
             updated_at=memory.updated_at,
             last_activity_at=memory.last_activity_at,

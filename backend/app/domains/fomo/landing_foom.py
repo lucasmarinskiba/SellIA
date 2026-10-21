@@ -38,7 +38,9 @@ class LandingFOOMService:
 
         # Conversion rate
         stmt = select(
-            func.sum(FOMOMetric.conversions) / func.nullif(func.sum(FOMOMetric.impressions), 0) * 100
+            func.sum(FOMOMetric.conversions)
+            / func.nullif(func.sum(FOMOMetric.impressions), 0)
+            * 100
         )
         conv_rate = await db.scalar(stmt) or Decimal(0)
 
@@ -143,7 +145,12 @@ class LandingFOOMService:
         await db.flush()
 
         # Record metric
-        await FOMOMetric.record_metric(db, None, "conversion", revenue=Decimal(99) if plan_selected == "pro" else Decimal(0))
+        await FOMOMetric.record_metric(
+            db,
+            None,
+            "conversion",
+            revenue=Decimal(99) if plan_selected == "pro" else Decimal(0),
+        )
 
     @staticmethod
     async def get_testimonials(

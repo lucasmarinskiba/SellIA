@@ -11,6 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class TrumpPrompt:
     """Trump-style prompt structure"""
+
     name: str
     context: str
     variables: dict[str, str]
@@ -28,7 +29,7 @@ trump_the_anchor = TrumpPrompt(
         "customer_profile": "Decision-maker with budget authority",
         "market": "Competitive landscape with premium pricing",
         "product": "High-value solution",
-        "situation": "Initial negotiation phase"
+        "situation": "Initial negotiation phase",
     },
     expert_voice="""
     Look, everybody wants to negotiate. That's fine. But here's the thing -
@@ -52,9 +53,9 @@ trump_the_anchor = TrumpPrompt(
         "silence_strategy": "let_them_sweat",
         "final_expected_range": {
             "min": kwargs.get("base_price", 100000) * 1.8,
-            "max": kwargs.get("base_price", 100000) * 2.2
-        }
-    }
+            "max": kwargs.get("base_price", 100000) * 2.2,
+        },
+    },
 )
 
 # TRUMP PROMPT #2: PERCEIVED VALUE AMPLIFICATION
@@ -65,7 +66,7 @@ trump_perceived_value = TrumpPrompt(
         "customer_profile": "Price-sensitive buyer comparing alternatives",
         "market": "Commoditized offerings",
         "product": "Premium-positioned solution",
-        "situation": "Objection: 'Your price is too high'"
+        "situation": "Objection: 'Your price is too high'",
     },
     expert_voice="""
     You know what separates me from every other guy? I BUILD PERCEPTION.
@@ -93,9 +94,9 @@ trump_perceived_value = TrumpPrompt(
             "premium_packaging",
             "brand_association",
             "social_proof",
-            "exclusivity"
-        ]
-    }
+            "exclusivity",
+        ],
+    },
 )
 
 # TRUMP PROMPT #3: LEVERAGE STACKING
@@ -106,7 +107,7 @@ trump_leverage_stacking = TrumpPrompt(
         "customer_profile": "Resistant prospect with competing options",
         "market": "Competitive with alternative solutions available",
         "product": "Solution with multiple value dimensions",
-        "situation": "Negotiation deadlock or low commitment"
+        "situation": "Negotiation deadlock or low commitment",
     },
     expert_voice="""
     People think leverage is one thing - it's not. LEVERAGE is a stack of pressures all hitting at once.
@@ -131,12 +132,12 @@ trump_leverage_stacking = TrumpPrompt(
             "peer_pressure",
             "internal_approval_deadline",
             "opportunity_cost",
-            "board_pressure"
+            "board_pressure",
         ],
         "pressure_intensity": "high",
         "multi_touch_sequence": True,
-        "artificial_deadline": kwargs.get("deadline", "friday")
-    }
+        "artificial_deadline": kwargs.get("deadline", "friday"),
+    },
 )
 
 # TRUMP PROMPT #4: WALK-AWAY POWER
@@ -147,7 +148,7 @@ trump_walkaway = TrumpPrompt(
         "customer_profile": "Demanding, entitled, or disrespectful",
         "market": "Seller has other opportunities",
         "product": "High-value solution with limited availability",
-        "situation": "Customer becoming unreasonable in demands"
+        "situation": "Customer becoming unreasonable in demands",
     },
     expert_voice="""
     The most powerful thing you can do in a negotiation is walk away. Seriously.
@@ -171,8 +172,8 @@ trump_walkaway = TrumpPrompt(
         "walkaway_threshold": "breached",
         "confidence_level": "unwavering",
         "alternative_deals": kwargs.get("pipeline_count", 5),
-        "reputation_signal": "strong_and_selective"
-    }
+        "reputation_signal": "strong_and_selective",
+    },
 )
 
 # TRUMP PROMPT #5: NARRATIVE CONTROL
@@ -183,7 +184,7 @@ trump_narrative = TrumpPrompt(
         "customer_profile": "Influenced by competitors or negative reviews",
         "market": "Narrative-driven industry (perception = reality)",
         "product": "Misunderstood or underestimated value",
-        "situation": "Need to reframe the customer's perception"
+        "situation": "Need to reframe the customer's perception",
     },
     expert_voice="""
     Whoever tells the best story WINS. Not the best product - the best STORY.
@@ -210,10 +211,10 @@ trump_narrative = TrumpPrompt(
             "opening_situation",
             "turning_point",
             "customer_transformation",
-            "outcome_vision"
+            "outcome_vision",
         ],
-        "repetition_touchpoints": 7
-    }
+        "repetition_touchpoints": 7,
+    },
 )
 
 # TRUMP PROMPT #6: DOMINANCE SIGNALING
@@ -224,7 +225,7 @@ trump_dominance = TrumpPrompt(
         "customer_profile": "C-level executive, decision-maker",
         "market": "High-stakes B2B sales",
         "product": "Enterprise or complex solution",
-        "situation": "Initial call or meeting"
+        "situation": "Initial call or meeting",
     },
     expert_voice="""
     In the first 90 seconds, people decide if you're big time or small time.
@@ -248,13 +249,13 @@ trump_dominance = TrumpPrompt(
             "recent_major_win",
             "high_profile_client",
             "proven_results",
-            "market_leadership"
+            "market_leadership",
         ],
         "confidence_level": "absolute",
         "control_position": "agenda_setter",
         "social_proof_tier": "premium_clients",
-        "first_impression_score": 9
-    }
+        "first_impression_score": 9,
+    },
 )
 
 # TRUMP PROMPT #7: TIMING MASTERY
@@ -265,7 +266,7 @@ trump_timing = TrumpPrompt(
         "customer_profile": "Needs approval from multiple stakeholders",
         "market": "Enterprise sales with extended sales cycle",
         "product": "Significant investment requiring multiple approvals",
-        "situation": "At the 'they need to convince others' stage"
+        "situation": "At the 'they need to convince others' stage",
     },
     expert_voice="""
     Timing is EVERYTHING in deals. You can have the perfect deal at the wrong time - it dies.
@@ -289,8 +290,8 @@ trump_timing = TrumpPrompt(
         "approval_stakeholders": kwargs.get("decision_makers", 3),
         "artificial_scarcity_deadline": "7_days",
         "momentum_touchpoints": 5,
-        "timing_accuracy": "synchronized_to_their_pain"
-    }
+        "timing_accuracy": "synchronized_to_their_pain",
+    },
 )
 
 # TRUMP PROMPT #8: POWER POSITIONING
@@ -301,7 +302,7 @@ trump_power_position = TrumpPrompt(
         "customer_profile": "High-status, experienced negotiator",
         "market": "High-stakes negotiation",
         "product": "High-value, competitive offering",
-        "situation": "Peer-level or asymmetric power dynamic"
+        "situation": "Peer-level or asymmetric power dynamic",
     },
     expert_voice="""
     Most salespeople negotiate from BELOW. They're sitting there asking for permission,
@@ -326,8 +327,8 @@ trump_power_position = TrumpPrompt(
         "time_scarcity_signal": "urgent_other_deals",
         "response_speed": "slower_than_them",
         "offer_sequence": "us_first",
-        "power_dynamic_shift": "we_evaluate_them"
-    }
+        "power_dynamic_shift": "we_evaluate_them",
+    },
 )
 
 # TRUMP PROMPT #9: REPUTATION LEVERAGE
@@ -338,7 +339,7 @@ trump_reputation = TrumpPrompt(
         "customer_profile": "Risk-averse decision-maker preferring established brands",
         "market": "Market where reputation matters more than price",
         "product": "Comparable to alternatives but with stronger brand",
-        "situation": "Price comparison or 'why choose us' conversation"
+        "situation": "Price comparison or 'why choose us' conversation",
     },
     expert_voice="""
     You think people buy based on price or features? No. They buy based on REPUTATION.
@@ -364,12 +365,12 @@ trump_reputation = TrumpPrompt(
             "project_volume",
             "success_rate",
             "media_mentions",
-            "industry_awards"
+            "industry_awards",
         ],
         "social_proof_tier": "premium",
         "risk_positioning": "safe_choice",
-        "brand_strength": "market_leading"
-    }
+        "brand_strength": "market_leading",
+    },
 )
 
 # TRUMP PROMPT #10: OBJECTION REFRAMING
@@ -380,7 +381,7 @@ trump_objection_reframe = TrumpPrompt(
         "customer_profile": "Risk-averse or skeptical prospect",
         "market": "Innovation or change-resistant industry",
         "product": "New approach or methodology",
-        "situation": "Common objection blocking the deal"
+        "situation": "Common objection blocking the deal",
     },
     expert_voice="""
     Every objection is just a question underneath. Someone says 'I'm not sure this will work' -
@@ -403,8 +404,8 @@ trump_objection_reframe = TrumpPrompt(
         "reframe_strategy": "flip_risk",
         "evidence_provided": True,
         "agreement_percentage": 60,
-        "implementation_questions_triggered": True
-    }
+        "implementation_questions_triggered": True,
+    },
 )
 
 # TRUMP PROMPT #11: DEAL SWEETENERS
@@ -415,7 +416,7 @@ trump_sweeteners = TrumpPrompt(
         "customer_profile": "Ready to buy, just needs final justification",
         "market": "High-value transaction",
         "product": "Premium offering with possible add-ons",
-        "situation": "Last objection is very small/price-related"
+        "situation": "Last objection is very small/price-related",
     },
     expert_voice="""
     When a deal is THIS close, you don't push harder. You sweeten.
@@ -439,8 +440,8 @@ trump_sweeteners = TrumpPrompt(
         "sweetener_actual_cost": kwargs.get("actual_cost", 2000),
         "sweetener_type": "premium_support_or_options",
         "exclusivity_framing": True,
-        "close_trigger": "with_sweetener"
-    }
+        "close_trigger": "with_sweetener",
+    },
 )
 
 # TRUMP PROMPT #12: SCARCITY CREATION
@@ -451,7 +452,7 @@ trump_scarcity = TrumpPrompt(
         "customer_profile": "Procrastinator or 'always thinking about it' type",
         "market": "Competitive marketplace with limited capacity",
         "product": "High-demand or limited-capacity offering",
-        "situation": "Customer delaying decision indefinitely"
+        "situation": "Customer delaying decision indefinitely",
     },
     expert_voice="""
     People don't value things that are always available. Psychology 101.
@@ -475,8 +476,8 @@ trump_scarcity = TrumpPrompt(
         "price_deadline": "friday",
         "price_increase_percentage": 20,
         "early_adopter_scarcity": True,
-        "competitive_urgency": "real_competitor_adoption"
-    }
+        "competitive_urgency": "real_competitor_adoption",
+    },
 )
 
 # TRUMP PROMPT #13: PAYMENT TERMS MASTERY
@@ -487,7 +488,7 @@ trump_payment_terms = TrumpPrompt(
         "customer_profile": "Budget-constrained but authority to make decision",
         "market": "B2B with flexible payment options",
         "product": "Significant financial commitment",
-        "situation": "Price is objection; full payment upfront is blocker"
+        "situation": "Price is objection; full payment upfront is blocker",
     },
     expert_voice="""
     Most salespeople leave money on the table by making payment a sticking point.
@@ -509,13 +510,21 @@ trump_payment_terms = TrumpPrompt(
     python_example=lambda **kwargs: {
         "total_deal_value": kwargs.get("base_price", 100000),
         "payment_options": [
-            {"option": "monthly", "amount": kwargs.get("base_price", 100000) / 12, "framing": "investment"},
+            {
+                "option": "monthly",
+                "amount": kwargs.get("base_price", 100000) / 12,
+                "framing": "investment",
+            },
             {"option": "quarterly", "amount": kwargs.get("base_price", 100000) / 4},
-            {"option": "upfront", "amount": kwargs.get("base_price", 100000), "discount": 0}
+            {
+                "option": "upfront",
+                "amount": kwargs.get("base_price", 100000),
+                "discount": 0,
+            },
         ],
         "performance_based": True,
-        "psychology_multiplier": 1.3
-    }
+        "psychology_multiplier": 1.3,
+    },
 )
 
 # TRUMP PROMPT #14: COMPETITOR DESTRUCTION
@@ -526,7 +535,7 @@ trump_competitor = TrumpPrompt(
         "customer_profile": "Evaluating multiple options",
         "market": "Competitive marketplace",
         "product": "Differentiated alternative to competitors",
-        "situation": "Customer has legitimate competing offers"
+        "situation": "Customer has legitimate competing offers",
     },
     expert_voice="""
     Never attack a competitor directly - that makes you look threatened. Instead,
@@ -553,10 +562,10 @@ trump_competitor = TrumpPrompt(
             "implementation_timeline",
             "support_levels",
             "company_viability",
-            "customer_success_rate"
+            "customer_success_rate",
         ],
-        "comparison_advantage": "us_favored"
-    }
+        "comparison_advantage": "us_favored",
+    },
 )
 
 # TRUMP PROMPT #15: EXECUTIVE CHARM OFFENSIVE
@@ -567,7 +576,7 @@ trump_executive_charm = TrumpPrompt(
         "customer_profile": "C-level executive, decision-influencer",
         "market": "Enterprise relationship-driven deals",
         "product": "Strategic, long-term partnership",
-        "situation": "Need to build personal relationship with key stakeholder"
+        "situation": "Need to build personal relationship with key stakeholder",
     },
     expert_voice="""
     At high levels, people don't buy from companies, they buy from PEOPLE they like and respect.
@@ -593,8 +602,8 @@ trump_executive_charm = TrumpPrompt(
         "compliment_type": "specific_and_truthful",
         "value_provided": "research_insights",
         "follow_up_cadence": "monthly_value_add",
-        "relationship_depth": "genuine_professional"
-    }
+        "relationship_depth": "genuine_professional",
+    },
 )
 
 # TRUMP PROMPT #16: CRISIS LEVERAGE
@@ -605,7 +614,7 @@ trump_crisis = TrumpPrompt(
         "customer_profile": "Desperate to solve immediate problem",
         "market": "Crisis-driven decision making",
         "product": "Solution to acute business problem",
-        "situation": "Customer pain is at maximum; timeline is compressed"
+        "situation": "Customer pain is at maximum; timeline is compressed",
     },
     expert_voice="""
     When someone's in crisis mode, they're not evaluating price. They're evaluating SURVIVAL.
@@ -629,8 +638,8 @@ trump_crisis = TrumpPrompt(
         "deployment_speed": "48_hours",
         "guarantee_provided": True,
         "evaluation_friction": "minimal",
-        "decision_speed": "same_day_to_48_hours"
-    }
+        "decision_speed": "same_day_to_48_hours",
+    },
 )
 
 # TRUMP PROMPT #17: LEGACY POSITIONING
@@ -641,7 +650,7 @@ trump_legacy = TrumpPrompt(
         "customer_profile": "Senior executive, legacy-focused, wants to be remembered",
         "market": "Strategic, transformational deals",
         "product": "Game-changing or industry-leading solution",
-        "situation": "Appeal to their desire to make an impact"
+        "situation": "Appeal to their desire to make an impact",
     },
     expert_voice="""
     Most salespeople sell features. The BEST salespeople sell LEGACY.
@@ -665,8 +674,8 @@ trump_legacy = TrumpPrompt(
         "legacy_impact": "market_disruption",
         "case_study_potential": True,
         "speaking_opportunity": True,
-        "competitive_advantage_duration": "2_years_minimum"
-    }
+        "competitive_advantage_duration": "2_years_minimum",
+    },
 )
 
 # TRUMP PROMPT #18: DEAL MULTIPLICATION
@@ -677,7 +686,7 @@ trump_deal_multiply = TrumpPrompt(
         "customer_profile": "Satisfied customer with multiple departments/opportunities",
         "market": "Large enterprise with silo'd departments",
         "product": "Solution applicable across multiple business units",
-        "situation": "First sale complete; now expand aggressively"
+        "situation": "First sale complete; now expand aggressively",
     },
     expert_voice="""
     Most salespeople get ONE customer and stop. That's amateur hour.
@@ -702,8 +711,8 @@ trump_deal_multiply = TrumpPrompt(
         "departments_in_target": kwargs.get("target_departments", 5),
         "customer_endorsement": "leveraged",
         "cross_sell_speed": "aggressive_but_sustainable",
-        "volume_discount_tier": "15_percent"
-    }
+        "volume_discount_tier": "15_percent",
+    },
 )
 
 # Export all Trump prompts
@@ -725,7 +734,7 @@ TRUMP_PROMPTS = [
     trump_executive_charm,
     trump_crisis,
     trump_legacy,
-    trump_deal_multiply
+    trump_deal_multiply,
 ]
 
 __all__ = ["TRUMP_PROMPTS", "TrumpPrompt"]

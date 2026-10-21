@@ -72,7 +72,9 @@ def _ip_matches(pattern: str, ip: str) -> bool:
     """Verifica si una IP coincide con un patrón (IP exacta o CIDR)."""
     try:
         if "/" in pattern:
-            return ipaddress.ip_address(ip) in ipaddress.ip_network(pattern, strict=False)
+            return ipaddress.ip_address(ip) in ipaddress.ip_network(
+                pattern, strict=False
+            )
         return pattern == ip
     except ValueError:
         return pattern == ip

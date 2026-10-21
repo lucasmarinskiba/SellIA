@@ -48,7 +48,8 @@ async def create_checkout_preference(
         "payer": {"email": "user@example.com"},  # Will be updated with real email
         "external_reference": f"{user_id}:{subscription_id}:{plan_slug}",
         "auto_return": "approved",
-        "back_urls": back_urls or {
+        "back_urls": back_urls
+        or {
             "success": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/dashboard/planes?status=success",
             "failure": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/dashboard/planes?status=failure",
             "pending": f"{settings.FRONTEND_URL or 'http://localhost:3000'}/dashboard/planes?status=pending",
@@ -116,6 +117,7 @@ async def process_mercadopago_webhook(
 # =============================================================================
 # MercadoPago Preapproval (Recurring Payments)
 # =============================================================================
+
 
 @mercadopago_breaker
 async def create_preapproval(

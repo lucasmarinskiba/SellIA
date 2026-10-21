@@ -69,7 +69,9 @@ async def _inbound_content_generator():
                 await db.commit()
                 logger.info(f"Generated SEO content for campaign {campaign.id}")
             except Exception:
-                logger.exception(f"Failed to generate content for campaign {campaign.id}")
+                logger.exception(
+                    f"Failed to generate content for campaign {campaign.id}"
+                )
 
 
 @shared_task(name="growth.lead_magnet_distributor")
@@ -85,12 +87,14 @@ async def _lead_magnet_distributor():
 
         # Find new leads with lead magnet source that haven't received it yet
         result = await db.execute(
-            select(InboundLead).where(
+            select(InboundLead)
+            .where(
                 InboundLead.source_type == "lead_magnet",
                 InboundLead.nurturing_stage == NurturingStage.NEW,
                 InboundLead.is_active == True,
                 InboundLead.conversation_id.isnot(None),
-            ).limit(50)
+            )
+            .limit(50)
         )
         leads = result.scalars().all()
 
@@ -127,11 +131,15 @@ async def _cold_lead_nurturer():
 
         # Find cold leads
         result = await db.execute(
-            select(InboundLead).where(
-                InboundLead.nurturing_stage.in_([NurturingStage.NEW, NurturingStage.AWARENESS]),
+            select(InboundLead)
+            .where(
+                InboundLead.nurturing_stage.in_(
+                    [NurturingStage.NEW, NurturingStage.AWARENESS]
+                ),
                 InboundLead.is_active == True,
                 InboundLead.conversation_id.isnot(None),
-            ).limit(30)
+            )
+            .limit(30)
         )
         leads = result.scalars().all()
 
@@ -148,6 +156,7 @@ async def _cold_lead_nurturer():
 
                 # Send value bomb
                 from app.domains.channels.services import send_outbound_message
+
                 topics = ["productividad", "ventas", "marketing", "crecimiento"]
                 topic = topics[hash(str(lead.id)) % len(topics)]
 
@@ -185,11 +194,13 @@ async def _social_proof_collector():
         seven_days_ago = datetime.now(UTC) - timedelta(days=7)
 
         result = await db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.status == OrderStatus.COMPLETED,
                 Order.updated_at >= seven_days_ago,
                 Order.updated_at <= three_days_ago,
-            ).limit(50)
+            )
+            .limit(50)
         )
         orders = result.scalars().all()
 
@@ -200,6 +211,7 @@ async def _social_proof_collector():
             try:
                 # Check if review already requested
                 from app.domains.growth.models import SocialProofItem
+
                 existing = await db.execute(
                     select(SocialProofItem).where(SocialProofItem.order_id == order.id)
                 )
@@ -234,9 +246,11 @@ async def _ugc_request_sender():
 
         # Send pending UGC requests
         result = await db.execute(
-            select(UgcRequest).where(
+            select(UgcRequest)
+            .where(
                 UgcRequest.status == UgcRequestStatus.PENDING,
-            ).limit(30)
+            )
+            .limit(30)
         )
         requests = result.scalars().all()
 
@@ -280,9 +294,13 @@ async def _referral_loop_evaluator():
 
                 # If K > 1, log celebration
                 if metrics["exponential_growth"]:
-                    logger.info(f"🚀 Business {business_id} has achieved viral growth! K={metrics['k_factor']}")
+                    logger.info(
+                        f"🚀 Business {business_id} has achieved viral growth! K={metrics['k_factor']}"
+                    )
             except Exception:
-                logger.exception(f"Failed to evaluate referrals for business {business_id}")
+                logger.exception(
+                    f"Failed to evaluate referrals for business {business_id}"
+                )
 
 
 @shared_task(name="growth.community_engagement_scanner")

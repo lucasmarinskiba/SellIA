@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class IntegrityCheckResult:
-    def __init__(self, name: str, passed: bool, details: list[dict[str, Any]] | None = None):
+    def __init__(
+        self, name: str, passed: bool, details: list[dict[str, Any]] | None = None
+    ):
         self.name = name
         self.passed = passed
         self.details = details or []
@@ -38,7 +40,10 @@ async def check_orphaned_messages(db: AsyncSession) -> IntegrityCheckResult:
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"message_id": str(r["id"]), "conversation_id": str(r["conversation_id"])} for r in rows]
+    details = [
+        {"message_id": str(r["id"]), "conversation_id": str(r["conversation_id"])}
+        for r in rows
+    ]
     return IntegrityCheckResult("orphaned_messages", len(details) == 0, details)
 
 
@@ -53,7 +58,9 @@ async def check_orphaned_orders(db: AsyncSession) -> IntegrityCheckResult:
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"order_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows]
+    details = [
+        {"order_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows
+    ]
     return IntegrityCheckResult("orphaned_orders", len(details) == 0, details)
 
 
@@ -68,7 +75,9 @@ async def check_orphaned_catalog_items(db: AsyncSession) -> IntegrityCheckResult
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"item_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows]
+    details = [
+        {"item_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows
+    ]
     return IntegrityCheckResult("orphaned_catalog_items", len(details) == 0, details)
 
 
@@ -83,8 +92,13 @@ async def check_orphaned_workflow_executions(db: AsyncSession) -> IntegrityCheck
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"execution_id": str(r["id"]), "workflow_id": str(r["workflow_id"])} for r in rows]
-    return IntegrityCheckResult("orphaned_workflow_executions", len(details) == 0, details)
+    details = [
+        {"execution_id": str(r["id"]), "workflow_id": str(r["workflow_id"])}
+        for r in rows
+    ]
+    return IntegrityCheckResult(
+        "orphaned_workflow_executions", len(details) == 0, details
+    )
 
 
 async def check_orphaned_agent_conversations(db: AsyncSession) -> IntegrityCheckResult:
@@ -98,8 +112,12 @@ async def check_orphaned_agent_conversations(db: AsyncSession) -> IntegrityCheck
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"conversation_id": str(r["id"]), "agent_id": str(r["agent_id"])} for r in rows]
-    return IntegrityCheckResult("orphaned_agent_conversations", len(details) == 0, details)
+    details = [
+        {"conversation_id": str(r["id"]), "agent_id": str(r["agent_id"])} for r in rows
+    ]
+    return IntegrityCheckResult(
+        "orphaned_agent_conversations", len(details) == 0, details
+    )
 
 
 async def check_orphaned_revenue_events(db: AsyncSession) -> IntegrityCheckResult:
@@ -128,7 +146,9 @@ async def check_orphaned_deals(db: AsyncSession) -> IntegrityCheckResult:
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"deal_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows]
+    details = [
+        {"deal_id": str(r["id"]), "business_id": str(r["business_id"])} for r in rows
+    ]
     return IntegrityCheckResult("orphaned_deals", len(details) == 0, details)
 
 
@@ -143,7 +163,9 @@ async def check_orphaned_subscriptions(db: AsyncSession) -> IntegrityCheckResult
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"subscription_id": str(r["id"]), "user_id": str(r["user_id"])} for r in rows]
+    details = [
+        {"subscription_id": str(r["id"]), "user_id": str(r["user_id"])} for r in rows
+    ]
     return IntegrityCheckResult("orphaned_subscriptions", len(details) == 0, details)
 
 
@@ -159,8 +181,17 @@ async def check_orphaned_business_users(db: AsyncSession) -> IntegrityCheckResul
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"role_id": str(r["id"]), "user_id": str(r["user_id"]), "business_id": str(r["business_id"])} for r in rows]
-    return IntegrityCheckResult("orphaned_business_user_roles", len(details) == 0, details)
+    details = [
+        {
+            "role_id": str(r["id"]),
+            "user_id": str(r["user_id"]),
+            "business_id": str(r["business_id"]),
+        }
+        for r in rows
+    ]
+    return IntegrityCheckResult(
+        "orphaned_business_user_roles", len(details) == 0, details
+    )
 
 
 async def check_duplicate_idempotency_keys(db: AsyncSession) -> IntegrityCheckResult:
@@ -175,7 +206,9 @@ async def check_duplicate_idempotency_keys(db: AsyncSession) -> IntegrityCheckRe
     result = await db.execute(query)
     rows = result.mappings().all()
     details = [{"key": r["key"], "count": r["cnt"]} for r in rows]
-    return IntegrityCheckResult("duplicate_idempotency_keys", len(details) == 0, details)
+    return IntegrityCheckResult(
+        "duplicate_idempotency_keys", len(details) == 0, details
+    )
 
 
 async def check_duplicate_webhook_events(db: AsyncSession) -> IntegrityCheckResult:
@@ -189,7 +222,10 @@ async def check_duplicate_webhook_events(db: AsyncSession) -> IntegrityCheckResu
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"provider": r["provider"], "event_id": r["event_id"], "count": r["cnt"]} for r in rows]
+    details = [
+        {"provider": r["provider"], "event_id": r["event_id"], "count": r["cnt"]}
+        for r in rows
+    ]
     return IntegrityCheckResult("duplicate_webhook_events", len(details) == 0, details)
 
 
@@ -203,7 +239,14 @@ async def check_negative_amounts(db: AsyncSession) -> IntegrityCheckResult:
     """)
     result = await db.execute(query)
     rows = result.mappings().all()
-    details = [{"order_id": str(r["id"]), "total_amount": float(r["total_amount"]), "business_id": str(r["business_id"])} for r in rows]
+    details = [
+        {
+            "order_id": str(r["id"]),
+            "total_amount": float(r["total_amount"]),
+            "business_id": str(r["business_id"]),
+        }
+        for r in rows
+    ]
     return IntegrityCheckResult("negative_order_amounts", len(details) == 0, details)
 
 
@@ -237,7 +280,11 @@ async def run_all_integrity_checks(db: AsyncSession) -> dict[str, Any]:
                 passed += 1
             else:
                 failed += 1
-                logger.warning("Integrity check failed: %s (%d issues)", result.name, len(result.details))
+                logger.warning(
+                    "Integrity check failed: %s (%d issues)",
+                    result.name,
+                    len(result.details),
+                )
         except Exception as e:
             logger.exception("Integrity check error: %s", check.__name__)
             results.append({"name": check.__name__, "passed": False, "error": str(e)})
@@ -252,8 +299,12 @@ async def run_all_integrity_checks(db: AsyncSession) -> dict[str, Any]:
     }
 
     if failed > 0:
-        logger.error("DB integrity check completed: %d/%d checks failed", failed, len(ALL_CHECKS))
+        logger.error(
+            "DB integrity check completed: %d/%d checks failed", failed, len(ALL_CHECKS)
+        )
     else:
-        logger.info("DB integrity check completed: all %d checks passed", len(ALL_CHECKS))
+        logger.info(
+            "DB integrity check completed: all %d checks passed", len(ALL_CHECKS)
+        )
 
     return summary

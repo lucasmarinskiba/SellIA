@@ -51,7 +51,12 @@ DEPARTMENT_BY_SUBTYPE: dict[str, str] = {
     "fx_gain_loss": "finance",
 }
 
-COGS_SUBTYPES = {"cogs", "payment_processing_fees", "marketplace_fees", "shipping_costs"}
+COGS_SUBTYPES = {
+    "cogs",
+    "payment_processing_fees",
+    "marketplace_fees",
+    "shipping_costs",
+}
 
 
 class LedgerReports:
@@ -211,8 +216,10 @@ class LedgerReports:
     ) -> dict[str, Any]:
         accounts = {a.id: a for a in await self.ledger.get_accounts(business_id)}
         cash_ids = {
-            a.id for a in accounts.values()
-            if a.type == AccountType.ASSET.value and (a.subtype or "").startswith("cash")
+            a.id
+            for a in accounts.values()
+            if a.type == AccountType.ASSET.value
+            and (a.subtype or "").startswith("cash")
         }
 
         # opening cash
@@ -302,7 +309,9 @@ class LedgerReports:
         if period.status == PeriodStatus.LOCKED.value:
             raise LedgerError(f"period {period_name} already locked")
 
-        pnl = await self.income_statement(business_id, period.period_start, period.period_end)
+        pnl = await self.income_statement(
+            business_id, period.period_start, period.period_end
+        )
         net_income = _q(pnl["net_income"])
 
         closing_entry_id = None
@@ -310,7 +319,9 @@ class LedgerReports:
             acc_map = await self.ledger.account_map(business_id)
             cye = acc_map.get("current_year_earnings")
             if not cye:
-                raise LedgerError("missing current_year_earnings account; run ensure_setup")
+                raise LedgerError(
+                    "missing current_year_earnings account; run ensure_setup"
+                )
 
             # Build closing lines: zero every revenue/expense account for the period.
             moves = await self._account_movements(
@@ -331,21 +342,41 @@ class LedgerReports:
                     continue
                 # Reverse the account's net movement
                 if bal > 0:
-                    lines.append({"account_id": acc_id, "credit": bal,
-                                  "description": f"Cierre {period_name}: {acc.name}"})
+                    lines.append(
+                        {
+                            "account_id": acc_id,
+                            "credit": bal,
+                            "description": f"Cierre {period_name}: {acc.name}",
+                        }
+                    )
                     net_to_equity -= bal
                 else:
-                    lines.append({"account_id": acc_id, "debit": -bal,
-                                  "description": f"Cierre {period_name}: {acc.name}"})
+                    lines.append(
+                        {
+                            "account_id": acc_id,
+                            "debit": -bal,
+                            "description": f"Cierre {period_name}: {acc.name}",
+                        }
+                    )
                     net_to_equity += -bal
 
             # Balancing line to current-year earnings
             if net_to_equity > 0:
-                lines.append({"account_id": cye.id, "credit": net_to_equity,
-                              "description": f"Resultado {period_name}"})
+                lines.append(
+                    {
+                        "account_id": cye.id,
+                        "credit": net_to_equity,
+                        "description": f"Resultado {period_name}",
+                    }
+                )
             elif net_to_equity < 0:
-                lines.append({"account_id": cye.id, "debit": -net_to_equity,
-                              "description": f"Resultado {period_name}"})
+                lines.append(
+                    {
+                        "account_id": cye.id,
+                        "debit": -net_to_equity,
+                        "description": f"Resultado {period_name}",
+                    }
+                )
 
             if len(lines) >= 2:
                 # Date the closing entry on the last instant *inside* the period
@@ -380,7 +411,9 @@ class LedgerReports:
             "message": f"Período {period_name} {'bloqueado' if lock else 'cerrado'}. Resultado: {net_income}",
         }
 
-    async def reopen_period(self, business_id: uuid.UUID, period_name: str) -> AccountingPeriod:
+    async def reopen_period(
+        self, business_id: uuid.UUID, period_name: str
+    ) -> AccountingPeriod:
         res = await self.db.execute(
             select(AccountingPeriod).where(
                 AccountingPeriod.business_id == business_id,

@@ -24,7 +24,14 @@ logger = get_logger(__name__)
 
 
 class UsageAdvice:
-    def __init__(self, type: str, title: str, description: str, potential_savings: str, action_link: str | None = None):
+    def __init__(
+        self,
+        type: str,
+        title: str,
+        description: str,
+        potential_savings: str,
+        action_link: str | None = None,
+    ):
         self.type = type
         self.title = title
         self.description = description
@@ -41,7 +48,9 @@ class UsageAdvice:
         }
 
 
-async def get_usage_advice(db: AsyncSession, user_id: uuid.UUID) -> list[dict[str, Any]]:
+async def get_usage_advice(
+    db: AsyncSession, user_id: uuid.UUID
+) -> list[dict[str, Any]]:
     """Generate personalized cost/usage advice for a user."""
     advice: list[UsageAdvice] = []
 
@@ -58,61 +67,75 @@ async def get_usage_advice(db: AsyncSession, user_id: uuid.UUID) -> list[dict[st
 
             # Advice: near limit
             if usage["ai_messages"] > plan.ai_message_limit * 0.8:
-                advice.append(UsageAdvice(
-                    type="warning",
-                    title="Estás cerca del límite de mensajes AI",
-                    description=f"Usaste {usage['ai_messages']} de {plan.ai_message_limit} mensajes este mes. Considerá optimizar tus prompts o subir de plan.",
-                    potential_savings="Evitar interrupciones",
-                    action_link="/subscriptions/upgrade",
-                ))
+                advice.append(
+                    UsageAdvice(
+                        type="warning",
+                        title="Estás cerca del límite de mensajes AI",
+                        description=f"Usaste {usage['ai_messages']} de {plan.ai_message_limit} mensajes este mes. Considerá optimizar tus prompts o subir de plan.",
+                        potential_savings="Evitar interrupciones",
+                        action_link="/subscriptions/upgrade",
+                    )
+                )
 
             # Advice: underutilized plan
             if usage["ai_messages"] < plan.ai_message_limit * 0.2 and plan.price > 0:
-                advice.append(UsageAdvice(
-                    type="suggestion",
-                    title="Tu plan tiene mucho margen sin usar",
-                    description=f"Usaste solo el {usage['ai_messages']/plan.ai_message_limit*100:.0f}% de tu plan. Podés bajar de plan y ahorrar.",
-                    potential_savings=f"${plan.price * 0.5:.0f}/mes aprox.",
-                    action_link="/subscriptions/change",
-                ))
+                advice.append(
+                    UsageAdvice(
+                        type="suggestion",
+                        title="Tu plan tiene mucho margen sin usar",
+                        description=f"Usaste solo el {usage['ai_messages']/plan.ai_message_limit*100:.0f}% de tu plan. Podés bajar de plan y ahorrar.",
+                        potential_savings=f"${plan.price * 0.5:.0f}/mes aprox.",
+                        action_link="/subscriptions/change",
+                    )
+                )
 
     # 2. Check conversation efficiency
     conv_stats = await _get_conversation_stats(db, user_id, days=7)
     if conv_stats["avg_ai_turns_per_conversation"] > 3:
-        advice.append(UsageAdvice(
-            type="optimization",
-            title="Tus agentes usan muchos turnos AI por conversación",
-            description="Cada conversación genera ~{:.0f} consultas al modelo. Activá 'Modo Conciso' en la configuración del agente para reducir a 1-2 turnos.".format(conv_stats["avg_ai_turns_per_conversation"]),
-            potential_savings="~40% menos tokens AI",
-            action_link="/agents/settings",
-        ))
+        advice.append(
+            UsageAdvice(
+                type="optimization",
+                title="Tus agentes usan muchos turnos AI por conversación",
+                description="Cada conversación genera ~{:.0f} consultas al modelo. Activá 'Modo Conciso' en la configuración del agente para reducir a 1-2 turnos.".format(
+                    conv_stats["avg_ai_turns_per_conversation"]
+                ),
+                potential_savings="~40% menos tokens AI",
+                action_link="/agents/settings",
+            )
+        )
 
     # 3. Check for duplicate/inefficient content generation
     recent_generations = await _get_recent_generations(db, user_id, days=7)
     if recent_generations > 50:
-        advice.append(UsageAdvice(
-            type="optimization",
-            title="Generás mucho contenido manualmente",
-            description=f"Creaste {recent_generations} piezas de contenido esta semana. Usá el Batch Generator para crear 20 en 1 solo request y ahorrá hasta 60%.",
-            potential_savings="~60% en generación de contenido",
-            action_link="/content/batch",
-        ))
+        advice.append(
+            UsageAdvice(
+                type="optimization",
+                title="Generás mucho contenido manualmente",
+                description=f"Creaste {recent_generations} piezas de contenido esta semana. Usá el Batch Generator para crear 20 en 1 solo request y ahorrá hasta 60%.",
+                potential_savings="~60% en generación de contenido",
+                action_link="/content/batch",
+            )
+        )
 
     # 4. Semantic cache benefit estimate
     cache_hit_rate = await _get_cache_hit_rate(user_id)
     if cache_hit_rate < 0.2:
-        advice.append(UsageAdvice(
-            type="optimization",
-            title="Activá el Cache Semántico para FAQs",
-            description="Muchas preguntas de tus clientes se repiten. El cache semántico responde las similares sin llamar a la API.",
-            potential_savings="~30% menos llamadas AI",
-            action_link="/settings/ai",
-        ))
+        advice.append(
+            UsageAdvice(
+                type="optimization",
+                title="Activá el Cache Semántico para FAQs",
+                description="Muchas preguntas de tus clientes se repiten. El cache semántico responde las similares sin llamar a la API.",
+                potential_savings="~30% menos llamadas AI",
+                action_link="/settings/ai",
+            )
+        )
 
     return [a.to_dict() for a in advice]
 
 
-async def _get_active_subscription(db: AsyncSession, user_id: uuid.UUID) -> Subscription | None:
+async def _get_active_subscription(
+    db: AsyncSession, user_id: uuid.UUID
+) -> Subscription | None:
     result = await db.execute(
         select(Subscription).where(
             Subscription.user_id == user_id,
@@ -122,7 +145,9 @@ async def _get_active_subscription(db: AsyncSession, user_id: uuid.UUID) -> Subs
     return result.scalar_one_or_none()
 
 
-async def _get_recent_usage(db: AsyncSession, user_id: uuid.UUID, days: int) -> dict[str, int]:
+async def _get_recent_usage(
+    db: AsyncSession, user_id: uuid.UUID, days: int
+) -> dict[str, int]:
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.sum(UsageTracking.ai_messages_used)).where(
@@ -134,7 +159,9 @@ async def _get_recent_usage(db: AsyncSession, user_id: uuid.UUID, days: int) -> 
     return {"ai_messages": int(total)}
 
 
-async def _get_conversation_stats(db: AsyncSession, user_id: uuid.UUID, days: int) -> dict[str, float]:
+async def _get_conversation_stats(
+    db: AsyncSession, user_id: uuid.UUID, days: int
+) -> dict[str, float]:
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.count(Conversation.id)).where(
@@ -156,10 +183,13 @@ async def _get_conversation_stats(db: AsyncSession, user_id: uuid.UUID, days: in
     return {"avg_ai_turns_per_conversation": avg}
 
 
-async def _get_recent_generations(db: AsyncSession, user_id: uuid.UUID, days: int) -> int:
+async def _get_recent_generations(
+    db: AsyncSession, user_id: uuid.UUID, days: int
+) -> int:
     # Placeholder: in production this would count GeneratedContent rows
     # For now, return 0 so it doesn't trigger unless real data exists
     from app.domains.automations.models import GeneratedContent
+
     since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.count(GeneratedContent.id)).where(
@@ -175,6 +205,7 @@ async def _get_cache_hit_rate(user_id: uuid.UUID) -> float:
         import redis.asyncio as redis
 
         from app.core.config import get_settings
+
         r = redis.from_url(get_settings().REDIS_URL, decode_responses=True)
         hits = int(await r.get("sellia:metrics:semantic_cache:hits") or 0)
         misses = int(await r.get("sellia:metrics:semantic_cache:misses") or 0)

@@ -77,10 +77,10 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.google.com/webmaster-tools/v1/getting_started",
         unlocks="Posiciones, impresiones, clics y CTR reales por keyword y por página, "
-                "sacados de las búsquedas que de verdad mostraron el sitio del usuario. "
-                "Es la única fuente de posiciones reales y no cuesta nada.",
+        "sacados de las búsquedas que de verdad mostraron el sitio del usuario. "
+        "Es la única fuente de posiciones reales y no cuesta nada.",
         today_instead="La herramienta mide la página pero no puede decir en qué puesto sale "
-                      "ni por qué términos la encuentran.",
+        "ni por qué términos la encuentran.",
         priority=1,
     ),
     Integration(
@@ -92,9 +92,9 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.google.com/speed/docs/insights/v5/get-started",
         unlocks="Core Web Vitals reales (LCP, CLS, INP) de laboratorio y de campo (CrUX), "
-                "que hoy se declaran explícitamente como no medibles.",
+        "que hoy se declaran explícitamente como no medibles.",
         today_instead="Sólo se mide el tiempo de respuesta del servidor, que es real pero es "
-                      "una parte chica de la experiencia.",
+        "una parte chica de la experiencia.",
         priority=1,
     ),
     Integration(
@@ -107,9 +107,9 @@ INTEGRATIONS: list[Integration] = [
         cost=PAID,
         docs_url="https://docs.dataforseo.com/v3/keywords_data/overview/",
         unlocks="Cuánta gente busca cada término y qué tan difícil es rankear. Convierte el "
-                "perfil de términos actual (qué dice tu página) en decisiones de qué escribir.",
+        "perfil de términos actual (qué dice tu página) en decisiones de qué escribir.",
         today_instead="Se muestra qué términos usa realmente la página, sin volumen ni "
-                      "dificultad, y se aclara que eso requiere API paga.",
+        "dificultad, y se aclara que eso requiere API paga.",
         priority=2,
     ),
     Integration(
@@ -121,9 +121,9 @@ INTEGRATIONS: list[Integration] = [
         cost=PAID,
         docs_url="https://docs.dataforseo.com/v3/backlinks/overview/",
         unlocks="Quién enlaza al sitio del usuario desde afuera: el otro 50% de la autoridad. "
-                "Hoy sólo se verifica el enlazado entre las propiedades del propio usuario.",
+        "Hoy sólo se verifica el enlazado entre las propiedades del propio usuario.",
         today_instead="Se mide la red interna de marca (web ↔ redes ↔ tienda), que es real y "
-                      "accionable, pero no ve enlaces de terceros.",
+        "accionable, pero no ve enlaces de terceros.",
         priority=3,
     ),
     Integration(
@@ -135,7 +135,7 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://learn.microsoft.com/en-us/bingwebmaster/getting-access",
         unlocks="Posiciones en Bing y envío instantáneo de URLs a indexar (IndexNow). "
-                "Gratis y con menos competencia que Google.",
+        "Gratis y con menos competencia que Google.",
         today_instead="No se consulta Bing.",
         priority=3,
     ),
@@ -145,13 +145,17 @@ INTEGRATIONS: list[Integration] = [
         name="Google Analytics 4 Data API",
         provider="Google",
         tool="Analytics",
-        required_env=["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", "GA4_PROPERTY_ID"],
+        required_env=[
+            "GOOGLE_OAUTH_CLIENT_ID",
+            "GOOGLE_OAUTH_CLIENT_SECRET",
+            "GA4_PROPERTY_ID",
+        ],
         cost=FREE,
         docs_url="https://developers.google.com/analytics/devguides/reporting/data/v1",
         unlocks="Visitas, origen del tráfico y conversiones del sitio del usuario, para cruzar "
-                "tráfico con las conversaciones que sí medimos hoy.",
+        "tráfico con las conversaciones que sí medimos hoy.",
         today_instead="Analytics sólo lee conversaciones, mensajes y órdenes propias: no sabe "
-                      "cuánta gente visitó la web sin escribir.",
+        "cuánta gente visitó la web sin escribir.",
         priority=2,
     ),
     Integration(
@@ -164,7 +168,7 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.facebook.com/docs/marketing-api/insights",
         unlocks="Inversión publicitaria y resultados reales para poder calcular ROAS. Sin gasto "
-                "real, cualquier ROI sería inventado.",
+        "real, cualquier ROI sería inventado.",
         today_instead="No se muestra ROI ni ROAS en ninguna pantalla, justamente por eso.",
         priority=3,
     ),
@@ -179,9 +183,9 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started",
         unlocks="Botón 'Autorizar' con OAuth: hoy cada usuario tiene que pegar a mano un token "
-                "que sacó por su cuenta del panel de Meta.",
+        "que sacó por su cuenta del panel de Meta.",
         today_instead="El usuario carga sus credenciales manualmente en el formulario y se "
-                      "validan de verdad contra la plataforma.",
+        "validan de verdad contra la plataforma.",
         priority=1,
     ),
     Integration(
@@ -194,9 +198,9 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.mercadolibre.com.ar/es_ar/registra-tu-aplicacion",
         unlocks="Conexión con un clic y renovación automática del token, para que la IA "
-                "responda preguntas de publicaciones sin que se corte cada 6 horas.",
+        "responda preguntas de publicaciones sin que se corte cada 6 horas.",
         today_instead="Cada usuario tiene que crear su propia app en ML y pegar client_id y "
-                      "client_secret.",
+        "client_secret.",
         priority=1,
     ),
     Integration(
@@ -208,9 +212,9 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developer-docs.amazon.com/sp-api/docs/registering-your-application",
         unlocks="Órdenes, listings y mensajes de Amazon en el mismo inbox. Requiere aprobación "
-                "de Amazon, que tarda.",
+        "de Amazon, que tarda.",
         today_instead="El usuario carga sus propias credenciales SP-API si ya tiene una app "
-                      "aprobada.",
+        "aprobada.",
         priority=3,
     ),
     Integration(
@@ -235,7 +239,7 @@ INTEGRATIONS: list[Integration] = [
         cost=FREE,
         docs_url="https://developers.google.com/my-business/content/prereqs",
         unlocks="Reseñas reales de Google, respuesta automática a reseñas y ficha local: la "
-                "señal de autoridad más fuerte para un negocio con local físico.",
+        "señal de autoridad más fuerte para un negocio con local físico.",
         today_instead="Sólo se cuentan reseñas cargadas manualmente en SellIA.",
         priority=2,
     ),
@@ -286,7 +290,7 @@ INTEGRATIONS: list[Integration] = [
         cost=FREEMIUM,
         docs_url="https://docs.sentry.io/platforms/python/integrations/fastapi/",
         unlocks="Errores de producción con stack trace en vez de tener que leer logs de Railway "
-                "a mano. Free tier alcanza de sobra para este volumen.",
+        "a mano. Free tier alcanza de sobra para este volumen.",
         today_instead="Los errores se ven sólo en los logs del deploy.",
         priority=2,
     ),
@@ -346,7 +350,9 @@ def status() -> dict[str, Any]:
         "by_tool": [
             {
                 "tool": tool,
-                "integrations": sorted(entries, key=lambda i: (i["configured"], i["priority"])),
+                "integrations": sorted(
+                    entries, key=lambda i: (i["configured"], i["priority"])
+                ),
             }
             for tool, entries in by_tool.items()
         ],

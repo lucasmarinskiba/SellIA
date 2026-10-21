@@ -32,11 +32,11 @@ from app.core.clock import utc_now
 
 
 class ProbabilityLevel(str, Enum):
-    VERY_LOW = "very_low"      # 0–20%
-    LOW = "low"                # 20–40%
-    MEDIUM = "medium"          # 40–60%
-    HIGH = "high"              # 60–80%
-    VERY_HIGH = "very_high"    # 80–100%
+    VERY_LOW = "very_low"  # 0–20%
+    LOW = "low"  # 20–40%
+    MEDIUM = "medium"  # 40–60%
+    HIGH = "high"  # 60–80%
+    VERY_HIGH = "very_high"  # 80–100%
 
 
 class DecisionContext:
@@ -44,7 +44,7 @@ class DecisionContext:
 
     def __init__(self, target_id: str, signal_dict: dict[str, Any]):
         self.target_id = target_id  # Lead ID, deal ID, customer ID, etc.
-        self.signals = signal_dict   # {signal_name: value}
+        self.signals = signal_dict  # {signal_name: value}
         self.timestamp = utc_now()
         self.history: list[dict[str, Any]] = []
         self.metadata: dict[str, Any] = {}
@@ -55,27 +55,36 @@ class DecisionContext:
 
     def add_history(self, event: str, outcome: bool | None = None) -> None:
         """Registra evento histórico."""
-        self.history.append({
-            "event": event,
-            "outcome": outcome,
-            "timestamp": utc_now(),
-        })
+        self.history.append(
+            {
+                "event": event,
+                "outcome": outcome,
+                "timestamp": utc_now(),
+            }
+        )
 
     def get_pattern(self, event_type: str) -> dict[str, int]:
         """Patrón de eventos (cuántos exitosos/fallidos)."""
-        success = sum(1 for h in self.history
-                      if h["event"] == event_type and h["outcome"] is True)
-        fail = sum(1 for h in self.history
-                   if h["event"] == event_type and h["outcome"] is False)
+        success = sum(
+            1 for h in self.history if h["event"] == event_type and h["outcome"] is True
+        )
+        fail = sum(
+            1
+            for h in self.history
+            if h["event"] == event_type and h["outcome"] is False
+        )
         return {"success": success, "fail": fail, "total": success + fail}
 
 
 @dataclass
 class BayesianNode:
     """Nodo de red Bayesiana: P(A | B, C, ...)"""
+
     name: str
     priors: dict[str, float] = field(default_factory=dict)  # P(A)
-    likelihoods: dict[str, dict[str, float]] = field(default_factory=dict)  # P(evidence|A)
+    likelihoods: dict[str, dict[str, float]] = field(
+        default_factory=dict
+    )  # P(evidence|A)
 
     def infer(self, evidence: dict[str, Any]) -> dict[str, float]:
         """Inferencia posterior: P(A | evidence) usando regla de Bayes."""
@@ -89,16 +98,16 @@ class BayesianNode:
             posteriors[hypothesis] = likelihood * prior
         # Normalizar
         total = sum(posteriors.values())
-        return {h: p / total if total > 0 else 0.5
-                for h, p in posteriors.items()}
+        return {h: p / total if total > 0 else 0.5 for h, p in posteriors.items()}
 
 
 @dataclass
 class DecisionTree:
     """Árbol de decisión: condición → acción/subárbol."""
+
     condition: Callable[[DecisionContext], bool]
     action: Callable[[DecisionContext], dict[str, Any]] | None = None
-    left: DecisionTree | None = None   # Si True
+    left: DecisionTree | None = None  # Si True
     right: DecisionTree | None = None  # Si False
 
     def evaluate(self, context: DecisionContext) -> dict[str, Any]:
@@ -120,10 +129,11 @@ class DecisionTree:
 @dataclass
 class CausalPath:
     """Inferencia causal: X causa Y (cuantificada)."""
+
     cause: str
     effect: str
     strength: float  # 0.0–1.0
-    mechanism: str   # Cómo causa X a Y?
+    mechanism: str  # Cómo causa X a Y?
     conditions: list[str] = field(default_factory=list)  # Cuándo X → Y?
 
     def applies(self, context: DecisionContext) -> bool:
@@ -153,27 +163,33 @@ class ReasoningEngine:
             self.causal_paths[domain] = []
         self.causal_paths[domain].append(path)
 
-    def infer_bayesian(self, network_name: str,
-                      evidence: dict[str, Any]) -> dict[str, float]:
+    def infer_bayesian(
+        self, network_name: str, evidence: dict[str, Any]
+    ) -> dict[str, float]:
         """Inferencia Bayesiana."""
         if network_name not in self.bayesian_networks:
             return {}
         return self.bayesian_networks[network_name].infer(evidence)
 
-    def evaluate_decision_tree(self, tree_name: str,
-                              context: DecisionContext) -> dict[str, Any]:
+    def evaluate_decision_tree(
+        self, tree_name: str, context: DecisionContext
+    ) -> dict[str, Any]:
         """Evalúa árbol de decisión."""
         if tree_name not in self.decision_trees:
             return {"error": "tree not found"}
         return self.decision_trees[tree_name].evaluate(context)
 
-    def find_causes(self, effect: str, context: DecisionContext,
-                    domain: str) -> list[CausalPath]:
+    def find_causes(
+        self, effect: str, context: DecisionContext, domain: str
+    ) -> list[CausalPath]:
         """Encuentra causas probables de un efecto."""
         if domain not in self.causal_paths:
             return []
-        return [p for p in self.causal_paths[domain]
-                if p.effect == effect and p.applies(context)]
+        return [
+            p
+            for p in self.causal_paths[domain]
+            if p.effect == effect and p.applies(context)
+        ]
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -184,34 +200,38 @@ class ReasoningEngine:
 @dataclass
 class AgentMemory:
     """Memoria de agente: conversaciones, decisiones, outcomes."""
+
     agent_id: str
     decisions: list[dict[str, Any]] = field(default_factory=list)
     outcomes: list[dict[str, Any]] = field(default_factory=list)
     patterns: dict[str, dict[str, int]] = field(default_factory=dict)
 
-    def record_decision(self, context: DecisionContext,
-                       decision: str, confidence: float) -> None:
+    def record_decision(
+        self, context: DecisionContext, decision: str, confidence: float
+    ) -> None:
         """Registra decisión + confianza."""
-        self.decisions.append({
-            "timestamp": utc_now().isoformat(),
-            "target": context.target_id,
-            "decision": decision,
-            "confidence": confidence,
-            "signals": context.signals,
-        })
+        self.decisions.append(
+            {
+                "timestamp": utc_now().isoformat(),
+                "target": context.target_id,
+                "decision": decision,
+                "confidence": confidence,
+                "signals": context.signals,
+            }
+        )
 
-    def record_outcome(self, target_id: str, success: bool,
-                      reason: str = "") -> None:
+    def record_outcome(self, target_id: str, success: bool, reason: str = "") -> None:
         """Registra outcome (exitoso/fallido)."""
-        self.outcomes.append({
-            "timestamp": utc_now().isoformat(),
-            "target": target_id,
-            "success": success,
-            "reason": reason,
-        })
+        self.outcomes.append(
+            {
+                "timestamp": utc_now().isoformat(),
+                "target": target_id,
+                "success": success,
+                "reason": reason,
+            }
+        )
 
-    def update_pattern(self, pattern_name: str, event: str,
-                      success: bool) -> None:
+    def update_pattern(self, pattern_name: str, event: str, success: bool) -> None:
         """Actualiza patrón de aprendizaje."""
         if pattern_name not in self.patterns:
             self.patterns[pattern_name] = {"success": 0, "fail": 0}
@@ -232,8 +252,13 @@ class AgentMemory:
 class BaseAgent(ABC):
     """Base para todos los agentes evolucionados."""
 
-    def __init__(self, agent_id: str, name: str, role: str,
-                 reasoning_engine: ReasoningEngine | None = None):
+    def __init__(
+        self,
+        agent_id: str,
+        name: str,
+        role: str,
+        reasoning_engine: ReasoningEngine | None = None,
+    ):
         self.agent_id = agent_id
         self.name = name
         self.role = role
@@ -247,8 +272,9 @@ class BaseAgent(ABC):
     async def decide(self, context: DecisionContext) -> dict[str, Any]:
         """Toma decisión basada en contexto."""
 
-    async def learn_from_outcome(self, target_id: str, success: bool,
-                                reason: str = "") -> None:
+    async def learn_from_outcome(
+        self, target_id: str, success: bool, reason: str = ""
+    ) -> None:
         """Aprende de outcomes para ajustar estrategias."""
         self.memory.record_outcome(target_id, success, reason)
         # Aquí iría lógica de ajuste dinámico (RL, Thompson sampling, etc.)
@@ -283,9 +309,7 @@ class SalesCloserAgent(BaseAgent):
         }
 
         # Inferencia Bayesiana
-        closure_prob = self.reasoning_engine.infer_bayesian(
-            "sales_closure", evidence
-        )
+        closure_prob = self.reasoning_engine.infer_bayesian("sales_closure", evidence)
 
         if closure_prob.get("ready", 0) > 0.75:
             decision = "close_now"
@@ -297,9 +321,7 @@ class SalesCloserAgent(BaseAgent):
             decision = "nurture"
             action = {"message": "Set next touchpoint", "days": 3}
 
-        self.memory.record_decision(
-            context, decision, closure_prob.get("ready", 0)
-        )
+        self.memory.record_decision(context, decision, closure_prob.get("ready", 0))
         return {
             "decision": decision,
             "confidence": closure_prob.get("ready", 0),
@@ -347,9 +369,7 @@ class PersuasionMasterAgent(BaseAgent):
 
         persuasion_frame = self._build_frame(best_tactic, context)
 
-        self.memory.record_decision(
-            context, f"tactic:{best_tactic}", 0.8
-        )
+        self.memory.record_decision(context, f"tactic:{best_tactic}", 0.8)
         return {
             "primary_tactic": best_tactic,
             "confidence": 0.8,
@@ -357,8 +377,9 @@ class PersuasionMasterAgent(BaseAgent):
             "backup_tactics": [t for t, _ in tactics[1:3]],
         }
 
-    def _rank_tactics(self, context: DecisionContext,
-                     profile: dict[str, Any]) -> list[tuple[str, float]]:
+    def _rank_tactics(
+        self, context: DecisionContext, profile: dict[str, Any]
+    ) -> list[tuple[str, float]]:
         """Rankea 6 principios Cialdini por contexto."""
         # Cialdini: reciprocity, commitment, social_proof, authority, liking, scarcity
         scores = {}
@@ -425,7 +446,9 @@ class ContentStrategistAgent(BaseAgent):
         """Diseña content strategy (topic, format, funnel stage, KPI)."""
         buyer_stage = context.signals.get("buyer_stage", {}).get("value", "awareness")
         search_intent = context.signals.get("search_intent", {}).get("value", "")
-        target_seo_difficulty = context.signals.get("seo_difficulty", {}).get("value", 30)
+        target_seo_difficulty = context.signals.get("seo_difficulty", {}).get(
+            "value", 30
+        )
 
         # Decision tree: stage → content type + SEO approach
         self._tree_content_decision(buyer_stage)
@@ -513,8 +536,9 @@ class RevenueOptimizationAgent(BaseAgent):
         }
         return upgrades.get(current_tier, "professional")
 
-    def _get_price_strategy(self, context: DecisionContext,
-                           tier: str) -> dict[str, Any]:
+    def _get_price_strategy(
+        self, context: DecisionContext, tier: str
+    ) -> dict[str, Any]:
         """Estrategia de precio dinámico."""
         base_prices = {
             "starter": 29,
@@ -522,8 +546,12 @@ class RevenueOptimizationAgent(BaseAgent):
             "business": 299,
             "enterprise": "custom",
         }
-        market_condition = context.signals.get("market_condition", {}).get("value", "stable")
-        multiplier = {"growth": 1.2, "stable": 1.0, "decline": 0.8}.get(market_condition, 1.0)
+        market_condition = context.signals.get("market_condition", {}).get(
+            "value", "stable"
+        )
+        multiplier = {"growth": 1.2, "stable": 1.0, "decline": 0.8}.get(
+            market_condition, 1.0
+        )
         price = base_prices.get(tier, 99)
         if isinstance(price, str):
             return {
@@ -576,8 +604,9 @@ class PatternRecognitionAgent(BaseAgent):
                 return ["sudden_failure"]
         return []
 
-    def _forecast_next(self, patterns: list[str],
-                      history: list[dict[str, Any]]) -> dict[str, Any]:
+    def _forecast_next(
+        self, patterns: list[str], history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Predice próximo evento."""
         if not patterns:
             return {"prediction": "uncertain"}
@@ -609,11 +638,14 @@ class PredictiveAnalyticsAgent(BaseAgent):
             "demand_forecast_90d": demand_forecast["90d"],
             "revenue_projection": revenue_projection,
             "churn_risk_score": churn_risk,
-            "recommendation": "Scale marketing" if demand_forecast["30d"] > 0.2 else "Optimize",
+            "recommendation": (
+                "Scale marketing" if demand_forecast["30d"] > 0.2 else "Optimize"
+            ),
         }
 
-    def _forecast_demand(self, data: list[float],
-                        seasonality: float) -> dict[str, float]:
+    def _forecast_demand(
+        self, data: list[float], seasonality: float
+    ) -> dict[str, float]:
         """ARIMA-like forecasting."""
         if not data:
             return {"30d": 0.0, "90d": 0.0}
@@ -623,8 +655,9 @@ class PredictiveAnalyticsAgent(BaseAgent):
             "90d": (avg * 1.2 * seasonality),
         }
 
-    def _project_revenue(self, demand: dict[str, float],
-                        context: DecisionContext) -> dict[str, float]:
+    def _project_revenue(
+        self, demand: dict[str, float], context: DecisionContext
+    ) -> dict[str, float]:
         """Project revenue basado en demand."""
         avg_deal_value = context.signals.get("avg_deal_value", {}).get("value", 1000)
         return {
@@ -652,7 +685,9 @@ class AnomalyDetectorAgent(BaseAgent):
         behavioral_anomaly = self._detect_behavioral_anomaly(context)
         financial_anomaly = self._detect_financial_anomaly(context)
 
-        risk_level = "critical" if fraud_score > 0.8 else "high" if fraud_score > 0.6 else "low"
+        risk_level = (
+            "critical" if fraud_score > 0.8 else "high" if fraud_score > 0.6 else "low"
+        )
 
         return {
             "fraud_risk": fraud_score,
@@ -721,7 +756,9 @@ class LifecycleOptimizerAgent(BaseAgent):
 
     async def decide(self, context: DecisionContext) -> dict[str, Any]:
         """Define next action por stage de lifecycle."""
-        current_stage = context.signals.get("lifecycle_stage", {}).get("value", "onboarding")
+        current_stage = context.signals.get("lifecycle_stage", {}).get(
+            "value", "onboarding"
+        )
         days_in_stage = context.signals.get("days_in_stage", {}).get("value", 0)
 
         if current_stage == "onboarding" and days_in_stage >= 3:
@@ -768,16 +805,18 @@ class NicheFinderAgent(BaseAgent):
             "recommendation": f"Focus on {best_niches[0][0]}",
         }
 
-    def _score_niches(self, keywords: list[str],
-                     market_data: dict[str, Any]) -> dict[str, float]:
+    def _score_niches(
+        self, keywords: list[str], market_data: dict[str, Any]
+    ) -> dict[str, float]:
         """Puntúa nichos por demanda + margen + competencia."""
         scores = {}
         for kw in keywords:
             demand_score = 0.5  # Placeholder
             margin_score = 0.6
             competition_score = 0.4
-            scores[kw] = (demand_score * 0.4 + margin_score * 0.3 +
-                         (1 - competition_score) * 0.3)
+            scores[kw] = (
+                demand_score * 0.4 + margin_score * 0.3 + (1 - competition_score) * 0.3
+            )
         return scores
 
 
@@ -786,7 +825,9 @@ class PositioningStrategistAgent(BaseAgent):
 
     async def decide(self, context: DecisionContext) -> dict[str, Any]:
         """Recomienda posicionamiento óptimo vs competencia."""
-        market_position = context.signals.get("current_position", {}).get("value", "generic")
+        market_position = context.signals.get("current_position", {}).get(
+            "value", "generic"
+        )
         competitors = context.signals.get("competitors", {}).get("value", [])
 
         positioning = self._find_unique_angle(market_position, competitors)
@@ -799,19 +840,26 @@ class PositioningStrategistAgent(BaseAgent):
             "differentiation": positioning["vs_competitors"],
         }
 
-    def _find_unique_angle(self, current: str,
-                          competitors: list[str]) -> dict[str, str]:
+    def _find_unique_angle(
+        self, current: str, competitors: list[str]
+    ) -> dict[str, str]:
         """Encuentra ángulo único."""
         angles = {
             "price_leader": {"angle": "Lowest price", "vs_competitors": "20% cheaper"},
             "quality_leader": {"angle": "Highest quality", "vs_competitors": "Premium"},
-            "speed_leader": {"angle": "Fastest delivery", "vs_competitors": "24h shipping"},
+            "speed_leader": {
+                "angle": "Fastest delivery",
+                "vs_competitors": "24h shipping",
+            },
             "service_leader": {"angle": "Best support", "vs_competitors": "24/7 help"},
         }
-        return angles.get(current, angles["quality_leader"]) | {"target": "early_adopters"}
+        return angles.get(current, angles["quality_leader"]) | {
+            "target": "early_adopters"
+        }
 
-    def _build_positioning_statement(self, positioning: dict[str, str],
-                                     context: DecisionContext) -> str:
+    def _build_positioning_statement(
+        self, positioning: dict[str, str], context: DecisionContext
+    ) -> str:
         """Construye statement."""
         return f"For {positioning['target']}: {positioning['angle']}"
 
@@ -873,8 +921,7 @@ class ContentCuratorAgent(BaseAgent):
         """Busca trends."""
         return ["AI automation", "Sustainability", "DX trends"]
 
-    def _find_gaps(self, audience: dict[str, Any],
-                   trends: list[str]) -> list[str]:
+    def _find_gaps(self, audience: dict[str, Any], trends: list[str]) -> list[str]:
         """Identifica gaps de contenido."""
         return [f"Gap: {trend}" for trend in trends]
 
@@ -925,7 +972,11 @@ class PRStrategistAgent(BaseAgent):
 
     def _get_media_list(self, target: str) -> list[str]:
         """Obtiene lista de medios."""
-        return ["TechCrunch", "Forbes", "WSJ"] if target == "tier1" else ["Medium", "Dev.to"]
+        return (
+            ["TechCrunch", "Forbes", "WSJ"]
+            if target == "tier1"
+            else ["Medium", "Dev.to"]
+        )
 
     def _build_talking_points(self, context: DecisionContext) -> list[str]:
         """Construye talking points."""
@@ -1004,32 +1055,59 @@ class EvolvedAgentRegistry:
     def register_new_agents(self) -> None:
         """Registra 10 agentes nuevos."""
         new_agents = [
-            PredictiveAnalyticsAgent("agent.predictive", "Predictive Analytics",
-                                     "forecasting", self.reasoning_engine),
-            AnomalyDetectorAgent("agent.anomaly", "Anomaly Detector",
-                                "security", self.reasoning_engine),
-            AutonomousNegotiatorAgent("agent.negotiator", "Autonomous Negotiator",
-                                      "sales", self.reasoning_engine),
-            LifecycleOptimizerAgent("agent.lifecycle", "Lifecycle Optimizer",
-                                    "retention", self.reasoning_engine),
-            NicheFinderAgent("agent.niche", "Niche Finder",
-                            "product", self.reasoning_engine),
-            PositioningStrategistAgent("agent.positioning", "Positioning Strategist",
-                                       "strategy", self.reasoning_engine),
-            PartnershipScoutAgent("agent.partnerships", "Partnership Scout",
-                                 "growth", self.reasoning_engine),
-            ContentCuratorAgent("agent.content_curator", "Content Curator",
-                              "marketing", self.reasoning_engine),
-            PRStrategistAgent("agent.pr", "PR Strategist",
-                            "marketing", self.reasoning_engine),
-            BrandArchitectAgent("agent.brand", "Brand Architect",
-                              "branding", self.reasoning_engine),
+            PredictiveAnalyticsAgent(
+                "agent.predictive",
+                "Predictive Analytics",
+                "forecasting",
+                self.reasoning_engine,
+            ),
+            AnomalyDetectorAgent(
+                "agent.anomaly", "Anomaly Detector", "security", self.reasoning_engine
+            ),
+            AutonomousNegotiatorAgent(
+                "agent.negotiator",
+                "Autonomous Negotiator",
+                "sales",
+                self.reasoning_engine,
+            ),
+            LifecycleOptimizerAgent(
+                "agent.lifecycle",
+                "Lifecycle Optimizer",
+                "retention",
+                self.reasoning_engine,
+            ),
+            NicheFinderAgent(
+                "agent.niche", "Niche Finder", "product", self.reasoning_engine
+            ),
+            PositioningStrategistAgent(
+                "agent.positioning",
+                "Positioning Strategist",
+                "strategy",
+                self.reasoning_engine,
+            ),
+            PartnershipScoutAgent(
+                "agent.partnerships",
+                "Partnership Scout",
+                "growth",
+                self.reasoning_engine,
+            ),
+            ContentCuratorAgent(
+                "agent.content_curator",
+                "Content Curator",
+                "marketing",
+                self.reasoning_engine,
+            ),
+            PRStrategistAgent(
+                "agent.pr", "PR Strategist", "marketing", self.reasoning_engine
+            ),
+            BrandArchitectAgent(
+                "agent.brand", "Brand Architect", "branding", self.reasoning_engine
+            ),
         ]
         for agent in new_agents:
             self.agents[agent.agent_id] = agent
 
-    async def decide(self, agent_id: str,
-                    context: DecisionContext) -> dict[str, Any]:
+    async def decide(self, agent_id: str, context: DecisionContext) -> dict[str, Any]:
         """Decisión desde agente."""
         if agent_id not in self.agents:
             return {"error": "agent not found"}

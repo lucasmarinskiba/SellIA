@@ -15,8 +15,8 @@ logger = get_logger(__name__)
 
 
 class CircuitState(Enum):
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing fast
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing fast
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
@@ -54,7 +54,9 @@ class CircuitBreaker:
                 if time.time() - self.last_failure_time >= self.recovery_timeout:
                     self.state = CircuitState.HALF_OPEN
                     self.success_count = 0
-                    logger.info(f"Circuit breaker entering HALF_OPEN for {func.__qualname__}")
+                    logger.info(
+                        f"Circuit breaker entering HALF_OPEN for {func.__qualname__}"
+                    )
                 else:
                     raise CircuitBreakerOpen(f"Circuit is OPEN for {func.__qualname__}")
 
@@ -87,12 +89,15 @@ class CircuitBreaker:
                 logger.warning("Circuit breaker OPEN (half-open test failed)")
             elif self.failure_count >= self.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit breaker OPEN after {self.failure_count} failures")
+                logger.warning(
+                    f"Circuit breaker OPEN after {self.failure_count} failures"
+                )
 
     def __call__(self, func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await self.call(func, *args, **kwargs)
+
         return wrapper
 
 

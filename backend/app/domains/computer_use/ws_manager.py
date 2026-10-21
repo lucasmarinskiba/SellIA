@@ -107,7 +107,9 @@ class ComputerUseWebSocketManager:
                 await ws.send_json(message)
                 return
             except Exception as e:
-                logger.warning(f"Local WS send failed for {session_id}: {e}", exc_info=True)
+                logger.warning(
+                    f"Local WS send failed for {session_id}: {e}", exc_info=True
+                )
                 # Connection might be broken, remove it
                 async with self._lock:
                     self._connections.pop(session_id, None)
@@ -142,7 +144,9 @@ class ComputerUseWebSocketManager:
                                 try:
                                     await ws.send_json(message)
                                 except Exception as e:
-                                    logger.warning(f"WS send via Redis failed: {e}", exc_info=True)
+                                    logger.warning(
+                                        f"WS send via Redis failed: {e}", exc_info=True
+                                    )
                                     async with self._lock:
                                         self._connections.pop(session_id, None)
                     except Exception:

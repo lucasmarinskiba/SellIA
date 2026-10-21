@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AffiliateProduct:
     """Affiliate product metadata."""
+
     product_id: str
     name: str
     platform: str  # hotmart|meli|amazon|beacons|tiendanube
@@ -93,7 +94,9 @@ class HotmartAnalyzer:
             difficulty += 2
         return min(difficulty, 10.0)
 
-    def find_trending_products(self, category: str | None = None) -> list[AffiliateProduct]:
+    def find_trending_products(
+        self, category: str | None = None
+    ) -> list[AffiliateProduct]:
         """Find trending Hotmart products."""
         # Placeholder: in real impl, fetch from Hotmart API
         products = [
@@ -169,9 +172,9 @@ class AmazonAnalyzer:
 
     def find_best_performing_niches(self) -> list[str]:
         """Find highest-performing niches on Amazon."""
-        return sorted(
-            self.commission_rates.items(), key=lambda x: x[1], reverse=True
-        )[:5]
+        return sorted(self.commission_rates.items(), key=lambda x: x[1], reverse=True)[
+            :5
+        ]
 
     def estimate_monthly_earnings(
         self, daily_clicks: int, conversion_rate: float, aov: float

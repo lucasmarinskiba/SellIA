@@ -1,6 +1,5 @@
 """Phase 32 Platform Monetization API (8 endpoints)."""
 
-
 import logging
 from typing import Annotated
 
@@ -98,7 +97,9 @@ def get_upgrade_trigger(
         classification = segmentation.classify_user(user_id, user_data)
 
         trigger_engine = UpgradeTriggerEngine(db)
-        trigger = trigger_engine.get_optimal_trigger(user_id, classification.segment, classification.propensity_score)
+        trigger = trigger_engine.get_optimal_trigger(
+            user_id, classification.segment, classification.propensity_score
+        )
 
         return TriggerResponse(
             user_id=trigger["user_id"],
@@ -121,7 +122,9 @@ def send_upgrade_trigger(
     """Send trigger via email + in-app + push."""
     try:
         trigger_engine = UpgradeTriggerEngine(db)
-        result = trigger_engine.send_trigger(user_id, {"urgency_message": "Premium unlocked"})
+        result = trigger_engine.send_trigger(
+            user_id, {"urgency_message": "Premium unlocked"}
+        )
         return result
     except Exception as e:
         logger.exception("send_upgrade_trigger: error inesperado")
@@ -155,9 +158,24 @@ def list_active_tests(
     try:
         return {
             "active_tests": [
-                {"test_name": "urgency_v1", "element_type": "urgency", "variants": 3, "conversions": 1250},
-                {"test_name": "offer_discount_v1", "element_type": "offer", "variants": 3, "conversions": 980},
-                {"test_name": "cta_text_v1", "element_type": "cta", "variants": 5, "conversions": 1120},
+                {
+                    "test_name": "urgency_v1",
+                    "element_type": "urgency",
+                    "variants": 3,
+                    "conversions": 1250,
+                },
+                {
+                    "test_name": "offer_discount_v1",
+                    "element_type": "offer",
+                    "variants": 3,
+                    "conversions": 980,
+                },
+                {
+                    "test_name": "cta_text_v1",
+                    "element_type": "cta",
+                    "variants": 5,
+                    "conversions": 1120,
+                },
             ]
         }
     except Exception as e:
@@ -191,7 +209,9 @@ def forecast_revenue(
     """Forecast monthly revenue based on current metrics."""
     try:
         analytics = ConversionAnalytics(db)
-        forecast = analytics.forecast_revenue(free_users=100000, avg_conversion_rate=0.35, arpu=5000)
+        forecast = analytics.forecast_revenue(
+            free_users=100000, avg_conversion_rate=0.35, arpu=5000
+        )
 
         return forecast
     except Exception as e:

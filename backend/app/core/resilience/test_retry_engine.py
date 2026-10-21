@@ -8,7 +8,6 @@ Validar:
 4. Decorador @retry funciona
 """
 
-
 import pytest
 from retry_engine import (
     CircuitBreakerState,
@@ -64,7 +63,9 @@ async def test_exponential_backoff():
 async def test_max_delay_cap():
     """Test: Delay no excede max_delay."""
     engine = RetryEngine()
-    config = RetryConfig(initial_delay=1.0, max_delay=10.0, exponential_base=2.0, jitter=False)
+    config = RetryConfig(
+        initial_delay=1.0, max_delay=10.0, exponential_base=2.0, jitter=False
+    )
 
     # Intento 10 con base 2: 1 * 2^10 = 1024, capeado a 10.0
     delay = engine._calculate_delay(10, config)
@@ -153,6 +154,7 @@ async def test_circuit_breaker_recovery():
     cb = engine.circuit_breakers.get("test_cb_recovery")
     if not cb:
         from retry_engine import CircuitBreaker
+
         cb = CircuitBreaker("test_cb_recovery", config)
         engine.circuit_breakers["test_cb_recovery"] = cb
 

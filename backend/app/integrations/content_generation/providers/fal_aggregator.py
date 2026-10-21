@@ -19,7 +19,6 @@ Pricing varies by model:
 - Luma: ~$0.05/s
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -45,13 +44,41 @@ settings = get_settings()
 
 # Endpoints y costos
 FAL_MODELS = {
-    "flux-schnell": {"endpoint": "fal-ai/flux/schnell", "cost_per_image": 0.003, "type": "image"},
-    "flux-dev": {"endpoint": "fal-ai/flux/dev", "cost_per_image": 0.015, "type": "image"},
-    "flux-pro": {"endpoint": "fal-ai/flux-pro/v1.1", "cost_per_image": 0.025, "type": "image"},
-    "seedance-pro": {"endpoint": "fal-ai/seedance/seedance-2-pro/text-to-video", "cost_per_second": 0.10, "type": "video"},
-    "seedance-fast": {"endpoint": "fal-ai/seedance/seedance-2-fast/text-to-video", "cost_per_second": 0.081, "type": "video"},
-    "kling": {"endpoint": "fal-ai/kling-video/v1/standard/text-to-video", "cost_per_second": 0.06, "type": "video"},
-    "luma": {"endpoint": "fal-ai/luma-dream-machine", "cost_per_second": 0.05, "type": "video"},
+    "flux-schnell": {
+        "endpoint": "fal-ai/flux/schnell",
+        "cost_per_image": 0.003,
+        "type": "image",
+    },
+    "flux-dev": {
+        "endpoint": "fal-ai/flux/dev",
+        "cost_per_image": 0.015,
+        "type": "image",
+    },
+    "flux-pro": {
+        "endpoint": "fal-ai/flux-pro/v1.1",
+        "cost_per_image": 0.025,
+        "type": "image",
+    },
+    "seedance-pro": {
+        "endpoint": "fal-ai/seedance/seedance-2-pro/text-to-video",
+        "cost_per_second": 0.10,
+        "type": "video",
+    },
+    "seedance-fast": {
+        "endpoint": "fal-ai/seedance/seedance-2-fast/text-to-video",
+        "cost_per_second": 0.081,
+        "type": "video",
+    },
+    "kling": {
+        "endpoint": "fal-ai/kling-video/v1/standard/text-to-video",
+        "cost_per_second": 0.06,
+        "type": "video",
+    },
+    "luma": {
+        "endpoint": "fal-ai/luma-dream-machine",
+        "cost_per_second": 0.05,
+        "type": "video",
+    },
 }
 
 
@@ -106,10 +133,13 @@ class FalAggregatorProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="FAL_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="FAL_KEY no configurada"
+            )
 
         try:
             import fal_client
+
             fal_client.api_key = settings.FAL_KEY
 
             model_key = self._select_model(config)
@@ -119,7 +149,9 @@ class FalAggregatorProvider(BaseProvider):
             arguments = {"prompt": config.prompt}
 
             if model_config["type"] == "image":
-                arguments["image_size"] = config.extra_params.get("image_size", "square_hd")
+                arguments["image_size"] = config.extra_params.get(
+                    "image_size", "square_hd"
+                )
                 if config.num_variations > 1:
                     arguments["num_images"] = config.num_variations
             else:  # video
@@ -143,10 +175,17 @@ class FalAggregatorProvider(BaseProvider):
                 if result.get("images"):
                     url = result["images"][0].get("url")
                 elif "video" in result:
-                    url = result["video"].get("url") if isinstance(result["video"], dict) else result["video"]
+                    url = (
+                        result["video"].get("url")
+                        if isinstance(result["video"], dict)
+                        else result["video"]
+                    )
 
             if not url:
-                return GenerationResult(success=False, error_message=f"fal.ai ({model_key}) no devolvió resultado")
+                return GenerationResult(
+                    success=False,
+                    error_message=f"fal.ai ({model_key}) no devolvió resultado",
+                )
 
             # Descargar y comprimir si es imagen
             local = None
@@ -154,10 +193,14 @@ class FalAggregatorProvider(BaseProvider):
             if model_config["type"] == "image":
                 image_bytes = await download_url(url)
                 if image_bytes:
-                    local = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                    local = compress_image(
+                        image_bytes,
+                        quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                    )
                     import io
 
                     from PIL import Image as PILImage
+
                     img = PILImage.open(io.BytesIO(local))
                     width, height = img.size
 
@@ -172,7 +215,9 @@ class FalAggregatorProvider(BaseProvider):
                 quality_tier=config.quality,
                 width=width,
                 height=height,
-                duration_seconds=config.duration_seconds if model_config["type"] == "video" else None,
+                duration_seconds=(
+                    config.duration_seconds if model_config["type"] == "video" else None
+                ),
                 metadata={"fal_model": model_key, "endpoint": endpoint},
             )
 

@@ -90,7 +90,8 @@ class AgentRouter:
                             f"Escalation threshold reached for lead {context.lead_id}"
                         )
                         return await self._escalate_to_human(
-                            context, f"Agent requested escalation {escalation_count} times"
+                            context,
+                            f"Agent requested escalation {escalation_count} times",
                         )
 
                 # Check if pipeline complete
@@ -107,17 +108,11 @@ class AgentRouter:
                 logger.exception(
                     f"Agent execution failed: {next_agent_type} for lead {context.lead_id}"
                 )
-                return await self._escalate_to_human(
-                    context, f"Agent error: {e!s}"
-                )
+                return await self._escalate_to_human(context, f"Agent error: {e!s}")
 
         # Max hops reached
-        logger.warning(
-            f"Max hops ({self.max_hops}) reached for lead {context.lead_id}"
-        )
-        return await self._escalate_to_human(
-            context, "Pipeline max hops exceeded"
-        )
+        logger.warning(f"Max hops ({self.max_hops}) reached for lead {context.lead_id}")
+        return await self._escalate_to_human(context, "Pipeline max hops exceeded")
 
     async def _find_best_agent(self, context: AgentContext) -> AgentType | None:
         """

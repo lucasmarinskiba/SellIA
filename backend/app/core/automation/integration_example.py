@@ -30,6 +30,7 @@ automation_engine = None
 
 # ========== HANDLERS ==========
 
+
 async def handle_post_product(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Handler para post_product jobs.
@@ -165,6 +166,7 @@ async def handle_extract_analytics(payload: dict[str, Any]) -> dict[str, Any]:
 
 # ========== STARTUP / SHUTDOWN ==========
 
+
 async def setup_automation():
     """Setup automation engine on app startup."""
     global automation_engine
@@ -179,7 +181,9 @@ async def setup_automation():
     automation_engine.register_handler(JobType.RESPOND_INQUIRY, handle_respond_inquiry)
     automation_engine.register_handler(JobType.SEND_EMAIL, handle_send_email)
     automation_engine.register_handler(JobType.SYNC_INVENTORY, handle_sync_inventory)
-    automation_engine.register_handler(JobType.EXTRACT_ANALYTICS, handle_extract_analytics)
+    automation_engine.register_handler(
+        JobType.EXTRACT_ANALYTICS, handle_extract_analytics
+    )
 
     logger.info("✓ Automation Engine ready")
 
@@ -198,6 +202,7 @@ async def shutdown_automation():
 
 # ========== API ROUTES ==========
 
+
 def setup_automation_routes(app: FastAPI):
     """Setup automation API routes."""
 
@@ -214,7 +219,9 @@ def setup_automation_routes(app: FastAPI):
     async def get_automation_status():
         """Get current automation engine status."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         status = await automation_engine.get_system_status()
         return JSONResponse(status)
@@ -224,7 +231,9 @@ def setup_automation_routes(app: FastAPI):
     async def get_dashboard():
         """Get full dashboard data."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         dashboard = DashboardAPI(automation_engine.monitoring)
         data = await dashboard.get_dashboard_data()
@@ -235,31 +244,41 @@ def setup_automation_routes(app: FastAPI):
     async def get_jobs(status: str | None = None, limit: int = 50):
         """Get jobs (optionally filtered by status)."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         if status:
             # Filter by status
-            jobs = await automation_engine.state_manager.get_by_status(status, limit=limit)
+            jobs = await automation_engine.state_manager.get_by_status(
+                status, limit=limit
+            )
             jobs_data = [
                 {
                     "id": j.id,
                     "type": j.job_type.value,
                     "status": j.status.value,
                     "created_at": j.created_at.isoformat(),
-                    "duration": f"{j.duration_seconds:.2f}s" if j.duration_seconds else "—",
+                    "duration": (
+                        f"{j.duration_seconds:.2f}s" if j.duration_seconds else "—"
+                    ),
                 }
                 for j in jobs
             ]
         else:
             # Get recent jobs
-            jobs = await automation_engine.state_manager.get_recent(hours=1, limit=limit)
+            jobs = await automation_engine.state_manager.get_recent(
+                hours=1, limit=limit
+            )
             jobs_data = [
                 {
                     "id": j.id,
                     "type": j.job_type.value,
                     "status": j.status.value,
                     "created_at": j.created_at.isoformat(),
-                    "duration": f"{j.duration_seconds:.2f}s" if j.duration_seconds else "—",
+                    "duration": (
+                        f"{j.duration_seconds:.2f}s" if j.duration_seconds else "—"
+                    ),
                 }
                 for j in jobs
             ]
@@ -271,7 +290,9 @@ def setup_automation_routes(app: FastAPI):
     async def get_job_details(job_id: str):
         """Get detailed job history."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         history = await automation_engine.state_manager.get_history(job_id)
         if not history:
@@ -284,9 +305,15 @@ def setup_automation_routes(app: FastAPI):
     async def get_escalations(limit: int = 50):
         """Get pending escalations."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
-        escalations = await automation_engine.escalation_handler.get_pending_escalations(limit=limit)
+        escalations = (
+            await automation_engine.escalation_handler.get_pending_escalations(
+                limit=limit
+            )
+        )
         escalations_data = [
             {
                 "id": e.id,
@@ -306,7 +333,9 @@ def setup_automation_routes(app: FastAPI):
     async def resolve_escalation(escalation_id: str, resolution: str):
         """Resolve an escalation."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         success = await automation_engine.escalation_handler.resolve_escalation(
             escalation_id,
@@ -329,7 +358,9 @@ def setup_automation_routes(app: FastAPI):
     ):
         """Add a new recurring task."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         try:
             task_id = await automation_engine.add_recurring_task(
@@ -348,7 +379,9 @@ def setup_automation_routes(app: FastAPI):
     async def list_tasks():
         """List all tasks."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         tasks = await automation_engine.scheduler.list_tasks()
         return JSONResponse({"tasks": tasks})
@@ -358,7 +391,9 @@ def setup_automation_routes(app: FastAPI):
     async def get_prometheus_metrics():
         """Export Prometheus metrics."""
         if not automation_engine:
-            raise HTTPException(status_code=503, detail="Automation engine not initialized")
+            raise HTTPException(
+                status_code=503, detail="Automation engine not initialized"
+            )
 
         metrics = await automation_engine.monitoring.export_prometheus_metrics()
         return metrics
@@ -367,6 +402,7 @@ def setup_automation_routes(app: FastAPI):
 
 
 # ========== INITIALIZATION IN FASTAPI APP ==========
+
 
 def create_app() -> FastAPI:
     """Create FastAPI app with automation engine."""

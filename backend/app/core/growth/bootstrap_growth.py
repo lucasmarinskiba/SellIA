@@ -13,14 +13,34 @@ class BootstrapGrowth:
     MVP_LOOPS: ClassVar[dict] = {
         "ecommerce": [
             {"week": 1, "action": "List 10 products", "target": "Initial feedstock"},
-            {"week": 2, "action": "Get first 5 sales", "target": "Proof of product-market fit"},
-            {"week": 3, "action": "Repeat winning product", "target": "Create first trend"},
+            {
+                "week": 2,
+                "action": "Get first 5 sales",
+                "target": "Proof of product-market fit",
+            },
+            {
+                "week": 3,
+                "action": "Repeat winning product",
+                "target": "Create first trend",
+            },
             {"week": 4, "action": "Add bundle offers", "target": "Increase AOV"},
         ],
         "service": [
-            {"week": 1, "action": "Package service offering", "target": "Clear value prop"},
-            {"week": 2, "action": "Get 3 paying customers", "target": "Initial traction"},
-            {"week": 3, "action": "Refine based on feedback", "target": "Optimize delivery"},
+            {
+                "week": 1,
+                "action": "Package service offering",
+                "target": "Clear value prop",
+            },
+            {
+                "week": 2,
+                "action": "Get 3 paying customers",
+                "target": "Initial traction",
+            },
+            {
+                "week": 3,
+                "action": "Refine based on feedback",
+                "target": "Optimize delivery",
+            },
             {"week": 4, "action": "Create case study", "target": "Social proof"},
         ],
     }
@@ -52,7 +72,9 @@ class BootstrapGrowth:
             }
         """
 
-        mvp_loop = BootstrapGrowth.MVP_LOOPS.get(product_category, BootstrapGrowth.MVP_LOOPS["ecommerce"])
+        mvp_loop = BootstrapGrowth.MVP_LOOPS.get(
+            product_category, BootstrapGrowth.MVP_LOOPS["ecommerce"]
+        )
 
         return {
             "product_category": product_category,

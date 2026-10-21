@@ -4,6 +4,7 @@ Lead Progression Endpoints
 - No-engagement timeout checks
 - Workflow progression monitoring
 """
+
 import logging
 from typing import Annotated
 
@@ -27,6 +28,7 @@ router = APIRouter(prefix="/api/v1/progression", tags=["progression"])
 # flip any lead straight to e.g. "won"/"qualified". Same schema gap as
 # leads.py: LeadModel has no owner column, so this only closes anonymous
 # access, not per-business isolation -- flagged there, not repeated here.
+
 
 # ============================================================
 # ENDPOINTS
@@ -56,8 +58,9 @@ async def change_lead_status(
         "lead_id": lead_id,
         "old_status": old_status,
         "new_status": new_status,
-        "updated_at": lead.updated_at.isoformat()
+        "updated_at": lead.updated_at.isoformat(),
     }
+
 
 @router.post("/{lead_id}/no-engagement-check")
 async def check_no_engagement(
@@ -70,9 +73,7 @@ async def check_no_engagement(
     service = await get_progression_service()
 
     has_timeout = await service.check_no_engagement_timeout(
-        session,
-        lead_id,
-        days_threshold
+        session, lead_id, days_threshold
     )
 
     stmt = select(Lead).where(Lead.id == lead_id)
@@ -85,13 +86,16 @@ async def check_no_engagement(
     return {
         "lead_id": lead_id,
         "status": lead.status,
-        "last_contacted": lead.last_contacted.isoformat() if lead.last_contacted else None,
+        "last_contacted": (
+            lead.last_contacted.isoformat() if lead.last_contacted else None
+        ),
         "no_engagement_timeout_triggered": has_timeout,
         "threshold_days": days_threshold,
         "days_since_contact": (
             (datetime.now() - lead.last_contacted).days if lead.last_contacted else None
-        )
+        ),
     }
+
 
 @router.post("/{lead_id}/trigger-no-engagement")
 async def trigger_no_engagement_email(
@@ -105,23 +109,19 @@ async def trigger_no_engagement_email(
 
     try:
         from app.core.scheduler import get_scheduler
+
         scheduler = await get_scheduler()
 
         result = await service.trigger_no_engagement_sequence(
-            session,
-            lead_id,
-            workflow_id,
-            scheduler
+            session, lead_id, workflow_id, scheduler
         )
 
-        return {
-            "status": "ok",
-            "result": result
-        }
+        return {"status": "ok", "result": result}
 
     except Exception as e:
         logger.exception("No-engagement trigger failed")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{lead_id}/workflow-executions")
 async def get_lead_executions(
@@ -130,9 +130,11 @@ async def get_lead_executions(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> dict:
     """Get all workflow executions for lead."""
-    stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_id == lead_id
-    ).order_by(WorkflowExecution.created_at.desc())
+    stmt = (
+        select(WorkflowExecution)
+        .where(WorkflowExecution.lead_id == lead_id)
+        .order_by(WorkflowExecution.created_at.desc())
+    )
 
     result = await session.execute(stmt)
     executions = result.scalars().all()
@@ -148,12 +150,13 @@ async def get_lead_executions(
                 "sent_at": e.sent_at.isoformat() if e.sent_at else None,
                 "opened_at": e.opened_at.isoformat() if e.opened_at else None,
                 "clicked_at": e.clicked_at.isoformat() if e.clicked_at else None,
-                "created_at": e.created_at.isoformat()
+                "created_at": e.created_at.isoformat(),
             }
             for e in executions
         ],
-        "total": len(executions)
+        "total": len(executions),
     }
+
 
 # ============================================================
 # TESTING / SIMULATION
@@ -167,9 +170,12 @@ async def simulate_email_opened(
     """Simulate email open (for testing)."""
     service = await get_progression_service()
 
-    stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_id == lead_id
-    ).order_by(WorkflowExecution.created_at.desc()).limit(1)
+    stmt = (
+        select(WorkflowExecution)
+        .where(WorkflowExecution.lead_id == lead_id)
+        .order_by(WorkflowExecution.created_at.desc())
+        .limit(1)
+    )
 
     result = await session.execute(stmt)
     execution = result.scalar_one_or_none()
@@ -183,11 +189,12 @@ async def simulate_email_opened(
             "status": "ok",
             "event": "email_opened",
             "lead_id": lead_id,
-            "execution_id": execution.id
+            "execution_id": execution.id,
         }
     except Exception as e:
         logger.exception("Simulate open failed")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/{lead_id}/simulate-click")
 async def simulate_email_clicked(
@@ -199,9 +206,12 @@ async def simulate_email_clicked(
     """Simulate email click (for testing)."""
     service = await get_progression_service()
 
-    stmt = select(WorkflowExecution).where(
-        WorkflowExecution.lead_id == lead_id
-    ).order_by(WorkflowExecution.created_at.desc()).limit(1)
+    stmt = (
+        select(WorkflowExecution)
+        .where(WorkflowExecution.lead_id == lead_id)
+        .order_by(WorkflowExecution.created_at.desc())
+        .limit(1)
+    )
 
     result = await session.execute(stmt)
     execution = result.scalar_one_or_none()
@@ -216,11 +226,12 @@ async def simulate_email_clicked(
             "event": "email_clicked",
             "lead_id": lead_id,
             "execution_id": execution.id,
-            "url": url
+            "url": url,
         }
     except Exception as e:
         logger.exception("Simulate click failed")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/{lead_id}/simulate-bounce")
 async def simulate_email_bounced(
@@ -238,11 +249,12 @@ async def simulate_email_bounced(
             "status": "ok",
             "event": "email_bounced",
             "lead_id": lead_id,
-            "reason": reason
+            "reason": reason,
         }
     except Exception as e:
         logger.exception("Simulate bounce failed")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Import for datetime
 from datetime import datetime

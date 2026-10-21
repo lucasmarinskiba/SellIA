@@ -61,7 +61,7 @@ class ChannelDecision:
     delta_pct: float
     roas: Decimal
     conversions: int
-    action: str          # increase | decrease | hold | pause | resume
+    action: str  # increase | decrease | hold | pause | resume
     reason: str
 
     def as_dict(self) -> dict:
@@ -101,7 +101,9 @@ def _effective_roas(ch: ChannelInput) -> Decimal:
     return _q(r)
 
 
-def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> ReallocationResult:
+def optimize(
+    channels: list[ChannelInput], config: OptimizerConfig
+) -> ReallocationResult:
     blended_spend = sum((c.spend or ZERO for c in channels), ZERO)
     blended_rev = sum((c.revenue or ZERO for c in channels), ZERO)
     blended_roas = _q(blended_rev / blended_spend) if blended_spend > 0 else ZERO
@@ -113,9 +115,14 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
 
     if not managed:
         return ReallocationResult(
-            decisions=[_hold(c, "canal no gestionado por el autopiloto") for c in channels],
-            blended_roas=blended_roas, total_before=total_before, total_after=total_before,
-            noop=True, note="sin canales gestionados",
+            decisions=[
+                _hold(c, "canal no gestionado por el autopiloto") for c in channels
+            ],
+            blended_roas=blended_roas,
+            total_before=total_before,
+            total_after=total_before,
+            noop=True,
+            note="sin canales gestionados",
         )
 
     if config.total_daily_budget is not None:
@@ -126,8 +133,12 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
     if pool <= 0:
         return ReallocationResult(
             decisions=[_hold(c, "presupuesto total = 0") for c in channels],
-            blended_roas=blended_roas, total_before=total_before, total_after=total_before,
-            noop=True, note="pool de presupuesto en cero", pool=pool,
+            blended_roas=blended_roas,
+            total_before=total_before,
+            total_after=total_before,
+            noop=True,
+            note="pool de presupuesto en cero",
+            pool=pool,
         )
 
     target = config.target_roas if config.target_roas > 0 else Decimal(1)
@@ -139,11 +150,24 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
     for c in managed:
         eff = _effective_roas(c)
         enough_data = c.conversions >= config.min_data_conversions
-        if config.allow_pause and enough_data and eff < config.kill_roas and c.spend > 0:
+        if (
+            config.allow_pause
+            and enough_data
+            and eff < config.kill_roas
+            and c.spend > 0
+        ):
             decisions.append(
                 ChannelDecision(
-                    c.channel_id, c.platform, c.name, _q(c.current_budget), ZERO,
-                    _q(-c.current_budget), -100.0, _q(c.roas), c.conversions, "pause",
+                    c.channel_id,
+                    c.platform,
+                    c.name,
+                    _q(c.current_budget),
+                    ZERO,
+                    _q(-c.current_budget),
+                    -100.0,
+                    _q(c.roas),
+                    c.conversions,
+                    "pause",
                     f"ROAS {eff} < umbral de corte {config.kill_roas} con {c.conversions} conv.",
                 )
             )
@@ -154,10 +178,16 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
         # everything got paused — nothing to allocate
         for c in fixed:
             decisions.append(_hold(c, "canal fijo"))
-        total_after = sum((d.after for d in decisions), ZERO) + sum((_q(c.current_budget) for c in fixed), ZERO)
+        total_after = sum((d.after for d in decisions), ZERO) + sum(
+            (_q(c.current_budget) for c in fixed), ZERO
+        )
         return ReallocationResult(
-            decisions=decisions, blended_roas=blended_roas, total_before=total_before,
-            total_after=_q(total_after), pool=pool, note="todos los canales pausados por ROAS",
+            decisions=decisions,
+            blended_roas=blended_roas,
+            total_before=total_before,
+            total_after=_q(total_after),
+            pool=pool,
+            note="todos los canales pausados por ROAS",
         )
 
     # --- score --------------------------------------------------------------
@@ -171,7 +201,10 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
         scores[c.channel_id] = max(ratio, 0.01) ** aggr
 
     score_sum = sum(scores.values()) or 1.0
-    raw = {c.channel_id: pool * Decimal(str(scores[c.channel_id] / score_sum)) for c in active}
+    raw = {
+        c.channel_id: pool * Decimal(str(scores[c.channel_id] / score_sum))
+        for c in active
+    }
 
     # --- bounds per channel ------------------------------------------------
     lo: dict[str, Decimal] = {}
@@ -212,9 +245,13 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
                 continue
             v = alloc[cid]
             if v < lo[cid]:
-                alloc[cid] = lo[cid]; fixed_ids.add(cid); changed = True
+                alloc[cid] = lo[cid]
+                fixed_ids.add(cid)
+                changed = True
             elif v > hi[cid]:
-                alloc[cid] = hi[cid]; fixed_ids.add(cid); changed = True
+                alloc[cid] = hi[cid]
+                fixed_ids.add(cid)
+                changed = True
         fixed_total = sum((alloc[c] for c in fixed_ids), ZERO)
         free_ids = [c.channel_id for c in active if c.channel_id not in fixed_ids]
         residual = pool - fixed_total
@@ -238,7 +275,11 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
         before = _q(c.current_budget)
         after = alloc[c.channel_id]
         delta = _q(after - before)
-        pct = float(_q(delta / before * 100)) if before > 0 else (100.0 if after > 0 else 0.0)
+        pct = (
+            float(_q(delta / before * 100))
+            if before > 0
+            else (100.0 if after > 0 else 0.0)
+        )
         if abs(delta) < CENT:
             action, reason = "hold", f"ROAS {_effective_roas(c)} en objetivo"
         elif delta > 0:
@@ -250,8 +291,19 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
         if c.conversions < config.min_data_conversions:
             reason += f" (baja confianza: {c.conversions} conv.)"
         decisions.append(
-            ChannelDecision(c.channel_id, c.platform, c.name, before, after, delta, pct,
-                            _q(c.roas), c.conversions, action, reason)
+            ChannelDecision(
+                c.channel_id,
+                c.platform,
+                c.name,
+                before,
+                after,
+                delta,
+                pct,
+                _q(c.roas),
+                c.conversions,
+                action,
+                reason,
+            )
         )
 
     for c in fixed:
@@ -269,5 +321,16 @@ def optimize(channels: list[ChannelInput], config: OptimizerConfig) -> Reallocat
 
 def _hold(c: ChannelInput, reason: str) -> ChannelDecision:
     b = _q(c.current_budget)
-    return ChannelDecision(c.channel_id, c.platform, c.name, b, b, ZERO, 0.0,
-                           _q(c.roas), c.conversions, "hold", reason)
+    return ChannelDecision(
+        c.channel_id,
+        c.platform,
+        c.name,
+        b,
+        b,
+        ZERO,
+        0.0,
+        _q(c.roas),
+        c.conversions,
+        "hold",
+        reason,
+    )

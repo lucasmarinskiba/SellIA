@@ -86,7 +86,9 @@ async def get_campaign(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = AdCopywriterService(db)
-    data = await service.get_campaign_with_variants(campaign_id, current_user.business_id)
+    data = await service.get_campaign_with_variants(
+        campaign_id, current_user.business_id
+    )
     if not data:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
@@ -127,7 +129,9 @@ async def export_campaign(
 ):
     service = AdCopywriterService(db)
     try:
-        export = await service.export_campaign(campaign_id, platform, current_user.business_id)
+        export = await service.export_campaign(
+            campaign_id, platform, current_user.business_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return export

@@ -62,7 +62,10 @@ class OnboardingAnalyzer:
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Texto extraído del sitio web/Instagram:\n\n{raw_text}\n\nDevolvé el JSON."},
+                    {
+                        "role": "user",
+                        "content": f"Texto extraído del sitio web/Instagram:\n\n{raw_text}\n\nDevolvé el JSON.",
+                    },
                 ],
                 temperature=0.3,
                 max_tokens=2500,
@@ -77,14 +80,17 @@ class OnboardingAnalyzer:
             for p in data.get("products", []):
                 try:
                     from decimal import Decimal
+
                     price = Decimal(str(p["price"])) if p.get("price") else None
-                    products.append(ScrapedProduct(
-                        name=p["name"],
-                        description=p.get("description"),
-                        price=price,
-                        currency=p.get("currency", "ARS"),
-                        category=p.get("category"),
-                    ))
+                    products.append(
+                        ScrapedProduct(
+                            name=p["name"],
+                            description=p.get("description"),
+                            price=price,
+                            currency=p.get("currency", "ARS"),
+                            category=p.get("category"),
+                        )
+                    )
                 except Exception:
                     logger.exception("analyze: error inesperado")
                     continue

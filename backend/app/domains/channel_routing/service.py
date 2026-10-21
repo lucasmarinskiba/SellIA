@@ -1,4 +1,5 @@
 """Phase 3: Channel Routing Service - Intelligent Message Delivery."""
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -99,7 +100,10 @@ class ChannelRoutingService:
             "routed_to_channel": routed_channel,
             "confidence": round(confidence, 2),
             "optimal_send_time": target_time.isoformat(),
-            "fallback_channels": [routing.fallback_channel_1, routing.fallback_channel_2],
+            "fallback_channels": [
+                routing.fallback_channel_1,
+                routing.fallback_channel_2,
+            ],
         }
 
     @staticmethod
@@ -131,13 +135,21 @@ class ChannelRoutingService:
 
         # Update response rates based on channel
         if channel == "email":
-            affinity.email_response_rate = (affinity.email_response_rate * 0.7) + (0.3 if was_clicked else 0)
+            affinity.email_response_rate = (affinity.email_response_rate * 0.7) + (
+                0.3 if was_clicked else 0
+            )
         elif channel == "sms":
-            affinity.sms_response_rate = (affinity.sms_response_rate * 0.7) + (0.3 if was_clicked else 0)
+            affinity.sms_response_rate = (affinity.sms_response_rate * 0.7) + (
+                0.3 if was_clicked else 0
+            )
         elif channel == "whatsapp":
-            affinity.whatsapp_response_rate = (affinity.whatsapp_response_rate * 0.7) + (0.3 if was_clicked else 0)
+            affinity.whatsapp_response_rate = (
+                affinity.whatsapp_response_rate * 0.7
+            ) + (0.3 if was_clicked else 0)
         elif channel == "phone":
-            affinity.phone_response_rate = (affinity.phone_response_rate * 0.7) + (0.3 if was_clicked else 0)
+            affinity.phone_response_rate = (affinity.phone_response_rate * 0.7) + (
+                0.3 if was_clicked else 0
+            )
 
         # Recalculate affinity scores
         total_rate = (
@@ -150,7 +162,9 @@ class ChannelRoutingService:
         if total_rate > 0:
             affinity.email_score = affinity.email_response_rate / total_rate * 0.4 + 0.1
             affinity.sms_score = affinity.sms_response_rate / total_rate * 0.4 + 0.1
-            affinity.whatsapp_score = affinity.whatsapp_response_rate / total_rate * 0.4 + 0.1
+            affinity.whatsapp_score = (
+                affinity.whatsapp_response_rate / total_rate * 0.4 + 0.1
+            )
             affinity.phone_score = affinity.phone_response_rate / total_rate * 0.4 + 0.1
 
         await db.commit()
@@ -218,7 +232,9 @@ class ChannelRoutingService:
 
         return {
             "primary_channel": channels_ranked[0].channel if channels_ranked else None,
-            "secondary_channel": channels_ranked[1].channel if len(channels_ranked) > 1 else None,
+            "secondary_channel": (
+                channels_ranked[1].channel if len(channels_ranked) > 1 else None
+            ),
             "channels_by_performance": [
                 {
                     "channel": m.channel,

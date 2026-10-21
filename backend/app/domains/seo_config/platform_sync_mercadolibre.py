@@ -49,12 +49,14 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
         """
         # Listing permalinks spell the id with a hyphen (`MLA-123456789-title`)
         # while the API id has none (`MLA123456789`): accept both, return the API form.
-        match = re.search(r'(?<![A-Za-z])(ML[A-Z]?)-?(\d{6,})', url)
+        match = re.search(r"(?<![A-Za-z])(ML[A-Z]?)-?(\d{6,})", url)
         if match:
             return f"{match.group(1)}{match.group(2)}"
         return None
 
-    async def update_listing_title(self, external_id: str, title: str) -> dict[str, Any]:
+    async def update_listing_title(
+        self, external_id: str, title: str
+    ) -> dict[str, Any]:
         """Update listing title on MercadoLibre."""
         if not self.access_token:
             return {"status": "failed", "error_message": "Missing access_token"}
@@ -70,7 +72,9 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
                 )
 
                 if resp.status_code in (200, 201):
-                    logger.info(f"MercadoLibre: updated title for listing {external_id}")
+                    logger.info(
+                        f"MercadoLibre: updated title for listing {external_id}"
+                    )
                     return {"status": "synced", "response": resp.json()}
                 else:
                     error = resp.json().get("message", resp.text)
@@ -82,7 +86,9 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
             logger.exception(f"MercadoLibre title sync error: {error_msg}")
             return {"status": "failed", "error_message": error_msg}
 
-    async def update_listing_description(self, external_id: str, description: str) -> dict[str, Any]:
+    async def update_listing_description(
+        self, external_id: str, description: str
+    ) -> dict[str, Any]:
         """Update listing description on MercadoLibre.
 
         MercadoLibre uses a separate 'descriptions' endpoint for item descriptions.
@@ -102,7 +108,10 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
 
                 if get_resp.status_code != 200:
                     error = get_resp.json().get("message", get_resp.text)
-                    return {"status": "failed", "error_message": f"Could not fetch item: {error}"}
+                    return {
+                        "status": "failed",
+                        "error_message": f"Could not fetch item: {error}",
+                    }
 
                 # Update description via descriptions endpoint
                 desc_payload = {"plain_text": description}
@@ -114,7 +123,9 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
                 )
 
                 if desc_resp.status_code in (200, 201):
-                    logger.info(f"MercadoLibre: updated description for listing {external_id}")
+                    logger.info(
+                        f"MercadoLibre: updated description for listing {external_id}"
+                    )
                     return {"status": "synced", "response": desc_resp.json()}
                 else:
                     error = desc_resp.json().get("message", desc_resp.text)

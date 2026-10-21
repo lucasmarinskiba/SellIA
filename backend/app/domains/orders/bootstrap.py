@@ -29,7 +29,9 @@ async def ensure_orders_tables() -> None:
                 )
             created += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("orders bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "orders bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ orders tables ensured (%s/%s)", created, len(tables))
     await _scope_order_number_to_business()
 

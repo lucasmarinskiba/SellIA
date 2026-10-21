@@ -18,5 +18,5 @@ __all__ = [
     "LocationInventoryService",
     "LowStockAlert",
     "StockMovement",
-    "StockStatus"
+    "StockStatus",
 ]

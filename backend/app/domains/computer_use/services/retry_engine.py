@@ -14,7 +14,7 @@ from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RetryPolicy:
@@ -37,12 +37,13 @@ class RetryPolicy:
     def get_delay(self, attempt: int) -> float:
         """Calcula delay con exponential backoff."""
         delay = min(
-            self.initial_delay * (self.exponential_base ** attempt),
+            self.initial_delay * (self.exponential_base**attempt),
             self.max_delay,
         )
 
         if self.jitter:
             import random
+
             delay *= random.uniform(0.8, 1.2)
 
         return delay
@@ -75,7 +76,9 @@ def retry_with_backoff(
                         )
                         await asyncio.sleep(delay)
                     else:
-                        logger.error(f"All {policy.max_retries + 1} retries exhausted for {func.__name__}")
+                        logger.error(
+                            f"All {policy.max_retries + 1} retries exhausted for {func.__name__}"
+                        )
                         raise
 
             raise last_exception
@@ -98,7 +101,9 @@ def retry_with_backoff(
                         )
                         asyncio.run(asyncio.sleep(delay))
                     else:
-                        logger.error(f"All {policy.max_retries + 1} retries exhausted for {func.__name__}")
+                        logger.error(
+                            f"All {policy.max_retries + 1} retries exhausted for {func.__name__}"
+                        )
                         raise
 
             raise last_exception
@@ -167,7 +172,9 @@ class RetryableTask:
                 else:
                     self.status = "failed"
                     self.completed_at = utc_now()
-                    logger.error(f"Task {self.task_id} failed after {self.attempts} attempts: {e}")
+                    logger.error(
+                        f"Task {self.task_id} failed after {self.attempts} attempts: {e}"
+                    )
                     return False
 
         return False
@@ -181,5 +188,7 @@ class RetryableTask:
             "last_error": self.last_error,
             "result": str(self.result) if self.result else None,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }

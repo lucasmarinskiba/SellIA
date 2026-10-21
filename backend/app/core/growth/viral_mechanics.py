@@ -49,7 +49,9 @@ class ViralMechanics:
             "conversion_rate": conversion_rate,
             "referrer_incentive": f"${referral_incentive}",
             "referee_incentive": f"${referral_incentive}",
-            "doubling_time_days": int(30 / viral_coefficient) if viral_coefficient > 0 else None,
+            "doubling_time_days": (
+                int(30 / viral_coefficient) if viral_coefficient > 0 else None
+            ),
         }
 
     @staticmethod
@@ -83,15 +85,28 @@ class ViralMechanics:
     ) -> dict[str, Any]:
         """Calculate viral coefficient from actual data."""
 
-        viral_coefficient = (invitations_sent / daily_active_users) * (new_signups_from_invites / invitations_sent) if daily_active_users > 0 else 0
+        viral_coefficient = (
+            (invitations_sent / daily_active_users)
+            * (new_signups_from_invites / invitations_sent)
+            if daily_active_users > 0
+            else 0
+        )
 
         return {
             "viral_coefficient": round(viral_coefficient, 2),
             "status": "exponential" if viral_coefficient > 1.0 else "linear",
             "growth_mode": "viral" if viral_coefficient > 1.5 else "steady",
             "dau": daily_active_users,
-            "invites_per_dau": round(invitations_sent / daily_active_users, 2) if daily_active_users > 0 else 0,
-            "conversion_from_invites": round(new_signups_from_invites / invitations_sent * 100, 1) if invitations_sent > 0 else 0,
+            "invites_per_dau": (
+                round(invitations_sent / daily_active_users, 2)
+                if daily_active_users > 0
+                else 0
+            ),
+            "conversion_from_invites": (
+                round(new_signups_from_invites / invitations_sent * 100, 1)
+                if invitations_sent > 0
+                else 0
+            ),
         }
 
     @staticmethod

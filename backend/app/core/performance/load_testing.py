@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class LoadTestPhase(Enum):
     """Load test phases."""
+
     RAMP_UP = "ramp_up"  # Gradually increase load
     STEADY_STATE = "steady_state"  # Maintain constant load
     SPIKE = "spike"  # Sudden spike
@@ -27,6 +28,7 @@ class LoadTestPhase(Enum):
 @dataclass
 class RequestMetrics:
     """Metrics for a single request."""
+
     request_id: str
     endpoint: str
     method: str
@@ -52,6 +54,7 @@ class RequestMetrics:
 @dataclass
 class LoadTestResult:
     """Results of a load test."""
+
     test_name: str
     total_requests: int
     successful_requests: int
@@ -325,8 +328,12 @@ class LoadTestRunner:
             max_response_time_ms=max(response_times),
             avg_response_time_ms=statistics.mean(response_times),
             median_response_time_ms=statistics.median(response_times),
-            p95_response_time_ms=sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0,
-            p99_response_time_ms=sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0,
+            p95_response_time_ms=(
+                sorted_times[p95_idx] if p95_idx < len(sorted_times) else 0
+            ),
+            p99_response_time_ms=(
+                sorted_times[p99_idx] if p99_idx < len(sorted_times) else 0
+            ),
             requests_per_second=rps,
             error_rate_percent=error_rate,
             concurrent_users=config.concurrent_users,
@@ -378,10 +385,7 @@ class LoadTestRunner:
     def get_all_results(self) -> dict[str, dict[str, Any]]:
         """Get all test results."""
 
-        return {
-            name: result.to_dict()
-            for name, result in self.results.items()
-        }
+        return {name: result.to_dict() for name, result in self.results.items()}
 
     def compare_results(self, test_name_1: str, test_name_2: str) -> dict[str, Any]:
         """Compare two test results."""
@@ -396,19 +400,26 @@ class LoadTestRunner:
             "test_1": test_name_1,
             "test_2": test_name_2,
             "avg_response_time_change_percent": (
-                (result2.avg_response_time_ms - result1.avg_response_time_ms) /
-                result1.avg_response_time_ms * 100
-                if result1.avg_response_time_ms > 0 else 0
+                (result2.avg_response_time_ms - result1.avg_response_time_ms)
+                / result1.avg_response_time_ms
+                * 100
+                if result1.avg_response_time_ms > 0
+                else 0
             ),
-            "error_rate_change_percent": result2.error_rate_percent - result1.error_rate_percent,
+            "error_rate_change_percent": result2.error_rate_percent
+            - result1.error_rate_percent,
             "throughput_change_percent": (
-                (result2.requests_per_second - result1.requests_per_second) /
-                result1.requests_per_second * 100
-                if result1.requests_per_second > 0 else 0
+                (result2.requests_per_second - result1.requests_per_second)
+                / result1.requests_per_second
+                * 100
+                if result1.requests_per_second > 0
+                else 0
             ),
             "p99_latency_change_percent": (
-                (result2.p99_response_time_ms - result1.p99_response_time_ms) /
-                result1.p99_response_time_ms * 100
-                if result1.p99_response_time_ms > 0 else 0
+                (result2.p99_response_time_ms - result1.p99_response_time_ms)
+                / result1.p99_response_time_ms
+                * 100
+                if result1.p99_response_time_ms > 0
+                else 0
             ),
         }

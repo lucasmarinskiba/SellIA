@@ -41,8 +41,10 @@ logger = logging.getLogger(__name__)
 # DATA STRUCTURES
 # ============================================================================
 
+
 class PlatformType(str, Enum):
     """Plataformas soportadas."""
+
     MERCADO_LIBRE = "mercado_libre"
     SHOPIFY = "shopify"
     FACEBOOK = "facebook"
@@ -56,6 +58,7 @@ class PlatformType(str, Enum):
 
 class ActionType(str, Enum):
     """Tipos de acciones en Computer Use."""
+
     NAVIGATE = "navigate"
     SCREENSHOT = "screenshot"
     CLICK = "click"
@@ -70,6 +73,7 @@ class ActionType(str, Enum):
 
 class StrategyType(str, Enum):
     """Tipos de estrategias."""
+
     POST_PRODUCT = "post_product"
     RESPOND_INQUIRY = "respond_inquiry"
     NEGOTIATE_DEAL = "negotiate_deal"
@@ -83,6 +87,7 @@ class StrategyType(str, Enum):
 @dataclass
 class BrowserSession:
     """Sesión de navegador con contexto."""
+
     session_id: str
     platform: PlatformType
     browser_type: str = "chromium"
@@ -96,6 +101,7 @@ class BrowserSession:
 @dataclass
 class Action:
     """Acción individual a ejecutar."""
+
     type: ActionType
     params: dict[str, Any]
     platform: PlatformType | None = None
@@ -108,6 +114,7 @@ class Action:
 @dataclass
 class ActionResult:
     """Resultado de ejecutar una acción."""
+
     action_type: ActionType
     success: bool
     timestamp: datetime
@@ -121,6 +128,7 @@ class ActionResult:
 @dataclass
 class WorkflowExecution:
     """Ejecución de un workflow completo."""
+
     workflow_id: str
     strategy_type: StrategyType
     platform: PlatformType
@@ -151,6 +159,7 @@ class WorkflowExecution:
 @dataclass
 class LeadData:
     """Datos de lead extraídos."""
+
     name: str | None = None
     email: str | None = None
     phone: str | None = None
@@ -167,6 +176,7 @@ class LeadData:
 @dataclass
 class OrderData:
     """Datos de orden extraídos."""
+
     order_id: str
     platform: PlatformType
     buyer_name: str | None = None
@@ -186,6 +196,7 @@ class OrderData:
 # ============================================================================
 # VISION ENGINE - Visual Element Detection
 # ============================================================================
+
 
 class VisionEngine:
     """Detecta elementos en pantalla usando visión por computadora."""
@@ -246,6 +257,7 @@ class VisionEngine:
 # ============================================================================
 # BROWSER AUTOMATION UTILS
 # ============================================================================
+
 
 class BrowserAutomationUtils:
     """Utilidades para automatización de navegador con Computer Use."""
@@ -391,14 +403,17 @@ class BrowserAutomationUtils:
                     logger.error(f"Failed after {max_retries} attempts: {e!s}")
                     raise
 
-                backoff = base_backoff * (2 ** attempt)
-                logger.warning(f"Attempt {attempt + 1} failed. Retrying in {backoff}s...")
+                backoff = base_backoff * (2**attempt)
+                logger.warning(
+                    f"Attempt {attempt + 1} failed. Retrying in {backoff}s..."
+                )
                 await asyncio.sleep(backoff)
 
 
 # ============================================================================
 # ERROR HANDLING & RESILIENCE
 # ============================================================================
+
 
 class ErrorHandler:
     """Maneja errores de Computer Use con reintentos inteligentes."""
@@ -412,7 +427,11 @@ class ErrorHandler:
             return "timeout"
         elif "rate" in error_lower or "throttle" in error_lower:
             return "rate_limit"
-        elif "auth" in error_lower or "login" in error_lower or "credential" in error_lower:
+        elif (
+            "auth" in error_lower
+            or "login" in error_lower
+            or "credential" in error_lower
+        ):
             return "auth_failed"
         elif "captcha" in error_lower:
             return "captcha"
@@ -441,6 +460,7 @@ class ErrorHandler:
 # ============================================================================
 # PLATFORM-SPECIFIC HANDLERS
 # ============================================================================
+
 
 class PlatformHandler(ABC):
     """Handler base para plataformas."""
@@ -728,6 +748,7 @@ class EmailHandler(PlatformHandler):
 # LEAD CAPTURE ENGINE
 # ============================================================================
 
+
 class LeadCaptureEngine:
     """Extrae datos estructurados de leads de cualquier plataforma."""
 
@@ -785,13 +806,13 @@ class LeadCaptureEngine:
             lead = LeadData()
 
             # Extrae email
-            email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
+            email_pattern = r"[\w\.-]+@[\w\.-]+\.\w+"
             emails = re.findall(email_pattern, text)
             if emails:
                 lead.email = emails[0]
 
             # Extrae teléfono
-            phone_pattern = r'[\+]?[\d\s\-\(\)]{10,}'
+            phone_pattern = r"[\+]?[\d\s\-\(\)]{10,}"
             phones = re.findall(phone_pattern, text)
             if phones:
                 lead.phone = phones[0]
@@ -840,6 +861,7 @@ class LeadCaptureEngine:
 # ============================================================================
 # MAIN ORCHESTRATOR
 # ============================================================================
+
 
 class ComputerUseOrchestrator:
     """
@@ -1068,7 +1090,9 @@ class ComputerUseOrchestrator:
         completed_actions = sum(w.completed_actions for w in self.workflow_history)
         failed_actions = sum(w.failed_actions for w in self.workflow_history)
 
-        success_rate = (completed_actions / total_actions * 100) if total_actions > 0 else 0
+        success_rate = (
+            (completed_actions / total_actions * 100) if total_actions > 0 else 0
+        )
 
         # Agrupa por estrategia
         by_strategy = {}
@@ -1150,6 +1174,7 @@ class ComputerUseOrchestrator:
 # ============================================================================
 # PRODUCTION HELPER FUNCTIONS
 # ============================================================================
+
 
 async def create_and_initialize_orchestrator() -> ComputerUseOrchestrator:
     """Crea e inicializa orquestador."""

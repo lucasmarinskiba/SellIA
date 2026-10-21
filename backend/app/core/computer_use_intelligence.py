@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # ── Enums ──────────────────────────────────────────────
 
+
 class ActionType(Enum):
     SCREENSHOT = "screenshot"
     CLICK = "click"
@@ -21,6 +22,7 @@ class ActionType(Enum):
     NAVIGATE = "navigate"
     WAIT = "wait"
 
+
 class BrowserContext(Enum):
     AMAZON = "amazon"
     SHOPIFY = "shopify"
@@ -29,7 +31,9 @@ class BrowserContext(Enum):
     EBAY = "ebay"
     CUSTOM_ECOMMERCE = "custom_ecommerce"
 
+
 # ── Data Models ──────────────────────────────────────
+
 
 @dataclass
 class ComputerUseAction:
@@ -40,6 +44,7 @@ class ComputerUseAction:
     wait_time: int | None = None
     expect_text: str | None = None
 
+
 @dataclass
 class ComputerUsePlan:
     goal: str
@@ -47,6 +52,7 @@ class ComputerUsePlan:
     steps: list[ComputerUseAction]
     expected_outcome: str
     fallback_strategy: str
+
 
 @dataclass
 class ExecutionResult:
@@ -57,50 +63,76 @@ class ExecutionResult:
     error: str | None = None
     validation_passed: bool = False
 
+
 # ── Computer Use Planner ──────────────────────────────
+
 
 class ComputerUsePlanner:
     """Plans browser automation sequences before executing"""
 
     @staticmethod
-    def plan_product_listing(product_name: str, price: float, context: BrowserContext) -> ComputerUsePlan:
+    def plan_product_listing(
+        product_name: str, price: float, context: BrowserContext
+    ) -> ComputerUsePlan:
         """Plan listing product on marketplace"""
         return ComputerUsePlan(
             goal=f"List '{product_name}' for ${price}",
             context=context,
             steps=[
-                ComputerUseAction(ActionType.NAVIGATE, url="https://example.com/seller/products/new"),
+                ComputerUseAction(
+                    ActionType.NAVIGATE, url="https://example.com/seller/products/new"
+                ),
                 ComputerUseAction(ActionType.SCREENSHOT),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='product_name']", text=product_name),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='price']", text=str(price)),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT,
+                    selector="[name='product_name']",
+                    text=product_name,
+                ),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT, selector="[name='price']", text=str(price)
+                ),
                 ComputerUseAction(ActionType.CLICK, selector="[type='submit']"),
                 ComputerUseAction(ActionType.WAIT, wait_time=3),
                 ComputerUseAction(ActionType.SCREENSHOT),
                 ComputerUseAction(ActionType.EXTRACT_DATA, selector=".success-message"),
             ],
             expected_outcome="Product listed successfully with confirmation message",
-            fallback_strategy="Retry from product name field after 2 second delay"
+            fallback_strategy="Retry from product name field after 2 second delay",
         )
 
     @staticmethod
-    def plan_customer_outreach(customer_email: str, product_name: str) -> ComputerUsePlan:
+    def plan_customer_outreach(
+        customer_email: str, product_name: str
+    ) -> ComputerUsePlan:
         """Plan sending customer message"""
         return ComputerUsePlan(
             goal=f"Send message to {customer_email} about {product_name}",
             context=BrowserContext.CUSTOM_ECOMMERCE,
             steps=[
-                ComputerUseAction(ActionType.NAVIGATE, url="https://example.com/messages/new"),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='recipient']", text=customer_email),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='subject']",
-                                 text=f"Check out {product_name}"),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='message']",
-                                 text=f"Hi! I thought you'd be interested in {product_name}. Let me know!"),
+                ComputerUseAction(
+                    ActionType.NAVIGATE, url="https://example.com/messages/new"
+                ),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT,
+                    selector="[name='recipient']",
+                    text=customer_email,
+                ),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT,
+                    selector="[name='subject']",
+                    text=f"Check out {product_name}",
+                ),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT,
+                    selector="[name='message']",
+                    text=f"Hi! I thought you'd be interested in {product_name}. Let me know!",
+                ),
                 ComputerUseAction(ActionType.CLICK, selector="[type='submit']"),
                 ComputerUseAction(ActionType.WAIT, wait_time=2),
                 ComputerUseAction(ActionType.SCREENSHOT),
             ],
             expected_outcome="Message sent confirmation displayed",
-            fallback_strategy="Check if email field has validation error, retry with corrected email"
+            fallback_strategy="Check if email field has validation error, retry with corrected email",
         )
 
     @staticmethod
@@ -110,20 +142,30 @@ class ComputerUsePlanner:
             goal=f"Mark order {order_id} as shipped",
             context=BrowserContext.CUSTOM_ECOMMERCE,
             steps=[
-                ComputerUseAction(ActionType.NAVIGATE, url=f"https://example.com/orders/{order_id}"),
+                ComputerUseAction(
+                    ActionType.NAVIGATE, url=f"https://example.com/orders/{order_id}"
+                ),
                 ComputerUseAction(ActionType.SCREENSHOT),
-                ComputerUseAction(ActionType.CLICK, selector="[data-action='mark_shipped']"),
-                ComputerUseAction(ActionType.FILL_TEXT, selector="[name='tracking_number']", text="tracking123"),
+                ComputerUseAction(
+                    ActionType.CLICK, selector="[data-action='mark_shipped']"
+                ),
+                ComputerUseAction(
+                    ActionType.FILL_TEXT,
+                    selector="[name='tracking_number']",
+                    text="tracking123",
+                ),
                 ComputerUseAction(ActionType.CLICK, selector=".confirm-button"),
                 ComputerUseAction(ActionType.WAIT, wait_time=2),
                 ComputerUseAction(ActionType.SCREENSHOT),
                 ComputerUseAction(ActionType.EXTRACT_DATA, selector=".status-message"),
             ],
             expected_outcome="Order status changed to 'Shipped' with tracking number",
-            fallback_strategy="Reload page and retry from mark_shipped button"
+            fallback_strategy="Reload page and retry from mark_shipped button",
         )
 
+
 # ── Computer Use Executor ──────────────────────────────
+
 
 class ComputerUseExecutor:
     """Executes planned browser automation with validation"""
@@ -172,7 +214,7 @@ class ComputerUseExecutor:
                 success=True,
                 actions_executed=actions_executed,
                 extracted_data=extracted_data,
-                validation_passed=validation_passed
+                validation_passed=validation_passed,
             )
 
         except Exception as e:
@@ -181,7 +223,7 @@ class ComputerUseExecutor:
                 success=False,
                 actions_executed=actions_executed,
                 error=str(e),
-                validation_passed=False
+                validation_passed=False,
             )
 
     @staticmethod
@@ -194,7 +236,9 @@ class ComputerUseExecutor:
         matched = sum(1 for kw in expected_keywords if kw in data_str)
         return matched >= len(expected_keywords) * 0.6  # 60% match threshold
 
+
 # ── Workflow Orchestrator ──────────────────────────────
+
 
 class ComputerUseWorkflow:
     """Chains multiple computer use plans into workflows"""
@@ -209,9 +253,7 @@ class ComputerUseWorkflow:
 
         # Step 1: List product
         listing_plan = self.planner.plan_product_listing(
-            product['name'],
-            product['price'],
-            BrowserContext.AMAZON
+            product["name"], product["price"], BrowserContext.AMAZON
         )
         listing_result = await self.executor.execute_plan(listing_plan)
         self.workflow_history.append(listing_result)
@@ -220,10 +262,9 @@ class ComputerUseWorkflow:
             return {"success": False, "error": "Product listing failed"}
 
         # Step 2: Send to similar customers (if available)
-        for customer_email in product.get('target_emails', [])[:5]:  # Max 5 customers
+        for customer_email in product.get("target_emails", [])[:5]:  # Max 5 customers
             outreach_plan = self.planner.plan_customer_outreach(
-                customer_email,
-                product['name']
+                customer_email, product["name"]
             )
             outreach_result = await self.executor.execute_plan(outreach_plan)
             self.workflow_history.append(outreach_result)
@@ -232,7 +273,9 @@ class ComputerUseWorkflow:
             "success": True,
             "steps_completed": len(self.workflow_history),
             "product_listed": listing_result.success,
-            "customers_contacted": sum(1 for r in self.workflow_history[1:] if r.success)
+            "customers_contacted": sum(
+                1 for r in self.workflow_history[1:] if r.success
+            ),
         }
 
     async def process_orders_batch(self, order_ids: list[str]) -> dict[str, Any]:
@@ -249,10 +292,12 @@ class ComputerUseWorkflow:
             "success": True,
             "total_orders": len(order_ids),
             "successfully_processed": sum(1 for r in results if r.success),
-            "failed": sum(1 for r in results if not r.success)
+            "failed": sum(1 for r in results if not r.success),
         }
 
+
 # ── Public API ─────────────────────────────────────
+
 
 async def automate_product_listing(product: dict[str, Any]) -> ExecutionResult:
     """Entry point: Automate product listing"""
@@ -260,21 +305,23 @@ async def automate_product_listing(product: dict[str, Any]) -> ExecutionResult:
     executor = ComputerUseExecutor()
 
     plan = planner.plan_product_listing(
-        product['name'],
-        product['price'],
-        BrowserContext.CUSTOM_ECOMMERCE
+        product["name"], product["price"], BrowserContext.CUSTOM_ECOMMERCE
     )
 
     return await executor.execute_plan(plan)
 
-async def automate_customer_outreach(customer: dict[str, Any], product: dict[str, Any]) -> ExecutionResult:
+
+async def automate_customer_outreach(
+    customer: dict[str, Any], product: dict[str, Any]
+) -> ExecutionResult:
     """Entry point: Automate customer outreach"""
     planner = ComputerUsePlanner()
     executor = ComputerUseExecutor()
 
-    plan = planner.plan_customer_outreach(customer['email'], product['name'])
+    plan = planner.plan_customer_outreach(customer["email"], product["name"])
 
     return await executor.execute_plan(plan)
+
 
 async def automate_order_processing(order_id: str) -> ExecutionResult:
     """Entry point: Automate order processing"""

@@ -1,4 +1,5 @@
 """Phase X11: Loyalty & Retention Agent - Personalized Retention Sequences."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
@@ -17,7 +18,9 @@ class LoyaltyProgram(Base):
     # sin "user_id" - toda query de este modelo fallaba con
     # UndefinedColumnError contra el schema equivocado.
     __tablename__ = "x11_loyalty_status"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
     email = Column(String(255), nullable=False)
@@ -42,7 +45,9 @@ class LoyaltyProgram(Base):
     # Rewards & incentives
     next_reward_milestone = Column(String(255))  # "Unlock Gold: 5 more team members"
     reward_unlock_progress = Column(Float, default=0)  # 0-1.0
-    exclusive_perks = Column(JSON, default=list)  # ["priority_support", "custom_training"]
+    exclusive_perks = Column(
+        JSON, default=list
+    )  # ["priority_support", "custom_training"]
 
     # VIP treatment
     dedicated_account_manager = Column(String(255), nullable=True)
@@ -55,10 +60,14 @@ class LoyaltyProgram(Base):
 
 class RetentionSequence(Base):
     __tablename__ = "retention_sequences"
-    id = Column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id = Column(
+        String(36), primary_key=True, default=lambda: str(__import__("uuid").uuid4())
+    )
 
     user_id = Column(String(36), nullable=False, index=True)
-    sequence_type = Column(String(50), nullable=False)  # win_back, expansion, vip_nurture, churn_prevention
+    sequence_type = Column(
+        String(50), nullable=False
+    )  # win_back, expansion, vip_nurture, churn_prevention
     current_step = Column(Integer, default=0)
     total_steps = Column(Integer, default=5)
 

@@ -39,8 +39,12 @@ class SellIADirector:
         await self.objective_service.refresh_all_kpis(business_id)
 
         # 2. Evaluate objectives
-        objectives = await self.objective_service.get_objectives_for_business(business_id, status="active")
-        at_risk_objectives = [o for o in objectives if o.status == ObjectiveStatus.AT_RISK]
+        objectives = await self.objective_service.get_objectives_for_business(
+            business_id, status="active"
+        )
+        at_risk_objectives = [
+            o for o in objectives if o.status == ObjectiveStatus.AT_RISK
+        ]
         [o for o in objectives if o.status == ObjectiveStatus.MISSED]
 
         # 3. Detect anomalies
@@ -58,52 +62,76 @@ class SellIADirector:
                 await self._execute_action(business_id, action)
 
         # 6. Generate Daily Briefing
-        briefing = await self._generate_daily_briefing(business_id, objectives, at_risk_objectives, action_plan)
+        briefing = await self._generate_daily_briefing(
+            business_id, objectives, at_risk_objectives, action_plan
+        )
 
         # 7. Send briefing to business owner if configured
         await self._send_briefing_to_owner(business_id, briefing)
 
         logger.info(f"[Director] Cycle completed for business {business_id}")
-        return {"objectives_evaluated": len(objectives), "at_risk": len(at_risk_objectives), "actions_generated": len(action_plan)}
+        return {
+            "objectives_evaluated": len(objectives),
+            "at_risk": len(at_risk_objectives),
+            "actions_generated": len(action_plan),
+        }
 
-    async def _generate_action_plan(self, objective: BusinessObjective) -> list[dict[str, Any]]:
+    async def _generate_action_plan(
+        self, objective: BusinessObjective
+    ) -> list[dict[str, Any]]:
         """Generate specific actions to recover an at-risk objective."""
         actions = []
-        progress = float(objective.current_value / objective.target_value) if objective.target_value else 0
-        gap = float(objective.target_value - objective.current_value) if objective.target_value else 0
+        progress = (
+            float(objective.current_value / objective.target_value)
+            if objective.target_value
+            else 0
+        )
+        gap = (
+            float(objective.target_value - objective.current_value)
+            if objective.target_value
+            else 0
+        )
 
         # Days remaining
-        days_remaining = (objective.end_date - datetime.now(UTC)).days if objective.end_date else 30
+        days_remaining = (
+            (objective.end_date - datetime.now(UTC)).days if objective.end_date else 30
+        )
         if days_remaining <= 0:
             days_remaining = 1
 
         gap / days_remaining
 
         if objective.linked_channel_platform:
-            actions.append({
-                "type": "increase_channel_activity",
-                "channel": objective.linked_channel_platform,
-                "message": f"Aumentar actividad en {objective.linked_channel_platform} para alcanzar meta",
-                "auto_execute": False,
-                "priority": "high",
-            })
+            actions.append(
+                {
+                    "type": "increase_channel_activity",
+                    "channel": objective.linked_channel_platform,
+                    "message": f"Aumentar actividad en {objective.linked_channel_platform} para alcanzar meta",
+                    "auto_execute": False,
+                    "priority": "high",
+                }
+            )
 
         if progress < 0.5 and days_remaining < 15:
-            actions.append({
-                "type": "launch_recovery_campaign",
-                "message": f"Lanzar campaña de recovery: faltan {gap} unidades en {days_remaining} días",
-                "auto_execute": True,
-                "priority": "critical",
-                "workflow_type": "re_engagement",
-            })
+            actions.append(
+                {
+                    "type": "launch_recovery_campaign",
+                    "message": f"Lanzar campaña de recovery: faltan {gap} unidades en {days_remaining} días",
+                    "auto_execute": True,
+                    "priority": "critical",
+                    "workflow_type": "re_engagement",
+                }
+            )
 
         if "revenue" in objective.name.lower() or objective.unit in ("ARS", "USD"):
-            actions.append({
-                "type": "activate_upsell",
-                "message": "Activar workflows de upsell/cross-sell a clientes existentes",
-                "auto_execute": True,
-                "priority": "high",
-            })
+            actions.append(
+                {
+                    "type": "activate_upsell",
+                    "message": "Activar workflows de upsell/cross-sell a clientes existentes",
+                    "auto_execute": True,
+                    "priority": "high",
+                }
+            )
 
         return actions
 
@@ -116,6 +144,7 @@ class SellIADirector:
                     Workflow,
                     WorkflowStatus,
                 )
+
                 result = await self.db.execute(
                     select(Workflow).where(
                         Workflow.business_id == business_id,
@@ -127,10 +156,13 @@ class SellIADirector:
                 if workflow and workflow.status == WorkflowStatus.PAUSED:
                     workflow.status = WorkflowStatus.ACTIVE
                     await self.db.commit()
-                    logger.info(f"[Director] Activated recovery workflow for business {business_id}")
+                    logger.info(
+                        f"[Director] Activated recovery workflow for business {business_id}"
+                    )
 
             elif action["type"] == "activate_upsell":
                 from app.domains.automations.models import Workflow, WorkflowStatus
+
                 result = await self.db.execute(
                     select(Workflow).where(
                         Workflow.business_id == business_id,
@@ -142,12 +174,20 @@ class SellIADirector:
                 if workflow and workflow.status == WorkflowStatus.PAUSED:
                     workflow.status = WorkflowStatus.ACTIVE
                     await self.db.commit()
-                    logger.info(f"[Director] Activated upsell workflow for business {business_id}")
+                    logger.info(
+                        f"[Director] Activated upsell workflow for business {business_id}"
+                    )
 
         except Exception:
             logger.exception("[Director] Action execution error")
 
-    async def _generate_daily_briefing(self, business_id: uuid.UUID, objectives: list[BusinessObjective], at_risk: list[BusinessObjective], action_plan: list[dict]) -> str:
+    async def _generate_daily_briefing(
+        self,
+        business_id: uuid.UUID,
+        objectives: list[BusinessObjective],
+        at_risk: list[BusinessObjective],
+        action_plan: list[dict],
+    ) -> str:
         """Generate an AI-powered daily briefing for the business owner."""
         # Gather context
         total_objectives = len(objectives)
@@ -156,10 +196,13 @@ class SellIADirector:
 
         # Recent insights
         insights_result = await self.db.execute(
-            select(InsightAlert).where(
+            select(InsightAlert)
+            .where(
                 InsightAlert.business_id == business_id,
                 InsightAlert.created_at >= datetime.now(UTC) - timedelta(hours=24),
-            ).order_by(desc(InsightAlert.created_at)).limit(5)
+            )
+            .order_by(desc(InsightAlert.created_at))
+            .limit(5)
         )
         insights = insights_result.scalars().all()
 
@@ -174,7 +217,11 @@ OBJETIVOS DEL PERÍODO:
 OBJETIVOS EN RIESGO:
 """
         for obj in at_risk:
-            progress = float(obj.current_value / obj.target_value * 100) if obj.target_value else 0
+            progress = (
+                float(obj.current_value / obj.target_value * 100)
+                if obj.target_value
+                else 0
+            )
             context += f"- {obj.name}: {obj.current_value}/{obj.target_value} ({progress:.1f}%)\n"
 
         if insights:
@@ -214,23 +261,31 @@ Usa emojis y formato claro.""",
         """Send the daily briefing to the business owner via their preferred channel."""
         try:
             from app.domains.businesses.models import Business
-            result = await self.db.execute(select(Business).where(Business.id == business_id))
+
+            result = await self.db.execute(
+                select(Business).where(Business.id == business_id)
+            )
             business = result.scalar_one_or_none()
             if not business or not business.owner_id:
                 return
 
             # Find owner's primary conversation (WhatsApp preferred)
             conv_result = await self.db.execute(
-                select(Conversation).where(
+                select(Conversation)
+                .where(
                     Conversation.business_id == business_id,
                     Conversation.is_active == True,
-                ).order_by(desc(Conversation.created_at)).limit(1)
+                )
+                .order_by(desc(Conversation.created_at))
+                .limit(1)
             )
             conv = conv_result.scalar_one_or_none()
             if conv:
                 # Send as a message in the conversation thread
                 # For now, just log it. In production, this would send via WhatsApp/Email
-                logger.info(f"[Director] Briefing ready for business {business_id}: {briefing[:200]}...")
+                logger.info(
+                    f"[Director] Briefing ready for business {business_id}: {briefing[:200]}..."
+                )
 
         except Exception:
             logger.exception("[Director] Briefing send error")
@@ -246,7 +301,9 @@ class DirectorTaskRunner:
         from app.domains.businesses.models import Business
 
         async with AsyncSessionLocal() as db:
-            result = await db.execute(select(Business).where(Business.is_active == True))
+            result = await db.execute(
+                select(Business).where(Business.is_active == True)
+            )
             businesses = result.scalars().all()
 
             director = SellIADirector(db)
@@ -256,4 +313,6 @@ class DirectorTaskRunner:
                 except Exception:
                     logger.exception(f"[DirectorTask] Error for business {business.id}")
 
-            logger.info(f"[DirectorTask] Completed cycles for {len(businesses)} businesses")
+            logger.info(
+                f"[DirectorTask] Completed cycles for {len(businesses)} businesses"
+            )

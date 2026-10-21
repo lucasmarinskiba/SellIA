@@ -39,6 +39,7 @@ from app.core.clock import utc_now
 
 # ========== FIXTURES ==========
 
+
 @pytest.fixture
 def scheduler():
     """Create TaskScheduler instance."""
@@ -76,7 +77,9 @@ def monitoring(state_manager, job_queue, scheduler, escalation_handler):
 
 
 @pytest.fixture
-def automation_engine(scheduler, job_queue, state_manager, retry_handler, escalation_handler, monitoring):
+def automation_engine(
+    scheduler, job_queue, state_manager, retry_handler, escalation_handler, monitoring
+):
     """Create AutomationEngine instance."""
     return AutomationEngine(
         scheduler=scheduler,
@@ -89,6 +92,7 @@ def automation_engine(scheduler, job_queue, state_manager, retry_handler, escala
 
 
 # ========== JOB TESTS ==========
+
 
 class TestJobCreation:
     """Test Job creation and state."""
@@ -145,6 +149,7 @@ class TestJobCreation:
 
 
 # ========== SCHEDULER TESTS ==========
+
 
 class TestTaskScheduler:
     """Test TaskScheduler functionality."""
@@ -210,6 +215,7 @@ class TestTaskScheduler:
 
 
 # ========== JOB QUEUE TESTS ==========
+
 
 class TestJobQueue:
     """Test JobQueue functionality."""
@@ -298,6 +304,7 @@ class TestJobQueue:
 
 # ========== STATE MANAGER TESTS ==========
 
+
 class TestStateManager:
     """Test StateManager functionality."""
 
@@ -366,6 +373,7 @@ class TestStateManager:
 
 # ========== RETRY HANDLER TESTS ==========
 
+
 class TestRetryHandler:
     """Test RetryHandler functionality."""
 
@@ -403,6 +411,7 @@ class TestRetryHandler:
 
 # ========== ESCALATION TESTS ==========
 
+
 class TestEscalationHandler:
     """Test EscalationHandler functionality."""
 
@@ -438,7 +447,9 @@ class TestEscalationHandler:
             payload={},
         )
 
-        escalation_id = await escalation_handler.escalate(job, reason="Test", severity="high")
+        escalation_id = await escalation_handler.escalate(
+            job, reason="Test", severity="high"
+        )
         await escalation_handler.resolve_escalation(
             escalation_id,
             resolution="Issue fixed",
@@ -469,6 +480,7 @@ class TestEscalationHandler:
 
 
 # ========== MONITORING TESTS ==========
+
 
 class TestMonitoringDashboard:
     """Test MonitoringDashboard functionality."""
@@ -512,6 +524,7 @@ class TestMonitoringDashboard:
 
 # ========== INTEGRATION TESTS ==========
 
+
 class TestAutomationEngineIntegration:
     """Integration tests for AutomationEngine."""
 
@@ -539,6 +552,7 @@ class TestAutomationEngineIntegration:
     @pytest.mark.asyncio
     async def test_engine_cycle(self, automation_engine):
         """Test a single engine cycle."""
+
         # Register a handler
         async def handle_post_product(payload):
             return {"status": "success", "products_posted": payload.get("count", 0)}
@@ -562,6 +576,7 @@ class TestAutomationEngineIntegration:
 
 
 # ========== WORKFLOW TESTS ==========
+
 
 class TestWorkflowBuilder:
     """Test WorkflowBuilder functionality."""

@@ -24,6 +24,7 @@ router = APIRouter(prefix="/proactive", tags=["proactive"])
 # Opportunities
 # ---------------------------------------------------------------------------
 
+
 @router.get("/opportunities", response_model=list[OutreachOpportunityResponse])
 async def list_opportunities(
     business_id: UUID,
@@ -61,7 +62,10 @@ async def send_opportunity_now(
     return result
 
 
-@router.post("/opportunities/{opportunity_id}/dismiss", response_model=OutreachOpportunityResponse)
+@router.post(
+    "/opportunities/{opportunity_id}/dismiss",
+    response_model=OutreachOpportunityResponse,
+)
 async def dismiss_opportunity(
     opportunity_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -78,6 +82,7 @@ async def dismiss_opportunity(
 # Rules
 # ---------------------------------------------------------------------------
 
+
 @router.get("/rules", response_model=list[OutreachRuleResponse])
 async def list_rules(
     business_id: UUID,
@@ -89,7 +94,9 @@ async def list_rules(
     return rules
 
 
-@router.post("/rules", response_model=OutreachRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules", response_model=OutreachRuleResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_rule(
     business_id: UUID,
     data: OutreachRuleCreate,
@@ -112,7 +119,9 @@ async def update_rule(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     service = ProactiveService(db)
-    update_dict = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    update_dict = {
+        k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None
+    }
     rule = await service.update_rule(rule_id, update_dict)
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")

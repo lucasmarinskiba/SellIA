@@ -64,7 +64,9 @@ class StorePositioningScoreService:
             )
 
             result = await self.db.execute(
-                select(IntegrationConnection).where(IntegrationConnection.id == connection_id)
+                select(IntegrationConnection).where(
+                    IntegrationConnection.id == connection_id
+                )
             )
             connection = result.scalar_one_or_none()
             if not connection:
@@ -76,7 +78,9 @@ class StorePositioningScoreService:
             # have this service fetch and expose that business's real store
             # credentials/analytics under its own score.
             if connection.business_id != business_id:
-                logger.warning(f"Connection {connection_id} does not belong to business {business_id}")
+                logger.warning(
+                    f"Connection {connection_id} does not belong to business {business_id}"
+                )
                 return None
 
             credentials = dict(connection.auth_metadata or {})
@@ -103,18 +107,25 @@ class StorePositioningScoreService:
         platform_name = canonical_platform(platform_name) or platform_name
         guard = SEOAgentGuard(self.db)
         if not await guard.can_run_seo_agent(
-            business_id, "store_positioning", platform_id=connection_id, platform_name=platform_name
+            business_id,
+            "store_positioning",
+            platform_id=connection_id,
+            platform_name=platform_name,
         ):
             return None
 
-        connector = await self.get_store_connector(business_id, platform_name, connection_id)
+        connector = await self.get_store_connector(
+            business_id, platform_name, connection_id
+        )
         if not connector:
             return None
 
         try:
             signals = await connector.get_store_signals(external_id)
         except Exception:
-            logger.exception(f"Failed to fetch store signals for {business_id}/{platform_name}")
+            logger.exception(
+                f"Failed to fetch store signals for {business_id}/{platform_name}"
+            )
             return None
 
         signal_map = {s.key: s for s in signals}
@@ -135,7 +146,10 @@ class StorePositioningScoreService:
         await self.db.refresh(score)
 
         await self._generate_store_recommendations(
-            business_id, platform_name, score, connector.recommendation_rules(signal_map)
+            business_id,
+            platform_name,
+            score,
+            connector.recommendation_rules(signal_map),
         )
 
         logger.info(
@@ -147,7 +161,10 @@ class StorePositioningScoreService:
     def _open_store_recommendations_query(self, business_id: UUID, platform_name: str):
         return (
             select(PositioningRecommendation)
-            .join(StorePositioningScore, PositioningRecommendation.store_score_id == StorePositioningScore.id)
+            .join(
+                StorePositioningScore,
+                PositioningRecommendation.store_score_id == StorePositioningScore.id,
+            )
             .where(
                 StorePositioningScore.business_id == business_id,
                 StorePositioningScore.platform_name == platform_name,
@@ -162,7 +179,9 @@ class StorePositioningScoreService:
         score: StorePositioningScore,
         rules: list[dict],
     ) -> None:
-        result = await self.db.execute(self._open_store_recommendations_query(business_id, platform_name))
+        result = await self.db.execute(
+            self._open_store_recommendations_query(business_id, platform_name)
+        )
         open_recs = {r.signal_key: r for r in result.scalars().all()}
 
         triggered_keys = {r["signal_key"] for r in rules}
@@ -176,16 +195,18 @@ class StorePositioningScoreService:
         for rule in rules:
             if rule["signal_key"] in open_recs:
                 continue
-            self.db.add(PositioningRecommendation(
-                business_id=business_id,
-                link_id=None,
-                store_score_id=score.id,
-                signal_key=rule["signal_key"],
-                severity=rule["severity"],
-                message=rule["message"],
-                current_value=rule.get("current_value"),
-                target_value=rule.get("target_value"),
-            ))
+            self.db.add(
+                PositioningRecommendation(
+                    business_id=business_id,
+                    link_id=None,
+                    store_score_id=score.id,
+                    signal_key=rule["signal_key"],
+                    severity=rule["severity"],
+                    message=rule["message"],
+                    current_value=rule.get("current_value"),
+                    target_value=rule.get("target_value"),
+                )
+            )
 
         await self.db.commit()
 
@@ -224,14 +245,20 @@ class StorePositioningScoreService:
         self, business_id: UUID, platform_name: str
     ) -> list[PositioningRecommendation]:
         platform_name = canonical_platform(platform_name) or platform_name
-        result = await self.db.execute(self._open_store_recommendations_query(business_id, platform_name))
+        result = await self.db.execute(
+            self._open_store_recommendations_query(business_id, platform_name)
+        )
         return list(result.scalars().all())
 
     async def has_declared_storefront(self, business_id: UUID) -> dict:
         """Read-only overlay from web_presence: does the business have a link
         marked is_primary (its site, or its main store when it has no site)?
         No table merge — same principle as generic_web in the link-level summary."""
-        out = {"has_declared_storefront": False, "primary_link_url": None, "primary_link_platform": None}
+        out = {
+            "has_declared_storefront": False,
+            "primary_link_url": None,
+            "primary_link_platform": None,
+        }
         try:
             from app.domains.businesses.models import Business
             from app.domains.web_presence.models import BusinessLink
@@ -241,7 +268,10 @@ class StorePositioningScoreService:
                 return out
             result = await self.db.execute(
                 select(BusinessLink)
-                .where(BusinessLink.user_id == business.user_id, BusinessLink.is_primary.is_(True))
+                .where(
+                    BusinessLink.user_id == business.user_id,
+                    BusinessLink.is_primary.is_(True),
+                )
                 .limit(1)
             )
             link = result.scalar_one_or_none()
@@ -252,5 +282,8 @@ class StorePositioningScoreService:
                     primary_link_platform=link.platform,
                 )
         except Exception as e:
-            logger.warning(f"Could not read web_presence primary link: {str(e)[:150]}", exc_info=True)
+            logger.warning(
+                f"Could not read web_presence primary link: {str(e)[:150]}",
+                exc_info=True,
+            )
         return out

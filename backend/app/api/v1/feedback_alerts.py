@@ -48,7 +48,9 @@ async def evaluate_feedback(
         result = FeedbackAlertService.evaluate_feedback_and_alert(
             feedback_id=request.feedback_id,
             location_id=request.location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             nps_score=request.nps_score,
             sentiment=request.sentiment,
             comment=request.comment,
@@ -56,7 +58,7 @@ async def evaluate_feedback(
             visitor_email=request.visitor_email,
             visitor_phone=request.visitor_phone,
             visitor_name=request.visitor_name,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -73,9 +75,7 @@ async def acknowledge_alert(
     """Manager acknowledges alert."""
     try:
         result = FeedbackAlertService.acknowledge_alert(
-            alert_id=alert_id,
-            manager_id=current_user.id,
-            db=db
+            alert_id=alert_id, manager_id=current_user.id, db=db
         )
         return result
     except Exception as e:
@@ -97,7 +97,7 @@ async def escalate_alert(
             alert_id=alert_id,
             assigned_to_staff_id=assigned_to_staff_id,
             resolution_plan=resolution_plan,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -115,9 +115,7 @@ async def resolve_alert(
     """Mark alert as resolved."""
     try:
         result = FeedbackAlertService.resolve_alert(
-            alert_id=alert_id,
-            resolution_notes=resolution_notes,
-            db=db
+            alert_id=alert_id, resolution_notes=resolution_notes, db=db
         )
         return result
     except Exception as e:
@@ -135,10 +133,7 @@ async def get_location_alerts(
     """Get NPS alerts for location."""
     try:
         result = FeedbackAlertService.get_location_alerts(
-            location_id=location_id,
-            status_filter=status,
-            days=days,
-            db=db
+            location_id=location_id, status_filter=status, days=days, db=db
         )
         return result
     except Exception as e:
@@ -157,7 +152,7 @@ async def update_nps_metrics(
         result = NPSDashboardService.update_nps_metrics(
             location_id=location_id,
             business_id=UUID("00000000-0000-0000-0000-000000000000"),
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -174,9 +169,7 @@ async def get_nps_dashboard(
     """Get NPS dashboard data."""
     try:
         result = NPSDashboardService.get_nps_dashboard(
-            location_id=location_id,
-            days=days,
-            db=db
+            location_id=location_id, days=days, db=db
         )
         return result
     except Exception as e:
@@ -194,9 +187,7 @@ async def calculate_sentiment_trend(
     """Calculate daily sentiment trend."""
     try:
         result = NPSDashboardService.calculate_sentiment_trend(
-            location_id=location_id,
-            date=date,
-            db=db
+            location_id=location_id, date=date, db=db
         )
         return result
     except Exception as e:
@@ -213,10 +204,15 @@ async def get_staff_assigned_alerts(
     try:
         from app.domains.feedback.feedback_alert_models import AlertStatus, NPSAlert
 
-        alerts = db.query(NPSAlert).filter(
-            NPSAlert.assigned_to_staff_id == staff_id,
-            NPSAlert.status.in_([AlertStatus.ESCALATED, AlertStatus.ACTIVE])
-        ).order_by(NPSAlert.created_at.desc()).all()
+        alerts = (
+            db.query(NPSAlert)
+            .filter(
+                NPSAlert.assigned_to_staff_id == staff_id,
+                NPSAlert.status.in_([AlertStatus.ESCALATED, AlertStatus.ACTIVE]),
+            )
+            .order_by(NPSAlert.created_at.desc())
+            .all()
+        )
 
         alert_list = [
             {
@@ -236,7 +232,7 @@ async def get_staff_assigned_alerts(
         return {
             "staff_id": str(staff_id),
             "assigned_alerts": len(alert_list),
-            "alerts": alert_list
+            "alerts": alert_list,
         }
     except Exception as e:
         logger.exception("get_staff_assigned_alerts: error inesperado")

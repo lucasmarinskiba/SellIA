@@ -36,8 +36,10 @@ logger = logging.getLogger(__name__)
 # VERIFICATION TYPES
 # ============================================================================
 
+
 class VerificationType(str, Enum):
     """Tipo de verificación."""
+
     UI_ELEMENT = "ui_element"  # Elemento visible en UI
     URL_CHANGE = "url_change"
     REDIRECT = "redirect"
@@ -51,6 +53,7 @@ class VerificationType(str, Enum):
 
 class VerificationStatus(str, Enum):
     """Estado de verificación."""
+
     PASSED = "passed"
     FAILED = "failed"
     TIMEOUT = "timeout"
@@ -61,9 +64,11 @@ class VerificationStatus(str, Enum):
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class VerificationResult:
     """Resultado de verificación."""
+
     action_id: str
     action_type: str
     verification_type: VerificationType
@@ -78,6 +83,7 @@ class VerificationResult:
 @dataclass
 class ActionSnapshot:
     """Snapshot del estado antes/después de acción."""
+
     timestamp: datetime
     url: str
     page_title: str
@@ -90,6 +96,7 @@ class ActionSnapshot:
 # ============================================================================
 # FORM SUBMISSION VERIFIER
 # ============================================================================
+
 
 class FormSubmissionVerifier:
     """Verificar envío de formulario."""
@@ -105,7 +112,7 @@ class FormSubmissionVerifier:
         expected_redirect_url: str | None = None,
         expected_message: str | None = None,
         db_table: str | None = None,
-        db_record_id: str | None = None
+        db_record_id: str | None = None,
     ) -> VerificationResult:
         """
         Verificar envío de formulario.
@@ -130,7 +137,7 @@ class FormSubmissionVerifier:
                     timestamp=datetime.now(),
                     verification_time_ms=int((time.time() - start_time) * 1000),
                     details={"message": expected_message},
-                    evidence=["UI success message found"]
+                    evidence=["UI success message found"],
                 )
 
             # Método 2: Verificar redirección
@@ -145,7 +152,7 @@ class FormSubmissionVerifier:
                         timestamp=datetime.now(),
                         verification_time_ms=int((time.time() - start_time) * 1000),
                         details={"redirected_to": current_url},
-                        evidence=["URL redirect verified"]
+                        evidence=["URL redirect verified"],
                     )
 
             # Método 3: Verificar BD (si está disponible)
@@ -160,7 +167,7 @@ class FormSubmissionVerifier:
                         timestamp=datetime.now(),
                         verification_time_ms=int((time.time() - start_time) * 1000),
                         details=db_result,
-                        evidence=["Database record found"]
+                        evidence=["Database record found"],
                     )
 
             # No se pudo verificar
@@ -171,7 +178,7 @@ class FormSubmissionVerifier:
                 status=VerificationStatus.INCONCLUSIVE,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error="Could not verify form submission"
+                error="Could not verify form submission",
             )
 
         except Exception as e:
@@ -183,7 +190,7 @@ class FormSubmissionVerifier:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
     async def _verify_success_message(self, expected_message: str | None) -> bool:
@@ -191,16 +198,23 @@ class FormSubmissionVerifier:
         try:
             # Patrones comunes de éxito
             success_patterns = [
-                "success", "enviado", "completado", "guardado", "created",
-                "¡Éxito!", "✓", "listo", "done", "confirmed"
+                "success",
+                "enviado",
+                "completado",
+                "guardado",
+                "created",
+                "¡Éxito!",
+                "✓",
+                "listo",
+                "done",
+                "confirmed",
             ]
 
             # Buscar en notificaciones/alerts
             for pattern in success_patterns:
                 try:
                     element = await self.computer_use.find_element(
-                        f"Alert or notification containing '{pattern}'",
-                        timeout_ms=3000
+                        f"Alert or notification containing '{pattern}'", timeout_ms=3000
                     )
                     if element:
                         return True
@@ -210,8 +224,7 @@ class FormSubmissionVerifier:
             # Si hay mensaje específico esperado
             if expected_message:
                 element = await self.computer_use.find_element(
-                    expected_message,
-                    timeout_ms=3000
+                    expected_message, timeout_ms=3000
                 )
                 return bool(element)
 
@@ -222,9 +235,7 @@ class FormSubmissionVerifier:
             return False
 
     async def _verify_db_insert(
-        self,
-        table: str,
-        record_id: str
+        self, table: str, record_id: str
     ) -> dict[str, Any] | None:
         """Verificar inserción en BD."""
         if not self.db:
@@ -233,16 +244,11 @@ class FormSubmissionVerifier:
         try:
             # Ejecutar query
             result = await self.db.query(
-                f"SELECT * FROM {table} WHERE id = :id LIMIT 1",
-                {"id": record_id}
+                f"SELECT * FROM {table} WHERE id = :id LIMIT 1", {"id": record_id}
             )
 
             if result:
-                return {
-                    "table": table,
-                    "record_id": record_id,
-                    "data": result[0]
-                }
+                return {"table": table, "record_id": record_id, "data": result[0]}
 
             return None
 
@@ -255,6 +261,7 @@ class FormSubmissionVerifier:
 # FILE UPLOAD VERIFIER
 # ============================================================================
 
+
 class FileUploadVerifier:
     """Verificar subida de archivos."""
 
@@ -265,7 +272,7 @@ class FileUploadVerifier:
         self,
         file_path: str,
         expected_filename: str,
-        upload_area_selector: str | None = None
+        upload_area_selector: str | None = None,
     ) -> VerificationResult:
         """
         Verificar subida de archivo.
@@ -290,11 +297,8 @@ class FileUploadVerifier:
                     status=VerificationStatus.PASSED,
                     timestamp=datetime.now(),
                     verification_time_ms=int((time.time() - start_time) * 1000),
-                    details={
-                        "filename": expected_filename,
-                        "verified": True
-                    },
-                    evidence=["File found in upload area"]
+                    details={"filename": expected_filename, "verified": True},
+                    evidence=["File found in upload area"],
                 )
 
             return VerificationResult(
@@ -304,7 +308,7 @@ class FileUploadVerifier:
                 status=VerificationStatus.FAILED,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error="File not found in upload area"
+                error="File not found in upload area",
             )
 
         except Exception as e:
@@ -316,7 +320,7 @@ class FileUploadVerifier:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
     async def _verify_file_in_ui(self, filename: str) -> bool:
@@ -325,7 +329,7 @@ class FileUploadVerifier:
             # Buscar elemento con nombre de archivo
             element = await self.computer_use.find_element(
                 f"File upload item or thumbnail containing '{filename}'",
-                timeout_ms=5000
+                timeout_ms=5000,
             )
             return bool(element)
 
@@ -338,6 +342,7 @@ class FileUploadVerifier:
 # PAYMENT VERIFIER
 # ============================================================================
 
+
 class PaymentVerifier:
     """Verificar pagos y transacciones."""
 
@@ -346,10 +351,7 @@ class PaymentVerifier:
         self.payment_gateway = payment_gateway_connector
 
     async def verify_payment(
-        self,
-        transaction_id: str,
-        amount: float,
-        currency: str = "USD"
+        self, transaction_id: str, amount: float, currency: str = "USD"
     ) -> VerificationResult:
         """
         Verificar pago.
@@ -366,8 +368,7 @@ class PaymentVerifier:
             # Método 1: Verificar via API del gateway
             if self.payment_gateway:
                 gateway_result = await self._verify_with_payment_gateway(
-                    transaction_id,
-                    amount
+                    transaction_id, amount
                 )
                 if gateway_result:
                     return VerificationResult(
@@ -378,7 +379,7 @@ class PaymentVerifier:
                         timestamp=datetime.now(),
                         verification_time_ms=int((time.time() - start_time) * 1000),
                         details=gateway_result,
-                        evidence=["Payment gateway confirmed"]
+                        evidence=["Payment gateway confirmed"],
                     )
 
             # Método 2: Verificar en UI
@@ -392,7 +393,7 @@ class PaymentVerifier:
                     timestamp=datetime.now(),
                     verification_time_ms=int((time.time() - start_time) * 1000),
                     details=ui_result,
-                    evidence=["Payment confirmation visible in UI"]
+                    evidence=["Payment confirmation visible in UI"],
                 )
 
             return VerificationResult(
@@ -402,7 +403,7 @@ class PaymentVerifier:
                 status=VerificationStatus.INCONCLUSIVE,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error="Could not verify payment"
+                error="Could not verify payment",
             )
 
         except Exception as e:
@@ -414,13 +415,11 @@ class PaymentVerifier:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
     async def _verify_with_payment_gateway(
-        self,
-        transaction_id: str,
-        amount: float
+        self, transaction_id: str, amount: float
     ) -> dict[str, Any] | None:
         """Verificar con el gateway de pago."""
         if not self.payment_gateway:
@@ -434,7 +433,7 @@ class PaymentVerifier:
                     "transaction_id": transaction_id,
                     "status": "confirmed",
                     "amount": transaction.get("amount"),
-                    "timestamp": transaction.get("timestamp")
+                    "timestamp": transaction.get("timestamp"),
                 }
 
             return None
@@ -448,16 +447,12 @@ class PaymentVerifier:
         try:
             # Buscar confirmación de pago
             confirmation = await self.computer_use.find_element(
-                "Payment confirmation or success message",
-                timeout_ms=5000
+                "Payment confirmation or success message", timeout_ms=5000
             )
 
             if confirmation:
                 text = await self.computer_use.get_element_text(confirmation)
-                return {
-                    "confirmed": True,
-                    "message": text
-                }
+                return {"confirmed": True, "message": text}
 
             return None
 
@@ -470,6 +465,7 @@ class PaymentVerifier:
 # MESSAGE DELIVERY VERIFIER
 # ============================================================================
 
+
 class MessageDeliveryVerifier:
     """Verificar entrega de mensajes."""
 
@@ -477,10 +473,7 @@ class MessageDeliveryVerifier:
         self.computer_use = computer_use_engine
 
     async def verify_message_sent(
-        self,
-        message_content: str,
-        recipient: str,
-        platform: str
+        self, message_content: str, recipient: str, platform: str
     ) -> VerificationResult:
         """
         Verificar envío de mensaje.
@@ -493,8 +486,7 @@ class MessageDeliveryVerifier:
         try:
             # Buscar mensaje en conversación
             message_found = await self._find_message_in_conversation(
-                message_content,
-                platform
+                message_content, platform
             )
 
             if message_found:
@@ -508,9 +500,9 @@ class MessageDeliveryVerifier:
                     details={
                         "recipient": recipient,
                         "platform": platform,
-                        "message_content": message_content[:100]
+                        "message_content": message_content[:100],
                     },
-                    evidence=["Message found in conversation"]
+                    evidence=["Message found in conversation"],
                 )
 
             return VerificationResult(
@@ -520,7 +512,7 @@ class MessageDeliveryVerifier:
                 status=VerificationStatus.FAILED,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error="Message not found in conversation"
+                error="Message not found in conversation",
             )
 
         except Exception as e:
@@ -532,14 +524,10 @@ class MessageDeliveryVerifier:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
-    async def _find_message_in_conversation(
-        self,
-        message: str,
-        platform: str
-    ) -> bool:
+    async def _find_message_in_conversation(self, message: str, platform: str) -> bool:
         """Buscar mensaje en conversación."""
         try:
             # Buscar partes del mensaje
@@ -548,8 +536,7 @@ class MessageDeliveryVerifier:
             for keyword in keywords:
                 try:
                     element = await self.computer_use.find_element(
-                        f"Text containing '{keyword}'",
-                        timeout_ms=3000
+                        f"Text containing '{keyword}'", timeout_ms=3000
                     )
                     if element:
                         return True
@@ -567,6 +554,7 @@ class MessageDeliveryVerifier:
 # NAVIGATION VERIFIER
 # ============================================================================
 
+
 class NavigationVerifier:
     """Verificar navegación."""
 
@@ -574,13 +562,13 @@ class NavigationVerifier:
         self.computer_use = computer_use_engine
 
     async def verify_navigation(
-        self,
-        target_url: str,
-        expected_title: str | None = None
+        self, target_url: str, expected_title: str | None = None
     ) -> VerificationResult:
         """Verificar que navegación fue exitosa."""
         start_time = time.time()
-        action_id = f"nav_{hashlib.md5(target_url.encode(), usedforsecurity=False).hexdigest()}"
+        action_id = (
+            f"nav_{hashlib.md5(target_url.encode(), usedforsecurity=False).hexdigest()}"
+        )
 
         try:
             # Esperar carga de página
@@ -601,11 +589,8 @@ class NavigationVerifier:
                             status=VerificationStatus.PASSED,
                             timestamp=datetime.now(),
                             verification_time_ms=int((time.time() - start_time) * 1000),
-                            details={
-                                "url": current_url,
-                                "title": page_title
-                            },
-                            evidence=["URL and title verified"]
+                            details={"url": current_url, "title": page_title},
+                            evidence=["URL and title verified"],
                         )
                 else:
                     return VerificationResult(
@@ -616,7 +601,7 @@ class NavigationVerifier:
                         timestamp=datetime.now(),
                         verification_time_ms=int((time.time() - start_time) * 1000),
                         details={"url": current_url},
-                        evidence=["URL verified"]
+                        evidence=["URL verified"],
                     )
 
             return VerificationResult(
@@ -626,7 +611,7 @@ class NavigationVerifier:
                 status=VerificationStatus.FAILED,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=f"URL mismatch: expected {target_url}, got {current_url}"
+                error=f"URL mismatch: expected {target_url}, got {current_url}",
             )
 
         except Exception as e:
@@ -638,13 +623,14 @@ class NavigationVerifier:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
 
 # ============================================================================
 # VERIFICATION COORDINATOR
 # ============================================================================
+
 
 class VerificationCoordinator:
     """Coordinador central de verificaciones."""
@@ -658,11 +644,7 @@ class VerificationCoordinator:
         self.navigation_verifier = NavigationVerifier(computer_use_engine)
         self.verification_history: list[VerificationResult] = []
 
-    async def verify_action(
-        self,
-        action_type: str,
-        **kwargs
-    ) -> VerificationResult:
+    async def verify_action(self, action_type: str, **kwargs) -> VerificationResult:
         """Verificar acción genérica."""
         try:
             if action_type == "form_submission":
@@ -683,7 +665,7 @@ class VerificationCoordinator:
                     status=VerificationStatus.INCONCLUSIVE,
                     timestamp=datetime.now(),
                     verification_time_ms=0,
-                    error=f"Unknown action type: {action_type}"
+                    error=f"Unknown action type: {action_type}",
                 )
 
             # Registrar en historial
@@ -703,7 +685,7 @@ class VerificationCoordinator:
                 status=VerificationStatus.TIMEOUT,
                 timestamp=datetime.now(),
                 verification_time_ms=0,
-                error=str(e)
+                error=str(e),
             )
 
 

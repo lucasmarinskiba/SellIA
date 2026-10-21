@@ -22,6 +22,7 @@ from app.core.database import Base
 
 class Coupon(Base):
     """A discount coupon."""
+
     __tablename__ = "coupons"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -57,11 +58,22 @@ class Coupon(Base):
 
 class CouponUsage(Base):
     """Tracks coupon redemptions."""
+
     __tablename__ = "coupon_usages"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    coupon_id = Column(UUID(as_uuid=True), ForeignKey("coupons.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    coupon_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("coupons.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     discount_applied = Column(Numeric(10, 2), nullable=False)
     original_amount = Column(Numeric(10, 2), nullable=False)

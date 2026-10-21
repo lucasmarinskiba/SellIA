@@ -49,7 +49,9 @@ class CaptchaDetector:
     def __init__(self, confidence_threshold: float = 0.7):
         self.confidence_threshold = confidence_threshold
 
-    def detect_from_text(self, page_text: str, page_url: str = "") -> tuple[bool, float, str]:
+    def detect_from_text(
+        self, page_text: str, page_url: str = ""
+    ) -> tuple[bool, float, str]:
         """Detecta CAPTCHA analizando texto de la página."""
         text_lower = page_text.lower()
         url_lower = page_url.lower()
@@ -67,11 +69,18 @@ class CaptchaDetector:
             score += 0.3
 
         # Title-based
-        if any(word in text_lower[:200] for word in ["challenge", "verify", "security check"]):
+        if any(
+            word in text_lower[:200]
+            for word in ["challenge", "verify", "security check"]
+        ):
             score += 0.2
 
         is_captcha = score >= self.confidence_threshold
-        reason = f"Keywords matched: {matched_keywords[:3]}" if matched_keywords else "No CAPTCHA indicators"
+        reason = (
+            f"Keywords matched: {matched_keywords[:3]}"
+            if matched_keywords
+            else "No CAPTCHA indicators"
+        )
 
         return is_captcha, min(score, 1.0), reason
 
@@ -117,7 +126,10 @@ class CaptchaDetector:
             for frame in frames:
                 try:
                     frame_url = frame.url
-                    if any(keyword in frame_url.lower() for keyword in ["recaptcha", "hcaptcha", "turnstile"]):
+                    if any(
+                        keyword in frame_url.lower()
+                        for keyword in ["recaptcha", "hcaptcha", "turnstile"]
+                    ):
                         return True, 0.95, f"CAPTCHA iframe detected: {frame_url}"
                 except Exception:
                     logger.exception("detect_from_page: error inesperado")

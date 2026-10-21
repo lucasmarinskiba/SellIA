@@ -11,6 +11,7 @@ from app.domains.outreach.models import FatigueLevel, OutreachLogStatus
 # ContactFatigueScore
 # ---------------------------------------------------------------------------
 
+
 class ContactFatigueScoreResponse(BaseModel):
     id: UUID
     business_id: UUID
@@ -36,6 +37,7 @@ class ContactFatigueScoreResponse(BaseModel):
 # OutreachCadenceRule
 # ---------------------------------------------------------------------------
 
+
 class OutreachCadenceRuleBase(BaseModel):
     max_messages_per_week: int = 3
     max_messages_per_channel_per_week: int = 2
@@ -43,7 +45,9 @@ class OutreachCadenceRuleBase(BaseModel):
     cooldown_after_no_reply_days: int = 3
     cooldown_after_no_reply_count: int = 3
     long_cooldown_days: int = 14
-    channel_priority: list[str] = Field(default_factory=lambda: ["whatsapp", "email", "instagram"])
+    channel_priority: list[str] = Field(
+        default_factory=lambda: ["whatsapp", "email", "instagram"]
+    )
     respect_local_hours: bool = True
     allowed_hours_start: int = 9
     allowed_hours_end: int = 20
@@ -87,6 +91,7 @@ class OutreachCadenceRuleResponse(OutreachCadenceRuleBase):
 # OutreachLog
 # ---------------------------------------------------------------------------
 
+
 class OutreachLogResponse(BaseModel):
     id: UUID
     business_id: UUID
@@ -108,6 +113,7 @@ class OutreachLogResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # CanContact / Recommendations
 # ---------------------------------------------------------------------------
+
 
 class CanContactRequest(BaseModel):
     conversation_id: UUID

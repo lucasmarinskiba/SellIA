@@ -33,19 +33,22 @@ logger = logging.getLogger(__name__)
 # WORKFLOW TYPES & CONFIGURATIONS
 # ============================================================================
 
+
 class WorkflowPhase(str, Enum):
     """Fases de workflow."""
-    PROSPECTING = "prospecting"      # Busca leads
-    QUALIFYING = "qualifying"        # Califica leads
-    ENGAGING = "engaging"            # Toma contacto
-    SELLING = "selling"              # Vende
-    NURTURING = "nurturing"          # Nutre
-    RETENTION = "retention"          # Retiene
+
+    PROSPECTING = "prospecting"  # Busca leads
+    QUALIFYING = "qualifying"  # Califica leads
+    ENGAGING = "engaging"  # Toma contacto
+    SELLING = "selling"  # Vende
+    NURTURING = "nurturing"  # Nutre
+    RETENTION = "retention"  # Retiene
 
 
 @dataclass
 class WorkflowConfig:
     """Configuración de workflow."""
+
     name: str
     phase: WorkflowPhase
     platforms: list[str]  # ["mercado_libre", "shopify", "facebook"]
@@ -59,6 +62,7 @@ class WorkflowConfig:
 @dataclass
 class WorkflowExecution:
     """Ejecución de workflow."""
+
     workflow_id: str
     config: WorkflowConfig
     started_at: datetime
@@ -77,6 +81,7 @@ class WorkflowExecution:
 # ============================================================================
 # PROSPECTING WORKFLOW
 # ============================================================================
+
 
 class ProspectingWorkflow:
     """
@@ -112,7 +117,9 @@ class ProspectingWorkflow:
         Retorna leads listos para contacto.
         """
         try:
-            logger.info(f"Starting prospecting cycle: {len(search_queries)} queries, {len(locations)} locations")
+            logger.info(
+                f"Starting prospecting cycle: {len(search_queries)} queries, {len(locations)} locations"
+            )
 
             execution = WorkflowExecution(
                 workflow_id=f"prospecting_{utc_now().timestamp()}",
@@ -137,10 +144,12 @@ class ProspectingWorkflow:
 
                     try:
                         # Busca en Google Maps
-                        leads_google = await self.lead_capture.capture_leads_from_google_maps(
-                            query=query,
-                            location=location,
-                            max_results=20,
+                        leads_google = (
+                            await self.lead_capture.capture_leads_from_google_maps(
+                                query=query,
+                                location=location,
+                                max_results=20,
+                            )
                         )
                         all_leads.extend(leads_google)
 
@@ -155,24 +164,32 @@ class ProspectingWorkflow:
                         await asyncio.sleep(2)
 
                     except Exception as e:
-                        logger.warning(f"Error searching {query} in {location}: {e!s}", exc_info=True)
+                        logger.warning(
+                            f"Error searching {query} in {location}: {e!s}",
+                            exc_info=True,
+                        )
 
             logger.info(f"Found {len(all_leads)} leads")
 
             # 2. QUALIFY — Califica por score
             logger.info("Phase 2: Qualifying leads...")
             self.qualified_leads = [
-                lead for lead in all_leads
-                if lead.score.overall_score >= 60
+                lead for lead in all_leads if lead.score.overall_score >= 60
             ]
             logger.info(f"Qualified {len(self.qualified_leads)} leads")
 
             # 3. SEGMENT — Agrupa por valor
             logger.info("Phase 3: Segmenting leads...")
-            high_value = [l for l in self.qualified_leads if l.score.overall_score >= 80]
-            medium_value = [l for l in self.qualified_leads if 60 <= l.score.overall_score < 80]
+            high_value = [
+                l for l in self.qualified_leads if l.score.overall_score >= 80
+            ]
+            medium_value = [
+                l for l in self.qualified_leads if 60 <= l.score.overall_score < 80
+            ]
 
-            logger.info(f"High-value: {len(high_value)}, Medium-value: {len(medium_value)}")
+            logger.info(
+                f"High-value: {len(high_value)}, Medium-value: {len(medium_value)}"
+            )
 
             execution.completed_at = utc_now()
             execution.status = "completed"
@@ -196,6 +213,7 @@ class ProspectingWorkflow:
 # ============================================================================
 # SELLING WORKFLOW
 # ============================================================================
+
 
 class SellingWorkflow:
     """
@@ -228,7 +246,9 @@ class SellingWorkflow:
         5. Cierra y gestiona envío
         """
         try:
-            logger.info(f"Starting sales cycle: {len(products)} products, {len(platforms)} platforms")
+            logger.info(
+                f"Starting sales cycle: {len(products)} products, {len(platforms)} platforms"
+            )
 
             execution = WorkflowExecution(
                 workflow_id=f"selling_{utc_now().timestamp()}",
@@ -247,17 +267,21 @@ class SellingWorkflow:
             for product in products:
                 for platform in platforms:
                     try:
-                        execution_result = await self.orchestrator.execute_strategy_on_platform(
-                            platform=self._string_to_platform(platform),
-                            strategy="post_product",
-                            context={"product": product},
+                        execution_result = (
+                            await self.orchestrator.execute_strategy_on_platform(
+                                platform=self._string_to_platform(platform),
+                                strategy="post_product",
+                                context={"product": product},
+                            )
                         )
 
-                        publish_results.append({
-                            "product": product.get("name"),
-                            "platform": platform,
-                            "success": execution_result.success_rate > 50,
-                        })
+                        publish_results.append(
+                            {
+                                "product": product.get("name"),
+                                "platform": platform,
+                                "success": execution_result.success_rate > 50,
+                            }
+                        )
 
                         execution.completed_tasks += 1
 
@@ -279,16 +303,22 @@ class SellingWorkflow:
                 for platform in platforms:
                     try:
                         # En producción, monitorearía en tiempo real
-                        execution_result = await self.orchestrator.execute_strategy_on_platform(
-                            platform=self._string_to_platform(platform),
-                            strategy="respond_inquiry",
-                            context={"dashboard_url": f"https://{platform}.com/dashboard"},
+                        execution_result = (
+                            await self.orchestrator.execute_strategy_on_platform(
+                                platform=self._string_to_platform(platform),
+                                strategy="respond_inquiry",
+                                context={
+                                    "dashboard_url": f"https://{platform}.com/dashboard"
+                                },
+                            )
                         )
 
                         execution.completed_tasks += execution_result.completed_actions
 
                     except Exception as e:
-                        logger.warning(f"Error checking inquiries: {e!s}", exc_info=True)
+                        logger.warning(
+                            f"Error checking inquiries: {e!s}", exc_info=True
+                        )
 
                 # Espera 5 min antes siguiente check
                 if i < 2:
@@ -332,6 +362,7 @@ class SellingWorkflow:
 # NURTURING WORKFLOW
 # ============================================================================
 
+
 class NurturingWorkflow:
     """
     Workflow de nutrición de leads.
@@ -361,7 +392,9 @@ class NurturingWorkflow:
         Rescore basado en engagement.
         """
         try:
-            logger.info(f"Starting nurture campaign: {sequence_name}, {len(leads)} leads")
+            logger.info(
+                f"Starting nurture campaign: {sequence_name}, {len(leads)} leads"
+            )
 
             execution = WorkflowExecution(
                 workflow_id=f"nurturing_{utc_now().timestamp()}",
@@ -399,11 +432,13 @@ class NurturingWorkflow:
                             logger.warning(f"Error sending email: {e!s}", exc_info=True)
                             execution.failed_tasks += 1
 
-                    results.append({
-                        "email": email,
-                        "sequence": sequence_name,
-                        "status": "sent",
-                    })
+                    results.append(
+                        {
+                            "email": email,
+                            "sequence": sequence_name,
+                            "status": "sent",
+                        }
+                    )
 
                 except Exception:
                     logger.exception("Error processing lead")
@@ -430,6 +465,7 @@ class NurturingWorkflow:
 # ============================================================================
 # RETENTION WORKFLOW
 # ============================================================================
+
 
 class RetentionWorkflow:
     """
@@ -491,6 +527,7 @@ class RetentionWorkflow:
 # WORKFLOW ORCHESTRATOR
 # ============================================================================
 
+
 class WorkflowOrchestrator:
     """Orquesta múltiples workflows en paralelo."""
 
@@ -500,9 +537,13 @@ class WorkflowOrchestrator:
         self.lead_capture = lead_capture_engine
 
         # Inicializa workflows
-        self.prospecting = ProspectingWorkflow(computer_use_orchestrator, lead_capture_engine)
+        self.prospecting = ProspectingWorkflow(
+            computer_use_orchestrator, lead_capture_engine
+        )
         self.selling = SellingWorkflow(computer_use_orchestrator)
-        self.nurturing = NurturingWorkflow(computer_use_orchestrator, lead_capture_engine)
+        self.nurturing = NurturingWorkflow(
+            computer_use_orchestrator, lead_capture_engine
+        )
         self.retention = RetentionWorkflow(computer_use_orchestrator)
 
         self.active_workflows: dict[str, WorkflowExecution] = {}
@@ -543,7 +584,8 @@ class WorkflowOrchestrator:
                 "prospecting": prospect_result,
                 "selling": selling_result,
                 "total_leads": prospect_result.get("qualified_leads", 0),
-                "total_revenue_potential": sum(p.get("price", 0) for p in products) * prospect_result.get("qualified_leads", 0),
+                "total_revenue_potential": sum(p.get("price", 0) for p in products)
+                * prospect_result.get("qualified_leads", 0),
             }
 
         except Exception as e:
@@ -580,7 +622,9 @@ class WorkflowOrchestrator:
                         search_queries=config.get("search_queries", []),
                         locations=config.get("locations", []),
                     )
-                    logger.info(f"Prospecting: {result.get('qualified_leads', 0)} leads")
+                    logger.info(
+                        f"Prospecting: {result.get('qualified_leads', 0)} leads"
+                    )
 
                 # 8:00 — Selling
                 result = await self.selling.complete_sales_cycle(
@@ -603,7 +647,10 @@ class WorkflowOrchestrator:
 
         except KeyboardInterrupt:
             logger.info("Sales machine stopped")
-            return {"cycles": cycles, "duration": (utc_now() - start_time).total_seconds()}
+            return {
+                "cycles": cycles,
+                "duration": (utc_now() - start_time).total_seconds(),
+            }
 
     def get_workflows_report(self) -> dict[str, Any]:
         """Retorna reporte de todos workflows ejecutados."""
@@ -616,8 +663,16 @@ class WorkflowOrchestrator:
                     "name": w.config.name,
                     "phase": w.config.phase.value,
                     "status": w.status,
-                    "duration": (w.completed_at - w.started_at).total_seconds() if w.completed_at else None,
-                    "success_rate": f"{(w.completed_tasks / w.total_tasks * 100):.1f}%" if w.total_tasks > 0 else "0%",
+                    "duration": (
+                        (w.completed_at - w.started_at).total_seconds()
+                        if w.completed_at
+                        else None
+                    ),
+                    "success_rate": (
+                        f"{(w.completed_tasks / w.total_tasks * 100):.1f}%"
+                        if w.total_tasks > 0
+                        else "0%"
+                    ),
                 }
                 for w in self.workflow_history[-20:]
             ],

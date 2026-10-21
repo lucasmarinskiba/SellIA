@@ -118,7 +118,9 @@ def get_discovery_questions(
             raise HTTPException(status_code=404, detail="Deal not found")
 
         prospect = {
-            "company_name": deal.company_name if hasattr(deal, 'company_name') else "Company",
+            "company_name": (
+                deal.company_name if hasattr(deal, "company_name") else "Company"
+            ),
             "industry": getattr(deal, "industry", "technology"),
             "role": "decision_maker",
         }
@@ -145,7 +147,9 @@ def record_discovery_response(
 
     try:
         engine = DiscoveryQuestionsEngine(db)
-        db_response = engine.record_response(request.deal_id, request.question, request.response)
+        db_response = engine.record_response(
+            request.deal_id, request.question, request.response
+        )
 
         return RecordResponseResponse(
             recorded=True,
@@ -166,7 +170,9 @@ def create_need_narrative(
 
     try:
         engine = NeedCreationEngine(db)
-        result = engine.create_need_narrative(request.deal_id, request.discovery_responses)
+        result = engine.create_need_narrative(
+            request.deal_id, request.discovery_responses
+        )
 
         return NeedNarrativeResponse(
             narrative=result.narrative,

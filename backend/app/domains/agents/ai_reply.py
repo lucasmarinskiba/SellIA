@@ -98,6 +98,7 @@ async def generate_ai_response(
     business_context = {}
     try:
         from app.domains.agents.context_builder import BusinessContextBuilder
+
         ctx_builder = BusinessContextBuilder(db)
         business_context = await ctx_builder.build_system_prompt_context(
             business_id=business_id,
@@ -137,17 +138,22 @@ async def generate_ai_response(
             detected_stage = None
             if force_stage:
                 from app.core.prompts.funnel_specialists import FunnelStage
+
                 try:
                     detected_stage = FunnelStage(force_stage)
                 except ValueError:
                     detected_stage = None
             if detected_stage is None:
-                detected_stage = await detect_funnel_stage(db, business_id, conversation)
+                detected_stage = await detect_funnel_stage(
+                    db, business_id, conversation
+                )
             if not voice_slug:
                 # Picks the primary recommended voice for this stage, or A/B
                 # tests between the top 2 when the stage has multiple
                 # candidates (see funnel_ab_bridge.py).
-                ab_voice_slug, _, _ = await get_stage_voice_slug(db, detected_stage, conversation)
+                ab_voice_slug, _, _ = await get_stage_voice_slug(
+                    db, detected_stage, conversation
+                )
                 voice_slug = ab_voice_slug or None
     except Exception as e:
         logger.exception("generate_ai_response: error inesperado")
@@ -187,7 +193,9 @@ async def generate_ai_response(
                 db, experiment.id, conversation_id
             )
             system_prompt = (
-                experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
+                experiment.variant_a_prompt
+                if variant == "a"
+                else experiment.variant_b_prompt
             )
 
             # Remember the assignment so a later conversion (deal won/lost)
@@ -259,9 +267,10 @@ async def generate_ai_response(
 
     # Get recent conversation history
     result = await db.execute(
-        select(Message).where(
-            Message.conversation_id == conversation_id
-        ).order_by(Message.created_at.desc()).limit(10)
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at.desc())
+        .limit(10)
     )
     recent_msgs = [
         {"id": m.id, "content": m.content, "direction": m.direction.value}
@@ -364,6 +373,7 @@ async def generate_ai_response(
     # Generate using fallback provider (OpenAI -> Anthropic)
     try:
         from app.domains.agents.llm_provider import generate_with_fallback
+
         response = await generate_with_fallback(
             db=db,
             business_id=business_id,
@@ -412,6 +422,7 @@ async def generate_ai_response(
             if custom_prompt:
                 # Heuristic: extract tool names from custom_prompt
                 import re
+
                 tools_used = re.findall(r"\[([^\]]+)\]", custom_prompt)
 
             thought_steps = await ChainOfThought.generate_thought_process(
@@ -456,6 +467,7 @@ async def generate_raw_ai_response(
     """
     try:
         from app.domains.agents.llm_provider import generate_with_fallback
+
         response = await generate_with_fallback(
             db=db,
             business_id=business_id,

@@ -25,12 +25,16 @@ class DiscoveryResponse(Base):
     __tablename__ = "discovery_responses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Question & response
     question = Column(Text, nullable=False)
     response_text = Column(Text, nullable=False)
-    question_category = Column(String(50))  # rapport, problem, impact, status_quo, desired, authority
+    question_category = Column(
+        String(50)
+    )  # rapport, problem, impact, status_quo, desired, authority
 
     # Analysis
     sentiment = Column(String(50))  # positive, neutral, negative
@@ -52,7 +56,9 @@ class NeedNarrative(Base):
     __tablename__ = "need_narratives"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     narrative = Column(Text, nullable=False)
     financial_impact_calculated = Column(Float)  # Annual impact in dollars
@@ -71,7 +77,9 @@ class ObjectionHandling(Base):
     __tablename__ = "objection_handling"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Objection details
     objection_text = Column(Text, nullable=False)
@@ -101,7 +109,9 @@ class CloseAttempt(Base):
     __tablename__ = "close_attempts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Close details
     close_step = Column(Integer, nullable=False)  # 1-5
@@ -130,7 +140,9 @@ class SalesConversation(Base):
     __tablename__ = "sales_conversations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)  # str in Python, uuid in the DB (deals.id)
+    deal_id = Column(
+        UUID(as_uuid=False), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )  # str in Python, uuid in the DB (deals.id)
 
     # Conversation flow
     conversation_json = Column(JSONB)  # Full transcript with sentiment

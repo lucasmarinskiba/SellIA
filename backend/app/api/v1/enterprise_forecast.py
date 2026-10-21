@@ -28,8 +28,12 @@ _STAGE_ALIASES = {
 }
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -75,10 +79,19 @@ async def add_opportunity(
     await db.refresh(deal)
 
     from app.domains.webhooks.service import fire_business_event
-    await fire_business_event(db, business_id, "lead.created", {
-        "deal_id": str(deal.id), "title": deal.title, "value": amount,
-        "contact_name": contact_name, "stage": stage_enum.value,
-    })
+
+    await fire_business_event(
+        db,
+        business_id,
+        "lead.created",
+        {
+            "deal_id": str(deal.id),
+            "title": deal.title,
+            "value": amount,
+            "contact_name": contact_name,
+            "stage": stage_enum.value,
+        },
+    )
 
     return {
         "status": "added",
@@ -128,7 +141,9 @@ async def project_revenue(
 ):
     """Project revenue for period ahead."""
     await _get_business_for_user(business_id, current_user, db)
-    projection = await forecasting_engine.project_revenue(business_id, db, days_ahead, target_revenue)
+    projection = await forecasting_engine.project_revenue(
+        business_id, db, days_ahead, target_revenue
+    )
 
     return {
         "period": projection["period"],
@@ -140,7 +155,9 @@ async def project_revenue(
             "worst_case": f"${projection['worst_case']:,.2f}",
         },
         "probability_of_target": (
-            f"{projection['probability_of_target']:.1f}%" if projection["probability_of_target"] is not None else "N/A"
+            f"{projection['probability_of_target']:.1f}%"
+            if projection["probability_of_target"] is not None
+            else "N/A"
         ),
         "key_drivers": {
             "avg_deal_size": f"${projection['key_drivers']['avg_deal_size']:,.2f}",

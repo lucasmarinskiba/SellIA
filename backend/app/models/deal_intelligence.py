@@ -25,7 +25,9 @@ class DealStakeholder(Base):
     __tablename__ = "deal_stakeholders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Person details
     person_id = Column(String(255), nullable=False)
@@ -35,7 +37,9 @@ class DealStakeholder(Base):
     company = Column(String(255))
 
     # Role in buying process
-    buyer_role = Column(String(50), default="influencer")  # economic_buyer, user_buyer, coach, blocker, influencer
+    buyer_role = Column(
+        String(50), default="influencer"
+    )  # economic_buyer, user_buyer, coach, blocker, influencer
     influence_level = Column(Integer, default=5)  # 1-10 scale
     engagement_score = Column(Float, default=0.0)  # 0-100
 
@@ -63,7 +67,12 @@ class DealProbabilityScore(Base):
     __tablename__ = "deal_probability_scores"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False, unique=True)
+    deal_id = Column(
+        String(255),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Predicted probability
     close_probability = Column(Float, nullable=False)  # 0-100
@@ -92,11 +101,15 @@ class DealHealthSnapshot(Base):
     __tablename__ = "deal_health_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Overall health
     health_score = Column(Integer, nullable=False)  # 0-100
-    health_status = Column(String(20), nullable=False)  # healthy, at_risk, critical, won, lost
+    health_status = Column(
+        String(20), nullable=False
+    )  # healthy, at_risk, critical, won, lost
 
     # Component scores
     engagement_health = Column(Integer)  # 0-100
@@ -129,11 +142,15 @@ class DealHealthAlert(Base):
     __tablename__ = "deal_health_alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     user_id = Column(String(255), ForeignKey("users.id", ondelete="CASCADE"))
 
     # Alert details
-    alert_type = Column(String(50), nullable=False)  # low_engagement, lost_momentum, buyer_churn, stalled
+    alert_type = Column(
+        String(50), nullable=False
+    )  # low_engagement, lost_momentum, buyer_churn, stalled
     severity = Column(String(20), nullable=False)  # info, warning, critical
     title = Column(String(255), nullable=False)
     description = Column(Text)
@@ -161,11 +178,15 @@ class StakeholderEngagementEvent(Base):
     __tablename__ = "stakeholder_engagement_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False)
+    deal_id = Column(
+        String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False
+    )
     person_id = Column(String(255), nullable=False)
 
     # Event type
-    event_type = Column(String(50), nullable=False)  # email_open, email_click, call, meeting, message
+    event_type = Column(
+        String(50), nullable=False
+    )  # email_open, email_click, call, meeting, message
     engagement_value = Column(Integer, nullable=False)  # Points assigned
 
     # Event details
@@ -185,7 +206,12 @@ class ModelPredictionsCache(Base):
     __tablename__ = "model_predictions_cache"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    deal_id = Column(String(255), ForeignKey("deals.id", ondelete="CASCADE"), nullable=False, unique=True)
+    deal_id = Column(
+        String(255),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
 
     # Cached prediction
     prediction_json = Column(JSONB, nullable=False)  # Full prediction object
@@ -193,6 +219,4 @@ class ModelPredictionsCache(Base):
     cache_created_at = Column(DateTime, default=utc_now, nullable=False)
     cache_expires_at = Column(DateTime, nullable=False)
 
-    __table_args__ = (
-        Index("idx_cache_expires", "cache_expires_at"),
-    )
+    __table_args__ = (Index("idx_cache_expires", "cache_expires_at"),)

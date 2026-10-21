@@ -1,4 +1,5 @@
 """Phase 36: Sales Automation API."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/v1/sales-automation", tags=["sales-automation"])
 
+
 @router.post("/email-sequence")
 async def create_email_sequence(
     business_id: UUID,
@@ -16,6 +18,7 @@ async def create_email_sequence(
     db: Annotated[Session, Depends(get_db)],
 ):
     return {"sequence_id": "seq_001", "name": name, "status": "active"}
+
 
 @router.post("/email-sequence/{sequence_id}/send")
 async def send_email_sequence(
@@ -26,6 +29,7 @@ async def send_email_sequence(
 ):
     return {"sequence_id": sequence_id, "lead_id": str(lead_id), "status": "sent"}
 
+
 @router.post("/call-followup")
 async def log_call_followup(
     business_id: UUID,
@@ -33,7 +37,12 @@ async def log_call_followup(
     transcript: str,
     db: Annotated[Session, Depends(get_db)],
 ):
-    return {"followup_id": "fu_001", "status": "logged", "action_recommended": "send_proposal"}
+    return {
+        "followup_id": "fu_001",
+        "status": "logged",
+        "action_recommended": "send_proposal",
+    }
+
 
 @router.post("/sms-sequence")
 async def create_sms_sequence(
@@ -41,7 +50,12 @@ async def create_sms_sequence(
     customer_id: UUID,
     db: Annotated[Session, Depends(get_db)],
 ):
-    return {"sequence_id": "sms_001", "customer_id": str(customer_id), "status": "active"}
+    return {
+        "sequence_id": "sms_001",
+        "customer_id": str(customer_id),
+        "status": "active",
+    }
+
 
 @router.get("/automation-metrics")
 async def get_automation_metrics(

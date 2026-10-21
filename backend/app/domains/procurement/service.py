@@ -44,15 +44,19 @@ class VendorService:
     async def list_vendors(self, business_id: uuid.UUID) -> list[Vendor]:
         """List active vendors."""
         vendors = (
-            await self.db.execute(
-                select(Vendor).where(
-                    and_(
-                        Vendor.business_id == business_id,
-                        Vendor.is_active == True,
+            (
+                await self.db.execute(
+                    select(Vendor).where(
+                        and_(
+                            Vendor.business_id == business_id,
+                            Vendor.is_active == True,
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return vendors
 
     async def update_scores(
@@ -74,9 +78,9 @@ class VendorService:
         vendor.delivery_score = delivery_score
         # Weighted average: 40% quality, 35% cost, 25% delivery
         vendor.overall_score = (
-            quality_score * Decimal("0.40") +
-            cost_score * Decimal("0.35") +
-            delivery_score * Decimal("0.25")
+            quality_score * Decimal("0.40")
+            + cost_score * Decimal("0.35")
+            + delivery_score * Decimal("0.25")
         )
         await self.db.commit()
         logger.info(f"Vendor {vendor_id} scored: {vendor.overall_score}")
@@ -100,7 +104,9 @@ class RFQService:
     ) -> RFQ:
         """Create RFQ."""
         # Same collision risk as po_number above — see that comment.
-        rfq_number = f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        rfq_number = (
+            f"RFQ-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
         rfq = RFQ(
             business_id=business_id,
             rfq_number=rfq_number,
@@ -159,7 +165,9 @@ class PurchaseOrderService:
         # Second-precision timestamp alone collides whenever two POs are
         # created within the same wall-clock second — same fix as
         # invoicing.service.create_invoice's invoice_number.
-        po_number = f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        po_number = (
+            f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        )
         total_amount = quantity * unit_price_aed
 
         po = PurchaseOrder(
@@ -182,7 +190,9 @@ class PurchaseOrderService:
     async def get_po(self, po_id: uuid.UUID) -> PurchaseOrder:
         """Fetch PO."""
         po = (
-            await self.db.execute(select(PurchaseOrder).where(PurchaseOrder.id == po_id))
+            await self.db.execute(
+                select(PurchaseOrder).where(PurchaseOrder.id == po_id)
+            )
         ).scalar_one_or_none()
         if not po:
             raise ValueError(f"PO {po_id} not found")
@@ -218,10 +228,16 @@ class PurchaseOrderService:
     async def po_summary(self, business_id: uuid.UUID) -> dict:
         """Summary of POs by status."""
         pos = (
-            await self.db.execute(
-                select(PurchaseOrder).where(PurchaseOrder.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(PurchaseOrder).where(
+                        PurchaseOrder.business_id == business_id
+                    )
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         issued = sum(1 for p in pos if p.status == "issued")
         received = sum(1 for p in pos if p.status == "received")

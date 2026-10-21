@@ -44,7 +44,9 @@ class ContinuousLearner:
                 timeout=10,
                 check=False,
             )
-            commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            commit_hash = (
+                result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            )
 
             # Check for new agent definitions
             agents_path = Path(self.realEstate_repo) / "agents"
@@ -97,7 +99,9 @@ class ContinuousLearner:
                 timeout=10,
                 check=False,
             )
-            commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            commit_hash = (
+                result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
+            )
 
             # Check for specialized agents
             agents_path = Path(self.comercial_repo) / "core" / "agents"
@@ -185,7 +189,9 @@ class ContinuousLearner:
     def rollback_to_version(self, system: str, version: str) -> bool:
         """Rollback to previous version."""
         try:
-            repo = self.realEstate_repo if system == "realEstate" else self.comercial_repo
+            repo = (
+                self.realEstate_repo if system == "realEstate" else self.comercial_repo
+            )
             subprocess.run(
                 ["git", "-C", repo, "checkout", version],
                 timeout=10,

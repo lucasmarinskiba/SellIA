@@ -4,7 +4,6 @@ Pricing: ~$0.008/generation
 Strengths: SEO optimization, ad scoring, landing pages, blog posts
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class WritesonicProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="WRITESONIC_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="WRITESONIC_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -60,7 +61,9 @@ class WritesonicProvider(BaseProvider):
 
             text = data.get("message")
             if not text:
-                return GenerationResult(success=False, error_message="Writesonic no devolvió texto")
+                return GenerationResult(
+                    success=False, error_message="Writesonic no devolvió texto"
+                )
 
             return GenerationResult(
                 success=True,

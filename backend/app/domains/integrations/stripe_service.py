@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class StripeEventType(str, Enum):
     """Stripe webhook event types."""
+
     PAYMENT_SUCCEEDED = "payment_intent.succeeded"
     PAYMENT_FAILED = "payment_intent.payment_failed"
     INVOICE_PAID = "invoice.paid"
@@ -108,7 +109,9 @@ class StripeService:
         try:
             payment_intent = event_data.get("object", {})
             customer_id = payment_intent.get("customer")
-            error = payment_intent.get("last_payment_error", {}).get("message", "Unknown error")
+            error = payment_intent.get("last_payment_error", {}).get(
+                "message", "Unknown error"
+            )
 
             logger.warning(f"Payment failed for customer {customer_id}: {error}")
 
@@ -150,9 +153,7 @@ class StripeService:
             logger.exception("Invoice paid handler failed")
             return None
 
-    async def create_customer(
-        self, email: str, name: str, company: str
-    ) -> str | None:
+    async def create_customer(self, email: str, name: str, company: str) -> str | None:
         """Create Stripe customer."""
         try:
             # In production, call Stripe API
@@ -172,9 +173,7 @@ class StripeService:
         """Create subscription."""
         try:
             # In production, call Stripe API
-            logger.info(
-                f"Subscription created: {customer_id} - ${annual_price}/year"
-            )
+            logger.info(f"Subscription created: {customer_id} - ${annual_price}/year")
             return f"sub_{datetime.now().timestamp()}"
 
         except Exception:

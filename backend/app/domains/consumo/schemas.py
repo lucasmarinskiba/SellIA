@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 # ===== Cost Attribution =====
 
+
 class AICallLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,6 +53,7 @@ class UserMarginOut(BaseModel):
 
 # ===== Quality Gate =====
 
+
 class QualityGateConfigOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,6 +72,7 @@ class QualityGateConfigUpdate(BaseModel):
 
 # ===== Plan Recommendation =====
 
+
 class PlanRecommendationOut(BaseModel):
     current_plan: str
     current_plan_price: float
@@ -83,6 +86,7 @@ class PlanRecommendationOut(BaseModel):
 
 
 # ===== Onboarding =====
+
 
 class OnboardingProgressOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

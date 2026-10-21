@@ -58,8 +58,12 @@ class MonitoringSystem:
         self.metrics: list[PerformanceMetric] = []
 
     def create_alert(
-        self, alert_type: AlertType, severity: AlertSeverity,
-        title: str, message: str, affected_users: int = 0
+        self,
+        alert_type: AlertType,
+        severity: AlertSeverity,
+        title: str,
+        message: str,
+        affected_users: int = 0,
     ) -> Alert:
         """Create alert"""
 
@@ -69,7 +73,7 @@ class MonitoringSystem:
             severity=severity,
             title=title,
             message=message,
-            affected_users=affected_users
+            affected_users=affected_users,
         )
 
         self.alerts.append(alert)
@@ -108,12 +112,14 @@ class MonitoringSystem:
                 "severity": a.severity.value,
                 "title": a.title,
                 "affected_users": a.affected_users,
-                "minutes_ago": (utc_now() - a.timestamp).seconds // 60
+                "minutes_ago": (utc_now() - a.timestamp).seconds // 60,
             }
             for a in active
         ]
 
-    def record_metric(self, name: str, value: float, unit: str = "") -> PerformanceMetric:
+    def record_metric(
+        self, name: str, value: float, unit: str = ""
+    ) -> PerformanceMetric:
         """Record performance metric"""
 
         metric = PerformanceMetric(metric_name=name, value=value, unit=unit)
@@ -130,15 +136,18 @@ class MonitoringSystem:
         thresholds = {
             "api_response_time_ms": 1000,
             "error_rate_percent": 5,
-            "database_query_time_ms": 2000
+            "database_query_time_ms": 2000,
         }
 
-        if metric.metric_name in thresholds and metric.value > thresholds[metric.metric_name]:
+        if (
+            metric.metric_name in thresholds
+            and metric.value > thresholds[metric.metric_name]
+        ):
             self.create_alert(
                 alert_type=AlertType.HIGH_LATENCY,
                 severity=AlertSeverity.HIGH,
                 title=f"High {metric.metric_name}",
-                message=f"{metric.metric_name} is {metric.value}{metric.unit}"
+                message=f"{metric.metric_name} is {metric.value}{metric.unit}",
             )
 
     def get_performance_stats(self) -> dict[str, Any]:
@@ -154,7 +163,7 @@ class MonitoringSystem:
             "error_rate_percent": 0.02,
             "database_query_time_avg": 125.0,
             "cache_hit_rate": 0.87,
-            "uptime_percent": 99.95
+            "uptime_percent": 99.95,
         }
 
     def get_alert_summary(self) -> dict[str, Any]:
@@ -170,5 +179,5 @@ class MonitoringSystem:
             "critical_alerts": critical,
             "high_alerts": high,
             "mttr_minutes": 15,  # Mean Time To Resolution
-            "alert_resolution_rate": 0.95
+            "alert_resolution_rate": 0.95,
         }

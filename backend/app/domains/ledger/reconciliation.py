@@ -48,7 +48,9 @@ class ReconciliationService:
             raise ValueError("bank account not found")
         return acc
 
-    async def create_bank_account(self, business_id: uuid.UUID, **data: Any) -> BankAccount:
+    async def create_bank_account(
+        self, business_id: uuid.UUID, **data: Any
+    ) -> BankAccount:
         acc = BankAccount(business_id=business_id, **data)
         self.db.add(acc)
         await self.db.commit()
@@ -95,7 +97,11 @@ class ReconciliationService:
 
         bank.last_synced_at = _utcnow()
         await self.db.commit()
-        return {"received": len(transactions), "inserted": inserted, "skipped": len(transactions) - inserted}
+        return {
+            "received": len(transactions),
+            "inserted": inserted,
+            "skipped": len(transactions) - inserted,
+        }
 
     # ------------------------------------------------------------------
     async def run_reconciliation(
@@ -119,7 +125,9 @@ class ReconciliationService:
                     )
                     .order_by(ReconciliationRule.priority)
                 )
-            ).scalars().all()
+            )
+            .scalars()
+            .all()
         )
 
         auto_matched = 0
@@ -137,8 +145,13 @@ class ReconciliationService:
 
             rule = self._first_matching_rule(rules, txn)
             if rule:
-                await self._categorize(business_id, txn, account_id=rule.account_id,
-                                       contact_type=rule.contact_type, contact_id=rule.contact_id)
+                await self._categorize(
+                    business_id,
+                    txn,
+                    account_id=rule.account_id,
+                    contact_type=rule.contact_type,
+                    contact_id=rule.contact_id,
+                )
                 txn.match_confidence = Decimal("0.80")
                 rule_categorized += 1
 
@@ -183,7 +196,9 @@ class ReconciliationService:
 
         for entry, delta in by_entry.values():
             already = await self.db.execute(
-                select(BankTransaction.id).where(BankTransaction.matched_entry_id == entry.id)
+                select(BankTransaction.id).where(
+                    BankTransaction.matched_entry_id == entry.id
+                )
             )
             if already.first():
                 continue
@@ -200,7 +215,11 @@ class ReconciliationService:
         for rule in rules:
             if rule.match_contains and rule.match_contains.lower() not in desc:
                 continue
-            if rule.direction and rule.direction != "any" and rule.direction != direction:
+            if (
+                rule.direction
+                and rule.direction != "any"
+                and rule.direction != direction
+            ):
                 continue
             mag = abs(amt)
             if rule.match_min_amount is not None and mag < _q(rule.match_min_amount):
@@ -213,7 +232,8 @@ class ReconciliationService:
     async def _cash_account_ids(self, business_id: uuid.UUID) -> list[uuid.UUID]:
         accounts = await self.ledger.get_accounts(business_id)
         return [
-            a.id for a in accounts
+            a.id
+            for a in accounts
             if a.type == "asset" and (a.subtype or "").startswith("cash")
         ]
 
@@ -235,15 +255,33 @@ class ReconciliationService:
         amt = _q(abs(txn.amount))
         if txn.amount >= 0:  # inflow: Dr cash / Cr category
             lines = [
-                {"account_id": cash_id, "debit": amt, "description": txn.description or "Ingreso banco"},
-                {"account_id": account_id, "credit": amt, "description": txn.description or "Ingreso",
-                 "contact_type": contact_type, "contact_id": contact_id},
+                {
+                    "account_id": cash_id,
+                    "debit": amt,
+                    "description": txn.description or "Ingreso banco",
+                },
+                {
+                    "account_id": account_id,
+                    "credit": amt,
+                    "description": txn.description or "Ingreso",
+                    "contact_type": contact_type,
+                    "contact_id": contact_id,
+                },
             ]
         else:  # outflow: Dr category / Cr cash
             lines = [
-                {"account_id": account_id, "debit": amt, "description": txn.description or "Egreso",
-                 "contact_type": contact_type, "contact_id": contact_id},
-                {"account_id": cash_id, "credit": amt, "description": txn.description or "Egreso banco"},
+                {
+                    "account_id": account_id,
+                    "debit": amt,
+                    "description": txn.description or "Egreso",
+                    "contact_type": contact_type,
+                    "contact_id": contact_id,
+                },
+                {
+                    "account_id": cash_id,
+                    "credit": amt,
+                    "description": txn.description or "Egreso banco",
+                },
             ]
         entry = await self.ledger.post_entry(
             business_id,
@@ -301,7 +339,9 @@ class ReconciliationService:
         if not txn:
             raise ValueError("bank transaction not found")
         if account_id is None:
-            acc = await self.ledger.resolve_account(business_id, subtype=account_subtype)
+            acc = await self.ledger.resolve_account(
+                business_id, subtype=account_subtype
+            )
             account_id = acc.id
         entry = await self._categorize(business_id, txn, account_id=account_id)
         await self.db.commit()
@@ -324,7 +364,9 @@ class ReconciliationService:
         q = q.order_by(BankTransaction.txn_date.desc()).limit(limit)
         return list((await self.db.execute(q)).scalars().all())
 
-    async def create_rule(self, business_id: uuid.UUID, **data: Any) -> ReconciliationRule:
+    async def create_rule(
+        self, business_id: uuid.UUID, **data: Any
+    ) -> ReconciliationRule:
         rule = ReconciliationRule(business_id=business_id, **data)
         self.db.add(rule)
         await self.db.commit()

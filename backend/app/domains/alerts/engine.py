@@ -82,12 +82,20 @@ class AlertEngine:
                 return Alert(
                     business_id=business_id,
                     rule_id=rule.id,
-                    conversation_id=uuid.UUID(context["conversation_id"]) if context.get("conversation_id") else None,
+                    conversation_id=(
+                        uuid.UUID(context["conversation_id"])
+                        if context.get("conversation_id")
+                        else None
+                    ),
                     title=f"Lead score alcanzó {new_score}",
                     description=f"El lead superó el umbral de {threshold} puntos.",
                     severity=rule.severity,
                     entity_type="conversation",
-                    entity_id=uuid.UUID(context["conversation_id"]) if context.get("conversation_id") else None,
+                    entity_id=(
+                        uuid.UUID(context["conversation_id"])
+                        if context.get("conversation_id")
+                        else None
+                    ),
                     alert_metadata={"new_score": new_score, "threshold": threshold},
                 )
 
@@ -119,7 +127,10 @@ class AlertEngine:
                     title="Workflow falló",
                     description="La ejecución del workflow falló.",
                     severity=AlertSeverity.CRITICAL,
-                    alert_metadata={"workflow_id": str(context.get("workflow_id")), "execution_id": str(context.get("execution_id"))},
+                    alert_metadata={
+                        "workflow_id": str(context.get("workflow_id")),
+                        "execution_id": str(context.get("execution_id")),
+                    },
                 )
 
         elif rule_type == AlertRuleType.REVENUE_TARGET:
@@ -129,12 +140,20 @@ class AlertEngine:
                 return Alert(
                     business_id=business_id,
                     rule_id=rule.id,
-                    order_id=uuid.UUID(context["order_id"]) if context.get("order_id") else None,
+                    order_id=(
+                        uuid.UUID(context["order_id"])
+                        if context.get("order_id")
+                        else None
+                    ),
                     title="Meta de revenue alcanzada",
                     description=f"Se alcanzó la meta de ${target:,.2f} con una orden de ${total_amount:,.2f}.",
                     severity=AlertSeverity.INFO,
                     entity_type="order",
-                    entity_id=uuid.UUID(context["order_id"]) if context.get("order_id") else None,
+                    entity_id=(
+                        uuid.UUID(context["order_id"])
+                        if context.get("order_id")
+                        else None
+                    ),
                     alert_metadata={"target": target, "total_amount": total_amount},
                 )
 
@@ -146,7 +165,9 @@ class AlertEngine:
 
     # ========== Scheduled checks ==========
 
-    async def check_deal_stalled(self, business_id: uuid.UUID | None = None) -> list[Alert]:
+    async def check_deal_stalled(
+        self, business_id: uuid.UUID | None = None
+    ) -> list[Alert]:
         """Find deals with no activity for N days."""
         days = 3
         since = datetime.now(UTC) - timedelta(days=days)
@@ -199,7 +220,9 @@ class AlertEngine:
             await self.db.commit()
         return generated
 
-    async def check_hot_leads_no_deal(self, business_id: uuid.UUID | None = None) -> list[Alert]:
+    async def check_hot_leads_no_deal(
+        self, business_id: uuid.UUID | None = None
+    ) -> list[Alert]:
         """Find hot leads without an active deal."""
         query = select(LeadScore).where(
             LeadScore.classification == "hot",
@@ -256,7 +279,9 @@ class AlertEngine:
             await self.db.commit()
         return generated
 
-    async def check_abandoned_carts(self, business_id: uuid.UUID | None = None) -> list[Alert]:
+    async def check_abandoned_carts(
+        self, business_id: uuid.UUID | None = None
+    ) -> list[Alert]:
         """Find pending orders older than N days."""
         days = 2
         since = datetime.now(UTC) - timedelta(days=days)
@@ -296,7 +321,10 @@ class AlertEngine:
                 severity=AlertSeverity.INFO,
                 entity_type="order",
                 entity_id=order.id,
-                alert_metadata={"total_amount": float(order.total_amount), "days_pending": days},
+                alert_metadata={
+                    "total_amount": float(order.total_amount),
+                    "days_pending": days,
+                },
             )
             self.db.add(alert)
             generated.append(alert)
@@ -361,7 +389,9 @@ class AlertEngine:
 
     # ========== Recommendation generation ==========
 
-    async def _generate_recommendation(self, alert: Alert, rule: AlertRule) -> Recommendation | None:
+    async def _generate_recommendation(
+        self, alert: Alert, rule: AlertRule
+    ) -> Recommendation | None:
         """Generate a deterministic recommendation based on alert type."""
         rule_type = rule.rule_type
 
@@ -373,8 +403,16 @@ class AlertEngine:
                 description="El lead alcanzó un score alto. Es momento de contactarlo con una propuesta.",
                 priority=4,
                 action_type=RecommendationActionType.SEND_MESSAGE,
-                action_payload={"template": "follow_up_hot", "conversation_id": str(alert.conversation_id) if alert.conversation_id else None},
-                context_data={"alert_id": str(alert.id), "score": alert.alert_metadata.get("new_score")},
+                action_payload={
+                    "template": "follow_up_hot",
+                    "conversation_id": (
+                        str(alert.conversation_id) if alert.conversation_id else None
+                    ),
+                },
+                context_data={
+                    "alert_id": str(alert.id),
+                    "score": alert.alert_metadata.get("new_score"),
+                },
             )
 
         elif rule_type == AlertRuleType.DEAL_STALLED:
@@ -385,8 +423,13 @@ class AlertEngine:
                 description="El deal está estancado. Considera reactivarlo con un mensaje o moverlo a nurture.",
                 priority=3,
                 action_type=RecommendationActionType.SEND_MESSAGE,
-                action_payload={"deal_id": str(alert.deal_id) if alert.deal_id else None},
-                context_data={"alert_id": str(alert.id), "days_stalled": alert.alert_metadata.get("days_stalled")},
+                action_payload={
+                    "deal_id": str(alert.deal_id) if alert.deal_id else None
+                },
+                context_data={
+                    "alert_id": str(alert.id),
+                    "days_stalled": alert.alert_metadata.get("days_stalled"),
+                },
             )
 
         elif rule_type == AlertRuleType.HOT_LEAD_NO_DEAL:
@@ -397,7 +440,11 @@ class AlertEngine:
                 description="Este lead caliente no tiene un deal asociado. Crear uno aumentará el tracking.",
                 priority=5,
                 action_type=RecommendationActionType.CREATE_DEAL,
-                action_payload={"conversation_id": str(alert.conversation_id) if alert.conversation_id else None},
+                action_payload={
+                    "conversation_id": (
+                        str(alert.conversation_id) if alert.conversation_id else None
+                    )
+                },
                 context_data={"alert_id": str(alert.id)},
             )
 
@@ -409,8 +456,14 @@ class AlertEngine:
                 description="El cliente dejó una orden pendiente. Un mensaje de seguimiento puede recuperarla.",
                 priority=3,
                 action_type=RecommendationActionType.SEND_MESSAGE,
-                action_payload={"order_id": str(alert.order_id) if alert.order_id else None, "offer_discount": True},
-                context_data={"alert_id": str(alert.id), "order_amount": alert.alert_metadata.get("total_amount")},
+                action_payload={
+                    "order_id": str(alert.order_id) if alert.order_id else None,
+                    "offer_discount": True,
+                },
+                context_data={
+                    "alert_id": str(alert.id),
+                    "order_amount": alert.alert_metadata.get("total_amount"),
+                },
             )
 
         elif rule_type == AlertRuleType.WORKFLOW_FAILED:
@@ -422,7 +475,10 @@ class AlertEngine:
                 priority=5,
                 action_type=RecommendationActionType.DISMISS,
                 action_payload={},
-                context_data={"alert_id": str(alert.id), "workflow_id": alert.alert_metadata.get("workflow_id")},
+                context_data={
+                    "alert_id": str(alert.id),
+                    "workflow_id": alert.alert_metadata.get("workflow_id"),
+                },
             )
 
         elif rule_type == AlertRuleType.NO_REPLY:
@@ -433,7 +489,11 @@ class AlertEngine:
                 description="Esta conversación lleva tiempo sin respuesta. Un agente humano puede reactivarla.",
                 priority=2,
                 action_type=RecommendationActionType.ASSIGN_AGENT,
-                action_payload={"conversation_id": str(alert.conversation_id) if alert.conversation_id else None},
+                action_payload={
+                    "conversation_id": (
+                        str(alert.conversation_id) if alert.conversation_id else None
+                    )
+                },
                 context_data={"alert_id": str(alert.id)},
             )
 
@@ -446,6 +506,7 @@ class AlertEngine:
         # Cooldown
         cooldown_since = datetime.now(UTC) - timedelta(minutes=rule.cooldown_minutes)
         from app.domains.alerts.models import Alert
+
         result = await self.db.execute(
             select(func.count(Alert.id)).where(
                 Alert.rule_id == rule.id,

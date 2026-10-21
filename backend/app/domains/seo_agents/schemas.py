@@ -71,7 +71,9 @@ class BacklinkOpportunityIn(BaseModel):
     """Request to add a backlink opportunity."""
 
     domain: str
-    opportunity_type: str  # guest_post, directory, resource_page, broken_link, competitor_backlink
+    opportunity_type: (
+        str  # guest_post, directory, resource_page, broken_link, competitor_backlink
+    )
     domain_authority: int
     niche_keywords: list[str]
     domain_topic_keywords: list[str]
@@ -132,7 +134,9 @@ class GenerateCalendarRequest(BaseModel):
     target_keywords: list[str]
     days: int = 90
     cadence_days: int = 7
-    keyword_opportunities: dict[str, float] | None = None  # keyword -> opportunity_score (0-100)
+    keyword_opportunities: dict[str, float] | None = (
+        None  # keyword -> opportunity_score (0-100)
+    )
 
 
 class ContentCalendarEntryOut(BaseModel):

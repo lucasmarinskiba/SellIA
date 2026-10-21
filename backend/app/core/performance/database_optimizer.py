@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class IndexType(Enum):
     """Database index types."""
+
     B_TREE = "B-tree"
     HASH = "Hash"
     BTREE_FULL_TEXT = "Full-text"
@@ -28,6 +29,7 @@ class IndexType(Enum):
 
 class QueryPriority(Enum):
     """Query priority classification."""
+
     CRITICAL = "critical"  # <50ms required
     HIGH = "high"  # <200ms required
     NORMAL = "normal"  # <1000ms acceptable
@@ -37,6 +39,7 @@ class QueryPriority(Enum):
 @dataclass
 class SlowQuery:
     """Slow query log entry."""
+
     query_hash: str
     query: str
     execution_time_ms: float
@@ -66,6 +69,7 @@ class SlowQuery:
 @dataclass
 class IndexRecommendation:
     """Index recommendation for a table."""
+
     table: str
     columns: list[str]
     index_type: IndexType
@@ -186,14 +190,13 @@ class DatabaseOptimizer:
             for qh, stats in sorted_queries[:limit]
         ]
 
-    def get_recent_slow_queries(self, minutes: int = 5, limit: int = 100) -> list[dict[str, Any]]:
+    def get_recent_slow_queries(
+        self, minutes: int = 5, limit: int = 100
+    ) -> list[dict[str, Any]]:
         """Get slow queries from the last N minutes."""
         cutoff_time = utc_now() - timedelta(minutes=minutes)
 
-        recent = [
-            q for q in self._slow_query_log
-            if q.timestamp > cutoff_time
-        ]
+        recent = [q for q in self._slow_query_log if q.timestamp > cutoff_time]
 
         # Sort by execution time descending
         recent.sort(key=lambda x: x.execution_time_ms, reverse=True)
@@ -323,7 +326,11 @@ class DatabaseOptimizer:
             "join_count": join_count,
             "subquery_count": subquery_count,
             "where_conditions": where_count,
-            "optimization_potential": "High" if estimated_cost > 200 else "Medium" if estimated_cost > 100 else "Low",
+            "optimization_potential": (
+                "High"
+                if estimated_cost > 200
+                else "Medium" if estimated_cost > 100 else "Low"
+            ),
         }
 
     def suggest_materialized_view(
@@ -383,7 +390,9 @@ class DatabaseOptimizer:
                 "table": table_name,
                 "row_count": row_count,
                 "size_mb": round(size_mb, 2),
-                "avg_row_size_bytes": round((size_mb * 1024 * 1024 / max(row_count, 1)), 2),
+                "avg_row_size_bytes": round(
+                    (size_mb * 1024 * 1024 / max(row_count, 1)), 2
+                ),
                 "last_analyzed": utc_now().isoformat(),
             }
         except Exception as e:

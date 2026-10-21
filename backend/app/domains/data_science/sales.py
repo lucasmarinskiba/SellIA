@@ -51,7 +51,9 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
     now = datetime.now(UTC)
     since = now - timedelta(days=days)
 
-    biz_result = await db.execute(select(Business.id).where(Business.user_id == user.id))
+    biz_result = await db.execute(
+        select(Business.id).where(Business.user_id == user.id)
+    )
     business_ids = [row[0] for row in biz_result.all()]
 
     empty = {
@@ -71,7 +73,9 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
         "generated_at": now.isoformat(),
     }
     if not business_ids:
-        empty["headline"] = "Todavía no creaste tu negocio, así que no hay ninguna venta tuya que leer."
+        empty["headline"] = (
+            "Todavía no creaste tu negocio, así que no hay ninguna venta tuya que leer."
+        )
         return empty
 
     result = await db.execute(
@@ -102,16 +106,18 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
         paid = [o for o in rows if o.payment_status == PaymentStatus.COMPLETED]
         med = median(amounts)
         q1, q3 = quartiles(amounts)
-        currencies.append({
-            "currency": currency,
-            "orders": len(rows),
-            "revenue": round(sum(amounts), 2),
-            "collected": round(sum(float(o.total_amount or 0) for o in paid), 2),
-            "median_ticket": round(med, 2) if med is not None else None,
-            "q1_ticket": round(q1, 2) if q1 is not None else None,
-            "q3_ticket": round(q3, 2) if q3 is not None else None,
-            "is_main": currency == main_currency,
-        })
+        currencies.append(
+            {
+                "currency": currency,
+                "orders": len(rows),
+                "revenue": round(sum(amounts), 2),
+                "collected": round(sum(float(o.total_amount or 0) for o in paid), 2),
+                "median_ticket": round(med, 2) if med is not None else None,
+                "q1_ticket": round(q1, 2) if q1 is not None else None,
+                "q3_ticket": round(q3, 2) if q3 is not None else None,
+                "is_main": currency == main_currency,
+            }
+        )
 
     main_orders = per_currency[main_currency]
     main_amounts = [float(o.total_amount or 0) for o in main_orders]
@@ -129,11 +135,13 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
     revenue_series = []
     for offset in range(days - 1, -1, -1):
         day = (now - timedelta(days=offset)).date().isoformat()
-        revenue_series.append({
-            "date": day,
-            "revenue": round(daily_revenue.get(day, 0.0), 2),
-            "orders": daily_orders.get(day, 0),
-        })
+        revenue_series.append(
+            {
+                "date": day,
+                "revenue": round(daily_revenue.get(day, 0.0), 2),
+                "orders": daily_orders.get(day, 0),
+            }
+        )
 
     # ── Ticket distribution: real buckets, not a smooth curve ──
     ticket_distribution = _histogram(main_amounts)
@@ -150,15 +158,17 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
             len(rows),
         )
         med = median(amounts)
-        by_platform.append({
-            "platform": platform,
-            "orders": len(rows),
-            "revenue": round(sum(amounts), 2),
-            "median_ticket": round(med, 2) if med is not None else None,
-            "paid_rate": paid.percent,
-            "confidence": paid.confidence,
-            "reading": paid.reading("órdenes"),
-        })
+        by_platform.append(
+            {
+                "platform": platform,
+                "orders": len(rows),
+                "revenue": round(sum(amounts), 2),
+                "median_ticket": round(med, 2) if med is not None else None,
+                "paid_rate": paid.percent,
+                "confidence": paid.confidence,
+                "reading": paid.reading("órdenes"),
+            }
+        )
 
     # ── When people actually buy ──
     weekday_counts: Counter[int] = Counter()
@@ -183,7 +193,11 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
         "created": len(orders),
         "paid": sum(
             status_counts.get(s, 0)
-            for s in (OrderStatus.PAID.value, OrderStatus.SHIPPED.value, OrderStatus.DELIVERED.value)
+            for s in (
+                OrderStatus.PAID.value,
+                OrderStatus.SHIPPED.value,
+                OrderStatus.DELIVERED.value,
+            )
         ),
         "shipped": sum(
             status_counts.get(s, 0)
@@ -193,9 +207,21 @@ async def get_sales_analysis(db: AsyncSession, user, days: int = 90) -> dict[str
     }
     status_funnel = [
         {"step": "Órdenes creadas", "count": reached["created"], "of_created": 100.0},
-        {"step": "Pagadas", "count": reached["paid"], "of_created": _pct(reached["paid"], reached["created"])},
-        {"step": "Enviadas", "count": reached["shipped"], "of_created": _pct(reached["shipped"], reached["created"])},
-        {"step": "Entregadas", "count": reached["delivered"], "of_created": _pct(reached["delivered"], reached["created"])},
+        {
+            "step": "Pagadas",
+            "count": reached["paid"],
+            "of_created": _pct(reached["paid"], reached["created"]),
+        },
+        {
+            "step": "Enviadas",
+            "count": reached["shipped"],
+            "of_created": _pct(reached["shipped"], reached["created"]),
+        },
+        {
+            "step": "Entregadas",
+            "count": reached["delivered"],
+            "of_created": _pct(reached["delivered"], reached["created"]),
+        },
     ]
     lost = {
         "cancelled": status_counts.get(OrderStatus.CANCELLED.value, 0),
@@ -264,8 +290,10 @@ def _histogram(amounts: list[float], buckets: int = 6) -> list[dict[str, Any]]:
         start = low + index * width
         end = high if index == buckets - 1 else start + width
         count = sum(
-            1 for value in values
-            if (value >= start and value < end) or (index == buckets - 1 and value == high)
+            1
+            for value in values
+            if (value >= start and value < end)
+            or (index == buckets - 1 and value == high)
         )
         out.append({"from": round(start, 2), "to": round(end, 2), "orders": count})
     return out
@@ -282,7 +310,9 @@ def _repeat_customers(orders: list[Any]) -> dict[str, Any]:
     per_customer: Counter[str] = Counter()
     unidentified = 0
     for order in orders:
-        key = (order.customer_email or "").strip().lower() or (order.customer_phone or "").strip()
+        key = (order.customer_email or "").strip().lower() or (
+            order.customer_phone or ""
+        ).strip()
         if not key:
             unidentified += 1
             continue
@@ -302,7 +332,8 @@ def _repeat_customers(orders: list[Any]) -> dict[str, Any]:
             + (
                 f" Además hay {unidentified} órdenes sin email ni teléfono: no se puede saber "
                 "si son de alguien que ya compró."
-                if unidentified else ""
+                if unidentified
+                else ""
             )
         ),
     }
@@ -312,7 +343,9 @@ def _concentration(orders: list[Any], currency: str) -> dict[str, Any] | None:
     """Share of revenue held by the top buyers — a risk number, not a vanity one."""
     per_customer: dict[str, float] = defaultdict(float)
     for order in orders:
-        key = (order.customer_email or "").strip().lower() or (order.customer_phone or "").strip()
+        key = (order.customer_email or "").strip().lower() or (
+            order.customer_phone or ""
+        ).strip()
         if not key:
             continue
         per_customer[key] += float(order.total_amount or 0)
@@ -366,44 +399,55 @@ def _sales_readings(**kwargs: Any) -> list[dict[str, Any]]:
         q1, q3 = quartiles(amounts)
         spread = (
             f" La mitad del medio de tus ventas está entre {round(q1)} y {round(q3)} {currency}."
-            if q1 is not None and q3 is not None else ""
+            if q1 is not None and q3 is not None
+            else ""
         )
-        readings.append({
-            "key": "median_ticket",
-            "title": f"Ticket mediano ({currency})",
-            "value": round(med, 2),
-            "unit": currency,
-            "confidence": "solid" if len(amounts) >= MIN_FOR_TREND
-                          else "preliminary" if len(amounts) >= MIN_TO_READ else "insufficient",
-            "reading": (
-                f"La venta típica es de {round(med)} {currency} (n={len(amounts)}).{spread} "
-                "Se usa la mediana: un solo pedido grande levanta el promedio y deja de describir "
-                "a ningún cliente real."
-            ),
-            "why_it_matters": (
-                "Es la base de cualquier cuenta: cuántas ventas necesitás para cubrir costos, y "
-                "cuánto podés gastar para conseguir un cliente."
-            ),
-        })
+        readings.append(
+            {
+                "key": "median_ticket",
+                "title": f"Ticket mediano ({currency})",
+                "value": round(med, 2),
+                "unit": currency,
+                "confidence": (
+                    "solid"
+                    if len(amounts) >= MIN_FOR_TREND
+                    else (
+                        "preliminary" if len(amounts) >= MIN_TO_READ else "insufficient"
+                    )
+                ),
+                "reading": (
+                    f"La venta típica es de {round(med)} {currency} (n={len(amounts)}).{spread} "
+                    "Se usa la mediana: un solo pedido grande levanta el promedio y deja de describir "
+                    "a ningún cliente real."
+                ),
+                "why_it_matters": (
+                    "Es la base de cualquier cuenta: cuántas ventas necesitás para cubrir costos, y "
+                    "cuánto podés gastar para conseguir un cliente."
+                ),
+            }
+        )
 
     # Payment conversion
     paid = Proportion(reached["paid"], reached["created"])
-    readings.append({
-        "key": "paid_rate",
-        "title": "Órdenes que terminaron pagadas",
-        "value": paid.percent,
-        "unit": "%",
-        "confidence": paid.confidence,
-        "reading": paid.reading("órdenes")
-        + (
-            f" Se cancelaron {lost['cancelled']} y se reembolsaron {lost['refunded']}."
-            if lost["cancelled"] or lost["refunded"] else ""
-        ),
-        "why_it_matters": (
-            "Una orden creada y no pagada es una venta perdida después del sí: suele arreglarse "
-            "con recordatorios, no con más tráfico."
-        ),
-    })
+    readings.append(
+        {
+            "key": "paid_rate",
+            "title": "Órdenes que terminaron pagadas",
+            "value": paid.percent,
+            "unit": "%",
+            "confidence": paid.confidence,
+            "reading": paid.reading("órdenes")
+            + (
+                f" Se cancelaron {lost['cancelled']} y se reembolsaron {lost['refunded']}."
+                if lost["cancelled"] or lost["refunded"]
+                else ""
+            ),
+            "why_it_matters": (
+                "Una orden creada y no pagada es una venta perdida después del sí: suele arreglarse "
+                "con recordatorios, no con más tráfico."
+            ),
+        }
+    )
 
     # Time to payment
     delays = []
@@ -413,97 +457,129 @@ def _sales_readings(**kwargs: Any) -> list[dict[str, Any]]:
             delays.append((paid_at - created).total_seconds() / 3600)
     delay_median = median(delays)
     if delay_median is not None:
-        readings.append({
-            "key": "hours_to_payment",
-            "title": "Horas hasta el pago (mediana)",
-            "value": round(delay_median, 1),
-            "unit": "h",
-            "confidence": "solid" if len(delays) >= MIN_FOR_TREND
-                          else "preliminary" if len(delays) >= MIN_TO_READ else "insufficient",
-            "reading": (
-                f"La mitad de las órdenes se pagó en {round(delay_median, 1)} horas o menos "
-                f"(n={len(delays)})."
-            ),
-            "why_it_matters": (
-                "Cuanto más tarda el pago, más chances hay de que no llegue: el recordatorio "
-                "rinde justo después de la mediana."
-            ),
-        })
+        readings.append(
+            {
+                "key": "hours_to_payment",
+                "title": "Horas hasta el pago (mediana)",
+                "value": round(delay_median, 1),
+                "unit": "h",
+                "confidence": (
+                    "solid"
+                    if len(delays) >= MIN_FOR_TREND
+                    else "preliminary" if len(delays) >= MIN_TO_READ else "insufficient"
+                ),
+                "reading": (
+                    f"La mitad de las órdenes se pagó en {round(delay_median, 1)} horas o menos "
+                    f"(n={len(delays)})."
+                ),
+                "why_it_matters": (
+                    "Cuanto más tarda el pago, más chances hay de que no llegue: el recordatorio "
+                    "rinde justo después de la mediana."
+                ),
+            }
+        )
 
     # Week over week, on real dates
     week_ago = now - timedelta(days=7)
     two_weeks_ago = now - timedelta(days=14)
-    this_week = sum(1 for o in main_orders if _aware(o.created_at) and _aware(o.created_at) >= week_ago)
+    this_week = sum(
+        1
+        for o in main_orders
+        if _aware(o.created_at) and _aware(o.created_at) >= week_ago
+    )
     last_week = sum(
-        1 for o in main_orders
+        1
+        for o in main_orders
         if _aware(o.created_at) and two_weeks_ago <= _aware(o.created_at) < week_ago
     )
     change = describe_change(this_week, last_week, "órdenes")
-    readings.append({
-        "key": "weekly_orders",
-        "title": "Órdenes esta semana",
-        "value": this_week,
-        "unit": "",
-        "confidence": "solid" if this_week + last_week >= MIN_FOR_TREND
-                      else "preliminary" if this_week + last_week >= MIN_TO_READ else "insufficient",
-        "reading": change["reading"],
-        "direction": change["direction"],
-        "why_it_matters": "El volumen manda: un ticket que sube con el volumen cayendo no es una mejora.",
-    })
+    readings.append(
+        {
+            "key": "weekly_orders",
+            "title": "Órdenes esta semana",
+            "value": this_week,
+            "unit": "",
+            "confidence": (
+                "solid"
+                if this_week + last_week >= MIN_FOR_TREND
+                else (
+                    "preliminary"
+                    if this_week + last_week >= MIN_TO_READ
+                    else "insufficient"
+                )
+            ),
+            "reading": change["reading"],
+            "direction": change["direction"],
+            "why_it_matters": "El volumen manda: un ticket que sube con el volumen cayendo no es una mejora.",
+        }
+    )
 
     # Best day — only when there is enough to distinguish one
     total_orders = sum(weekday_counts.values())
     if total_orders >= MIN_TO_READ and weekday_counts:
         best_day, best_count = max(weekday_counts.items(), key=lambda kv: kv[1])
         share = Proportion(best_count, total_orders)
-        readings.append({
-            "key": "best_weekday",
-            "title": "Día que más vende",
-            "value": WEEKDAYS[best_day],
-            "unit": "",
-            "confidence": share.confidence,
-            "reading": (
-                f"{WEEKDAYS[best_day]} concentra {best_count} de {total_orders} órdenes "
-                f"({share.percent}%). {share.reading('órdenes')}"
-            ),
-            "why_it_matters": "Es cuándo conviene publicar, mandar la campaña y tener a alguien atento.",
-        })
+        readings.append(
+            {
+                "key": "best_weekday",
+                "title": "Día que más vende",
+                "value": WEEKDAYS[best_day],
+                "unit": "",
+                "confidence": share.confidence,
+                "reading": (
+                    f"{WEEKDAYS[best_day]} concentra {best_count} de {total_orders} órdenes "
+                    f"({share.percent}%). {share.reading('órdenes')}"
+                ),
+                "why_it_matters": "Es cuándo conviene publicar, mandar la campaña y tener a alguien atento.",
+            }
+        )
     elif weekday_counts:
-        readings.append({
-            "key": "best_weekday",
-            "title": "Día que más vende",
-            "value": None,
-            "unit": "",
-            "confidence": "insufficient",
-            "reading": (
-                f"Con {total_orders} órdenes no se puede distinguir un día de otro: la diferencia "
-                "que se vea es ruido."
-            ),
-            "why_it_matters": "Es cuándo conviene publicar, mandar la campaña y tener a alguien atento.",
-        })
+        readings.append(
+            {
+                "key": "best_weekday",
+                "title": "Día que más vende",
+                "value": None,
+                "unit": "",
+                "confidence": "insufficient",
+                "reading": (
+                    f"Con {total_orders} órdenes no se puede distinguir un día de otro: la diferencia "
+                    "que se vea es ruido."
+                ),
+                "why_it_matters": "Es cuándo conviene publicar, mandar la campaña y tener a alguien atento.",
+            }
+        )
 
-    readings.append(kwargs["repeat_customers"] | {
-        "key": "repeat_rate",
-        "title": "Clientes que volvieron a comprar",
-        "value": kwargs["repeat_customers"]["repeat_rate"],
-        "unit": "%",
-        "why_it_matters": (
-            "Traer un cliente nuevo cuesta varias veces más que vender de nuevo a uno que ya "
-            "te compró: esta es la métrica que decide si crecés o reponés."
-        ),
-    })
+    readings.append(
+        kwargs["repeat_customers"]
+        | {
+            "key": "repeat_rate",
+            "title": "Clientes que volvieron a comprar",
+            "value": kwargs["repeat_customers"]["repeat_rate"],
+            "unit": "%",
+            "why_it_matters": (
+                "Traer un cliente nuevo cuesta varias veces más que vender de nuevo a uno que ya "
+                "te compró: esta es la métrica que decide si crecés o reponés."
+            ),
+        }
+    )
 
     concentration = kwargs["concentration"]
     if concentration:
-        readings.append({
-            "key": "concentration",
-            "title": "Concentración de la facturación",
-            "value": concentration.get("top_share"),
-            "unit": "%",
-            "confidence": "insufficient" if concentration.get("top_share") is None else "preliminary",
-            "reading": concentration["reading"],
-            "why_it_matters": "Mide a cuánto riesgo estás si se va un solo cliente.",
-        })
+        readings.append(
+            {
+                "key": "concentration",
+                "title": "Concentración de la facturación",
+                "value": concentration.get("top_share"),
+                "unit": "%",
+                "confidence": (
+                    "insufficient"
+                    if concentration.get("top_share") is None
+                    else "preliminary"
+                ),
+                "reading": concentration["reading"],
+                "why_it_matters": "Mide a cuánto riesgo estás si se va un solo cliente.",
+            }
+        )
 
     return readings
 
@@ -516,7 +592,11 @@ def _sales_headline(
 ) -> str:
     revenue = sum(float(o.total_amount or 0) for o in main_orders)
     week_ago = now - timedelta(days=7)
-    this_week = sum(1 for o in main_orders if _aware(o.created_at) and _aware(o.created_at) >= week_ago)
+    this_week = sum(
+        1
+        for o in main_orders
+        if _aware(o.created_at) and _aware(o.created_at) >= week_ago
+    )
     paid_pct = _pct(reached["paid"], reached["created"])
     pieces = [
         f"{len(main_orders)} órdenes en {currency} por {round(revenue)} {currency}",

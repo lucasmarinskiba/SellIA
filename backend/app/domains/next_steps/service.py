@@ -146,12 +146,20 @@ async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
         "actions": [action.__dict__ for action in actions],
         "checked": checked,
         "not_checked": [
-            name for name in (
-                "waiting_conversations", "bot_off_where_traffic_is", "unpaid_orders",
-                "unshipped_orders", "customers_without_contact", "dormant_customers",
-                "incomplete_profile", "ai_not_configured", "channel_gaps",
+            name
+            for name in (
+                "waiting_conversations",
+                "bot_off_where_traffic_is",
+                "unpaid_orders",
+                "unshipped_orders",
+                "customers_without_contact",
+                "dormant_customers",
+                "incomplete_profile",
+                "ai_not_configured",
+                "channel_gaps",
                 "reach_opportunity",
-            ) if name not in checked
+            )
+            if name not in checked
         ],
         "generated_at": now.isoformat(),
     }
@@ -169,8 +177,13 @@ async def _waiting_conversations(ctx: Ctx) -> list[Action]:
 
     convs = await db.execute(
         select(Conversation.id, ChannelConnection.platform)
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
-        .where(Conversation.business_id.in_(business_ids), Conversation.is_active.is_(True))
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
+        .where(
+            Conversation.business_id.in_(business_ids), Conversation.is_active.is_(True)
+        )
     )
     platform_of = {
         row[0]: (row[1].value if hasattr(row[1], "value") else str(row[1]))
@@ -196,7 +209,9 @@ async def _waiting_conversations(ctx: Ctx) -> list[Action]:
     if not waiting:
         return []
 
-    stale = [(c, t) for c, t in waiting if (now - t) >= timedelta(hours=STALE_REPLY_HOURS)]
+    stale = [
+        (c, t) for c, t in waiting if (now - t) >= timedelta(hours=STALE_REPLY_HOURS)
+    ]
     oldest = min((t for _, t in waiting), default=None)
     hours = round((now - oldest).total_seconds() / 3600, 1) if oldest else 0
     by_platform = Counter(platform_of[c] for c, _ in waiting)
@@ -209,7 +224,10 @@ async def _waiting_conversations(ctx: Ctx) -> list[Action]:
                 f"{len(waiting)} conversación(es) cuyo último mensaje es del comprador. "
                 f"{len(stale)} lleva(n) más de {STALE_REPLY_HOURS} horas sin respuesta; "
                 f"la más vieja espera hace {hours} horas. "
-                + " · ".join(f"{platform}: {count}" for platform, count in by_platform.most_common())
+                + " · ".join(
+                    f"{platform}: {count}"
+                    for platform, count in by_platform.most_common()
+                )
             ),
             why=(
                 "Una consulta sin responder es una venta que se va a otro lado sin dejar rastro. "
@@ -236,7 +254,10 @@ async def _bot_off_where_traffic_is(ctx: Ctx) -> list[Action]:
 
     convs = await db.execute(
         select(Conversation.id, ChannelConnection.platform)
-        .join(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+        .join(
+            ChannelConnection,
+            Conversation.channel_connection_id == ChannelConnection.id,
+        )
         .where(Conversation.business_id.in_(business_ids))
     )
     platform_of = {
@@ -247,8 +268,7 @@ async def _bot_off_where_traffic_is(ctx: Ctx) -> list[Action]:
         return []
 
     inbound = await db.execute(
-        select(Message.conversation_id)
-        .where(
+        select(Message.conversation_id).where(
             Message.conversation_id.in_(list(platform_of)),
             Message.direction == MessageDirection.INBOUND,
         )
@@ -299,14 +319,23 @@ async def _unpaid_orders(ctx: Ctx) -> list[Action]:
     from app.domains.orders.models import Order, OrderStatus
 
     result = await db.execute(
-        select(Order.id, Order.total_amount, Order.currency, Order.created_at, Order.order_number)
-        .where(
+        select(
+            Order.id,
+            Order.total_amount,
+            Order.currency,
+            Order.created_at,
+            Order.order_number,
+        ).where(
             Order.business_id.in_(business_ids),
             Order.is_active.is_(True),
             Order.status == OrderStatus.PENDING,
         )
     )
-    rows = [r for r in result.all() if _aware(r[3]) and (now - _aware(r[3])) >= timedelta(days=UNPAID_DAYS)]
+    rows = [
+        r
+        for r in result.all()
+        if _aware(r[3]) and (now - _aware(r[3])) >= timedelta(days=UNPAID_DAYS)
+    ]
     if not rows:
         return []
 
@@ -314,7 +343,8 @@ async def _unpaid_orders(ctx: Ctx) -> list[Action]:
     for _id, amount, currency, _created, _number in rows:
         by_currency[currency or "?"] += float(amount or 0)
     amounts = " · ".join(
-        f"{round(total)} {currency}" for currency, total in sorted(by_currency.items(), key=lambda kv: -kv[1])
+        f"{round(total)} {currency}"
+        for currency, total in sorted(by_currency.items(), key=lambda kv: -kv[1])
     )
     oldest = min(_aware(r[3]) for r in rows)
     days = (now - oldest).days
@@ -345,8 +375,7 @@ async def _unshipped_orders(ctx: Ctx) -> list[Action]:
     from app.domains.orders.models import Order, OrderStatus
 
     result = await db.execute(
-        select(Order.id, Order.paid_at, Order.created_at, Order.order_number)
-        .where(
+        select(Order.id, Order.paid_at, Order.created_at, Order.order_number).where(
             Order.business_id.in_(business_ids),
             Order.is_active.is_(True),
             Order.status == OrderStatus.PAID,
@@ -388,14 +417,16 @@ async def _customers_without_contact(ctx: Ctx) -> list[Action]:
     from app.domains.orders.models import Order
 
     result = await db.execute(
-        select(Order.customer_email, Order.customer_phone)
-        .where(Order.business_id.in_(business_ids), Order.is_active.is_(True))
+        select(Order.customer_email, Order.customer_phone).where(
+            Order.business_id.in_(business_ids), Order.is_active.is_(True)
+        )
     )
     rows = result.all()
     if not rows:
         return []
     missing = sum(
-        1 for email, phone in rows
+        1
+        for email, phone in rows
         if not (email or "").strip() and not (phone or "").strip()
     )
     if missing == 0 or missing < max(2, len(rows) * 0.2):
@@ -424,8 +455,13 @@ async def _dormant_customers(ctx: Ctx) -> list[Action]:
     from app.domains.orders.models import Order, PaymentStatus
 
     result = await db.execute(
-        select(Order.customer_email, Order.customer_phone, Order.created_at, Order.total_amount, Order.currency)
-        .where(
+        select(
+            Order.customer_email,
+            Order.customer_phone,
+            Order.created_at,
+            Order.total_amount,
+            Order.currency,
+        ).where(
             Order.business_id.in_(business_ids),
             Order.is_active.is_(True),
             Order.payment_status == PaymentStatus.COMPLETED,
@@ -447,7 +483,8 @@ async def _dormant_customers(ctx: Ctx) -> list[Action]:
         currency_of[key] = currency or "?"
 
     dormant = [
-        key for key, seen in last_seen.items()
+        key
+        for key, seen in last_seen.items()
         if (now - seen) >= timedelta(days=DORMANT_DAYS)
     ]
     if not dormant:
@@ -456,7 +493,9 @@ async def _dormant_customers(ctx: Ctx) -> list[Action]:
     by_currency: dict[str, float] = defaultdict(float)
     for key in dormant:
         by_currency[currency_of[key]] += spent[key]
-    amounts = " · ".join(f"{round(total)} {currency}" for currency, total in by_currency.items())
+    amounts = " · ".join(
+        f"{round(total)} {currency}" for currency, total in by_currency.items()
+    )
     oldest_days = max((now - last_seen[key]).days for key in dormant)
 
     return [
@@ -514,8 +553,10 @@ async def _ai_not_configured(ctx: Ctx) -> list[Action]:
 
     status = registry.status()
     ai_group = [
-        item for item in status.get("integrations", [])
-        if item.get("category") in ("ai", "llm") or item.get("key", "").lower() in ("anthropic", "openai", "groq")
+        item
+        for item in status.get("integrations", [])
+        if item.get("category") in ("ai", "llm")
+        or item.get("key", "").lower() in ("anthropic", "openai", "groq")
     ]
     if not ai_group:
         return []
@@ -557,19 +598,25 @@ async def _channel_gaps(ctx: Ctx) -> list[Action]:
     context = await service.get_or_create_context(ctx.user_id, ctx.business_ids[0])
     gaps = await service.analyze_channel_gaps(ctx.user_id, context.id)
 
-    critical = [gap for gap in gaps if not gap.is_configured and gap.priority == "critical"]
+    critical = [
+        gap for gap in gaps if not gap.is_configured and gap.priority == "critical"
+    ]
     if not critical:
         return []
 
     names = ", ".join(gap.channel for gap in critical)
-    playbooks = [gap.recommended_playbook for gap in critical if gap.recommended_playbook]
+    playbooks = [
+        gap.recommended_playbook for gap in critical if gap.recommended_playbook
+    ]
     return [
         Action(
             key="channel_gaps",
             title=f"Te faltan {len(critical)} canal(es) que tu rubro necesita",
             evidence=(
                 f"Sin conectar: {names}. "
-                + " · ".join(f"{gap.channel}: {gap.impact_estimate}" for gap in critical[:3])
+                + " · ".join(
+                    f"{gap.channel}: {gap.impact_estimate}" for gap in critical[:3]
+                )
             ),
             why=(
                 "Son los canales donde tus compradores ya están buscando lo que vendés. "

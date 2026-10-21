@@ -33,9 +33,12 @@ MIN_SAMPLES_FOR_PERSONALIZATION = 5
 
 # Bounds so latency-based delay adjustment never produces something absurd.
 DELAY_BOUNDS_MINUTES = {
-    "immediate": (2, 30),        # e.g. cart_abandoned step 1 (base 5m)
+    "immediate": (2, 30),  # e.g. cart_abandoned step 1 (base 5m)
     "short_followup": (30, 360),  # e.g. cart_abandoned step 2 (base 120m)
-    "long_followup": (360, 4320),  # e.g. cart_abandoned step 3 (base 1440m/24h), capped at 3 days
+    "long_followup": (
+        360,
+        4320,
+    ),  # e.g. cart_abandoned step 3 (base 1440m/24h), capped at 3 days
 }
 
 
@@ -59,7 +62,9 @@ class EngagementTimeAnalyzer:
             hour = sent_at.hour
             dow = sent_at.weekday()
 
-            engagement = (1 if send.get("opened") else 0) + (2 if send.get("clicked") else 0)
+            engagement = (1 if send.get("opened") else 0) + (
+                2 if send.get("clicked") else 0
+            )
 
             hour_scores[hour] += engagement
             hour_counts[hour] += 1
@@ -142,7 +147,9 @@ class SendTimePredictor:
         if target_hour is None:
             target_hour = prediction["recommended_hour_range"][0]
 
-        candidate = reference_date.replace(hour=target_hour, minute=0, second=0, microsecond=0)
+        candidate = reference_date.replace(
+            hour=target_hour, minute=0, second=0, microsecond=0
+        )
         if candidate <= reference_date:
             candidate += timedelta(days=1)
 
@@ -189,7 +196,9 @@ class DynamicDelayAdjuster:
     ) -> dict[str, Any]:
         """Scale a fixed base delay toward the customer's typical response
         latency, clipped to sane per-category bounds."""
-        bounds = DELAY_BOUNDS_MINUTES.get(delay_category, (base_delay_minutes // 2, base_delay_minutes * 3))
+        bounds = DELAY_BOUNDS_MINUTES.get(
+            delay_category, (base_delay_minutes // 2, base_delay_minutes * 3)
+        )
 
         if not latency_stats.get("has_data"):
             return {
@@ -235,12 +244,14 @@ class DynamicDelayAdjuster:
                 latency_stats,
                 step.get("category", "short_followup"),
             )
-            optimized.append({
-                **step,
-                "delay_minutes": result["adjusted_delay_minutes"],
-                "original_delay_minutes": step["delay_minutes"],
-                "personalized": result["personalized"],
-            })
+            optimized.append(
+                {
+                    **step,
+                    "delay_minutes": result["adjusted_delay_minutes"],
+                    "original_delay_minutes": step["delay_minutes"],
+                    "personalized": result["personalized"],
+                }
+            )
         return optimized
 
 
@@ -253,20 +264,57 @@ class AITimingOptimizerAgent:
     # these rather than hardcoding fixed minutes everywhere.
     AUTOMATION_BASE_DELAYS: ClassVar[dict] = {
         "cart_abandonment": [
-            {"step": 1, "delay_minutes": 5, "category": "immediate", "channel": "email"},
-            {"step": 2, "delay_minutes": 120, "category": "short_followup", "channel": "email"},
-            {"step": 3, "delay_minutes": 1440, "category": "long_followup", "channel": "sms"},
+            {
+                "step": 1,
+                "delay_minutes": 5,
+                "category": "immediate",
+                "channel": "email",
+            },
+            {
+                "step": 2,
+                "delay_minutes": 120,
+                "category": "short_followup",
+                "channel": "email",
+            },
+            {
+                "step": 3,
+                "delay_minutes": 1440,
+                "category": "long_followup",
+                "channel": "sms",
+            },
         ],
         "flash_sale": [
-            {"step": 1, "delay_minutes": 0, "category": "immediate", "channel": "email"},
-            {"step": 2, "delay_minutes": 240, "category": "short_followup", "channel": "email"},
-            {"step": 3, "delay_minutes": 1380, "category": "long_followup", "channel": "sms"},
-            {"step": 4, "delay_minutes": 1410, "category": "long_followup", "channel": "sms"},
+            {
+                "step": 1,
+                "delay_minutes": 0,
+                "category": "immediate",
+                "channel": "email",
+            },
+            {
+                "step": 2,
+                "delay_minutes": 240,
+                "category": "short_followup",
+                "channel": "email",
+            },
+            {
+                "step": 3,
+                "delay_minutes": 1380,
+                "category": "long_followup",
+                "channel": "sms",
+            },
+            {
+                "step": 4,
+                "delay_minutes": 1410,
+                "category": "long_followup",
+                "channel": "sms",
+            },
         ],
     }
 
     @staticmethod
-    def analyze_engagement_patterns(send_history: list[dict[str, Any]]) -> dict[str, Any]:
+    def analyze_engagement_patterns(
+        send_history: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Build the raw heatmap for a customer"""
         return EngagementTimeAnalyzer.build_heatmap(send_history)
 
@@ -293,9 +341,14 @@ class AITimingOptimizerAgent:
         """Adjust a fixed automation sequence's delays for one customer"""
         base_delays = AITimingOptimizerAgent.AUTOMATION_BASE_DELAYS.get(automation_type)
         if base_delays is None:
-            return {"error": "unknown_automation_type", "automation_type": automation_type}
+            return {
+                "error": "unknown_automation_type",
+                "automation_type": automation_type,
+            }
 
-        optimized_steps = DynamicDelayAdjuster.optimize_sequence(base_delays, send_history)
+        optimized_steps = DynamicDelayAdjuster.optimize_sequence(
+            base_delays, send_history
+        )
         latency_stats = DynamicDelayAdjuster.compute_response_latency(send_history)
 
         return {
@@ -314,8 +367,12 @@ class AITimingOptimizerAgent:
         """Full recommendation for one customer: best send window + adjusted
         delays + fatigue check (reusing Fase D's detector — timing must never
         override a cooldown recommendation)."""
-        timing = AITimingOptimizerAgent.predict_optimal_send_time(send_history, reference_date)
-        schedule = AITimingOptimizerAgent.optimize_automation_schedule(automation_type, send_history)
+        timing = AITimingOptimizerAgent.predict_optimal_send_time(
+            send_history, reference_date
+        )
+        schedule = AITimingOptimizerAgent.optimize_automation_schedule(
+            automation_type, send_history
+        )
 
         fatigue_result = FOMOFatigueDetector.detect_fatigue(send_history)
         cooldown = FOMOFatigueDetector.recommend_cooldown(fatigue_result)

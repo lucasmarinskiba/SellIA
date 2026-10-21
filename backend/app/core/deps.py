@@ -117,7 +117,8 @@ async def get_current_user_optional(
         return await get_current_user(request, db)
     except HTTPException:
         return None
-    except Exception:  # noqa: BLE001 -- a broken/expired token is not an error here
+    # a broken/expired token is not an error here
+    except Exception:  # noqa: BLE001
         return None
 
 

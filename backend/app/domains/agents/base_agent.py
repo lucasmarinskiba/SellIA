@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 class AgentType(str, Enum):
     """Agent specialization types."""
+
     DISCOVERY = "discovery"
     QUALIFICATION = "qualification"
     PROPOSAL = "proposal"
@@ -21,6 +22,7 @@ class AgentType(str, Enum):
 
 class AgentContext(BaseModel):
     """Unified context passed between agents."""
+
     lead_id: str
     company: str | None = None
     contact_name: str | None = None
@@ -60,13 +62,14 @@ class AgentContext(BaseModel):
                 "intent_score": 0.92,
                 "budget": "$50k-$100k",
                 "timeline": "Q4 2026",
-                "current_stage": "discovery"
+                "current_stage": "discovery",
             }
         }
 
 
 class AgentDecision(BaseModel):
     """Decision output from an agent."""
+
     next_agent: AgentType | None = None
     action: str  # e.g., "send_email", "schedule_call", "escalate_to_human"
     confidence: float  # 0.0-1.0

@@ -5,6 +5,7 @@ Email Sender Service
 - Retry logic + scheduling
 - Bounce/unsubscribe handling
 """
+
 import logging
 import os
 from datetime import datetime
@@ -14,6 +15,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
 # ============================================================
 # EMAIL PROVIDER ENUMS
 # ============================================================
@@ -22,6 +24,7 @@ class EmailProvider(str, Enum):
     SENDGRID = "sendgrid"
     RESEND = "resend"
     MOCK = "mock"  # For testing
+
 
 # ============================================================
 # EMAIL SENDER
@@ -62,7 +65,7 @@ class EmailSender:
         from_email: str = "noreply@sellia.io",
         from_name: str = "SellIA",
         reply_to: str | None = None,
-        tracking_id: str | None = None
+        tracking_id: str | None = None,
     ) -> dict:
         """Send email via configured provider."""
 
@@ -74,7 +77,7 @@ class EmailSender:
                 from_email=from_email,
                 from_name=from_name,
                 reply_to=reply_to,
-                tracking_id=tracking_id
+                tracking_id=tracking_id,
             )
 
         elif self.provider == EmailProvider.RESEND:
@@ -85,7 +88,7 @@ class EmailSender:
                 from_email=from_email,
                 from_name=from_name,
                 reply_to=reply_to,
-                tracking_id=tracking_id
+                tracking_id=tracking_id,
             )
 
         elif self.provider == EmailProvider.SMTP:
@@ -94,15 +97,12 @@ class EmailSender:
                 subject=subject,
                 body=body,
                 from_email=from_email,
-                from_name=from_name
+                from_name=from_name,
             )
 
         else:  # MOCK
             return self._send_mock(
-                to=to,
-                subject=subject,
-                from_email=from_email,
-                tracking_id=tracking_id
+                to=to, subject=subject, from_email=from_email, tracking_id=tracking_id
             )
 
     async def _send_sendgrid(
@@ -113,38 +113,22 @@ class EmailSender:
         from_email: str,
         from_name: str,
         reply_to: str | None,
-        tracking_id: str | None
+        tracking_id: str | None,
     ) -> dict:
         """Send via SendGrid API."""
         try:
             email_data = {
-                "personalizations": [
-                    {
-                        "to": [{"email": to}],
-                        "subject": subject
-                    }
-                ],
-                "from": {
-                    "email": from_email,
-                    "name": from_name
-                },
-                "content": [
-                    {
-                        "type": "text/html",
-                        "value": body
-                    }
-                ],
+                "personalizations": [{"to": [{"email": to}], "subject": subject}],
+                "from": {"email": from_email, "name": from_name},
+                "content": [{"type": "text/html", "value": body}],
                 "tracking_settings": {
                     "open": {"enable": True},
-                    "click": {"enable": True}
-                }
+                    "click": {"enable": True},
+                },
             }
 
             if reply_to:
-                email_data["reply_to"] = {
-                    "email": reply_to,
-                    "name": from_name
-                }
+                email_data["reply_to"] = {"email": reply_to, "name": from_name}
 
             # Add custom args for tracking
             if tracking_id:
@@ -157,10 +141,10 @@ class EmailSender:
                     "https://api.sendgrid.com/v3/mail/send",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
                     },
                     json=email_data,
-                    timeout=30
+                    timeout=30,
                 )
 
                 if response.status_code in [200, 202]:
@@ -169,23 +153,19 @@ class EmailSender:
                         "status": "sent",
                         "provider": "sendgrid",
                         "timestamp": datetime.now().isoformat(),
-                        "tracking_id": tracking_id
+                        "tracking_id": tracking_id,
                     }
                 else:
                     logger.error(f"SendGrid error: {response.text}")
                     return {
                         "status": "failed",
                         "provider": "sendgrid",
-                        "error": response.text
+                        "error": response.text,
                     }
 
         except Exception as e:
             logger.exception("SendGrid send failed")
-            return {
-                "status": "failed",
-                "provider": "sendgrid",
-                "error": str(e)
-            }
+            return {"status": "failed", "provider": "sendgrid", "error": str(e)}
 
     async def _send_resend(
         self,
@@ -195,7 +175,7 @@ class EmailSender:
         from_email: str,
         from_name: str,
         reply_to: str | None,
-        tracking_id: str | None
+        tracking_id: str | None,
     ) -> dict:
         """Send via Resend API (https://resend.com/docs/api-reference/emails/send-email)."""
         try:
@@ -217,45 +197,38 @@ class EmailSender:
                     "https://api.resend.com/emails",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
                     },
                     json=email_data,
-                    timeout=30
+                    timeout=30,
                 )
 
                 if response.status_code in [200, 201]:
                     result = response.json()
-                    logger.info(f"Email sent via Resend to {to} (id={result.get('id')})")
+                    logger.info(
+                        f"Email sent via Resend to {to} (id={result.get('id')})"
+                    )
                     return {
                         "status": "sent",
                         "provider": "resend",
                         "provider_message_id": result.get("id"),
                         "timestamp": datetime.now().isoformat(),
-                        "tracking_id": tracking_id
+                        "tracking_id": tracking_id,
                     }
                 else:
                     logger.error(f"Resend error: {response.text}")
                     return {
                         "status": "failed",
                         "provider": "resend",
-                        "error": response.text
+                        "error": response.text,
                     }
 
         except Exception as e:
             logger.exception("Resend send failed")
-            return {
-                "status": "failed",
-                "provider": "resend",
-                "error": str(e)
-            }
+            return {"status": "failed", "provider": "resend", "error": str(e)}
 
     async def _send_smtp(
-        self,
-        to: str,
-        subject: str,
-        body: str,
-        from_email: str,
-        from_name: str
+        self, to: str, subject: str, body: str, from_email: str, from_name: str
     ) -> dict:
         """Send via SMTP."""
         try:
@@ -266,23 +239,15 @@ class EmailSender:
             return {
                 "status": "sent",
                 "provider": "smtp",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         except Exception as e:
             logger.exception("SMTP send failed")
-            return {
-                "status": "failed",
-                "provider": "smtp",
-                "error": str(e)
-            }
+            return {"status": "failed", "provider": "smtp", "error": str(e)}
 
     def _send_mock(
-        self,
-        to: str,
-        subject: str,
-        from_email: str,
-        tracking_id: str | None
+        self, to: str, subject: str, from_email: str, tracking_id: str | None
     ) -> dict:
         """Mock send for testing."""
         logger.info(f"[MOCK EMAIL] To: {to}, Subject: {subject}, ID: {tracking_id}")
@@ -292,7 +257,7 @@ class EmailSender:
             "provider": "mock",
             "timestamp": datetime.now().isoformat(),
             "tracking_id": tracking_id,
-            "message": "Email sent (mock mode)"
+            "message": "Email sent (mock mode)",
         }
 
     async def mark_opened(self, tracking_id: str) -> dict:
@@ -303,7 +268,7 @@ class EmailSender:
         return {
             "tracking_id": tracking_id,
             "status": "opened",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     async def mark_clicked(self, tracking_id: str, url: str) -> dict:
@@ -315,7 +280,7 @@ class EmailSender:
             "tracking_id": tracking_id,
             "status": "clicked",
             "url": url,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     async def mark_bounced(self, email: str, reason: str) -> dict:
@@ -327,7 +292,7 @@ class EmailSender:
             "email": email,
             "status": "bounced",
             "reason": reason,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     async def mark_unsubscribed(self, email: str) -> dict:
@@ -338,8 +303,9 @@ class EmailSender:
         return {
             "email": email,
             "status": "unsubscribed",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
+
 
 # ============================================================
 # SCHEDULER
@@ -358,7 +324,7 @@ class EmailScheduler:
         lead_email: str,
         subject: str,
         body: str,
-        send_at: datetime | None = None
+        send_at: datetime | None = None,
     ) -> dict:
         """Schedule workflow email for delivery."""
 
@@ -368,13 +334,13 @@ class EmailScheduler:
                 to=lead_email,
                 subject=subject,
                 body=body,
-                tracking_id=f"wf_{workflow_execution_id}"
+                tracking_id=f"wf_{workflow_execution_id}",
             )
 
             return {
                 "workflow_execution_id": workflow_execution_id,
                 "status": result["status"],
-                "sent_at": datetime.now().isoformat()
+                "sent_at": datetime.now().isoformat(),
             }
 
         else:
@@ -384,25 +350,17 @@ class EmailScheduler:
             return {
                 "workflow_execution_id": workflow_execution_id,
                 "status": "scheduled",
-                "scheduled_for": send_at.isoformat()
+                "scheduled_for": send_at.isoformat(),
             }
 
     async def send_with_retry(
-        self,
-        to: str,
-        subject: str,
-        body: str,
-        max_retries: int = 3
+        self, to: str, subject: str, body: str, max_retries: int = 3
     ) -> dict:
         """Send email with retry logic."""
 
         for attempt in range(max_retries):
             try:
-                result = await self.sender.send_email(
-                    to=to,
-                    subject=subject,
-                    body=body
-                )
+                result = await self.sender.send_email(to=to, subject=subject, body=body)
 
                 if result["status"] == "sent":
                     return result
@@ -414,8 +372,9 @@ class EmailScheduler:
                     return {
                         "status": "failed",
                         "error": str(e),
-                        "attempts": attempt + 1
+                        "attempts": attempt + 1,
                     }
+
 
 # ============================================================
 # FACTORY
@@ -444,6 +403,7 @@ def get_email_sender(provider: str | None = None) -> EmailSender:
         return EmailSender(EmailProvider.SMTP)
     else:
         return EmailSender(EmailProvider.MOCK)
+
 
 def get_email_scheduler(provider: str | None = None) -> EmailScheduler:
     """Factory to get configured email scheduler."""

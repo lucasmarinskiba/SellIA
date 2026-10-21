@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class CloseRiskLevel(str, Enum):
     """Close probability assessment."""
+
     HIGH = "high"  # >70%
     MEDIUM = "medium"  # 40-70%
     LOW = "low"  # <40%
@@ -22,6 +23,7 @@ class CloseRiskLevel(str, Enum):
 
 class ChurnRiskLevel(str, Enum):
     """Customer churn risk."""
+
     CRITICAL = "critical"  # >70%
     HIGH = "high"  # 40-70%
     MEDIUM = "medium"  # 20-40%
@@ -30,6 +32,7 @@ class ChurnRiskLevel(str, Enum):
 
 class ExpansionPotential(str, Enum):
     """Upsell/expansion opportunity."""
+
     VERY_HIGH = "very_high"  # >80%
     HIGH = "high"  # 60-80%
     MEDIUM = "medium"  # 40-60%
@@ -40,6 +43,7 @@ class ExpansionPotential(str, Enum):
 @dataclass
 class CloseForecast:
     """Deal close prediction."""
+
     deal_id: str
     close_probability: float  # 0-1
     risk_level: CloseRiskLevel
@@ -52,6 +56,7 @@ class CloseForecast:
 @dataclass
 class ChurnForecast:
     """Customer churn prediction."""
+
     customer_id: str
     churn_probability: float  # 0-1
     risk_level: ChurnRiskLevel
@@ -64,6 +69,7 @@ class ChurnForecast:
 @dataclass
 class ExpansionScore:
     """Expansion/upsell opportunity."""
+
     customer_id: str
     expansion_probability: float  # 0-1
     expansion_potential: ExpansionPotential
@@ -128,13 +134,16 @@ class RevenueForecaster:
             time_factor = 1.0
 
         # Engagement signal scoring
-        engagement_score = min(
-            1.0,
-            (engagement_signals.get("email_opens", 0) / 10)
-            + (engagement_signals.get("calls", 0) / 5)
-            + (1.0 if engagement_signals.get("demo_attended") else 0)
-            + (1.0 if engagement_signals.get("proposal_sent") else 0),
-        ) / 4
+        engagement_score = (
+            min(
+                1.0,
+                (engagement_signals.get("email_opens", 0) / 10)
+                + (engagement_signals.get("calls", 0) / 5)
+                + (1.0 if engagement_signals.get("demo_attended") else 0)
+                + (1.0 if engagement_signals.get("proposal_sent") else 0),
+            )
+            / 4
+        )
 
         # Intent contribution
         intent_factor = 0.7 + (intent_score * 0.3)  # Intent adds 0-30%
@@ -268,22 +277,31 @@ class ChurnPredictor:
         logins_30d = engagement_signals.get("logins_30d", 0)
         support_tickets_30d = engagement_signals.get("support_tickets_30d", 0)
 
-        engagement_score = min(
-            1.0,
-            (email_opens_30d / 10) + (logins_30d / 30) + (support_tickets_30d / 5),
-        ) / 3
+        engagement_score = (
+            min(
+                1.0,
+                (email_opens_30d / 10) + (logins_30d / 30) + (support_tickets_30d / 5),
+            )
+            / 3
+        )
 
         # Usage scoring
         feature_adoption = usage_metrics.get("feature_adoption_percent", 0) / 100
         monthly_active_users = usage_metrics.get("monthly_active_users", 0)
         data_growth = usage_metrics.get("data_growth_percent", 0) / 100
 
-        usage_score = (feature_adoption + min(1.0, monthly_active_users / 10) + min(1.0, data_growth)) / 3
+        usage_score = (
+            feature_adoption
+            + min(1.0, monthly_active_users / 10)
+            + min(1.0, data_growth)
+        ) / 3
 
         # Satisfaction scoring
         satisfaction_score = 1.0
         if nps_score is not None:
-            satisfaction_score = max(0.0, (nps_score + 100) / 200)  # -100 to 100 NPS → 0 to 1
+            satisfaction_score = max(
+                0.0, (nps_score + 100) / 200
+            )  # -100 to 100 NPS → 0 to 1
 
         # Time-based factor (longer subscribers = lower churn)
         tenure_factor = min(1.0, subscription_months / 24)  # 0-2 years
@@ -326,9 +344,7 @@ class ChurnPredictor:
 
         # Retention score (actions to take)
         retention_score = (
-            engagement_score * 30
-            + usage_score * 30
-            + satisfaction_score * 40
+            engagement_score * 30 + usage_score * 30 + satisfaction_score * 40
         )
 
         return ChurnForecast(
@@ -396,7 +412,11 @@ class ExpansionScorer:
             expansion_prob += 0.08
 
         # Spending vs benchmark
-        spending_ratio = annual_revenue_with_us / industry_benchmark_spending if industry_benchmark_spending else 1.0
+        spending_ratio = (
+            annual_revenue_with_us / industry_benchmark_spending
+            if industry_benchmark_spending
+            else 1.0
+        )
         if spending_ratio > 0.8:
             expansion_prob += 0.1  # Already spending a lot
         elif spending_ratio < 0.3:
@@ -430,8 +450,8 @@ class ExpansionScorer:
             if current_idx < len(tier_hierarchy) - 1:
                 next_tier = tier_hierarchy[current_idx + 1]
                 next_config = self.product_tiers[next_tier]
-                expansion_value = (
-                    next_config["annual_price"] - current_config.get("annual_price", 0)
+                expansion_value = next_config["annual_price"] - current_config.get(
+                    "annual_price", 0
                 )
                 recommended.append(
                     {
@@ -456,7 +476,9 @@ class ExpansionScorer:
             customer_id=customer_id,
             expansion_probability=expansion_prob,
             expansion_potential=potential,
-            estimated_expansion_value=sum(r.get("estimated_value", 0) for r in recommended),
+            estimated_expansion_value=sum(
+                r.get("estimated_value", 0) for r in recommended
+            ),
             recommended_products=recommended,
             time_to_expand_months=months_to_expand,
         )

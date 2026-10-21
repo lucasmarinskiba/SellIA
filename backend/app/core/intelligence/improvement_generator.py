@@ -93,7 +93,9 @@ Generate improvement proposals based on this data."""
         for imp in improvements:
             await db.refresh(imp)
 
-        logger.info(f"Generated {len(improvements)} system improvements from health report")
+        logger.info(
+            f"Generated {len(improvements)} system improvements from health report"
+        )
         return improvements
 
     except Exception:

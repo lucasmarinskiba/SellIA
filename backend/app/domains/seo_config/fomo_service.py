@@ -67,7 +67,9 @@ class FOMAConversionService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
-            logger.info(f"Duplicate conversion ignored: {link_id} on {platform_name} ({external_event_id})")
+            logger.info(
+                f"Duplicate conversion ignored: {link_id} on {platform_name} ({external_event_id})"
+            )
             return None
         await self.db.refresh(event)
 

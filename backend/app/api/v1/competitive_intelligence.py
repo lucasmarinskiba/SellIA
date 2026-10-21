@@ -61,7 +61,7 @@ def add_competitor(
         latitude=request.latitude,
         longitude=request.longitude,
         threat_level=request.threat_level,
-        db=db
+        db=db,
     )
 
 
@@ -81,7 +81,7 @@ def log_competitor_pricing(
         discounted_price=request.discounted_price,
         in_stock=request.in_stock,
         source=request.source,
-        db=db
+        db=db,
     )
 
 
@@ -102,7 +102,7 @@ def add_competitor_offering(
         features=request.features,
         our_has_equivalent=request.our_has_equivalent,
         competitive_advantage=request.competitive_advantage,
-        db=db
+        db=db,
     )
 
 
@@ -114,9 +114,7 @@ def get_competitive_position(
 ):
     """Get competitive position summary."""
     return CompetitiveIntelligenceService.get_competitive_position(
-        business_id=business_id,
-        date=date,
-        db=db
+        business_id=business_id, date=date, db=db
     )
 
 
@@ -129,10 +127,7 @@ def get_price_benchmark(
 ):
     """Get price benchmarking for product."""
     return CompetitiveIntelligenceService.get_price_benchmarking(
-        business_id=business_id,
-        product_name=product_name,
-        days=days,
-        db=db
+        business_id=business_id, product_name=product_name, days=days, db=db
     )
 
 
@@ -143,8 +138,7 @@ def get_offering_gaps(
 ):
     """Identify feature/offering gaps vs competitors."""
     return CompetitiveIntelligenceService.get_offering_gaps(
-        business_id=business_id,
-        db=db
+        business_id=business_id, db=db
     )
 
 
@@ -152,13 +146,12 @@ def get_offering_gaps(
 def get_competitors(
     business_id: UUID,
     db: Annotated[Session, Depends(get_db)],
-    threat_level: Annotated[str | None, Query(description="low, medium, high, critical")] = None,
+    threat_level: Annotated[
+        str | None, Query(description="low, medium, high, critical")
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     """Get list of tracked competitors."""
     return CompetitiveIntelligenceService.get_competitor_list(
-        business_id=business_id,
-        threat_level=threat_level,
-        limit=limit,
-        db=db
+        business_id=business_id, threat_level=threat_level, limit=limit, db=db
     )

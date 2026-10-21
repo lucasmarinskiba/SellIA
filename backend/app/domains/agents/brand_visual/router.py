@@ -19,7 +19,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/agents/brand-visual", tags=["brand-visual"])
 
 
-@router.post("/generate", response_model=BrandKitJobResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=BrandKitJobResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_brand_kit(
     req: BrandKitGenerateRequest,
     db: Annotated[AsyncSession, Depends(get_db)],

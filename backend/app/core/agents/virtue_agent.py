@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class HonestySeverity(str, Enum):
     """Severity of honesty violation."""
+
     CRITICAL = "critical"  # Outright lie
     HIGH = "high"  # Misleading claim
     MEDIUM = "medium"  # Exaggerated benefit
@@ -26,6 +27,7 @@ class HonestySeverity(str, Enum):
 
 class IntegrityCheck(str, Enum):
     """Types of integrity checks."""
+
     PROMISE_DELIVERY = "promise_delivery"  # Promise matches delivery
     TIMELINE_ADHERENCE = "timeline_adherence"  # Delivers on time
     QUALITY_CONSISTENCY = "quality_consistency"  # Quality matches claim
@@ -65,7 +67,9 @@ class VirtueAgent:
     }
 
     @staticmethod
-    def validate_honesty(claim: str, product_data: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    def validate_honesty(
+        claim: str, product_data: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Validate if a claim is honest and not misleading.
 
@@ -85,47 +89,62 @@ class VirtueAgent:
         # Check 1: Prohibited claims
         for prohibited in VirtueAgent.PROHIBITED_CLAIMS:
             if prohibited.lower() in claim.lower():
-                details["violations"].append({
-                    "type": "prohibited_claim",
-                    "severity": HonestySeverity.CRITICAL,
-                    "claim": prohibited,
-                    "reason": f"'{prohibited}' is a prohibited absolute claim",
-                    "suggestion": "Reframe as 'often helps', 'works for many', 'typically', etc.",
-                })
+                details["violations"].append(
+                    {
+                        "type": "prohibited_claim",
+                        "severity": HonestySeverity.CRITICAL,
+                        "claim": prohibited,
+                        "reason": f"'{prohibited}' is a prohibited absolute claim",
+                        "suggestion": "Reframe as 'often helps', 'works for many', 'typically', etc.",
+                    }
+                )
                 details["is_honest"] = False
 
         # Check 2: Unverified superlatives
         superlatives = ["best", "fastest", "cheapest", "#1", "only"]
         for word in superlatives:
-            if word.lower() in claim.lower() and not product_data.get(f"verified_{word}", False):
-                details["warnings"].append({
-                    "type": "unverified_superlative",
-                    "severity": HonestySeverity.HIGH,
-                    "claim": word,
-                    "reason": f"'{word}' not verified in product data",
-                    "suggestion": "Use 'among the', 'typically', or remove superlative",
-                })
+            if word.lower() in claim.lower() and not product_data.get(
+                f"verified_{word}", False
+            ):
+                details["warnings"].append(
+                    {
+                        "type": "unverified_superlative",
+                        "severity": HonestySeverity.HIGH,
+                        "claim": word,
+                        "reason": f"'{word}' not verified in product data",
+                        "suggestion": "Use 'among the', 'typically', or remove superlative",
+                    }
+                )
 
         # Check 3: Certainty language (should use possibility)
         certainty_words = ["will", "always", "never", "guaranteed", "certain"]
         for word in certainty_words:
-            if word.lower() in claim.lower() and not product_data.get("highly_predictable", False):
-                details["warnings"].append({
-                    "type": "overconfident_language",
-                    "severity": HonestySeverity.MEDIUM,
-                    "word": word,
-                    "reason": "Using absolute certainty without verification",
-                    "suggestion": "Replace with 'typically', 'often', 'can', 'might'",
-                })
+            if word.lower() in claim.lower() and not product_data.get(
+                "highly_predictable", False
+            ):
+                details["warnings"].append(
+                    {
+                        "type": "overconfident_language",
+                        "severity": HonestySeverity.MEDIUM,
+                        "word": word,
+                        "reason": "Using absolute certainty without verification",
+                        "suggestion": "Replace with 'typically', 'often', 'can', 'might'",
+                    }
+                )
 
         # Check 4: Missing required transparency
         for required_type, requirement in VirtueAgent.REQUIRED_TRANSPARENCY.items():
-            if required_type in product_data and (not claim.lower().__contains__(required_type) and product_data.get(f"must_disclose_{required_type}", True)):
-                details["suggestions"].append({
-                    "type": "missing_transparency",
-                    "requirement": required_type,
-                    "message": requirement,
-                })
+            if required_type in product_data and (
+                not claim.lower().__contains__(required_type)
+                and product_data.get(f"must_disclose_{required_type}", True)
+            ):
+                details["suggestions"].append(
+                    {
+                        "type": "missing_transparency",
+                        "requirement": required_type,
+                        "message": requirement,
+                    }
+                )
 
         return details["is_honest"], details
 
@@ -168,9 +187,12 @@ class VirtueAgent:
 
             if promised_date and actual_date:
                 from datetime import datetime
+
                 try:
-                    delta_days = (datetime.fromisoformat(actual_date) -
-                                datetime.fromisoformat(promised_date)).days
+                    delta_days = (
+                        datetime.fromisoformat(actual_date)
+                        - datetime.fromisoformat(promised_date)
+                    ).days
                     if delta_days > 0:
                         details["checks"]["timeline"] = {
                             "status": "delayed",
@@ -195,11 +217,13 @@ class VirtueAgent:
             details["integrity_maintained"] = False
 
             # Action: explain gaps and offer remedy
-            details["actions"].append({
-                "type": "communicate_gap",
-                "message": f"Transparently explain why features {missing_features} are missing",
-                "remedy": "Offer timeline + compensation or alternatives",
-            })
+            details["actions"].append(
+                {
+                    "type": "communicate_gap",
+                    "message": f"Transparently explain why features {missing_features} are missing",
+                    "remedy": "Offer timeline + compensation or alternatives",
+                }
+            )
 
         # Check 4: Quality consistency
         expected_quality = delivery.get("expected_quality", 0)
@@ -240,48 +264,94 @@ class VirtueAgent:
 
         # Dark pattern detection
         dark_patterns = {
-            "false_urgency": ["hurry", "last chance", "today only", "act now", "before it's gone"],
-            "fake_scarcity": ["only 3 left", "running out", "limited spots", "exclusive"],
-            "social_proof_abuse": ["everyone is buying", "trending", "viral", "everyone loves"],
-            "authority_abuse": ["doctors recommend", "experts say", "scientific", "proven"],
+            "false_urgency": [
+                "hurry",
+                "last chance",
+                "today only",
+                "act now",
+                "before it's gone",
+            ],
+            "fake_scarcity": [
+                "only 3 left",
+                "running out",
+                "limited spots",
+                "exclusive",
+            ],
+            "social_proof_abuse": [
+                "everyone is buying",
+                "trending",
+                "viral",
+                "everyone loves",
+            ],
+            "authority_abuse": [
+                "doctors recommend",
+                "experts say",
+                "scientific",
+                "proven",
+            ],
         }
 
         for pattern, keywords in dark_patterns.items():
             for keyword in keywords:
-                if keyword.lower() in message.lower() and not audience.get(f"verified_{pattern}", False):
-                    details["violations"].append({
-                        "type": "dark_pattern",
-                        "pattern": pattern,
-                        "keyword": keyword,
-                        "severity": HonestySeverity.HIGH,
-                        "message": f"Unverified '{pattern}' detected",
-                    })
+                if keyword.lower() in message.lower() and not audience.get(
+                    f"verified_{pattern}", False
+                ):
+                    details["violations"].append(
+                        {
+                            "type": "dark_pattern",
+                            "pattern": pattern,
+                            "keyword": keyword,
+                            "severity": HonestySeverity.HIGH,
+                            "message": f"Unverified '{pattern}' detected",
+                        }
+                    )
                     details["respectful"] = False
 
         # Manipulation check: targeting vulnerabilities
-        emotional_triggers = ["desperate", "fail", "stupid", "worthless", "shame", "afraid"]
+        emotional_triggers = [
+            "desperate",
+            "fail",
+            "stupid",
+            "worthless",
+            "shame",
+            "afraid",
+        ]
         for trigger in emotional_triggers:
             if trigger.lower() in message.lower():
-                details["warnings"].append({
-                    "type": "emotional_manipulation",
-                    "trigger": trigger,
-                    "message": "Message may be manipulating emotional vulnerabilities",
-                    "fix": "Remove emotional triggers, focus on rational benefits",
-                })
+                details["warnings"].append(
+                    {
+                        "type": "emotional_manipulation",
+                        "trigger": trigger,
+                        "message": "Message may be manipulating emotional vulnerabilities",
+                        "fix": "Remove emotional triggers, focus on rational benefits",
+                    }
+                )
 
         # User-centric check
-        user_benefit_keywords = ["you save", "you gain", "you get", "your success", "your benefit"]
+        user_benefit_keywords = [
+            "you save",
+            "you gain",
+            "you get",
+            "your success",
+            "your benefit",
+        ]
         seller_benefit_keywords = ["our growth", "our profit", "our revenue"]
 
-        user_benefit_count = sum(1 for kw in user_benefit_keywords if kw in message.lower())
-        seller_benefit_count = sum(1 for kw in seller_benefit_keywords if kw in message.lower())
+        user_benefit_count = sum(
+            1 for kw in user_benefit_keywords if kw in message.lower()
+        )
+        seller_benefit_count = sum(
+            1 for kw in seller_benefit_keywords if kw in message.lower()
+        )
 
         if seller_benefit_count > user_benefit_count:
-            details["warnings"].append({
-                "type": "not_user_centric",
-                "message": "Message is more focused on seller benefits than user benefits",
-                "fix": "Reframe message to emphasize user value proposition",
-            })
+            details["warnings"].append(
+                {
+                    "type": "not_user_centric",
+                    "message": "Message is more focused on seller benefits than user benefits",
+                    "fix": "Reframe message to emphasize user value proposition",
+                }
+            )
 
         return details["respectful"], details
 
@@ -314,25 +384,33 @@ class VirtueAgent:
                 details["transparent"] = False
 
                 if item == "limitations":
-                    details["suggestions"].append({
-                        "type": "missing_limitation",
-                        "message": "Add product limitations: 'Note: works best with X, may not suit Y'",
-                    })
+                    details["suggestions"].append(
+                        {
+                            "type": "missing_limitation",
+                            "message": "Add product limitations: 'Note: works best with X, may not suit Y'",
+                        }
+                    )
                 elif item == "pricing":
-                    details["suggestions"].append({
-                        "type": "missing_pricing",
-                        "message": "Full pricing must be visible: base + taxes + fees",
-                    })
+                    details["suggestions"].append(
+                        {
+                            "type": "missing_pricing",
+                            "message": "Full pricing must be visible: base + taxes + fees",
+                        }
+                    )
                 elif item == "trial_length":
-                    details["suggestions"].append({
-                        "type": "missing_trial",
-                        "message": "Trial ends on [DATE]. Disclose cancellation terms.",
-                    })
+                    details["suggestions"].append(
+                        {
+                            "type": "missing_trial",
+                            "message": "Trial ends on [DATE]. Disclose cancellation terms.",
+                        }
+                    )
                 elif item == "refund_policy":
-                    details["suggestions"].append({
-                        "type": "missing_refund",
-                        "message": "Be explicit: 'X days money-back guarantee, no questions'",
-                    })
+                    details["suggestions"].append(
+                        {
+                            "type": "missing_refund",
+                            "message": "Be explicit: 'X days money-back guarantee, no questions'",
+                        }
+                    )
 
         return details["transparent"], details
 
@@ -360,7 +438,9 @@ class VirtueAgent:
 
         # Honesty
         is_honest, honesty_details = VirtueAgent.validate_honesty(claim, product)
-        honesty_score = 100 if is_honest else max(0, 100 - len(honesty_details["violations"]) * 25)
+        honesty_score = (
+            100 if is_honest else max(0, 100 - len(honesty_details["violations"]) * 25)
+        )
 
         # Integrity
         is_integral, integrity_details = VirtueAgent.check_integrity(
@@ -368,7 +448,9 @@ class VirtueAgent:
             delivery,
             product.get("timeline", {}),
         )
-        integrity_score = 100 if is_integral else max(0, 100 - len(integrity_details["gaps"]) * 20)
+        integrity_score = (
+            100 if is_integral else max(0, 100 - len(integrity_details["gaps"]) * 20)
+        )
 
         # Respect
         is_respectful, respect_details = VirtueAgent.enforce_respect_framework(
@@ -376,17 +458,23 @@ class VirtueAgent:
             claim,
             "sales",
         )
-        respect_score = 100 if is_respectful else max(0, 100 - len(respect_details["violations"]) * 15)
+        respect_score = (
+            100
+            if is_respectful
+            else max(0, 100 - len(respect_details["violations"]) * 15)
+        )
 
         # Transparency (simplified)
-        transparency_score = 90 if len(honesty_details.get("suggestions", [])) < 3 else 60
+        transparency_score = (
+            90 if len(honesty_details.get("suggestions", [])) < 3 else 60
+        )
 
         # Weighted score
         virtue_score = (
-            honesty_score * 0.40 +
-            integrity_score * 0.30 +
-            respect_score * 0.20 +
-            transparency_score * 0.10
+            honesty_score * 0.40
+            + integrity_score * 0.30
+            + respect_score * 0.20
+            + transparency_score * 0.10
         )
 
         return {
@@ -400,8 +488,8 @@ class VirtueAgent:
             },
             "violations": honesty_details.get("violations", []),
             "warnings": (
-                honesty_details.get("warnings", []) +
-                respect_details.get("warnings", [])
+                honesty_details.get("warnings", [])
+                + respect_details.get("warnings", [])
             ),
             "recommendations": honesty_details.get("suggestions", []),
         }

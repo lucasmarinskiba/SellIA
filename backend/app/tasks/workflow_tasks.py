@@ -29,13 +29,21 @@ logger = logging.getLogger(__name__)
 
 # Helper para correr código async desde sync Celery
 @shared_task(bind=True, max_retries=3)
-def execute_workflow_task(self, execution_id: str, business_id: str, selected_actions: list[dict[str, Any]] | None = None):
+def execute_workflow_task(
+    self,
+    execution_id: str,
+    business_id: str,
+    selected_actions: list[dict[str, Any]] | None = None,
+):
     """Execute a workflow via Celery task."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.domains.automations.engine import WorkflowEngine
+
             engine = WorkflowEngine(db)
             from uuid import UUID
+
             await engine.execute_workflow(
                 execution_id=UUID(execution_id),
                 business_id=UUID(business_id),
@@ -46,19 +54,28 @@ def execute_workflow_task(self, execution_id: str, business_id: str, selected_ac
         # separate short session, after the workflow's own commit, so a
         # logging hiccup never rolls back or blocks the real execution above.
         async with AsyncSessionLocal() as db2:
-            result = await db2.execute(select(Business.user_id).where(Business.id == business_id))
+            result = await db2.execute(
+                select(Business.user_id).where(Business.id == business_id)
+            )
             owner_id = result.scalar_one_or_none()
         if owner_id:
             from app.domains.ai_activity.service import log_ai_action
+
             wf_name = None
             try:
                 async with AsyncSessionLocal() as db3:
                     wf_result = await db3.execute(
-                        select(WorkflowExecution).where(WorkflowExecution.id == execution_id)
+                        select(WorkflowExecution).where(
+                            WorkflowExecution.id == execution_id
+                        )
                     )
                     execution = wf_result.scalar_one_or_none()
                     if execution:
-                        wf_row = await db3.execute(select(Workflow.name).where(Workflow.id == execution.workflow_id))
+                        wf_row = await db3.execute(
+                            select(Workflow.name).where(
+                                Workflow.id == execution.workflow_id
+                            )
+                        )
                         wf_name = wf_row.scalar_one_or_none()
             except Exception:
                 logger.exception("_run: error inesperado")
@@ -69,7 +86,10 @@ def execute_workflow_task(self, execution_id: str, business_id: str, selected_ac
                 actor_id="automation.workflow_engine",
                 action="workflow_executed",
                 summary=f"Workflow ejecutado: {wf_name or execution_id}",
-                payload={"execution_id": execution_id, "selected_actions": selected_actions},
+                payload={
+                    "execution_id": execution_id,
+                    "selected_actions": selected_actions,
+                },
             )
 
     try:
@@ -95,11 +115,14 @@ def _inject_tracking(body: str, tracking_token: str, base_url: str) -> str:
 
     # Wrap links
     import re
+
     link_pattern = re.compile(r'href=["\'](https?://[^"\']+)["\']', re.IGNORECASE)
 
     def replace_link(match):
         original_url = match.group(1)
-        tracked_url = f"{base_url}/api/v1/track/click/{tracking_token}?url={original_url}"
+        tracked_url = (
+            f"{base_url}/api/v1/track/click/{tracking_token}?url={original_url}"
+        )
         return f'href="{tracked_url}"'
 
     body = link_pattern.sub(replace_link, body)
@@ -112,13 +135,16 @@ def send_sequence_email_task(
     step_id: str,
 ):
     """Send a specific step of an email sequence. Supports AI-generated content and tracking."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             import secrets
 
             # Get subscription
             result = await db.execute(
-                select(SequenceSubscription).where(SequenceSubscription.id == subscription_id)
+                select(SequenceSubscription).where(
+                    SequenceSubscription.id == subscription_id
+                )
             )
             subscription = result.scalar_one_or_none()
             if not subscription or subscription.status != "active":
@@ -164,6 +190,7 @@ def send_sequence_email_task(
 
             if ai_personality:
                 from app.domains.agents.ai_reply import generate_ai_response
+
                 ai_prompt = step_extra.get("ai_prompt", "")
                 template_guide = ""
                 if template:
@@ -187,28 +214,39 @@ Write ONLY the email body text. Be concise and compelling."""
                     max_tokens=2000,
                 )
 
-                ai_subject = step.subject_override or (template.subject if template else "Mensaje")
+                ai_subject = step.subject_override or (
+                    template.subject if template else "Mensaje"
+                )
                 if ai_body:
                     body = ai_body
                     subject = ai_subject
                 else:
-                    body = step.body_override or (template.body_text if template else "")
+                    body = step.body_override or (
+                        template.body_text if template else ""
+                    )
                     subject = ai_subject
             else:
-                subject = step.subject_override or (template.subject if template else "Mensaje")
+                subject = step.subject_override or (
+                    template.subject if template else "Mensaje"
+                )
                 body = step.body_override or (template.body_text if template else "")
 
             # Variable substitution
             lead_name = conversation.lead_name or ""
             business_name = business.name if business else ""
-            subject = subject.replace("{{lead_name}}", lead_name).replace("{{business_name}}", business_name)
-            body = body.replace("{{lead_name}}", lead_name).replace("{{business_name}}", business_name)
+            subject = subject.replace("{{lead_name}}", lead_name).replace(
+                "{{business_name}}", business_name
+            )
+            body = body.replace("{{lead_name}}", lead_name).replace(
+                "{{business_name}}", business_name
+            )
 
             # Generate tracking token
             tracking_token = secrets.token_urlsafe(24)
 
             # Build tracking URL base
             from app.core.config import get_settings
+
             settings = get_settings()
             base_url = settings.TRACKING_BASE_URL or "http://localhost:8000"
 
@@ -219,7 +257,11 @@ Write ONLY the email body text. Be concise and compelling."""
                 # Also inject text body as fallback
                 content_text = body
             else:
-                _inject_tracking(f"<html><body><p>{body.replace(chr(10), '<br/>')}</p></body></html>", tracking_token, base_url)
+                _inject_tracking(
+                    f"<html><body><p>{body.replace(chr(10), '<br/>')}</p></body></html>",
+                    tracking_token,
+                    base_url,
+                )
                 content_text = body
 
             # Get SMTP credentials from business email channel
@@ -236,6 +278,7 @@ Write ONLY the email body text. Be concise and compelling."""
 
             # Send email
             from app.domains.channels.connectors.email import EmailConnector
+
             connector = EmailConnector(credentials, channel_settings)
 
             # Create email log
@@ -278,6 +321,7 @@ Write ONLY the email body text. Be concise and compelling."""
 
                 if business and business.user_id:
                     from app.domains.ai_activity.service import log_ai_action
+
                     await log_ai_action(
                         user_id=business.user_id,
                         business_id=business_id,
@@ -285,13 +329,18 @@ Write ONLY the email body text. Be concise and compelling."""
                         actor_id="automation.send_sequence_email",
                         action="email_sent",
                         summary=f"Email de secuencia enviado a {conversation.lead_email}: {subject}",
-                        payload={"subscription_id": str(subscription.id), "step_id": step_id, "subject": subject},
+                        payload={
+                            "subscription_id": str(subscription.id),
+                            "step_id": step_id,
+                            "subject": subject,
+                        },
                     )
             except Exception as e:
                 logger.exception("_run: error inesperado")
                 log.status = "failed"
                 await db.commit()
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Failed to send email: {e}")
 
     run_async(_run())
@@ -300,12 +349,15 @@ Write ONLY the email body text. Be concise and compelling."""
 @shared_task
 def check_pending_workflows():
     """Check for workflow executions that need to be resumed."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(WorkflowExecution).where(
+                select(WorkflowExecution)
+                .where(
                     WorkflowExecution.status == "running",
-                ).order_by(WorkflowExecution.executed_at)
+                )
+                .order_by(WorkflowExecution.executed_at)
             )
             executions = result.scalars().all()
 
@@ -323,7 +375,9 @@ def check_pending_workflows():
                         if now >= resume_at:
                             # Resume via Celery task
                             wf_result = await db.execute(
-                                select(Workflow).where(Workflow.id == execution.workflow_id)
+                                select(Workflow).where(
+                                    Workflow.id == execution.workflow_id
+                                )
                             )
                             workflow = wf_result.scalar_one_or_none()
                             if workflow:
@@ -338,6 +392,7 @@ def check_pending_workflows():
 @shared_task
 def check_email_sequences():
     """Check for email sequence steps that need to be sent."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             now = datetime.now(UTC)
@@ -353,10 +408,12 @@ def check_email_sequences():
             for sub in subscriptions:
                 # Get sequence steps
                 result = await db.execute(
-                    select(SequenceStep).where(
+                    select(SequenceStep)
+                    .where(
                         SequenceStep.sequence_id == sub.sequence_id,
                         SequenceStep.is_active == True,
-                    ).order_by(SequenceStep.step_order)
+                    )
+                    .order_by(SequenceStep.step_order)
                 )
                 steps = result.scalars().all()
 
@@ -370,7 +427,9 @@ def check_email_sequences():
 
                 # Calculate due time
                 if sub.last_sent_at:
-                    delay = timedelta(hours=next_step.delay_hours, minutes=next_step.delay_minutes)
+                    delay = timedelta(
+                        hours=next_step.delay_hours, minutes=next_step.delay_minutes
+                    )
                     due_at = sub.last_sent_at + delay
                 else:
                     # First step: send immediately (or after a small delay)
@@ -395,7 +454,9 @@ def check_email_sequences():
                                     SequenceEmailLog.opened_at != None,
                                 )
                             )
-                            was_opened = prev_log_result.scalar_one_or_none() is not None
+                            was_opened = (
+                                prev_log_result.scalar_one_or_none() is not None
+                            )
                             if expected == "yes" and not was_opened:
                                 continue
                             if expected == "no" and was_opened:
@@ -411,7 +472,9 @@ def check_email_sequences():
                                     SequenceEmailLog.clicked_at != None,
                                 )
                             )
-                            was_clicked = prev_log_result.scalar_one_or_none() is not None
+                            was_clicked = (
+                                prev_log_result.scalar_one_or_none() is not None
+                            )
                             if expected == "yes" and not was_clicked:
                                 continue
                             if expected == "no" and was_clicked:
@@ -440,22 +503,26 @@ def check_human_handoffs():
         queue_len = r.llen("human_handoff_queue")
         if queue_len > 0:
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"{queue_len} conversations awaiting human")
             # TODO: Send push notifications, emails, or WebSocket events to dashboard
         r.close()
     except Exception as e:
         logger.exception("check_human_handoffs: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"Redis error: {e}")
 
 
 @shared_task
 def calculate_lead_score_task(conversation_id: str, business_id: str):
     """Recalculate lead score for a conversation."""
+
     async def _run():
         from uuid import UUID
 
         from app.domains.crm.scoring import LeadScoringEngine
+
         async with AsyncSessionLocal() as db:
             engine = LeadScoringEngine(db)
             await engine.calculate_score(
@@ -469,12 +536,15 @@ def calculate_lead_score_task(conversation_id: str, business_id: str):
 @shared_task
 def check_deals_stalled():
     """Check for stalled deals and generate alerts."""
+
     async def _run():
         from app.domains.alerts.engine import AlertEngine
+
         async with AsyncSessionLocal() as db:
             engine = AlertEngine(db)
             alerts = await engine.check_deal_stalled()
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Generated {len(alerts)} stalled deal alerts")
 
     run_async(_run())
@@ -483,13 +553,18 @@ def check_deals_stalled():
 @shared_task
 def check_hot_leads_no_deal():
     """Check for hot leads without deals and generate alerts."""
+
     async def _run():
         from app.domains.alerts.engine import AlertEngine
+
         async with AsyncSessionLocal() as db:
             engine = AlertEngine(db)
             alerts = await engine.check_hot_leads_no_deal()
             from app.core.logger import get_logger
-            get_logger(__name__).info(f"Generated {len(alerts)} hot-lead-no-deal alerts")
+
+            get_logger(__name__).info(
+                f"Generated {len(alerts)} hot-lead-no-deal alerts"
+            )
 
     run_async(_run())
 
@@ -497,12 +572,15 @@ def check_hot_leads_no_deal():
 @shared_task
 def check_abandoned_carts():
     """Check for abandoned carts and generate alerts."""
+
     async def _run():
         from app.domains.alerts.engine import AlertEngine
+
         async with AsyncSessionLocal() as db:
             engine = AlertEngine(db)
             alerts = await engine.check_abandoned_carts()
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Generated {len(alerts)} abandoned cart alerts")
 
     run_async(_run())
@@ -511,26 +589,31 @@ def check_abandoned_carts():
 @shared_task
 def check_no_reply_conversations():
     """Check for conversations with no reply and generate alerts."""
+
     async def _run():
         from app.domains.alerts.engine import AlertEngine
+
         async with AsyncSessionLocal() as db:
             engine = AlertEngine(db)
             alerts = await engine.check_no_reply()
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Generated {len(alerts)} no-reply alerts")
 
     run_async(_run())
 
 
-
 @shared_task
 def check_upcoming_appointments():
     """Check for upcoming appointments and send reminders."""
+
     async def _run():
         from app.domains.services import services as svc_services
+
         async with AsyncSessionLocal() as db:
             result = await svc_services.check_upcoming_appointments(db)
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Appointment reminders: {result}")
 
     run_async(_run())
@@ -539,11 +622,14 @@ def check_upcoming_appointments():
 @shared_task
 def process_no_show_appointments():
     """Mark past appointments without completion as no-show."""
+
     async def _run():
         from app.domains.services import services as svc_services
+
         async with AsyncSessionLocal() as db:
             count = await svc_services.process_no_shows(db)
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"No-shows processed: {count}")
 
     run_async(_run())
@@ -552,11 +638,14 @@ def process_no_show_appointments():
 @shared_task
 def request_pending_confirmations():
     """Request confirmation for pending appointments within 48h."""
+
     async def _run():
         from app.domains.services import services as svc_services
+
         async with AsyncSessionLocal() as db:
             count = await svc_services.request_pending_confirmations(db)
             from app.core.logger import get_logger
+
             get_logger(__name__).info(f"Confirmations requested: {count}")
 
     run_async(_run())

@@ -59,6 +59,7 @@ async def get_user_id(request: Request) -> str:
 async def get_db():
     """Get database session"""
     from app.core.database import get_db as _get_db
+
     async for session in _get_db():
         yield session
 
@@ -79,6 +80,7 @@ async def _ensure_memory_row(user_id: str, db) -> None:
     events, interests, challenges) before ever calling GET /me silently
     no-op'd against a nonexistent row."""
     from sqlalchemy import text
+
     await db.execute(
         text("""INSERT INTO user_memory
         (id, user_id, preferred_language, preferred_tone, industry_focus, business_stage,
@@ -90,7 +92,7 @@ async def _ensure_memory_row(user_id: str, db) -> None:
         '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
         0, 0, '[]'::jsonb, '[]'::jsonb, 0.0, 0.0, 0.0, 'low', NOW(), NOW(), NOW())
         ON CONFLICT (user_id) DO NOTHING"""),
-        {"uid": user_id, "new_id": str(uuid.uuid4())}
+        {"uid": user_id, "new_id": str(uuid.uuid4())},
     )
     await db.commit()
 
@@ -103,10 +105,11 @@ async def get_memory(
     """Get user memory"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text(f"SELECT {MEMORY_COLUMNS} FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
 
@@ -138,18 +141,34 @@ async def get_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-JSONB_MEMORY_FIELDS = {"key_challenges", "key_interests", "technologies_used", "favorite_agents", "frequently_asked_topics"}
+JSONB_MEMORY_FIELDS = {
+    "key_challenges",
+    "key_interests",
+    "technologies_used",
+    "favorite_agents",
+    "frequently_asked_topics",
+}
 
 # Columns a client is allowed to PATCH via /me — everything in user_memory
 # except id/user_id/created_at/updated_at, which the client must never
 # control directly.
 ALLOWED_UPDATE_FIELDS = {
-    "preferred_language", "preferred_tone", "industry_focus", "business_stage",
-    "primary_business_type", "target_audience_summary",
-    "key_challenges", "key_interests", "technologies_used",
-    "total_conversations", "total_messages",
-    "favorite_agents", "frequently_asked_topics",
-    "engagement_score", "satisfaction_score", "churn_risk_score",
+    "preferred_language",
+    "preferred_tone",
+    "industry_focus",
+    "business_stage",
+    "primary_business_type",
+    "target_audience_summary",
+    "key_challenges",
+    "key_interests",
+    "technologies_used",
+    "total_conversations",
+    "total_messages",
+    "favorite_agents",
+    "frequently_asked_topics",
+    "engagement_score",
+    "satisfaction_score",
+    "churn_risk_score",
     "lifetime_value_estimate",
 } | JSONB_MEMORY_FIELDS
 
@@ -163,6 +182,7 @@ async def update_memory(
     """Update user memory"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         # SECURITY: `key` becomes a raw SQL identifier below (column names
         # can't be bound parameters in SQLAlchemy). Without this whitelist
@@ -210,6 +230,7 @@ async def log_event(
     """Log event"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         event_type = data.get("event_type", "action")
         event_data = data.get("data", {})
@@ -218,20 +239,27 @@ async def log_event(
             text("""INSERT INTO user_memory_events
             (id, user_id, event_type, event_data, created_at)
             VALUES (:new_id, :uid, :et, CAST(:ed AS jsonb), NOW())"""),
-            {"new_id": str(uuid.uuid4()), "uid": user_id, "et": event_type, "ed": json.dumps(event_data)}
+            {
+                "new_id": str(uuid.uuid4()),
+                "uid": user_id,
+                "et": event_type,
+                "ed": json.dumps(event_data),
+            },
         )
 
         # Increment total_messages in user_memory
         await db.execute(
-            text("UPDATE user_memory SET total_messages = total_messages + 1 WHERE user_id = :uid"),
-            {"uid": user_id}
+            text(
+                "UPDATE user_memory SET total_messages = total_messages + 1 WHERE user_id = :uid"
+            ),
+            {"uid": user_id},
         )
 
         await db.commit()
 
         result = await db.execute(
             text("SELECT total_messages FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
 
@@ -250,10 +278,11 @@ async def add_interest(
     """Add interest"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_interests::text FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
         interests = (_loads(row[0]) if row else None) or []
@@ -262,8 +291,10 @@ async def add_interest(
             interests.append(interest)
 
         await db.execute(
-            text("UPDATE user_memory SET key_interests = CAST(:interests AS jsonb) WHERE user_id = :uid"),
-            {"uid": user_id, "interests": json.dumps(interests)}
+            text(
+                "UPDATE user_memory SET key_interests = CAST(:interests AS jsonb) WHERE user_id = :uid"
+            ),
+            {"uid": user_id, "interests": json.dumps(interests)},
         )
         await db.commit()
 
@@ -282,10 +313,11 @@ async def add_challenge(
     """Add challenge"""
     try:
         from sqlalchemy import text
+
         await _ensure_memory_row(user_id, db)
         result = await db.execute(
             text("SELECT key_challenges::text FROM user_memory WHERE user_id = :uid"),
-            {"uid": user_id}
+            {"uid": user_id},
         )
         row = result.fetchone()
         challenges = (_loads(row[0]) if row else None) or []
@@ -294,8 +326,10 @@ async def add_challenge(
             challenges.append(challenge)
 
         await db.execute(
-            text("UPDATE user_memory SET key_challenges = CAST(:challenges AS jsonb) WHERE user_id = :uid"),
-            {"uid": user_id, "challenges": json.dumps(challenges)}
+            text(
+                "UPDATE user_memory SET key_challenges = CAST(:challenges AS jsonb) WHERE user_id = :uid"
+            ),
+            {"uid": user_id, "challenges": json.dumps(challenges)},
         )
         await db.commit()
 
@@ -314,22 +348,32 @@ async def set_preference(
     """Set preference"""
     try:
         from sqlalchemy import text
+
         key = data.get("key")
         value = data.get("value")
         val_json = json.dumps(value)
 
         # Try update first
         result = await db.execute(
-            text("UPDATE user_preferences SET preference_value = CAST(:val AS jsonb) WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key, "val": val_json}
+            text(
+                "UPDATE user_preferences SET preference_value = CAST(:val AS jsonb) WHERE user_id = :uid AND preference_key = :key"
+            ),
+            {"uid": user_id, "key": key, "val": val_json},
         )
 
         # If no rows updated, insert
         if result.rowcount == 0:
             await db.execute(
-                text("""INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
-                VALUES (:new_id, :uid, :key, CAST(:val AS jsonb), NOW(), NOW())"""),
-                {"new_id": str(uuid.uuid4()), "uid": user_id, "key": key, "val": val_json}
+                text(
+                    """INSERT INTO user_preferences (id, user_id, preference_key, preference_value, created_at, updated_at)
+                VALUES (:new_id, :uid, :key, CAST(:val AS jsonb), NOW(), NOW())"""
+                ),
+                {
+                    "new_id": str(uuid.uuid4()),
+                    "uid": user_id,
+                    "key": key,
+                    "val": val_json,
+                },
             )
 
         await db.commit()
@@ -348,9 +392,12 @@ async def get_preference(
     """Get preference"""
     try:
         from sqlalchemy import text
+
         result = await db.execute(
-            text("SELECT preference_value::text FROM user_preferences WHERE user_id = :uid AND preference_key = :key"),
-            {"uid": user_id, "key": key}
+            text(
+                "SELECT preference_value::text FROM user_preferences WHERE user_id = :uid AND preference_key = :key"
+            ),
+            {"uid": user_id, "key": key},
         )
         row = result.fetchone()
         value = _loads(row[0]) if row else None
@@ -369,10 +416,13 @@ async def get_events(
     """Get recent events"""
     try:
         from sqlalchemy import text
+
         result = await db.execute(
-            text("""SELECT id, event_type, event_data::text, created_at FROM user_memory_events
-            WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""),
-            {"uid": user_id, "limit": limit}
+            text(
+                """SELECT id, event_type, event_data::text, created_at FROM user_memory_events
+            WHERE user_id = :uid ORDER BY created_at DESC LIMIT :limit"""
+            ),
+            {"uid": user_id, "limit": limit},
         )
         rows = result.fetchall()
         events = [
@@ -380,7 +430,7 @@ async def get_events(
                 "id": str(row[0]),
                 "event_type": row[1],
                 "event_data": _loads(row[2]) or {},
-                "created_at": row[3]
+                "created_at": row[3],
             }
             for row in rows
         ]

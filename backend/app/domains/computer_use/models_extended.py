@@ -26,11 +26,21 @@ from app.core.database import Base
 
 class ComputerUseTemplate(Base):
     """Plantillas predefinidas de tareas de Computer Use."""
+
     __tablename__ = "computer_use_templates"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
@@ -48,11 +58,21 @@ class ComputerUseTemplate(Base):
 
 class ComputerUseScheduledTask(Base):
     """Tareas programadas de Computer Use (cron)."""
+
     __tablename__ = "computer_use_scheduled_tasks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     name = Column(String(200), nullable=False)
     task_description = Column(Text, nullable=False)
@@ -65,7 +85,11 @@ class ComputerUseScheduledTask(Base):
 
     # Last execution tracking
     last_run_at = Column(DateTime(timezone=True), nullable=True)
-    last_session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="SET NULL"), nullable=True)
+    last_session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     total_runs = Column(Integer, default=0)
     success_count = Column(Integer, default=0)
     fail_count = Column(Integer, default=0)
@@ -79,12 +103,20 @@ class ComputerUseScheduledTask(Base):
 
 class ComputerUseAnnotation(Base):
     """Anotaciones/comentarios en screenshots específicos."""
+
     __tablename__ = "computer_use_annotations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     step_number = Column(Integer, nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     content = Column(Text, nullable=False)
     x_coordinate = Column(Integer, nullable=True)  # Optional: point on screenshot
@@ -99,11 +131,21 @@ class ComputerUseAnnotation(Base):
 
 class ComputerUseBrowserProfile(Base):
     """Perfiles de navegador con cookies, localStorage, viewport."""
+
     __tablename__ = "computer_use_browser_profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     name = Column(String(200), nullable=False)
     viewport_width = Column(Integer, default=1280)
@@ -113,7 +155,9 @@ class ComputerUseBrowserProfile(Base):
     timezone_id = Column(String(50), default="America/Argentina/Buenos_Aires")
     cookies = Column(JSONB, default=list)
     local_storage = Column(JSONB, default=dict)
-    geolocation = Column(JSONB, nullable=True)  # {"latitude": -34.6, "longitude": -58.4}
+    geolocation = Column(
+        JSONB, nullable=True
+    )  # {"latitude": -34.6, "longitude": -58.4}
     is_default = Column(Boolean, default=False)
 
     created_at = Column(DateTime(timezone=True), default=utc_now)
@@ -124,13 +168,21 @@ class ComputerUseBrowserProfile(Base):
 
 class ComputerUseProxyConfig(Base):
     """Configuraciones de proxy para sesiones de Computer Use."""
+
     __tablename__ = "computer_use_proxy_configs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     name = Column(String(200), nullable=False)
-    proxy_type = Column(Enum("http", "https", "socks5", name="proxy_type"), default="http")
+    proxy_type = Column(
+        Enum("http", "https", "socks5", name="proxy_type"), default="http"
+    )
     host = Column(String(255), nullable=False)
     port = Column(Integer, nullable=False)
     username = Column(String(255), nullable=True)
@@ -148,14 +200,26 @@ class ComputerUseProxyConfig(Base):
 
 class ComputerUseSessionShare(Base):
     """Compartir sesiones entre usuarios con permisos."""
+
     __tablename__ = "computer_use_session_shares"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
-    shared_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    shared_with_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    shared_by_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    shared_with_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     shared_with_email = Column(String(255), nullable=True)  # For invite-by-email
-    permission = Column(Enum("view", "comment", "control", name="share_permission"), default="view")
+    permission = Column(
+        Enum("view", "comment", "control", name="share_permission"), default="view"
+    )
     token = Column(String(64), nullable=False, unique=True, index=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
@@ -163,21 +227,37 @@ class ComputerUseSessionShare(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
 
     session = relationship("ComputerUseSession", backref="shares")
-    shared_by = relationship("User", foreign_keys=[shared_by_user_id], backref="shared_sessions")
-    shared_with = relationship("User", foreign_keys=[shared_with_user_id], backref="received_sessions")
+    shared_by = relationship(
+        "User", foreign_keys=[shared_by_user_id], backref="shared_sessions"
+    )
+    shared_with = relationship(
+        "User", foreign_keys=[shared_with_user_id], backref="received_sessions"
+    )
 
     __table_args__ = (
-        UniqueConstraint("session_id", "shared_with_user_id", name="uq_session_share_user"),
+        UniqueConstraint(
+            "session_id", "shared_with_user_id", name="uq_session_share_user"
+        ),
     )
 
 
 class ComputerUseBatchJob(Base):
     """Trabajos batch: misma tarea en múltiples URLs."""
+
     __tablename__ = "computer_use_batch_jobs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     name = Column(String(200), nullable=False)
     task_description = Column(Text, nullable=False)
@@ -187,7 +267,14 @@ class ComputerUseBatchJob(Base):
     concurrency = Column(Integer, default=3)
 
     status = Column(
-        Enum("pending", "running", "completed", "failed", "cancelled", name="batch_status"),
+        Enum(
+            "pending",
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            name="batch_status",
+        ),
         default="pending",
     )
     completed_count = Column(Integer, default=0)
@@ -204,10 +291,16 @@ class ComputerUseBatchJob(Base):
 
 class ComputerUseSessionTag(Base):
     """Tags para sesiones (many-to-many via association)."""
+
     __tablename__ = "computer_use_session_tags"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     tag = Column(String(50), nullable=False, index=True)
     color = Column(String(20), default="#3b82f6")
 
@@ -215,18 +308,24 @@ class ComputerUseSessionTag(Base):
 
     session = relationship("ComputerUseSession", backref="session_tags")
 
-    __table_args__ = (
-        UniqueConstraint("session_id", "tag", name="uq_session_tag"),
-    )
+    __table_args__ = (UniqueConstraint("session_id", "tag", name="uq_session_tag"),)
 
 
 class ComputerUseSessionNote(Base):
     """Notas generales de una sesión."""
+
     __tablename__ = "computer_use_session_notes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     content = Column(Text, nullable=False)
     is_pinned = Column(Boolean, default=False)
@@ -239,12 +338,20 @@ class ComputerUseSessionNote(Base):
 
 class ComputerUseSessionBookmark(Base):
     """Bookmarks/marcadores dentro de una sesión."""
+
     __tablename__ = "computer_use_session_bookmarks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id = Column(UUID(as_uuid=True), ForeignKey("computer_use_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("computer_use_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     step_number = Column(Integer, nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     label = Column(String(200), nullable=False)
     color = Column(String(20), default="#3b82f6")
@@ -256,11 +363,21 @@ class ComputerUseSessionBookmark(Base):
 
 class ComputerUseWebhook(Base):
     """Webhooks para notificaciones de eventos de sesión."""
+
     __tablename__ = "computer_use_webhooks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     name = Column(String(200), nullable=False)
     url = Column(String(2048), nullable=False)

@@ -30,11 +30,25 @@ logger = get_logger(__name__)
 # LLM dependency, so this still works even when a business hasn't configured
 # an LLM key (Groq/OpenAI/Anthropic) for their conversations.
 _BUY_INTENT_PATTERNS = [
-    r"\bquiero comprar", r"\bcomo pago", r"\bcómo pago", r"\bdonde pago", r"\bdónde pago",
-    r"\blink de pago", r"\bmandame el link", r"\bmándame el link", r"\bme lo llevo",
-    r"\bquiero reservar", r"\bconfirmo la compra", r"\bdale.{0,10}va\b", r"\bquiero pagar",
-    r"\bcuanto sale\b.{0,20}(lo compro|me lo llevo)", r"\bwant to buy", r"\bhow do i pay",
-    r"\bpayment link", r"\bi'?ll take it", r"\bcheckout\b",
+    r"\bquiero comprar",
+    r"\bcomo pago",
+    r"\bcómo pago",
+    r"\bdonde pago",
+    r"\bdónde pago",
+    r"\blink de pago",
+    r"\bmandame el link",
+    r"\bmándame el link",
+    r"\bme lo llevo",
+    r"\bquiero reservar",
+    r"\bconfirmo la compra",
+    r"\bdale.{0,10}va\b",
+    r"\bquiero pagar",
+    r"\bcuanto sale\b.{0,20}(lo compro|me lo llevo)",
+    r"\bwant to buy",
+    r"\bhow do i pay",
+    r"\bpayment link",
+    r"\bi'?ll take it",
+    r"\bcheckout\b",
 ]
 _BUY_INTENT_RE = re.compile("|".join(_BUY_INTENT_PATTERNS), re.IGNORECASE)
 
@@ -78,15 +92,21 @@ async def _resolve_catalog_item(
     return None
 
 
-async def _has_pending_or_paid_checkout(db: AsyncSession, conversation_id: UUID) -> bool:
+async def _has_pending_or_paid_checkout(
+    db: AsyncSession, conversation_id: UUID
+) -> bool:
     """Avoid spamming a new payment link on every message once one is out."""
     from app.domains.payments.payment_models import Transaction, TransactionStatus
 
     result = await db.execute(
-        select(Transaction.id).where(
+        select(Transaction.id)
+        .where(
             Transaction.conversation_id == conversation_id,
-            Transaction.status.in_([TransactionStatus.PROCESSING, TransactionStatus.APPROVED]),
-        ).limit(1)
+            Transaction.status.in_(
+                [TransactionStatus.PROCESSING, TransactionStatus.APPROVED]
+            ),
+        )
+        .limit(1)
     )
     return result.scalar_one_or_none() is not None
 
@@ -109,7 +129,9 @@ async def maybe_trigger_checkout(
             return None
 
         if await _has_pending_or_paid_checkout(db, conversation.id):
-            logger.debug(f"Conversation {conversation.id} already has a pending/paid checkout — skipping")
+            logger.debug(
+                f"Conversation {conversation.id} already has a pending/paid checkout — skipping"
+            )
             return None
 
         item = await _resolve_catalog_item(db, business_id, message_text)
@@ -122,11 +144,13 @@ async def maybe_trigger_checkout(
             business_id=business_id,
             customer_email=conversation.lead_email or "cliente@example.com",
             customer_name=conversation.lead_name or "Cliente",
-            items=[{
-                "name": item.name,
-                "quantity": 1,
-                "unit_price": float(item.price),
-            }],
+            items=[
+                {
+                    "name": item.name,
+                    "quantity": 1,
+                    "unit_price": float(item.price),
+                }
+            ],
             amount=item.price,
             currency=item.currency or "ARS",
             conversation_id=conversation.id,
@@ -134,11 +158,15 @@ async def maybe_trigger_checkout(
         )
 
         if checkout.get("status") == "error":
-            logger.warning(f"Checkout creation failed for conversation {conversation.id}: {checkout.get('error')}")
+            logger.warning(
+                f"Checkout creation failed for conversation {conversation.id}: {checkout.get('error')}"
+            )
             return None
 
         if not checkout.get("checkout_url"):
-            logger.warning(f"Checkout created without a URL for conversation {conversation.id}: {checkout}")
+            logger.warning(
+                f"Checkout created without a URL for conversation {conversation.id}: {checkout}"
+            )
             return None
 
         logger.info(
@@ -151,5 +179,7 @@ async def maybe_trigger_checkout(
         return checkout
 
     except Exception:
-        logger.exception(f"maybe_trigger_checkout error for conversation {conversation.id}")
+        logger.exception(
+            f"maybe_trigger_checkout error for conversation {conversation.id}"
+        )
         return None

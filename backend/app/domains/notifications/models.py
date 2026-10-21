@@ -40,15 +40,28 @@ class NotificationStatus(str):
 
 class NotificationDelivery(Base):
     """Track every notification sent to owners/agents."""
+
     __tablename__ = "notification_deliveries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     channel = Column(String(20), nullable=False, index=True)
     priority = Column(String(20), nullable=False, index=True)
-    notification_type = Column(String(50), nullable=False)  # handoff, briefing, deal_closed, alert, etc.
+    notification_type = Column(
+        String(50), nullable=False
+    )  # handoff, briefing, deal_closed, alert, etc.
 
     subject = Column(String(255), nullable=True)
     message = Column(Text, nullable=False)

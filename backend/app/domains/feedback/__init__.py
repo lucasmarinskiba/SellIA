@@ -18,5 +18,5 @@ __all__ = [
     "NPSAlert",
     "NPSDashboardService",
     "NPSTrendMetric",
-    "SentimentTrend"
+    "SentimentTrend",
 ]

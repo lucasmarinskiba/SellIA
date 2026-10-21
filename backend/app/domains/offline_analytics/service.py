@@ -1,4 +1,5 @@
 """Phase 5D: Offline Analytics Service."""
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -51,7 +52,9 @@ class OfflineAnalyticsService:
         return attribution
 
     @staticmethod
-    async def calculate_offline_metrics(db: AsyncSession, business_id: UUID) -> OfflineAnalyticsMetrics:
+    async def calculate_offline_metrics(
+        db: AsyncSession, business_id: UUID
+    ) -> OfflineAnalyticsMetrics:
         # Get all location visits
         result = await db.execute(
             select(LocationVisit).where(LocationVisit.business_id == business_id)
@@ -62,11 +65,17 @@ class OfflineAnalyticsService:
 
         # Offline conversions
         result = await db.execute(
-            select(OfflineConversion).where(OfflineConversion.business_id == business_id)
+            select(OfflineConversion).where(
+                OfflineConversion.business_id == business_id
+            )
         )
         offline_conversions = result.scalars().all()
         total_conversions = len([oc for oc in offline_conversions if oc.purchase_made])
-        conversion_rate = (total_conversions / total_foot_traffic * 100) if total_foot_traffic > 0 else 0
+        conversion_rate = (
+            (total_conversions / total_foot_traffic * 100)
+            if total_foot_traffic > 0
+            else 0
+        )
 
         # Avg dwell time
         avg_dwell = sum(v.dwell_minutes for v in visits) / len(visits) if visits else 0
@@ -81,8 +90,12 @@ class OfflineAnalyticsService:
             )
         )
         attributions = result.scalars().all()
-        online_to_offline = len([a for a in attributions if a.conversion_type == "online_to_offline"])
-        offline_to_online = len([a for a in attributions if a.conversion_type == "offline_to_online"])
+        online_to_offline = len(
+            [a for a in attributions if a.conversion_type == "online_to_offline"]
+        )
+        offline_to_online = len(
+            [a for a in attributions if a.conversion_type == "offline_to_online"]
+        )
         full_loop = len([a for a in attributions if a.conversion_type == "full_loop"])
 
         # Peak hour
@@ -96,8 +109,12 @@ class OfflineAnalyticsService:
         visitor_counts = {}
         for v in visits:
             visitor_counts[v.user_id] = visitor_counts.get(v.user_id, 0) + 1
-        repeat_visitors = len([uid for uid, count in visitor_counts.items() if count > 1])
-        repeat_rate = (repeat_visitors / unique_visitors * 100) if unique_visitors > 0 else 0
+        repeat_visitors = len(
+            [uid for uid, count in visitor_counts.items() if count > 1]
+        )
+        repeat_rate = (
+            (repeat_visitors / unique_visitors * 100) if unique_visitors > 0 else 0
+        )
 
         # Get or create metrics
         result = await db.execute(
@@ -197,8 +214,12 @@ class OfflineAnalyticsService:
         )
         attributions = result.scalars().all()
 
-        online_to_offline = [a for a in attributions if a.conversion_type == "online_to_offline"]
-        offline_to_online = [a for a in attributions if a.conversion_type == "offline_to_online"]
+        online_to_offline = [
+            a for a in attributions if a.conversion_type == "online_to_offline"
+        ]
+        offline_to_online = [
+            a for a in attributions if a.conversion_type == "offline_to_online"
+        ]
         full_loop = [a for a in attributions if a.conversion_type == "full_loop"]
 
         return {
@@ -206,9 +227,12 @@ class OfflineAnalyticsService:
             "online_to_offline_conversions": len(online_to_offline),
             "offline_to_online_conversions": len(offline_to_online),
             "full_loop_conversions": len(full_loop),
-            "total_revenue_from_attribution": sum(a.post_visit_order_value for a in attributions),
+            "total_revenue_from_attribution": sum(
+                a.post_visit_order_value for a in attributions
+            ),
             "avg_time_to_conversion_days": (
                 sum(a.time_to_conversion_days for a in attributions) / len(attributions)
-                if attributions else 0
+                if attributions
+                else 0
             ),
         }

@@ -118,6 +118,9 @@ def validate_cloudflare_origin(client_ip: str, headers: dict) -> tuple[bool, str
         return True, "Acceso directo (sin Cloudflare)"
 
     if not is_cloudflare_ip(client_ip):
-        return False, f"IP {client_ip} no pertenece a Cloudflare. Posible spoofing de headers."
+        return (
+            False,
+            f"IP {client_ip} no pertenece a Cloudflare. Posible spoofing de headers.",
+        )
 
     return True, "Request validado como proveniente de Cloudflare"

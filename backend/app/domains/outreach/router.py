@@ -29,6 +29,7 @@ router = APIRouter(prefix="/outreach", tags=["Outreach Cadence"])
 # Cadence Rules
 # ---------------------------------------------------------------------------
 
+
 @router.get("/rules/{business_id}", response_model=OutreachCadenceRuleResponse)
 async def get_cadence_rule(
     business_id: UUID,
@@ -62,6 +63,7 @@ async def update_cadence_rule(
 # Fatigue Scores
 # ---------------------------------------------------------------------------
 
+
 @router.get("/fatigue/{business_id}", response_model=list[ContactFatigueScoreResponse])
 async def list_fatigue_scores(
     business_id: UUID,
@@ -71,16 +73,23 @@ async def list_fatigue_scores(
     limit: int = 50,
     offset: int = 0,
 ):
-    query = select(ContactFatigueScore).where(ContactFatigueScore.business_id == business_id)
+    query = select(ContactFatigueScore).where(
+        ContactFatigueScore.business_id == business_id
+    )
     if level:
         query = query.where(ContactFatigueScore.fatigue_level == level)
-    query = query.order_by(desc(ContactFatigueScore.updated_at)).offset(offset).limit(limit)
+    query = (
+        query.order_by(desc(ContactFatigueScore.updated_at)).offset(offset).limit(limit)
+    )
     result = await db.execute(query)
     scores = result.scalars().all()
     return [ContactFatigueScoreResponse.model_validate(s) for s in scores]
 
 
-@router.get("/fatigue/{business_id}/{conversation_id}", response_model=ContactFatigueScoreResponse)
+@router.get(
+    "/fatigue/{business_id}/{conversation_id}",
+    response_model=ContactFatigueScoreResponse,
+)
 async def get_fatigue_score(
     business_id: UUID,
     conversation_id: UUID,
@@ -96,6 +105,7 @@ async def get_fatigue_score(
 # Can Contact?
 # ---------------------------------------------------------------------------
 
+
 @router.post("/can-contact", response_model=CanContactResponse)
 async def can_contact(
     req: CanContactRequest,
@@ -105,12 +115,17 @@ async def can_contact(
     service = FatigueScoringService(db)
     # Need business_id from conversation
     from app.domains.channels.models import Conversation
-    conv_result = await db.execute(select(Conversation).where(Conversation.id == req.conversation_id))
+
+    conv_result = await db.execute(
+        select(Conversation).where(Conversation.id == req.conversation_id)
+    )
     conv = conv_result.scalar_one_or_none()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    result = await service.can_contact_now(conv.business_id, req.conversation_id, req.channel, req.message_type)
+    result = await service.can_contact_now(
+        conv.business_id, req.conversation_id, req.channel, req.message_type
+    )
     return CanContactResponse(
         can_contact=result["can_contact"],
         reason=result["reason"],
@@ -126,7 +141,11 @@ async def can_contact(
 # Next Action
 # ---------------------------------------------------------------------------
 
-@router.get("/next-action/{business_id}/{conversation_id}", response_model=CadenceNextActionResponse)
+
+@router.get(
+    "/next-action/{business_id}/{conversation_id}",
+    response_model=CadenceNextActionResponse,
+)
 async def get_next_action(
     business_id: UUID,
     conversation_id: UUID,
@@ -149,6 +168,7 @@ async def get_next_action(
 # ---------------------------------------------------------------------------
 # Outreach Logs
 # ---------------------------------------------------------------------------
+
 
 @router.get("/logs/{business_id}", response_model=list[OutreachLogResponse])
 async def list_outreach_logs(

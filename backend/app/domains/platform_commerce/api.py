@@ -50,21 +50,35 @@ async def overview(
     connections: dict[str, dict[str, Any]] = {}
     if business_ids:
         result = await db.execute(
-            select(ChannelConnection).where(ChannelConnection.business_id.in_(business_ids))
+            select(ChannelConnection).where(
+                ChannelConnection.business_id.in_(business_ids)
+            )
         )
         for channel in result.scalars().all():
-            platform = channel.platform.value if hasattr(channel.platform, "value") else str(channel.platform)
+            platform = (
+                channel.platform.value
+                if hasattr(channel.platform, "value")
+                else str(channel.platform)
+            )
             connections[platform] = {
                 "connected": bool(channel.is_active),
-                "status": channel.status.value if hasattr(channel.status, "value") else str(channel.status),
+                "status": (
+                    channel.status.value
+                    if hasattr(channel.status, "value")
+                    else str(channel.status)
+                ),
                 "status_message": channel.status_message,
-                "last_sync_at": channel.last_sync_at.isoformat() if channel.last_sync_at else None,
+                "last_sync_at": (
+                    channel.last_sync_at.isoformat() if channel.last_sync_at else None
+                ),
             }
 
     settings_rows: dict[str, PlatformSettings] = {}
     if business_ids:
         settings_result = await db.execute(
-            select(PlatformSettings).where(PlatformSettings.business_id.in_(business_ids))
+            select(PlatformSettings).where(
+                PlatformSettings.business_id.in_(business_ids)
+            )
         )
         settings_rows = {s.platform: s for s in settings_result.scalars().all()}
 
@@ -72,19 +86,45 @@ async def overview(
     for row in economics["platforms"]:
         platform = row["platform"]
         config = settings_rows.get(platform)
-        platforms.append({
-            **row,
-            "connection": connections.get(platform),
-            "capabilities": capabilities.describe(platform),
-            "actions": selling.actions_for(platform),
-            "settings": {
-                "commission_percent": float(config.commission_percent) if config and config.commission_percent is not None else None,
-                "fixed_fee_per_order": float(config.fixed_fee_per_order) if config and config.fixed_fee_per_order is not None else None,
-                "cogs_percent": float(config.cogs_percent) if config and config.cogs_percent is not None else None,
-                "monthly_fixed_cost": float(config.monthly_fixed_cost) if config and config.monthly_fixed_cost is not None else None,
-                "monthly_ad_spend": float(config.monthly_ad_spend) if config and config.monthly_ad_spend is not None else None,
-            } if config else None,
-        })
+        platforms.append(
+            {
+                **row,
+                "connection": connections.get(platform),
+                "capabilities": capabilities.describe(platform),
+                "actions": selling.actions_for(platform),
+                "settings": (
+                    {
+                        "commission_percent": (
+                            float(config.commission_percent)
+                            if config and config.commission_percent is not None
+                            else None
+                        ),
+                        "fixed_fee_per_order": (
+                            float(config.fixed_fee_per_order)
+                            if config and config.fixed_fee_per_order is not None
+                            else None
+                        ),
+                        "cogs_percent": (
+                            float(config.cogs_percent)
+                            if config and config.cogs_percent is not None
+                            else None
+                        ),
+                        "monthly_fixed_cost": (
+                            float(config.monthly_fixed_cost)
+                            if config and config.monthly_fixed_cost is not None
+                            else None
+                        ),
+                        "monthly_ad_spend": (
+                            float(config.monthly_ad_spend)
+                            if config and config.monthly_ad_spend is not None
+                            else None
+                        ),
+                    }
+                    if config
+                    else None
+                ),
+            }
+        )
 
     return {
         "period_days": days,

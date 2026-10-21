@@ -10,6 +10,7 @@ from app.domains.channels.schemas import WebhookPayload
 
 class WebChatConnector(BaseChannelConnector):
     """Conector para el widget de chat web embebido en sitios del usuario."""
+
     platform = "webchat"
 
     def __init__(self, credentials: dict[str, Any], settings: dict[str, Any]):
@@ -17,7 +18,9 @@ class WebChatConnector(BaseChannelConnector):
         self.widget_id = credentials.get("widget_id")
         self.allowed_domains = settings.get("allowed_domains", [])
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         """En WebChat, el mensaje se envía via websocket/SSE al frontend.
         Este método retorna el payload para ser entregado por el backend."""
         return {

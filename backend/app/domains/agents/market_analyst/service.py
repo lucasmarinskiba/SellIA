@@ -52,6 +52,7 @@ async def _scrape_with_httpx(url: str) -> dict[str, Any]:
 
 def _extract_title(html: str) -> str | None:
     import re
+
     m = re.search(r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
     return m.group(1).strip() if m else None
 
@@ -60,6 +61,7 @@ async def _scrape_with_browser(url: str) -> dict[str, Any]:
     """Scrapeo con BrowserService (Playwright) para JS-heavy sites."""
     try:
         from app.domains.computer_use.browser_service import BrowserService
+
         browser = BrowserService()
         await browser.start(headless=True)
         await browser.navigate(url)
@@ -232,10 +234,17 @@ async def run_market_analysis(
                 if "error" in scrape_data:
                     scrape_data = await _scrape_with_browser(url)
             else:
-                scrape_data = {"url": None, "title": name, "text_preview": "", "method": "none"}
+                scrape_data = {
+                    "url": None,
+                    "title": name,
+                    "text_preview": "",
+                    "method": "none",
+                }
 
             # 2. Análisis LLM
-            llm_analysis = await _analyze_competitor_with_llm(db, business_id, competitor, scrape_data)
+            llm_analysis = await _analyze_competitor_with_llm(
+                db, business_id, competitor, scrape_data
+            )
 
             snapshot = CompetitorSnapshot(
                 job_id=job.id,
@@ -249,20 +258,24 @@ async def run_market_analysis(
                 raw_data=scrape_data,
             )
             db.add(snapshot)
-            snapshots_data.append({
-                "name": name,
-                "price_range": llm_analysis.get("price_range"),
-                "key_features": llm_analysis.get("key_features", []),
-                "strengths": llm_analysis.get("strengths", []),
-                "weaknesses": llm_analysis.get("weaknesses", []),
-                "sentiment_score": llm_analysis.get("sentiment_score"),
-            })
+            snapshots_data.append(
+                {
+                    "name": name,
+                    "price_range": llm_analysis.get("price_range"),
+                    "key_features": llm_analysis.get("key_features", []),
+                    "strengths": llm_analysis.get("strengths", []),
+                    "weaknesses": llm_analysis.get("weaknesses", []),
+                    "sentiment_score": llm_analysis.get("sentiment_score"),
+                }
+            )
 
         job.competitors_analyzed = len(competitors_list)
         await db.commit()
 
         # 3. Reporte consolidado
-        report = await _generate_market_report_with_llm(db, business_id, target_market, snapshots_data)
+        report = await _generate_market_report_with_llm(
+            db, business_id, target_market, snapshots_data
+        )
         job.report_data = report
         job.trends_found = len(report.get("trends", []))
         job.status = "completed"
@@ -279,7 +292,9 @@ async def run_market_analysis(
     return job
 
 
-async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> dict[str, Any] | None:
+async def get_market_report(
+    db: AsyncSession, job_id: uuid.UUID
+) -> dict[str, Any] | None:
     """Retorna el reporte completo con snapshots y charts data."""
     result = await db.execute(
         select(MarketAnalysisJob).where(MarketAnalysisJob.id == job_id)
@@ -306,7 +321,9 @@ async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> dict[str, An
                 "key_features": s.key_features,
                 "strengths": s.strengths,
                 "weaknesses": s.weaknesses,
-                "sentiment_score": float(s.sentiment_score) if s.sentiment_score is not None else None,
+                "sentiment_score": (
+                    float(s.sentiment_score) if s.sentiment_score is not None else None
+                ),
                 "created_at": s.created_at,
             }
             for s in snapshots
@@ -319,7 +336,9 @@ async def get_market_report(db: AsyncSession, job_id: uuid.UUID) -> dict[str, An
     }
 
 
-async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> list[MarketAnalysisJob]:
+async def list_jobs(
+    db: AsyncSession, business_id: uuid.UUID
+) -> list[MarketAnalysisJob]:
     result = await db.execute(
         select(MarketAnalysisJob)
         .where(MarketAnalysisJob.business_id == business_id)

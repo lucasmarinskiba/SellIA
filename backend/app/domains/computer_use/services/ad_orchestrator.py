@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class AdPlatform(str, Enum):
     """Plataformas de ads soportadas."""
+
     FACEBOOK = "facebook"
     INSTAGRAM = "instagram"
     GOOGLE_SEARCH = "google_search"
@@ -32,6 +33,7 @@ class AdPlatform(str, Enum):
 
 class AdFormat(str, Enum):
     """Formatos de ads."""
+
     SINGLE_IMAGE = "single_image"
     CAROUSEL = "carousel"
     VIDEO = "video"
@@ -41,6 +43,7 @@ class AdFormat(str, Enum):
 
 class CopyTone(str, Enum):
     """Tonalidad del copy."""
+
     URGENT = "urgent"  # Limited time, scarcity
     EDUCATIONAL = "educational"  # Learn, discover
     LIFESTYLE = "lifestyle"  # Aspirational, dream
@@ -133,7 +136,13 @@ class AdCopyGenerator:
                 "The fastest {time_period} {count} people made this decision.",
                 "{percentage}% off for the first {count} customers.",
             ],
-            "ctas": ["Claim Your Spot", "Grab Yours Now", "Secure Access", "Lock In Price", "Act Now"],
+            "ctas": [
+                "Claim Your Spot",
+                "Grab Yours Now",
+                "Secure Access",
+                "Lock In Price",
+                "Act Now",
+            ],
         },
         CopyTone.EDUCATIONAL: {
             "headlines": [
@@ -150,7 +159,13 @@ class AdCopyGenerator:
                 "Get the playbook {successful_people} use for {outcome}.",
                 "Download: The {topic} blueprint used by {creators}.",
             ],
-            "ctas": ["Watch Free", "Learn More", "Get Access", "Download Now", "Enroll Free"],
+            "ctas": [
+                "Watch Free",
+                "Learn More",
+                "Get Access",
+                "Download Now",
+                "Enroll Free",
+            ],
         },
         CopyTone.LIFESTYLE: {
             "headlines": [
@@ -167,7 +182,13 @@ class AdCopyGenerator:
                 "The {time_period} that changes everything. Real stories from {community}.",
                 "Stop dreaming. Start doing. {CTA} today.",
             ],
-            "ctas": ["Start My Journey", "See Transformation", "Join Community", "Begin Today", "Get Started"],
+            "ctas": [
+                "Start My Journey",
+                "See Transformation",
+                "Join Community",
+                "Begin Today",
+                "Get Started",
+            ],
         },
         CopyTone.DISCOUNT: {
             "headlines": [
@@ -201,7 +222,13 @@ class AdCopyGenerator:
                 "Join {count}+ {audience} who {outcome}.",
                 "{expert_type} recommend us. Here's why {count}+ agree.",
             ],
-            "ctas": ["Read Reviews", "See Stories", "Join {count}+", "Start Free", "Learn How"],
+            "ctas": [
+                "Read Reviews",
+                "See Stories",
+                "Join {count}+",
+                "Start Free",
+                "Learn How",
+            ],
         },
     }
 
@@ -291,7 +318,9 @@ class AdOrchestrator:
             get_meta_ads_connector(
                 access_token=settings.META_ACCESS_TOKEN,
                 ad_account_id=settings.META_AD_ACCOUNT_ID,
-            ) if hasattr(settings, 'META_ACCESS_TOKEN') else None
+            )
+            if hasattr(settings, "META_ACCESS_TOKEN")
+            else None
         )
         self.google_ads_connector = (
             get_google_ads_connector(
@@ -300,7 +329,9 @@ class AdOrchestrator:
                 refresh_token=settings.GOOGLE_ADS_REFRESH_TOKEN,
                 developer_token=settings.GOOGLE_ADS_DEVELOPER_TOKEN,
                 customer_id=settings.GOOGLE_ADS_CUSTOMER_ID,
-            ) if hasattr(settings, 'GOOGLE_ADS_DEVELOPER_TOKEN') else None
+            )
+            if hasattr(settings, "GOOGLE_ADS_DEVELOPER_TOKEN")
+            else None
         )
 
     async def create_campaign(
@@ -359,7 +390,9 @@ class AdOrchestrator:
                 # 4. Lanzar campaign (placeholder)
                 await self._launch_campaign(campaign)
 
-            self.logger.info(f"Campaigns created: {len(campaign_ids)} | platforms: {[p.value for p in platforms]}")
+            self.logger.info(
+                f"Campaigns created: {len(campaign_ids)} | platforms: {[p.value for p in platforms]}"
+            )
 
             return True, campaign_ids
 
@@ -416,7 +449,9 @@ class AdOrchestrator:
                     campaign.status = "paused"
                     paused.append(campaign_id)
 
-                    self.logger.info(f"Campaign paused (low ROAS): {campaign_id} | roas={perf.get('roas')}")
+                    self.logger.info(
+                        f"Campaign paused (low ROAS): {campaign_id} | roas={perf.get('roas')}"
+                    )
 
         return len(paused), paused
 
@@ -458,12 +493,21 @@ class AdOrchestrator:
     async def _launch_campaign(self, campaign: AdCampaign) -> bool:
         """Lanza campaign en plataforma REAL (Meta o Google)."""
         try:
-            if campaign.platform in (AdPlatform.FACEBOOK, AdPlatform.INSTAGRAM) and self.meta_ads_connector:
+            if (
+                campaign.platform in (AdPlatform.FACEBOOK, AdPlatform.INSTAGRAM)
+                and self.meta_ads_connector
+            ):
                 return await self._launch_meta_campaign(campaign)
-            elif campaign.platform in (AdPlatform.GOOGLE_SEARCH, AdPlatform.GOOGLE_DISPLAY) and self.google_ads_connector:
+            elif (
+                campaign.platform
+                in (AdPlatform.GOOGLE_SEARCH, AdPlatform.GOOGLE_DISPLAY)
+                and self.google_ads_connector
+            ):
                 return await self._launch_google_campaign(campaign)
             else:
-                self.logger.warning(f"No connector for platform {campaign.platform.value}")
+                self.logger.warning(
+                    f"No connector for platform {campaign.platform.value}"
+                )
                 campaign.status = "draft"
                 return False
         except Exception:
@@ -513,7 +557,9 @@ class AdOrchestrator:
             campaign.status = "running"
             campaign.campaign_id = campaign_id
 
-            self.logger.info(f"Meta campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
+            self.logger.info(
+                f"Meta campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day"
+            )
             return True
 
         except Exception:
@@ -524,20 +570,26 @@ class AdOrchestrator:
         """Lanza en Google Ads (Search/Display)."""
         try:
             # Crear campaign
-            campaign_success, campaign_id = await self.google_ads_connector.create_search_campaign(
-                campaign_name=campaign.name,
-                budget_micros=int(campaign.daily_budget * 1_000_000),  # Convertir a microdólares
-                keywords=[k for k in campaign.target_audience.get("keywords", [])],
+            campaign_success, campaign_id = (
+                await self.google_ads_connector.create_search_campaign(
+                    campaign_name=campaign.name,
+                    budget_micros=int(
+                        campaign.daily_budget * 1_000_000
+                    ),  # Convertir a microdólares
+                    keywords=[k for k in campaign.target_audience.get("keywords", [])],
+                )
             )
 
             if not campaign_success:
                 return False
 
             # Crear ad group
-            adgroup_success, adgroup_id = await self.google_ads_connector.create_ad_group(
-                campaign_id=campaign_id,
-                ad_group_name=f"AdGroup - {campaign.name}",
-                cpc_bid_micros=int(0.50 * 1_000_000),  # $0.50 CPC default
+            adgroup_success, adgroup_id = (
+                await self.google_ads_connector.create_ad_group(
+                    campaign_id=campaign_id,
+                    ad_group_name=f"AdGroup - {campaign.name}",
+                    cpc_bid_micros=int(0.50 * 1_000_000),  # $0.50 CPC default
+                )
             )
 
             if not adgroup_success:
@@ -550,16 +602,22 @@ class AdOrchestrator:
                     headline1=copy.headline,
                     headline2=f"v{copy.version}",
                     description=copy.body,
-                    final_url=campaign.target_audience.get("landing_page_url", "https://yoursite.com"),
+                    final_url=campaign.target_audience.get(
+                        "landing_page_url", "https://yoursite.com"
+                    ),
                 )
 
                 if not ad_success:
-                    self.logger.warning(f"Failed to create Google ad variant {copy.version}")
+                    self.logger.warning(
+                        f"Failed to create Google ad variant {copy.version}"
+                    )
 
             campaign.status = "running"
             campaign.campaign_id = campaign_id
 
-            self.logger.info(f"Google campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day")
+            self.logger.info(
+                f"Google campaign launched: {campaign_id} | budget: ${campaign.daily_budget}/day"
+            )
             return True
 
         except Exception:

@@ -38,7 +38,9 @@ class OptimizationRecommendation:
 class PerformanceOptimizer:
     """Auto-optimize seller performance"""
 
-    def analyze_performance(self, seller_metrics: dict[str, Any]) -> OptimizationStrategy:
+    def analyze_performance(
+        self, seller_metrics: dict[str, Any]
+    ) -> OptimizationStrategy:
         """Determine optimal strategy based on current performance"""
 
         roi = seller_metrics.get("roi", 1.0)
@@ -68,7 +70,7 @@ class PerformanceOptimizer:
                 "instagram": 0.25,
                 "google_ads": 0.25,
                 "facebook_ads": 0.15,
-                "linkedin": 0.05
+                "linkedin": 0.05,
             }
         elif strategy == OptimizationStrategy.GROWTH:
             channels = {
@@ -76,7 +78,7 @@ class PerformanceOptimizer:
                 "instagram": 0.20,
                 "google_ads": 0.20,
                 "facebook_ads": 0.15,
-                "linkedin": 0.10
+                "linkedin": 0.10,
             }
         elif strategy == OptimizationStrategy.BALANCED:
             channels = {
@@ -84,14 +86,10 @@ class PerformanceOptimizer:
                 "whatsapp": 0.20,
                 "email": 0.15,
                 "instagram": 0.15,
-                "linkedin": 0.10
+                "linkedin": 0.10,
             }
         else:  # CONSERVATIVE
-            channels = {
-                "google_maps": 0.50,
-                "whatsapp": 0.30,
-                "email": 0.20
-            }
+            channels = {"google_maps": 0.50, "whatsapp": 0.30, "email": 0.20}
 
         for channel, pct in channels.items():
             budget = total_budget * pct
@@ -100,7 +98,7 @@ class PerformanceOptimizer:
                 recommended_budget=budget,
                 expected_leads=int(budget / 10),  # $10 per lead estimate
                 expected_revenue=int(budget * 2.5),  # 2.5x ROI target
-                confidence=0.85
+                confidence=0.85,
             )
             allocations.append(allocation)
 
@@ -110,7 +108,7 @@ class PerformanceOptimizer:
         self,
         seller_id: str,
         current_metrics: dict[str, Any],
-        total_budget: float = 1000.0
+        total_budget: float = 1000.0,
     ) -> OptimizationRecommendation:
         """Generate complete optimization plan"""
 
@@ -131,7 +129,7 @@ class PerformanceOptimizer:
             expected_total_revenue=total_expected_revenue,
             expected_roi=expected_roi,
             rationale=rationale,
-            actions=actions
+            actions=actions,
         )
 
         return recommendation
@@ -141,13 +139,17 @@ class PerformanceOptimizer:
         if strategy == OptimizationStrategy.AGGRESSIVE:
             return "High ROI and growth momentum justify increased spend to capture market share"
         elif strategy == OptimizationStrategy.GROWTH:
-            return "Good performance metrics support gradual budget increase for scaling"
+            return (
+                "Good performance metrics support gradual budget increase for scaling"
+            )
         elif strategy == OptimizationStrategy.BALANCED:
             return "Current metrics indicate steady performance - maintain current trajectory"
         else:
             return "Conservative approach recommended - focus on cost efficiency and proven channels"
 
-    def _generate_actions(self, strategy: OptimizationStrategy, allocations: list) -> list[str]:
+    def _generate_actions(
+        self, strategy: OptimizationStrategy, allocations: list
+    ) -> list[str]:
         """Generate specific implementation steps"""
         total_leads = sum(a.expected_leads for a in allocations)
         actions = [
@@ -155,6 +157,6 @@ class PerformanceOptimizer:
             f"2. Monitor daily leads: target {total_leads} leads",
             "3. Track conversion rate weekly",
             "4. Adjust bids based on actual ROI",
-            "5. Review performance bi-weekly"
+            "5. Review performance bi-weekly",
         ]
         return actions[:5]

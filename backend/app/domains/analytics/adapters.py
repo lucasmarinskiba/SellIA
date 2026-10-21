@@ -200,17 +200,50 @@ class LtvAdapter:
     """Returns business-type-specific LTV prediction adjustments."""
 
     MULTIPLIERS: ClassVar[dict[BusinessType, dict[str, float]]] = {
-        BusinessType.SOFTWARE: {"predicted_orders_multiplier": 1.5, "confidence_boost": 0.1},
-        BusinessType.CONSULTING: {"predicted_orders_multiplier": 0.8, "confidence_boost": 0.05},
-        BusinessType.SERVICES: {"predicted_orders_multiplier": 1.0, "confidence_boost": 0.0},
-        BusinessType.FOOD_BEVERAGE: {"predicted_orders_multiplier": 2.5, "confidence_boost": 0.15},
-        BusinessType.FASHION_BEAUTY: {"predicted_orders_multiplier": 2.0, "confidence_boost": 0.1},
-        BusinessType.PHYSICAL_PRODUCTS: {"predicted_orders_multiplier": 1.8, "confidence_boost": 0.1},
-        BusinessType.DIGITAL_PRODUCTS: {"predicted_orders_multiplier": 1.2, "confidence_boost": 0.05},
-        BusinessType.HEALTH_WELLNESS: {"predicted_orders_multiplier": 1.8, "confidence_boost": 0.1},
-        BusinessType.HOME_DECOR: {"predicted_orders_multiplier": 0.6, "confidence_boost": 0.05},
-        BusinessType.HANDCRAFT: {"predicted_orders_multiplier": 1.0, "confidence_boost": 0.05},
-        BusinessType.OTHER: {"predicted_orders_multiplier": 1.0, "confidence_boost": 0.0},
+        BusinessType.SOFTWARE: {
+            "predicted_orders_multiplier": 1.5,
+            "confidence_boost": 0.1,
+        },
+        BusinessType.CONSULTING: {
+            "predicted_orders_multiplier": 0.8,
+            "confidence_boost": 0.05,
+        },
+        BusinessType.SERVICES: {
+            "predicted_orders_multiplier": 1.0,
+            "confidence_boost": 0.0,
+        },
+        BusinessType.FOOD_BEVERAGE: {
+            "predicted_orders_multiplier": 2.5,
+            "confidence_boost": 0.15,
+        },
+        BusinessType.FASHION_BEAUTY: {
+            "predicted_orders_multiplier": 2.0,
+            "confidence_boost": 0.1,
+        },
+        BusinessType.PHYSICAL_PRODUCTS: {
+            "predicted_orders_multiplier": 1.8,
+            "confidence_boost": 0.1,
+        },
+        BusinessType.DIGITAL_PRODUCTS: {
+            "predicted_orders_multiplier": 1.2,
+            "confidence_boost": 0.05,
+        },
+        BusinessType.HEALTH_WELLNESS: {
+            "predicted_orders_multiplier": 1.8,
+            "confidence_boost": 0.1,
+        },
+        BusinessType.HOME_DECOR: {
+            "predicted_orders_multiplier": 0.6,
+            "confidence_boost": 0.05,
+        },
+        BusinessType.HANDCRAFT: {
+            "predicted_orders_multiplier": 1.0,
+            "confidence_boost": 0.05,
+        },
+        BusinessType.OTHER: {
+            "predicted_orders_multiplier": 1.0,
+            "confidence_boost": 0.0,
+        },
     }
 
     @classmethod
@@ -225,11 +258,26 @@ class AlertAdapter:
         BusinessType.SOFTWARE: {"drop_critical": -15.0, "growth_opportunity": 30.0},
         BusinessType.CONSULTING: {"drop_critical": -25.0, "growth_opportunity": 40.0},
         BusinessType.SERVICES: {"drop_critical": -20.0, "growth_opportunity": 35.0},
-        BusinessType.FOOD_BEVERAGE: {"drop_critical": -10.0, "growth_opportunity": 25.0},
-        BusinessType.FASHION_BEAUTY: {"drop_critical": -20.0, "growth_opportunity": 35.0},
-        BusinessType.PHYSICAL_PRODUCTS: {"drop_critical": -20.0, "growth_opportunity": 35.0},
-        BusinessType.DIGITAL_PRODUCTS: {"drop_critical": -25.0, "growth_opportunity": 40.0},
-        BusinessType.HEALTH_WELLNESS: {"drop_critical": -15.0, "growth_opportunity": 30.0},
+        BusinessType.FOOD_BEVERAGE: {
+            "drop_critical": -10.0,
+            "growth_opportunity": 25.0,
+        },
+        BusinessType.FASHION_BEAUTY: {
+            "drop_critical": -20.0,
+            "growth_opportunity": 35.0,
+        },
+        BusinessType.PHYSICAL_PRODUCTS: {
+            "drop_critical": -20.0,
+            "growth_opportunity": 35.0,
+        },
+        BusinessType.DIGITAL_PRODUCTS: {
+            "drop_critical": -25.0,
+            "growth_opportunity": 40.0,
+        },
+        BusinessType.HEALTH_WELLNESS: {
+            "drop_critical": -15.0,
+            "growth_opportunity": 30.0,
+        },
         BusinessType.HOME_DECOR: {"drop_critical": -25.0, "growth_opportunity": 40.0},
         BusinessType.HANDCRAFT: {"drop_critical": -25.0, "growth_opportunity": 40.0},
         BusinessType.OTHER: {"drop_critical": -20.0, "growth_opportunity": 50.0},
@@ -283,12 +331,18 @@ class AlertAdapter:
     }
 
     @classmethod
-    def get_revenue_thresholds(cls, business_type: BusinessType | None) -> dict[str, float]:
-        return cls.REVENUE_THRESHOLDS.get(business_type, cls.REVENUE_THRESHOLDS[BusinessType.OTHER])
+    def get_revenue_thresholds(
+        cls, business_type: BusinessType | None
+    ) -> dict[str, float]:
+        return cls.REVENUE_THRESHOLDS.get(
+            business_type, cls.REVENUE_THRESHOLDS[BusinessType.OTHER]
+        )
 
     @classmethod
     def get_recommendations(cls, business_type: BusinessType | None) -> dict[str, str]:
-        return cls.RECOMMENDATIONS.get(business_type, cls.RECOMMENDATIONS[BusinessType.OTHER])
+        return cls.RECOMMENDATIONS.get(
+            business_type, cls.RECOMMENDATIONS[BusinessType.OTHER]
+        )
 
 
 class DashboardKPIAdapter:
@@ -328,7 +382,11 @@ class DashboardKPIAdapter:
             {"key": "conversion_rate", "label": "Conversión", "priority": 2},
             {"key": "return_rate", "label": "Tasa de Devolución", "priority": 3},
             {"key": "avg_ticket", "label": "Ticket Promedio", "priority": 4},
-            {"key": "new_vs_returning", "label": "Nuevos vs Recurrentes", "priority": 5},
+            {
+                "key": "new_vs_returning",
+                "label": "Nuevos vs Recurrentes",
+                "priority": 5,
+            },
         ],
         BusinessType.PHYSICAL_PRODUCTS: [
             {"key": "revenue", "label": "Ingresos", "priority": 1},

@@ -51,9 +51,9 @@ class AnalysisStyle(str, Enum):
     MULTI_TIMEFRAME = "multi_timeframe"
     RELATIVE_VALUATION = "relative_valuation"
     RISK_MANAGEMENT = "risk_management"
-    INCOME_APPROACH = "income_approach"        # inmobiliario (cap rate / NOI)
+    INCOME_APPROACH = "income_approach"  # inmobiliario (cap rate / NOI)
     COMPARABLE_APPROACH = "comparable_approach"  # inmobiliario (comps)
-    COST_APPROACH = "cost_approach"            # inmobiliario (costo de reposición)
+    COST_APPROACH = "cost_approach"  # inmobiliario (costo de reposición)
 
 
 class RiskRating(str, Enum):
@@ -73,28 +73,46 @@ class ProposalStatus(str, Enum):
 # Estilos de análisis válidos por clase de activo (introspección + validación).
 ANALYSIS_BY_ASSET: dict[AssetClass, list[AnalysisStyle]] = {
     AssetClass.CRYPTO: [
-        AnalysisStyle.TECHNICAL, AnalysisStyle.ON_CHAIN, AnalysisStyle.SENTIMENT,
-        AnalysisStyle.MACRO, AnalysisStyle.MULTI_TIMEFRAME, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.ON_CHAIN,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.MULTI_TIMEFRAME,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.EQUITY: [
-        AnalysisStyle.FUNDAMENTAL, AnalysisStyle.TECHNICAL, AnalysisStyle.RELATIVE_VALUATION,
-        AnalysisStyle.QUANTITATIVE, AnalysisStyle.SENTIMENT, AnalysisStyle.MACRO,
+        AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.RELATIVE_VALUATION,
+        AnalysisStyle.QUANTITATIVE,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.MACRO,
         AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.FOREX: [
-        AnalysisStyle.TECHNICAL, AnalysisStyle.MACRO, AnalysisStyle.MULTI_TIMEFRAME,
-        AnalysisStyle.SENTIMENT, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.MULTI_TIMEFRAME,
+        AnalysisStyle.SENTIMENT,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.COMMODITY: [
-        AnalysisStyle.MACRO, AnalysisStyle.TECHNICAL, AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.TECHNICAL,
+        AnalysisStyle.FUNDAMENTAL,
         AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.BOND: [
-        AnalysisStyle.MACRO, AnalysisStyle.FUNDAMENTAL, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.FUNDAMENTAL,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
     AssetClass.REAL_ESTATE: [
-        AnalysisStyle.INCOME_APPROACH, AnalysisStyle.COMPARABLE_APPROACH,
-        AnalysisStyle.COST_APPROACH, AnalysisStyle.MACRO, AnalysisStyle.RISK_MANAGEMENT,
+        AnalysisStyle.INCOME_APPROACH,
+        AnalysisStyle.COMPARABLE_APPROACH,
+        AnalysisStyle.COST_APPROACH,
+        AnalysisStyle.MACRO,
+        AnalysisStyle.RISK_MANAGEMENT,
     ],
 }
 
@@ -116,14 +134,14 @@ class TradeProposal:
     NO es una orden. Requiere aprobación humana y ejecución por el usuario.
     """
 
-    asset: str                       # ej. "BTC/USDT", "AAPL", "EUR/USD", "Depto Palermo"
+    asset: str  # ej. "BTC/USDT", "AAPL", "EUR/USD", "Depto Palermo"
     asset_class: AssetClass
     side: TradeSide
     rationale: str
     analysis_styles: list[AnalysisStyle]
     risk: RiskRating
-    confidence: float                # 0.0–1.0
-    market: str = ""                 # plataforma/mercado (ej. "Binance", "NYSE")
+    confidence: float  # 0.0–1.0
+    market: str = ""  # plataforma/mercado (ej. "Binance", "NYSE")
     suggested_allocation_pct: float | None = None  # % del capital sugerido
     stop_loss: str | None = None
     take_profit: str | None = None
@@ -138,10 +156,14 @@ class TradeProposal:
     def __post_init__(self) -> None:
         self.confidence = max(0.0, min(1.0, float(self.confidence)))
         if self.suggested_allocation_pct is not None:
-            self.suggested_allocation_pct = max(0.0, min(100.0, float(self.suggested_allocation_pct)))
+            self.suggested_allocation_pct = max(
+                0.0, min(100.0, float(self.suggested_allocation_pct))
+            )
         valid = ANALYSIS_BY_ASSET.get(self.asset_class, [])
         if valid:
-            self.analysis_styles = [s for s in self.analysis_styles if s in valid] or list(valid[:1])
+            self.analysis_styles = [
+                s for s in self.analysis_styles if s in valid
+            ] or list(valid[:1])
 
     def is_expired(self, now: datetime | None = None) -> bool:
         now = now or _now()
@@ -286,14 +308,21 @@ class CopyTradeReviewQueue:
         self._expire_stale(now)
         if not self.presence.is_active(now):
             return []
-        return [p.to_dict() for p in self._proposals.values() if p.status == ProposalStatus.PENDING]
+        return [
+            p.to_dict()
+            for p in self._proposals.values()
+            if p.status == ProposalStatus.PENDING
+        ]
 
     def approve(self, proposal_id: str, now: datetime | None = None) -> dict:
         p = self._proposals.get(proposal_id)
         if p is None:
             return {"ok": False, "reason": "Propuesta no encontrada."}
         if not self.presence.is_active(now):
-            return {"ok": False, "reason": "Usuario inactivo: no se puede aprobar sin presencia."}
+            return {
+                "ok": False,
+                "reason": "Usuario inactivo: no se puede aprobar sin presencia.",
+            }
         if p.is_expired(now):
             p.status = ProposalStatus.EXPIRED
             return {"ok": False, "reason": "Propuesta expirada; el mercado se movió."}

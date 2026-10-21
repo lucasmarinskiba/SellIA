@@ -36,9 +36,11 @@ logger = logging.getLogger(__name__)
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class WebFormData:
     """Datos extraídos de formulario web."""
+
     form_url: str
     form_name: str
     fields: dict[str, str]  # {"email": "user@example.com", "name": "John"}
@@ -49,6 +51,7 @@ class WebFormData:
 @dataclass
 class LeadScore:
     """Score de calidad y potencial del lead."""
+
     overall_score: float  # 0-100
     data_completeness: float  # % de campos
     email_verified: bool
@@ -62,6 +65,7 @@ class LeadScore:
 @dataclass
 class EnrichedLead:
     """Lead enriquecido con datos adicionales."""
+
     # Core data
     email: str
     first_name: str | None = None
@@ -91,12 +95,14 @@ class EnrichedLead:
     timeline: str | None = None
 
     # Quality metrics
-    score: LeadScore = field(default_factory=lambda: LeadScore(
-        overall_score=0.0,
-        data_completeness=0.0,
-        email_verified=False,
-        phone_verified=False,
-    ))
+    score: LeadScore = field(
+        default_factory=lambda: LeadScore(
+            overall_score=0.0,
+            data_completeness=0.0,
+            email_verified=False,
+            phone_verified=False,
+        )
+    )
 
     # Timestamps
     first_seen: datetime = field(default_factory=utc_now)
@@ -107,6 +113,7 @@ class EnrichedLead:
 # ============================================================================
 # WEB FORM AUTOMATION
 # ============================================================================
+
 
 class WebFormFiller:
     """Automatiza llenado de formularios web."""
@@ -177,24 +184,28 @@ class WebFormFiller:
             )
 
             # 7. Log submission
-            self.form_submissions.append(WebFormData(
-                form_url=form_url,
-                form_name=form_name,
-                fields=form_data,
-                success=True,
-            ))
+            self.form_submissions.append(
+                WebFormData(
+                    form_url=form_url,
+                    form_name=form_name,
+                    fields=form_data,
+                    success=True,
+                )
+            )
 
             logger.info(f"Form submitted successfully: {form_name}")
             return True
 
         except Exception:
             logger.exception("Error filling form")
-            self.form_submissions.append(WebFormData(
-                form_url=form_url,
-                form_name=form_name,
-                fields=form_data,
-                success=False,
-            ))
+            self.form_submissions.append(
+                WebFormData(
+                    form_url=form_url,
+                    form_name=form_name,
+                    fields=form_data,
+                    success=False,
+                )
+            )
             return False
 
     def _detect_form_fields(self, screenshot: dict[str, Any]) -> dict[str, str]:
@@ -245,6 +256,7 @@ class WebFormFiller:
 # LEAD SCRAPING FROM DIRECTORIES
 # ============================================================================
 
+
 class DirectoryScraper:
     """
     Scrape de directorios (LinkedIn, Google Maps, Yellow Pages, industry databases).
@@ -282,11 +294,15 @@ class DirectoryScraper:
             # await computer_use.navigate("https://maps.google.com")
 
             # 2. Busca
-            await self.browser_utils.type_in_field("Search field", f"{query} {location}")
+            await self.browser_utils.type_in_field(
+                "Search field", f"{query} {location}"
+            )
             await self.browser_utils.click_by_vision("Search button or Enter key")
 
             # 3. Espera resultados
-            await self.browser_utils.wait_for_element("Search results or Business listings", timeout=15)
+            await self.browser_utils.wait_for_element(
+                "Search results or Business listings", timeout=15
+            )
 
             # 4. Scrape resultados
             businesses = []
@@ -307,7 +323,9 @@ class DirectoryScraper:
                     await asyncio.sleep(1)
 
                 except Exception as e:
-                    logger.warning(f"Error scraping business {i+1}: {e!s}", exc_info=True)
+                    logger.warning(
+                        f"Error scraping business {i+1}: {e!s}", exc_info=True
+                    )
 
             logger.info(f"Scraped {len(businesses)} businesses from Google Maps")
             return businesses
@@ -395,7 +413,9 @@ class DirectoryScraper:
                     await asyncio.sleep(2)
 
                 except Exception as e:
-                    logger.warning(f"Error scraping profile {i+1}: {e!s}", exc_info=True)
+                    logger.warning(
+                        f"Error scraping profile {i+1}: {e!s}", exc_info=True
+                    )
 
             logger.info(f"Scraped {len(profiles)} LinkedIn profiles")
             return profiles
@@ -404,7 +424,9 @@ class DirectoryScraper:
             logger.exception("Error scraping LinkedIn")
             return []
 
-    def _parse_linkedin_profile(self, screenshot: dict[str, Any]) -> dict[str, Any] | None:
+    def _parse_linkedin_profile(
+        self, screenshot: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extrae datos de perfil LinkedIn."""
         return {
             "name": None,
@@ -419,6 +441,7 @@ class DirectoryScraper:
 # ============================================================================
 # LEAD EXTRACTION FROM MESSAGES
 # ============================================================================
+
 
 class MessageLeadExtractor:
     """Extrae datos de leads de mensajes (WhatsApp, Messenger, email)."""
@@ -447,13 +470,13 @@ class MessageLeadExtractor:
         }
 
         # Extrae email
-        email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
+        email_pattern = r"[\w\.-]+@[\w\.-]+\.\w+"
         emails = re.findall(email_pattern, message_text)
         if emails:
             extracted["email"] = emails[0]
 
         # Extrae teléfono
-        phone_pattern = r'[\+]?[\d\s\-\(\)]{10,}'
+        phone_pattern = r"[\+]?[\d\s\-\(\)]{10,}"
         phones = re.findall(phone_pattern, message_text)
         if phones:
             extracted["phone"] = phones[0]
@@ -484,6 +507,7 @@ class MessageLeadExtractor:
 # ============================================================================
 # LEAD ENRICHMENT
 # ============================================================================
+
 
 class LeadEnricher:
     """Enriquece leads con datos de terceros."""
@@ -583,7 +607,7 @@ class LeadEnricher:
         try:
             # Validación básica
             # En producción: usar servicio de verificación (Apollo, ZeroBounce, etc)
-            return bool(re.match(r'[\w\.-]+@[\w\.-]+\.\w+', email))
+            return bool(re.match(r"[\w\.-]+@[\w\.-]+\.\w+", email))
 
         except Exception as e:
             logger.warning(f"Error verifying email: {e!s}", exc_info=True)
@@ -635,13 +659,15 @@ class LeadEnricher:
         weights = {}
 
         # Completitud (40%)
-        fields_filled = sum([
-            lead.email != "",
-            lead.first_name is not None,
-            lead.phone is not None,
-            lead.company is not None,
-            lead.job_title is not None,
-        ])
+        fields_filled = sum(
+            [
+                lead.email != "",
+                lead.first_name is not None,
+                lead.phone is not None,
+                lead.company is not None,
+                lead.job_title is not None,
+            ]
+        )
         completeness = (fields_filled / 5) * 100
         score += completeness * 0.4
         weights["completeness"] = completeness
@@ -680,6 +706,7 @@ class LeadEnricher:
 # ============================================================================
 # LEAD CAPTURE ENGINE (Main)
 # ============================================================================
+
 
 class LeadCaptureEngine:
     """Motor principal de captura y enriquecimiento de leads."""
@@ -755,7 +782,9 @@ class LeadCaptureEngine:
         - excel (xlsx)
         """
         if format == "json":
-            return json.dumps([asdict(lead) for lead in self.all_leads], default=str, indent=2)
+            return json.dumps(
+                [asdict(lead) for lead in self.all_leads], default=str, indent=2
+            )
         elif format == "csv":
             # TODO: Implementar CSV export
             return ""
@@ -764,7 +793,9 @@ class LeadCaptureEngine:
 
     def get_high_quality_leads(self, min_score: float = 70.0) -> list[EnrichedLead]:
         """Retorna leads con score >= min_score."""
-        return [lead for lead in self.all_leads if lead.score.overall_score >= min_score]
+        return [
+            lead for lead in self.all_leads if lead.score.overall_score >= min_score
+        ]
 
     def get_leads_by_source(self, source: str) -> list[EnrichedLead]:
         """Retorna leads de fuente específica."""
@@ -780,7 +811,9 @@ class LeadCaptureEngine:
                 "by_source": {},
             }
 
-        avg_score = sum(lead.score.overall_score for lead in self.all_leads) / len(self.all_leads)
+        avg_score = sum(lead.score.overall_score for lead in self.all_leads) / len(
+            self.all_leads
+        )
         high_quality = len([l for l in self.all_leads if l.score.overall_score >= 70])
 
         by_source = {}

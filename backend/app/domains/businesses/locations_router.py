@@ -50,23 +50,18 @@ async def create_location(
     # Verify business ownership
     result = await db.execute(
         select(Business).where(
-            Business.id == business_id,
-            Business.user_id == current_user.id
+            Business.id == business_id, Business.user_id == current_user.id
         )
     )
     business = result.scalar_one_or_none()
 
     if not business:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
         )
 
     # Create location
-    location = Location(
-        business_id=business_id,
-        **location_data.model_dump()
-    )
+    location = Location(business_id=business_id, **location_data.model_dump())
 
     db.add(location)
     await db.flush()
@@ -74,16 +69,19 @@ async def create_location(
     # Auto-detect localization model based on new location count
     all_locs_result = await db.execute(
         select(Location).where(
-            Location.business_id == business_id,
-            Location.is_active == True
+            Location.business_id == business_id, Location.is_active == True
         )
     )
     all_locations = all_locs_result.scalars().all()
 
-    detected_model = BusinessLocalizationService.detect_model(business, list(all_locations))
+    detected_model = BusinessLocalizationService.detect_model(
+        business, list(all_locations)
+    )
     if detected_model != business.localization_model:
         business.localization_model = detected_model
-        logger.info(f"Auto-updated business {business_id} localization to {detected_model}")
+        logger.info(
+            f"Auto-updated business {business_id} localization to {detected_model}"
+        )
 
     await db.commit()
     await db.refresh(location)
@@ -106,16 +104,14 @@ async def list_locations(
     # Verify business ownership
     result = await db.execute(
         select(Business).where(
-            Business.id == business_id,
-            Business.user_id == current_user.id
+            Business.id == business_id, Business.user_id == current_user.id
         )
     )
     business = result.scalar_one_or_none()
 
     if not business:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
         )
 
     # Query locations
@@ -145,8 +141,7 @@ async def get_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify user owns this location's business
@@ -157,8 +152,7 @@ async def get_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     location_resp = LocationResponse.model_validate(location)
@@ -182,8 +176,7 @@ async def update_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify ownership
@@ -194,8 +187,7 @@ async def update_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     # Update fields
@@ -225,8 +217,7 @@ async def delete_location(
 
     if not location:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Location not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Location not found"
         )
 
     # Verify ownership
@@ -237,8 +228,7 @@ async def delete_location(
 
     if not business or business.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
 
     location.is_active = False

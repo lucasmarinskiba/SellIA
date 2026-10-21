@@ -24,6 +24,7 @@ numbers. Metrics with no real data source anywhere in the app yet
 sense) are returned as None with an honest label rather than a random
 number that looks real.
 """
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -42,9 +43,14 @@ from app.domains.users.models import User
 
 class TeamManager:
     @staticmethod
-    async def add_team_member(business_id: UUID, user_id: UUID, role: BusinessMemberRole, db: AsyncSession) -> BusinessMember:
+    async def add_team_member(
+        business_id: UUID, user_id: UUID, role: BusinessMemberRole, db: AsyncSession
+    ) -> BusinessMember:
         result = await db.execute(
-            select(BusinessMember).where(BusinessMember.business_id == business_id, BusinessMember.user_id == user_id)
+            select(BusinessMember).where(
+                BusinessMember.business_id == business_id,
+                BusinessMember.user_id == user_id,
+            )
         )
         existing = result.scalar_one_or_none()
         if existing:
@@ -61,9 +67,14 @@ class TeamManager:
         return member
 
     @staticmethod
-    async def remove_team_member(business_id: UUID, user_id: UUID, db: AsyncSession) -> bool:
+    async def remove_team_member(
+        business_id: UUID, user_id: UUID, db: AsyncSession
+    ) -> bool:
         result = await db.execute(
-            select(BusinessMember).where(BusinessMember.business_id == business_id, BusinessMember.user_id == user_id)
+            select(BusinessMember).where(
+                BusinessMember.business_id == business_id,
+                BusinessMember.user_id == user_id,
+            )
         )
         member = result.scalar_one_or_none()
         if not member:
@@ -75,7 +86,9 @@ class TeamManager:
     @staticmethod
     async def get_team_members(business_id: UUID, db: AsyncSession) -> list[dict]:
         """Owner (Business.user_id) plus every active BusinessMember row, joined with User for name/email."""
-        biz_result = await db.execute(select(Business).where(Business.id == business_id))
+        biz_result = await db.execute(
+            select(Business).where(Business.id == business_id)
+        )
         business = biz_result.scalar_one_or_none()
         if not business:
             return []
@@ -86,39 +99,64 @@ class TeamManager:
         members_result = await db.execute(
             select(BusinessMember, User)
             .join(User, User.id == BusinessMember.user_id)
-            .where(BusinessMember.business_id == business_id, BusinessMember.is_active == True)
+            .where(
+                BusinessMember.business_id == business_id,
+                BusinessMember.is_active == True,
+            )
         )
 
         result = []
         if owner:
-            result.append({
-                "user_id": str(owner.id), "name": owner.full_name, "email": owner.email,
-                "role": "owner", "joined_at": None,
-            })
+            result.append(
+                {
+                    "user_id": str(owner.id),
+                    "name": owner.full_name,
+                    "email": owner.email,
+                    "role": "owner",
+                    "joined_at": None,
+                }
+            )
         for member, user in members_result.all():
-            result.append({
-                "user_id": str(user.id), "name": user.full_name, "email": user.email,
-                "role": member.role.value, "joined_at": member.joined_at.isoformat() if member.joined_at else None,
-            })
+            result.append(
+                {
+                    "user_id": str(user.id),
+                    "name": user.full_name,
+                    "email": user.email,
+                    "role": member.role.value,
+                    "joined_at": (
+                        member.joined_at.isoformat() if member.joined_at else None
+                    ),
+                }
+            )
         return result
 
     @staticmethod
-    async def get_member_role(business_id: UUID, user_id: UUID, db: AsyncSession) -> str | None:
-        biz_result = await db.execute(select(Business).where(Business.id == business_id))
+    async def get_member_role(
+        business_id: UUID, user_id: UUID, db: AsyncSession
+    ) -> str | None:
+        biz_result = await db.execute(
+            select(Business).where(Business.id == business_id)
+        )
         business = biz_result.scalar_one_or_none()
         if business and business.user_id == user_id:
             return "owner"
         result = await db.execute(
             select(BusinessMember).where(
-                BusinessMember.business_id == business_id, BusinessMember.user_id == user_id, BusinessMember.is_active == True
+                BusinessMember.business_id == business_id,
+                BusinessMember.user_id == user_id,
+                BusinessMember.is_active == True,
             )
         )
         member = result.scalar_one_or_none()
         return member.role.value if member else None
 
     @staticmethod
-    async def assign_deal(business_id: UUID, deal_id: UUID, member_user_id: UUID, db: AsyncSession) -> bool:
-        result = await db.execute(select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id))
+    async def assign_deal(
+        business_id: UUID, deal_id: UUID, member_user_id: UUID, db: AsyncSession
+    ) -> bool:
+        result = await db.execute(
+            select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id)
+        )
         deal = result.scalar_one_or_none()
         if not deal:
             return False
@@ -128,7 +166,9 @@ class TeamManager:
 
     @staticmethod
     async def unassign_deal(business_id: UUID, deal_id: UUID, db: AsyncSession) -> bool:
-        result = await db.execute(select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id))
+        result = await db.execute(
+            select(Deal).where(Deal.id == deal_id, Deal.business_id == business_id)
+        )
         deal = result.scalar_one_or_none()
         if not deal:
             return False
@@ -137,14 +177,21 @@ class TeamManager:
         return True
 
     @staticmethod
-    async def get_member_deals(business_id: UUID, member_user_id: UUID, db: AsyncSession) -> list[Deal]:
+    async def get_member_deals(
+        business_id: UUID, member_user_id: UUID, db: AsyncSession
+    ) -> list[Deal]:
         result = await db.execute(
-            select(Deal).where(Deal.business_id == business_id, Deal.assigned_to_user_id == member_user_id)
+            select(Deal).where(
+                Deal.business_id == business_id,
+                Deal.assigned_to_user_id == member_user_id,
+            )
         )
         return list(result.scalars().all())
 
     @staticmethod
-    async def get_member_performance(business_id: UUID, member_user_id: UUID, db: AsyncSession) -> dict:
+    async def get_member_performance(
+        business_id: UUID, member_user_id: UUID, db: AsyncSession
+    ) -> dict:
         """Real metrics computed from Deal + DealOutcome. avg_response_time
         and customer_satisfaction have no data source anywhere in the app
         yet (no per-message response-time log, no CSAT survey feature) --
@@ -153,19 +200,26 @@ class TeamManager:
         from app.domains.enterprise.forecasting_models import DealOutcome
 
         deals = await TeamManager.get_member_deals(business_id, member_user_id, db)
-        open_deals = [d for d in deals if d.stage not in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)]
+        open_deals = [
+            d
+            for d in deals
+            if d.stage not in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+        ]
         won_deals = [d for d in deals if d.stage == LeadStage.CLOSED_WON]
 
         outcomes = []
         if deals:
             outcomes_result = await db.execute(
                 select(DealOutcome).where(
-                    DealOutcome.business_id == business_id, DealOutcome.deal_id.in_([d.id for d in deals])
+                    DealOutcome.business_id == business_id,
+                    DealOutcome.deal_id.in_([d.id for d in deals]),
                 )
             )
             outcomes = outcomes_result.scalars().all()
 
-        revenue_generated = sum(float(d.value) for d in won_deals if d.value is not None)
+        revenue_generated = sum(
+            float(d.value) for d in won_deals if d.value is not None
+        )
 
         return {
             "member_user_id": str(member_user_id),
@@ -175,7 +229,9 @@ class TeamManager:
             "win_rate": (len(won_deals) / len(deals)) if deals else None,
             "revenue_generated": revenue_generated,
             "forecast_accuracy": (
-                float(sum(o.forecast_accuracy for o in outcomes) / len(outcomes)) if outcomes else None
+                float(sum(o.forecast_accuracy for o in outcomes) / len(outcomes))
+                if outcomes
+                else None
             ),
             "avg_response_time_seconds": None,  # no per-message response-time tracking exists yet
             "customer_satisfaction": None,  # no CSAT survey feature exists yet
@@ -184,18 +240,31 @@ class TeamManager:
     @staticmethod
     async def get_team_metrics(business_id: UUID, db: AsyncSession) -> dict:
         members = await TeamManager.get_team_members(business_id, db)
-        performances = [await TeamManager.get_member_performance(business_id, UUID(m["user_id"]), db) for m in members]
+        performances = [
+            await TeamManager.get_member_performance(
+                business_id, UUID(m["user_id"]), db
+            )
+            for m in members
+        ]
 
         total_deals_assigned = sum(p["deals_assigned"] for p in performances)
         total_revenue = sum(p["revenue_generated"] for p in performances)
-        top_performer = max(performances, key=lambda p: p["revenue_generated"], default=None)
+        top_performer = max(
+            performances, key=lambda p: p["revenue_generated"], default=None
+        )
 
         return {
             "total_members": len(members),
             "total_deals_assigned": total_deals_assigned,
             "total_revenue_generated": total_revenue,
-            "top_performer_user_id": top_performer["member_user_id"] if top_performer and top_performer["revenue_generated"] > 0 else None,
-            "top_performer_revenue": top_performer["revenue_generated"] if top_performer else 0.0,
+            "top_performer_user_id": (
+                top_performer["member_user_id"]
+                if top_performer and top_performer["revenue_generated"] > 0
+                else None
+            ),
+            "top_performer_revenue": (
+                top_performer["revenue_generated"] if top_performer else 0.0
+            ),
         }
 
     @staticmethod
@@ -203,9 +272,19 @@ class TeamManager:
         members = await TeamManager.get_team_members(business_id, db)
         distribution = {}
         for m in members:
-            deals = await TeamManager.get_member_deals(business_id, UUID(m["user_id"]), db)
-            open_deals = [d for d in deals if d.stage not in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)]
-            distribution[m["user_id"]] = {"name": m["name"], "open_deals": len(open_deals), "role": m["role"]}
+            deals = await TeamManager.get_member_deals(
+                business_id, UUID(m["user_id"]), db
+            )
+            open_deals = [
+                d
+                for d in deals
+                if d.stage not in (LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST)
+            ]
+            distribution[m["user_id"]] = {
+                "name": m["name"],
+                "open_deals": len(open_deals),
+                "role": m["role"],
+            }
         return distribution
 
     @staticmethod
@@ -221,7 +300,8 @@ class TeamManager:
 
         result = await db.execute(
             select(Deal).where(
-                Deal.business_id == business_id, Deal.assigned_to_user_id.is_(None),
+                Deal.business_id == business_id,
+                Deal.assigned_to_user_id.is_(None),
                 Deal.stage.notin_([LeadStage.CLOSED_WON, LeadStage.CLOSED_LOST]),
             )
         )
@@ -239,14 +319,22 @@ class TeamManager:
 
     @staticmethod
     async def create_delegation(
-        business_id: UUID, from_user_id: UUID, to_user_id: UUID, deal_ids: list[UUID], reason: str, db: AsyncSession,
+        business_id: UUID,
+        from_user_id: UUID,
+        to_user_id: UUID,
+        deal_ids: list[UUID],
+        reason: str,
+        db: AsyncSession,
         duration_hours: int = 24,
     ) -> DealDelegation:
         from datetime import timedelta
 
         delegation = DealDelegation(
-            business_id=business_id, from_user_id=from_user_id, to_user_id=to_user_id,
-            deal_ids=[str(d) for d in deal_ids], reason=reason,
+            business_id=business_id,
+            from_user_id=from_user_id,
+            to_user_id=to_user_id,
+            deal_ids=[str(d) for d in deal_ids],
+            reason=reason,
             expires_at=datetime.now(UTC) + timedelta(hours=duration_hours),
         )
         db.add(delegation)
@@ -255,9 +343,14 @@ class TeamManager:
         return delegation
 
     @staticmethod
-    async def decide_delegation(business_id: UUID, delegation_id: UUID, decision: str, db: AsyncSession) -> bool:
+    async def decide_delegation(
+        business_id: UUID, delegation_id: UUID, decision: str, db: AsyncSession
+    ) -> bool:
         result = await db.execute(
-            select(DealDelegation).where(DealDelegation.id == delegation_id, DealDelegation.business_id == business_id)
+            select(DealDelegation).where(
+                DealDelegation.id == delegation_id,
+                DealDelegation.business_id == business_id,
+            )
         )
         delegation = result.scalar_one_or_none()
         if not delegation:
@@ -266,7 +359,9 @@ class TeamManager:
         delegation.decided_at = datetime.now(UTC)
         if decision == "approved":
             for deal_id_str in delegation.deal_ids:
-                deal_result = await db.execute(select(Deal).where(Deal.id == UUID(deal_id_str)))
+                deal_result = await db.execute(
+                    select(Deal).where(Deal.id == UUID(deal_id_str))
+                )
                 deal = deal_result.scalar_one_or_none()
                 if deal:
                     deal.assigned_to_user_id = delegation.to_user_id
@@ -274,10 +369,13 @@ class TeamManager:
         return True
 
     @staticmethod
-    async def get_pending_delegations(business_id: UUID, to_user_id: UUID, db: AsyncSession) -> list[DealDelegation]:
+    async def get_pending_delegations(
+        business_id: UUID, to_user_id: UUID, db: AsyncSession
+    ) -> list[DealDelegation]:
         result = await db.execute(
             select(DealDelegation).where(
-                DealDelegation.business_id == business_id, DealDelegation.to_user_id == to_user_id,
+                DealDelegation.business_id == business_id,
+                DealDelegation.to_user_id == to_user_id,
                 DealDelegation.status == "pending",
             )
         )

@@ -30,11 +30,14 @@ async def require_admin(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Requiere permisos de administrador")
+        raise HTTPException(
+            status_code=403, detail="Requiere permisos de administrador"
+        )
     return current_user
 
 
 # ===== CHURN SIGNALS =====
+
 
 @router.get("/churn-signals")
 async def get_admin_churn_signals(
@@ -83,6 +86,7 @@ async def get_admin_churn_signals(
 
 # ===== MARGINS =====
 
+
 @router.get("/margins")
 async def get_admin_margins(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -94,6 +98,7 @@ async def get_admin_margins(
 
 
 # ===== NPS STATS =====
+
 
 @router.get("/nps-stats")
 async def get_admin_nps_stats(
@@ -110,7 +115,9 @@ async def get_admin_nps_stats(
     promoters = promoters_result.scalar() or 0
 
     passives_result = await db.execute(
-        select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score.between(7, 8))
+        select(func.count(FeedbackNPSResponse.id)).where(
+            FeedbackNPSResponse.score.between(7, 8)
+        )
     )
     passives = passives_result.scalar() or 0
 
@@ -135,6 +142,7 @@ async def get_admin_nps_stats(
 
 # ===== REFERRAL STATS =====
 
+
 @router.get("/referral-stats")
 async def get_admin_referral_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -145,13 +153,19 @@ async def get_admin_referral_stats(
     total_codes_result = await db.execute(select(func.count(ReferralCode.id)))
     total_codes = total_codes_result.scalar() or 0
 
-    total_clicks_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_clicks), 0)))
+    total_clicks_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_clicks), 0))
+    )
     total_clicks = total_clicks_result.scalar() or 0
 
-    total_signups_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_signups), 0)))
+    total_signups_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_signups), 0))
+    )
     total_signups = total_signups_result.scalar() or 0
 
-    total_conversions_result = await db.execute(select(func.coalesce(func.sum(ReferralCode.total_conversions), 0)))
+    total_conversions_result = await db.execute(
+        select(func.coalesce(func.sum(ReferralCode.total_conversions), 0))
+    )
     total_conversions = total_conversions_result.scalar() or 0
 
     top_referrers_result = await db.execute(

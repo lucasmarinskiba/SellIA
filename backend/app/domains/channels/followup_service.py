@@ -31,16 +31,21 @@ from app.domains.channels.models import (
 
 logger = get_logger(__name__)
 
-COLD_THRESHOLD_HOURS = 24  # how long a conversation must sit silent before it counts as "cold"
+COLD_THRESHOLD_HOURS = (
+    24  # how long a conversation must sit silent before it counts as "cold"
+)
 MAX_FOLLOWUPS_PER_CONVERSATION = 2
-SCAN_BATCH_LIMIT = 200  # cap per run so one giant backlog can't block the loop for too long
+SCAN_BATCH_LIMIT = (
+    200  # cap per run so one giant backlog can't block the loop for too long
+)
 
 
 async def _find_cold_conversations(db: AsyncSession) -> list[Conversation]:
     threshold = datetime.now(UTC) - timedelta(hours=COLD_THRESHOLD_HOURS)
 
     result = await db.execute(
-        select(Conversation).where(
+        select(Conversation)
+        .where(
             Conversation.status == ConversationStatus.ACTIVE,
             Conversation.last_message_at.isnot(None),
             Conversation.last_message_at < threshold,
@@ -49,7 +54,8 @@ async def _find_cold_conversations(db: AsyncSession) -> list[Conversation]:
                 Conversation.last_followup_sent_at.is_(None),
                 Conversation.last_followup_sent_at < Conversation.last_message_at,
             ),
-        ).limit(SCAN_BATCH_LIMIT)
+        )
+        .limit(SCAN_BATCH_LIMIT)
     )
     return list(result.scalars().all())
 
@@ -80,7 +86,9 @@ async def _build_followup_text(db: AsyncSession, business_id: Any) -> str:
             angle = ctx.communication_angles[0]
             hook = angle.get("hook")
             if hook:
-                return f"¡Hola! {hook} ¿Seguís interesado/a? Cualquier duda, acá estoy 🙂"
+                return (
+                    f"¡Hola! {hook} ¿Seguís interesado/a? Cualquier duda, acá estoy 🙂"
+                )
         if ctx and ctx.scheduling_link:
             return f"¡Hola! ¿Seguís por ahí? Si querés avanzamos: {ctx.scheduling_link}"
     except Exception:
@@ -111,6 +119,7 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             text = await _build_followup_text(db, conversation.business_id)
 
             from app.domains.channels.services import send_outbound_message
+
             await send_outbound_message(db, conversation.id, text)
 
             conversation.last_followup_sent_at = datetime.now(UTC)
@@ -118,12 +127,16 @@ async def scan_and_send_followups(db: AsyncSession) -> dict[str, int]:
             await db.commit()
 
             stats["sent"] += 1
-            logger.info(f"Follow-up sent to conversation {conversation.id} (#{conversation.followup_count})")
+            logger.info(
+                f"Follow-up sent to conversation {conversation.id} (#{conversation.followup_count})"
+            )
 
         except Exception:
             await db.rollback()
             stats["errors"] += 1
-            logger.exception(f"Follow-up send failed for conversation {conversation.id}")
+            logger.exception(
+                f"Follow-up send failed for conversation {conversation.id}"
+            )
 
     if stats["sent"] or stats["errors"]:
         logger.info(f"Follow-up scan complete: {stats}")

@@ -120,23 +120,31 @@ def assess_client_risk(
     if is_tor_exit(ip):
         risk["is_tor"] = True
         risk["score"] += 40
-        risk["recommendations"].append("Conexión desde red Tor detectada. Se requiere verificación adicional.")
+        risk["recommendations"].append(
+            "Conexión desde red Tor detectada. Se requiere verificación adicional."
+        )
 
     if is_known_vpn_range(ip):
         risk["is_vpn"] = True
         risk["score"] += 15
-        risk["recommendations"].append("VPN/Proxy detectado. Verifique que sea una conexión legitima.")
+        risk["recommendations"].append(
+            "VPN/Proxy detectado. Verifique que sea una conexión legitima."
+        )
 
     mitm = detect_mitm_headers(headers)
     if mitm:
         risk["mitm_detected"] = True
         risk["mitm_headers"] = mitm
         risk["score"] += 25
-        risk["recommendations"].append("Posible inspección SSL/MITM detectada. Asegurese de usar una conexion segura y verifique su antivirus/VPN.")
+        risk["recommendations"].append(
+            "Posible inspección SSL/MITM detectada. Asegurese de usar una conexion segura y verifique su antivirus/VPN."
+        )
 
     if is_malicious_user_agent(user_agent):
         risk["malicious_ua"] = True
         risk["score"] += 50
-        risk["recommendations"].append("User-Agent sospechoso detectado. Posible escaneo automatizado.")
+        risk["recommendations"].append(
+            "User-Agent sospechoso detectado. Posible escaneo automatizado."
+        )
 
     return risk

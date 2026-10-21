@@ -14,7 +14,10 @@ router = APIRouter(prefix="/fomo/ai/timing", tags=["fomo-ai-timing"])
 
 @router.post("/analyze-engagement")
 async def analyze_engagement_patterns(
-    send_history: Annotated[list[dict[str, Any]], Body(description='[{"sent_at": iso8601, "opened": bool, "clicked": bool}]')],
+    send_history: Annotated[
+        list[dict[str, Any]],
+        Body(description='[{"sent_at": iso8601, "opened": bool, "clicked": bool}]'),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Build the hour-of-day / day-of-week engagement heatmap for one customer"""
@@ -52,13 +55,20 @@ async def get_send_recommendation(
 ):
     """Full per-customer recommendation: best send window + personalized delays + fatigue check"""
     parsed = _parse_send_history(send_history)
-    return AITimingOptimizerAgent.get_send_recommendation(customer_id, automation_type, parsed)
+    return AITimingOptimizerAgent.get_send_recommendation(
+        customer_id, automation_type, parsed
+    )
 
 
 @router.post("/batch-optimize")
 async def batch_optimize(
     automation_type: Annotated[str, Query()],
-    customers_history: Annotated[dict[str, list[dict[str, Any]]], Body(description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}')],
+    customers_history: Annotated[
+        dict[str, list[dict[str, Any]]],
+        Body(
+            description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}'
+        ),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Batch timing recommendations across multiple customers"""

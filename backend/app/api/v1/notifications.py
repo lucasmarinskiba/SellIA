@@ -49,10 +49,7 @@ def set_notification_preferences(
     """Set user notification preferences."""
     preferences = request.dict(exclude_none=True) if request else {}
     return NotificationService.set_notification_preferences(
-        user_id=user_id,
-        business_id=business_id,
-        preferences=preferences,
-        db=db
+        user_id=user_id, business_id=business_id, preferences=preferences, db=db
     )
 
 
@@ -64,9 +61,7 @@ def get_notification_preferences(
 ):
     """Get user notification preferences."""
     return NotificationService.get_notification_preferences(
-        user_id=user_id,
-        business_id=business_id,
-        db=db
+        user_id=user_id, business_id=business_id, db=db
     )
 
 
@@ -84,7 +79,7 @@ def create_alert_rule(
         condition_json=request.condition_json,
         channels=request.channels,
         priority=request.priority,
-        db=db
+        db=db,
     )
 
 
@@ -96,9 +91,7 @@ def get_alert_rules(
 ):
     """Get alert rules."""
     return NotificationService.get_alert_rules(
-        business_id=business_id,
-        enabled_only=enabled_only,
-        db=db
+        business_id=business_id, enabled_only=enabled_only, db=db
     )
 
 
@@ -110,9 +103,7 @@ def update_alert_rule(
 ):
     """Update alert rule."""
     return NotificationService.update_alert_rule(
-        rule_id=rule_id,
-        updates=updates,
-        db=db
+        rule_id=rule_id, updates=updates, db=db
     )
 
 
@@ -130,7 +121,7 @@ def trigger_alert(
         alert_message=request.alert_message,
         priority=request.priority,
         target_user_ids=request.target_user_ids,
-        db=db
+        db=db,
     )
 
 
@@ -143,10 +134,7 @@ def get_notification_history(
 ):
     """Get notification history."""
     return NotificationService.get_notification_history(
-        user_id=user_id,
-        business_id=business_id,
-        days=days,
-        db=db
+        user_id=user_id, business_id=business_id, days=days, db=db
     )
 
 
@@ -158,9 +146,7 @@ def mark_notification_read(
 ):
     """Mark notification as read."""
     return NotificationService.mark_as_read(
-        notification_id=notification_id,
-        action=action,
-        db=db
+        notification_id=notification_id, action=action, db=db
     )
 
 
@@ -172,7 +158,5 @@ def get_notification_metrics(
 ):
     """Get notification metrics."""
     return NotificationService.get_notification_metrics(
-        business_id=business_id,
-        days=days,
-        db=db
+        business_id=business_id, days=days, db=db
     )

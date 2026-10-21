@@ -49,7 +49,9 @@ class DocumentService:
 
         content = await file.read()
         if len(content) > MAX_FILE_SIZE:
-            raise ValueError(f"File too large: {len(content)} bytes (max {MAX_FILE_SIZE})")
+            raise ValueError(
+                f"File too large: {len(content)} bytes (max {MAX_FILE_SIZE})"
+            )
 
         safe_title = title or Path(file.filename).stem
         unique_name = f"{uuid.uuid4().hex}_{file.filename}"
@@ -76,7 +78,10 @@ class DocumentService:
         try:
             process_document_task.delay(str(doc.id))
         except Exception as exc:
-            logger.warning(f"Could not queue Celery task: {exc}; processing will happen on next read or manually", exc_info=True)
+            logger.warning(
+                f"Could not queue Celery task: {exc}; processing will happen on next read or manually",
+                exc_info=True,
+            )
 
         return doc
 

@@ -8,6 +8,7 @@ pero nunca instanciados. Ahora enroll crea/actualiza una fila real,
 loyalty-status la lee (404 si nunca se inscribió), y unlock-vip actualiza
 esa misma fila.
 """
+
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -72,15 +73,24 @@ def _progress_to_next_tier(points: float) -> dict:
     for i, (tier, low, high) in enumerate(TIER_THRESHOLDS):
         if high is not None and low <= points <= high:
             _next_tier, next_low, _ = TIER_THRESHOLDS[i + 1]
-            return {"points_to_next_tier": next_low - points, "progress_to_next": (points - low) / (next_low - low)}
+            return {
+                "points_to_next_tier": next_low - points,
+                "progress_to_next": (points - low) / (next_low - low),
+            }
     return {"points_to_next_tier": 0, "progress_to_next": 1.0}
 
 
-async def _get_or_create_program(db: AsyncSession, user_id: str, email: str | None = None) -> LoyaltyProgram:
-    result = await db.execute(select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id))
+async def _get_or_create_program(
+    db: AsyncSession, user_id: str, email: str | None = None
+) -> LoyaltyProgram:
+    result = await db.execute(
+        select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id)
+    )
     program = result.scalars().first()
     if program is None:
-        program = LoyaltyProgram(id=str(uuid.uuid4()), user_id=user_id, email=email or f"{user_id}@unknown")
+        program = LoyaltyProgram(
+            id=str(uuid.uuid4()), user_id=user_id, email=email or f"{user_id}@unknown"
+        )
         db.add(program)
         await db.commit()
         await db.refresh(program)
@@ -153,10 +163,15 @@ async def get_loyalty_status(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Get customer loyalty tier + progress - lee la fila real, 404 si nunca se inscribió."""
-    result = await db.execute(select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id))
+    result = await db.execute(
+        select(LoyaltyProgram).where(LoyaltyProgram.user_id == user_id)
+    )
     program = result.scalars().first()
     if program is None:
-        raise HTTPException(status_code=404, detail=f"user_id={user_id} no está inscripto en el programa de loyalty")
+        raise HTTPException(
+            status_code=404,
+            detail=f"user_id={user_id} no está inscripto en el programa de loyalty",
+        )
 
     progress = _progress_to_next_tier(program.points_balance)
 

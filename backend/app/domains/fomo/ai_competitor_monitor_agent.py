@@ -56,7 +56,8 @@ class CompetitorPriceExtractor:
             for m in CompetitorPriceExtractor.PRICE_PATTERN.findall(raw_text)
         ]
         discounts = [
-            int(m) for m in CompetitorPriceExtractor.PERCENT_OFF_PATTERN.findall(raw_text)
+            int(m)
+            for m in CompetitorPriceExtractor.PERCENT_OFF_PATTERN.findall(raw_text)
         ]
         was_now_matches = CompetitorPriceExtractor.WAS_NOW_PATTERN.findall(raw_text)
         was_now_pairs = [
@@ -78,7 +79,9 @@ class CompetitorPriceExtractor:
             if pair["was"] > 0:
                 detected_discount = round((1 - pair["now"] / pair["was"]) * 100, 1)
         elif prices:
-            detected_price = min(prices)  # the sale price is typically the lowest listed
+            detected_price = min(
+                prices
+            )  # the sale price is typically the lowest listed
 
         if detected_discount is None and discounts:
             detected_discount = max(discounts)
@@ -122,7 +125,10 @@ class PriceChangeDetector:
 
         significant = (
             discount_delta >= PriceChangeDetector.SIGNIFICANT_DISCOUNT_DELTA
-            or (price_drop_ratio is not None and price_drop_ratio >= PriceChangeDetector.SIGNIFICANT_PRICE_DROP_RATIO)
+            or (
+                price_drop_ratio is not None
+                and price_drop_ratio >= PriceChangeDetector.SIGNIFICANT_PRICE_DROP_RATIO
+            )
         )
 
         if curr_discount > prev_discount:
@@ -138,7 +144,9 @@ class PriceChangeDetector:
             "change_type": change_type,
             "significant": significant,
             "discount_delta_points": discount_delta,
-            "price_drop_ratio": round(price_drop_ratio, 4) if price_drop_ratio is not None else None,
+            "price_drop_ratio": (
+                round(price_drop_ratio, 4) if price_drop_ratio is not None else None
+            ),
             "current": current,
             "previous": previous,
         }
@@ -160,7 +168,9 @@ class CompetitiveMessagingGenerator:
             return {"error": "invalid_our_price"}
 
         savings = competitor_price - our_price
-        savings_percent = (savings / competitor_price * 100) if competitor_price > 0 else 0
+        savings_percent = (
+            (savings / competitor_price * 100) if competitor_price > 0 else 0
+        )
 
         if savings > 0:
             headline = f"{our_product_name}: ${our_price:.2f} vs {competitor_name}: ${competitor_price:.2f} — Ahorra ${savings:.2f}"
@@ -275,7 +285,11 @@ class AICompetitorMonitorAgent:
         comparison = None
         counter_offer = None
 
-        if our_price is not None and current.get("detected_price") is not None and our_product_name:
+        if (
+            our_price is not None
+            and current.get("detected_price") is not None
+            and our_product_name
+        ):
             comparison = CompetitiveMessagingGenerator.generate_comparison(
                 our_price, current["detected_price"], our_product_name, competitor_name
             )
@@ -284,8 +298,12 @@ class AICompetitorMonitorAgent:
             counter_discount = our_recommended_discount_percent or min(
                 current["detected_discount_percent"] + 5, 50
             )
-            counter_offer = CompetitiveMessagingGenerator.generate_counter_offer_message(
-                current["detected_discount_percent"], counter_discount, competitor_name
+            counter_offer = (
+                CompetitiveMessagingGenerator.generate_counter_offer_message(
+                    current["detected_discount_percent"],
+                    counter_discount,
+                    competitor_name,
+                )
             )
 
         return {
@@ -303,6 +321,7 @@ async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> str | No
     raw page text, or None on any failure (never raises into the caller)."""
     try:
         import aiohttp
+
         async with (
             aiohttp.ClientSession() as session,
             session.get(
@@ -310,7 +329,9 @@ async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> str | No
             ) as resp,
         ):
             if resp.status != 200:
-                logger.warning(f"Competitor page fetch returned {resp.status} for {url}")
+                logger.warning(
+                    f"Competitor page fetch returned {resp.status} for {url}"
+                )
                 return None
             return await resp.text()
     except Exception as e:

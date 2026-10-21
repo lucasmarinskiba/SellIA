@@ -45,7 +45,7 @@ class WorkflowEngine:
         trigger_config: dict,
         conditions: list[dict] | None = None,
         actions: list[dict] | None = None,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> dict:
         """Create workflow."""
         if not db:
@@ -56,7 +56,7 @@ class WorkflowEngine:
             name=name,
             description=description,
             trigger_type=trigger_type,
-            trigger_config=trigger_config
+            trigger_config=trigger_config,
         )
 
         db.add(workflow)
@@ -72,7 +72,7 @@ class WorkflowEngine:
                     operator=cond.get("operator"),
                     value=cond.get("value"),
                     value_type=cond.get("value_type", "string"),
-                    logic_operator=cond.get("logic_operator", "AND")
+                    logic_operator=cond.get("logic_operator", "AND"),
                 )
                 db.add(condition)
 
@@ -83,17 +83,14 @@ class WorkflowEngine:
                     workflow_id=workflow.id,
                     action_type=action.get("action_type"),
                     action_config=action.get("action_config", {}),
-                    order=i
+                    order=i,
                 )
                 db.add(workflow_action)
 
         await db.commit()
 
         # Create metrics record
-        metrics = WorkflowMetrics(
-            business_id=business_id,
-            workflow_id=workflow.id
-        )
+        metrics = WorkflowMetrics(business_id=business_id, workflow_id=workflow.id)
         db.add(metrics)
         await db.commit()
 
@@ -103,22 +100,19 @@ class WorkflowEngine:
             "workflow_id": str(workflow.id),
             "name": name,
             "trigger_type": trigger_type,
-            "is_active": workflow.is_active
+            "is_active": workflow.is_active,
         }
 
     @staticmethod
     async def get_workflows(
-        business_id: UUID,
-        active_only: bool = True,
-        db: AsyncSession = None
+        business_id: UUID, active_only: bool = True, db: AsyncSession = None
     ) -> list[dict]:
         """Get workflows."""
         if not db:
             raise ValueError("Database session required")
 
         query = select(Workflow).where(
-            Workflow.business_id == business_id,
-            Workflow.is_deleted == False
+            Workflow.business_id == business_id, Workflow.is_deleted == False
         )
 
         if active_only:
@@ -134,23 +128,25 @@ class WorkflowEngine:
                 "trigger_type": w.trigger_type,
                 "is_active": w.is_active,
                 "total_executions": w.total_executions,
-                "last_executed": w.last_executed_at.isoformat() if w.last_executed_at else None,
+                "last_executed": (
+                    w.last_executed_at.isoformat() if w.last_executed_at else None
+                ),
             }
             for w in workflows
         ]
 
     @staticmethod
     async def activate_workflow(
-        workflow_id: UUID,
-        business_id: UUID,
-        db: AsyncSession = None
+        workflow_id: UUID, business_id: UUID, db: AsyncSession = None
     ) -> dict:
         """Activate workflow."""
         if not db:
             raise ValueError("Database session required")
 
         result = await db.execute(
-            select(Workflow).where(Workflow.id == workflow_id, Workflow.business_id == business_id)
+            select(Workflow).where(
+                Workflow.id == workflow_id, Workflow.business_id == business_id
+            )
         )
         workflow = result.scalar_one_or_none()
         if not workflow:
@@ -163,16 +159,16 @@ class WorkflowEngine:
 
     @staticmethod
     async def pause_workflow(
-        workflow_id: UUID,
-        business_id: UUID,
-        db: AsyncSession = None
+        workflow_id: UUID, business_id: UUID, db: AsyncSession = None
     ) -> dict:
         """Pause workflow."""
         if not db:
             raise ValueError("Database session required")
 
         result = await db.execute(
-            select(Workflow).where(Workflow.id == workflow_id, Workflow.business_id == business_id)
+            select(Workflow).where(
+                Workflow.id == workflow_id, Workflow.business_id == business_id
+            )
         )
         workflow = result.scalar_one_or_none()
         if not workflow:
@@ -189,7 +185,7 @@ class WorkflowEngine:
         business_id: UUID,
         customer_id: UUID,
         trigger_data: dict,
-        db: AsyncSession = None
+        db: AsyncSession = None,
     ) -> dict:
         """Execute workflow for customer."""
         if not db:
@@ -208,7 +204,9 @@ class WorkflowEngine:
             return {"status": "workflow_not_found"}
 
         # Check execution limits
-        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         count_result = await db.execute(
             select(func.count(WorkflowExecution.id)).where(
                 WorkflowExecution.workflow_id == workflow_id,
@@ -217,17 +215,24 @@ class WorkflowEngine:
         )
         executions_today = count_result.scalar() or 0
 
-        if workflow.max_executions_per_day > 0 and executions_today >= workflow.max_executions_per_day:
+        if (
+            workflow.max_executions_per_day > 0
+            and executions_today >= workflow.max_executions_per_day
+        ):
             return {"status": "execution_limit_reached"}
 
         # Evaluate conditions
-        conditions_met = await WorkflowEngine._evaluate_conditions(workflow_id, trigger_data, db)
+        conditions_met = await WorkflowEngine._evaluate_conditions(
+            workflow_id, trigger_data, db
+        )
         if not conditions_met:
             return {"status": "conditions_not_met"}
 
         # Execute actions
         actions_result = await db.execute(
-            select(WorkflowAction).where(WorkflowAction.workflow_id == workflow_id).order_by(WorkflowAction.order)
+            select(WorkflowAction)
+            .where(WorkflowAction.workflow_id == workflow_id)
+            .order_by(WorkflowAction.order)
         )
         actions = actions_result.scalars().all()
 
@@ -259,7 +264,7 @@ class WorkflowEngine:
             actions_executed=actions_executed,
             actions_failed=actions_failed,
             execution_log=execution_log,
-            completed_at=datetime.now(UTC)
+            completed_at=datetime.now(UTC),
         )
 
         db.add(execution)
@@ -284,24 +289,26 @@ class WorkflowEngine:
 
         await db.commit()
 
-        logger.info(f"Workflow {workflow_id} executed for customer {customer_id}: {actions_executed} actions")
+        logger.info(
+            f"Workflow {workflow_id} executed for customer {customer_id}: {actions_executed} actions"
+        )
 
         return {
             "execution_id": str(execution.id),
             "status": "success",
             "actions_executed": actions_executed,
-            "actions_failed": actions_failed
+            "actions_failed": actions_failed,
         }
 
     @staticmethod
     async def _evaluate_conditions(
-        workflow_id: UUID,
-        trigger_data: dict,
-        db: AsyncSession
+        workflow_id: UUID, trigger_data: dict, db: AsyncSession
     ) -> bool:
         """Evaluate workflow conditions."""
         result = await db.execute(
-            select(WorkflowCondition).where(WorkflowCondition.workflow_id == workflow_id)
+            select(WorkflowCondition).where(
+                WorkflowCondition.workflow_id == workflow_id
+            )
         )
         conditions = result.scalars().all()
 
@@ -342,10 +349,7 @@ class WorkflowEngine:
 
     @staticmethod
     async def get_workflow_executions(
-        workflow_id: UUID,
-        business_id: UUID,
-        limit: int = 50,
-        db: AsyncSession = None
+        workflow_id: UUID, business_id: UUID, limit: int = 50, db: AsyncSession = None
     ) -> list[dict]:
         """Get workflow execution history."""
         if not db:
@@ -353,7 +357,10 @@ class WorkflowEngine:
 
         result = await db.execute(
             select(WorkflowExecution)
-            .where(WorkflowExecution.workflow_id == workflow_id, WorkflowExecution.business_id == business_id)
+            .where(
+                WorkflowExecution.workflow_id == workflow_id,
+                WorkflowExecution.business_id == business_id,
+            )
             .order_by(desc(WorkflowExecution.started_at))
             .limit(limit)
         )
@@ -374,9 +381,7 @@ class WorkflowEngine:
 
     @staticmethod
     async def get_workflow_metrics(
-        workflow_id: UUID,
-        business_id: UUID,
-        db: AsyncSession = None
+        workflow_id: UUID, business_id: UUID, db: AsyncSession = None
     ) -> dict:
         """Get workflow metrics."""
         if not db:
@@ -384,7 +389,8 @@ class WorkflowEngine:
 
         result = await db.execute(
             select(WorkflowMetrics).where(
-                WorkflowMetrics.workflow_id == workflow_id, WorkflowMetrics.business_id == business_id
+                WorkflowMetrics.workflow_id == workflow_id,
+                WorkflowMetrics.business_id == business_id,
             )
         )
         metrics = result.scalar_one_or_none()

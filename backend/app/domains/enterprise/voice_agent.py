@@ -17,6 +17,7 @@ business has ONE voice agent configuration, not several. Adapted the API
 to that reality rather than inventing multi-persona support the schema
 was never built for.
 """
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -28,9 +29,13 @@ from app.domains.voice.models import VoiceCall, VoiceConfig
 
 class VoiceAgentManager:
     @staticmethod
-    async def get_or_create_config(business_id: UUID, db: AsyncSession, **defaults) -> VoiceConfig:
+    async def get_or_create_config(
+        business_id: UUID, db: AsyncSession, **defaults
+    ) -> VoiceConfig:
         """Get this business's voice config, creating a default one if none exists yet."""
-        result = await db.execute(select(VoiceConfig).where(VoiceConfig.business_id == business_id))
+        result = await db.execute(
+            select(VoiceConfig).where(VoiceConfig.business_id == business_id)
+        )
         config = result.scalar_one_or_none()
         if config:
             return config
@@ -41,7 +46,9 @@ class VoiceAgentManager:
             tts_provider=defaults.get("tts_provider", "openai"),
             stt_provider=defaults.get("stt_provider", "openai_whisper"),
             language=defaults.get("language", "es"),
-            greeting_message=defaults.get("greeting_message", "Hola, gracias por tu llamada."),
+            greeting_message=defaults.get(
+                "greeting_message", "Hola, gracias por tu llamada."
+            ),
         )
         db.add(config)
         await db.commit()
@@ -79,12 +86,20 @@ class VoiceAgentManager:
 
     @staticmethod
     async def initiate_outbound_call(
-        business_id: UUID, customer_id: UUID, phone_number: str, db: AsyncSession,
-        conversation_id: UUID | None = None, twilio_call_id: str | None = None,
+        business_id: UUID,
+        customer_id: UUID,
+        phone_number: str,
+        db: AsyncSession,
+        conversation_id: UUID | None = None,
+        twilio_call_id: str | None = None,
     ) -> VoiceCall:
         call = VoiceCall(
-            business_id=business_id, customer_id=customer_id, conversation_id=conversation_id,
-            phone_number=phone_number, direction="outbound", status="queued",
+            business_id=business_id,
+            customer_id=customer_id,
+            conversation_id=conversation_id,
+            phone_number=phone_number,
+            direction="outbound",
+            status="queued",
             extra_data={"twilio_call_id": twilio_call_id} if twilio_call_id else {},
             started_at=datetime.now(UTC),
         )
@@ -95,12 +110,20 @@ class VoiceAgentManager:
 
     @staticmethod
     async def handle_inbound_call(
-        business_id: UUID, customer_id: UUID, phone_number: str, db: AsyncSession,
-        conversation_id: UUID | None = None, twilio_call_id: str | None = None,
+        business_id: UUID,
+        customer_id: UUID,
+        phone_number: str,
+        db: AsyncSession,
+        conversation_id: UUID | None = None,
+        twilio_call_id: str | None = None,
     ) -> VoiceCall:
         call = VoiceCall(
-            business_id=business_id, customer_id=customer_id, conversation_id=conversation_id,
-            phone_number=phone_number, direction="inbound", status="ringing",
+            business_id=business_id,
+            customer_id=customer_id,
+            conversation_id=conversation_id,
+            phone_number=phone_number,
+            direction="inbound",
+            status="ringing",
             extra_data={"twilio_call_id": twilio_call_id} if twilio_call_id else {},
             started_at=datetime.now(UTC),
         )
@@ -111,7 +134,12 @@ class VoiceAgentManager:
 
     @staticmethod
     async def append_transcript_segment(
-        call_id: UUID, business_id: UUID, speaker: str, text: str, db: AsyncSession, timestamp: float = 0.0,
+        call_id: UUID,
+        business_id: UUID,
+        speaker: str,
+        text: str,
+        db: AsyncSession,
+        timestamp: float = 0.0,
     ) -> VoiceCall:
         call = await VoiceAgentManager._get_owned_call(call_id, business_id, db)
         segments = list(call.transcript_segments or [])
@@ -123,7 +151,9 @@ class VoiceAgentManager:
         return call
 
     @staticmethod
-    async def update_call_status(call_id: UUID, business_id: UUID, status: str, db: AsyncSession) -> VoiceCall:
+    async def update_call_status(
+        call_id: UUID, business_id: UUID, status: str, db: AsyncSession
+    ) -> VoiceCall:
         call = await VoiceAgentManager._get_owned_call(call_id, business_id, db)
         call.status = status
         if status == "in_progress" and not call.started_at:
@@ -131,13 +161,17 @@ class VoiceAgentManager:
         elif status == "completed":
             call.ended_at = datetime.now(UTC)
             if call.started_at:
-                call.recording_duration = int((call.ended_at - call.started_at).total_seconds())
+                call.recording_duration = int(
+                    (call.ended_at - call.started_at).total_seconds()
+                )
         await db.commit()
         await db.refresh(call)
         return call
 
     @staticmethod
-    async def set_recording_url(call_id: UUID, business_id: UUID, recording_url: str, db: AsyncSession) -> VoiceCall:
+    async def set_recording_url(
+        call_id: UUID, business_id: UUID, recording_url: str, db: AsyncSession
+    ) -> VoiceCall:
         call = await VoiceAgentManager._get_owned_call(call_id, business_id, db)
         call.recording_url = recording_url
         await db.commit()
@@ -145,7 +179,9 @@ class VoiceAgentManager:
         return call
 
     @staticmethod
-    async def set_ai_summary(call_id: UUID, business_id: UUID, summary: str, db: AsyncSession) -> VoiceCall:
+    async def set_ai_summary(
+        call_id: UUID, business_id: UUID, summary: str, db: AsyncSession
+    ) -> VoiceCall:
         call = await VoiceAgentManager._get_owned_call(call_id, business_id, db)
         call.ai_summary = summary
         await db.commit()
@@ -153,7 +189,9 @@ class VoiceAgentManager:
         return call
 
     @staticmethod
-    async def analyze_sentiment(call_id: UUID, business_id: UUID, sentiment: str, score: float, db: AsyncSession) -> VoiceCall:
+    async def analyze_sentiment(
+        call_id: UUID, business_id: UUID, sentiment: str, score: float, db: AsyncSession
+    ) -> VoiceCall:
         call = await VoiceAgentManager._get_owned_call(call_id, business_id, db)
         # VoiceCall has no dedicated sentiment column -- stored in extra_data
         # (JSONB) rather than adding 2 more columns for a single feature.
@@ -166,32 +204,48 @@ class VoiceAgentManager:
         return call
 
     @staticmethod
-    async def get_call_detail(call_id: UUID, business_id: UUID, db: AsyncSession) -> VoiceCall | None:
+    async def get_call_detail(
+        call_id: UUID, business_id: UUID, db: AsyncSession
+    ) -> VoiceCall | None:
         result = await db.execute(
-            select(VoiceCall).where(VoiceCall.id == call_id, VoiceCall.business_id == business_id)
+            select(VoiceCall).where(
+                VoiceCall.id == call_id, VoiceCall.business_id == business_id
+            )
         )
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_business_calls(business_id: UUID, db: AsyncSession, limit: int = 50) -> list[VoiceCall]:
+    async def get_business_calls(
+        business_id: UUID, db: AsyncSession, limit: int = 50
+    ) -> list[VoiceCall]:
         result = await db.execute(
-            select(VoiceCall).where(VoiceCall.business_id == business_id)
-            .order_by(VoiceCall.created_at.desc()).limit(limit)
+            select(VoiceCall)
+            .where(VoiceCall.business_id == business_id)
+            .order_by(VoiceCall.created_at.desc())
+            .limit(limit)
         )
         return list(result.scalars().all())
 
     @staticmethod
-    async def get_call_analytics(business_id: UUID, db: AsyncSession, days: int = 30) -> dict:
+    async def get_call_analytics(
+        business_id: UUID, db: AsyncSession, days: int = 30
+    ) -> dict:
         cutoff = datetime.now(UTC) - timedelta(days=days)
         result = await db.execute(
-            select(VoiceCall).where(VoiceCall.business_id == business_id, VoiceCall.created_at > cutoff)
+            select(VoiceCall).where(
+                VoiceCall.business_id == business_id, VoiceCall.created_at > cutoff
+            )
         )
         calls = result.scalars().all()
 
         completed = [c for c in calls if c.status == "completed"]
         failed = [c for c in calls if c.status == "failed"]
         total_duration = sum(c.recording_duration or 0 for c in completed)
-        sentiments = [c.extra_data.get("sentiment_score") for c in completed if c.extra_data and c.extra_data.get("sentiment_score") is not None]
+        sentiments = [
+            c.extra_data.get("sentiment_score")
+            for c in completed
+            if c.extra_data and c.extra_data.get("sentiment_score") is not None
+        ]
 
         return {
             "total_calls": len(calls),
@@ -200,23 +254,33 @@ class VoiceAgentManager:
             "completed_calls": len(completed),
             "failed_calls": len(failed),
             "completion_rate": len(completed) / len(calls) if calls else 0,
-            "avg_sentiment_score": sum(sentiments) / len(sentiments) if sentiments else 0,
+            "avg_sentiment_score": (
+                sum(sentiments) / len(sentiments) if sentiments else 0
+            ),
             "period_days": days,
         }
 
     @staticmethod
-    async def find_call_by_twilio_id(twilio_call_id: str, db: AsyncSession) -> VoiceCall | None:
+    async def find_call_by_twilio_id(
+        twilio_call_id: str, db: AsyncSession
+    ) -> VoiceCall | None:
         """Look up a call by its Twilio CallSid, stored in extra_data (no
         dedicated column). Used by the Twilio status-callback webhook."""
         result = await db.execute(
-            select(VoiceCall).where(VoiceCall.extra_data["twilio_call_id"].astext == twilio_call_id)
+            select(VoiceCall).where(
+                VoiceCall.extra_data["twilio_call_id"].astext == twilio_call_id
+            )
         )
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def _get_owned_call(call_id: UUID, business_id: UUID, db: AsyncSession) -> VoiceCall:
+    async def _get_owned_call(
+        call_id: UUID, business_id: UUID, db: AsyncSession
+    ) -> VoiceCall:
         result = await db.execute(
-            select(VoiceCall).where(VoiceCall.id == call_id, VoiceCall.business_id == business_id)
+            select(VoiceCall).where(
+                VoiceCall.id == call_id, VoiceCall.business_id == business_id
+            )
         )
         call = result.scalar_one_or_none()
         if not call:

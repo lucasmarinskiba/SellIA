@@ -42,14 +42,19 @@ ROTATION_INTERVAL = timedelta(days=90)
 
 
 def is_rotation_proposal(rec: Recommendation) -> bool:
-    return isinstance(rec.context_data, dict) and rec.context_data.get("kind") == ROTATION_KIND
+    return (
+        isinstance(rec.context_data, dict)
+        and rec.context_data.get("kind") == ROTATION_KIND
+    )
 
 
 def _hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()[:16]
 
 
-async def _already_proposed(db: AsyncSession, channel_id: uuid.UUID, now: datetime) -> bool:
+async def _already_proposed(
+    db: AsyncSession, channel_id: uuid.UUID, now: datetime
+) -> bool:
     """A pending proposal, or any proposal made in the last 90 days (dismissing postpones)."""
     result = await db.execute(
         select(Recommendation.id)
@@ -66,7 +71,9 @@ async def _already_proposed(db: AsyncSession, channel_id: uuid.UUID, now: dateti
     return result.first() is not None
 
 
-async def propose_rotation(db: AsyncSession, channel: ChannelConnection, now: datetime | None = None) -> bool:
+async def propose_rotation(
+    db: AsyncSession, channel: ChannelConnection, now: datetime | None = None
+) -> bool:
     """Leave the owner a proposal to rotate ``channel``'s token. False if one is already open.
 
     The caller commits.
@@ -93,7 +100,11 @@ async def propose_rotation(db: AsyncSession, channel: ChannelConnection, now: da
             title=title,
             description=body,
             priority=2,
-            context_data={"kind": ROTATION_KIND, "channel_id": str(channel.id), "platform": platform},
+            context_data={
+                "kind": ROTATION_KIND,
+                "channel_id": str(channel.id),
+                "platform": platform,
+            },
             action_type=RecommendationActionType.WAIT,
             action_payload={},
         )
@@ -116,7 +127,9 @@ class RotationNotPossible(Exception):
     """The channel is gone or inactive: there is nothing to rotate."""
 
 
-async def apply_rotation(db: AsyncSession, rec: Recommendation, user_id: uuid.UUID | None) -> None:
+async def apply_rotation(
+    db: AsyncSession, rec: Recommendation, user_id: uuid.UUID | None
+) -> None:
     """The owner accepted ``rec``: rotate the channel's token and mark it applied. Caller commits."""
     channel_id = uuid.UUID(str(rec.context_data["channel_id"]))
     channel = (

@@ -1,6 +1,5 @@
 """SEO Analysis endpoints - Core Web Vitals, structured data, keyword research."""
 
-
 from fastapi import APIRouter, Query
 
 from app.core.clock import utc_now

@@ -26,7 +26,9 @@ async def get_db():
         yield session
 
 
-@router.post("/rules", response_model=AutoResponderRuleOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules", response_model=AutoResponderRuleOut, status_code=status.HTTP_201_CREATED
+)
 async def create_rule(
     data: AutoResponderRuleCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -57,7 +59,9 @@ async def update_rule(
 ):
     """Update an auto-responder rule."""
     try:
-        rule = await ar_service.update_rule(db, rule_id, data.model_dump(exclude_unset=True))
+        rule = await ar_service.update_rule(
+            db, rule_id, data.model_dump(exclude_unset=True)
+        )
         return rule
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -72,7 +76,9 @@ async def delete_rule(
     """Delete an auto-responder rule."""
     deleted = await ar_service.delete_rule(db, rule_id)
     if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada"
+        )
 
 
 @router.get("/stats", response_model=AutoResponderStatsOut)

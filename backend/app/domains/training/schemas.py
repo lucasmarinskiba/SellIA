@@ -10,12 +10,16 @@ from pydantic import BaseModel, ConfigDict, Field
 # SimulationScenario
 # ---------------------------------------------------------------------------
 
+
 class SimulationScenarioBase(BaseModel):
     name: str = Field(..., max_length=200)
     description: str | None = None
     difficulty: str = Field(default="medium", pattern=r"^(easy|medium|hard|expert)$")
     customer_persona: dict[str, Any] = Field(default_factory=dict)
-    objective: str = Field(default="close_sale", pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$")
+    objective: str = Field(
+        default="close_sale",
+        pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$",
+    )
     success_criteria: dict[str, Any] = Field(default_factory=dict)
     agent_type: str = Field(default="general", max_length=50)
     is_active: bool = True
@@ -30,7 +34,10 @@ class SimulationScenarioUpdate(BaseModel):
     description: str | None = None
     difficulty: str | None = Field(default=None, pattern=r"^(easy|medium|hard|expert)$")
     customer_persona: dict[str, Any] | None = None
-    objective: str | None = Field(default=None, pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$")
+    objective: str | None = Field(
+        default=None,
+        pattern=r"^(close_sale|set_appointment|gather_info|handle_complaint)$",
+    )
     success_criteria: dict[str, Any] | None = None
     agent_type: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
@@ -48,6 +55,7 @@ class SimulationScenarioOut(SimulationScenarioBase):
 # ---------------------------------------------------------------------------
 # SimulationRun
 # ---------------------------------------------------------------------------
+
 
 class SimulationMessage(BaseModel):
     role: str  # agent | customer | system
@@ -78,6 +86,7 @@ class SimulationRunOut(BaseModel):
 # Requests
 # ---------------------------------------------------------------------------
 
+
 class SimulationStartRequest(BaseModel):
     scenario_id: UUID
     agent_id: UUID | None = None  # if None, uses scenario.agent_type
@@ -86,6 +95,7 @@ class SimulationStartRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Leaderboard
 # ---------------------------------------------------------------------------
+
 
 class LeaderboardEntry(BaseModel):
     run_id: UUID

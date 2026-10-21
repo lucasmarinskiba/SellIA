@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 class EnsembleForecaster(Forecaster):
     name = "ensemble"
 
-    def __init__(self, members: list[Forecaster], weights: dict[str, float] | None = None):
+    def __init__(
+        self, members: list[Forecaster], weights: dict[str, float] | None = None
+    ):
         self.members = members
         self.weights = weights or {}
 
@@ -35,14 +37,20 @@ class EnsembleForecaster(Forecaster):
                 continue
         if not self._fitted:
             raise RuntimeError("ensemble: no member fit successfully")
-        w = np.array([max(self.weights.get(m.name, 0.0), 0.0) for m in self._fitted], dtype=float)
+        w = np.array(
+            [max(self.weights.get(m.name, 0.0), 0.0) for m in self._fitted], dtype=float
+        )
         if w.sum() <= 0:
             w = np.ones(len(self._fitted))
         self._w = w / w.sum()
-        self.active_weights = {m.name: float(wi) for m, wi in zip(self._fitted, self._w)}
+        self.active_weights = {
+            m.name: float(wi) for m, wi in zip(self._fitted, self._w)
+        }
         return self
 
-    def predict(self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES):
+    def predict(
+        self, horizon, future_index, future_exog=None, quantiles=DEFAULT_QUANTILES
+    ):
         future_index = pd.DatetimeIndex(future_index)
         results = []
         for m in self._fitted:
@@ -79,7 +87,13 @@ class EnsembleForecaster(Forecaster):
             q_out = {k: stacked[i] for i, k in enumerate(keys)}
 
         return ForecastResult(
-            self.name, horizon, future_index, np.clip(mean, 0.0, None), q_out,
-            diagnostics={"weights": self.active_weights,
-                         "members": [r.model_name for _, r in keep]},
+            self.name,
+            horizon,
+            future_index,
+            np.clip(mean, 0.0, None),
+            q_out,
+            diagnostics={
+                "weights": self.active_weights,
+                "members": [r.model_name for _, r in keep],
+            },
         )

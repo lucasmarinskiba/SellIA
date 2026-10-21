@@ -1,6 +1,5 @@
 """Phase 30 Churn Prevention API endpoints."""
 
-
 import logging
 from typing import Annotated
 
@@ -136,7 +135,10 @@ def predict_churn(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/expansion-opportunities/{customer_id}", response_model=ExpansionOpportunitiesResponse)
+@router.post(
+    "/expansion-opportunities/{customer_id}",
+    response_model=ExpansionOpportunitiesResponse,
+)
 def get_expansion_opportunities(
     customer_id: str,
     db: Annotated[Session, Depends(get_db)],
@@ -155,7 +157,12 @@ def get_expansion_opportunities(
         usage_data = {
             "customer_id": customer_id,
             "features_using": ["reporting", "analytics"],
-            "features_available": ["reporting", "analytics", "automation", "custom_dashboards"],
+            "features_available": [
+                "reporting",
+                "analytics",
+                "automation",
+                "custom_dashboards",
+            ],
             "team_size_current": 12,
             "team_size_historical": 10,
             "seats_purchased": 10,
@@ -224,7 +231,9 @@ def get_abm_intent(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/retention-campaign/{customer_id}", response_model=RetentionCampaignResponse)
+@router.post(
+    "/retention-campaign/{customer_id}", response_model=RetentionCampaignResponse
+)
 def launch_retention_campaign(
     customer_id: str,
     request: RetentionCampaignRequest,
@@ -307,7 +316,9 @@ def get_customer_health(
         expansion_detector = ExpansionOpportunityDetector(db)
         abm_scorer = ABMIntentScorer(db)
 
-        health_calculator = CustomerHealthScore(db, churn_model, expansion_detector, abm_scorer)
+        health_calculator = CustomerHealthScore(
+            db, churn_model, expansion_detector, abm_scorer
+        )
         health = health_calculator.calculate_health(customer_id, features)
 
         return HealthScoreResponse(

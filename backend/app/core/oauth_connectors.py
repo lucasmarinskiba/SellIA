@@ -75,7 +75,9 @@ class AmazonSPAPI:
     """Amazon Selling Partner API connector."""
 
     TOKEN_URL = "https://api.amazon.com/auth/o2/token"
-    RESTRICTED_DATA_TOKEN_URL = "https://sellingpartnerapi-na.amazon.com/tokens/2021-03-01/restrictedDataToken"
+    RESTRICTED_DATA_TOKEN_URL = (
+        "https://sellingpartnerapi-na.amazon.com/tokens/2021-03-01/restrictedDataToken"
+    )
 
     @classmethod
     async def exchange_code(cls, code: str) -> dict:

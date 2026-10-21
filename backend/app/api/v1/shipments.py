@@ -31,6 +31,7 @@ router = APIRouter()
 
 # ========== Carriers Info ==========
 
+
 @router.get("/carriers", response_model=list[CarrierInfo])
 async def list_carriers(
     current_user: Annotated[User, Depends(get_current_active_user)],
@@ -44,6 +45,7 @@ async def list_carriers(
 
 # ========== Shipment Configs ==========
 
+
 @router.get("/configs", response_model=list[ShipmentConfigResponse])
 async def list_configs(
     business_id: UUID,
@@ -54,7 +56,11 @@ async def list_configs(
     return await shipment_services.list_shipment_configs(db, business_id)
 
 
-@router.post("/configs", response_model=ShipmentConfigResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/configs",
+    response_model=ShipmentConfigResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_config(
     business_id: UUID,
     data: ShipmentConfigCreate,
@@ -62,7 +68,9 @@ async def create_config(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Create a carrier configuration for a business."""
-    config = await shipment_services.create_shipment_config(db, business_id, data.model_dump())
+    config = await shipment_services.create_shipment_config(
+        db, business_id, data.model_dump()
+    )
     return config
 
 
@@ -77,7 +85,9 @@ async def update_config(
     config = await shipment_services.get_shipment_config(db, config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
-    return await shipment_services.update_shipment_config(db, config, data.model_dump(exclude_unset=True))
+    return await shipment_services.update_shipment_config(
+        db, config, data.model_dump(exclude_unset=True)
+    )
 
 
 @router.delete("/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -108,6 +118,7 @@ async def test_config(
 
 # ========== Shipments ==========
 
+
 @router.get("", response_model=dict)
 async def list_shipments(
     business_id: UUID,
@@ -120,7 +131,9 @@ async def list_shipments(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """List shipments for a business with filters."""
-    items, total = await shipment_services.list_shipments(db, business_id, status, carrier, search, limit, offset)
+    items, total = await shipment_services.list_shipments(
+        db, business_id, status, carrier, search, limit, offset
+    )
     return {
         "items": items,
         "total": total,
@@ -137,13 +150,16 @@ async def create_shipment(
 ):
     """Create a new shipment for an order."""
     try:
-        shipment = await shipment_services.create_shipment(db, data.order_id, data.model_dump())
+        shipment = await shipment_services.create_shipment(
+            db, data.order_id, data.model_dump()
+        )
         return shipment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         logger.exception("create_shipment: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error creating shipment")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -172,7 +188,9 @@ async def update_shipment(
     shipment = await shipment_services.get_shipment(db, shipment_id)
     if not shipment:
         raise HTTPException(status_code=404, detail="Envío no encontrado")
-    return await shipment_services.update_shipment(db, shipment, data.model_dump(exclude_unset=True))
+    return await shipment_services.update_shipment(
+        db, shipment, data.model_dump(exclude_unset=True)
+    )
 
 
 @router.delete("/{shipment_id}", status_code=status.HTTP_204_NO_CONTENT)

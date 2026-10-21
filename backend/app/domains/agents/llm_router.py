@@ -24,27 +24,57 @@ class TaskComplexity(str, Enum):
 
 # Keywords that indicate complexity level
 _SIMPLE_KEYWORDS = [
-    "cómo", "qué es", "dónde", "cuándo", "cuál", "definición",
-    "hello", "hi", "hola", "gracias", "thanks", "ok", "sí", "no",
-    "status", "estado", "precio", "price", "plan", "billing",
+    "cómo",
+    "qué es",
+    "dónde",
+    "cuándo",
+    "cuál",
+    "definición",
+    "hello",
+    "hi",
+    "hola",
+    "gracias",
+    "thanks",
+    "ok",
+    "sí",
+    "no",
+    "status",
+    "estado",
+    "precio",
+    "price",
+    "plan",
+    "billing",
 ]
 
 _COMPLEX_KEYWORDS = [
-    "estrategia", "strategy", "análisis detallado", "deep analysis",
-    "plan de acción", "action plan", "investigación", "research",
-    "comparativa", "benchmark", "optimización avanzada", "advanced optimization",
-    "modelo de negocio", "business model", "proyección", "forecast",
-    "diagnóstico completo", "full diagnostic",
+    "estrategia",
+    "strategy",
+    "análisis detallado",
+    "deep analysis",
+    "plan de acción",
+    "action plan",
+    "investigación",
+    "research",
+    "comparativa",
+    "benchmark",
+    "optimización avanzada",
+    "advanced optimization",
+    "modelo de negocio",
+    "business model",
+    "proyección",
+    "forecast",
+    "diagnóstico completo",
+    "full diagnostic",
 ]
 
 # Model tiers by cost (cheapest first)
 TIER_SIMPLE = [
-    ("ollama", "llama3.2:1b"),               # free, local
-    ("groq", "llama-3.1-8b-instant"),        # free, sub-second
-    ("openai", "gpt-4o-mini"),               # very cheap
+    ("ollama", "llama3.2:1b"),  # free, local
+    ("groq", "llama-3.1-8b-instant"),  # free, sub-second
+    ("openai", "gpt-4o-mini"),  # very cheap
 ]
 TIER_MEDIUM = [
-    ("groq", "llama-3.3-70b-versatile"),     # free, strong + fast
+    ("groq", "llama-3.3-70b-versatile"),  # free, strong + fast
     ("openai", "gpt-4o-mini"),
     ("anthropic", "claude-3-5-haiku-20241022"),
     ("kimi", "kimi-k2-5"),
@@ -52,7 +82,7 @@ TIER_MEDIUM = [
 TIER_COMPLEX = [
     ("openai", "gpt-4o"),
     ("anthropic", "claude-3-5-sonnet-20241022"),
-    ("groq", "llama-3.3-70b-versatile"),     # free fallback for complex
+    ("groq", "llama-3.3-70b-versatile"),  # free fallback for complex
     ("kimi", "kimi-k2-5"),
 ]
 
@@ -130,8 +160,8 @@ def estimate_cost_usd(prompt: str, complexity: TaskComplexity) -> float:
     """Rough cost estimate for logging/metrics (per 1K tokens)."""
     # Approximate prices per 1K output tokens (as of 2025)
     prices = {
-        TaskComplexity.SIMPLE: 0.0006,    # gpt-4o-mini
-        TaskComplexity.MEDIUM: 0.003,     # haiku / mini
-        TaskComplexity.COMPLEX: 0.015,    # gpt-4o / sonnet
+        TaskComplexity.SIMPLE: 0.0006,  # gpt-4o-mini
+        TaskComplexity.MEDIUM: 0.003,  # haiku / mini
+        TaskComplexity.COMPLEX: 0.015,  # gpt-4o / sonnet
     }
     return prices.get(complexity, 0.003)

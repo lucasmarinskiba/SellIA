@@ -40,6 +40,7 @@ stripe.api_version = STRIPE_API_VERSION
 
 class PaymentMethodType(str, Enum):
     """Supported payment methods."""
+
     CARD = "card"
     ACH_TRANSFER = "ach_transfer"
     BANK_TRANSFER = "bank_transfer"
@@ -49,6 +50,7 @@ class PaymentMethodType(str, Enum):
 
 class WebhookEventType(str, Enum):
     """Stripe webhook event types we care about."""
+
     PAYMENT_INTENT_SUCCEEDED = "payment_intent.succeeded"
     PAYMENT_INTENT_PAYMENT_FAILED = "payment_intent.payment_failed"
     CHARGE_REFUNDED = "charge.refunded"
@@ -108,11 +110,13 @@ class StripeProcessor:
 
             # Prepare metadata
             session_metadata = metadata or {}
-            session_metadata.update({
-                "order_id": order_id,
-                "product_name": product_name,
-                "customer_email": customer_email,
-            })
+            session_metadata.update(
+                {
+                    "order_id": order_id,
+                    "product_name": product_name,
+                    "customer_email": customer_email,
+                }
+            )
 
             # Create session
             session = stripe.checkout.Session.create(
@@ -197,10 +201,12 @@ class StripeProcessor:
         """
         try:
             intent_metadata = metadata or {}
-            intent_metadata.update({
-                "order_id": order_id,
-                "product_name": product_name,
-            })
+            intent_metadata.update(
+                {
+                    "order_id": order_id,
+                    "product_name": product_name,
+                }
+            )
 
             intent = stripe.PaymentIntent.create(
                 amount=int(amount_usd * 100),
@@ -232,7 +238,7 @@ class StripeProcessor:
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             return {
-                                "session_id": session.id,
+                "session_id": session.id,
                 "payment_intent": session.payment_intent,
                 "customer_email": session.customer_email,
                 "status": session.payment_status,
@@ -249,7 +255,7 @@ class StripeProcessor:
         try:
             intent = stripe.PaymentIntent.retrieve(intent_id)
             return {
-                                "payment_intent_id": intent.id,
+                "payment_intent_id": intent.id,
                 "amount": intent.amount / 100,
                 "currency": intent.currency,
                 "status": intent.status,
@@ -369,9 +375,7 @@ class StripeProcessor:
                 customer_email=customer_email,
                 description=description,
                 metadata=invoice_metadata,
-                due_date=int(
-                    (utc_now() + timedelta(days=due_days)).timestamp()
-                ),
+                due_date=int((utc_now() + timedelta(days=due_days)).timestamp()),
             )
 
             # Add line item
@@ -511,7 +515,9 @@ class StripeWebhookHandler:
         """Handle payment_intent.payment_failed event."""
         intent = event["data"]["object"]
         order_id = intent.get("metadata", {}).get("order_id")
-        failure_message = intent.get("last_payment_error", {}).get("message", "Unknown error")
+        failure_message = intent.get("last_payment_error", {}).get(
+            "message", "Unknown error"
+        )
 
         logger.error(
             f"Payment failed: {intent['id']} | Order: {order_id} | Reason: {failure_message}"

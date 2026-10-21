@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 def _normalize_name(name: str | None) -> str:
     if not name:
-        return ''
+        return ""
     return name.strip().lower()
 
 
@@ -54,30 +54,36 @@ class CustomerIdentityMatcher:
         if email:
             matched = await self.match_by_email(business_id, email)
             if matched:
-                await self._add_platform(matched, platform, external_id, name, email, phone)
+                await self._add_platform(
+                    matched, platform, external_id, name, email, phone
+                )
                 return matched
 
         # 2. Match por teléfono exacto
         if phone:
             matched = await self.match_by_phone(business_id, phone)
             if matched:
-                await self._add_platform(matched, platform, external_id, name, email, phone)
+                await self._add_platform(
+                    matched, platform, external_id, name, email, phone
+                )
                 return matched
 
         # 3. Match por nombre fuzzy contra clientes del mismo negocio
         if name:
             matched = await self._match_by_fuzzy_name(business_id, name)
             if matched:
-                await self._add_platform(matched, platform, external_id, name, email, phone)
+                await self._add_platform(
+                    matched, platform, external_id, name, email, phone
+                )
                 return matched
 
         # 4. Crear nuevo UnifiedCustomer
         now = datetime.now(UTC)
         identity_map = {platform: external_id}
-        if email and platform != 'email':
-            identity_map['email'] = email
-        if phone and platform != 'phone':
-            identity_map['phone'] = phone
+        if email and platform != "email":
+            identity_map["email"] = email
+        if phone and platform != "phone":
+            identity_map["phone"] = phone
 
         new_customer = UnifiedCustomer(
             business_id=business_id,
@@ -94,7 +100,7 @@ class CustomerIdentityMatcher:
         self.db.add(new_customer)
         await self.db.commit()
         await self.db.refresh(new_customer)
-        logger.info(f'Nuevo unified customer creado: {new_customer.id} ({name})')
+        logger.info(f"Nuevo unified customer creado: {new_customer.id} ({name})")
         return new_customer
 
     async def _add_platform(
@@ -126,7 +132,7 @@ class CustomerIdentityMatcher:
         customer.last_seen_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(customer)
-        logger.info(f'Plataforma {platform} agregada a unified customer {customer.id}')
+        logger.info(f"Plataforma {platform} agregada a unified customer {customer.id}")
 
     async def match_by_email(
         self,
@@ -150,14 +156,15 @@ class CustomerIdentityMatcher:
         phone: str,
     ) -> UnifiedCustomer | None:
         """Encuentra un cliente unificado por teléfono exacto."""
-        normalized = phone.strip().replace(' ', '').replace('-', '')
+        normalized = phone.strip().replace(" ", "").replace("-", "")
         result = await self.db.execute(
             select(UnifiedCustomer).where(
                 and_(
                     UnifiedCustomer.business_id == business_id,
                     func.replace(
-                        func.replace(UnifiedCustomer.master_phone, ' ', ''), '-', ''
-                    ) == normalized,
+                        func.replace(UnifiedCustomer.master_phone, " ", ""), "-", ""
+                    )
+                    == normalized,
                 )
             )
         )
@@ -196,7 +203,7 @@ class CustomerIdentityMatcher:
     ) -> dict[str, Any]:
         """Calcula un puntaje de confianza (0-100) para fusionar dos clientes."""
         if customer_a_id == customer_b_id:
-            return {"score": 0, "reasons": ['Los IDs son idénticos']}
+            return {"score": 0, "reasons": ["Los IDs son idénticos"]}
 
         result_a = await self.db.execute(
             select(UnifiedCustomer).where(
@@ -218,39 +225,43 @@ class CustomerIdentityMatcher:
         b = result_b.scalar_one_or_none()
 
         if not a or not b:
-            return {"score": 0, "reasons": ['Uno o ambos clientes no existen']}
+            return {"score": 0, "reasons": ["Uno o ambos clientes no existen"]}
 
         score = 0
         reasons = []
 
         # Email exacto
-        if a.master_email and b.master_email and a.master_email.lower() == b.master_email.lower():
+        if (
+            a.master_email
+            and b.master_email
+            and a.master_email.lower() == b.master_email.lower()
+        ):
             score += 50
-            reasons.append('Email idéntico')
+            reasons.append("Email idéntico")
 
         # Teléfono exacto
         if a.master_phone and b.master_phone:
-            na = a.master_phone.strip().replace(' ', '').replace('-', '')
-            nb = b.master_phone.strip().replace(' ', '').replace('-', '')
+            na = a.master_phone.strip().replace(" ", "").replace("-", "")
+            nb = b.master_phone.strip().replace(" ", "").replace("-", "")
             if na == nb:
                 score += 50
-                reasons.append('Teléfono idéntico')
+                reasons.append("Teléfono idéntico")
 
         # Nombre similar
         name_score = _name_similarity(a.display_name, b.display_name)
         if name_score >= 0.85:
             score += int(name_score * 30)
-            reasons.append(f'Nombre muy similar ({int(name_score * 100)}%)')
+            reasons.append(f"Nombre muy similar ({int(name_score * 100)}%)")
         elif name_score >= 0.6:
             score += int(name_score * 15)
-            reasons.append(f'Nombre parecido ({int(name_score * 100)}%)')
+            reasons.append(f"Nombre parecido ({int(name_score * 100)}%)")
 
         # Plataformas complementarias (misma persona en distintas plataformas)
         platforms_a = set(a.identity_map.keys()) if a.identity_map else set()
         platforms_b = set(b.identity_map.keys()) if b.identity_map else set()
         if platforms_a and platforms_b and not platforms_a.intersection(platforms_b):
             score += 10
-            reasons.append('Plataformas complementarias')
+            reasons.append("Plataformas complementarias")
 
         score = min(100, score)
         return {"score": score, "reasons": reasons}
@@ -296,14 +307,18 @@ class CustomerIdentityMatcher:
 
         # Combinar preferred_platforms
         target_platforms = list(target.preferred_platforms or [])
-        for p in (source.preferred_platforms or []):
+        for p in source.preferred_platforms or []:
             if p not in target_platforms:
                 target_platforms.append(p)
         target.preferred_platforms = target_platforms
 
         # Sumar LTV y compras
-        target.total_lifetime_value = Decimal(target.total_lifetime_value or 0) + Decimal(source.total_lifetime_value or 0)
-        target.total_purchases = (target.total_purchases or 0) + (source.total_purchases or 0)
+        target.total_lifetime_value = Decimal(
+            target.total_lifetime_value or 0
+        ) + Decimal(source.total_lifetime_value or 0)
+        target.total_purchases = (target.total_purchases or 0) + (
+            source.total_purchases or 0
+        )
 
         # Mantener first_seen más antiguo
         if source.first_seen_at and target.first_seen_at:
@@ -321,7 +336,9 @@ class CustomerIdentityMatcher:
 
         # last_purchase_at más reciente
         if source.last_purchase_at and target.last_purchase_at:
-            target.last_purchase_at = max(target.last_purchase_at, source.last_purchase_at)
+            target.last_purchase_at = max(
+                target.last_purchase_at, source.last_purchase_at
+            )
         elif source.last_purchase_at and not target.last_purchase_at:
             target.last_purchase_at = source.last_purchase_at
 
@@ -332,7 +349,7 @@ class CustomerIdentityMatcher:
         await self.db.commit()
         await self.db.refresh(target)
 
-        logger.info(f'Clientes fusionados: {source_id} -> {target_id}')
+        logger.info(f"Clientes fusionados: {source_id} -> {target_id}")
         return target
 
     async def get_unified_profile(
@@ -358,17 +375,29 @@ class CustomerIdentityMatcher:
             "master_phone": customer.master_phone,
             "identity_map": identity_map,
             "platforms": list(identity_map.keys()),
-            "first_seen_at": customer.first_seen_at.isoformat() if customer.first_seen_at else None,
-            "last_seen_at": customer.last_seen_at.isoformat() if customer.last_seen_at else None,
+            "first_seen_at": (
+                customer.first_seen_at.isoformat() if customer.first_seen_at else None
+            ),
+            "last_seen_at": (
+                customer.last_seen_at.isoformat() if customer.last_seen_at else None
+            ),
             "total_lifetime_value": float(customer.total_lifetime_value or 0),
             "buying_frequency_days": customer.buying_frequency_days,
             "preferred_platforms": preferred,
             "preferred_platform": preferred[0] if preferred else None,
             "rfm_segment": customer.rfm_segment,
-            "last_purchase_at": customer.last_purchase_at.isoformat() if customer.last_purchase_at else None,
+            "last_purchase_at": (
+                customer.last_purchase_at.isoformat()
+                if customer.last_purchase_at
+                else None
+            ),
             "total_purchases": customer.total_purchases or 0,
-            "created_at": customer.created_at.isoformat() if customer.created_at else None,
-            "updated_at": customer.updated_at.isoformat() if customer.updated_at else None,
+            "created_at": (
+                customer.created_at.isoformat() if customer.created_at else None
+            ),
+            "updated_at": (
+                customer.updated_at.isoformat() if customer.updated_at else None
+            ),
         }
 
     async def list_unified_customers(

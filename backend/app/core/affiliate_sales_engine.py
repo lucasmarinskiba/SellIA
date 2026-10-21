@@ -85,13 +85,18 @@ class AffiliateSalesEngine:
             "timestamp": utc_now().isoformat(),
             "analysis": {
                 "platforms": self.market_analyzer.get_market_summary(),
-                "recommended_methods": self.methods_library.get_quick_start_methods()[:3],
-                "strategy": self.strategy_engine.generate_full_strategy(niche, budget, 5000),
+                "recommended_methods": self.methods_library.get_quick_start_methods()[
+                    :3
+                ],
+                "strategy": self.strategy_engine.generate_full_strategy(
+                    niche, budget, 5000
+                ),
             },
         }
 
-    def start_affiliate_program(self, niche: str, budget: float = 0,
-                               email: str | None = None) -> dict[str, Any]:
+    def start_affiliate_program(
+        self, niche: str, budget: float = 0, email: str | None = None
+    ) -> dict[str, Any]:
         """Start complete affiliate program for niche."""
         logger.info(f"Starting affiliate program for niche: {niche}")
 
@@ -122,8 +127,9 @@ class AffiliateSalesEngine:
             ],
         }
 
-    def recommend_products_for_niche(self, niche: str,
-                                     min_commission: float = 0.30) -> list[dict[str, Any]]:
+    def recommend_products_for_niche(
+        self, niche: str, min_commission: float = 0.30
+    ) -> list[dict[str, Any]]:
         """Recommend high-profit products for niche."""
         return self.market_analyzer.hotmart.find_high_profit_niches(min_commission)
 
@@ -146,9 +152,16 @@ class AffiliateSalesEngine:
         """Get methods with highest income potential."""
         return self.methods_library.get_high_income_methods()
 
-    def record_sale(self, product_id: str, method: str, channel: str,
-                   amount: float, commission_pct: float,
-                   cost: float = 0.0, customer_id: str | None = None) -> dict[str, Any]:
+    def record_sale(
+        self,
+        product_id: str,
+        method: str,
+        channel: str,
+        amount: float,
+        commission_pct: float,
+        cost: float = 0.0,
+        customer_id: str | None = None,
+    ) -> dict[str, Any]:
         """Record an affiliate sale."""
 
         # Create sale object
@@ -172,7 +185,11 @@ class AffiliateSalesEngine:
             "status": "sale_recorded",
             "sale_id": sale.sale_id,
             "commission_earned": f"${sale.commission_earned:.2f}",
-            "roi": f"{((sale.commission_earned - cost) / cost * 100):.1f}%" if cost > 0 else "0%",
+            "roi": (
+                f"{((sale.commission_earned - cost) / cost * 100):.1f}%"
+                if cost > 0
+                else "0%"
+            ),
         }
 
     def get_dashboard(self) -> dict[str, Any]:
@@ -201,23 +218,27 @@ class AffiliateSalesEngine:
         top_methods = dashboard.get("top_methods", [])
         if top_methods:
             best_method = top_methods[0]
-            report["optimization_actions"].append({
-                "action": "Double down on top method",
-                "method": best_method[0],
-                "reason": f"Highest performer: ${best_method[1]}/month",
-            })
+            report["optimization_actions"].append(
+                {
+                    "action": "Double down on top method",
+                    "method": best_method[0],
+                    "reason": f"Highest performer: ${best_method[1]}/month",
+                }
+            )
 
         # Check conversion rates
         conversion_rates = dashboard.get("conversion_rates", {})
         for method, rate_str in conversion_rates.get("by_method", {}).items():
             rate = float(rate_str.rstrip("%"))
             if rate < 0.5:
-                report["optimization_actions"].append({
-                    "action": "Pivot or optimize",
-                    "method": method,
-                    "reason": f"Low conversion rate: {rate}%",
-                    "recommendation": "Test new offer or messaging",
-                })
+                report["optimization_actions"].append(
+                    {
+                        "action": "Pivot or optimize",
+                        "method": method,
+                        "reason": f"Low conversion rate: {rate}%",
+                        "recommendation": "Test new offer or messaging",
+                    }
+                )
 
         return report
 
@@ -246,8 +267,9 @@ class AffiliateSalesOrchestrator:
         self.sellias_brain = sellias_brain
         self.active_programs: dict[str, dict[str, Any]] = {}
 
-    def start_new_campaign(self, niche: str, email: str, budget: float = 0,
-                          target_income: float = 5000) -> dict[str, Any]:
+    def start_new_campaign(
+        self, niche: str, email: str, budget: float = 0, target_income: float = 5000
+    ) -> dict[str, Any]:
         """Start new affiliate campaign."""
         campaign_id = f"campaign_{utc_now().timestamp()}"
 
@@ -297,6 +319,7 @@ class AffiliateSalesOrchestrator:
 # ============================================================================
 # FACTORY FUNCTIONS
 # ============================================================================
+
 
 def create_affiliate_engine() -> AffiliateSalesEngine:
     """Factory to create affiliate sales engine."""

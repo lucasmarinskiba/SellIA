@@ -27,12 +27,15 @@ class ProductionMonitoring:
         if self.pagerduty_enabled:
             self._init_pagerduty()
 
-        logger.info(f"Monitoring: Datadog={self.datadog_enabled}, Sentry={self.sentry_enabled}, PagerDuty={self.pagerduty_enabled}")
+        logger.info(
+            f"Monitoring: Datadog={self.datadog_enabled}, Sentry={self.sentry_enabled}, PagerDuty={self.pagerduty_enabled}"
+        )
 
     def _init_datadog(self):
         """Initialize Datadog APM + metrics."""
         try:
-            from datadog import initialize, statsd  # noqa: F401 - sonda de disponibilidad
+            # sonda de disponibilidad
+            from datadog import initialize, statsd  # noqa: F401
             from ddtrace import patch_all
 
             patch_all()
@@ -117,20 +120,26 @@ class ProductionMonitoring:
         """Check FeedIA content generation."""
         return {"status": "healthy", "pending_content": 4, "publish_queue": "ok"}
 
-    async def track_metric(self, metric_name: str, value: float, tags: dict[str, str] | None = None):
+    async def track_metric(
+        self, metric_name: str, value: float, tags: dict[str, str] | None = None
+    ):
         """Send metric to Datadog."""
         if self.datadog_enabled:
             try:
                 from datadog import statsd
+
                 statsd.gauge(metric_name, value, tags=tags or {})
             except Exception:
                 logger.exception("Failed to track metric")
 
-    async def report_error(self, error: Exception, context: dict[str, Any] | None = None):
+    async def report_error(
+        self, error: Exception, context: dict[str, Any] | None = None
+    ):
         """Report error to Sentry."""
         if self.sentry_enabled:
             try:
                 import sentry_sdk
+
                 sentry_sdk.capture_exception(error, extra=context or {})
             except Exception:
                 logger.exception("Failed to report error")

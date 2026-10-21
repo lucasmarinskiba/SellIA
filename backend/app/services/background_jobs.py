@@ -119,7 +119,9 @@ class BackgroundJobQueue:
 
         # Find pending jobs with matching priority
         pending = [
-            j for j in self.jobs.values() if j.status == JobStatus.PENDING and j.priority == priority
+            j
+            for j in self.jobs.values()
+            if j.status == JobStatus.PENDING and j.priority == priority
         ]
 
         if pending:
@@ -213,7 +215,9 @@ class BackgroundJobQueue:
 
         return self.jobs.get(job_id)
 
-    def list_jobs(self, status: JobStatus | None = None, limit: int = 100) -> list[BackgroundJob]:
+    def list_jobs(
+        self, status: JobStatus | None = None, limit: int = 100
+    ) -> list[BackgroundJob]:
         """List jobs (optionally filtered by status)."""
 
         jobs = list(self.jobs.values())
@@ -238,10 +242,16 @@ class BackgroundJobQueue:
     def _get_avg_execution_time(self, jobs: list[BackgroundJob]) -> float:
         """Calculate average execution time for completed jobs."""
 
-        completed = [j for j in jobs if j.status == JobStatus.COMPLETED and j.started_at and j.completed_at]
+        completed = [
+            j
+            for j in jobs
+            if j.status == JobStatus.COMPLETED and j.started_at and j.completed_at
+        ]
         if not completed:
             return 0.0
-        total_time = sum((j.completed_at - j.started_at).total_seconds() for j in completed)
+        total_time = sum(
+            (j.completed_at - j.started_at).total_seconds() for j in completed
+        )
         return total_time / len(completed)
 
 
@@ -333,7 +343,9 @@ def register_job_handlers():
     job_queue.register_handler("send_email", handle_send_email)
     job_queue.register_handler("export_data", handle_export_data)
     job_queue.register_handler("sync_salesforce", handle_sync_salesforce)
-    job_queue.register_handler("sync_hubspot", handle_sync_salesforce)  # Similar handler
+    job_queue.register_handler(
+        "sync_hubspot", handle_sync_salesforce
+    )  # Similar handler
     job_queue.register_handler("process_recording", handle_process_recording)
     job_queue.register_handler("webhook_retry", handle_webhook_retry)
 

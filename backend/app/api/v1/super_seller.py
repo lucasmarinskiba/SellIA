@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class ProductDiagnosis(BaseModel):
     """Diagnóstico de producto."""
+
     product_name: str
     product_description: str
     price: float
@@ -80,7 +81,11 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         # 4. Detectar problemas
         problems = ProblemDetector.analyze(
             product_name=diagnosis.product_name,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             performance_data=performance_data,
             strategy=strategy,
         )
@@ -88,7 +93,9 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
         # 5. Soluciones por problema (usando grandes mentes)
         solutions = []
         for problem in problems:
-            solution = ProblemSolver.solve(problem, business_minds=["hermozi", "belfort", "jobs", "buffett"])
+            solution = ProblemSolver.solve(
+                problem, business_minds=["hermozi", "belfort", "jobs", "buffett"]
+            )
             solutions.append(solution)
 
         logger.info(f"Diagnóstico completado: {len(problems)} problemas detectados")
@@ -113,7 +120,11 @@ async def diagnose_product(diagnosis: ProductDiagnosis):
                 for p in problems
             ],
             "solutions_by_problem": solutions,
-            "urgent_actions": [s["recommended_priority"] for s in solutions if s.get("recommended_priority") == 1],
+            "urgent_actions": [
+                s["recommended_priority"]
+                for s in solutions
+                if s.get("recommended_priority") == 1
+            ],
             "diagnosed_at": utc_now().isoformat(),
         }
 
@@ -174,7 +185,11 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
 
         problems = ProblemDetector.analyze(
             product_name=diagnosis.product_name,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             performance_data=performance_data,
             strategy=strategy,
         )
@@ -192,7 +207,11 @@ async def generate_complete_plan(diagnosis: ProductDiagnosis):
         complete_plan = SalesExecutor.build_complete_sales_plan(
             product=diagnosis.product_name,
             category=market_analysis.category,
-            market_analysis=market_analysis.__dict__ if hasattr(market_analysis, '__dict__') else market_analysis,
+            market_analysis=(
+                market_analysis.__dict__
+                if hasattr(market_analysis, "__dict__")
+                else market_analysis
+            ),
             strategy=strategy,
             problems=problems_dict,
         )

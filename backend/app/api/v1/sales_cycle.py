@@ -88,7 +88,9 @@ async def start_sales_cycle(
         # Por ahora: simular
         cycle_result = await loop_engine.run_sales_cycle_with_loops(product, buyer)
 
-        logger.info(f"Sales cycle {cycle_id} initialized: {cycle_result['overall_status']}")
+        logger.info(
+            f"Sales cycle {cycle_id} initialized: {cycle_result['overall_status']}"
+        )
 
         return {
             "status": "initiated",

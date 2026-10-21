@@ -33,7 +33,9 @@ class OrderItem(BaseModel):
     name: str = ""
     sku: str | None = None
     quantity: int = Field(default=1, validation_alias=AliasChoices("quantity", "qty"))
-    unit_price: float = Field(default=0.0, validation_alias=AliasChoices("unit_price", "price"))
+    unit_price: float = Field(
+        default=0.0, validation_alias=AliasChoices("unit_price", "price")
+    )
     total_price: float | None = None
 
     @model_validator(mode="after")

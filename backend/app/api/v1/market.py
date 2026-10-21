@@ -61,12 +61,16 @@ async def get_available_agents(market: str | None = None) -> dict[str, Any]:
     """Get available agents for market."""
     if market:
         from app.core.market import Industry
+
         try:
             ind = Industry[market.upper()]
             agents = AgentLoader._recommend_agents(ind, None)
-            return {"market": market, "agents": AgentLoader.load_agents_for_market(
-                type('MarketProfile', (), {'recommended_agents': agents})()
-            )}
+            return {
+                "market": market,
+                "agents": AgentLoader.load_agents_for_market(
+                    type("MarketProfile", (), {"recommended_agents": agents})()
+                ),
+            }
         except Exception as e:
             logger.exception("get_available_agents: error inesperado")
             raise HTTPException(status_code=400, detail=f"Invalid market: {e}")
@@ -78,6 +82,7 @@ async def get_market_rules(market: str) -> dict[str, Any]:
     """Get rules for market."""
     try:
         from app.core.market import Industry
+
         ind = Industry[market.upper()]
         rules_file = MarketDetector._get_rules_file(ind)
         rules = MarketRulesEngine.load_rules(market, rules_file)

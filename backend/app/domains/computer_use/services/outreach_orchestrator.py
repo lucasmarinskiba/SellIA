@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class OutreachChannel(str, Enum):
     """Canales de outreach."""
+
     EMAIL = "email"
     WHATSAPP = "whatsapp"
     LINKEDIN = "linkedin"
@@ -123,11 +124,15 @@ We help teams fix this. Worth a quick chat?
     ) -> OutreachCampaign:
         """Crea campaña de outreach."""
         try:
-            campaign_id = f"camp_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            campaign_id = (
+                f"camp_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            )
 
             # Usar template default si no se proporciona
             if not message_template:
-                message_template = self.TEMPLATES.get(target_quality, self.TEMPLATES["cold"])["body"]
+                message_template = self.TEMPLATES.get(
+                    target_quality, self.TEMPLATES["cold"]
+                )["body"]
 
             campaign = OutreachCampaign(
                 campaign_id=campaign_id,
@@ -189,15 +194,19 @@ We help teams fix this. Worth a quick chat?
             # Log
             if success:
                 campaign.stats["sent"] += 1
-                self.outreach_log.append({
-                    "campaign_id": campaign.campaign_id,
-                    "lead_id": lead.lead_id,
-                    "channel": campaign.channel.value,
-                    "timestamp": utc_now().isoformat(),
-                    "status": "sent",
-                })
+                self.outreach_log.append(
+                    {
+                        "campaign_id": campaign.campaign_id,
+                        "lead_id": lead.lead_id,
+                        "channel": campaign.channel.value,
+                        "timestamp": utc_now().isoformat(),
+                        "status": "sent",
+                    }
+                )
 
-                self.logger.info(f"Outreach sent to {lead.email} via {campaign.channel.value}")
+                self.logger.info(
+                    f"Outreach sent to {lead.email} via {campaign.channel.value}"
+                )
 
                 return True, msg_id
 

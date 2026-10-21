@@ -136,17 +136,19 @@ class FOMAPatternSynthesizer:
                 if other_trigger != current_trigger:
                     improvement = other_ctr - current_ctr
                     if improvement > 5.0:  # Only recommend if >5% improvement
-                        recommendations.append({
-                            "platform": platform,
-                            "current_trigger": current_trigger,
-                            "current_ctr": float(current_ctr),
-                            "recommended_trigger": other_trigger,
-                            "recommended_platform": other_platform,
-                            "expected_ctr": float(other_ctr),
-                            "potential_improvement": float(improvement),
-                            "confidence": 0.75,
-                            "reasoning": f"{other_trigger} performs {improvement:.1f}% better on {other_platform}",
-                        })
+                        recommendations.append(
+                            {
+                                "platform": platform,
+                                "current_trigger": current_trigger,
+                                "current_ctr": float(current_ctr),
+                                "recommended_trigger": other_trigger,
+                                "recommended_platform": other_platform,
+                                "expected_ctr": float(other_ctr),
+                                "potential_improvement": float(improvement),
+                                "confidence": 0.75,
+                                "reasoning": f"{other_trigger} performs {improvement:.1f}% better on {other_platform}",
+                            }
+                        )
 
         # Sort by potential improvement
         recommendations.sort(key=lambda x: x["potential_improvement"], reverse=True)
@@ -186,11 +188,13 @@ class FOMAPatternSynthesizer:
             platform = row[0]
             count = row[1]
             ctr = float(row[2]) if row[2] else 0.0
-            platforms.append({
-                "platform": platform,
-                "samples": count,
-                "avg_ctr": ctr,
-            })
+            platforms.append(
+                {
+                    "platform": platform,
+                    "samples": count,
+                    "avg_ctr": ctr,
+                }
+            )
             total_ctr += ctr
 
         avg_across_platforms = total_ctr / len(platforms) if platforms else 0.0

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class FootTrafficMetrics(BaseModel):
     """Foot traffic metrics for location."""
+
     location_id: UUID
     location_name: str
     period: str
@@ -25,6 +26,7 @@ class FootTrafficMetrics(BaseModel):
 
 class OfflineConversionMetrics(BaseModel):
     """Conversion metrics from offline visits."""
+
     location_id: UUID
     location_name: str
     total_visits: int
@@ -38,6 +40,7 @@ class OfflineConversionMetrics(BaseModel):
 
 class OnlineOfflineAttributionMetrics(BaseModel):
     """Attribution metrics: online→offline→purchase."""
+
     business_id: UUID
     period: str
     total_online_leads: int
@@ -57,6 +60,7 @@ class OnlineOfflineAttributionMetrics(BaseModel):
 
 class LocationComparisonMetrics(BaseModel):
     """Compare foot traffic + conversion across locations."""
+
     business_id: UUID
     period: str
     locations: list[dict]
@@ -68,6 +72,7 @@ class LocationComparisonMetrics(BaseModel):
 
 class ProximityTriggerROI(BaseModel):
     """ROI metrics for proximity trigger."""
+
     business_id: UUID
     trigger_name: str
     period: str
@@ -85,6 +90,7 @@ class ProximityTriggerROI(BaseModel):
 
 class DashboardSummary(BaseModel):
     """High-level summary for main BI dashboard."""
+
     business_id: UUID
     period: str
     total_visits: int
@@ -106,6 +112,7 @@ class DashboardSummary(BaseModel):
 
 class LocationAnalyticsDetailedReport(BaseModel):
     """Detailed analytics report for single location."""
+
     location_id: UUID
     location_name: str
     location_address: str

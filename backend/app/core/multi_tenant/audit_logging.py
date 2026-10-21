@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 
 class AuditAction(str, Enum):
     """Predefined audit actions."""
+
     # User actions
     USER_LOGIN = "user.login"
     USER_LOGOUT = "user.logout"
@@ -52,6 +53,7 @@ class AuditAction(str, Enum):
 
 class AuditStatus(str, Enum):
     """Action outcome."""
+
     SUCCESS = "success"
     FAILED = "failed"
     WARNING = "warning"
@@ -144,9 +146,7 @@ class AuditService:
 
     async def get_audit_log(self, log_id: str) -> AuditLog | None:
         """Get audit log by ID."""
-        result = await self.db.execute(
-            select(AuditLog).where(AuditLog.id == log_id)
-        )
+        result = await self.db.execute(select(AuditLog).where(AuditLog.id == log_id))
         return result.scalar_one_or_none()
 
     async def list_tenant_audit_logs(
@@ -169,9 +169,7 @@ class AuditService:
         query = select(AuditLog).where(AuditLog.tenant_id == tenant_id)
 
         # Date filter
-        cutoff_date = datetime.now(UTC).replace(
-            day=datetime.now(UTC).day - days_back
-        )
+        cutoff_date = datetime.now(UTC).replace(day=datetime.now(UTC).day - days_back)
         query = query.where(AuditLog.created_at >= cutoff_date)
 
         # Optional filters
@@ -193,11 +191,7 @@ class AuditService:
         total_count = len(count_result.all())
 
         # Apply pagination and ordering
-        query = (
-            query.order_by(desc(AuditLog.created_at))
-            .limit(limit)
-            .offset(offset)
-        )
+        query = query.order_by(desc(AuditLog.created_at)).limit(limit).offset(offset)
 
         result = await self.db.execute(query)
         logs = result.scalars().all()
@@ -243,6 +237,7 @@ class AuditService:
         # Format as CSV
         import csv
         import io
+
         output = io.StringIO()
         writer = csv.DictWriter(
             output,
@@ -261,17 +256,19 @@ class AuditService:
 
         writer.writeheader()
         for log in logs:
-            writer.writerow({
-                "timestamp": log.created_at.isoformat(),
-                "action": log.action,
-                "resource_type": log.resource_type,
-                "resource_id": log.resource_id,
-                "user_id": str(log.user_id) if log.user_id else "system",
-                "user_email": log.user_email or "",
-                "ip_address": log.ip_address or "",
-                "status": log.status,
-                "reason": log.reason or "",
-            })
+            writer.writerow(
+                {
+                    "timestamp": log.created_at.isoformat(),
+                    "action": log.action,
+                    "resource_type": log.resource_type,
+                    "resource_id": log.resource_id,
+                    "user_id": str(log.user_id) if log.user_id else "system",
+                    "user_email": log.user_email or "",
+                    "ip_address": log.ip_address or "",
+                    "status": log.status,
+                    "reason": log.reason or "",
+                }
+            )
 
         csv_data = output.getvalue()
 
@@ -298,9 +295,7 @@ class AuditService:
         Run as scheduled task for storage management.
         CAUTION: Usually kept for compliance (1-7 years).
         """
-        cutoff_date = datetime.now(UTC).replace(
-            day=datetime.now(UTC).day - days_before
-        )
+        cutoff_date = datetime.now(UTC).replace(day=datetime.now(UTC).day - days_before)
 
         # Get count first
         count_result = await self.db.execute(
@@ -309,9 +304,7 @@ class AuditService:
         count = len(count_result.all())
 
         # Delete
-        await self.db.execute(
-            select(AuditLog).where(AuditLog.created_at < cutoff_date)
-        )
+        await self.db.execute(select(AuditLog).where(AuditLog.created_at < cutoff_date))
         await self.db.commit()
 
         logger.warning(
@@ -336,9 +329,7 @@ class AuditLogger:
         **kwargs,
     ) -> AuditLog:
         service = self.get_service(db)
-        return await service.log_action(
-            tenant_id, action, resource_type, **kwargs
-        )
+        return await service.log_action(tenant_id, action, resource_type, **kwargs)
 
 
 _audit_logger: AuditLogger | None = None

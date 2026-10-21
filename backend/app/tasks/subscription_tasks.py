@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 @shared_task
 def check_expiring_subscriptions():
     """Verifica suscripciones que vencen pronto y envía recordatorios."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.domains.subscriptions.models import (
@@ -67,9 +68,15 @@ def check_expiring_subscriptions():
                 select(Subscription, User)
                 .join(User)
                 .where(
-                    Subscription.status.in_([SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]),
+                    Subscription.status.in_(
+                        [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]
+                    ),
                     Subscription.current_period_end < now,
-                    Subscription.grace_period_end < now if Subscription.grace_period_end else True,
+                    (
+                        Subscription.grace_period_end < now
+                        if Subscription.grace_period_end
+                        else True
+                    ),
                 )
             )
             for sub, user in result.all():
@@ -96,6 +103,7 @@ def check_expiring_subscriptions():
 @shared_task
 def process_crypto_pending_payments():
     """Consulta blockchain para pagos crypto pendientes."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.domains.subscriptions.crypto_billing import (
@@ -113,8 +121,7 @@ def process_crypto_pending_payments():
             ttl = now - timedelta(minutes=30)
 
             result = await db.execute(
-                select(PaymentTransaction)
-                .where(
+                select(PaymentTransaction).where(
                     PaymentTransaction.status == PaymentStatus.PENDING,
                     PaymentTransaction.provider == "crypto",
                     PaymentTransaction.created_at > ttl,
@@ -127,10 +134,15 @@ def process_crypto_pending_payments():
                     continue
 
                 try:
-                    status = await check_crypto_payment_status(tx.crypto_tx_hash, tx.crypto_network)
+                    status = await check_crypto_payment_status(
+                        tx.crypto_tx_hash, tx.crypto_network
+                    )
                     tx.crypto_confirmations = status.get("confirmations", 0)
 
-                    if status.get("status") == "completed" and tx.crypto_confirmations >= 12:
+                    if (
+                        status.get("status") == "completed"
+                        and tx.crypto_confirmations >= 12
+                    ):
                         # Verificar monto
                         verified = await verify_crypto_payment(
                             tx.crypto_tx_hash,
@@ -146,17 +158,25 @@ def process_crypto_pending_payments():
                             # Activar suscripción
                             if tx.subscription_id:
                                 sub_result = await db.execute(
-                                    select(Subscription).where(Subscription.id == tx.subscription_id)
+                                    select(Subscription).where(
+                                        Subscription.id == tx.subscription_id
+                                    )
                                 )
                                 sub = sub_result.scalar_one_or_none()
                                 if sub and tx.plan_id:
                                     sub.plan_id = tx.plan_id
                                     sub.status = SubscriptionStatus.ACTIVE
                                     sub.current_period_start = now
-                                    sub.current_period_end = now + timedelta(days=30 if tx.billing_cycle == "monthly" else 365)
+                                    sub.current_period_end = now + timedelta(
+                                        days=(
+                                            30 if tx.billing_cycle == "monthly" else 365
+                                        )
+                                    )
                                     sub.payment_provider = "crypto"
                                     sub.crypto_network = tx.crypto_network
-                                    logger.info(f"Crypto payment completed: tx {tx.id}, sub {sub.id}")
+                                    logger.info(
+                                        f"Crypto payment completed: tx {tx.id}, sub {sub.id}"
+                                    )
 
                     await db.commit()
                 except Exception:
@@ -168,6 +188,7 @@ def process_crypto_pending_payments():
 @shared_task
 def cleanup_expired_crypto_payments():
     """Marca como expirados los pagos crypto que superaron el TTL."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.domains.subscriptions.models import (
@@ -179,8 +200,7 @@ def cleanup_expired_crypto_payments():
             ttl = now - timedelta(minutes=30)
 
             result = await db.execute(
-                select(PaymentTransaction)
-                .where(
+                select(PaymentTransaction).where(
                     PaymentTransaction.status == PaymentStatus.PENDING,
                     PaymentTransaction.provider == "crypto",
                     PaymentTransaction.created_at < ttl,
@@ -239,8 +259,7 @@ async def _check_usage_alerts(db) -> None:
 
             # Get usage
             usage_result = await db.execute(
-                select(func.coalesce(func.sum(UsageTracking.quantity), 0))
-                .where(
+                select(func.coalesce(func.sum(UsageTracking.quantity), 0)).where(
                     UsageTracking.user_id == user.id,
                     UsageTracking.metric_type == metric,
                     UsageTracking.period_month == current_month,
@@ -253,8 +272,7 @@ async def _check_usage_alerts(db) -> None:
                 if percent >= threshold:
                     # Check if alert already sent
                     existing = await db.execute(
-                        select(UsageAlert)
-                        .where(
+                        select(UsageAlert).where(
                             UsageAlert.user_id == user.id,
                             UsageAlert.metric_type == metric,
                             UsageAlert.threshold_percent == threshold,
@@ -268,7 +286,9 @@ async def _check_usage_alerts(db) -> None:
                             threshold_percent=threshold,
                         )
                         db.add(alert)
-                        logger.info(f"Usage alert {threshold}%: {metric} para usuario {user.id}")
+                        logger.info(
+                            f"Usage alert {threshold}%: {metric} para usuario {user.id}"
+                        )
                         # TODO: Enviar email/push
 
     await db.commit()
@@ -277,6 +297,7 @@ async def _check_usage_alerts(db) -> None:
 @shared_task
 def check_usage_alerts():
     """Verifica uso de suscripciones y envía alerts al 80% y 100%."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             await _check_usage_alerts(db)
@@ -287,6 +308,7 @@ def check_usage_alerts():
 @shared_task
 def generate_recurring_invoices():
     """Genera invoices para suscripciones con renovación automática."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.domains.subscriptions.models import (
@@ -315,13 +337,17 @@ def generate_recurring_invoices():
                 )
                 from app.domains.users.models import User
 
-                user_result = await db.execute(select(User).where(User.id == sub.user_id))
+                user_result = await db.execute(
+                    select(User).where(User.id == sub.user_id)
+                )
                 user = user_result.scalar_one_or_none()
                 if not user:
                     continue
 
                 region = get_region_from_country(user.country_code)
-                price, currency = get_plan_price(plan, region, sub.billing_cycle or "monthly")
+                price, currency = get_plan_price(
+                    plan, region, sub.billing_cycle or "monthly"
+                )
 
                 try:
                     await create_invoice(
@@ -334,12 +360,13 @@ def generate_recurring_invoices():
                         billing_cycle=sub.billing_cycle or "monthly",
                         region=region,
                     )
-                    logger.info(f"Invoice generada para usuario {user.id}, plan {plan.slug}")
+                    logger.info(
+                        f"Invoice generada para usuario {user.id}, plan {plan.slug}"
+                    )
                 except Exception:
                     logger.exception(f"Error generando invoice para {user.id}")
 
     run_async(_run())
-
 
 
 #: Pending bank transfers are reminded when they expire in (18 h, 24 h]; see send_transfer_reminders.
@@ -350,6 +377,7 @@ TRANSFER_REMINDER_WINDOW_END = timedelta(hours=24)
 @shared_task
 def send_transfer_reminders():
     """Envía recordatorios de transferencias pendientes que están por vencer."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.core.email_service import send_email
@@ -389,7 +417,9 @@ def send_transfer_reminders():
                     hours_left=max(hours_left, 1),
                 )
                 await send_email(user.email, subject, html, text)
-                logger.info(f"Reminder enviado: orden {order.order_number}, usuario {user.id}")
+                logger.info(
+                    f"Reminder enviado: orden {order.order_number}, usuario {user.id}"
+                )
 
     run_async(_run())
 
@@ -397,6 +427,7 @@ def send_transfer_reminders():
 @shared_task
 def expire_pending_transfers():
     """Marca como expiradas las transferencias que superaron las 48h."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.core.email_service import send_email
@@ -433,10 +464,10 @@ def expire_pending_transfers():
     run_async(_run())
 
 
-
 @shared_task
 def sync_mercadopago_preapprovals():
     """Sincroniza estados de preapprovals con MercadoPago (resiliencia ante webhooks perdidos)."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             from app.core.email_service import send_email
@@ -455,7 +486,9 @@ def sync_mercadopago_preapprovals():
                 .join(User)
                 .where(
                     Subscription.mercadopago_preapproval_id.isnot(None),
-                    Subscription.status.in_([SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]),
+                    Subscription.status.in_(
+                        [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]
+                    ),
                 )
             )
 
@@ -463,7 +496,9 @@ def sync_mercadopago_preapprovals():
                 if not sub.mercadopago_preapproval_id:
                     continue
                 try:
-                    status = await get_preapproval_status(sub.mercadopago_preapproval_id)
+                    status = await get_preapproval_status(
+                        sub.mercadopago_preapproval_id
+                    )
                     mp_status = status.get("status")
 
                     if mp_status in ("paused", "cancelled"):
@@ -473,29 +508,39 @@ def sync_mercadopago_preapprovals():
                             from app.domains.subscriptions.models import (
                                 SubscriptionPlan,
                             )
+
                             plan_result = await db.execute(
-                                select(SubscriptionPlan).where(SubscriptionPlan.id == sub.plan_id)
+                                select(SubscriptionPlan).where(
+                                    SubscriptionPlan.id == sub.plan_id
+                                )
                             )
                             plan = plan_result.scalar_one_or_none()
                             subject, html, text = preapproval_payment_failed(
                                 plan_name=plan.name if plan else "SellIA",
                             )
                             await send_email(user.email, subject, html, text)
-                        logger.info(f"Preapproval pausado/cancelado: sub {sub.id}, user {user.id}")
+                        logger.info(
+                            f"Preapproval pausado/cancelado: sub {sub.id}, user {user.id}"
+                        )
 
                     elif mp_status == "authorized":
                         sub.auto_renew = True
                         next_payment = status.get("next_payment_date")
                         if next_payment:
                             from datetime import datetime as dt
+
                             if isinstance(next_payment, str):
                                 try:
-                                    sub.next_billing_date = dt.fromisoformat(next_payment)
+                                    sub.next_billing_date = dt.fromisoformat(
+                                        next_payment
+                                    )
                                 except ValueError:
                                     pass
 
                     await db.commit()
                 except Exception:
-                    logger.exception(f"Error sync preapproval {sub.mercadopago_preapproval_id}")
+                    logger.exception(
+                        f"Error sync preapproval {sub.mercadopago_preapproval_id}"
+                    )
 
     run_async(_run())

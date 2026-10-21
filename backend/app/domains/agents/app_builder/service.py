@@ -27,7 +27,15 @@ from app.domains.agents.prompts.business_context_adapter import (
 
 logger = get_logger(__name__)
 
-STORAGE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))) / "storage" / "exports"
+STORAGE_DIR = (
+    Path(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        )
+    )
+    / "storage"
+    / "exports"
+)
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -52,22 +60,28 @@ class AppBuilderService:
 
         # Guardar features individuales
         for feat in data.features:
-            self.db.add(AppFeature(
-                job_id=job.id,
-                feature_name=feat.feature_name,
-                description=feat.description,
-                priority=feat.priority,
-                estimated_hours=feat.estimated_hours,
-            ))
+            self.db.add(
+                AppFeature(
+                    job_id=job.id,
+                    feature_name=feat.feature_name,
+                    description=feat.description,
+                    priority=feat.priority,
+                    estimated_hours=feat.estimated_hours,
+                )
+            )
         await self.db.commit()
         await self.db.refresh(job)
         return job
 
     async def get_job(self, job_id: uuid.UUID) -> AppBuildJob | None:
-        result = await self.db.execute(select(AppBuildJob).where(AppBuildJob.id == job_id))
+        result = await self.db.execute(
+            select(AppBuildJob).where(AppBuildJob.id == job_id)
+        )
         return result.scalar_one_or_none()
 
-    async def list_jobs(self, business_id: uuid.UUID, limit: int = 100, offset: int = 0) -> list[AppBuildJob]:
+    async def list_jobs(
+        self, business_id: uuid.UUID, limit: int = 100, offset: int = 0
+    ) -> list[AppBuildJob]:
         result = await self.db.execute(
             select(AppBuildJob)
             .where(AppBuildJob.business_id == business_id)
@@ -97,18 +111,24 @@ class AppBuilderService:
         features_list: list[AppFeatureCreate],
     ) -> AppBuildJob:
         """1. Crea job; 2. Analiza con LLM; 3. Genera código; 4. ZIP + guarda."""
-        job = await self.create_job(AppBuildJobCreate(
-            business_id=business_id,
-            app_name=app_description.split("\n")[0][:100] or "MVP App",
-            description=app_description,
-            features=features_list,
-        ))
+        job = await self.create_job(
+            AppBuildJobCreate(
+                business_id=business_id,
+                app_name=app_description.split("\n")[0][:100] or "MVP App",
+                description=app_description,
+                features=features_list,
+            )
+        )
         await self.update_job(job.id, status=AppBuildStatus.ANALYZING)
 
         try:
             # Opcional: LLM analysis (best-effort)
-            analysis = await self._analyze_with_llm(business_id, app_description, features_list)
-            logger.info(f"AppBuilder LLM analysis for job {job.id}: {analysis[:200]}...")
+            analysis = await self._analyze_with_llm(
+                business_id, app_description, features_list
+            )
+            logger.info(
+                f"AppBuilder LLM analysis for job {job.id}: {analysis[:200]}..."
+            )
         except Exception as e:
             logger.warning(f"AppBuilder LLM analysis failed: {e}", exc_info=True)
             analysis = ""
@@ -116,7 +136,9 @@ class AppBuilderService:
         await self.update_job(job.id, status=AppBuildStatus.GENERATING)
 
         try:
-            zip_path = self._generate_code_zip(job, app_description, features_list, analysis)
+            zip_path = self._generate_code_zip(
+                job, app_description, features_list, analysis
+            )
             relative_url = f"/storage/exports/{zip_path.name}"
             preview = self._build_preview_instructions(job, features_list)
 
@@ -129,11 +151,18 @@ class AppBuilderService:
             )
         except Exception as e:
             logger.exception(f"AppBuilder generation failed for job {job.id}")
-            await self.update_job(job.id, status=AppBuildStatus.FAILED, deploy_instructions=str(e))
+            await self.update_job(
+                job.id, status=AppBuildStatus.FAILED, deploy_instructions=str(e)
+            )
 
         return await self.get_job(job.id)
 
-    async def _analyze_with_llm(self, business_id: uuid.UUID, app_description: str, features_list: list[AppFeatureCreate]) -> str:
+    async def _analyze_with_llm(
+        self,
+        business_id: uuid.UUID,
+        app_description: str,
+        features_list: list[AppFeatureCreate],
+    ) -> str:
         from langchain_core.messages import HumanMessage, SystemMessage
 
         from app.domains.agents.llm_provider import generate_with_fallback
@@ -154,10 +183,19 @@ class AppBuilderService:
         if context_block:
             human_content = f"{context_block}\n\n{human_content}"
         messages = [
-            SystemMessage(content="Eres un arquitecto de software senior. Analiza requerimientos y sugiere una arquitectura limpia."),
+            SystemMessage(
+                content="Eres un arquitecto de software senior. Analiza requerimientos y sugiere una arquitectura limpia."
+            ),
             HumanMessage(content=human_content),
         ]
-        resp = await generate_with_fallback(self.db, business_id, messages, model="gpt-4o-mini", temperature=0.3, max_tokens=1200)
+        resp = await generate_with_fallback(
+            self.db,
+            business_id,
+            messages,
+            model="gpt-4o-mini",
+            temperature=0.3,
+            max_tokens=1200,
+        )
         return resp.content if resp else ""
 
     def _generate_code_zip(
@@ -174,32 +212,74 @@ class AppBuilderService:
         # === FRONTEND (Next.js) ===
         fe_dir = Path(tmpdir) / f"{app_slug}-frontend"
         self._write_file(fe_dir / "package.json", self._frontend_package_json(app_slug))
-        self._write_file(fe_dir / "tailwind.config.js", self._frontend_tailwind_config())
-        self._write_file(fe_dir / "src" / "app" / "page.tsx", self._frontend_home_page(app_description))
-        self._write_file(fe_dir / "src" / "app" / "auth" / "page.tsx", self._frontend_auth_page())
-        self._write_file(fe_dir / "src" / "app" / "dashboard" / "page.tsx", self._frontend_dashboard_page(features_list))
-        self._write_file(fe_dir / "src" / "app" / "settings" / "page.tsx", self._frontend_settings_page())
-        self._write_file(fe_dir / "src" / "components" / "Layout.tsx", self._frontend_layout_component())
-        self._write_file(fe_dir / "src" / "components" / "FormInput.tsx", self._frontend_form_input())
-        self._write_file(fe_dir / "src" / "components" / "DataTable.tsx", self._frontend_data_table())
-        self._write_file(fe_dir / "src" / "components" / "Card.tsx", self._frontend_card_component())
+        self._write_file(
+            fe_dir / "tailwind.config.js", self._frontend_tailwind_config()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "page.tsx",
+            self._frontend_home_page(app_description),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "auth" / "page.tsx", self._frontend_auth_page()
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "dashboard" / "page.tsx",
+            self._frontend_dashboard_page(features_list),
+        )
+        self._write_file(
+            fe_dir / "src" / "app" / "settings" / "page.tsx",
+            self._frontend_settings_page(),
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "Layout.tsx",
+            self._frontend_layout_component(),
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "FormInput.tsx", self._frontend_form_input()
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "DataTable.tsx", self._frontend_data_table()
+        )
+        self._write_file(
+            fe_dir / "src" / "components" / "Card.tsx", self._frontend_card_component()
+        )
         self._write_file(fe_dir / "src" / "lib" / "api.ts", self._frontend_api_client())
 
         # === BACKEND (FastAPI) ===
         be_dir = Path(tmpdir) / f"{app_slug}-backend"
         self._write_file(be_dir / "app" / "main.py", self._backend_main_py(app_slug))
-        self._write_file(be_dir / "app" / "core" / "database.py", self._backend_database_py())
-        self._write_file(be_dir / "app" / "core" / "config.py", self._backend_config_py())
-        self._write_file(be_dir / "app" / "core" / "security.py", self._backend_security_py())
-        self._write_file(be_dir / "app" / "models" / "user.py", self._backend_user_model())
-        self._write_file(be_dir / "app" / "schemas" / "user.py", self._backend_user_schema())
-        self._write_file(be_dir / "app" / "routers" / "auth.py", self._backend_auth_router())
-        self._write_file(be_dir / "app" / "routers" / "items.py", self._backend_items_router(features_list))
+        self._write_file(
+            be_dir / "app" / "core" / "database.py", self._backend_database_py()
+        )
+        self._write_file(
+            be_dir / "app" / "core" / "config.py", self._backend_config_py()
+        )
+        self._write_file(
+            be_dir / "app" / "core" / "security.py", self._backend_security_py()
+        )
+        self._write_file(
+            be_dir / "app" / "models" / "user.py", self._backend_user_model()
+        )
+        self._write_file(
+            be_dir / "app" / "schemas" / "user.py", self._backend_user_schema()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "auth.py", self._backend_auth_router()
+        )
+        self._write_file(
+            be_dir / "app" / "routers" / "items.py",
+            self._backend_items_router(features_list),
+        )
         self._write_file(be_dir / "alembic" / "env.py", self._backend_alembic_env())
-        self._write_file(be_dir / "docker-compose.yml", self._backend_docker_compose(app_slug))
+        self._write_file(
+            be_dir / "docker-compose.yml", self._backend_docker_compose(app_slug)
+        )
         self._write_file(be_dir / "requirements.txt", self._backend_requirements())
         self._write_file(be_dir / "Dockerfile", self._backend_dockerfile())
-        self._write_file(be_dir / "README.md", self._backend_readme(app_slug, app_description, features_list, analysis))
+        self._write_file(
+            be_dir / "README.md",
+            self._backend_readme(app_slug, app_description, features_list, analysis),
+        )
 
         # === ZIP ===
         zip_path = STORAGE_DIR / f"{app_slug}_{job.id}.zip"
@@ -212,6 +292,7 @@ class AppBuilderService:
 
         # Cleanup temp
         import shutil
+
         shutil.rmtree(tmpdir, ignore_errors=True)
 
         return zip_path
@@ -222,12 +303,13 @@ class AppBuilderService:
 
     def _slugify(self, text: str) -> str:
         import re
+
         return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40]
 
     # ---------- Frontend Templates ----------
 
     def _frontend_package_json(self, app_slug: str) -> str:
-        return f'''{{
+        return f"""{{
   "name": "{app_slug}-frontend",
   "version": "0.1.0",
   "private": true,
@@ -251,10 +333,10 @@ class AppBuilderService:
     "autoprefixer": "^10.4.0"
   }}
 }}
-'''
+"""
 
     def _frontend_tailwind_config(self) -> str:
-        return '''/** @type {import('tailwindcss').Config} */
+        return """/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -264,10 +346,10 @@ module.exports = {
   },
   plugins: [],
 }
-'''
+"""
 
     def _frontend_home_page(self, description: str) -> str:
-        return f'''export default function Home() {{
+        return f"""export default function Home() {{
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gradient-to-br from-slate-900 to-slate-800 text-white">
       <h1 className="text-5xl font-bold mb-6">Bienvenido</h1>
@@ -281,10 +363,10 @@ module.exports = {
     </main>
   );
 }}
-'''
+"""
 
     def _frontend_auth_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import { useState } from "react";
 
 export default function AuthPage() {
@@ -306,14 +388,18 @@ export default function AuthPage() {
     </div>
   );
 }
-'''
+"""
 
     def _frontend_dashboard_page(self, features: list[AppFeatureCreate]) -> str:
-        cards = "\n".join(
-            f'        <Card title="{f.feature_name}" description="{f.description or ""}" />'
-            for f in features[:6]
-        ) if features else '        <Card title="Bienvenido" description="Tu dashboard está listo." />'
-        return f'''"use client";
+        cards = (
+            "\n".join(
+                f'        <Card title="{f.feature_name}" description="{f.description or ""}" />'
+                for f in features[:6]
+            )
+            if features
+            else '        <Card title="Bienvenido" description="Tu dashboard está listo." />'
+        )
+        return f""""use client";
 import Card from "@/components/Card";
 import Layout from "@/components/Layout";
 
@@ -329,10 +415,10 @@ export default function Dashboard() {{
     </Layout>
   );
 }}
-'''
+"""
 
     def _frontend_settings_page(self) -> str:
-        return '''"use client";
+        return """"use client";
 import Layout from "@/components/Layout";
 
 export default function Settings() {
@@ -355,10 +441,10 @@ export default function Settings() {
     </Layout>
   );
 }
-'''
+"""
 
     def _frontend_layout_component(self) -> str:
-        return '''import Link from "next/link";
+        return """import Link from "next/link";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -376,10 +462,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-'''
+"""
 
     def _frontend_form_input(self) -> str:
-        return '''interface FormInputProps {
+        return """interface FormInputProps {
   label: string;
   type?: string;
   value: string;
@@ -399,10 +485,10 @@ export default function FormInput({ label, type = "text", value, onChange }: For
     </div>
   );
 }
-'''
+"""
 
     def _frontend_data_table(self) -> str:
-        return '''interface Column<T> {
+        return """interface Column<T> {
   key: keyof T;
   title: string;
 }
@@ -431,10 +517,10 @@ export default function DataTable<T extends Record<string, any>>({ columns, rows
     </div>
   );
 }
-'''
+"""
 
     def _frontend_card_component(self) -> str:
-        return '''export default function Card({ title, description }: { title: string; description?: string }) {
+        return """export default function Card({ title, description }: { title: string; description?: string }) {
   return (
     <div className="p-5 bg-slate-900 rounded-xl border border-slate-800 hover:border-indigo-500/50 transition">
       <h3 className="text-lg font-semibold text-white mb-1">{title}</h3>
@@ -442,10 +528,10 @@ export default function DataTable<T extends Record<string, any>>({ columns, rows
     </div>
   );
 }
-'''
+"""
 
     def _frontend_api_client(self) -> str:
-        return '''const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        return """const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -455,12 +541,12 @@ export async function apiFetch(path: string, options?: RequestInit) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-'''
+"""
 
     # ---------- Backend Templates ----------
 
     def _backend_main_py(self, app_slug: str) -> str:
-        return f'''from fastapi import FastAPI
+        return f"""from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, items
 
@@ -480,10 +566,10 @@ app.include_router(items.router, prefix="/items", tags=["items"])
 @app.get("/health")
 async def health():
     return {{"status": "ok"}}
-'''
+"""
 
     def _backend_database_py(self) -> str:
-        return '''from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+        return """from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 DATABASE_URL = "postgresql+asyncpg://user:password@db:5432/appdb"
@@ -500,10 +586,10 @@ async def get_db():
             yield session
         finally:
             await session.close()
-'''
+"""
 
     def _backend_config_py(self) -> str:
-        return '''from pydantic_settings import BaseSettings
+        return """from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://user:password@db:5432/appdb"
@@ -514,10 +600,10 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
-'''
+"""
 
     def _backend_security_py(self) -> str:
-        return '''from datetime import datetime, timedelta
+        return """from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from jose import jwt
 from app.core.config import settings
@@ -538,10 +624,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     expire = utc_now() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
-'''
+"""
 
     def _backend_user_model(self) -> str:
-        return '''import uuid
+        return """import uuid
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -556,10 +642,10 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-'''
+"""
 
     def _backend_user_schema(self) -> str:
-        return '''from pydantic import BaseModel, ConfigDict
+        return """from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 
@@ -583,10 +669,10 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
-'''
+"""
 
     def _backend_auth_router(self) -> str:
-        return '''from fastapi import APIRouter, Depends, HTTPException, status
+        return """from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -617,11 +703,15 @@ async def login(data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token}
-'''
+"""
 
     def _backend_items_router(self, features: list[AppFeatureCreate]) -> str:
-        feature_names = ", ".join(f'"{f.feature_name}"' for f in features[:5]) if features else '"items"'
-        return f'''from fastapi import APIRouter, Depends
+        feature_names = (
+            ", ".join(f'"{f.feature_name}"' for f in features[:5])
+            if features
+            else '"items"'
+        )
+        return f"""from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
@@ -638,10 +728,10 @@ async def list_items(db: AsyncSession = Depends(get_db)):
 @router.post("/")
 async def create_item(name: str, db: AsyncSession = Depends(get_db)):
     return {{"id": "uuid-here", "name": name}}
-'''
+"""
 
     def _backend_alembic_env(self) -> str:
-        return '''from logging.config import fileConfig
+        return """from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -687,10 +777,10 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-'''
+"""
 
     def _backend_docker_compose(self, app_slug: str) -> str:
-        return f'''version: "3.9"
+        return f"""version: "3.9"
 services:
   db:
     image: postgres:16-alpine
@@ -722,10 +812,10 @@ services:
 
 volumes:
   pgdata:
-'''
+"""
 
     def _backend_requirements(self) -> str:
-        return '''fastapi==0.111.0
+        return """fastapi==0.111.0
 uvicorn[standard]==0.30.0
 sqlalchemy[asyncio]==2.0.30
 asyncpg==0.29.0
@@ -735,10 +825,10 @@ pydantic-settings==2.2.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-'''
+"""
 
     def _backend_dockerfile(self) -> str:
-        return '''FROM python:3.11-slim
+        return """FROM python:3.11-slim
 
 WORKDIR /app
 COPY requirements.txt .
@@ -747,7 +837,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-'''
+"""
 
     def _backend_readme(
         self,
@@ -756,8 +846,10 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
         features: list[AppFeatureCreate],
         analysis: str,
     ) -> str:
-        features_md = "\n".join(f"- {f.feature_name}: {f.description or ''}" for f in features)
-        return f'''# {app_slug.title()}
+        features_md = "\n".join(
+            f"- {f.feature_name}: {f.description or ''}" for f in features
+        )
+        return f"""# {app_slug.title()}
 
 {description}
 
@@ -776,9 +868,11 @@ docker-compose up --build
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API docs: http://localhost:8000/docs
-'''
+"""
 
-    def _build_preview_instructions(self, job: AppBuildJob, features: list[AppFeatureCreate]) -> str:
+    def _build_preview_instructions(
+        self, job: AppBuildJob, features: list[AppFeatureCreate]
+    ) -> str:
         features_text = "\n".join(f"- {f.feature_name}" for f in features)
         return f"""# Instrucciones de despliegue — {job.app_name}
 

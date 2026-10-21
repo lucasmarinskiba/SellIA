@@ -56,7 +56,9 @@ class GoogleCalendarAutomation:
             logger.warning(f"Conflict detected: {conflict_check['conflicts']}")
 
             # Buscar slot disponible
-            alternative_time = await self._find_available_slot(start_time, duration_minutes)
+            alternative_time = await self._find_available_slot(
+                start_time, duration_minutes
+            )
 
             if alternative_time:
                 logger.info(f"Proposing alternative: {alternative_time}")
@@ -187,7 +189,9 @@ class GoogleCalendarAutomation:
                 candidate_time = preferred_time.replace(hour=hour, minute=0)
                 candidate_time += timedelta(days=days_ahead)
 
-                conflict_check = await self._check_conflicts(candidate_time, duration_minutes)
+                conflict_check = await self._check_conflicts(
+                    candidate_time, duration_minutes
+                )
 
                 if not conflict_check["has_conflict"]:
                     logger.info(f"Available slot found: {candidate_time}")
@@ -255,7 +259,9 @@ class GoogleCalendarAutomation:
             for hour in [9, 10, 11, 14, 15, 16, 17]:
                 candidate_time = current.replace(hour=hour, minute=0)
 
-                conflict_check = await self._check_conflicts(candidate_time, duration_minutes)
+                conflict_check = await self._check_conflicts(
+                    candidate_time, duration_minutes
+                )
 
                 if not conflict_check["has_conflict"]:
                     available_slots.append(candidate_time)
@@ -266,7 +272,9 @@ class GoogleCalendarAutomation:
 
         return {
             "status": "success",
-            "available_slots": [s.isoformat() for s in available_slots[:10]],  # Primeros 10
+            "available_slots": [
+                s.isoformat() for s in available_slots[:10]
+            ],  # Primeros 10
             "total_found": len(available_slots),
         }
 

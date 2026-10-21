@@ -39,7 +39,9 @@ async def create_vendor(
 ):
     """Create vendor."""
     svc = VendorService(db)
-    return await svc.create_vendor(business_id, body.name, body.category, body.contact_email, body.contact_phone)
+    return await svc.create_vendor(
+        business_id, body.name, body.category, body.contact_email, body.contact_phone
+    )
 
 
 @router.get("/vendors", response_model=list[VendorOut])
@@ -63,7 +65,9 @@ async def score_vendor(
 ):
     """Update vendor scores."""
     svc = VendorService(db)
-    return await svc.update_scores(vendor_id, body.quality_score, body.cost_score, body.delivery_score)
+    return await svc.update_scores(
+        vendor_id, body.quality_score, body.cost_score, body.delivery_score
+    )
 
 
 # RFQs

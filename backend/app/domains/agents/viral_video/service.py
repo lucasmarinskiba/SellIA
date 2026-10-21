@@ -57,7 +57,9 @@ class ViralVideoService:
         await self.db.refresh(job)
 
         # 1. Generate optimized script
-        script_data = await self._generate_script(business_id, topic, platform, duration, settings)
+        script_data = await self._generate_script(
+            business_id, topic, platform, duration, settings
+        )
         script = VideoScript(
             job_id=job.id,
             business_id=business_id,
@@ -99,11 +101,15 @@ class ViralVideoService:
         music_path = STORAGE_DIR / f"music_{job.id}.mp3"
         if not music_path.exists():
             # Create dummy music file for demo
-            await asyncio.to_thread(write_file, music_path, "wb", data=b"\xff\xfb" + os.urandom(2048))
+            await asyncio.to_thread(
+                write_file, music_path, "wb", data=b"\xff\xfb" + os.urandom(2048)
+            )
 
         job.status = "completed"
         job.provider_used = provider
-        job.video_url = f"/storage/media/videos/{video_path.name}" if video_path else None
+        job.video_url = (
+            f"/storage/media/videos/{video_path.name}" if video_path else None
+        )
         job.thumbnail_url = thumbnail_url
         await self.db.commit()
         await self.db.refresh(job)
@@ -215,14 +221,23 @@ class ViralVideoService:
             try:
                 video_bytes = await caller(prompt, api_key)
                 if video_bytes:
-                    await asyncio.to_thread(write_file, file_path, "wb", data=video_bytes)
+                    await asyncio.to_thread(
+                        write_file, file_path, "wb", data=video_bytes
+                    )
                     return file_path, provider_name
             except Exception as e:
-                logger.warning(f"{provider_name} video generation failed: {e}", exc_info=True)
+                logger.warning(
+                    f"{provider_name} video generation failed: {e}", exc_info=True
+                )
 
         # Fallback: create a dummy video file
         logger.info("Video generation fallback: creating dummy file")
-        await asyncio.to_thread(write_file, file_path, "wb", data=b"\x00\x00\x00\x20ftypisomisommp41\x00\x00\x00\x08moov")
+        await asyncio.to_thread(
+            write_file,
+            file_path,
+            "wb",
+            data=b"\x00\x00\x00\x20ftypisomisommp41\x00\x00\x00\x08moov",
+        )
         return file_path, "mock"
 
     async def _generate_thumbnail(

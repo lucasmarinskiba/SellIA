@@ -36,7 +36,7 @@ def register_webhook(
         url=request.url,
         subscribed_events=request.subscribed_events,
         description=request.description,
-        db=db
+        db=db,
     )
 
 
@@ -51,7 +51,7 @@ def trigger_event(
         business_id=business_id,
         event_type=request.event_type,
         event_data=request.event_data,
-        db=db
+        db=db,
     )
 
 
@@ -66,7 +66,7 @@ def queue_event(
         business_id=business_id,
         event_type=request.event_type,
         event_data=request.event_data,
-        db=db
+        db=db,
     )
 
 
@@ -77,8 +77,4 @@ def get_webhook_stats(
     days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Get webhook delivery statistics."""
-    return WebhookService.get_webhook_stats(
-        business_id=business_id,
-        days=days,
-        db=db
-    )
+    return WebhookService.get_webhook_stats(business_id=business_id, days=days, db=db)

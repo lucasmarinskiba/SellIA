@@ -34,25 +34,31 @@ async def generate_sales_playbook(
     Returns a dict with playbook sections, or None if generation fails.
     """
     # Fetch business
-    result = await db.execute(
-        select(Business).where(Business.id == business_id)
-    )
+    result = await db.execute(select(Business).where(Business.id == business_id))
     business = result.scalar_one_or_none()
     if not business:
         return None
 
     # Fetch catalog
     result = await db.execute(
-        select(CatalogItem).where(
+        select(CatalogItem)
+        .where(
             CatalogItem.business_id == business_id,
             CatalogItem.is_active == True,
-        ).limit(15)
+        )
+        .limit(15)
     )
     catalog_items = result.scalars().all()
-    catalog_summary = "\n".join([
-        f"- {item.name} (${item.price} {item.currency}): {item.description[:150] if item.description else 'N/A'}"
-        for item in catalog_items
-    ]) if catalog_items else "Sin productos/servicios en catálogo."
+    catalog_summary = (
+        "\n".join(
+            [
+                f"- {item.name} (${item.price} {item.currency}): {item.description[:150] if item.description else 'N/A'}"
+                for item in catalog_items
+            ]
+        )
+        if catalog_items
+        else "Sin productos/servicios en catálogo."
+    )
 
     # Deal stats
     result = await db.execute(
@@ -115,7 +121,12 @@ UPSELL_STRATEGY: <cómo aumentar ticket promedio>"""
             HumanMessage(content=user_prompt),
         ]
         response = await generate_with_fallback(
-            db, business_id, messages, model="llama3.1", temperature=0.7, max_tokens=1500,
+            db,
+            business_id,
+            messages,
+            model="llama3.1",
+            temperature=0.7,
+            max_tokens=1500,
         )
         if not response:
             return None
@@ -123,6 +134,7 @@ UPSELL_STRATEGY: <cómo aumentar ticket promedio>"""
     except Exception as e:
         logger.exception("generate_sales_playbook: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).error(f"LLM error: {e}")
         return None
 
@@ -138,7 +150,9 @@ UPSELL_STRATEGY: <cómo aumentar ticket promedio>"""
         "follow_up_cadence": "",
         "upsell_strategy": "",
         "raw": ai_response,
-        "generated_at": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
     }
 
     current_key = None
@@ -156,13 +170,15 @@ UPSELL_STRATEGY: <cómo aumentar ticket promedio>"""
         stripped = line.strip()
         matched = False
         for prefix, key in key_map.items():
-            if stripped.upper().startswith(f"{prefix}:") or stripped.upper().startswith(f"{prefix} "):
+            if stripped.upper().startswith(f"{prefix}:") or stripped.upper().startswith(
+                f"{prefix} "
+            ):
                 current_key = key
                 # Extract after first colon or first space
                 if ":" in stripped:
                     playbook[key] = stripped.split(":", 1)[1].strip()
                 else:
-                    playbook[key] = stripped[len(prefix):].strip()
+                    playbook[key] = stripped[len(prefix) :].strip()
                 matched = True
                 break
         if not matched and current_key and stripped:

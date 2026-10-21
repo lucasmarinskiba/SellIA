@@ -114,19 +114,27 @@ class ReActOrchestrator:
         if self._raw_business_type:
             try:
                 from app.domains.business_context.models import BusinessType
+
                 bt = BusinessType(self._raw_business_type)
                 relevant = BusinessTypeRegistry.get_relevant_tools(bt, min_priority=30)
-                allowed_tool_names = [_TOOL_NAME_MAP.get(t, t.lower()) for t in relevant if t in _TOOL_NAME_MAP]
+                allowed_tool_names = [
+                    _TOOL_NAME_MAP.get(t, t.lower())
+                    for t in relevant
+                    if t in _TOOL_NAME_MAP
+                ]
             except (ValueError, KeyError):
                 pass
 
-        tool_desc = self.registry.get_tool_descriptions(allowed_names=allowed_tool_names)
+        tool_desc = self.registry.get_tool_descriptions(
+            allowed_names=allowed_tool_names
+        )
 
         # Add business-type adaptation if available
         adaptation = ""
         if self._raw_business_type:
             try:
                 from app.domains.business_context.models import BusinessType
+
                 bt = BusinessType(self._raw_business_type)
                 adaptation = BusinessTypeRegistry.get_prompt_adaptation(bt)
             except (ValueError, KeyError):
@@ -230,6 +238,7 @@ class ReActOrchestrator:
             provider = "openai"
             api_key = keys["openai"]
             from langchain_openai import ChatOpenAI
+
             llm = ChatOpenAI(
                 model=model,
                 api_key=api_key,
@@ -241,6 +250,7 @@ class ReActOrchestrator:
             api_key = keys["anthropic"]
             model = "claude-3-5-sonnet-20241022"
             from langchain_anthropic import ChatAnthropic
+
             llm = ChatAnthropic(
                 model=model,
                 api_key=api_key,
@@ -252,6 +262,7 @@ class ReActOrchestrator:
 
         try:
             from langchain_core.tools import StructuredTool
+
             tools = [
                 StructuredTool.from_function(
                     name=t.name,
@@ -276,11 +287,18 @@ class ReActOrchestrator:
                     "final_answer": None,
                 }
                 from app.domains.agents.llm_provider import LLMResponse
+
                 return LLMResponse(
                     content=json.dumps(synthetic),
                     model=model,
                     provider=provider,
-                    tokens_used=response.response_metadata.get("token_usage", {}).get("total_tokens") if hasattr(response, "response_metadata") else None,
+                    tokens_used=(
+                        response.response_metadata.get("token_usage", {}).get(
+                            "total_tokens"
+                        )
+                        if hasattr(response, "response_metadata")
+                        else None
+                    ),
                 )
             else:
                 # Model answered directly
@@ -291,14 +309,24 @@ class ReActOrchestrator:
                     "final_answer": response.content,
                 }
                 from app.domains.agents.llm_provider import LLMResponse
+
                 return LLMResponse(
                     content=json.dumps(synthetic),
                     model=model,
                     provider=provider,
-                    tokens_used=response.response_metadata.get("token_usage", {}).get("total_tokens") if hasattr(response, "response_metadata") else None,
+                    tokens_used=(
+                        response.response_metadata.get("token_usage", {}).get(
+                            "total_tokens"
+                        )
+                        if hasattr(response, "response_metadata")
+                        else None
+                    ),
                 )
         except Exception as exc:
-            logger.warning(f"Native tool calling failed: {exc}. Falling back to JSON mode.", exc_info=True)
+            logger.warning(
+                f"Native tool calling failed: {exc}. Falling back to JSON mode.",
+                exc_info=True,
+            )
             return None
 
     # ------------------------------------------------------------------
@@ -349,6 +377,7 @@ class ReActOrchestrator:
             from sqlalchemy import select
 
             from app.domains.business_context.models import BusinessContext
+
             result = await self.db.execute(
                 select(BusinessContext.business_type).where(
                     BusinessContext.business_id == self.business_id,
@@ -392,7 +421,9 @@ class ReActOrchestrator:
             # Try native tool calling first for OpenAI/Anthropic
             response = await self._call_llm_with_native_tools(messages)
             if not response:
-                response = await self._call_llm(messages, temperature=0.3, max_tokens=2000)
+                response = await self._call_llm(
+                    messages, temperature=0.3, max_tokens=2000
+                )
 
             if not response:
                 return {
@@ -419,7 +450,9 @@ class ReActOrchestrator:
 
             if step.action == "final_answer" or step.final_answer is not None:
                 final = step.final_answer or "No se proporcionó respuesta final."
-                await self._log_iteration(iterations, step, None, model_name, provider_name)
+                await self._log_iteration(
+                    iterations, step, None, model_name, provider_name
+                )
                 return {
                     "final_answer": final,
                     "iterations": iterations,
@@ -437,12 +470,14 @@ class ReActOrchestrator:
                 business_id=self.business_id,
                 **(step.action_input or {}),
             )
-            self._tool_calls.append({
-                "iteration": iterations,
-                "tool": step.action,
-                "input": step.action_input,
-                "output": observation,
-            })
+            self._tool_calls.append(
+                {
+                    "iteration": iterations,
+                    "tool": step.action,
+                    "input": step.action_input,
+                    "output": observation,
+                }
+            )
 
             await self._log_iteration(
                 iterations,

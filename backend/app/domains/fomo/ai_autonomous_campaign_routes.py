@@ -27,7 +27,9 @@ async def scan_for_opportunities(
             "discount_percent": competitor_discount_percent,
         }
     return AIAutonomousCampaignManager.scan_for_opportunities(
-        real_stock=real_stock, product_id=product_id, competitor_signal=competitor_signal
+        real_stock=real_stock,
+        product_id=product_id,
+        competitor_signal=competitor_signal,
     )
 
 
@@ -45,13 +47,18 @@ async def create_campaign_from_opportunity(
 
 @router.post("/monitor-and-decide")
 async def monitor_and_decide(
-    today_metrics: Annotated[dict[str, float], Body(description='{"impressions", "conversions", "revenue", "cost"}')],
+    today_metrics: Annotated[
+        dict[str, float],
+        Body(description='{"impressions", "conversions", "revenue", "cost"}'),
+    ],
     current_user: Annotated[User, Depends(get_current_user)],
     metrics_history: Annotated[list[dict[str, float]] | None, Body()] = None,
     current_budget: Annotated[float | None, Query()] = None,
 ):
     """Evaluate live campaign health and decide pause/scale/continue"""
-    return AIAutonomousCampaignManager.monitor_and_decide(today_metrics, metrics_history, current_budget)
+    return AIAutonomousCampaignManager.monitor_and_decide(
+        today_metrics, metrics_history, current_budget
+    )
 
 
 @router.post("/daily-cycle")

@@ -18,6 +18,7 @@ from app.core.database import Base
 
 class SyntheticCheck(Base):
     """Configuración de checks sintéticos."""
+
     __tablename__ = "synthetic_checks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -35,10 +36,16 @@ class SyntheticCheck(Base):
 
 class SyntheticResult(Base):
     """Resultado individual de un check sintético."""
+
     __tablename__ = "synthetic_results"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    check_id = Column(UUID(as_uuid=True), ForeignKey("synthetic_checks.id", ondelete="CASCADE"), nullable=False, index=True)
+    check_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("synthetic_checks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     success = Column(Boolean, nullable=False)
     response_time_ms = Column(Float, nullable=True)
     status_code = Column(Integer, nullable=True)
@@ -48,6 +55,7 @@ class SyntheticResult(Base):
 
 class SystemHealthSnapshot(Base):
     """Snapshot agregado de salud del sistema."""
+
     __tablename__ = "system_health_snapshots"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

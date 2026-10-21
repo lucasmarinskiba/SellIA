@@ -69,7 +69,7 @@ class SellerAnalyticsEngine:
             sales_cycle_days=14.3,
             churn_rate=0.08,
             expansion_rate=0.25,
-            customer_satisfaction=4.6
+            customer_satisfaction=4.6,
         )
 
         return metrics
@@ -84,7 +84,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.68,
                 cost_per_lead=15.0,
                 roi=2.8,
-                rank=1
+                rank=1,
             ),
             ChannelPerformance(
                 channel="instagram",
@@ -92,7 +92,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.55,
                 cost_per_lead=8.0,
                 roi=2.1,
-                rank=2
+                rank=2,
             ),
             ChannelPerformance(
                 channel="whatsapp",
@@ -100,7 +100,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.72,
                 cost_per_lead=0.0,
                 roi=3.2,
-                rank=1
+                rank=1,
             ),
             ChannelPerformance(
                 channel="email",
@@ -108,7 +108,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.50,
                 cost_per_lead=2.0,
                 roi=1.5,
-                rank=4
+                rank=4,
             ),
             ChannelPerformance(
                 channel="linkedin",
@@ -116,7 +116,7 @@ class SellerAnalyticsEngine:
                 conversion_rate=0.65,
                 cost_per_lead=25.0,
                 roi=1.3,
-                rank=5
+                rank=5,
             ),
         ]
 
@@ -136,7 +136,7 @@ class SellerAnalyticsEngine:
                 "date": (utc_now() - timedelta(days=i)).strftime("%Y-%m-%d"),
                 "leads": 45 + (i * 2),
                 "deals": 8 + (i // 2),
-                "revenue": 12500 + (i * 500)
+                "revenue": 12500 + (i * 500),
             }
             for i in range(7)
         ]
@@ -144,11 +144,7 @@ class SellerAnalyticsEngine:
         dashboard = DashboardData(
             seller_id=seller_id,
             current_metrics=current,
-            period_metrics={
-                "daily": current,
-                "weekly": weekly,
-                "monthly": monthly
-            },
+            period_metrics={"daily": current, "weekly": weekly, "monthly": monthly},
             channel_performance=channels,
             daily_trend=daily_trend,
             top_products=[
@@ -165,13 +161,13 @@ class SellerAnalyticsEngine:
                 "7_days": 87500,
                 "30_days": 375000,
                 "90_days": 1125000,
-                "annual": 4500000
+                "annual": 4500000,
             },
             alerts=[
                 {"type": "warning", "message": "Conversion rate down 5% this week"},
                 {"type": "info", "message": "WhatsApp channel performing best"},
                 {"type": "success", "message": "Revenue up 12% vs last month"},
-            ]
+            ],
         )
 
         return dashboard

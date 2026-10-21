@@ -19,6 +19,7 @@ router = APIRouter(prefix="/proximity", tags=["proximity"])
 
 class OfflineConversionLog(BaseModel):
     """Log offline visit/conversion."""
+
     location_id: UUID
     latitude: float
     longitude: float
@@ -28,6 +29,7 @@ class OfflineConversionLog(BaseModel):
 
 class ProximityCheckRequest(BaseModel):
     """Check if user near any location."""
+
     latitude: float
     longitude: float
 
@@ -58,7 +60,7 @@ async def log_offline_conversion(
         "status": "logged",
         "location_id": str(conversion.location_id),
         "visit_type": conversion.visit_type,
-        "timestamp": datetime.now(UTC).isoformat()
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -69,8 +71,4 @@ async def get_nearby_users(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Get users near a location (for business owner)."""
-    return {
-        "location_id": str(location_id),
-        "nearby_users": [],
-        "total": 0
-    }
+    return {"location_id": str(location_id), "nearby_users": [], "total": 0}

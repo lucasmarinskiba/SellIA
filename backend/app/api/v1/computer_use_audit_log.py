@@ -40,7 +40,9 @@ async def list_audit_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
     platform: Annotated[str | None, Query(description="Filter by platform")] = None,
-    action_type: Annotated[str | None, Query(description="Filter by action type")] = None,
+    action_type: Annotated[
+        str | None, Query(description="Filter by action type")
+    ] = None,
     agent_name: Annotated[str | None, Query(description="Filter by agent")] = None,
     status: Annotated[str | None, Query(description="Filter by status")] = None,
     days: Annotated[int, Query(ge=1, le=90, description="Last N days")] = 7,

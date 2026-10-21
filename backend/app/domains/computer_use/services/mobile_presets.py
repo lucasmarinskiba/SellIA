@@ -77,7 +77,9 @@ def get_mobile_preset(preset_id: str) -> dict[str, Any]:
     """Obtiene un preset por ID."""
     preset = MOBILE_PRESETS.get(preset_id)
     if not preset:
-        raise ValueError(f"Preset desconocido: {preset_id}. Disponibles: {list(MOBILE_PRESETS.keys())}")
+        raise ValueError(
+            f"Preset desconocido: {preset_id}. Disponibles: {list(MOBILE_PRESETS.keys())}"
+        )
     return preset
 
 

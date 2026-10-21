@@ -46,9 +46,7 @@ class MigrationService:
             AppException: If user already has tenant
         """
         # Get user
-        user_result = await self.db.execute(
-            select(User).where(User.id == user_id)
-        )
+        user_result = await self.db.execute(select(User).where(User.id == user_id))
         user = user_result.scalar_one_or_none()
 
         if not user:
@@ -122,17 +120,21 @@ class MigrationService:
                 results["successful"] += 1
             except AppException as e:
                 results["failed"] += 1
-                results["errors"].append({
-                    "user_id": user_id,
-                    "reason": e.message,
-                })
+                results["errors"].append(
+                    {
+                        "user_id": user_id,
+                        "reason": e.message,
+                    }
+                )
             except Exception as e:
                 logger.exception("migrate_bulk_users: error inesperado")
                 results["failed"] += 1
-                results["errors"].append({
-                    "user_id": user_id,
-                    "reason": str(e),
-                })
+                results["errors"].append(
+                    {
+                        "user_id": user_id,
+                        "reason": str(e),
+                    }
+                )
 
         logger.info(
             "Bulk user migration completed",
@@ -255,9 +257,7 @@ class MigrationService:
         Rollback migration: delete tenant and all related data.
         WARNING: This is destructive and cannot be undone.
         """
-        tenant = await self.db.execute(
-            select(Tenant).where(Tenant.id == tenant_id)
-        )
+        tenant = await self.db.execute(select(Tenant).where(Tenant.id == tenant_id))
         tenant_obj = tenant.scalar_one_or_none()
 
         if not tenant_obj:

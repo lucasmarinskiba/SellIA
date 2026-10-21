@@ -43,6 +43,7 @@ async def check_flag(
     from sqlalchemy import select
 
     from app.domains.subscriptions.models import Subscription
+
     result = await db.execute(
         select(Subscription).where(
             Subscription.user_id == current_user.id,
@@ -54,6 +55,10 @@ async def check_flag(
         plan_id = str(sub.plan_id)
 
     enabled = await flag_service.flag_enabled(
-        db, flag_name, user_id=str(current_user.id), plan_id=plan_id, default=False,
+        db,
+        flag_name,
+        user_id=str(current_user.id),
+        plan_id=plan_id,
+        default=False,
     )
     return {"flag": flag_name, "enabled": enabled}

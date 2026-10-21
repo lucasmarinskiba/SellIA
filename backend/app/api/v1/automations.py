@@ -69,6 +69,7 @@ router = APIRouter()
 
 # ========== Workflows ==========
 
+
 @router.get("/workflows", response_model=list[WorkflowResponse])
 async def list_workflows(
     business_id: UUID,
@@ -76,15 +77,19 @@ async def list_workflows(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(Workflow).where(
+        select(Workflow)
+        .where(
             Workflow.business_id == business_id,
             Workflow.is_active == True,
-        ).order_by(desc(Workflow.created_at))
+        )
+        .order_by(desc(Workflow.created_at))
     )
     return result.scalars().all()
 
 
-@router.post("/workflows", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/workflows", response_model=WorkflowResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_workflow(
     data: WorkflowCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -132,6 +137,7 @@ async def delete_workflow(
 
 # ========== Email Templates ==========
 
+
 @router.get("/email-templates", response_model=list[EmailTemplateResponse])
 async def list_templates(
     business_id: UUID,
@@ -149,7 +155,11 @@ async def list_templates(
     return result.scalars().all()
 
 
-@router.post("/email-templates", response_model=EmailTemplateResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/email-templates",
+    response_model=EmailTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_template(
     data: EmailTemplateCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -169,7 +179,9 @@ async def update_template(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
+    result = await db.execute(
+        select(EmailTemplate).where(EmailTemplate.id == template_id)
+    )
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template no encontrado")
@@ -186,7 +198,9 @@ async def delete_template(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailTemplate).where(EmailTemplate.id == template_id))
+    result = await db.execute(
+        select(EmailTemplate).where(EmailTemplate.id == template_id)
+    )
     tmpl = result.scalar_one_or_none()
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template no encontrado")
@@ -197,6 +211,7 @@ async def delete_template(
 
 # ========== Email Sequences ==========
 
+
 @router.get("/email-sequences", response_model=list[EmailSequenceResponse])
 async def list_sequences(
     business_id: UUID,
@@ -204,15 +219,21 @@ async def list_sequences(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     result = await db.execute(
-        select(EmailSequence).where(
+        select(EmailSequence)
+        .where(
             EmailSequence.business_id == business_id,
             EmailSequence.is_active == True,
-        ).order_by(desc(EmailSequence.created_at))
+        )
+        .order_by(desc(EmailSequence.created_at))
     )
     return result.scalars().all()
 
 
-@router.post("/email-sequences", response_model=EmailSequenceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/email-sequences",
+    response_model=EmailSequenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_sequence(
     data: EmailSequenceCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -254,7 +275,9 @@ async def update_sequence(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
+    result = await db.execute(
+        select(EmailSequence).where(EmailSequence.id == sequence_id)
+    )
     seq = result.scalar_one_or_none()
     if not seq:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
@@ -265,7 +288,9 @@ async def update_sequence(
     return seq
 
 
-@router.get("/email-sequences/{sequence_id}/analytics", response_model=SequenceAnalytics)
+@router.get(
+    "/email-sequences/{sequence_id}/analytics", response_model=SequenceAnalytics
+)
 async def get_sequence_analytics(
     sequence_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -280,29 +305,36 @@ async def get_sequence_analytics(
 
     # Total subscribers
     sub_result = await db.execute(
-        select(func.count(SequenceSubscription.id))
-        .where(SequenceSubscription.sequence_id == sequence_id)
+        select(func.count(SequenceSubscription.id)).where(
+            SequenceSubscription.sequence_id == sequence_id
+        )
     )
     total_subscribers = sub_result.scalar() or 0
 
     # Total sent
     sent_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.status == "sent")
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.status == "sent",
+        )
     )
     total_sent = sent_result.scalar() or 0
 
     # Total opens
     open_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.opened_at != None)
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.opened_at != None,
+        )
     )
     total_opens = open_result.scalar() or 0
 
     # Total clicks
     click_result = await db.execute(
-        select(func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.clicked_at != None)
+        select(func.count(SequenceEmailLog.id)).where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.clicked_at != None,
+        )
     )
     total_clicks = click_result.scalar() or 0
 
@@ -312,14 +344,14 @@ async def get_sequence_analytics(
     # Sent trend by day
     trend_result = await db.execute(
         select(func.date(SequenceEmailLog.sent_at), func.count(SequenceEmailLog.id))
-        .where(SequenceEmailLog.sequence_id == sequence_id, SequenceEmailLog.sent_at != None)
+        .where(
+            SequenceEmailLog.sequence_id == sequence_id,
+            SequenceEmailLog.sent_at != None,
+        )
         .group_by(func.date(SequenceEmailLog.sent_at))
         .order_by(func.date(SequenceEmailLog.sent_at))
     )
-    sent_trend = [
-        {"date": str(row[0]), "count": row[1]}
-        for row in trend_result.all()
-    ]
+    sent_trend = [{"date": str(row[0]), "count": row[1]} for row in trend_result.all()]
 
     return SequenceAnalytics(
         sequence_id=sequence_id,
@@ -339,7 +371,9 @@ async def delete_sequence(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    result = await db.execute(select(EmailSequence).where(EmailSequence.id == sequence_id))
+    result = await db.execute(
+        select(EmailSequence).where(EmailSequence.id == sequence_id)
+    )
     seq = result.scalar_one_or_none()
     if not seq:
         raise HTTPException(status_code=404, detail="Secuencia no encontrada")
@@ -349,6 +383,7 @@ async def delete_sequence(
 
 
 # ========== Chatbot Rules ==========
+
 
 @router.get("/chatbot-rules", response_model=list[ChatbotRuleResponse])
 async def list_rules(
@@ -367,7 +402,11 @@ async def list_rules(
     return result.scalars().all()
 
 
-@router.post("/chatbot-rules", response_model=ChatbotRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/chatbot-rules",
+    response_model=ChatbotRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_rule(
     data: ChatbotRuleCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -415,6 +454,7 @@ async def delete_rule(
 
 # ========== Execute Workflow ==========
 
+
 @router.post("/workflows/{workflow_id}/execute")
 async def execute_workflow(
     workflow_id: UUID,
@@ -450,6 +490,7 @@ async def execute_workflow(
 
 # ========== Seed Pre-built Automations ==========
 
+
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_business_automations(
     business_id: UUID,
@@ -463,14 +504,19 @@ async def seed_business_automations(
     except Exception:
         logger.exception("seed_business_automations: error inesperado")
         from app.core.logger import get_logger
+
         get_logger(__name__).exception("Error seeding automations")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-
 # ========== Workflow Variants (A/B Testing) ==========
 
-@router.post("/workflows/{workflow_id}/variants", response_model=WorkflowVariantResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/workflows/{workflow_id}/variants",
+    response_model=WorkflowVariantResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_workflow_variant(
     workflow_id: UUID,
     data: WorkflowVariantCreate,
@@ -497,7 +543,9 @@ async def create_workflow_variant(
     return variant
 
 
-@router.get("/workflows/{workflow_id}/variants", response_model=list[WorkflowVariantResponse])
+@router.get(
+    "/workflows/{workflow_id}/variants", response_model=list[WorkflowVariantResponse]
+)
 async def list_workflow_variants(
     workflow_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -512,7 +560,10 @@ async def list_workflow_variants(
     return result.scalars().all()
 
 
-@router.patch("/workflows/{workflow_id}/variants/{variant_id}", response_model=WorkflowVariantResponse)
+@router.patch(
+    "/workflows/{workflow_id}/variants/{variant_id}",
+    response_model=WorkflowVariantResponse,
+)
 async def update_workflow_variant(
     workflow_id: UUID,
     variant_id: UUID,
@@ -534,7 +585,10 @@ async def update_workflow_variant(
     return variant
 
 
-@router.delete("/workflows/{workflow_id}/variants/{variant_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/workflows/{workflow_id}/variants/{variant_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_workflow_variant(
     workflow_id: UUID,
     variant_id: UUID,
@@ -550,11 +604,14 @@ async def delete_workflow_variant(
         others = await db.execute(
             select(func.count(WorkflowVariant.id)).where(
                 WorkflowVariant.workflow_id == workflow_id,
-                WorkflowVariant.id != variant_id
+                WorkflowVariant.id != variant_id,
             )
         )
         if others.scalar() > 0:
-            raise HTTPException(status_code=400, detail="No se puede eliminar la variante control mientras existan otras variantes")
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede eliminar la variante control mientras existan otras variantes",
+            )
 
     await db.delete(variant)
     await db.commit()
@@ -591,17 +648,19 @@ async def get_ab_test_results(
         rate = (convs / execs * 100) if execs > 0 else 0.0
         share = (execs / total_exec * 100) if total_exec > 0 else 0.0
 
-        variant_stats.append({
-            "id": str(v.id),
-            "variant_name": v.variant_name,
-            "is_control": v.is_control,
-            "traffic_split": v.traffic_split,
-            "execution_count": execs,
-            "conversion_count": convs,
-            "conversion_rate": round(rate, 2),
-            "traffic_share": round(share, 2),
-            "is_active": v.is_active,
-        })
+        variant_stats.append(
+            {
+                "id": str(v.id),
+                "variant_name": v.variant_name,
+                "is_control": v.is_control,
+                "traffic_split": v.traffic_split,
+                "execution_count": execs,
+                "conversion_count": convs,
+                "conversion_rate": round(rate, 2),
+                "traffic_share": round(share, 2),
+                "is_active": v.is_active,
+            }
+        )
 
         if execs >= 10 and rate > best_rate:
             best_rate = rate
@@ -616,12 +675,14 @@ async def get_ab_test_results(
         "recommendation": (
             f"La variante '{winner}' tiene la mejor tasa de conversión ({round(best_rate, 2)}%). "
             f"Considera aumentar su tráfico al 100%."
-            if winner else "Se necesitan al menos 10 ejecuciones por variante para determinar un ganador."
+            if winner
+            else "Se necesitan al menos 10 ejecuciones por variante para determinar un ganador."
         ),
     }
 
 
 # ========== AI Content Generation ==========
+
 
 @router.post("/content/generate", response_model=ContentGenerationResponse)
 async def generate_content(
@@ -651,7 +712,7 @@ async def generate_content(
     if not task_func:
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de contenido no soportado: {data.content_type}. Usa: {list(task_dispatch.keys())}"
+            detail=f"Tipo de contenido no soportado: {data.content_type}. Usa: {list(task_dispatch.keys())}",
         )
 
     # Enqueue Celery task
@@ -665,7 +726,7 @@ async def generate_content(
     if data.content_type in ["image", "video", "copy"] and not data.catalog_item_id:
         raise HTTPException(
             status_code=400,
-            detail=f"catalog_item_id es requerido para content_type='{data.content_type}'"
+            detail=f"catalog_item_id es requerido para content_type='{data.content_type}'",
         )
 
     if data.content_type == "thumbnail":
@@ -696,9 +757,11 @@ async def list_generated_content(
     agent_slug: str | None = None,
 ):
     """Lista contenido generado por IA para un negocio."""
-    query = select(GeneratedContent).where(
-        GeneratedContent.business_id == business_id
-    ).order_by(desc(GeneratedContent.created_at))
+    query = (
+        select(GeneratedContent)
+        .where(GeneratedContent.business_id == business_id)
+        .order_by(desc(GeneratedContent.created_at))
+    )
 
     if content_type:
         query = query.where(GeneratedContent.content_type == content_type)
@@ -778,6 +841,7 @@ async def reject_content(
 
 # ========== Content Calendar ==========
 
+
 @router.get("/calendar", response_model=list[ContentCalendarResponse])
 async def list_calendar(
     business_id: UUID,
@@ -787,9 +851,11 @@ async def list_calendar(
     status: str | None = None,
 ):
     """Lista publicaciones programadas en el calendario de contenido."""
-    query = select(ContentCalendar).where(
-        ContentCalendar.business_id == business_id
-    ).order_by(desc(ContentCalendar.scheduled_at))
+    query = (
+        select(ContentCalendar)
+        .where(ContentCalendar.business_id == business_id)
+        .order_by(desc(ContentCalendar.scheduled_at))
+    )
 
     if platform:
         query = query.where(ContentCalendar.platform == platform)
@@ -800,7 +866,11 @@ async def list_calendar(
     return result.scalars().all()
 
 
-@router.post("/calendar", response_model=ContentCalendarResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/calendar",
+    response_model=ContentCalendarResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_calendar_entry(
     data: ContentCalendarCreate,
     business_id: UUID,
@@ -882,6 +952,7 @@ async def publish_calendar_entry(
 
 # ========== Content Tools & Pricing ==========
 
+
 @router.get("/content/tools")
 async def list_content_tools(
     business_id: UUID,
@@ -912,16 +983,18 @@ async def list_content_tools(
             continue
         provider = router.providers.get(tool.provider_module)
         is_ready = provider.is_available if provider else False
-        tools.append({
-            "slug": slug,
-            "name": tool.name,
-            "category": tool.category,
-            "description": tool.description,
-            "cost_tier": tool.cost_tier,
-            "min_plan": tool.min_plan,
-            "is_ready": is_ready,
-            "fallback_tool": tool.fallback_tool,
-        })
+        tools.append(
+            {
+                "slug": slug,
+                "name": tool.name,
+                "category": tool.category,
+                "description": tool.description,
+                "cost_tier": tool.cost_tier,
+                "min_plan": tool.min_plan,
+                "is_ready": is_ready,
+                "fallback_tool": tool.fallback_tool,
+            }
+        )
 
     return {
         "plan": plan_tier,
@@ -970,7 +1043,11 @@ async def get_tool_detail(
         "is_ready": provider.is_available if provider else False,
         "pricing": pricing,
         "fallback_tool": tool.fallback_tool,
-        "upgrade_message": get_plan_upgrade_message(tool_slug, plan_tier) if not is_tool_allowed(tool_slug, plan_tier) else None,
+        "upgrade_message": (
+            get_plan_upgrade_message(tool_slug, plan_tier)
+            if not is_tool_allowed(tool_slug, plan_tier)
+            else None
+        ),
     }
 
 
@@ -1015,6 +1092,7 @@ async def get_content_usage(
 
     # Obtener stats de DB
     from datetime import timedelta
+
     month_ago = datetime.now(UTC) - timedelta(days=30)
 
     result = await db.execute(
@@ -1032,7 +1110,9 @@ async def get_content_usage(
     total_cost = 0
     for c in contents:
         by_type[c.content_type] = by_type.get(c.content_type, 0) + 1
-        by_tool[c.ai_model_used or "unknown"] = by_tool.get(c.ai_model_used or "unknown", 0) + 1
+        by_tool[c.ai_model_used or "unknown"] = (
+            by_tool.get(c.ai_model_used or "unknown", 0) + 1
+        )
         total_cost += (c.generation_cost or 0) / 100
 
     return {
@@ -1048,7 +1128,10 @@ async def get_content_usage(
 
 # ========== Automation Toggles ==========
 
-@router.get("/toggles/business/{business_id}", response_model=list[AutomationToggleResponse])
+
+@router.get(
+    "/toggles/business/{business_id}", response_model=list[AutomationToggleResponse]
+)
 async def list_toggles_by_business(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1066,7 +1149,10 @@ async def list_toggles_by_business(
     return result.scalars().all()
 
 
-@router.get("/toggles/business/{business_id}/search", response_model=list[AutomationToggleResponse])
+@router.get(
+    "/toggles/business/{business_id}/search",
+    response_model=list[AutomationToggleResponse],
+)
 async def search_toggles_advanced(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1104,7 +1190,11 @@ async def search_toggles_advanced(
     return result.scalars().all()
 
 
-@router.post("/toggles/business/{business_id}", response_model=AutomationToggleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/toggles/business/{business_id}",
+    response_model=AutomationToggleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_toggle(
     business_id: UUID,
     data: AutomationToggleCreate,
@@ -1130,7 +1220,9 @@ async def get_toggle(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Obtener un toggle específico."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
@@ -1146,7 +1238,9 @@ async def update_toggle(
     reason: str | None = None,
 ):
     """Cambiar ON/OFF o límites de un toggle."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
@@ -1161,7 +1255,9 @@ async def update_toggle(
     if data.is_enabled is not None:
         toggle.is_enabled = data.is_enabled
         toggle.enabled_at = datetime.now(UTC) if data.is_enabled else toggle.enabled_at
-        toggle.disabled_at = datetime.now(UTC) if not data.is_enabled else toggle.disabled_at
+        toggle.disabled_at = (
+            datetime.now(UTC) if not data.is_enabled else toggle.disabled_at
+        )
 
     if data.monthly_limit is not None:
         toggle.monthly_limit = data.monthly_limit
@@ -1173,7 +1269,11 @@ async def update_toggle(
     audit = ToggleAuditLog(
         business_id=toggle.business_id,
         toggle_id=toggle.id,
-        action="enabled" if data.is_enabled is True else "disabled" if data.is_enabled is False else "limit_changed",
+        action=(
+            "enabled"
+            if data.is_enabled is True
+            else "disabled" if data.is_enabled is False else "limit_changed"
+        ),
         old_value=old_state,
         new_value=data.model_dump(exclude_unset=True),
         changed_by_user_id=current_user.id,
@@ -1223,7 +1323,9 @@ async def reset_toggle_usage(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Reset del contador de uso mensual."""
-    result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle no encontrado")
@@ -1246,7 +1348,9 @@ async def get_toggles_dashboard(
         select(
             AutomationToggle.category,
             func.count().label("total"),
-            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label("enabled"),
+            func.sum(func.cast(AutomationToggle.is_enabled, type_=Integer)).label(
+                "enabled"
+            ),
             func.sum(AutomationToggle.current_month_usage).label("usage"),
         )
         .where(AutomationToggle.business_id == business_id)
@@ -1256,12 +1360,14 @@ async def get_toggles_dashboard(
     rows = result.all()
     by_category = []
     for row in rows:
-        by_category.append({
-            "category": str(row[0]),
-            "total": row[1] or 0,
-            "enabled": row[2] or 0,
-            "usage": row[3] or 0,
-        })
+        by_category.append(
+            {
+                "category": str(row[0]),
+                "total": row[1] or 0,
+                "enabled": row[2] or 0,
+                "usage": row[3] or 0,
+            }
+        )
 
     return ToggleDashboardResponse(
         by_category=by_category,
@@ -1295,7 +1401,12 @@ async def seed_toggles_endpoint(
 
 # ========== Toggle Schedules (Tier 3) ==========
 
-@router.post("/toggles/{toggle_id}/schedule", response_model=ToggleScheduleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/toggles/{toggle_id}/schedule",
+    response_model=ToggleScheduleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_toggle_schedule(
     toggle_id: UUID,
     schedule_in: ToggleScheduleCreate,
@@ -1305,7 +1416,9 @@ async def create_toggle_schedule(
     """Create schedule for toggle to turn on/off at specific time."""
     from app.domains.automations.models import ToggleSchedule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle_result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = toggle_result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle not found")
@@ -1328,7 +1441,9 @@ async def create_toggle_schedule(
     return schedule
 
 
-@router.get("/toggles/{toggle_id}/schedules", response_model=list[ToggleScheduleResponse])
+@router.get(
+    "/toggles/{toggle_id}/schedules", response_model=list[ToggleScheduleResponse]
+)
 async def list_toggle_schedules(
     toggle_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1338,14 +1453,21 @@ async def list_toggle_schedules(
     from app.domains.automations.models import ToggleSchedule
 
     result = await db.execute(
-        select(ToggleSchedule).where(ToggleSchedule.toggle_id == toggle_id).order_by(ToggleSchedule.next_execution_at)
+        select(ToggleSchedule)
+        .where(ToggleSchedule.toggle_id == toggle_id)
+        .order_by(ToggleSchedule.next_execution_at)
     )
     return result.scalars().all()
 
 
 # ========== Toggle Notifications (Tier 3) ==========
 
-@router.post("/toggles/{toggle_id}/notification-rule", response_model=ToggleNotificationRuleResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/toggles/{toggle_id}/notification-rule",
+    response_model=ToggleNotificationRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_notification_rule(
     toggle_id: UUID,
     rule_in: ToggleNotificationRuleCreate,
@@ -1355,7 +1477,9 @@ async def create_notification_rule(
     """Create notification rule for toggle event."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    toggle_result = await db.execute(select(AutomationToggle).where(AutomationToggle.id == toggle_id))
+    toggle_result = await db.execute(
+        select(AutomationToggle).where(AutomationToggle.id == toggle_id)
+    )
     toggle = toggle_result.scalar_one_or_none()
     if not toggle:
         raise HTTPException(status_code=404, detail="Toggle not found")
@@ -1379,7 +1503,10 @@ async def create_notification_rule(
     return rule
 
 
-@router.get("/toggles/{toggle_id}/notification-rules", response_model=list[ToggleNotificationRuleResponse])
+@router.get(
+    "/toggles/{toggle_id}/notification-rules",
+    response_model=list[ToggleNotificationRuleResponse],
+)
 async def list_notification_rules(
     toggle_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -1389,7 +1516,9 @@ async def list_notification_rules(
     from app.domains.automations.models import ToggleNotificationRule
 
     result = await db.execute(
-        select(ToggleNotificationRule).where(ToggleNotificationRule.toggle_id == toggle_id)
+        select(ToggleNotificationRule).where(
+            ToggleNotificationRule.toggle_id == toggle_id
+        )
     )
     return result.scalars().all()
 
@@ -1403,7 +1532,9 @@ async def delete_notification_rule(
     """Delete notification rule."""
     from app.domains.automations.models import ToggleNotificationRule
 
-    result = await db.execute(select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id))
+    result = await db.execute(
+        select(ToggleNotificationRule).where(ToggleNotificationRule.id == rule_id)
+    )
     rule = result.scalar_one_or_none()
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -1412,7 +1543,10 @@ async def delete_notification_rule(
     await db.commit()
 
 
-@router.get("/toggles/{toggle_id}/notification-logs", response_model=list[ToggleNotificationLogResponse])
+@router.get(
+    "/toggles/{toggle_id}/notification-logs",
+    response_model=list[ToggleNotificationLogResponse],
+)
 async def list_notification_logs(
     toggle_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],

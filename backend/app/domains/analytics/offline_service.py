@@ -40,7 +40,7 @@ class OfflineAnalyticsService:
         purchased: bool = False,
         purchase_amount: Decimal | None = None,
         staff_notes: str | None = None,
-        db: Session | None = None
+        db: Session | None = None,
     ) -> OfflineConversion:
         """
         Log a visitor to a physical location.
@@ -86,7 +86,9 @@ class OfflineAnalyticsService:
         db.commit()
         db.refresh(conversion)
 
-        logger.info(f"Logged offline visit: {conversion.id} at {location_id} ({visit_type})")
+        logger.info(
+            f"Logged offline visit: {conversion.id} at {location_id} ({visit_type})"
+        )
 
         return conversion
 
@@ -102,7 +104,7 @@ class OfflineAnalyticsService:
         visitor_phone: str | None = None,
         visitor_email: str | None = None,
         automation_id: UUID | None = None,
-        db: Session | None = None
+        db: Session | None = None,
     ) -> GeoProximityEvent:
         """
         Log proximity trigger event for user near location.
@@ -144,22 +146,25 @@ class OfflineAnalyticsService:
         db.commit()
         db.refresh(event)
 
-        logger.info(f"Logged proximity event: {trigger_name} at {location_id} ({distance_km:.1f}km)")
+        logger.info(
+            f"Logged proximity event: {trigger_name} at {location_id} ({distance_km:.1f}km)"
+        )
 
         return event
 
     @staticmethod
     def mark_proximity_executed(
-        proximity_event_id: UUID,
-        db: Session | None = None
+        proximity_event_id: UUID, db: Session | None = None
     ) -> GeoProximityEvent:
         """Mark proximity event as having triggered automation."""
         if not db:
             raise ValueError("Database session required")
 
-        event = db.query(GeoProximityEvent).filter(
-            GeoProximityEvent.id == proximity_event_id
-        ).first()
+        event = (
+            db.query(GeoProximityEvent)
+            .filter(GeoProximityEvent.id == proximity_event_id)
+            .first()
+        )
 
         if event:
             event.automation_triggered = True
@@ -174,15 +179,17 @@ class OfflineAnalyticsService:
         conversion_id: UUID,
         purchased: bool = False,
         purchase_amount: Decimal | None = None,
-        db: Session | None = None
+        db: Session | None = None,
     ) -> OfflineConversion:
         """Mark end of visit and calculate dwell time."""
         if not db:
             raise ValueError("Database session required")
 
-        conversion = db.query(OfflineConversion).filter(
-            OfflineConversion.id == conversion_id
-        ).first()
+        conversion = (
+            db.query(OfflineConversion)
+            .filter(OfflineConversion.id == conversion_id)
+            .first()
+        )
 
         if not conversion:
             raise ValueError(f"Conversion {conversion_id} not found")
@@ -202,15 +209,15 @@ class OfflineAnalyticsService:
         db.commit()
         db.refresh(conversion)
 
-        logger.info(f"Ended visit {conversion_id}: {conversion.dwell_minutes}min, purchased={purchased}")
+        logger.info(
+            f"Ended visit {conversion_id}: {conversion.dwell_minutes}min, purchased={purchased}"
+        )
 
         return conversion
 
     @staticmethod
     def get_daily_metrics(
-        location_id: UUID,
-        date: str,  # YYYY-MM-DD
-        db: Session | None = None
+        location_id: UUID, date: str, db: Session | None = None  # YYYY-MM-DD
     ) -> LocationVisitMetric | None:
         """Get or create daily metrics for location."""
         if not db:
@@ -220,12 +227,16 @@ class OfflineAnalyticsService:
         if not location:
             return None
 
-        metric = db.query(LocationVisitMetric).filter(
-            and_(
-                LocationVisitMetric.location_id == location_id,
-                LocationVisitMetric.metric_date == date
+        metric = (
+            db.query(LocationVisitMetric)
+            .filter(
+                and_(
+                    LocationVisitMetric.location_id == location_id,
+                    LocationVisitMetric.metric_date == date,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not metric:
             metric = LocationVisitMetric(
@@ -240,7 +251,9 @@ class OfflineAnalyticsService:
         return metric
 
     @staticmethod
-    def update_daily_metrics(location_id: UUID, date: str, db: Session | None = None) -> None:
+    def update_daily_metrics(
+        location_id: UUID, date: str, db: Session | None = None
+    ) -> None:
         """Recalculate daily metrics from offline_conversions for given date."""
         if not db:
             raise ValueError("Database session required")
@@ -253,20 +266,35 @@ class OfflineAnalyticsService:
         day_start = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=UTC)
         day_end = day_start + timedelta(days=1)
 
-        visits = db.query(OfflineConversion).filter(
-            and_(
-                OfflineConversion.location_id == location_id,
-                OfflineConversion.entry_time >= day_start,
-                OfflineConversion.entry_time < day_end
+        visits = (
+            db.query(OfflineConversion)
+            .filter(
+                and_(
+                    OfflineConversion.location_id == location_id,
+                    OfflineConversion.entry_time >= day_start,
+                    OfflineConversion.entry_time < day_end,
+                )
             )
-        ).all()
+            .all()
+        )
 
         metric.total_visits = len(visits)
-        metric.walk_in_visits = len([v for v in visits if v.visit_type == VisitType.WALK_IN])
+        metric.walk_in_visits = len(
+            [v for v in visits if v.visit_type == VisitType.WALK_IN]
+        )
         metric.qr_scans = len([v for v in visits if v.visit_type == VisitType.QR_SCAN])
-        metric.scheduled_visits = len([v for v in visits if v.visit_type in (
-            VisitType.SCHEDULED_DEMO, VisitType.SCHEDULED_TOUR, VisitType.SCHEDULED_APPOINTMENT
-        )])
+        metric.scheduled_visits = len(
+            [
+                v
+                for v in visits
+                if v.visit_type
+                in (
+                    VisitType.SCHEDULED_DEMO,
+                    VisitType.SCHEDULED_TOUR,
+                    VisitType.SCHEDULED_APPOINTMENT,
+                )
+            ]
+        )
 
         # Conversion metrics
         converted = [v for v in visits if v.purchased]
@@ -282,7 +310,9 @@ class OfflineAnalyticsService:
 
         contact_collected = len([v for v in visits if v.contact_collected])
         if visits:
-            metric.contact_collection_rate = Decimal(contact_collected) / Decimal(len(visits))
+            metric.contact_collection_rate = Decimal(contact_collected) / Decimal(
+                len(visits)
+            )
 
         # Hourly breakdown
         hourly_visits = {}
@@ -293,13 +323,13 @@ class OfflineAnalyticsService:
 
         db.commit()
 
-        logger.info(f"Updated daily metrics for {location_id} on {date}: {metric.total_visits} visits")
+        logger.info(
+            f"Updated daily metrics for {location_id} on {date}: {metric.total_visits} visits"
+        )
 
     @staticmethod
     def get_foot_traffic_heatmap(
-        location_id: UUID,
-        days: int = 30,
-        db: Session | None = None
+        location_id: UUID, days: int = 30, db: Session | None = None
     ) -> dict:
         """Get hourly foot traffic heatmap for last N days."""
         if not db:
@@ -307,12 +337,16 @@ class OfflineAnalyticsService:
 
         start_date = datetime.now(UTC) - timedelta(days=days)
 
-        metrics = db.query(LocationVisitMetric).filter(
-            and_(
-                LocationVisitMetric.location_id == location_id,
-                LocationVisitMetric.metric_date >= start_date.strftime("%Y-%m-%d")
+        metrics = (
+            db.query(LocationVisitMetric)
+            .filter(
+                and_(
+                    LocationVisitMetric.location_id == location_id,
+                    LocationVisitMetric.metric_date >= start_date.strftime("%Y-%m-%d"),
+                )
             )
-        ).all()
+            .all()
+        )
 
         # Aggregate hourly data
         hourly_totals = {}
@@ -328,9 +362,7 @@ class OfflineAnalyticsService:
 
     @staticmethod
     def get_conversion_funnel(
-        business_id: UUID,
-        days: int = 30,
-        db: Session | None = None
+        business_id: UUID, days: int = 30, db: Session | None = None
     ) -> dict:
         """Get online→offline→purchase conversion funnel for business."""
         if not db:
@@ -339,18 +371,24 @@ class OfflineAnalyticsService:
         start_date = datetime.now(UTC) - timedelta(days=days)
 
         # All offline conversions in period
-        all_conversions = db.query(OfflineConversion).filter(
-            and_(
-                OfflineConversion.business_id == business_id,
-                OfflineConversion.created_at >= start_date
+        all_conversions = (
+            db.query(OfflineConversion)
+            .filter(
+                and_(
+                    OfflineConversion.business_id == business_id,
+                    OfflineConversion.created_at >= start_date,
+                )
             )
-        ).all()
+            .all()
+        )
 
         total_visits = len(all_conversions)
         linked_conversations = len([c for c in all_conversions if c.conversation_id])
         purchased = len([c for c in all_conversions if c.purchased])
 
-        total_revenue = sum(c.purchase_amount or 0 for c in all_conversions if c.purchased)
+        total_revenue = sum(
+            c.purchase_amount or 0 for c in all_conversions if c.purchased
+        )
 
         return {
             "period_days": days,
@@ -359,15 +397,14 @@ class OfflineAnalyticsService:
             "visits_converted_to_purchase": purchased,
             "conversion_rate": purchased / total_visits if total_visits else 0,
             "total_revenue": float(total_revenue),
-            "avg_transaction_value": float(total_revenue / purchased) if purchased else 0,
+            "avg_transaction_value": (
+                float(total_revenue / purchased) if purchased else 0
+            ),
         }
 
     @staticmethod
     def get_proximity_trigger_effectiveness(
-        business_id: UUID,
-        trigger_name: str,
-        days: int = 30,
-        db: Session | None = None
+        business_id: UUID, trigger_name: str, days: int = 30, db: Session | None = None
     ) -> dict:
         """Measure effectiveness of proximity trigger (how many lead to actual visit)."""
         if not db:
@@ -376,13 +413,17 @@ class OfflineAnalyticsService:
         start_date = datetime.now(UTC) - timedelta(days=days)
 
         # Proximity events triggered
-        events = db.query(GeoProximityEvent).filter(
-            and_(
-                GeoProximityEvent.business_id == business_id,
-                GeoProximityEvent.trigger_name == trigger_name,
-                GeoProximityEvent.created_at >= start_date
+        events = (
+            db.query(GeoProximityEvent)
+            .filter(
+                and_(
+                    GeoProximityEvent.business_id == business_id,
+                    GeoProximityEvent.trigger_name == trigger_name,
+                    GeoProximityEvent.created_at >= start_date,
+                )
             )
-        ).all()
+            .all()
+        )
 
         total_triggered = len(events)
         executed = len([e for e in events if e.automation_triggered])
@@ -390,7 +431,9 @@ class OfflineAnalyticsService:
         # How many of these led to actual visits
         email_matches = len([e for e in events if e.visitor_email])
         phone_matches = len([e for e in events if e.visitor_phone])
-        visits_from_events = len([e for e in events if e.conversation_id and e.automation_triggered])
+        visits_from_events = len(
+            [e for e in events if e.conversation_id and e.automation_triggered]
+        )
 
         return {
             "trigger_name": trigger_name,

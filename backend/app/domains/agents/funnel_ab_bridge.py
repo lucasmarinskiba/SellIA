@@ -64,7 +64,9 @@ async def _get_or_create_stage_experiment(db: AsyncSession, stage: FunnelStage):
         min_samples=_MIN_SAMPLES,
     )
     experiment = await ABTestEngine.start_experiment(db, experiment.id)
-    logger.info(f"Auto-created funnel voice experiment for stage '{stage.value}': {slugs[0]} vs {slugs[1]}")
+    logger.info(
+        f"Auto-created funnel voice experiment for stage '{stage.value}': {slugs[0]} vs {slugs[1]}"
+    )
     return experiment
 
 
@@ -88,8 +90,14 @@ async def get_stage_voice_slug(
         if not experiment:
             return fallback, None, None
 
-        variant = ABTestEngine.get_variant_for_conversation(db, experiment.id, conversation.id)
-        voice_slug = experiment.variant_a_prompt if variant == "a" else experiment.variant_b_prompt
+        variant = ABTestEngine.get_variant_for_conversation(
+            db, experiment.id, conversation.id
+        )
+        voice_slug = (
+            experiment.variant_a_prompt
+            if variant == "a"
+            else experiment.variant_b_prompt
+        )
 
         # Remember the assignment on the conversation so a later conversion
         # event can be attributed back to this experiment/variant.
@@ -108,7 +116,10 @@ async def get_stage_voice_slug(
         return voice_slug, experiment.id, variant
 
     except Exception as e:
-        logger.warning(f"Funnel A/B voice selection failed for stage '{stage.value}': {e}", exc_info=True)
+        logger.warning(
+            f"Funnel A/B voice selection failed for stage '{stage.value}': {e}",
+            exc_info=True,
+        )
         return fallback, None, None
 
 

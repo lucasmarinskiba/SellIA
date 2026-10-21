@@ -32,60 +32,114 @@ class ComplianceService:
     """
 
     @staticmethod
-    async def set_consent(business_id: UUID, customer_id: UUID, consent_type: str, consented: bool, db: AsyncSession = None) -> dict:
+    async def set_consent(
+        business_id: UUID,
+        customer_id: UUID,
+        consent_type: str,
+        consented: bool,
+        db: AsyncSession = None,
+    ) -> dict:
         if not db:
             raise ValueError("Database session required")
 
-        record = ConsentRecord(business_id=business_id, customer_id=customer_id, consent_type=consent_type, consented=consented)
+        record = ConsentRecord(
+            business_id=business_id,
+            customer_id=customer_id,
+            consent_type=consent_type,
+            consented=consented,
+        )
         db.add(record)
 
-        await ComplianceService._audit_log(business_id, "consent_updated", "customer", customer_id, None, db)
+        await ComplianceService._audit_log(
+            business_id, "consent_updated", "customer", customer_id, None, db
+        )
         await db.commit()
         logger.info(f"Consent set: {customer_id} | {consent_type}={consented}")
         return {"consent_id": str(record.id), "consent_type": consent_type}
 
     @staticmethod
-    async def request_data_export(business_id: UUID, customer_id: UUID, export_format: str = "json", db: AsyncSession = None) -> dict:
+    async def request_data_export(
+        business_id: UUID,
+        customer_id: UUID,
+        export_format: str = "json",
+        db: AsyncSession = None,
+    ) -> dict:
         if not db:
             raise ValueError("Database session required")
 
-        request = DataExportRequest(business_id=business_id, customer_id=customer_id, export_format=export_format)
+        request = DataExportRequest(
+            business_id=business_id,
+            customer_id=customer_id,
+            export_format=export_format,
+        )
         db.add(request)
 
-        await ComplianceService._audit_log(business_id, "data_export_requested", "customer", customer_id, None, db)
+        await ComplianceService._audit_log(
+            business_id, "data_export_requested", "customer", customer_id, None, db
+        )
         await db.commit()
         logger.info(f"Export requested: {customer_id}")
         return {"request_id": str(request.id), "status": "pending"}
 
     @staticmethod
-    async def request_data_deletion(business_id: UUID, customer_id: UUID, deletion_type: str = "full", db: AsyncSession = None) -> dict:
+    async def request_data_deletion(
+        business_id: UUID,
+        customer_id: UUID,
+        deletion_type: str = "full",
+        db: AsyncSession = None,
+    ) -> dict:
         if not db:
             raise ValueError("Database session required")
 
-        request = DataDeletionRequest(business_id=business_id, customer_id=customer_id, deletion_type=deletion_type)
+        request = DataDeletionRequest(
+            business_id=business_id,
+            customer_id=customer_id,
+            deletion_type=deletion_type,
+        )
         db.add(request)
 
-        await ComplianceService._audit_log(business_id, "data_deletion_requested", "customer", customer_id, None, db)
+        await ComplianceService._audit_log(
+            business_id, "data_deletion_requested", "customer", customer_id, None, db
+        )
         await db.commit()
         logger.info(f"Deletion requested: {customer_id}")
         return {"request_id": str(request.id), "status": "pending"}
 
     @staticmethod
-    async def get_consent_status(business_id: UUID, customer_id: UUID, db: AsyncSession = None) -> dict:
+    async def get_consent_status(
+        business_id: UUID, customer_id: UUID, db: AsyncSession = None
+    ) -> dict:
         if not db:
             raise ValueError("Database session required")
 
         result = await db.execute(
             select(ConsentRecord).where(
                 ConsentRecord.business_id == business_id,
-                ConsentRecord.customer_id == customer_id
+                ConsentRecord.customer_id == customer_id,
             )
         )
         records = result.scalars().all()
 
-        return {"consents": [{"type": r.consent_type, "consented": r.consented} for r in records]}
+        return {
+            "consents": [
+                {"type": r.consent_type, "consented": r.consented} for r in records
+            ]
+        }
 
     @staticmethod
-    async def _audit_log(business_id: UUID, event_type: str, resource_type: str, resource_id: UUID, details: dict, db: AsyncSession) -> None:
-        log = AuditLog(business_id=business_id, event_type=event_type, resource_type=resource_type, resource_id=resource_id, details=details)
+    async def _audit_log(
+        business_id: UUID,
+        event_type: str,
+        resource_type: str,
+        resource_id: UUID,
+        details: dict,
+        db: AsyncSession,
+    ) -> None:
+        log = AuditLog(
+            business_id=business_id,
+            event_type=event_type,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            details=details,
+        )
         db.add(log)

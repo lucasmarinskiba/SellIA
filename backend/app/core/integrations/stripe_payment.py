@@ -54,7 +54,9 @@ class StripePaymentProcessor:
                 },
             )
 
-            logger.info(f"Payment intent created: {intent.id} for order {order_id} (${amount_usd})")
+            logger.info(
+                f"Payment intent created: {intent.id} for order {order_id} (${amount_usd})"
+            )
 
             return {
                 "status": "intent_created",
@@ -72,7 +74,10 @@ class StripePaymentProcessor:
             return {"status": "error", "message": "Service temporarily unavailable"}
         except stripe.error.AuthenticationError:
             logger.error("Stripe authentication error")
-            return {"status": "error", "message": "Payment service authentication failed"}
+            return {
+                "status": "error",
+                "message": "Payment service authentication failed",
+            }
         except Exception as e:
             logger.exception("Unexpected error creating payment intent")
             return {"status": "error", "message": str(e)}
@@ -150,7 +155,9 @@ class StripePaymentProcessor:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def refund_payment(payment_intent_id: str, amount_usd: float | None = None) -> dict[str, Any]:
+    def refund_payment(
+        payment_intent_id: str, amount_usd: float | None = None
+    ) -> dict[str, Any]:
         """Reembolsa pago (total o parcial)."""
 
         try:
@@ -215,7 +222,9 @@ class StripeWebhookHandler:
         order_id = payment_intent.get("metadata", {}).get("order_id")
         amount = payment_intent.get("amount", 0) / 100
 
-        logger.info(f"Payment succeeded: {payment_intent.id} for order {order_id} (${amount})")
+        logger.info(
+            f"Payment succeeded: {payment_intent.id} for order {order_id} (${amount})"
+        )
 
         # TODO: Update order status en DB, enviar factura, trigger fulfillment
         # db.orders.update_one(

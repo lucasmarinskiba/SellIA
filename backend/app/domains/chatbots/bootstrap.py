@@ -34,7 +34,9 @@ async def ensure_chatbot_tables() -> None:
                     lambda sync_conn, t=table: t.create(bind=sync_conn, checkfirst=True)
                 )
         except Exception as e:  # noqa: BLE001
-            logger.warning("chatbots bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "chatbots bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
 
     added = 0
     for column, ddl in COLUMNS.items():
@@ -43,9 +45,13 @@ async def ensure_chatbot_tables() -> None:
             # the others (Postgres aborts the whole transaction on first error).
             async with engine.begin() as conn:
                 await conn.execute(
-                    text(f"ALTER TABLE platform_bots ADD COLUMN IF NOT EXISTS {column} {ddl}")
+                    text(
+                        f"ALTER TABLE platform_bots ADD COLUMN IF NOT EXISTS {column} {ddl}"
+                    )
                 )
             added += 1
         except Exception as e:  # noqa: BLE001
-            logger.warning("chatbots bootstrap: column %s skipped: %s", column, str(e)[:160])
+            logger.warning(
+                "chatbots bootstrap: column %s skipped: %s", column, str(e)[:160]
+            )
     logger.info("✅ platform_bots columns ensured (%s/%s)", added, len(COLUMNS))

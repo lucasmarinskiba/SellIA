@@ -94,7 +94,9 @@ class CashFlowService:
 
             # Profit and tax provision (accrual, not paid yet)
             profit_before_tax = revenue - cogs - opex
-            tax_prov = profit_before_tax * tax_rate if profit_before_tax > 0 else Decimal(0)
+            tax_prov = (
+                profit_before_tax * tax_rate if profit_before_tax > 0 else Decimal(0)
+            )
             cumul_tax_reserve += tax_prov
 
             # Operating cash flow: revenue - cogs - opex (tax paid lazily, quarterly)
@@ -133,7 +135,9 @@ class CashFlowService:
         # Compute runway (days until zero if negative burn)
         runway = None
         if cumul_balance < 0:
-            daily_burn = (cumul_balance - assumptions.beginning_balance) / max(1, len(points))
+            daily_burn = (cumul_balance - assumptions.beginning_balance) / max(
+                1, len(points)
+            )
             if daily_burn < 0:
                 runway = int(-cumul_balance / daily_burn)
 
@@ -168,8 +172,9 @@ class CashFlowService:
         total = Decimal(0)
         for acct in cash_accts:
             balance_row = await self.db.execute(
-                select(func.sum(JournalEntry.debit_amount - JournalEntry.credit_amount))
-                .where(JournalEntry.account_id == acct.id)
+                select(
+                    func.sum(JournalEntry.debit_amount - JournalEntry.credit_amount)
+                ).where(JournalEntry.account_id == acct.id)
             )
             bal = balance_row.scalar() or 0
             total += Decimal(str(bal))

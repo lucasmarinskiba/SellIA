@@ -75,7 +75,9 @@ class EventBus:
     def unsubscribe(self, event_type: str, handler: EventHandler) -> None:
         """Desuscribir un handler."""
         if event_type in self._handlers:
-            self._handlers[event_type] = [h for h in self._handlers[event_type] if h != handler]
+            self._handlers[event_type] = [
+                h for h in self._handlers[event_type] if h != handler
+            ]
 
     async def start_listener(self):
         """Iniciar listener de Redis Pub/Sub en background."""
@@ -116,10 +118,14 @@ class EventBus:
                         except Exception as e:
                             logger.exception("_listen_loop: error inesperado")
                             from app.core.logger import get_logger
-                            get_logger(__name__).error(f"Handler error for {event_type}: {e}")
+
+                            get_logger(__name__).error(
+                                f"Handler error for {event_type}: {e}"
+                            )
                 except Exception as e:
                     logger.exception("_listen_loop: error inesperado")
                     from app.core.logger import get_logger
+
                     get_logger(__name__).error(f"Message parse error: {e}")
 
     async def emit(self, event_type: str, payload: dict[str, Any]) -> None:
@@ -133,6 +139,7 @@ class EventBus:
             except Exception as e:
                 logger.exception("emit: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Local handler error for {event_type}: {e}")
 
 
@@ -147,6 +154,7 @@ async def emit_event(event_type: str, payload: dict[str, Any]) -> None:
 
 # ===== Helpers de eventos comunes =====
 
+
 async def emit_message_received(
     business_id: str,
     conversation_id: str,
@@ -155,14 +163,17 @@ async def emit_message_received(
     sender_name: str | None = None,
     is_new_conversation: bool = False,
 ):
-    await event_bus.emit("message.received", {
-        "business_id": business_id,
-        "conversation_id": conversation_id,
-        "platform": platform,
-        "content": content,
-        "sender_name": sender_name,
-        "is_new_conversation": is_new_conversation,
-    })
+    await event_bus.emit(
+        "message.received",
+        {
+            "business_id": business_id,
+            "conversation_id": conversation_id,
+            "platform": platform,
+            "content": content,
+            "sender_name": sender_name,
+            "is_new_conversation": is_new_conversation,
+        },
+    )
 
 
 async def emit_message_sent(
@@ -171,12 +182,15 @@ async def emit_message_sent(
     platform: str,
     content: str,
 ):
-    await event_bus.emit("message.sent", {
-        "business_id": business_id,
-        "conversation_id": conversation_id,
-        "platform": platform,
-        "content": content,
-    })
+    await event_bus.emit(
+        "message.sent",
+        {
+            "business_id": business_id,
+            "conversation_id": conversation_id,
+            "platform": platform,
+            "content": content,
+        },
+    )
 
 
 async def emit_lead_score_changed(
@@ -187,14 +201,17 @@ async def emit_lead_score_changed(
     old_classification: str,
     new_classification: str,
 ):
-    await event_bus.emit("lead.score_changed", {
-        "business_id": business_id,
-        "conversation_id": conversation_id,
-        "old_score": old_score,
-        "new_score": new_score,
-        "old_classification": old_classification,
-        "new_classification": new_classification,
-    })
+    await event_bus.emit(
+        "lead.score_changed",
+        {
+            "business_id": business_id,
+            "conversation_id": conversation_id,
+            "old_score": old_score,
+            "new_score": new_score,
+            "old_classification": old_classification,
+            "new_classification": new_classification,
+        },
+    )
 
 
 async def emit_deal_created(
@@ -204,13 +221,16 @@ async def emit_deal_created(
     value: float | None = None,
     stage: str = "new_lead",
 ):
-    await event_bus.emit("deal.created", {
-        "business_id": business_id,
-        "deal_id": deal_id,
-        "conversation_id": conversation_id,
-        "value": value,
-        "stage": stage,
-    })
+    await event_bus.emit(
+        "deal.created",
+        {
+            "business_id": business_id,
+            "deal_id": deal_id,
+            "conversation_id": conversation_id,
+            "value": value,
+            "stage": stage,
+        },
+    )
 
 
 async def emit_workflow_completed(
@@ -220,13 +240,16 @@ async def emit_workflow_completed(
     status: str,
     conversation_id: str | None = None,
 ):
-    await event_bus.emit("workflow.completed", {
-        "business_id": business_id,
-        "workflow_id": workflow_id,
-        "execution_id": execution_id,
-        "status": status,
-        "conversation_id": conversation_id,
-    })
+    await event_bus.emit(
+        "workflow.completed",
+        {
+            "business_id": business_id,
+            "workflow_id": workflow_id,
+            "execution_id": execution_id,
+            "status": status,
+            "conversation_id": conversation_id,
+        },
+    )
 
 
 async def emit_human_handoff_required(
@@ -236,14 +259,17 @@ async def emit_human_handoff_required(
     reason: str,
     lead_name: str | None = None,
 ):
-    await event_bus.emit("human.handoff_required", {
-        "business_id": business_id,
-        "conversation_id": conversation_id,
-        "platform": platform,
-        "reason": reason,
-        "lead_name": lead_name,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await event_bus.emit(
+        "human.handoff_required",
+        {
+            "business_id": business_id,
+            "conversation_id": conversation_id,
+            "platform": platform,
+            "reason": reason,
+            "lead_name": lead_name,
+            "timestamp": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 async def emit_order_created(
@@ -253,14 +279,17 @@ async def emit_order_created(
     status: str,
     conversation_id: str | None = None,
 ):
-    await event_bus.emit("order.created", {
-        "business_id": business_id,
-        "order_id": order_id,
-        "total_amount": total_amount,
-        "status": status,
-        "conversation_id": conversation_id,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await event_bus.emit(
+        "order.created",
+        {
+            "business_id": business_id,
+            "order_id": order_id,
+            "total_amount": total_amount,
+            "status": status,
+            "conversation_id": conversation_id,
+            "timestamp": datetime.now(UTC).isoformat(),
+        },
+    )
 
 
 async def emit_revenue_event(
@@ -269,10 +298,13 @@ async def emit_revenue_event(
     amount: float,
     event_type: str,
 ):
-    await event_bus.emit("revenue.event", {
-        "business_id": business_id,
-        "revenue_event_id": revenue_event_id,
-        "amount": amount,
-        "event_type": event_type,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await event_bus.emit(
+        "revenue.event",
+        {
+            "business_id": business_id,
+            "revenue_event_id": revenue_event_id,
+            "amount": amount,
+            "event_type": event_type,
+            "timestamp": datetime.now(UTC).isoformat(),
+        },
+    )

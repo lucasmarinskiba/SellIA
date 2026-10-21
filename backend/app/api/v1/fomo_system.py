@@ -12,7 +12,6 @@ Routes:
 - POST /foom/competitor-intel - Get competitive data
 """
 
-
 import logging
 from typing import Annotated
 
@@ -175,20 +174,27 @@ def generate_all_triggers(
         # Generate all triggers
         scarcity = ScarcityEngine(db).generate_scarcity_triggers(deal_dict)
         social_proof = SocialProofEngine(db).generate_social_proof_triggers(deal_dict)
-        loss_aversion = LossAversionEngine(db).generate_loss_aversion_triggers(deal_dict)
+        loss_aversion = LossAversionEngine(db).generate_loss_aversion_triggers(
+            deal_dict
+        )
         authority = AuthoritySignalsEngine(db).generate_authority_triggers(deal_dict)
 
         all_triggers = scarcity + social_proof + loss_aversion + authority
 
         # Filter by channels if requested
         if request.include_channels:
-            all_triggers = [t for t in all_triggers if t.channel in request.include_channels]
+            all_triggers = [
+                t for t in all_triggers if t.channel in request.include_channels
+            ]
 
-        max_urgency = max([t.urgency_level for t in all_triggers]) if all_triggers else 0
-        foom_level = "CRITICAL" if max_urgency >= 9 else \
-                     "HIGH" if max_urgency >= 7 else \
-                     "MEDIUM" if max_urgency >= 5 else \
-                     "LOW"
+        max_urgency = (
+            max([t.urgency_level for t in all_triggers]) if all_triggers else 0
+        )
+        foom_level = (
+            "CRITICAL"
+            if max_urgency >= 9
+            else "HIGH" if max_urgency >= 7 else "MEDIUM" if max_urgency >= 5 else "LOW"
+        )
 
         return TriggersResponse(
             deal_id=request.deal_id,
@@ -365,7 +371,9 @@ def generate_video_script(
 
         script = generator.generate_video_script(trigger, request.duration_seconds)
 
-        return VideoScriptResponse(script=script, duration_seconds=request.duration_seconds)
+        return VideoScriptResponse(
+            script=script, duration_seconds=request.duration_seconds
+        )
     except Exception as e:
         logger.exception("generate_video_script: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
@@ -407,7 +415,9 @@ def get_competitor_intelligence(
 
         competitor_wins = tracker.get_competitor_wins(request.industry, request.days)
         adoption_rate = tracker.get_industry_adoption_rate("solution", request.industry)
-        market_share_trends = tracker.get_market_share_trends("your_company", request.industry)
+        market_share_trends = tracker.get_market_share_trends(
+            "your_company", request.industry
+        )
 
         return CompetitorIntelResponse(
             competitor_wins=competitor_wins,

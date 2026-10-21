@@ -27,6 +27,7 @@ router = APIRouter(prefix="/intelligence", tags=["intelligence"])
 
 # ========== Emotion ==========
 
+
 @router.post("/emotion/detect", response_model=EmotionDetectResponse)
 async def detect_emotion(
     data: EmotionDetectRequest,
@@ -60,7 +61,9 @@ async def detect_emotion(
     )
 
 
-@router.get("/emotion/timeline/{conversation_id}", response_model=EmotionTimelineResponse)
+@router.get(
+    "/emotion/timeline/{conversation_id}", response_model=EmotionTimelineResponse
+)
 async def get_emotion_timeline(
     conversation_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -84,7 +87,12 @@ async def get_emotion_timeline(
 
 # ========== Negotiation ==========
 
-@router.post("/negotiate/start", response_model=NegotiationStateResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/negotiate/start",
+    response_model=NegotiationStateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def start_negotiation(
     data: NegotiationStartRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -131,7 +139,9 @@ async def process_negotiation_offer(
     return neg_resp
 
 
-@router.get("/negotiate/state/{conversation_id}", response_model=NegotiationStateResponse)
+@router.get(
+    "/negotiate/state/{conversation_id}", response_model=NegotiationStateResponse
+)
 async def get_negotiation_state(
     conversation_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],

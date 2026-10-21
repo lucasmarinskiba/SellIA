@@ -4,7 +4,6 @@ Pricing: Free tier available, Pro ~$12.99/mo
 Strengths: Templates, brand kits, social graphics, quick designs
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class CanvaProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="CANVA_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="CANVA_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -58,9 +59,15 @@ class CanvaProvider(BaseProvider):
             ) as resp:
                 data = await resp.json()
 
-            design_url = data.get("design", {}).get("url") if isinstance(data.get("design"), dict) else data.get("url")
+            design_url = (
+                data.get("design", {}).get("url")
+                if isinstance(data.get("design"), dict)
+                else data.get("url")
+            )
             if not design_url:
-                return GenerationResult(success=False, error_message="Canva no devolvió diseño")
+                return GenerationResult(
+                    success=False, error_message="Canva no devolvió diseño"
+                )
 
             return GenerationResult(
                 success=True,

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class StrategyCategory(str, Enum):
     """Strategy classification categories."""
+
     BLUE_OCEAN = "blue_ocean"
     RETENTION = "retention"
     ACQUISITION = "acquisition"
@@ -26,6 +27,7 @@ class StrategyCategory(str, Enum):
 @dataclass
 class StrategyScore:
     """Strategy effectiveness score."""
+
     strategy_id: str
     strategy_name: str
     conversion_rate: float = 0.0  # % of leads converted
@@ -61,12 +63,12 @@ class StrategyScore:
         nps_norm = (self.nps_score + 100) / 200  # NPS -100 to 100 → 0 to 1
 
         weighted_score = (
-            weights["conversion_rate"] * conversion_norm +
-            weights["ltv"] * ltv_norm +
-            weights["cac"] * cac_norm +
-            weights["roi"] * roi_norm +
-            weights["retention"] * retention_norm +
-            weights["nps"] * nps_norm
+            weights["conversion_rate"] * conversion_norm
+            + weights["ltv"] * ltv_norm
+            + weights["cac"] * cac_norm
+            + weights["roi"] * roi_norm
+            + weights["retention"] * retention_norm
+            + weights["nps"] * nps_norm
         )
 
         return min(max(weighted_score * 100, 0), 100)
@@ -75,6 +77,7 @@ class StrategyScore:
 @dataclass
 class RecommendedStrategy:
     """Recommended strategy with confidence and reasoning."""
+
     strategy_id: str
     strategy_name: str
     category: StrategyCategory
@@ -92,6 +95,7 @@ class RecommendedStrategy:
 @dataclass
 class AdaptedStrategy:
     """Strategy adapted to market changes."""
+
     original_strategy_id: str
     adapted_strategy_id: str
     market_shift: str
@@ -234,7 +238,9 @@ class StrategyLearner:
 
     # Private helper methods
 
-    def _analyze_sales_history(self, sales_history: list[dict[str, Any]]) -> dict[str, Any]:
+    def _analyze_sales_history(
+        self, sales_history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Analyze historical sales data to understand what works."""
         if not sales_history:
             return {
@@ -251,9 +257,13 @@ class StrategyLearner:
         total_conversions = sum(h.get("conversions", 0) for h in sales_history)
         conversion_rate = total_conversions / total_leads if total_leads > 0 else 0.0
 
-        avg_deal_size = sum(h.get("deal_size", 0) for h in sales_history) / len(sales_history)
+        avg_deal_size = sum(h.get("deal_size", 0) for h in sales_history) / len(
+            sales_history
+        )
         avg_ltv = sum(h.get("ltv", 0) for h in sales_history) / len(sales_history)
-        churn_rate = sum(h.get("churn_rate", 0) for h in sales_history) / len(sales_history)
+        churn_rate = sum(h.get("churn_rate", 0) for h in sales_history) / len(
+            sales_history
+        )
 
         # Identify success factors
         success_factors = [
@@ -323,7 +333,9 @@ class StrategyLearner:
 
         # 2. Acquisition recommendation
         if current_performance["conversion_rate"] < 0.3:
-            recommendations.append(self._recommend_acquisition_strategy(business_profile))
+            recommendations.append(
+                self._recommend_acquisition_strategy(business_profile)
+            )
 
         # 3. Retention recommendation
         if current_performance["churn_rate"] > 0.15:
@@ -339,7 +351,9 @@ class StrategyLearner:
 
         return recommendations
 
-    def _recommend_blue_ocean(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_blue_ocean(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend Blue Ocean strategy."""
         return RecommendedStrategy(
             strategy_id="blue_ocean_01",
@@ -375,7 +389,9 @@ class StrategyLearner:
             ],
         )
 
-    def _recommend_acquisition_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_acquisition_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend customer acquisition strategy."""
         return RecommendedStrategy(
             strategy_id="acquisition_01",
@@ -403,7 +419,9 @@ class StrategyLearner:
             risks=["CAC may increase with scaling"],
         )
 
-    def _recommend_retention_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_retention_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend retention strategy."""
         return RecommendedStrategy(
             strategy_id="retention_01",
@@ -432,7 +450,9 @@ class StrategyLearner:
             risks=["May take time to show results"],
         )
 
-    def _recommend_pricing_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_pricing_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend pricing optimization strategy."""
         return RecommendedStrategy(
             strategy_id="pricing_01",
@@ -460,7 +480,9 @@ class StrategyLearner:
             risks=["Customer backlash", "Reduced volume"],
         )
 
-    def _recommend_growth_strategy(self, business_profile: "BusinessProfile") -> RecommendedStrategy:
+    def _recommend_growth_strategy(
+        self, business_profile: "BusinessProfile"
+    ) -> RecommendedStrategy:
         """Recommend growth strategy."""
         return RecommendedStrategy(
             strategy_id="growth_01",

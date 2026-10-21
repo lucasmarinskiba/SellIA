@@ -19,8 +19,8 @@ T = TypeVar("T")
 
 
 class CircuitState(Enum):
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, reject fast
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject fast
     HALF_OPEN = "half_open"  # Testing if recovered
 
 
@@ -81,7 +81,7 @@ class RetryHandler:
 
     def _calculate_delay(self, attempt: int) -> float:
         """Calcula el delay con backoff exponencial y jitter."""
-        delay = self.config.base_delay * (self.config.exponential_base ** attempt)
+        delay = self.config.base_delay * (self.config.exponential_base**attempt)
         delay = min(delay, self.config.max_delay)
         if self.config.jitter:
             delay = delay * (0.5 + random.random() * 0.5)
@@ -124,6 +124,7 @@ class CircuitBreaker:
 
     def _should_attempt_reset(self) -> bool:
         import time
+
         if self.last_failure_time is None:
             return True
         return time.time() - self.last_failure_time >= self.config.recovery_timeout
@@ -141,6 +142,7 @@ class CircuitBreaker:
 
     async def _on_failure(self):
         import time
+
         async with self._lock:
             self.failure_count += 1
             self.last_failure_time = time.time()
@@ -150,7 +152,9 @@ class CircuitBreaker:
                 logger.warning(f"Circuit {self.name}: OPEN (half-open failed)")
             elif self.failure_count >= self.config.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.warning(f"Circuit {self.name}: OPEN ({self.failure_count} failures)")
+                logger.warning(
+                    f"Circuit {self.name}: OPEN ({self.failure_count} failures)"
+                )
 
     def get_state(self) -> dict:
         return {

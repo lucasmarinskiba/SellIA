@@ -169,7 +169,9 @@ class MarketPatternRecognizer:
                     data_points=time_series.tolist(),
                     trend_direction=trend_direction,
                     impact="high" if trend_strength > 0.5 else "medium",
-                    recommendations=[f"Align strategy with {trend_direction} market trend"],
+                    recommendations=[
+                        f"Align strategy with {trend_direction} market trend"
+                    ],
                 )
             )
 
@@ -239,7 +241,9 @@ class CustomerBehaviorRecognizer:
         logger.info("Customer behavior recognizer trained")
         return self
 
-    def recognize_behavior(self, X: np.ndarray, customer_data: dict[str, Any]) -> BehaviorPattern:
+    def recognize_behavior(
+        self, X: np.ndarray, customer_data: dict[str, Any]
+    ) -> BehaviorPattern:
         """Recognize customer behavior pattern."""
         if not self.is_trained:
             raise ValueError("Recognizer must be trained first")
@@ -260,7 +264,11 @@ class CustomerBehaviorRecognizer:
         else:
             behavior_type = "standard"
 
-        frequency = "daily" if frequency_score > 5 else ("weekly" if frequency_score > 2 else "monthly")
+        frequency = (
+            "daily"
+            if frequency_score > 5
+            else ("weekly" if frequency_score > 2 else "monthly")
+        )
 
         churn_risk = float(np.clip(1 - (frequency_score / 10), 0, 1))
         upsell_opp = float(np.clip((value_score / 10000), 0, 1))
@@ -294,7 +302,9 @@ class CompetitorPatternRecognizer:
         logger.info("Competitor pattern recognizer trained")
         return self
 
-    def recognize_patterns(self, competitor_data: list[dict[str, Any]]) -> list[Pattern]:
+    def recognize_patterns(
+        self, competitor_data: list[dict[str, Any]]
+    ) -> list[Pattern]:
         """Recognize competitor patterns."""
         patterns = []
 
@@ -312,7 +322,10 @@ class CompetitorPatternRecognizer:
                         data_points=prices,
                         trend_direction="up",
                         impact="high",
-                        recommendations=["Monitor for market share loss", "Evaluate price competitiveness"],
+                        recommendations=[
+                            "Monitor for market share loss",
+                            "Evaluate price competitiveness",
+                        ],
                     )
                 )
 
@@ -326,7 +339,10 @@ class CompetitorPatternRecognizer:
                         description="Competitor ramping up product launches",
                         data_points=[competitor.get("new_products", 0)],
                         impact="high",
-                        recommendations=["Accelerate innovation", "Monitor competitive threats"],
+                        recommendations=[
+                            "Accelerate innovation",
+                            "Monitor competitive threats",
+                        ],
                     )
                 )
 
@@ -366,7 +382,10 @@ class CommunicationPatternRecognizer:
                     data_points=response_rates,
                     trend_direction="up",
                     impact="high",
-                    recommendations=["Continue current messaging strategy", "Increase send frequency"],
+                    recommendations=[
+                        "Continue current messaging strategy",
+                        "Increase send frequency",
+                    ],
                 )
             )
 
@@ -426,8 +445,12 @@ class AnomalyDetector:
         lof_scores = -self.lof._predict(X_scaled)
 
         # Normalize scores to 0-1
-        iso_scores = (iso_scores - iso_scores.min()) / (iso_scores.max() - iso_scores.min() + 1e-5)
-        lof_scores = (lof_scores - lof_scores.min()) / (lof_scores.max() - lof_scores.min() + 1e-5)
+        iso_scores = (iso_scores - iso_scores.min()) / (
+            iso_scores.max() - iso_scores.min() + 1e-5
+        )
+        lof_scores = (lof_scores - lof_scores.min()) / (
+            lof_scores.max() - lof_scores.min() + 1e-5
+        )
 
         # Combine scores
         combined_scores = (iso_scores + lof_scores) / 2
@@ -438,7 +461,11 @@ class AnomalyDetector:
                 severity = (
                     "critical"
                     if combined_scores[i] > 0.85
-                    else ("high" if combined_scores[i] > 0.75 else ("medium" if combined_scores[i] > 0.6 else "low"))
+                    else (
+                        "high"
+                        if combined_scores[i] > 0.75
+                        else ("medium" if combined_scores[i] > 0.6 else "low")
+                    )
                 )
 
                 # Identify affected features

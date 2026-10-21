@@ -33,7 +33,10 @@ router = APIRouter()
 class EnqueueTaskRequest(BaseModel):
     """Request para encolar tarea."""
 
-    task_type: str = Field(..., description="respond_message, schedule_appointment, close_sale, launch_ad_campaign, etc")
+    task_type: str = Field(
+        ...,
+        description="respond_message, schedule_appointment, close_sale, launch_ad_campaign, etc",
+    )
     customer_id: str | None = None
     payload: dict = Field(..., description="Task-specific data")
     priority: str | None = None  # urgent, high, medium, low, batch
@@ -111,7 +114,9 @@ async def enqueue_task(
             try:
                 due_at = datetime.fromisoformat(request.due_at)
             except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid due_at format (use ISO)")
+                raise HTTPException(
+                    status_code=400, detail="Invalid due_at format (use ISO)"
+                )
 
         # Encolar
         scheduler = get_task_scheduler()
@@ -180,14 +185,38 @@ async def get_task_info(
     """Retorna info sobre tipos de tareas y prioridades."""
     return {
         "task_types": {
-            "respond_message": {"description": "Respond to customer message", "default_priority": "URGENT"},
-            "schedule_appointment": {"description": "Schedule meeting/call", "default_priority": "HIGH"},
-            "close_sale": {"description": "Execute closing sequence", "default_priority": "HIGH"},
-            "launch_ad_campaign": {"description": "Launch advertising campaign", "default_priority": "MEDIUM"},
-            "send_follow_up": {"description": "Send follow-up to lead", "default_priority": "MEDIUM"},
-            "nurture_lead": {"description": "Nurture lead with content", "default_priority": "LOW"},
-            "re_engagement": {"description": "Re-engage cold lead", "default_priority": "LOW"},
-            "handle_objection": {"description": "Address customer objection", "default_priority": "URGENT"},
+            "respond_message": {
+                "description": "Respond to customer message",
+                "default_priority": "URGENT",
+            },
+            "schedule_appointment": {
+                "description": "Schedule meeting/call",
+                "default_priority": "HIGH",
+            },
+            "close_sale": {
+                "description": "Execute closing sequence",
+                "default_priority": "HIGH",
+            },
+            "launch_ad_campaign": {
+                "description": "Launch advertising campaign",
+                "default_priority": "MEDIUM",
+            },
+            "send_follow_up": {
+                "description": "Send follow-up to lead",
+                "default_priority": "MEDIUM",
+            },
+            "nurture_lead": {
+                "description": "Nurture lead with content",
+                "default_priority": "LOW",
+            },
+            "re_engagement": {
+                "description": "Re-engage cold lead",
+                "default_priority": "LOW",
+            },
+            "handle_objection": {
+                "description": "Address customer objection",
+                "default_priority": "URGENT",
+            },
         },
         "priorities": {
             "URGENT": 1,

@@ -21,6 +21,7 @@ from app.core.clock import utc_now
 
 class Intent(str, Enum):
     """User intent types"""
+
     BUYING = "buying"
     SELLING = "selling"
     INFORMATION = "information"
@@ -33,6 +34,7 @@ class Intent(str, Enum):
 
 class Sentiment(str, Enum):
     """User sentiment"""
+
     VERY_NEGATIVE = "very_negative"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
@@ -43,6 +45,7 @@ class Sentiment(str, Enum):
 @dataclass
 class ConversationTurn:
     """Single conversation exchange"""
+
     timestamp: datetime
     user_message: str
     bot_response: str
@@ -54,6 +57,7 @@ class ConversationTurn:
 @dataclass
 class UserProfile:
     """Persistent user profile"""
+
     user_id: str
     name: str
     email: str | None = None
@@ -69,20 +73,59 @@ class SentimentAnalyzer:
     """Detect user sentiment from messages"""
 
     POSITIVE_WORDS: ClassVar[set] = {
-        "love", "great", "awesome", "fantastic", "amazing", "wonderful",
-        "excellent", "perfect", "brilliant", "thank", "thanks", "grateful",
-        "happy", "excited", "pleased", "satisfied", "recommend"
+        "love",
+        "great",
+        "awesome",
+        "fantastic",
+        "amazing",
+        "wonderful",
+        "excellent",
+        "perfect",
+        "brilliant",
+        "thank",
+        "thanks",
+        "grateful",
+        "happy",
+        "excited",
+        "pleased",
+        "satisfied",
+        "recommend",
     }
 
     NEGATIVE_WORDS: ClassVar[set] = {
-        "hate", "terrible", "awful", "horrible", "bad", "worst", "useless",
-        "waste", "disappointed", "angry", "frustrated", "annoyed", "upset",
-        "broken", "problem", "issue", "bug", "error", "fail", "refund"
+        "hate",
+        "terrible",
+        "awful",
+        "horrible",
+        "bad",
+        "worst",
+        "useless",
+        "waste",
+        "disappointed",
+        "angry",
+        "frustrated",
+        "annoyed",
+        "upset",
+        "broken",
+        "problem",
+        "issue",
+        "bug",
+        "error",
+        "fail",
+        "refund",
     }
 
     VERY_NEGATIVE_WORDS: ClassVar[set] = {
-        "scam", "fraud", "criminal", "sue", "lawsuit", "cancel", "never",
-        "destroy", "worst", "unacceptable"
+        "scam",
+        "fraud",
+        "criminal",
+        "sue",
+        "lawsuit",
+        "cancel",
+        "never",
+        "destroy",
+        "worst",
+        "unacceptable",
     }
 
     @staticmethod
@@ -91,15 +134,18 @@ class SentimentAnalyzer:
         text_lower = text.lower()
 
         # Count sentiment words
-        very_negative_count = sum(1 for word in SentimentAnalyzer.VERY_NEGATIVE_WORDS
-                                  if word in text_lower)
-        negative_count = sum(1 for word in SentimentAnalyzer.NEGATIVE_WORDS
-                            if word in text_lower)
-        positive_count = sum(1 for word in SentimentAnalyzer.POSITIVE_WORDS
-                            if word in text_lower)
+        very_negative_count = sum(
+            1 for word in SentimentAnalyzer.VERY_NEGATIVE_WORDS if word in text_lower
+        )
+        negative_count = sum(
+            1 for word in SentimentAnalyzer.NEGATIVE_WORDS if word in text_lower
+        )
+        positive_count = sum(
+            1 for word in SentimentAnalyzer.POSITIVE_WORDS if word in text_lower
+        )
 
         # Exclamation marks indicate intensity
-        excitement = text.count('!') - text.count('?')
+        excitement = text.count("!") - text.count("?")
 
         # Determine sentiment
         if very_negative_count > 0:
@@ -120,33 +166,85 @@ class IntentDetector:
     """Detect user intent from message"""
 
     BUYING_KEYWORDS: ClassVar[set] = {
-        "buy", "purchase", "order", "get", "want", "need", "price",
-        "cost", "how much", "buy now", "interested", "available"
+        "buy",
+        "purchase",
+        "order",
+        "get",
+        "want",
+        "need",
+        "price",
+        "cost",
+        "how much",
+        "buy now",
+        "interested",
+        "available",
     }
 
     SELLING_KEYWORDS: ClassVar[set] = {
-        "sell", "sale", "discount", "offer", "deal", "sale price",
-        "selling", "want to sell", "selling price"
+        "sell",
+        "sale",
+        "discount",
+        "offer",
+        "deal",
+        "sale price",
+        "selling",
+        "want to sell",
+        "selling price",
     }
 
     SUPPORT_KEYWORDS: ClassVar[set] = {
-        "help", "support", "problem", "issue", "broken", "not working",
-        "error", "bug", "crash", "fix", "troubleshoot", "technical"
+        "help",
+        "support",
+        "problem",
+        "issue",
+        "broken",
+        "not working",
+        "error",
+        "bug",
+        "crash",
+        "fix",
+        "troubleshoot",
+        "technical",
     }
 
     COMPLAINT_KEYWORDS: ClassVar[set] = {
-        "complaint", "complain", "disappointed", "unsatisfied", "refund",
-        "return", "exchange", "wrong", "damaged", "missing"
+        "complaint",
+        "complain",
+        "disappointed",
+        "unsatisfied",
+        "refund",
+        "return",
+        "exchange",
+        "wrong",
+        "damaged",
+        "missing",
     }
 
     INFORMATION_KEYWORDS: ClassVar[set] = {
-        "what", "how", "why", "when", "where", "explain", "tell me",
-        "information", "details", "describe", "specs"
+        "what",
+        "how",
+        "why",
+        "when",
+        "where",
+        "explain",
+        "tell me",
+        "information",
+        "details",
+        "describe",
+        "specs",
     }
 
     NEGOTIATION_KEYWORDS: ClassVar[set] = {
-        "discount", "lower", "cheaper", "negotiate", "deal", "offer",
-        "bulk", "wholesale", "volume", "minimum"
+        "discount",
+        "lower",
+        "cheaper",
+        "negotiate",
+        "deal",
+        "offer",
+        "bulk",
+        "wholesale",
+        "volume",
+        "minimum",
     }
 
     @staticmethod
@@ -156,18 +254,24 @@ class IntentDetector:
 
         # Count keyword matches
         scores = {
-            Intent.BUYING: sum(1 for kw in IntentDetector.BUYING_KEYWORDS
-                              if kw in text_lower),
-            Intent.SELLING: sum(1 for kw in IntentDetector.SELLING_KEYWORDS
-                               if kw in text_lower),
-            Intent.SUPPORT: sum(1 for kw in IntentDetector.SUPPORT_KEYWORDS
-                               if kw in text_lower),
-            Intent.COMPLAINT: sum(1 for kw in IntentDetector.COMPLAINT_KEYWORDS
-                                 if kw in text_lower),
-            Intent.INFORMATION: sum(1 for kw in IntentDetector.INFORMATION_KEYWORDS
-                                   if kw in text_lower),
-            Intent.NEGOTIATION: sum(1 for kw in IntentDetector.NEGOTIATION_KEYWORDS
-                                   if kw in text_lower),
+            Intent.BUYING: sum(
+                1 for kw in IntentDetector.BUYING_KEYWORDS if kw in text_lower
+            ),
+            Intent.SELLING: sum(
+                1 for kw in IntentDetector.SELLING_KEYWORDS if kw in text_lower
+            ),
+            Intent.SUPPORT: sum(
+                1 for kw in IntentDetector.SUPPORT_KEYWORDS if kw in text_lower
+            ),
+            Intent.COMPLAINT: sum(
+                1 for kw in IntentDetector.COMPLAINT_KEYWORDS if kw in text_lower
+            ),
+            Intent.INFORMATION: sum(
+                1 for kw in IntentDetector.INFORMATION_KEYWORDS if kw in text_lower
+            ),
+            Intent.NEGOTIATION: sum(
+                1 for kw in IntentDetector.NEGOTIATION_KEYWORDS if kw in text_lower
+            ),
         }
 
         # Return highest scoring intent
@@ -188,7 +292,7 @@ class ConversationMemory:
         user_id: str,
         user_message: str,
         bot_response: str,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> ConversationTurn:
         """Add conversation turn"""
         sentiment = SentimentAnalyzer.analyze(user_message)
@@ -200,20 +304,22 @@ class ConversationMemory:
             bot_response=bot_response,
             user_sentiment=sentiment,
             detected_intent=intent,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Keep only recent history
         self.history[user_id].append(turn)
         if len(self.history[user_id]) > self.max_history:
-            self.history[user_id] = self.history[user_id][-self.max_history:]
+            self.history[user_id] = self.history[user_id][-self.max_history :]
 
         # Update user profile
         self._update_profile(user_id, sentiment, intent)
 
         return turn
 
-    def _update_profile(self, user_id: str, sentiment: Sentiment, intent: Intent) -> None:
+    def _update_profile(
+        self, user_id: str, sentiment: Sentiment, intent: Intent
+    ) -> None:
         """Update user profile based on interaction"""
         if user_id not in self.user_profiles:
             self.user_profiles[user_id] = UserProfile(user_id=user_id, name=user_id)
@@ -225,15 +331,19 @@ class ConversationMemory:
         # Track preferences
         if "sentiments" not in profile.preferences:
             profile.preferences["sentiments"] = {}
-        profile.preferences["sentiments"][sentiment.value] = \
+        profile.preferences["sentiments"][sentiment.value] = (
             profile.preferences["sentiments"].get(sentiment.value, 0) + 1
+        )
 
         if "intents" not in profile.preferences:
             profile.preferences["intents"] = {}
-        profile.preferences["intents"][intent.value] = \
+        profile.preferences["intents"][intent.value] = (
             profile.preferences["intents"].get(intent.value, 0) + 1
+        )
 
-    def get_history(self, user_id: str, limit: int | None = None) -> list[ConversationTurn]:
+    def get_history(
+        self, user_id: str, limit: int | None = None
+    ) -> list[ConversationTurn]:
         """Get conversation history"""
         history = self.history[user_id]
         if limit:
@@ -251,7 +361,7 @@ class ConversationMemory:
         recent_sentiment = history[-1].user_sentiment if history else Sentiment.NEUTRAL
 
         # Summarize topics
-        all_messages = ' '.join([turn.user_message for turn in history])
+        all_messages = " ".join([turn.user_message for turn in history])
 
         return {
             "last_intent": recent_intent.value,
@@ -266,18 +376,28 @@ class ConversationMemory:
                     "sentiment": turn.user_sentiment.value,
                 }
                 for turn in history[-3:]
-            ]
+            ],
         }
 
     def _extract_topics(self, text: str) -> list[str]:
         """Extract main topics from text"""
         # Simple keyword extraction
         keywords = {}
-        words = re.findall(r'\b\w{4,}\b', text.lower())
+        words = re.findall(r"\b\w{4,}\b", text.lower())
 
         common_words = {
-            "this", "that", "with", "have", "from", "been", "their",
-            "which", "these", "would", "could", "should"
+            "this",
+            "that",
+            "with",
+            "have",
+            "from",
+            "been",
+            "their",
+            "which",
+            "these",
+            "would",
+            "could",
+            "should",
         }
 
         for word in words:
@@ -339,7 +459,7 @@ class ContextRetriever:
             "topics_of_interest": self._extract_user_topics(profile),
             "response_guidance": self._generate_guidance(
                 current_intent, current_sentiment, profile
-            )
+            ),
         }
 
     def _get_primary_intent(self, profile: UserProfile) -> str:
@@ -361,10 +481,7 @@ class ContextRetriever:
         return profile.preferences.get("topics", [])
 
     def _generate_guidance(
-        self,
-        intent: Intent,
-        sentiment: Sentiment,
-        profile: UserProfile
+        self, intent: Intent, sentiment: Sentiment, profile: UserProfile
     ) -> dict[str, Any]:
         """Generate guidance for response generation"""
         guidance = {

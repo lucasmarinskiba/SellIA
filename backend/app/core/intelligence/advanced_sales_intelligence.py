@@ -50,7 +50,9 @@ class PredictiveLeadScoring:
 
         # Job title (0-10 points)
         title = lead.get("title", "").lower()
-        if any(keyword in title for keyword in ["ceo", "cto", "vp", "director", "manager"]):
+        if any(
+            keyword in title for keyword in ["ceo", "cto", "vp", "director", "manager"]
+        ):
             score += 10
 
         # Website engagement (0-20 points)
@@ -157,10 +159,16 @@ class ChurnPredictionModel:
         return {
             "customer_id": customer.get("id"),
             "churn_probability": min(churn_risk, 1.0),
-            "risk_level": "HIGH" if churn_risk > 0.7 else ("MEDIUM" if churn_risk > 0.5 else "LOW"),
+            "risk_level": (
+                "HIGH"
+                if churn_risk > 0.7
+                else ("MEDIUM" if churn_risk > 0.5 else "LOW")
+            ),
             "recommended_action": action,
             "intervention": intervention,
-            "expected_recovery_rate": 0.3 if churn_risk > 0.7 else (0.6 if churn_risk > 0.5 else 0.8),
+            "expected_recovery_rate": (
+                0.3 if churn_risk > 0.7 else (0.6 if churn_risk > 0.5 else 0.8)
+            ),
         }
 
 
@@ -171,7 +179,11 @@ class OptimalChannelSelector:
         "email": {"conversion_rate": 0.03, "cost_per_click": 0.05, "volume": "high"},
         "phone": {"conversion_rate": 0.15, "cost_per_click": 5.0, "volume": "low"},
         "whatsapp": {"conversion_rate": 0.08, "cost_per_click": 0.10, "volume": "high"},
-        "linkedin": {"conversion_rate": 0.05, "cost_per_click": 0.50, "volume": "medium"},
+        "linkedin": {
+            "conversion_rate": 0.05,
+            "cost_per_click": 0.50,
+            "volume": "medium",
+        },
         "ads": {"conversion_rate": 0.02, "cost_per_click": 1.0, "volume": "high"},
         "sms": {"conversion_rate": 0.06, "cost_per_click": 0.02, "volume": "high"},
     }
@@ -211,9 +223,20 @@ class OptimalChannelSelector:
         return {
             "recommended_channel": best_channel or "email",  # Default
             "expected_roi": best_roi,
-            "estimated_cost": (target_conversions / OptimalChannelSelector.CHANNEL_PERFORMANCE[best_channel or "email"]["conversion_rate"]) * OptimalChannelSelector.CHANNEL_PERFORMANCE[best_channel or "email"]["cost_per_click"],
+            "estimated_cost": (
+                target_conversions
+                / OptimalChannelSelector.CHANNEL_PERFORMANCE[best_channel or "email"][
+                    "conversion_rate"
+                ]
+            )
+            * OptimalChannelSelector.CHANNEL_PERFORMANCE[best_channel or "email"][
+                "cost_per_click"
+            ],
             "alternative_channels": sorted(
-                [(ch, (p["conversion_rate"])) for ch, p in OptimalChannelSelector.CHANNEL_PERFORMANCE.items()],
+                [
+                    (ch, (p["conversion_rate"]))
+                    for ch, p in OptimalChannelSelector.CHANNEL_PERFORMANCE.items()
+                ],
                 key=lambda x: x[1],
                 reverse=True,
             )[:3],
@@ -245,13 +268,23 @@ class AdaptiveSalesStrategy:
         winning_rate = len(winning_approaches) / len(similar_past_deals)
 
         if winning_rate == 0:
-            return {"approach": "pivot", "recommendation": "Try different approach, past ones failed"}
+            return {
+                "approach": "pivot",
+                "recommendation": "Try different approach, past ones failed",
+            }
 
         # Extract pattern
-        avg_closing_price = sum(d.get("closed_price", 0) for d in winning_approaches) / len(winning_approaches) if winning_approaches else 0
+        avg_closing_price = (
+            sum(d.get("closed_price", 0) for d in winning_approaches)
+            / len(winning_approaches)
+            if winning_approaches
+            else 0
+        )
         most_used_guarantee = max(
             {d.get("guarantee_type") for d in winning_approaches},
-            key=lambda x: sum(1 for d in winning_approaches if d.get("guarantee_type") == x),
+            key=lambda x: sum(
+                1 for d in winning_approaches if d.get("guarantee_type") == x
+            ),
             default="money_back",
         )
         best_channel = max(

@@ -26,7 +26,9 @@ class SellIADirector:
         obj_service = ObjectiveService(self.db)
         objectives = await obj_service.get_objectives_for_business(business_id)
         kpi_status = await self._evaluate_all_kpis(business_id)
-        action_plan = await self._generate_action_plan(objectives, kpi_status, business_id)
+        action_plan = await self._generate_action_plan(
+            objectives, kpi_status, business_id
+        )
 
         return {
             "business_id": str(business_id),
@@ -49,14 +51,20 @@ class SellIADirector:
             target = kpi.target_value or 1
             current = kpi.current_value or 0
             pct = (current / target * 100) if target else 0
-            status.append({
-                "kpi_id": str(kpi.id),
-                "name": kpi.name,
-                "target": float(target),
-                "current": float(current),
-                "percent": float(pct),
-                "status": "on_track" if pct >= 80 else "at_risk" if pct >= 50 else "critical",
-            })
+            status.append(
+                {
+                    "kpi_id": str(kpi.id),
+                    "name": kpi.name,
+                    "target": float(target),
+                    "current": float(current),
+                    "percent": float(pct),
+                    "status": (
+                        "on_track"
+                        if pct >= 80
+                        else "at_risk" if pct >= 50 else "critical"
+                    ),
+                }
+            )
         return status
 
     async def _generate_action_plan(
@@ -68,26 +76,32 @@ class SellIADirector:
         actions = []
         for kpi in kpi_status:
             if kpi["status"] == "critical":
-                actions.append({
-                    "priority": "high",
-                    "target_kpi": kpi["name"],
-                    "action": f"Urgently review {kpi['name']}: currently at {kpi['percent']:.1f}% of target.",
-                    "suggested_workflow_adjustment": "Increase automation touchpoints or escalate to human team.",
-                })
+                actions.append(
+                    {
+                        "priority": "high",
+                        "target_kpi": kpi["name"],
+                        "action": f"Urgently review {kpi['name']}: currently at {kpi['percent']:.1f}% of target.",
+                        "suggested_workflow_adjustment": "Increase automation touchpoints or escalate to human team.",
+                    }
+                )
             elif kpi["status"] == "at_risk":
-                actions.append({
-                    "priority": "medium",
-                    "target_kpi": kpi["name"],
-                    "action": f"Monitor {kpi['name']} closely: at {kpi['percent']:.1f}% of target.",
-                    "suggested_workflow_adjustment": "A/B test messaging or increase ad spend.",
-                })
+                actions.append(
+                    {
+                        "priority": "medium",
+                        "target_kpi": kpi["name"],
+                        "action": f"Monitor {kpi['name']} closely: at {kpi['percent']:.1f}% of target.",
+                        "suggested_workflow_adjustment": "A/B test messaging or increase ad spend.",
+                    }
+                )
         if not actions:
-            actions.append({
-                "priority": "low",
-                "target_kpi": "all",
-                "action": "All KPIs on track. Consider increasing targets for next period.",
-                "suggested_workflow_adjustment": "Run experiments to find new growth levers.",
-            })
+            actions.append(
+                {
+                    "priority": "low",
+                    "target_kpi": "all",
+                    "action": "All KPIs on track. Consider increasing targets for next period.",
+                    "suggested_workflow_adjustment": "Run experiments to find new growth levers.",
+                }
+            )
         return actions
 
     async def suggest_ab_test_variants(self, business_id: uuid.UUID) -> list[dict]:
@@ -98,15 +112,19 @@ class SellIADirector:
         if funnel and funnel.conversion_lead_to_qualified:
             clq = float(funnel.conversion_lead_to_qualified)
             if clq < 30:
-                suggestions.append({
-                    "test": "lead_qualification_message",
-                    "hypothesis": "Changing the first response message will increase qualification rate.",
-                    "current_rate": clq,
-                })
+                suggestions.append(
+                    {
+                        "test": "lead_qualification_message",
+                        "hypothesis": "Changing the first response message will increase qualification rate.",
+                        "current_rate": clq,
+                    }
+                )
             if float(funnel.conversion_deal_to_order or 0) < 20:
-                suggestions.append({
-                    "test": "checkout_urgency",
-                    "hypothesis": "Adding scarcity/urgency to closing messages will increase deal-to-order conversion.",
-                    "current_rate": float(funnel.conversion_deal_to_order or 0),
-                })
+                suggestions.append(
+                    {
+                        "test": "checkout_urgency",
+                        "hypothesis": "Adding scarcity/urgency to closing messages will increase deal-to-order conversion.",
+                        "current_rate": float(funnel.conversion_deal_to_order or 0),
+                    }
+                )
         return suggestions

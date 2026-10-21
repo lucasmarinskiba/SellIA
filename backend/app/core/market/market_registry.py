@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class HealthStatus(str, Enum):
     """Status de salud de componente."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -34,6 +35,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class MarketRegistryEntry:
     """Entrada en registry de mercado."""
+
     market_name: str
     industry: str
     supported: bool
@@ -48,6 +50,7 @@ class MarketRegistryEntry:
 @dataclass
 class AgentRegistryEntry:
     """Entrada en registry de agentes."""
+
     agent_name: str
     agent_role: str
     version: str
@@ -61,6 +64,7 @@ class AgentRegistryEntry:
 @dataclass
 class RuleSetRegistryEntry:
     """Entrada en registry de rule sets."""
+
     rule_set_name: str
     industry: str
     version: str
@@ -149,7 +153,10 @@ class MarketRegistry:
 
         # Actualiza markets con este agente
         for market in market_applicable:
-            if market in self.markets and agent_name not in self.markets[market].loaded_agents:
+            if (
+                market in self.markets
+                and agent_name not in self.markets[market].loaded_agents
+            ):
                 self.markets[market].loaded_agents.append(agent_name)
 
         logger.info(f"Registered agent: {agent_name} (v{version})")
@@ -184,7 +191,10 @@ class MarketRegistry:
 
         # Actualiza markets con este rule set
         for market in market_applicable:
-            if market in self.markets and rule_set_name not in self.markets[market].available_rules:
+            if (
+                market in self.markets
+                and rule_set_name not in self.markets[market].available_rules
+            ):
                 self.markets[market].available_rules.append(rule_set_name)
 
         logger.info(f"Registered rule set: {rule_set_name} (v{version})")
@@ -249,11 +259,12 @@ class MarketRegistry:
             Agentes con esa capacidad
         """
         return [
-            agent for agent in self.agents.values()
-            if capability in agent.capabilities
+            agent for agent in self.agents.values() if capability in agent.capabilities
         ]
 
-    def mark_agent_loaded(self, agent_name: str, last_loaded: str | None = None) -> None:
+    def mark_agent_loaded(
+        self, agent_name: str, last_loaded: str | None = None
+    ) -> None:
         """Marca agente como cargado.
 
         Args:
@@ -262,9 +273,7 @@ class MarketRegistry:
         """
         if agent_name in self.agents:
             self.agents[agent_name].status = "loaded"
-            self.agents[agent_name].last_loaded = (
-                last_loaded or utc_now().isoformat()
-            )
+            self.agents[agent_name].last_loaded = last_loaded or utc_now().isoformat()
 
     def mark_agent_error(self, agent_name: str, error_msg: str) -> None:
         """Marca agente con error.
@@ -344,15 +353,10 @@ class MarketRegistry:
             Resumen con conteos y status
         """
         markets_healthy = sum(
-            1 for m in self.markets.values()
-            if m.health_status == HealthStatus.HEALTHY
+            1 for m in self.markets.values() if m.health_status == HealthStatus.HEALTHY
         )
-        agents_loaded = sum(
-            1 for a in self.agents.values() if a.status == "loaded"
-        )
-        agents_error = sum(
-            1 for a in self.agents.values() if a.status == "error"
-        )
+        agents_loaded = sum(1 for a in self.agents.values() if a.status == "loaded")
+        agents_error = sum(1 for a in self.agents.values() if a.status == "error")
 
         return {
             "markets": {
@@ -367,8 +371,7 @@ class MarketRegistry:
             "rule_sets": {
                 "total": len(self.rule_sets),
                 "loaded": sum(
-                    1 for rs in self.rule_sets.values()
-                    if rs.status == "loaded"
+                    1 for rs in self.rule_sets.values() if rs.status == "loaded"
                 ),
             },
             "last_sync": self.last_sync,

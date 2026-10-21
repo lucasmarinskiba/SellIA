@@ -43,7 +43,8 @@ class ConversionTracker:
         settings = get_settings()
         self.stripe_connector = (
             get_stripe_connector(api_key=settings.STRIPE_SECRET_KEY)
-            if hasattr(settings, 'STRIPE_SECRET_KEY') else None
+            if hasattr(settings, "STRIPE_SECRET_KEY")
+            else None
         )
 
     async def process_sale_to_payment(
@@ -94,16 +95,20 @@ class ConversionTracker:
             log_entry.with_confidence(1.0)
             log_entry.success()
 
-            log_entry.with_metadata({
-                "customer_id": customer_id,
-                "customer_email": customer_email,
-                "product_id": product_info.get("id"),
-                "amount": amount_cents / 100,
-            })
+            log_entry.with_metadata(
+                {
+                    "customer_id": customer_id,
+                    "customer_email": customer_email,
+                    "product_id": product_info.get("id"),
+                    "amount": amount_cents / 100,
+                }
+            )
 
             await self.audit_service.log(log_entry)
 
-            logger.info(f"Checkout session created: {customer_id} | ${amount_cents / 100}")
+            logger.info(
+                f"Checkout session created: {customer_id} | ${amount_cents / 100}"
+            )
 
             return True, checkout_url
 
@@ -153,11 +158,13 @@ class ConversionTracker:
                 log_entry.with_confidence(1.0)
                 log_entry.success()
 
-                log_entry.with_metadata({
-                    "customer_email": customer_email,
-                    "amount": amount_total,
-                    "session_id": event_data.get("id"),
-                })
+                log_entry.with_metadata(
+                    {
+                        "customer_email": customer_email,
+                        "amount": amount_total,
+                        "session_id": event_data.get("id"),
+                    }
+                )
 
                 logger.info(f"Payment confirmed: {customer_email} | ${amount_total}")
 

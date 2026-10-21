@@ -71,6 +71,7 @@ class LoginLogResponse(BaseModel):
 
 # Push notifications
 
+
 class PushSubscriptionCreate(BaseModel):
     endpoint: str
     p256dh: str
@@ -90,6 +91,7 @@ class PushSubscriptionResponse(BaseModel):
 
 # User sessions
 
+
 class UserSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -107,6 +109,7 @@ class UserSessionResponse(BaseModel):
 
 
 # Audit logs (admin)
+
 
 class AuditLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -133,12 +136,14 @@ class SecurityStatsResponse(BaseModel):
 
 # Backup codes
 
+
 class BackupCodeResponse(BaseModel):
     codes: list[str]
     message: str
 
 
 # Breach check
+
 
 class BreachCheckResponse(BaseModel):
     email: str
@@ -149,6 +154,7 @@ class BreachCheckResponse(BaseModel):
 
 
 # Metrics
+
 
 class SecurityMetricsResponse(BaseModel):
     total_logins_24h: int

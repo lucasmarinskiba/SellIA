@@ -42,15 +42,28 @@ async def submit_nps(
 @router.get("/nps/stats")
 async def nps_stats(db: Annotated[AsyncSession, Depends(get_db)]):
     from sqlalchemy import func, select
+
     result = await db.execute(select(func.avg(FeedbackNPSResponse.score)))
     avg_score = result.scalar() or 0
 
-    promoters = await db.execute(select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score >= 9))
-    passives = await db.execute(select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score.between(7, 8)))
-    detractors = await db.execute(select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score <= 6))
+    promoters = await db.execute(
+        select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score >= 9)
+    )
+    passives = await db.execute(
+        select(func.count(FeedbackNPSResponse.id)).where(
+            FeedbackNPSResponse.score.between(7, 8)
+        )
+    )
+    detractors = await db.execute(
+        select(func.count(FeedbackNPSResponse.id)).where(FeedbackNPSResponse.score <= 6)
+    )
 
     total = promoters.scalar() + passives.scalar() + detractors.scalar()
-    nps_score = round(((promoters.scalar() - detractors.scalar()) / total) * 100, 1) if total else 0
+    nps_score = (
+        round(((promoters.scalar() - detractors.scalar()) / total) * 100, 1)
+        if total
+        else 0
+    )
 
     return {
         "avg_score": round(avg_score, 1),

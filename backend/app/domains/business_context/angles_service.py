@@ -62,10 +62,14 @@ def _build_prompt(ctx: BusinessContext) -> tuple[str, str]:
     if ctx.average_ticket:
         parts.append(f"Ticket promedio: {ctx.average_ticket}")
     if ctx.sales_model:
-        parts.append(f"Modelo de venta: {ctx.sales_model.value if hasattr(ctx.sales_model, 'value') else ctx.sales_model}")
+        parts.append(
+            f"Modelo de venta: {ctx.sales_model.value if hasattr(ctx.sales_model, 'value') else ctx.sales_model}"
+        )
 
     if not parts:
-        parts.append("El negocio todavía no cargó datos de nicho/oferta; infiere lo más genérico y útil posible.")
+        parts.append(
+            "El negocio todavía no cargó datos de nicho/oferta; infiere lo más genérico y útil posible."
+        )
 
     user_prompt = "\n".join(parts) + "\n\nJSON:"
     return system_prompt, user_prompt
@@ -83,19 +87,23 @@ def _parse_response(raw: str) -> dict[str, Any]:
     for a in angles:
         if not isinstance(a, dict):
             continue
-        cleaned.append({
-            "angle": str(a.get("angle", ""))[:200],
-            "hook": str(a.get("hook", ""))[:500],
-            "pain_point": str(a.get("pain_point", ""))[:300],
-            "cta": str(a.get("cta", ""))[:200],
-        })
+        cleaned.append(
+            {
+                "angle": str(a.get("angle", ""))[:200],
+                "hook": str(a.get("hook", ""))[:500],
+                "pain_point": str(a.get("pain_point", ""))[:300],
+                "cta": str(a.get("cta", ""))[:200],
+            }
+        )
     return {
         "winning_offer_summary": str(parsed.get("winning_offer_summary", ""))[:500],
         "communication_angles": cleaned or DEFAULT_ANGLES,
     }
 
 
-async def generate_communication_angles(db: AsyncSession, ctx: BusinessContext) -> dict[str, Any]:
+async def generate_communication_angles(
+    db: AsyncSession, ctx: BusinessContext
+) -> dict[str, Any]:
     """Generates and persists winning communication angles for a BusinessContext."""
     system_prompt, user_prompt = _build_prompt(ctx)
 
@@ -114,10 +122,14 @@ async def generate_communication_angles(db: AsyncSession, ctx: BusinessContext) 
         try:
             result = _parse_response(raw)
         except Exception as e:
-            logger.warning(f"Failed to parse communication angles JSON: {e}", exc_info=True)
+            logger.warning(
+                f"Failed to parse communication angles JSON: {e}", exc_info=True
+            )
 
     ctx.communication_angles = result["communication_angles"]
-    ctx.winning_offer_summary = result["winning_offer_summary"] or ctx.winning_offer_summary
+    ctx.winning_offer_summary = (
+        result["winning_offer_summary"] or ctx.winning_offer_summary
+    )
     await db.commit()
     await db.refresh(ctx)
 

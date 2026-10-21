@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 # PRODUCT SCHEMAS
 # ============================================================
 
+
 class ProductVariantAttrCreate(BaseModel):
     name: str
     sku: str | None = None
@@ -44,7 +45,7 @@ class ProductCreateRequest(BaseModel):
     track_inventory: bool = True
     featured_image_url: str | None = None
     images: list[str] = Field(default_factory=list)
-    status: str = 'DRAFT'
+    status: str = "DRAFT"
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -86,6 +87,7 @@ class ProductResponse(BaseModel):
 # ============================================================
 # CART SCHEMAS
 # ============================================================
+
 
 class CartItemRequest(BaseModel):
     product_id: UUID
@@ -140,6 +142,7 @@ class CartCheckoutRequest(BaseModel):
 # ORDER SCHEMAS
 # ============================================================
 
+
 class OrderItemResponse(BaseModel):
     id: UUID
     product_name: str
@@ -185,6 +188,7 @@ class OrderListResponse(BaseModel):
 # ============================================================
 # CATEGORY SCHEMAS
 # ============================================================
+
 
 class ProductCategoryCreateRequest(BaseModel):
     name: str

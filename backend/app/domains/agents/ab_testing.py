@@ -35,7 +35,9 @@ class PromptExperiment(Base):
     )
     name = Column(String(200), nullable=False)
     agent_type = Column(String(50), nullable=False, index=True)
-    metric = Column(String(20), nullable=False)  # 'conversion', 'engagement', 'satisfaction', 'revenue'
+    metric = Column(
+        String(20), nullable=False
+    )  # 'conversion', 'engagement', 'satisfaction', 'revenue'
     variant_a_name = Column(String(100), nullable=False)
     variant_a_prompt = Column(Text, nullable=False)
     variant_b_name = Column(String(100), nullable=False)

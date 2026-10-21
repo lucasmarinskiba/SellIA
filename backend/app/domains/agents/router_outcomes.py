@@ -49,7 +49,9 @@ async def record_outcome(
             from app.domains.agents.causal_engine import CausalAnalyzer
             from app.domains.agents.reflection import SelfReflection
 
-            reflection_result = await SelfReflection.reflect_on_conversation(db, conversation_id)
+            reflection_result = await SelfReflection.reflect_on_conversation(
+                db, conversation_id
+            )
             if reflection_result:
                 await SelfReflection.save_reflection(
                     db=db,
@@ -66,7 +68,9 @@ async def record_outcome(
                 from app.domains.channels.models import Conversation
 
                 conv_result = await db.execute(
-                    select(Conversation.business_id).where(Conversation.id == conversation_id)
+                    select(Conversation.business_id).where(
+                        Conversation.id == conversation_id
+                    )
                 )
                 business_id = conv_result.scalar_one_or_none()
                 if business_id:
@@ -79,6 +83,7 @@ async def record_outcome(
         except Exception as e:
             logger.exception("record_outcome: error inesperado")
             import logging
+
             logging.getLogger(__name__).warning(f"Post-outcome analysis failed: {e}")
 
     return {

@@ -41,9 +41,10 @@ logger = get_logger(__name__)
 @dataclass
 class SystemHealthSnapshot:
     """Instantánea del estado de salud del sistema en un momento dado."""
+
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
-    overall_health_score: int = 100          # 0-100
-    config_status: str = "ok"               # ok | warning | critical
+    overall_health_score: int = 100  # 0-100
+    config_status: str = "ok"  # ok | warning | critical
     repair_status: str = "ok"
     optimization_status: str = "ok"
     protection_status: str = "ok"
@@ -86,10 +87,10 @@ class AutonomousOperationsCenter:
 
     # Ciclos de ejecución (en segundos)
     CYCLE_INTERVALS: ClassVar[dict] = {
-        "protection": 300,       # cada 5 minutos — escaneo de amenazas
-        "repair": 600,           # cada 10 minutos — detección y reparación de fallas
-        "config": 1800,          # cada 30 minutos — reconfiguración adaptativa
-        "optimization": 86400,   # cada 24 horas — análisis de optimización
+        "protection": 300,  # cada 5 minutos — escaneo de amenazas
+        "repair": 600,  # cada 10 minutos — detección y reparación de fallas
+        "config": 1800,  # cada 30 minutos — reconfiguración adaptativa
+        "optimization": 86400,  # cada 24 horas — análisis de optimización
         "health_report": 21600,  # cada 6 horas — reporte de salud al dueño
     }
 
@@ -131,7 +132,9 @@ class AutonomousOperationsCenter:
         Este es el método principal llamado por Celery cada 5 minutos.
         """
         cycle_start = datetime.now(UTC)
-        logger.info(f"[AOC] ═══ Iniciando ciclo autónomo completo para business={business_id} ═══")
+        logger.info(
+            f"[AOC] ═══ Iniciando ciclo autónomo completo para business={business_id} ═══"
+        )
 
         results: dict[str, Any] = {
             "cycle_start": cycle_start.isoformat(),
@@ -145,13 +148,17 @@ class AutonomousOperationsCenter:
         # Ejecutar pilares en paralelo para máxima eficiencia
         pillar_tasks = []
         if "protection" in pillars_to_run:
-            pillar_tasks.append(("protection", self._run_protection_pillar(business_id)))
+            pillar_tasks.append(
+                ("protection", self._run_protection_pillar(business_id))
+            )
         if "repair" in pillars_to_run:
             pillar_tasks.append(("repair", self._run_repair_pillar(business_id)))
         if "config" in pillars_to_run:
             pillar_tasks.append(("config", self._run_config_pillar(business_id)))
         if "optimization" in pillars_to_run:
-            pillar_tasks.append(("optimization", self._run_optimization_pillar(business_id)))
+            pillar_tasks.append(
+                ("optimization", self._run_optimization_pillar(business_id))
+            )
 
         if pillar_tasks:
             pillar_names, pillar_coros = zip(*pillar_tasks)
@@ -173,7 +180,11 @@ class AutonomousOperationsCenter:
         results["health_snapshot"] = snapshot.to_dict()
 
         # Alertar al dueño si la salud está por debajo del umbral
-        if "health_report" in pillars_to_run or snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_warning"]:
+        if (
+            "health_report" in pillars_to_run
+            or snapshot.overall_health_score
+            < self.ALERT_THRESHOLDS["health_score_warning"]
+        ):
             await self._send_health_report(snapshot, business_id)
 
         cycle_duration = (datetime.now(UTC) - cycle_start).total_seconds()
@@ -208,31 +219,33 @@ class AutonomousOperationsCenter:
         """Ejecuta el pilar de Auto-Protección."""
         try:
             result = await self._protection_engine.run_protection_cycle(business_id)
-            logger.info(f"[AOC][Protection] Amenazas: {result.get('threats_detected', 0)}, Score: {result.get('threat_score', 0)}")
+            logger.info(
+                f"[AOC][Protection] Amenazas: {result.get('threats_detected', 0)}, Score: {result.get('threat_score', 0)}"
+            )
             return {"status": "ok", **result}
         except Exception as e:
             logger.exception("[AOC][Protection] Error")
             return {"status": "error", "error": str(e)[:200]}
 
-    async def _run_repair_pillar(
-        self, business_id: uuid.UUID | None
-    ) -> dict[str, Any]:
+    async def _run_repair_pillar(self, business_id: uuid.UUID | None) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Reparación."""
         try:
             result = await self._repair_engine.run_repair_cycle(business_id)
-            logger.info(f"[AOC][Repair] Detectadas: {result.get('detected', 0)}, Reparadas: {result.get('repaired', 0)}")
+            logger.info(
+                f"[AOC][Repair] Detectadas: {result.get('detected', 0)}, Reparadas: {result.get('repaired', 0)}"
+            )
             return {"status": "ok", **result}
         except Exception as e:
             logger.exception("[AOC][Repair] Error")
             return {"status": "error", "error": str(e)[:200]}
 
-    async def _run_config_pillar(
-        self, business_id: uuid.UUID | None
-    ) -> dict[str, Any]:
+    async def _run_config_pillar(self, business_id: uuid.UUID | None) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Configuración."""
         try:
             result = await self._config_engine.run_config_cycle(business_id)
-            logger.info(f"[AOC][Config] Estado de carga: {result.get('load_state', 'unknown')}")
+            logger.info(
+                f"[AOC][Config] Estado de carga: {result.get('load_state', 'unknown')}"
+            )
             return {"status": "ok", **result}
         except Exception as e:
             logger.exception("[AOC][Config] Error")
@@ -244,7 +257,9 @@ class AutonomousOperationsCenter:
         """Ejecuta el pilar de Auto-Optimización."""
         try:
             result = await self._optimization_engine.run_optimization_cycle(business_id)
-            logger.info(f"[AOC][Optimization] Insights: {result.get('insights_generated', 0)}, Acciones: {result.get('actions_taken', 0)}")
+            logger.info(
+                f"[AOC][Optimization] Insights: {result.get('insights_generated', 0)}, Acciones: {result.get('actions_taken', 0)}"
+            )
             return {"status": "ok", **result}
         except Exception as e:
             logger.exception("[AOC][Optimization] Error")
@@ -266,18 +281,27 @@ class AutonomousOperationsCenter:
         prot = cycle_results.get("protection", {})
         snapshot.threat_score = prot.get("threat_score", 0)
         snapshot.protection_status = (
-            "critical" if snapshot.threat_score >= self.ALERT_THRESHOLDS["threat_score_critical"]
-            else "warning" if snapshot.threat_score >= self.ALERT_THRESHOLDS["threat_score_warning"]
-            else "ok"
+            "critical"
+            if snapshot.threat_score >= self.ALERT_THRESHOLDS["threat_score_critical"]
+            else (
+                "warning"
+                if snapshot.threat_score
+                >= self.ALERT_THRESHOLDS["threat_score_warning"]
+                else "ok"
+            )
         )
 
         # --- Datos de reparación ---
         rep = cycle_results.get("repair", {})
         snapshot.active_faults = rep.get("active_faults", 0)
         snapshot.repair_status = (
-            "critical" if snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_critical"]
-            else "warning" if snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_warning"]
-            else "ok"
+            "critical"
+            if snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_critical"]
+            else (
+                "warning"
+                if snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_warning"]
+                else "ok"
+            )
         )
 
         # --- Datos de configuración ---
@@ -315,7 +339,9 @@ class AutonomousOperationsCenter:
             deals_result = await self.db.execute(deals_query)
             snapshot.deals_active = deals_result.scalar() or 0
         except Exception as e:
-            logger.warning(f"[AOC] No se pudieron obtener métricas de negocio: {e}", exc_info=True)
+            logger.warning(
+                f"[AOC] No se pudieron obtener métricas de negocio: {e}", exc_info=True
+            )
 
         # --- Score general de salud (0-100) ---
         snapshot.overall_health_score = self._calculate_health_score(snapshot)
@@ -345,7 +371,8 @@ class AutonomousOperationsCenter:
 
         # Pilares en estado crítico
         critical_pillars = sum(
-            1 for s in [
+            1
+            for s in [
                 snapshot.config_status,
                 snapshot.repair_status,
                 snapshot.optimization_status,
@@ -362,26 +389,38 @@ class AutonomousOperationsCenter:
         recs = []
 
         if snapshot.threat_score >= self.ALERT_THRESHOLDS["threat_score_critical"]:
-            recs.append("🚨 URGENTE: Score de amenaza crítico. Revisar logs de seguridad inmediatamente.")
+            recs.append(
+                "🚨 URGENTE: Score de amenaza crítico. Revisar logs de seguridad inmediatamente."
+            )
         elif snapshot.threat_score >= self.ALERT_THRESHOLDS["threat_score_warning"]:
             recs.append("⚠️ Amenazas detectadas. Revisar el panel de seguridad hoy.")
 
         if snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_critical"]:
-            recs.append("🔧 URGENTE: Múltiples fallas activas. Intervención manual requerida.")
+            recs.append(
+                "🔧 URGENTE: Múltiples fallas activas. Intervención manual requerida."
+            )
         elif snapshot.active_faults >= self.ALERT_THRESHOLDS["faults_warning"]:
             recs.append("🔧 Fallas detectadas y en proceso de reparación automática.")
 
         if snapshot.load_state == "high_load":
-            recs.append("⚡ Sistema bajo alta carga. Considerar escalar recursos o reducir tareas en segundo plano.")
+            recs.append(
+                "⚡ Sistema bajo alta carga. Considerar escalar recursos o reducir tareas en segundo plano."
+            )
 
         if snapshot.deals_active == 0:
-            recs.append("💡 Sin deals activos en el pipeline. Activar campaña de captación.")
+            recs.append(
+                "💡 Sin deals activos en el pipeline. Activar campaña de captación."
+            )
 
         if snapshot.messages_processed_24h < 10:
-            recs.append("📨 Actividad de mensajería baja en las últimas 24h. Verificar conexiones de canales.")
+            recs.append(
+                "📨 Actividad de mensajería baja en las últimas 24h. Verificar conexiones de canales."
+            )
 
         if snapshot.overall_health_score >= 90:
-            recs.append("✅ Sistema operando en condiciones óptimas. Sin acciones requeridas.")
+            recs.append(
+                "✅ Sistema operando en condiciones óptimas. Sin acciones requeridas."
+            )
 
         return recs[:5]  # Máximo 5 recomendaciones
 
@@ -407,9 +446,14 @@ class AutonomousOperationsCenter:
 
         from app.domains.alerts.models import Alert
 
-        degraded = snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_warning"]
+        degraded = (
+            snapshot.overall_health_score
+            < self.ALERT_THRESHOLDS["health_score_warning"]
+        )
         interval = (
-            self.HEALTH_REPORT_DEGRADED_MIN_SECONDS if degraded else self.CYCLE_INTERVALS["health_report"]
+            self.HEALTH_REPORT_DEGRADED_MIN_SECONDS
+            if degraded
+            else self.CYCLE_INTERVALS["health_report"]
         )
         since = datetime.now(UTC) - timedelta(seconds=interval)
         recent = await self.db.execute(
@@ -464,9 +508,9 @@ class AutonomousOperationsCenter:
             return
 
         health_emoji = (
-            "🟢" if snapshot.overall_health_score >= 80
-            else "🟡" if snapshot.overall_health_score >= 60
-            else "🔴"
+            "🟢"
+            if snapshot.overall_health_score >= 80
+            else "🟡" if snapshot.overall_health_score >= 60 else "🔴"
         )
 
         report_lines = [
@@ -495,10 +539,14 @@ class AutonomousOperationsCenter:
         try:
             if not await self._health_report_due(business_id, snapshot):
                 return
-            alert = self._build_health_alert(business_id, snapshot, health_emoji, report_text)
+            alert = self._build_health_alert(
+                business_id, snapshot, health_emoji, report_text
+            )
             self.db.add(alert)
             await self.db.commit()
-            logger.info(f"[AOC] Reporte de salud enviado. Score: {snapshot.overall_health_score}/100")
+            logger.info(
+                f"[AOC] Reporte de salud enviado. Score: {snapshot.overall_health_score}/100"
+            )
         except Exception:
             logger.exception("[AOC] Error enviando reporte de salud")
 
@@ -515,11 +563,7 @@ class AutonomousOperationsCenter:
     def get_health_trend(self, hours: int = 24) -> list[dict[str, Any]]:
         """Retorna tendencia de salud de las últimas N horas."""
         threshold = datetime.now(UTC) - timedelta(hours=hours)
-        return [
-            s.to_dict()
-            for s in self._health_history
-            if s.timestamp >= threshold
-        ]
+        return [s.to_dict() for s in self._health_history if s.timestamp >= threshold]
 
     def get_current_llm_config(self) -> dict[str, Any]:
         """Retorna config LLM actual (delegado al motor de config)."""
@@ -545,7 +589,9 @@ class AutonomousOperationsCenter:
 
         return {
             "timestamp": datetime.now(UTC).isoformat(),
-            "health_score": latest_health.get("overall_health_score", 100) if latest_health else 100,
+            "health_score": (
+                latest_health.get("overall_health_score", 100) if latest_health else 100
+            ),
             "load_state": load_state,
             "protection": protection_summary,
             "repair": repair_stats,
@@ -557,6 +603,7 @@ class AutonomousOperationsCenter:
 # ─────────────────────────────────────────────
 # FACTORY FUNCTION
 # ─────────────────────────────────────────────
+
 
 def get_operations_center(db: AsyncSession) -> AutonomousOperationsCenter:
     """Factory para obtener instancia del Centro de Operaciones."""

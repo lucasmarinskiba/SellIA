@@ -38,13 +38,19 @@ class ComplianceService:
         self.db.add(item)
         await self.db.commit()
         audit_svc = AuditLogService(self.db)
-        await audit_svc.log(business_id, "compliance_item", item.id, "created", "system")
+        await audit_svc.log(
+            business_id, "compliance_item", item.id, "created", "system"
+        )
         return item
 
     async def get_requirement(self, item_id: uuid.UUID) -> ComplianceChecklistItem:
         """Fetch compliance requirement."""
         item = (
-            await self.db.execute(select(ComplianceChecklistItem).where(ComplianceChecklistItem.id == item_id))
+            await self.db.execute(
+                select(ComplianceChecklistItem).where(
+                    ComplianceChecklistItem.id == item_id
+                )
+            )
         ).scalar_one_or_none()
         if not item:
             raise ValueError(f"Compliance item {item_id} not found")
@@ -81,10 +87,16 @@ class ComplianceService:
     async def compliance_status(self, business_id: uuid.UUID) -> dict:
         """Get compliance overview for business."""
         items = (
-            await self.db.execute(
-                select(ComplianceChecklistItem).where(ComplianceChecklistItem.business_id == business_id)
+            (
+                await self.db.execute(
+                    select(ComplianceChecklistItem).where(
+                        ComplianceChecklistItem.business_id == business_id
+                    )
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         total = len(items)
         compliant = sum(1 for i in items if i.status == "compliant")
@@ -132,27 +144,35 @@ class ContractService:
     async def list_templates(self, business_id: uuid.UUID) -> list[ContractTemplate]:
         """List active contract templates."""
         templates = (
-            await self.db.execute(
-                select(ContractTemplate).where(
-                    and_(
-                        ContractTemplate.business_id == business_id,
-                        ContractTemplate.is_active,
+            (
+                await self.db.execute(
+                    select(ContractTemplate).where(
+                        and_(
+                            ContractTemplate.business_id == business_id,
+                            ContractTemplate.is_active,
+                        )
                     )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return templates
 
     async def get_template(self, template_id: uuid.UUID) -> ContractTemplate:
         """Fetch template by ID."""
         template = (
-            await self.db.execute(select(ContractTemplate).where(ContractTemplate.id == template_id))
+            await self.db.execute(
+                select(ContractTemplate).where(ContractTemplate.id == template_id)
+            )
         ).scalar_one_or_none()
         if not template:
             raise ValueError(f"Template {template_id} not found")
         return template
 
-    async def render_contract(self, template_id: uuid.UUID, variables: dict[str, str]) -> dict:
+    async def render_contract(
+        self, template_id: uuid.UUID, variables: dict[str, str]
+    ) -> dict:
         """Render contract with variables (simple {{key}} replacement)."""
         template = await self.get_template(template_id)
         rendered_html = template.template_html
@@ -194,11 +214,20 @@ class AuditLogService:
         await self.db.commit()
         return log
 
-    async def get_logs(self, business_id: uuid.UUID, limit: int = 100) -> list[AuditLog]:
+    async def get_logs(
+        self, business_id: uuid.UUID, limit: int = 100
+    ) -> list[AuditLog]:
         """Fetch recent audit logs."""
         logs = (
-            await self.db.execute(
-                select(AuditLog).where(AuditLog.business_id == business_id).order_by(AuditLog.timestamp.desc()).limit(limit)
+            (
+                await self.db.execute(
+                    select(AuditLog)
+                    .where(AuditLog.business_id == business_id)
+                    .order_by(AuditLog.timestamp.desc())
+                    .limit(limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return logs

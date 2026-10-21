@@ -27,7 +27,9 @@ async def calculate_dynamic_pricing(
     company_size: str = Query("smb", description="startup|smb|mid_market|enterprise"),
     prospect_budget: float | None = Query(None, description="Prospect budget in USD"),
     expansion_potential: float = Query(0.5, ge=0.0, le=1.0),
-    competitor_price: float | None = Query(None, description="Competitor price for comparison"),
+    competitor_price: float | None = Query(
+        None, description="Competitor price for comparison"
+    ),
 ) -> dict[str, Any]:
     """
     Calculate optimal pricing based on intent, company size, budget, expansion.
@@ -334,9 +336,11 @@ async def route_lead_with_negotiation(
         pricing = await negotiation_engine.calculate_dynamic_pricing(
             intent_score=intent_score,
             company_size=company_size,
-            prospect_budget=float(lead.budget.split("-")[1].replace("k", "000"))
-            if lead.budget
-            else None,
+            prospect_budget=(
+                float(lead.budget.split("-")[1].replace("k", "000"))
+                if lead.budget
+                else None
+            ),
             expansion_potential=expansion_potential,
         )
 

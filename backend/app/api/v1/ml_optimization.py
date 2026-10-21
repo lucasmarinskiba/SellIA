@@ -73,7 +73,11 @@ async def get_content_recommendations(
                 "category": "keyword-targeting",
                 "priority": "high",
                 "title": "Target 'B2B sales automation' LSI keywords",
-                "keywords": ["sales process automation", "pipeline automation", "workflow automation"],
+                "keywords": [
+                    "sales process automation",
+                    "pipeline automation",
+                    "workflow automation",
+                ],
                 "current_coverage": 2,
                 "target_coverage": 5,
                 "expected_impact": {"rankings": "+2-3 positions", "ctr": "+8%"},
@@ -221,7 +225,9 @@ async def get_revenue_attribution() -> dict[str, Any]:
 
 @router.post("/automated-improvement")
 async def trigger_automated_improvement(
-    improvement_type: str = Query("content", description="Type: content|technical|linking"),
+    improvement_type: str = Query(
+        "content", description="Type: content|technical|linking"
+    ),
 ) -> dict[str, Any]:
     """Trigger automated SEO improvement"""
     improvements = {

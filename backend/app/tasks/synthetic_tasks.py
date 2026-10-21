@@ -17,6 +17,7 @@ logger = get_logger(__name__)
 @shared_task
 def run_synthetic_checks_task():
     """Run all synthetic checks every 5 minutes."""
+
     async def _run():
         async with AsyncSessionLocal() as db:
             snapshot = await run_all_checks(db)
@@ -24,4 +25,5 @@ def run_synthetic_checks_task():
                 f"Synthetic checks: {snapshot.checks_passed}/{snapshot.checks_total} passed, "
                 f"status={snapshot.overall_status}"
             )
+
     run_async(_run())

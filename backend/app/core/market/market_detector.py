@@ -39,6 +39,7 @@ class BuyerMotivation(str, Enum):
 @dataclass
 class MarketProfile:
     """Market profile for vendor."""
+
     industry: Industry
     business_model: BusinessModel
     buyer_motivation: BuyerMotivation
@@ -53,10 +54,25 @@ class MarketDetector:
     """Auto-detect market type from vendor inputs."""
 
     INDUSTRY_KEYWORDS: ClassVar[dict] = {
-        Industry.REAL_ESTATE: ["propiedad", "inmueble", "casa", "apartamento", "terreno", "alquiler", "venta inmobiliaria", "agente"],
+        Industry.REAL_ESTATE: [
+            "propiedad",
+            "inmueble",
+            "casa",
+            "apartamento",
+            "terreno",
+            "alquiler",
+            "venta inmobiliaria",
+            "agente",
+        ],
         Industry.COMMERCE: ["producto", "venta", "tienda", "ecommerce", "mercado"],
         Industry.SERVICES: ["servicio", "consultoría", "asesoría", "coaching"],
-        Industry.FINANCE: ["inversión", "crédito", "finanzas", "trading", "criptomoneda"],
+        Industry.FINANCE: [
+            "inversión",
+            "crédito",
+            "finanzas",
+            "trading",
+            "criptomoneda",
+        ],
         Industry.LABOR: ["empleado", "contratación", "reclutamiento", "freelance"],
         Industry.MANUFACTURING: ["manufactura", "producción", "fábrica", "industrial"],
         Industry.DIGITAL_PRODUCTS: ["software", "app", "SaaS", "curso", "membresía"],
@@ -78,7 +94,9 @@ class MarketDetector:
     }
 
     @staticmethod
-    def detect_market(user_input: str, company_data: dict[str, Any] | None = None) -> MarketProfile:
+    def detect_market(
+        user_input: str, company_data: dict[str, Any] | None = None
+    ) -> MarketProfile:
         input_text = user_input.lower()
         if company_data:
             input_text += f" {company_data.get('business_name', '')} {company_data.get('description', '')}".lower()
@@ -108,11 +126,15 @@ class MarketDetector:
             # con producto físico" scores PHYSICAL and SERVICE equally) means
             # the business genuinely spans both — that's what HYBRID means,
             # not just "no signal at all" (its old, only, meaning below).
-            business_model = BusinessModel.HYBRID if len(top_models) > 1 else top_models[0]
+            business_model = (
+                BusinessModel.HYBRID if len(top_models) > 1 else top_models[0]
+            )
             model_confidence = min(top_score / 1.5, 1.0)
         else:
             business_model = BusinessModel.HYBRID
-            model_confidence = None  # no signal — excluded from the blend below, not scored as 0
+            model_confidence = (
+                None  # no signal — excluded from the blend below, not scored as 0
+            )
 
         motivation_scores = {}
         for motiv, keywords in MarketDetector.MOTIVATION_KEYWORDS.items():
@@ -120,12 +142,16 @@ class MarketDetector:
             if score > 0:
                 motivation_scores[motiv] = score
 
-        motivation = max(motivation_scores, key=motivation_scores.get, default=BuyerMotivation.NEED)
+        motivation = max(
+            motivation_scores, key=motivation_scores.get, default=BuyerMotivation.NEED
+        )
 
         market_type = MarketDetector._determine_market_type(industry, input_text)
         recommended_agents = MarketDetector._recommend_agents(industry, business_model)
         rules_file = MarketDetector._get_rules_file(industry)
-        keywords = [kw for kw in re.findall(r'\b\w{3,}\b', input_text) if len(kw) > 3][:10]
+        keywords = [kw for kw in re.findall(r"\b\w{3,}\b", input_text) if len(kw) > 3][
+            :10
+        ]
         # Industry is the primary signal; business model only refines it when
         # there's an actual keyword hit for it. Averaging in a hard 0 whenever
         # no model keyword matched (the old behavior) halved confidence for
@@ -158,9 +184,17 @@ class MarketDetector:
     def _recommend_agents(industry: Industry, model: BusinessModel) -> list[str]:
         agents = ["sellIA_base"]
         if industry == Industry.REAL_ESTATE:
-            agents.extend(["realEstate_leadScorer", "realEstate_propertyAnalyzer", "realEstate_negotiator"])
+            agents.extend(
+                [
+                    "realEstate_leadScorer",
+                    "realEstate_propertyAnalyzer",
+                    "realEstate_negotiator",
+                ]
+            )
         elif industry == Industry.COMMERCE:
-            agents.extend(["commerce_prospector", "commerce_advisor", "commerce_negotiator"])
+            agents.extend(
+                ["commerce_prospector", "commerce_advisor", "commerce_negotiator"]
+            )
         elif industry == Industry.SERVICES:
             agents.extend(["services_qualifier", "services_deliveryCoordinator"])
         elif industry == Industry.FINANCE:

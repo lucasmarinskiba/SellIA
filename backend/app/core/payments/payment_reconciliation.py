@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class ReconciliationStatus(str, Enum):
     """Reconciliation statuses."""
+
     PENDING = "pending"
     MATCHED = "matched"
     PARTIAL = "partial"
@@ -38,6 +39,7 @@ class ReconciliationStatus(str, Enum):
 
 class FulfillmentType(str, Enum):
     """Order fulfillment types."""
+
     DIGITAL = "digital"
     PHYSICAL = "physical"
     SERVICE = "service"
@@ -134,15 +136,15 @@ class PaymentReconciler:
                 amount=amount_usd,
                 status="succeeded",
                 payment_method=payment_provider,
-                stripe_payment_intent_id=payment_id if payment_provider == "stripe" else None,
+                stripe_payment_intent_id=(
+                    payment_id if payment_provider == "stripe" else None
+                ),
             )
             db.add(payment)
 
             db.commit()
 
-            logger.info(
-                f"Payment reconciled: {payment_id} matched to order {order.id}"
-            )
+            logger.info(f"Payment reconciled: {payment_id} matched to order {order.id}")
 
             return {
                 "status": "matched",

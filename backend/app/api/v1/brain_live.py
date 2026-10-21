@@ -57,7 +57,9 @@ async def _query_audit_logs(**filters):
         from app.domains.computer_use.models_audit_log import ComputerUseAuditLog
 
         async with AuditSessionLocal() as db:
-            query = select(ComputerUseAuditLog).order_by(desc(ComputerUseAuditLog.created_at))
+            query = select(ComputerUseAuditLog).order_by(
+                desc(ComputerUseAuditLog.created_at)
+            )
             # Same ownership rule as the lead endpoints: a signed-in caller
             # sees only their own AI actions, an anonymous visitor only
             # ownerless rows. Without this, the public dashboard exposed
@@ -70,7 +72,9 @@ async def _query_audit_logs(**filters):
             if filters.get("status"):
                 query = query.where(ComputerUseAuditLog.status == filters["status"])
             if filters.get("platforms"):
-                query = query.where(ComputerUseAuditLog.platform.in_(filters["platforms"]))
+                query = query.where(
+                    ComputerUseAuditLog.platform.in_(filters["platforms"])
+                )
             query = query.limit(filters.get("limit", 50))
             result = await db.execute(query)
             return result.scalars().all(), None
@@ -99,13 +103,26 @@ def _squad_for(source: str | None) -> str:
 
 
 _PLATFORM_LABELS = {
-    "whatsapp": "WhatsApp", "email": "Email", "instagram": "Instagram",
-    "mercadolibre": "MercadoLibre", "amazon": "Amazon", "beacons": "Beacons",
-    "linkedin": "LinkedIn", "telegram": "Telegram", "webchat": "Web",
-    "messenger": "Messenger", "facebook_ads": "Facebook Ads", "meta_ads": "Meta Ads",
-    "google_ads": "Google Ads", "shopify": "Shopify", "tiktok": "TikTok",
-    "tiktok_ads": "TikTok Ads", "tiktok_shop": "TikTok Shop", "twitter": "Twitter/X",
-    "threads": "Threads", "hotmart": "Hotmart",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "instagram": "Instagram",
+    "mercadolibre": "MercadoLibre",
+    "amazon": "Amazon",
+    "beacons": "Beacons",
+    "linkedin": "LinkedIn",
+    "telegram": "Telegram",
+    "webchat": "Web",
+    "messenger": "Messenger",
+    "facebook_ads": "Facebook Ads",
+    "meta_ads": "Meta Ads",
+    "google_ads": "Google Ads",
+    "shopify": "Shopify",
+    "tiktok": "TikTok",
+    "tiktok_ads": "TikTok Ads",
+    "tiktok_shop": "TikTok Shop",
+    "twitter": "Twitter/X",
+    "threads": "Threads",
+    "hotmart": "Hotmart",
 }
 
 # app.domains.computer_use.models_audit_log's platform strings -> squad the
@@ -135,7 +152,9 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
     notifications: list[dict] = []
 
     async with AsyncSessionLocal() as db:
-        biz_result = await db.execute(select(Business.id).where(Business.user_id == user.id))
+        biz_result = await db.execute(
+            select(Business.id).where(Business.user_id == user.id)
+        )
         business_ids = [b for (b,) in biz_result.all()] if biz_result else []
 
         # 1) Real AI agent/automation/brain actions (app.domains.ai_activity)
@@ -148,15 +167,18 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
             )
             for row in result.scalars().all():
                 kind = "alert" if row.status == "failed" else "action"
-                notifications.append({
-                    "id": f"ai-{row.id}",
-                    "ts": row.created_at.isoformat(),
-                    "kind": kind,
-                    "title": row.summary[:120],
-                    "body": f"{row.actor_type} · {row.action}" + (" · falló" if row.status == "failed" else ""),
-                    "agent": "cua" if row.actor_type == "brain" else row.actor_type,
-                    "read": False,
-                })
+                notifications.append(
+                    {
+                        "id": f"ai-{row.id}",
+                        "ts": row.created_at.isoformat(),
+                        "kind": kind,
+                        "title": row.summary[:120],
+                        "body": f"{row.actor_type} · {row.action}"
+                        + (" · falló" if row.status == "failed" else ""),
+                        "agent": "cua" if row.actor_type == "brain" else row.actor_type,
+                        "read": False,
+                    }
+                )
         except Exception:
             logger.exception("_real_user_notifications: error inesperado")
 
@@ -166,24 +188,33 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                 result = await db.execute(
                     select(Message, Conversation, ChannelConnection)
                     .join(Conversation, Message.conversation_id == Conversation.id)
-                    .outerjoin(ChannelConnection, Conversation.channel_connection_id == ChannelConnection.id)
+                    .outerjoin(
+                        ChannelConnection,
+                        Conversation.channel_connection_id == ChannelConnection.id,
+                    )
                     .where(Conversation.business_id.in_(business_ids))
                     .where(Message.direction == MessageDirection.INBOUND)
                     .order_by(desc(Message.created_at))
                     .limit(limit)
                 )
                 for msg, conv, channel in result.all():
-                    platform = channel.platform.value if channel and channel.platform else "webchat"
+                    platform = (
+                        channel.platform.value
+                        if channel and channel.platform
+                        else "webchat"
+                    )
                     label = _PLATFORM_LABELS.get(platform, platform.title())
-                    notifications.append({
-                        "id": f"msg-{msg.id}",
-                        "ts": msg.created_at.isoformat(),
-                        "kind": "info",
-                        "title": f"Mensaje de {conv.lead_name or 'un cliente'} · {label}",
-                        "body": (msg.content or "")[:140],
-                        "agent": _CU_PLATFORM_TO_SQUAD.get(platform, "sdr"),
-                        "read": False,
-                    })
+                    notifications.append(
+                        {
+                            "id": f"msg-{msg.id}",
+                            "ts": msg.created_at.isoformat(),
+                            "kind": "info",
+                            "title": f"Mensaje de {conv.lead_name or 'un cliente'} · {label}",
+                            "body": (msg.content or "")[:140],
+                            "agent": _CU_PLATFORM_TO_SQUAD.get(platform, "sdr"),
+                            "read": False,
+                        }
+                    )
             except Exception:
                 logger.exception("_real_user_notifications: error inesperado")
 
@@ -197,36 +228,47 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
                     .limit(limit)
                 )
                 for deal in result.scalars().all():
-                    value = f"${deal.value:,.0f} {deal.currency}" if deal.value else "sin valor cargado"
-                    notifications.append({
-                        "id": f"deal-{deal.id}",
-                        "ts": deal.updated_at.isoformat(),
-                        "kind": "win",
-                        "title": f"Deal cerrado · {deal.title}",
-                        "body": f"{deal.contact_name or 'Cliente'} · {value}",
-                        "agent": "cs",
-                        "read": False,
-                    })
+                    value = (
+                        f"${deal.value:,.0f} {deal.currency}"
+                        if deal.value
+                        else "sin valor cargado"
+                    )
+                    notifications.append(
+                        {
+                            "id": f"deal-{deal.id}",
+                            "ts": deal.updated_at.isoformat(),
+                            "kind": "win",
+                            "title": f"Deal cerrado · {deal.title}",
+                            "body": f"{deal.contact_name or 'Cliente'} · {value}",
+                            "agent": "cs",
+                            "read": False,
+                        }
+                    )
             except Exception:
                 logger.exception("_real_user_notifications: error inesperado")
 
     # 4) Real pending Computer Use approvals (already user-scoped)
     try:
-        cu_logs, _err = await _query_audit_logs(status="pending_approval", limit=limit, user=user)
+        cu_logs, _err = await _query_audit_logs(
+            status="pending_approval", limit=limit, user=user
+        )
         for log in cu_logs:
             if str(getattr(log, "user_id", "")) != str(user.id):
                 continue
             platform = getattr(log, "platform", None) or "website"
             label = _PLATFORM_LABELS.get(platform, platform.title())
-            notifications.append({
-                "id": f"cu-{log.id}",
-                "ts": log.created_at.isoformat(),
-                "kind": "approval",
-                "title": f"Aprobación pendiente · {label}",
-                "body": getattr(log, "action_type", None) or "Acción de Computer Use requiere revisión",
-                "agent": _CU_PLATFORM_TO_SQUAD.get(platform, "cua"),
-                "read": False,
-            })
+            notifications.append(
+                {
+                    "id": f"cu-{log.id}",
+                    "ts": log.created_at.isoformat(),
+                    "kind": "approval",
+                    "title": f"Aprobación pendiente · {label}",
+                    "body": getattr(log, "action_type", None)
+                    or "Acción de Computer Use requiere revisión",
+                    "agent": _CU_PLATFORM_TO_SQUAD.get(platform, "cua"),
+                    "read": False,
+                }
+            )
     except Exception:
         logger.exception("_real_user_notifications: error inesperado")
 
@@ -260,7 +302,9 @@ async def _lead_notifications(limit: int, user=None) -> list[dict]:
         is_new = lead.created_at == lead.updated_at
         if lead.status == "won":
             kind, title = "win", f"Deal cerrado · {lead.company or lead.name}"
-            body = f"Valor estimado ${lead.budget:,.0f}" if lead.budget else "Deal ganado"
+            body = (
+                f"Valor estimado ${lead.budget:,.0f}" if lead.budget else "Deal ganado"
+            )
         elif lead.status == "qualified":
             kind, title = "action", f"Lead calificado · {lead.name}"
             body = f"Score {lead.score:.0f} · {lead.company or 'sin empresa'}"
@@ -271,15 +315,17 @@ async def _lead_notifications(limit: int, user=None) -> list[dict]:
             kind, title = "action", f"Actualización · {lead.name}"
             body = f"Estado: {lead.status}"
 
-        notifications.append({
-            "id": f"lead-{lead.id}-{int(lead.updated_at.timestamp())}",
-            "ts": lead.updated_at.isoformat(),
-            "kind": kind,
-            "title": title,
-            "body": body,
-            "agent": _squad_for(lead.source),
-            "read": False,
-        })
+        notifications.append(
+            {
+                "id": f"lead-{lead.id}-{int(lead.updated_at.timestamp())}",
+                "ts": lead.updated_at.isoformat(),
+                "kind": kind,
+                "title": title,
+                "body": body,
+                "agent": _squad_for(lead.source),
+                "read": False,
+            }
+        )
 
     return notifications
 
@@ -298,6 +344,7 @@ async def get_notifications(
     public ops dashboard) gets the original global lead-activity feed.
     """
     from app.api.v1.brain import _optional_user
+
     user = await _optional_user(request, db)
     if user is not None:
         notifications = await _real_user_notifications(user, limit)
@@ -316,6 +363,7 @@ async def get_squads(
     source -- scoped to the caller's own leads when signed in (see
     _owner_filter), platform demo rows for an anonymous visitor."""
     from app.api.v1.brain import _optional_user
+
     user = await _optional_user(request, db)
     owner = _owner_filter(user)
 
@@ -342,15 +390,18 @@ async def get_squads(
     squads: dict[str, dict] = {}
     for source, total, avg_score, pipeline_value in rows:
         squad_key = _squad_for(source)
-        bucket = squads.setdefault(squad_key, {
-            "id": squad_key,
-            "name": SQUAD_LABELS[squad_key]["name"],
-            "color": SQUAD_LABELS[squad_key]["color"],
-            "leads": 0,
-            "won": 0,
-            "avg_score": 0.0,
-            "pipeline_value": 0.0,
-        })
+        bucket = squads.setdefault(
+            squad_key,
+            {
+                "id": squad_key,
+                "name": SQUAD_LABELS[squad_key]["name"],
+                "color": SQUAD_LABELS[squad_key]["color"],
+                "leads": 0,
+                "won": 0,
+                "avg_score": 0.0,
+                "pipeline_value": 0.0,
+            },
+        )
         bucket["leads"] += total or 0
         bucket["won"] += won_by_source.get(source, 0)
         bucket["pipeline_value"] += float(pipeline_value or 0)
@@ -377,12 +428,15 @@ async def get_kpis(
     invented. Everything below is a direct aggregate of real lead rows.
     """
     from app.api.v1.brain import _optional_user
+
     user = await _optional_user(request, db)
     owner = _owner_filter(user)
 
     async with LeadsSessionLocal() as leads_db:
         total_result = await leads_db.execute(
-            select(func.count(LeadModel.id)).where(LeadModel.deleted_at.is_(None), owner)
+            select(func.count(LeadModel.id)).where(
+                LeadModel.deleted_at.is_(None), owner
+            )
         )
         total = total_result.scalar() or 0
 
@@ -412,7 +466,9 @@ async def get_kpis(
         pipeline_value = float(pipeline_result.scalar() or 0)
 
         avg_score_result = await leads_db.execute(
-            select(func.avg(LeadModel.score)).where(LeadModel.deleted_at.is_(None), owner)
+            select(func.avg(LeadModel.score)).where(
+                LeadModel.deleted_at.is_(None), owner
+            )
         )
         avg_score = float(avg_score_result.scalar() or 0)
 
@@ -434,6 +490,7 @@ async def get_pipeline_summary(
     """Real pipeline totals by status, for the sales pipeline widget --
     the caller's own leads when signed in, demo rows when anonymous."""
     from app.api.v1.brain import _optional_user
+
     user = await _optional_user(request, db)
     owner = _owner_filter(user)
 
@@ -482,8 +539,14 @@ async def get_audit_log(
 ):
     """Real agent audit trail for the caller's own account (demo rows when anonymous)."""
     from app.api.v1.brain import _optional_user
-    logs, error = await _query_audit_logs(limit=limit, user=await _optional_user(request, db))
-    return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}
+
+    logs, error = await _query_audit_logs(
+        limit=limit, user=await _optional_user(request, db)
+    )
+    return {
+        "logs": [_serialize_audit_log(l) for l in logs],
+        "unavailable": error is not None,
+    }
 
 
 @router.get("/audit-log/pending")
@@ -493,10 +556,14 @@ async def get_pending_approvals(
 ):
     """Real actions awaiting human approval, for the caller's own account."""
     from app.api.v1.brain import _optional_user
+
     logs, error = await _query_audit_logs(
         status="pending_approval", limit=100, user=await _optional_user(request, db)
     )
-    return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}
+    return {
+        "logs": [_serialize_audit_log(l) for l in logs],
+        "unavailable": error is not None,
+    }
 
 
 class ApprovalDecision(BaseModel):
@@ -559,7 +626,11 @@ async def get_handoff_log(
     """Real agent-to-human handoff events (Slack/WhatsApp/email escalations),
     for the caller's own account."""
     from app.api.v1.brain import _optional_user
+
     logs, error = await _query_audit_logs(
         platforms=HANDOFF_PLATFORMS, limit=limit, user=await _optional_user(request, db)
     )
-    return {"logs": [_serialize_audit_log(l) for l in logs], "unavailable": error is not None}
+    return {
+        "logs": [_serialize_audit_log(l) for l in logs],
+        "unavailable": error is not None,
+    }

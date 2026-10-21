@@ -1,4 +1,5 @@
 """Phase 39: Collaborative CRM API."""
+
 from typing import Annotated
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/v1/crm-collaboration", tags=["crm-collaboration"])
 
+
 @router.post("/workspace")
 async def create_workspace(
     business_id: UUID,
@@ -16,7 +18,13 @@ async def create_workspace(
     name: str,
     db: Annotated[Session, Depends(get_db)],
 ):
-    return {"workspace_id": "ws_001", "name": name, "team_id": str(team_id), "status": "active"}
+    return {
+        "workspace_id": "ws_001",
+        "name": name,
+        "team_id": str(team_id),
+        "status": "active",
+    }
+
 
 @router.post("/deal-board")
 async def create_deal_board(
@@ -25,7 +33,12 @@ async def create_deal_board(
     board_name: str,
     db: Annotated[Session, Depends(get_db)],
 ):
-    return {"board_id": "board_001", "name": board_name, "stages": ["prospect", "qualified", "proposal", "closed"]}
+    return {
+        "board_id": "board_001",
+        "name": board_name,
+        "stages": ["prospect", "qualified", "proposal", "closed"],
+    }
+
 
 @router.get("/pipeline/{business_id}")
 async def get_pipeline_visibility(
@@ -33,6 +46,7 @@ async def get_pipeline_visibility(
     db: Annotated[Session, Depends(get_db)],
 ):
     return {"total_opportunities": 247, "pipeline_value": 1250000, "win_rate": 0.35}
+
 
 @router.post("/deal-board/{board_id}/move")
 async def move_deal(
@@ -44,12 +58,14 @@ async def move_deal(
 ):
     return {"deal_id": str(deal_id), "new_stage": stage, "status": "moved"}
 
+
 @router.get("/team-collaboration")
 async def get_collaboration_metrics(
     business_id: UUID,
     db: Annotated[Session, Depends(get_db)],
 ):
     return {"active_users": 12, "open_deals": 89, "team_velocity": 3.2}
+
 
 @router.get("/pipeline-health")
 async def get_pipeline_health(

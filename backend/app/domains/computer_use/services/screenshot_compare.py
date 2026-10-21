@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 @dataclass
 class ComparisonResult:
     """Resultado de comparación de screenshots."""
+
     changed: bool
     similarity: float  # 0.0 to 1.0
     diff_pixels: int
@@ -45,10 +46,17 @@ class ScreenshotComparator:
             img_b = Image.open(io.BytesIO(screenshot_b)).convert("RGB")
 
             # Resize to same dimensions
-            target_size = (min(img_a.width, img_b.width), min(img_a.height, img_b.height))
+            target_size = (
+                min(img_a.width, img_b.width),
+                min(img_a.height, img_b.height),
+            )
             if target_size[0] < 1 or target_size[1] < 1:
                 return ComparisonResult(
-                    changed=True, similarity=0.0, diff_pixels=0, total_pixels=1, diff_percentage=100.0
+                    changed=True,
+                    similarity=0.0,
+                    diff_pixels=0,
+                    total_pixels=1,
+                    diff_percentage=100.0,
                 )
 
             img_a = img_a.resize(target_size, Image.Resampling.LANCZOS)
@@ -62,7 +70,9 @@ class ScreenshotComparator:
             total_pixels = target_size[0] * target_size[1]
             # A pixel is different if any channel differs by more than 10
             diff_pixels = int(np.sum(np.any(diff_array > 10, axis=2)))
-            diff_percentage = (diff_pixels / total_pixels) * 100 if total_pixels > 0 else 0
+            diff_percentage = (
+                (diff_pixels / total_pixels) * 100 if total_pixels > 0 else 0
+            )
             similarity = 1.0 - (diff_pixels / total_pixels) if total_pixels > 0 else 0
 
             changed = similarity < self.threshold
@@ -87,7 +97,11 @@ class ScreenshotComparator:
         except Exception as e:
             logger.warning(f"Screenshot comparison failed: {e}", exc_info=True)
             return ComparisonResult(
-                changed=True, similarity=0.0, diff_pixels=0, total_pixels=1, diff_percentage=100.0
+                changed=True,
+                similarity=0.0,
+                diff_pixels=0,
+                total_pixels=1,
+                diff_percentage=100.0,
             )
 
     def _generate_diff_highlight(
@@ -114,7 +128,7 @@ class ScreenshotComparator:
         screenshot_b: bytes,
     ) -> float:
         """Compara screenshots usando SSIM (Structural Similarity Index).
-        
+
         Requiere scikit-image. Si no está disponible, fallback a pixel diff.
         """
         try:
@@ -123,7 +137,10 @@ class ScreenshotComparator:
             img_a = Image.open(io.BytesIO(screenshot_a)).convert("L")  # Grayscale
             img_b = Image.open(io.BytesIO(screenshot_b)).convert("L")
 
-            target_size = (min(img_a.width, img_b.width), min(img_a.height, img_b.height))
+            target_size = (
+                min(img_a.width, img_b.width),
+                min(img_a.height, img_b.height),
+            )
             img_a = img_a.resize(target_size, Image.Resampling.LANCZOS)
             img_b = img_b.resize(target_size, Image.Resampling.LANCZOS)
 
@@ -147,7 +164,7 @@ class ScreenshotComparator:
         window_size: int = 3,
     ) -> list[int]:
         """Detecta pasos donde la página no cambió (stale state).
-        
+
         Retorna lista de índices de pasos donde no hubo cambio.
         """
         if len(screenshots) < 2:

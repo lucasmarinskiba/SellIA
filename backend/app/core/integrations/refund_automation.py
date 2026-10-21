@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class DisputeReason(Enum):
     """Categorías de reclamo."""
+
     PRODUCT_DAMAGED = "producto_dañado"
     PRODUCT_DIFFERENT = "producto_diferente"
     NOT_ARRIVED = "no_llegó"
@@ -29,6 +30,7 @@ class DisputeReason(Enum):
 
 class RefundStrategy(Enum):
     """Estrategias de resolución."""
+
     FULL_REFUND = "full_refund"
     PARTIAL_REFUND = "partial_refund"
     REPLACEMENT = "replacement"
@@ -63,7 +65,9 @@ class RefundAutomation:
         # Determinar estrategia automática
         strategy = self._recommend_strategy(reason, confidence)
 
-        logger.info(f"Dispute: {reason.value}, confidence: {confidence:.1%}, strategy: {strategy.value}")
+        logger.info(
+            f"Dispute: {reason.value}, confidence: {confidence:.1%}, strategy: {strategy.value}"
+        )
 
         return {
             "status": "analyzed",
@@ -82,10 +86,29 @@ class RefundAutomation:
 
         keywords = {
             DisputeReason.PRODUCT_DAMAGED: ["dañado", "roto", "quebrado", "defecto"],
-            DisputeReason.PRODUCT_DIFFERENT: ["no es igual", "diferente", "no es lo que", "no corresponde"],
-            DisputeReason.NOT_ARRIVED: ["no llegó", "no recibí", "desapareció", "tracking"],
-            DisputeReason.QUALITY_ISSUE: ["mala calidad", "bajo calidad", "no funciona", "falla"],
-            DisputeReason.WRONG_ADDRESS: ["dirección incorrecta", "envío equivocado", "otro destino"],
+            DisputeReason.PRODUCT_DIFFERENT: [
+                "no es igual",
+                "diferente",
+                "no es lo que",
+                "no corresponde",
+            ],
+            DisputeReason.NOT_ARRIVED: [
+                "no llegó",
+                "no recibí",
+                "desapareció",
+                "tracking",
+            ],
+            DisputeReason.QUALITY_ISSUE: [
+                "mala calidad",
+                "bajo calidad",
+                "no funciona",
+                "falla",
+            ],
+            DisputeReason.WRONG_ADDRESS: [
+                "dirección incorrecta",
+                "envío equivocado",
+                "otro destino",
+            ],
         }
 
         for reason, kws in keywords.items():
@@ -112,7 +135,9 @@ class RefundAutomation:
 
         return min(confidence, 1.0)
 
-    def _recommend_strategy(self, reason: DisputeReason, confidence: float) -> RefundStrategy:
+    def _recommend_strategy(
+        self, reason: DisputeReason, confidence: float
+    ) -> RefundStrategy:
         """Recomienda estrategia de resolución."""
 
         # Alta confianza → refund automático
@@ -135,14 +160,28 @@ class RefundAutomation:
         else:
             return RefundStrategy.ESCALATE
 
-    def _get_resolution_text(self, reason: DisputeReason, strategy: RefundStrategy) -> str:
+    def _get_resolution_text(
+        self, reason: DisputeReason, strategy: RefundStrategy
+    ) -> str:
         """Texto de oferta de resolución."""
 
         offers = {
-            (DisputeReason.PRODUCT_DAMAGED, RefundStrategy.REPLACEMENT): "Enviaremos producto nuevo sin cargo. El dañado lo retiramos.",
-            (DisputeReason.PRODUCT_DAMAGED, RefundStrategy.PARTIAL_REFUND): "Ofrecemos 50% de refund + puedes quedarte con el producto.",
-            (DisputeReason.NOT_ARRIVED, RefundStrategy.FULL_REFUND): "Reembolso 100%. Lamentamos el inconveniente.",
-            (DisputeReason.PRODUCT_DIFFERENT, RefundStrategy.PARTIAL_REFUND): "Refund 70%. Te pedimos disculpas.",
+            (
+                DisputeReason.PRODUCT_DAMAGED,
+                RefundStrategy.REPLACEMENT,
+            ): "Enviaremos producto nuevo sin cargo. El dañado lo retiramos.",
+            (
+                DisputeReason.PRODUCT_DAMAGED,
+                RefundStrategy.PARTIAL_REFUND,
+            ): "Ofrecemos 50% de refund + puedes quedarte con el producto.",
+            (
+                DisputeReason.NOT_ARRIVED,
+                RefundStrategy.FULL_REFUND,
+            ): "Reembolso 100%. Lamentamos el inconveniente.",
+            (
+                DisputeReason.PRODUCT_DIFFERENT,
+                RefundStrategy.PARTIAL_REFUND,
+            ): "Refund 70%. Te pedimos disculpas.",
         }
 
         return offers.get(
@@ -169,7 +208,10 @@ class RefundAutomation:
             elif payment_method == "mercadolibre":
                 result = await self.ml.process_refund(order_id, amount, reason)
             else:
-                return {"status": "error", "error": f"Unknown payment method: {payment_method}"}
+                return {
+                    "status": "error",
+                    "error": f"Unknown payment method: {payment_method}",
+                }
 
             if result["status"] == "success":
                 # Notificar buyer
@@ -183,9 +225,10 @@ class RefundAutomation:
             logger.exception("Refund error")
             return {"status": "error", "error": str(e)}
 
-    async def _notify_buyer_refund(self, order_id: str, amount: float, reason: str) -> None:
+    async def _notify_buyer_refund(
+        self, order_id: str, amount: float, reason: str
+    ) -> None:
         """Notifica buyer vía WhatsApp."""
-
 
         # TODO: WhatsApp notification integration
         logger.info(f"Refund notification sent for {order_id}")
@@ -200,7 +243,9 @@ class RefundAutomation:
     ) -> dict[str, Any]:
         """Maneja chargeback automático."""
 
-        logger.warning(f"Chargeback received for {order_id}: ${chargeback_amount} ({reason_code})")
+        logger.warning(
+            f"Chargeback received for {order_id}: ${chargeback_amount} ({reason_code})"
+        )
 
         # Estrategia: responder a chargeback con evidencia
         evidence = await self._gather_evidence(order_id)

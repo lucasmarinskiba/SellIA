@@ -23,10 +23,16 @@ from app.core.database import Base
 
 class SimulationScenario(Base):
     """Predefined or custom simulation scenarios for training agents."""
+
     __tablename__ = "simulation_scenarios"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     difficulty = Column(String(20), nullable=False, default="beginner")
@@ -36,16 +42,31 @@ class SimulationScenario(Base):
     success_criteria = Column(JSONB, default=dict)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class SimulationRun(Base):
     """Individual execution of a simulation scenario."""
+
     __tablename__ = "simulation_runs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    scenario_id = Column(UUID(as_uuid=True), ForeignKey("simulation_scenarios.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    scenario_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("simulation_scenarios.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     agent_config = Column(JSONB, default=dict)
     status = Column(String(20), nullable=False, default="running")
     messages = Column(JSONB, default=list)
@@ -61,13 +82,23 @@ class SimulationRun(Base):
 
 class SimulationLeaderboard(Base):
     """Aggregated simulation performance per user and agent type."""
+
     __tablename__ = "simulation_leaderboards"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     agent_type = Column(String(50), nullable=False)
     total_runs = Column(Integer, default=0)
     avg_score = Column(Float, default=0.0)
     best_score = Column(Integer, default=0)
     success_rate = Column(Float, default=0.0)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

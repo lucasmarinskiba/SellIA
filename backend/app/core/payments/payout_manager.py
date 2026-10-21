@@ -35,6 +35,7 @@ PAYOUT_SCHEDULE = os.getenv("PAYOUT_SCHEDULE", "weekly")  # daily, weekly, month
 
 class PayoutStatus(str, Enum):
     """Payout statuses."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     PAID = "paid"
@@ -45,6 +46,7 @@ class PayoutStatus(str, Enum):
 
 class PayoutFrequency(str, Enum):
     """Payout frequencies."""
+
     DAILY = "daily"
     WEEKLY = "weekly"
     BIWEEKLY = "biweekly"
@@ -95,10 +97,9 @@ class PayoutManager:
             # Calculate Stripe fees
             stripe_fee = Decimal(0)
             if stripe_fees:
-                stripe_fee = (
-                    amount * Decimal(str(STRIPE_ACCOUNT_FEES_PERCENT / 100))
-                    + Decimal(str(STRIPE_ACCOUNT_FEES_FIXED))
-                )
+                stripe_fee = amount * Decimal(
+                    str(STRIPE_ACCOUNT_FEES_PERCENT / 100)
+                ) + Decimal(str(STRIPE_ACCOUNT_FEES_FIXED))
                 amount -= stripe_fee
 
             # Calculate platform fees
@@ -343,7 +344,9 @@ class PayoutManager:
             }
         """
         try:
-            logger.info(f"Batch processing payouts: frequency={frequency}, dry_run={dry_run}")
+            logger.info(
+                f"Batch processing payouts: frequency={frequency}, dry_run={dry_run}"
+            )
 
             # TODO: Query all sellers eligible for payout this frequency
             # TODO: Calculate net payout for each

@@ -66,11 +66,15 @@ class WorkflowEngine:
         executions = []
         for workflow in workflows:
             # Check trigger_config filters
-            if not self._check_trigger_config(workflow.trigger_config, trigger_data or {}):
+            if not self._check_trigger_config(
+                workflow.trigger_config, trigger_data or {}
+            ):
                 continue
 
             # A/B Test: select variant deterministically
-            variant_id, selected_actions = await self._select_variant(workflow, conversation_id)
+            variant_id, selected_actions = await self._select_variant(
+                workflow, conversation_id
+            )
 
             # Create execution record
             execution = WorkflowExecution(
@@ -88,12 +92,20 @@ class WorkflowEngine:
             # Execute via Celery task if available, otherwise fallback to asyncio
             try:
                 from app.tasks.workflow_tasks import execute_workflow_task
-                execute_workflow_task.delay(str(execution.id), str(business_id), selected_actions)
+
+                execute_workflow_task.delay(
+                    str(execution.id), str(business_id), selected_actions
+                )
             except Exception as e:
                 logger.exception("process_trigger: error inesperado")
                 from app.core.logger import get_logger
-                get_logger(__name__).warning(f"Celery not available, using asyncio fallback: {e}")
-                asyncio.create_task(self._run_execution(execution.id, business_id, selected_actions))
+
+                get_logger(__name__).warning(
+                    f"Celery not available, using asyncio fallback: {e}"
+                )
+                asyncio.create_task(
+                    self._run_execution(execution.id, business_id, selected_actions)
+                )
 
         await self.db.commit()
         return executions
@@ -104,14 +116,16 @@ class WorkflowEngine:
         conversation_id: uuid.UUID | None,
     ) -> tuple[uuid.UUID | None, list[dict[str, Any]] | None]:
         """Select A/B test variant using deterministic hash-based routing.
-        
+
         Returns (variant_id, actions_override) or (None, None) if no variants.
         """
         result = await self.db.execute(
-            select(WorkflowVariant).where(
+            select(WorkflowVariant)
+            .where(
                 WorkflowVariant.workflow_id == workflow.id,
                 WorkflowVariant.is_active == True,
-            ).order_by(WorkflowVariant.is_control.desc(), WorkflowVariant.created_at)
+            )
+            .order_by(WorkflowVariant.is_control.desc(), WorkflowVariant.created_at)
         )
         variants = result.scalars().all()
         if not variants:
@@ -147,7 +161,9 @@ class WorkflowEngine:
         self.db.add(v)
         return v.id, v.actions if v.actions else None
 
-    def _check_trigger_config(self, config: dict[str, Any], trigger_data: dict[str, Any]) -> bool:
+    def _check_trigger_config(
+        self, config: dict[str, Any], trigger_data: dict[str, Any]
+    ) -> bool:
         """Check if trigger data matches workflow trigger_config filters."""
         if not config:
             return True
@@ -159,7 +175,9 @@ class WorkflowEngine:
                 return False
 
         # Channel filter
-        if ("channels" in config and trigger_data.get("channel")) and trigger_data["channel"] not in config["channels"]:
+        if ("channels" in config and trigger_data.get("channel")) and trigger_data[
+            "channel"
+        ] not in config["channels"]:
             return False
 
         # Minimum delay check
@@ -169,13 +187,23 @@ class WorkflowEngine:
 
         return True
 
-    async def _run_execution(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: list[dict[str, Any]] | None = None):
+    async def _run_execution(
+        self,
+        execution_id: uuid.UUID,
+        business_id: uuid.UUID,
+        selected_actions: list[dict[str, Any]] | None = None,
+    ):
         """Run a workflow execution in background."""
         async with AsyncSessionLocal() as db:
             engine = WorkflowEngine(db)
             await engine.execute_workflow(execution_id, business_id, selected_actions)
 
-    async def execute_workflow(self, execution_id: uuid.UUID, business_id: uuid.UUID, selected_actions: list[dict[str, Any]] | None = None):
+    async def execute_workflow(
+        self,
+        execution_id: uuid.UUID,
+        business_id: uuid.UUID,
+        selected_actions: list[dict[str, Any]] | None = None,
+    ):
         """Execute workflow actions sequentially."""
         result = await self.db.execute(
             select(WorkflowExecution).where(WorkflowExecution.id == execution_id)
@@ -230,11 +258,16 @@ class WorkflowEngine:
                     workflow_id=str(workflow.id),
                     execution_id=str(execution.id),
                     status="completed",
-                    conversation_id=str(execution.conversation_id) if execution.conversation_id else None,
+                    conversation_id=(
+                        str(execution.conversation_id)
+                        if execution.conversation_id
+                        else None
+                    ),
                 )
             except Exception as e:
                 logger.exception("execute_workflow: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Event emit error: {e}")
 
     async def _execute_action(
@@ -271,10 +304,16 @@ class WorkflowEngine:
             if delay > 0:
                 action_record["status"] = "waiting"
                 action_record["resume_at"] = (datetime.now(UTC) + delay).isoformat()
-                execution.actions_executed = execution.actions_executed + [action_record]
+                execution.actions_executed = execution.actions_executed + [
+                    action_record
+                ]
                 await self.db.commit()
                 # Schedule resume
-                asyncio.create_task(self._schedule_resume(execution.id, business_id, delay.total_seconds()))
+                asyncio.create_task(
+                    self._schedule_resume(
+                        execution.id, business_id, delay.total_seconds()
+                    )
+                )
                 return False  # Pause execution
 
         elif action_type == WorkflowActionType.WEBHOOK:
@@ -303,9 +342,15 @@ class WorkflowEngine:
             if delay > 0:
                 action_record["status"] = "waiting"
                 action_record["resume_at"] = (datetime.now(UTC) + delay).isoformat()
-                execution.actions_executed = execution.actions_executed + [action_record]
+                execution.actions_executed = execution.actions_executed + [
+                    action_record
+                ]
                 await self.db.commit()
-                asyncio.create_task(self._schedule_resume(execution.id, business_id, delay.total_seconds()))
+                asyncio.create_task(
+                    self._schedule_resume(
+                        execution.id, business_id, delay.total_seconds()
+                    )
+                )
                 return False
 
         elif action_type == WorkflowActionType.START_SEQUENCE:
@@ -340,14 +385,21 @@ class WorkflowEngine:
         await self.db.commit()
         return True
 
-    async def _schedule_resume(self, execution_id: uuid.UUID, business_id: uuid.UUID, delay_seconds: float):
+    async def _schedule_resume(
+        self, execution_id: uuid.UUID, business_id: uuid.UUID, delay_seconds: float
+    ):
         """Schedule workflow resume after delay."""
         await asyncio.sleep(delay_seconds)
         async with AsyncSessionLocal() as db:
             engine = WorkflowEngine(db)
             await engine.execute_workflow(execution_id, business_id)
 
-    async def _action_send_message(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_message(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Send a message via the conversation's channel, or cross-channel if target_channel is specified."""
         if not execution.conversation_id:
             return
@@ -388,10 +440,15 @@ class WorkflowEngine:
                 target_conn = result.scalar_one_or_none()
                 if not target_conn:
                     from app.core.logger import get_logger
-                    get_logger(__name__).warning(f"No active {target_channel} connection for cross-channel send")
+
+                    get_logger(__name__).warning(
+                        f"No active {target_channel} connection for cross-channel send"
+                    )
                     return
 
-                connector = get_connector(platform, target_conn.credentials, target_conn.settings)
+                connector = get_connector(
+                    platform, target_conn.credentials, target_conn.settings
+                )
 
                 # Determine recipient based on platform
                 recipient = None
@@ -399,26 +456,45 @@ class WorkflowEngine:
                     recipient = conversation.lead_phone
                 elif platform == ChannelPlatform.EMAIL and conversation.lead_email:
                     recipient = conversation.lead_email
-                elif platform in (ChannelPlatform.INSTAGRAM, ChannelPlatform.MESSENGER, ChannelPlatform.TELEGRAM, ChannelPlatform.TIKTOK):
+                elif platform in (
+                    ChannelPlatform.INSTAGRAM,
+                    ChannelPlatform.MESSENGER,
+                    ChannelPlatform.TELEGRAM,
+                    ChannelPlatform.TIKTOK,
+                ):
                     recipient = conversation.external_id
                 else:
-                    recipient = conversation.lead_phone or conversation.lead_email or conversation.external_id
+                    recipient = (
+                        conversation.lead_phone
+                        or conversation.lead_email
+                        or conversation.external_id
+                    )
 
                 if recipient:
                     await connector.send_message(recipient, content)
                 else:
                     from app.core.logger import get_logger
-                    get_logger(__name__).warning(f"No recipient found for cross-channel send to {target_channel}")
+
+                    get_logger(__name__).warning(
+                        f"No recipient found for cross-channel send to {target_channel}"
+                    )
             else:
                 from app.domains.channels.services import send_outbound_message
+
                 await send_outbound_message(self.db, execution.conversation_id, content)
         except Exception as e:
             # Log but don't fail workflow
             logger.exception("_action_send_message: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Failed to send message: {e}")
 
-    async def _action_send_email(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_email(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Send an email using the email connector."""
         if not execution.conversation_id:
             return
@@ -433,10 +509,13 @@ class WorkflowEngine:
 
         # Find email channel
         result = await self.db.execute(
-            select(Conversation.channel).where(Conversation.id == execution.conversation_id)
+            select(Conversation.channel).where(
+                Conversation.id == execution.conversation_id
+            )
         )
         # Simplified: use email connector directly
         from app.domains.channels.connectors.email import EmailConnector
+
         connector = EmailConnector({}, {})
 
         config.get("subject", "Mensaje de {business_name}")
@@ -447,9 +526,15 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_send_email: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Failed to send email: {e}")
 
-    async def _action_ai_reply(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_ai_reply(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Generate an AI response using a specific agent personality and send it."""
         if not execution.conversation_id:
             return
@@ -477,10 +562,12 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_ai_reply: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Context builder error: {e}")
 
         # Use centralized AI reply generator with voice composition
         from app.domains.agents.ai_reply import generate_ai_response
+
         response_text = await generate_ai_response(
             db=self.db,
             conversation=conversation,
@@ -492,9 +579,14 @@ class WorkflowEngine:
 
         if response_text:
             from app.domains.channels.services import send_outbound_message
-            await send_outbound_message(self.db, execution.conversation_id, response_text, generated_by="ai")
 
-    async def _action_add_tag(self, config: dict[str, Any], execution: WorkflowExecution):
+            await send_outbound_message(
+                self.db, execution.conversation_id, response_text, generated_by="ai"
+            )
+
+    async def _action_add_tag(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Add a tag to the conversation."""
         if not execution.conversation_id:
             return
@@ -513,9 +605,12 @@ class WorkflowEngine:
                 conversation.extra_data["tags"] = tags
                 await self.db.commit()
 
-    async def _action_webhook(self, config: dict[str, Any], execution: WorkflowExecution):
+    async def _action_webhook(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Call external webhook."""
         import aiohttp
+
         url = config.get("url", "")
         if not url:
             return
@@ -524,19 +619,27 @@ class WorkflowEngine:
                 payload = {
                     "execution_id": str(execution.id),
                     "workflow_id": str(execution.workflow_id),
-                    "conversation_id": str(execution.conversation_id) if execution.conversation_id else None,
+                    "conversation_id": (
+                        str(execution.conversation_id)
+                        if execution.conversation_id
+                        else None
+                    ),
                     "trigger_data": execution.trigger_data,
                     "actions_executed": execution.actions_executed,
                 }
                 async with session.post(url, json=payload, timeout=10) as resp:
                     from app.core.logger import get_logger
+
                     get_logger(__name__).info(f"Webhook {url} status: {resp.status}")
         except Exception as e:
             logger.exception("_action_webhook: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Webhook failed: {e}")
 
-    async def _action_move_stage(self, config: dict[str, Any], execution: WorkflowExecution):
+    async def _action_move_stage(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Move conversation to a different stage."""
         if not execution.conversation_id:
             return
@@ -552,7 +655,9 @@ class WorkflowEngine:
             conversation.extra_data["stage"] = stage
             await self.db.commit()
 
-    async def _action_update_stage(self, config: dict[str, Any], execution: WorkflowExecution):
+    async def _action_update_stage(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Update conversation stage in CRM."""
         if not execution.conversation_id:
             return
@@ -569,7 +674,9 @@ class WorkflowEngine:
             conversation.extra_data["stage"] = stage
             await self.db.commit()
 
-    async def _action_update_score(self, config: dict[str, Any], execution: WorkflowExecution):
+    async def _action_update_score(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Add/subtract lead score points."""
         if not execution.conversation_id:
             return
@@ -582,12 +689,20 @@ class WorkflowEngine:
             if not conversation.extra_data:
                 conversation.extra_data = {}
             current_score = conversation.extra_data.get("lead_score", 0) or 0
-            conversation.extra_data["lead_score"] = max(0, min(100, current_score + points))
+            conversation.extra_data["lead_score"] = max(
+                0, min(100, current_score + points)
+            )
             await self.db.commit()
 
-    async def _action_create_deal(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_deal(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Create a new deal in the CRM."""
         from app.domains.crm.models import Deal
+
         result = await self.db.execute(
             select(Conversation).where(Conversation.id == execution.conversation_id)
         )
@@ -597,14 +712,18 @@ class WorkflowEngine:
         deal = Deal(
             business_id=business_id,
             conversation_id=conversation.id,
-            title=config.get("title", f"Deal: {conversation.lead_name or 'Sin nombre'}"),
+            title=config.get(
+                "title", f"Deal: {conversation.lead_name or 'Sin nombre'}"
+            ),
             contact_name=conversation.lead_name,
             contact_email=conversation.lead_email,
             contact_phone=conversation.lead_phone,
             value=config.get("value"),
             currency=config.get("currency", "ARS"),
             stage=config.get("stage", "new_lead"),
-            source_channel=conversation.lead_source if conversation.lead_source else None,
+            source_channel=(
+                conversation.lead_source if conversation.lead_source else None
+            ),
         )
         self.db.add(deal)
         await self.db.commit()
@@ -622,27 +741,38 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_create_deal: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Deal event error: {e}")
 
-    async def _action_create_shipment(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_shipment(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Create a shipment for the order associated with this conversation/execution."""
         if not execution.conversation_id:
             return
 
         # Find the most recent paid order for this conversation
         from app.domains.orders.models import Order, OrderStatus
+
         result = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.conversation_id == execution.conversation_id,
                 Order.status.in_([OrderStatus.PAID, OrderStatus.PENDING]),
                 Order.is_active == True,
-            ).order_by(desc(Order.created_at)).limit(1)
+            )
+            .order_by(desc(Order.created_at))
+            .limit(1)
         )
         order = result.scalar_one_or_none()
         if not order:
             return
 
         from app.domains.shipments import services as shipment_services
+
         try:
             shipment_data = {
                 "order_id": order.id,
@@ -659,25 +789,36 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_create_shipment: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Shipment creation error: {e}")
 
-    async def _action_create_appointment(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_create_appointment(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Create an appointment for a service order."""
         if not execution.conversation_id:
             return
         from app.domains.orders.models import Order, OrderStatus
+
         result = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.conversation_id == execution.conversation_id,
                 Order.status.in_([OrderStatus.PAID, OrderStatus.PENDING]),
                 Order.is_active == True,
-            ).order_by(desc(Order.created_at)).limit(1)
+            )
+            .order_by(desc(Order.created_at))
+            .limit(1)
         )
         order = result.scalar_one_or_none()
         if not order:
             return
 
         from app.domains.services import services as svc_services
+
         try:
             # Create service delivery first
             delivery_data = {
@@ -689,10 +830,13 @@ class WorkflowEngine:
                 "solution_type": config.get("solution_type"),
                 "estimated_duration_minutes": config.get("duration_minutes", 60),
             }
-            delivery = await svc_services.create_service_delivery(self.db, business_id, delivery_data)
+            delivery = await svc_services.create_service_delivery(
+                self.db, business_id, delivery_data
+            )
 
             # Create appointment linked to delivery
             from datetime import timedelta
+
             start = config.get("scheduled_at")
             if start:
                 end = start + timedelta(minutes=config.get("duration_minutes", 60))
@@ -714,59 +858,93 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_create_appointment: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Appointment creation error: {e}")
 
-    async def _action_send_reminder(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_reminder(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Send reminder for an upcoming appointment."""
         appt_id = config.get("appointment_id")
         if not appt_id:
             return
         from app.domains.services import services as svc_services
+
         try:
             appt = await svc_services.get_appointment(self.db, appt_id)
             if appt:
-                await svc_services.send_appointment_reminder(self.db, appt, config.get("channel", "whatsapp"))
+                await svc_services.send_appointment_reminder(
+                    self.db, appt, config.get("channel", "whatsapp")
+                )
         except Exception as e:
             logger.exception("_action_send_reminder: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Send reminder error: {e}")
 
-    async def _action_request_confirmation(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_request_confirmation(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Request appointment confirmation from client."""
         appt_id = config.get("appointment_id")
         if not appt_id:
             return
         from app.domains.services import services as svc_services
+
         try:
             appt = await svc_services.get_appointment(self.db, appt_id)
             if appt:
-                await svc_services.request_confirmation(self.db, appt, config.get("channel", "whatsapp"))
+                await svc_services.request_confirmation(
+                    self.db, appt, config.get("channel", "whatsapp")
+                )
         except Exception as e:
             logger.exception("_action_request_confirmation: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Request confirmation error: {e}")
 
-    async def _action_request_feedback(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_request_feedback(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Request feedback after service completion."""
         appt_id = config.get("appointment_id")
         if not appt_id:
             return
         from app.domains.services import services as svc_services
+
         try:
             appt = await svc_services.get_appointment(self.db, appt_id)
             if appt:
-                await svc_services.request_feedback(self.db, appt, config.get("channel", "whatsapp"))
+                await svc_services.request_feedback(
+                    self.db, appt, config.get("channel", "whatsapp")
+                )
         except Exception as e:
             logger.exception("_action_request_feedback: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Request feedback error: {e}")
 
-    async def _action_update_service_status(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_update_service_status(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Update service delivery status."""
         delivery_id = config.get("delivery_id")
         if not delivery_id:
             return
         from app.domains.services import services as svc_services
+
         try:
             delivery = await svc_services.get_service_delivery(self.db, delivery_id)
             if delivery and config.get("status"):
@@ -775,9 +953,12 @@ class WorkflowEngine:
         except Exception as e:
             logger.exception("_action_update_service_status: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Update service status error: {e}")
 
-    async def _action_set_deal_value(self, config: dict[str, Any], execution: WorkflowExecution):
+    async def _action_set_deal_value(
+        self, config: dict[str, Any], execution: WorkflowExecution
+    ):
         """Set deal value on the conversation."""
         if not execution.conversation_id:
             return
@@ -794,7 +975,12 @@ class WorkflowEngine:
             conversation.extra_data["deal_value"] = value
             await self.db.commit()
 
-    async def _action_send_notification(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_send_notification(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Send a notification to the business owner with expert voice."""
         from app.domains.agents.ai_reply import generate_raw_ai_response
         from app.domains.businesses.models import Business
@@ -808,16 +994,17 @@ class WorkflowEngine:
         if not business:
             return
 
-        result = await self.db.execute(
-            select(User).where(User.id == business.user_id)
-        )
+        result = await self.db.execute(select(User).where(User.id == business.user_id))
         user = result.scalar_one_or_none()
         if not user or not user.email:
             from app.core.logger import get_logger
+
             get_logger(__name__).warning(f"No user/email for business {business_id}")
             return
 
-        raw_message = config.get("message", "Evento importante en tu pipeline de ventas")
+        raw_message = config.get(
+            "message", "Evento importante en tu pipeline de ventas"
+        )
         voice_slug = config.get("voice_personality_slug", "hormozi")
 
         # Generate notification with expert voice
@@ -848,6 +1035,7 @@ Instrucciones:
         except Exception as e:
             logger.exception("_action_send_notification: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).warning(f"AI generation failed, using raw: {e}")
             notification_text = raw_message
 
@@ -859,10 +1047,14 @@ Instrucciones:
             config.get("subject", f"🔔 {business.name} — Alerta de Ventas")
             await connector.send_message(user.email, notification_text, "text")
             from app.core.logger import get_logger
-            get_logger(__name__).info(f"Notification sent to user: {notification_text[:80]}...")
+
+            get_logger(__name__).info(
+                f"Notification sent to user: {notification_text[:80]}..."
+            )
         except Exception as e:
             logger.exception("_action_send_notification: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Email send failed: {e}")
 
         # Also store in conversation extra_data if applicable
@@ -875,17 +1067,25 @@ Instrucciones:
                 if not conversation.extra_data:
                     conversation.extra_data = {}
                 notifications = conversation.extra_data.get("owner_notifications", [])
-                notifications.append({
-                    "message": notification_text,
-                    "raw_message": raw_message,
-                    "sent_at": datetime.now(UTC).isoformat(),
-                })
+                notifications.append(
+                    {
+                        "message": notification_text,
+                        "raw_message": raw_message,
+                        "sent_at": datetime.now(UTC).isoformat(),
+                    }
+                )
                 conversation.extra_data["owner_notifications"] = notifications
                 await self.db.commit()
 
-    async def _action_start_sequence(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+    async def _action_start_sequence(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Start an email sequence for the conversation's lead."""
         from app.domains.automations.models import EmailSequence, SequenceSubscription
+
         sequence_id = config.get("sequence_id")
         if not sequence_id:
             return
@@ -900,6 +1100,7 @@ Instrucciones:
         sequence = result.scalar_one_or_none()
         if not sequence:
             from app.core.logger import get_logger
+
             get_logger(__name__).warning(f"Sequence not found: {sequence_id}")
             return
 
@@ -910,7 +1111,10 @@ Instrucciones:
             conversation = result.scalar_one_or_none()
             if not conversation or not conversation.lead_email:
                 from app.core.logger import get_logger
-                get_logger(__name__).warning(f"Conversation {execution.conversation_id} has no email, skipping sequence")
+
+                get_logger(__name__).warning(
+                    f"Conversation {execution.conversation_id} has no email, skipping sequence"
+                )
                 return
 
             # Check if already subscribed
@@ -922,7 +1126,10 @@ Instrucciones:
             )
             if existing.scalar_one_or_none():
                 from app.core.logger import get_logger
-                get_logger(__name__).info(f"Conversation already subscribed to sequence {sequence_id}")
+
+                get_logger(__name__).info(
+                    f"Conversation already subscribed to sequence {sequence_id}"
+                )
                 return
 
             sub = SequenceSubscription(
@@ -935,9 +1142,17 @@ Instrucciones:
             self.db.add(sub)
             await self.db.commit()
             from app.core.logger import get_logger
-            get_logger(__name__).info(f"Sequence {sequence_id} started for conversation {execution.conversation_id}")
 
-    async def _action_assign_human(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID):
+            get_logger(__name__).info(
+                f"Sequence {sequence_id} started for conversation {execution.conversation_id}"
+            )
+
+    async def _action_assign_human(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ):
         """Assign conversation to human agent (handoff)."""
         if not execution.conversation_id:
             return
@@ -958,11 +1173,18 @@ Instrucciones:
         await self.db.commit()
 
         # Find channel platform
-        platform = conversation.platform.value if hasattr(conversation, 'platform') and conversation.platform else "unknown"
+        platform = (
+            conversation.platform.value
+            if hasattr(conversation, "platform") and conversation.platform
+            else "unknown"
+        )
         if not platform and conversation.channel_connection_id:
             from app.domains.channels.models import ChannelConnection
+
             ch_result = await self.db.execute(
-                select(ChannelConnection).where(ChannelConnection.id == conversation.channel_connection_id)
+                select(ChannelConnection).where(
+                    ChannelConnection.id == conversation.channel_connection_id
+                )
             )
             ch = ch_result.scalar_one_or_none()
             if ch:
@@ -979,9 +1201,15 @@ Instrucciones:
         except Exception as e:
             logger.exception("_action_assign_human: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Handoff emit error: {e}")
 
-    async def _action_ai_wait(self, config: dict[str, Any], execution: WorkflowExecution, business_id: uuid.UUID) -> timedelta:
+    async def _action_ai_wait(
+        self,
+        config: dict[str, Any],
+        execution: WorkflowExecution,
+        business_id: uuid.UUID,
+    ) -> timedelta:
         """Use AI to determine optimal follow-up timing.
 
         Analyzes conversation context to recommend the best delay before next contact.
@@ -992,7 +1220,11 @@ Instrucciones:
             return default_delay
 
         if not execution.conversation_id:
-            return default_delay if default_delay.total_seconds() > 0 else timedelta(hours=24)
+            return (
+                default_delay
+                if default_delay.total_seconds() > 0
+                else timedelta(hours=24)
+            )
 
         try:
             from app.domains.agents.ai_reply import generate_raw_ai_response
@@ -1002,18 +1234,25 @@ Instrucciones:
             )
             conversation = result.scalar_one_or_none()
             if not conversation:
-                return default_delay if default_delay.total_seconds() > 0 else timedelta(hours=24)
+                return (
+                    default_delay
+                    if default_delay.total_seconds() > 0
+                    else timedelta(hours=24)
+                )
 
             result = await self.db.execute(
-                select(Message).where(
-                    Message.conversation_id == conversation.id
-                ).order_by(Message.created_at.desc()).limit(10)
+                select(Message)
+                .where(Message.conversation_id == conversation.id)
+                .order_by(Message.created_at.desc())
+                .limit(10)
             )
             messages = list(reversed(result.scalars().all()))
-            msg_summary = "\n".join([
-                f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
-                for m in messages
-            ])
+            msg_summary = "\n".join(
+                [
+                    f"{'Lead' if m.direction.value == 'inbound' else 'Agent'}: {m.content[:200]}"
+                    for m in messages
+                ]
+            )
 
             system_prompt = """You are a sales timing optimization AI.
 Your job is to analyze conversation context and recommend the optimal delay before the next follow-up.
@@ -1041,22 +1280,30 @@ Respond with JSON only: {{"hours": <number>, "reason": "<brief reason>"}}"""
 
             if ai_response:
                 import json
+
                 try:
                     data = json.loads(ai_response.strip())
                     hours = float(data.get("hours", 24))
                     hours = max(1, min(168, hours))
                     from app.core.logger import get_logger
-                    get_logger(__name__).info(f"Optimized delay: {hours}h — {data.get('reason', '')}")
+
+                    get_logger(__name__).info(
+                        f"Optimized delay: {hours}h — {data.get('reason', '')}"
+                    )
                     return timedelta(hours=hours)
                 except (json.JSONDecodeError, ValueError) as e:
                     from app.core.logger import get_logger
+
                     get_logger(__name__).error(f"JSON parse failed: {e}")
         except Exception as e:
             logger.exception("_action_ai_wait: error inesperado")
             from app.core.logger import get_logger
+
             get_logger(__name__).error(f"Optimization failed: {e}")
 
-        return default_delay if default_delay.total_seconds() > 0 else timedelta(hours=24)
+        return (
+            default_delay if default_delay.total_seconds() > 0 else timedelta(hours=24)
+        )
 
     def _parse_delay(self, config: dict[str, Any]) -> timedelta:
         """Parse delay config into timedelta."""
@@ -1097,6 +1344,7 @@ class WorkflowScheduler:
         self._running = True
         self._task = asyncio.create_task(self._loop())
         from app.core.logger import get_logger
+
         get_logger(__name__).info("Workflow scheduler started")
 
     async def stop(self):
@@ -1109,6 +1357,7 @@ class WorkflowScheduler:
             except asyncio.CancelledError:
                 pass
         from app.core.logger import get_logger
+
         get_logger(__name__).info("Workflow scheduler stopped")
 
     async def _loop(self):
@@ -1119,6 +1368,7 @@ class WorkflowScheduler:
             except Exception as e:
                 logger.exception("_loop: error inesperado")
                 from app.core.logger import get_logger
+
                 get_logger(__name__).error(f"Error in check loop: {e}")
             await asyncio.sleep(self.check_interval)
 
@@ -1126,9 +1376,11 @@ class WorkflowScheduler:
         """Check for executions that are waiting and ready to resume."""
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(WorkflowExecution).where(
+                select(WorkflowExecution)
+                .where(
                     WorkflowExecution.status == "running",
-                ).order_by(WorkflowExecution.executed_at)
+                )
+                .order_by(WorkflowExecution.executed_at)
             )
             executions = result.scalars().all()
 
@@ -1147,7 +1399,9 @@ class WorkflowScheduler:
                         if now >= resume_at:
                             # Resume execution via Celery
                             wf_result = await db.execute(
-                                select(Workflow).where(Workflow.id == execution.workflow_id)
+                                select(Workflow).where(
+                                    Workflow.id == execution.workflow_id
+                                )
                             )
                             workflow = wf_result.scalar_one_or_none()
                             if workflow:
@@ -1155,10 +1409,22 @@ class WorkflowScheduler:
                                     from app.tasks.workflow_tasks import (
                                         execute_workflow_task,
                                     )
-                                    execute_workflow_task.delay(str(execution.id), str(workflow.business_id))
+
+                                    execute_workflow_task.delay(
+                                        str(execution.id), str(workflow.business_id)
+                                    )
                                 except Exception as e:
-                                    logger.exception("_check_pending_executions: error inesperado")
+                                    logger.exception(
+                                        "_check_pending_executions: error inesperado"
+                                    )
                                     from app.core.logger import get_logger
-                                    get_logger(__name__).warning(f"Celery fallback: {e}")
+
+                                    get_logger(__name__).warning(
+                                        f"Celery fallback: {e}"
+                                    )
                                     engine = WorkflowEngine(db)
-                                    asyncio.create_task(engine._run_execution(execution.id, workflow.business_id))
+                                    asyncio.create_task(
+                                        engine._run_execution(
+                                            execution.id, workflow.business_id
+                                        )
+                                    )

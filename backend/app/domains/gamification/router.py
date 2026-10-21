@@ -63,7 +63,9 @@ async def record_login(
     business_id = await resolve_business_id(db, current_user)
 
     result = await engine.record_login(current_user.id, business_id)
-    welcome_msg = await engine.get_companion_message(current_user.id, business_id, "welcome")
+    welcome_msg = await engine.get_companion_message(
+        current_user.id, business_id, "welcome"
+    )
 
     return {
         **result,
@@ -77,6 +79,7 @@ async def list_achievements(
 ):
     """List all available achievements."""
     from sqlalchemy import select
+
     result = await db.execute(select(Achievement).where(Achievement.is_active == True))
     return list(result.scalars().all())
 
@@ -88,10 +91,13 @@ async def my_achievements(
 ):
     """List user's unlocked achievements."""
     from sqlalchemy import select
+
     result = await db.execute(
-        select(UserAchievement).where(
+        select(UserAchievement)
+        .where(
             UserAchievement.user_id == current_user.id,
-        ).order_by(UserAchievement.unlocked_at.desc())
+        )
+        .order_by(UserAchievement.unlocked_at.desc())
     )
     return list(result.scalars().all())
 
@@ -190,6 +196,7 @@ async def mood_checkin(
     # Generate AI companion response
     try:
         from app.domains.agents.ai_reply import generate_raw_ai_response
+
         companion_response = await generate_raw_ai_response(
             db=db,
             business_id=await resolve_business_id(db, current_user),
@@ -198,7 +205,9 @@ async def mood_checkin(
             max_tokens=200,
             temperature=0.8,
         )
-        log.ai_response = companion_response or "Entendido. Estoy acá para lo que necesites. 💪"
+        log.ai_response = (
+            companion_response or "Entendido. Estoy acá para lo que necesites. 💪"
+        )
     except Exception:
         logger.exception("mood_checkin: error inesperado")
         log.ai_response = "Entendido. Estoy acá para lo que necesites. 💪"
@@ -214,11 +223,13 @@ async def mood_checkin(
         await resolve_business_id(db, current_user),
     )
     profile.user_mood_today = data.mood
-    profile.mood_history.append({
-        "date": log.created_at.isoformat(),
-        "mood": data.mood,
-        "energy": data.energy_level,
-    })
+    profile.mood_history.append(
+        {
+            "date": log.created_at.isoformat(),
+            "mood": data.mood,
+            "energy": data.energy_level,
+        }
+    )
     await db.commit()
 
     return log
@@ -234,10 +245,14 @@ async def mood_history(
     from sqlalchemy import desc, select
 
     from app.domains.gamification.models import DailyMoodLog
+
     result = await db.execute(
-        select(DailyMoodLog).where(
+        select(DailyMoodLog)
+        .where(
             DailyMoodLog.user_id == current_user.id,
-        ).order_by(desc(DailyMoodLog.created_at)).limit(limit)
+        )
+        .order_by(desc(DailyMoodLog.created_at))
+        .limit(limit)
     )
     return list(result.scalars().all())
 
@@ -255,6 +270,7 @@ async def seed_achievements(
 # ============================================================
 #  Leaderboard
 # ============================================================
+
 
 @router.get("/leaderboard", response_model=list[LeaderboardEntryResponse])
 async def get_leaderboard(

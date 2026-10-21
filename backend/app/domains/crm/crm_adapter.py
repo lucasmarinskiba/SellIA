@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class CRMType(str, Enum):
     """Supported CRM platforms."""
+
     SALESFORCE = "salesforce"
     HUBSPOT = "hubspot"
     PIPEDRIVE = "pipedrive"
@@ -20,6 +21,7 @@ class CRMType(str, Enum):
 @dataclass
 class CRMLead:
     """Unified lead structure from any CRM."""
+
     id: str
     company_name: str
     contact_name: str
@@ -231,9 +233,7 @@ class MockCRMAdapter(CRMAdapter):
         logger.info(f"Fetching lead {lead_id} from mock CRM")
         return self.leads_db.get(lead_id)
 
-    async def fetch_leads(
-        self, filters: dict[str, Any] | None = None
-    ) -> list[CRMLead]:
+    async def fetch_leads(self, filters: dict[str, Any] | None = None) -> list[CRMLead]:
         """Fetch multiple leads with optional filtering."""
         leads = list(self.leads_db.values())
 
@@ -245,7 +245,16 @@ class MockCRMAdapter(CRMAdapter):
         for lead in leads:
             match = True
             for key, value in filters.items():
-                if key == "min_lead_score" and (lead.lead_score or 0) < value or key == "stage" and lead.stage != value or key == "industry" and lead.industry != value or key == "min_company_size" and (lead.company_size or 0) < value:
+                if (
+                    key == "min_lead_score"
+                    and (lead.lead_score or 0) < value
+                    or key == "stage"
+                    and lead.stage != value
+                    or key == "industry"
+                    and lead.industry != value
+                    or key == "min_company_size"
+                    and (lead.company_size or 0) < value
+                ):
                     match = False
                     break
 
@@ -276,9 +285,7 @@ class MockCRMAdapter(CRMAdapter):
         if lead_id not in self.leads_db:
             return False
 
-        logger.info(
-            f"Activity logged for {lead_id}: {activity_type} - {description}"
-        )
+        logger.info(f"Activity logged for {lead_id}: {activity_type} - {description}")
         return True
 
 
@@ -300,8 +307,11 @@ class CRMAdapterFactory:
         elif crm_type == CRMType.SALESFORCE:
             if CRMType.SALESFORCE not in cls._adapters:
                 if not config:
-                    raise ValueError("Salesforce config required: instance_url, client_id, client_secret, username, password")
+                    raise ValueError(
+                        "Salesforce config required: instance_url, client_id, client_secret, username, password"
+                    )
                 from app.domains.crm.salesforce_adapter import SalesforceAdapter
+
                 cls._adapters[CRMType.SALESFORCE] = SalesforceAdapter(
                     instance_url=config["instance_url"],
                     client_id=config["client_id"],
@@ -316,6 +326,7 @@ class CRMAdapterFactory:
                 if not config or "api_key" not in config:
                     raise ValueError("HubSpot config required: api_key")
                 from app.domains.crm.hubspot_adapter import HubSpotAdapter
+
                 cls._adapters[CRMType.HUBSPOT] = HubSpotAdapter(
                     api_key=config["api_key"]
                 )

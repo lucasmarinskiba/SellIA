@@ -24,7 +24,9 @@ async def get_db():
         yield session
 
 
-@router.post("/analyze", response_model=MarketAnalysisJobOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/analyze", response_model=MarketAnalysisJobOut, status_code=status.HTTP_201_CREATED
+)
 async def start_analysis(
     data: MarketAnalysisJobCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -35,6 +37,7 @@ async def start_analysis(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )
@@ -60,6 +63,7 @@ async def list_jobs(
     from sqlalchemy import select
 
     from app.domains.businesses.models import Business
+
     result = await db.execute(
         select(Business).where(Business.user_id == current_user.id).limit(1)
     )

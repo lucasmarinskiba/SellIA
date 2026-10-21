@@ -43,13 +43,20 @@ class FOMOCampaign(Base):
     existed — the real table is `users` (plural) — which would have made
     table creation itself fail the moment this collision was fixed.
     """
+
     __tablename__ = "fomo_widget_campaigns"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=True)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     name = Column(String(200), nullable=False)
-    campaign_type = Column(String(50), nullable=False)  # countdown | limited_spots | flash_sale | social_proof | progress | scarcity | exclusivity
-    trigger_type = Column(String(50), nullable=True)  # cart_abandon | page_view | churn_risk | low_engagement | product_view
+    campaign_type = Column(
+        String(50), nullable=False
+    )  # countdown | limited_spots | flash_sale | social_proof | progress | scarcity | exclusivity
+    trigger_type = Column(
+        String(50), nullable=True
+    )  # cart_abandon | page_view | churn_risk | low_engagement | product_view
 
     # Content
     headline = Column(String(255), nullable=False)
@@ -63,7 +70,9 @@ class FOMOCampaign(Base):
     spots_taken = Column(Integer, default=0, nullable=False)
 
     # Config (flexible JSONB for A/B testing)
-    config = Column(JSONB, nullable=True)  # {stockThreshold, countdownHours, segment, messageTemplate, discountPercent}
+    config = Column(
+        JSONB, nullable=True
+    )  # {stockThreshold, countdownHours, segment, messageTemplate, discountPercent}
 
     # Visual
     accent_color = Column(String(20), default="#F97316", nullable=False)
@@ -76,43 +85,67 @@ class FOMOCampaign(Base):
     show_on_pages = Column(JSONB, default=list, nullable=False)
 
     # Status & lifecycle
-    status = Column(String(20), default='active', nullable=False)  # active | paused | draft
+    status = Column(
+        String(20), default="active", nullable=False
+    )  # active | paused | draft
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
-    events = relationship("FOMOEvent", back_populates="campaign", cascade="all, delete-orphan")
-    ab_tests = relationship("FOMOABTest", back_populates="campaign", cascade="all, delete-orphan")
-    metrics = relationship("FOMOMetric", back_populates="campaign", cascade="all, delete-orphan")
+    events = relationship(
+        "FOMOEvent", back_populates="campaign", cascade="all, delete-orphan"
+    )
+    ab_tests = relationship(
+        "FOMOABTest", back_populates="campaign", cascade="all, delete-orphan"
+    )
+    metrics = relationship(
+        "FOMOMetric", back_populates="campaign", cascade="all, delete-orphan"
+    )
 
 
 class FOMOEvent(Base):
     """Real-time FOMO events: purchases, views, cart abandonment, etc."""
+
     __tablename__ = "fomo_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
-    event_type = Column(String(50), nullable=False)  # purchase | view | add_to_cart | abandoned
+    campaign_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fomo_widget_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    event_type = Column(
+        String(50), nullable=False
+    )  # purchase | view | add_to_cart | abandoned
     customer_id = Column(UUID(as_uuid=True), nullable=True)
     product_id = Column(UUID(as_uuid=True), nullable=True)
-    event_metadata = Column("metadata", JSONB, nullable=True)  # {revenue, customerName, productName, etc}
+    event_metadata = Column(
+        "metadata", JSONB, nullable=True
+    )  # {revenue, customerName, productName, etc}
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     # Relationships
     campaign = relationship("FOMOCampaign", back_populates="events")
 
-    __table_args__ = (
-        Index('idx_fomo_events_campaign', 'campaign_id', 'created_at'),
-    )
+    __table_args__ = (Index("idx_fomo_events_campaign", "campaign_id", "created_at"),)
 
 
 class FOMOABTest(Base):
     """A/B testing framework for FOMO campaigns"""
+
     __tablename__ = "fomo_ab_tests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fomo_widget_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
 
     # Variants (JSONB config objects)
     variant_a = Column(JSONB, nullable=False)
@@ -126,40 +159,46 @@ class FOMOABTest(Base):
 
     # Results
     winner = Column(String(1), nullable=True)  # 'A' | 'B'
-    status = Column(String(20), default='running', nullable=False)  # running | completed
+    status = Column(
+        String(20), default="running", nullable=False
+    )  # running | completed
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     campaign = relationship("FOMOCampaign", back_populates="ab_tests")
 
-    __table_args__ = (
-        Index('idx_fomo_ab_tests_campaign', 'campaign_id'),
-    )
+    __table_args__ = (Index("idx_fomo_ab_tests_campaign", "campaign_id"),)
 
 
 class FOMOMetric(Base):
     """Daily FOMO campaign metrics"""
+
     __tablename__ = "fomo_metrics"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('fomo_widget_campaigns.id', ondelete='CASCADE'), nullable=False)
+    campaign_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fomo_widget_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     date = Column(Date, nullable=False)
     impressions = Column(Integer, default=0, nullable=False)
     conversions = Column(Integer, default=0, nullable=False)
-    revenue = Column(Numeric(15, 2), default=Decimal('0.00'), nullable=False)
+    revenue = Column(Numeric(15, 2), default=Decimal("0.00"), nullable=False)
 
     # Relationships
     campaign = relationship("FOMOCampaign", back_populates="metrics")
 
     __table_args__ = (
-        UniqueConstraint('campaign_id', 'date', name='uq_fomo_metrics_campaign_date'),
-        Index('idx_fomo_metrics_campaign', 'campaign_id', 'date'),
+        UniqueConstraint("campaign_id", "date", name="uq_fomo_metrics_campaign_date"),
+        Index("idx_fomo_metrics_campaign", "campaign_id", "date"),
     )
 
 
 class SocialProofEvent(Base):
     """Real-time social proof events: 'Juan acaba de comprar...'"""
+
     __tablename__ = "social_proof_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

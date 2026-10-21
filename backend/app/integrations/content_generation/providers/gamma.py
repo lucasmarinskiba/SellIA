@@ -4,7 +4,6 @@ Pricing: Plan-based, ~$0.05/doc
 Strengths: Interactive docs, landing pages, guides, presentations
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -36,7 +35,9 @@ class GammaProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="GAMMA_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="GAMMA_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -60,7 +61,9 @@ class GammaProvider(BaseProvider):
 
             doc_url = data.get("url") or data.get("document", {}).get("url")
             if not doc_url:
-                return GenerationResult(success=False, error_message="Gamma no devolvió documento")
+                return GenerationResult(
+                    success=False, error_message="Gamma no devolvió documento"
+                )
 
             return GenerationResult(
                 success=True,

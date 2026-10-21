@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 # ========== SocialSeller Schemas ==========
 
+
 class SocialSellerCreate(BaseModel):
     business_id: uuid.UUID
     platform: str
@@ -53,9 +54,9 @@ class SocialSellerResponse(BaseModel):
 
 # ========== SellerCustomerRelationship Schemas ==========
 
+
 class SellerCustomerCreate(BaseModel):
     customer_id: uuid.UUID
-
 
 
 class CustomerInsightResponse(BaseModel):
@@ -72,6 +73,7 @@ class CustomerInsightResponse(BaseModel):
 
 
 # ========== SellerPerformance Schemas ==========
+
 
 class SellerPerformanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -93,6 +95,7 @@ class SellerPerformanceResponse(BaseModel):
 
 
 # ========== Pipeline & Reports ==========
+
 
 class PipelineStage(BaseModel):
     stage: str
@@ -144,6 +147,7 @@ class ExecuteActionResponse(BaseModel):
 
 
 # ========== Loyalty & Wall of Fame Schemas ==========
+
 
 class LoyaltyBadgeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -203,6 +207,7 @@ class LoyaltyActionResponse(BaseModel):
 
 
 # ========== Unified Customer Schemas ==========
+
 
 class UnifiedCustomerResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -290,6 +295,7 @@ class SellerCustomerResponse(BaseModel):
 
 # ========== Radar de Oportunidades Schemas ==========
 
+
 class PredictedPurchase(BaseModel):
     predicted_date: str | None = None
     confidence_score: int
@@ -369,6 +375,7 @@ class RadarActResponse(BaseModel):
 
 
 # ========== Lookalike Audience Schemas ==========
+
 
 class IdealCustomerProfile(BaseModel):
     avg_lifetime_value: float

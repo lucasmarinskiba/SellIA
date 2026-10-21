@@ -51,7 +51,11 @@ async def list_testimonials(
     return {
         "count": len(testimonials),
         "testimonials": testimonials,
-        "avg_rating": sum(t.rating for t in testimonials) / len(testimonials) if testimonials else 0,
+        "avg_rating": (
+            sum(t.rating for t in testimonials) / len(testimonials)
+            if testimonials
+            else 0
+        ),
     }
 
 
@@ -118,7 +122,9 @@ async def get_seller_reviews(
 
     if reviews:
         avg_rating = sum(r.rating for r in reviews) / len(reviews)
-        response_rate = sum(1 for r in reviews if r.seller_response) / len(reviews) * 100
+        response_rate = (
+            sum(1 for r in reviews if r.seller_response) / len(reviews) * 100
+        )
     else:
         avg_rating = 0
         response_rate = 0
@@ -134,7 +140,9 @@ async def get_seller_reviews(
             "2_star": len([r for r in reviews if r.rating == 2]),
             "1_star": len([r for r in reviews if r.rating == 1]),
         },
-        "recent": [r for r in sorted(reviews, key=lambda x: x.review_date, reverse=True)][:5],
+        "recent": [
+            r for r in sorted(reviews, key=lambda x: x.review_date, reverse=True)
+        ][:5],
     }
 
 
@@ -181,19 +189,23 @@ async def calculate_trust_score(
         }
 
     review_count = len(reviews)
-    review_rating = round(sum(r.rating for r in reviews) / review_count, 2) if review_count else 0.0
+    review_rating = (
+        round(sum(r.rating for r in reviews) / review_count, 2) if review_count else 0.0
+    )
     answered = sum(1 for r in reviews if r.seller_response)
     response_rate = round(answered / review_count * 100, 1) if review_count else 0.0
     verified_reviews = sum(1 for r in reviews if r.is_verified_purchase)
-    verification = round(verified_reviews / review_count * 100, 1) if review_count else 0.0
+    verification = (
+        round(verified_reviews / review_count * 100, 1) if review_count else 0.0
+    )
 
     # Each component is a real measurement, weighted into 0-100. No component
     # is included unless the data behind it exists.
     trust_score = round(
-        review_rating * 10           # max 50 (5 stars)
+        review_rating * 10  # max 50 (5 stars)
         + min(review_count / 2, 20)  # max 20
-        + response_rate * 0.15       # max 15
-        + verification * 0.10        # max 10
+        + response_rate * 0.15  # max 15
+        + verification * 0.10  # max 10
         + min(len(awards) * 2.5, 5),  # max 5
         1,
     )
@@ -222,8 +234,14 @@ async def calculate_trust_score(
             "testimonial_count": len(testimonials),
             "award_count": len(awards),
         },
-        "next_tier": None if tier == "platinum" else (
-            "silver" if tier == "bronze" else "gold" if tier == "silver" else "platinum"
+        "next_tier": (
+            None
+            if tier == "platinum"
+            else (
+                "silver"
+                if tier == "bronze"
+                else "gold" if tier == "silver" else "platinum"
+            )
         ),
         "points_to_next": max(0, round(thresholds.get(tier, 100) - trust_score, 1)),
     }

@@ -138,7 +138,9 @@ class StrategyRecommender:
                     f"Analysis indicates {best_strategy} aligns with customer profile",
                     "Historical data shows strong ROI with this approach",
                 ],
-                alternatives=[self.strategies[(strategy_idx + 1) % len(self.strategies)]],
+                alternatives=[
+                    self.strategies[(strategy_idx + 1) % len(self.strategies)]
+                ],
             )
             predictions.append(recommendation)
 
@@ -328,7 +330,13 @@ class MessageToneRecommender:
         self.classifier = RandomForestClassifier(n_estimators=100, random_state=42)
         self.scaler = StandardScaler()
         self.is_trained = False
-        self.tones = ["professional", "conversational", "urgent", "friendly", "consultative"]
+        self.tones = [
+            "professional",
+            "conversational",
+            "urgent",
+            "friendly",
+            "consultative",
+        ]
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "MessageToneRecommender":
         """Train the network."""

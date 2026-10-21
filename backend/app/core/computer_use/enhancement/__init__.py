@@ -30,8 +30,7 @@ from typing import Any
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -148,6 +147,7 @@ except ImportError as e:
 # CONVENIENCE INITIALIZERS
 # ============================================================================
 
+
 async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
     """
     Crear sistema de mejora completo.
@@ -159,22 +159,16 @@ async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
     system = {
         # Handlers
         "platform_factory": PlatformHandlerFactory(computer_use_engine),
-
         # Error handling
         "error_recovery": ErrorRecoveryManager(computer_use_engine),
-
         # Verification
         "verification": VerificationCoordinator(computer_use_engine),
-
         # Patterns
         "patterns": InteractionPatternLibrary(computer_use_engine),
-
         # Extraction
         "extraction": UniversalDataExtractor(computer_use_engine),
-
         # Resilience
         "resilience": ResilienceCoordinator(),
-
         # Monitoring
         "metrics": MetricsCollector(),
         "errors": ErrorTracker(),
@@ -185,10 +179,7 @@ async def create_enhancement_system(computer_use_engine) -> dict[str, Any]:
     reporter = PerformanceReporter(system["metrics"], system["errors"])
     system["reporter"] = reporter
     system["dashboard"] = MonitoringDashboard(
-        system["metrics"],
-        system["errors"],
-        system["alerts"],
-        reporter
+        system["metrics"], system["errors"], system["alerts"], reporter
     )
 
     logger.info("Enhancement System initialized successfully")

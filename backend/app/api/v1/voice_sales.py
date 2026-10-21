@@ -190,14 +190,16 @@ def get_voice_metrics(
         # Get metrics
         total_calls = db.query(VoiceCall).count()
 
-        booked_calls = db.query(VoiceCall).filter(
-            VoiceCall.outcome == "meeting_booked"
-        ).count()
+        booked_calls = (
+            db.query(VoiceCall).filter(VoiceCall.outcome == "meeting_booked").count()
+        )
         booking_rate = booked_calls / total_calls if total_calls > 0 else 0
 
         avg_duration = db.query(func.avg(VoiceCall.duration_seconds)).scalar() or 0
 
-        avg_objections = db.query(func.avg(VoiceCallMetrics.objections_handled)).scalar() or 0
+        avg_objections = (
+            db.query(func.avg(VoiceCallMetrics.objections_handled)).scalar() or 0
+        )
 
         return CallMetricsResponse(
             total_calls=total_calls,

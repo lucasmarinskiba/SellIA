@@ -71,43 +71,85 @@ class RecommendationStatus(str, enum.Enum):
 
 class AlertRule(Base):
     """Configurable rule that generates alerts when conditions are met."""
+
     __tablename__ = "alert_rules"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     rule_type = Column(Enum(AlertRuleType), nullable=False, index=True)
-    config = Column(JSONB, default=dict, nullable=False)  # {threshold: 80, days: 3, hours: 24, target_amount: 100000}
+    config = Column(
+        JSONB, default=dict, nullable=False
+    )  # {threshold: 80, days: 3, hours: 24, target_amount: 100000}
 
     severity = Column(Enum(AlertSeverity), default=AlertSeverity.INFO, nullable=False)
-    channels = Column(JSONB, default=list, nullable=False)  # ["in_app", "email", "webhook"]
+    channels = Column(
+        JSONB, default=list, nullable=False
+    )  # ["in_app", "email", "webhook"]
     cooldown_minutes = Column(Integer, default=60, nullable=False)
     max_alerts_per_day = Column(Integer, default=10, nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class Alert(Base):
     """A generated alert instance."""
+
     __tablename__ = "alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
-    rule_id = Column(UUID(as_uuid=True), ForeignKey("alert_rules.id", ondelete="SET NULL"), nullable=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    rule_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("alert_rules.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True)
-    deal_id = Column(UUID(as_uuid=True), ForeignKey("deals.id", ondelete="SET NULL"), nullable=True, index=True)
-    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True)
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    deal_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("deals.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     severity = Column(Enum(AlertSeverity), nullable=False)
-    status = Column(Enum(AlertStatus), default=AlertStatus.UNREAD, nullable=False, index=True)
+    status = Column(
+        Enum(AlertStatus), default=AlertStatus.UNREAD, nullable=False, index=True
+    )
 
     entity_type = Column(String(50), nullable=True)  # "deal", "conversation", "order"
     entity_id = Column(UUID(as_uuid=True), nullable=True)
@@ -122,10 +164,16 @@ class Alert(Base):
 
 class Recommendation(Base):
     """An actionable recommendation generated from alerts or heuristics."""
+
     __tablename__ = "recommendations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     type = Column(Enum(RecommendationType), nullable=False)
     title = Column(String(255), nullable=False)
@@ -136,7 +184,12 @@ class Recommendation(Base):
     action_type = Column(Enum(RecommendationActionType), nullable=False)
     action_payload = Column(JSONB, default=dict, nullable=False)
 
-    status = Column(Enum(RecommendationStatus), default=RecommendationStatus.PENDING, nullable=False, index=True)
+    status = Column(
+        Enum(RecommendationStatus),
+        default=RecommendationStatus.PENDING,
+        nullable=False,
+        index=True,
+    )
     applied_at = Column(DateTime(timezone=True), nullable=True)
     applied_by_user_id = Column(UUID(as_uuid=True), nullable=True)
 

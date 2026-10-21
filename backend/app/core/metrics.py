@@ -8,52 +8,35 @@ auth.py para métricas de login.
 from prometheus_client import Counter, Gauge, Histogram
 
 # Métricas de autenticación
-SELLIA_LOGINS = Counter(
-    "sellia_logins_total",
-    "Total de logins",
-    ["status"]
-)
+SELLIA_LOGINS = Counter("sellia_logins_total", "Total de logins", ["status"])
 
 SELLIA_FAILED_LOGINS = Counter(
-    "sellia_failed_logins_total",
-    "Total de logins fallidos",
-    ["ip"]
+    "sellia_failed_logins_total", "Total de logins fallidos", ["ip"]
 )
 
 SELLIA_GEOFENCE_VIOLATIONS = Counter(
-    "sellia_geofence_violations_total",
-    "Violaciones de geofencing"
+    "sellia_geofence_violations_total", "Violaciones de geofencing"
 )
 
 SELLIA_NEW_DEVICES = Counter(
-    "sellia_new_devices_total",
-    "Nuevos dispositivos detectados"
+    "sellia_new_devices_total", "Nuevos dispositivos detectados"
 )
 
 SELLIA_RATE_LIMIT_HITS = Counter(
-    "sellia_rate_limit_hits_total",
-    "Hits de rate limiting",
-    ["endpoint"]
+    "sellia_rate_limit_hits_total", "Hits de rate limiting", ["endpoint"]
 )
 
 # Métricas de rendimiento
 SELLIA_REQUEST_DURATION = Histogram(
-    "sellia_request_duration_seconds",
-    "Duración de requests",
-    ["path"]
+    "sellia_request_duration_seconds", "Duración de requests", ["path"]
 )
 
 SELLIA_REQUESTS = Counter(
-    "sellia_requests_total",
-    "Total de requests",
-    ["status", "path"]
+    "sellia_requests_total", "Total de requests", ["status", "path"]
 )
 
 # Métricas de sesiones
-SELLIA_ACTIVE_SESSIONS = Gauge(
-    "sellia_active_sessions",
-    "Sesiones activas"
-)
+SELLIA_ACTIVE_SESSIONS = Gauge("sellia_active_sessions", "Sesiones activas")
 
 # Métricas de Computer Use Agents
 COMPUTER_USE_SESSIONS_CREATED = Counter(

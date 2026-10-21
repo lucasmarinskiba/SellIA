@@ -40,7 +40,11 @@ async def store_credential(
         auth_type=AuthType(data.get("auth_type", "password")),
         business_id=data.get("business_id"),
     )
-    return {"id": str(cred.id), "domain": cred.domain, "platform_name": cred.platform_name}
+    return {
+        "id": str(cred.id),
+        "domain": cred.domain,
+        "platform_name": cred.platform_name,
+    }
 
 
 @router.get("")

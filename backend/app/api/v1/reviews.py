@@ -22,6 +22,7 @@ _REVIEW_COUNTER = 0
 
 class Review(BaseModel):
     """Reseña de producto."""
+
     id: str
     product_id: str
     customer_id: str
@@ -57,7 +58,9 @@ async def create_review(
 
         # Validar texto (min 10 caracteres)
         if len(text) < 10:
-            raise HTTPException(status_code=400, detail="Review too short (min 10 chars)")
+            raise HTTPException(
+                status_code=400, detail="Review too short (min 10 chars)"
+            )
 
         # Detectar spam
         spam_patterns = [
@@ -91,7 +94,9 @@ async def create_review(
 
         _REVIEWS_DB[review_id] = review
 
-        status_msg = "pending_moderation" if review["status"] == "pending" else "flagged_as_spam"
+        status_msg = (
+            "pending_moderation" if review["status"] == "pending" else "flagged_as_spam"
+        )
         logger.info(f"Reseña creada: {review_id} (⭐{rating}), status: {status_msg}")
 
         return {

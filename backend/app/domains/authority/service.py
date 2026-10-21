@@ -59,7 +59,9 @@ async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
         from app.domains.businesses.models import Business
 
         result = await db.execute(
-            select(Business.id, Business.name).where(Business.user_id == user.id).limit(1)
+            select(Business.id, Business.name)
+            .where(Business.user_id == user.id)
+            .limit(1)
         )
         row = result.first()
         if row:
@@ -77,13 +79,17 @@ async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
         )
         context = result.scalar_one_or_none()
         if context is not None:
-            ctx.update({
-                "industry": context.industry,
-                "business_type": context.business_type.value if context.business_type else None,
-                "target_audience": context.target_audience,
-                "value_proposition": context.value_proposition,
-                "city": context.city,
-            })
+            ctx.update(
+                {
+                    "industry": context.industry,
+                    "business_type": (
+                        context.business_type.value if context.business_type else None
+                    ),
+                    "target_audience": context.target_audience,
+                    "value_proposition": context.value_proposition,
+                    "city": context.city,
+                }
+            )
     except Exception as e:  # noqa: BLE001
         logger.warning("authority: context lookup failed: %s", str(e)[:200])
         await _safe_rollback(db)
@@ -91,7 +97,9 @@ async def _gather_context(db: AsyncSession, user) -> dict[str, Any]:
     return ctx
 
 
-async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[str, Any]]:
+async def compute_pillars(
+    db: AsyncSession, user
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Run every pillar against this account's real data. Returns (pillars, context)."""
     from app.domains.ai_activity import service as ai_activity_service
     from app.domains.data_science import service as ds_service
@@ -131,7 +139,9 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
         "identidad": pillar_calc.identidad(authority_report, context),
         "red": pillar_calc.red(authority_report),
         "prueba_social": pillar_calc.prueba_social(trust),
-        "respuesta": pillar_calc.respuesta(snapshot.get("conversations", {}), median_minutes),
+        "respuesta": pillar_calc.respuesta(
+            snapshot.get("conversations", {}), median_minutes
+        ),
         "contenido": pillar_calc.contenido(seo_report),
         "verificacion": pillar_calc.verificacion(
             snapshot.get("verification", {}), len(snapshot.get("channels", []))
@@ -140,7 +150,9 @@ async def compute_pillars(db: AsyncSession, user) -> tuple[dict[str, Any], dict[
     return computed, context
 
 
-async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> dict[str, Any]:
+async def capture_snapshot(
+    db: AsyncSession, user, force: bool = False
+) -> dict[str, Any]:
     """Measure now and store it, unless the last measurement is very recent.
 
     Returns plain values, never the ORM object: commit() expires every loaded
@@ -164,21 +176,25 @@ async def capture_snapshot(db: AsyncSession, user, force: bool = False) -> dict[
         last.captured_at = now
         await db.commit()
     else:
-        db.add(AuthoritySnapshot(
-            user_id=user.id,
-            business_id=context.get("business_id"),
-            captured_at=now,
-            total_score=total,
-            pillars=computed,
-            signals=signals,
-        ))
+        db.add(
+            AuthoritySnapshot(
+                user_id=user.id,
+                business_id=context.get("business_id"),
+                captured_at=now,
+                total_score=total,
+                pillars=computed,
+                signals=signals,
+            )
+        )
         await db.commit()
 
     await sync_actions(db, user, computed, context)
     return {"total_score": total, "captured_at": now, "pillars": computed}
 
 
-async def _latest_snapshot(db: AsyncSession, user_id: uuid.UUID) -> AuthoritySnapshot | None:
+async def _latest_snapshot(
+    db: AsyncSession, user_id: uuid.UUID
+) -> AuthoritySnapshot | None:
     result = await db.execute(
         select(AuthoritySnapshot)
         .where(AuthoritySnapshot.user_id == user_id)
@@ -207,20 +223,22 @@ async def sync_actions(
     for key, rec in by_key.items():
         action = existing.get(key)
         if action is None:
-            db.add(AuthorityAction(
-                user_id=user.id,
-                business_id=context.get("business_id"),
-                action_key=rec.action_key,
-                pillar=rec.pillar,
-                agent=rec.agent,
-                principle=rec.principle,
-                title=rec.title,
-                rationale=rec.rationale,
-                script=rec.script,
-                channel=rec.channel,
-                mode=rec.mode,
-                impact_score=rec.impact_score,
-            ))
+            db.add(
+                AuthorityAction(
+                    user_id=user.id,
+                    business_id=context.get("business_id"),
+                    action_key=rec.action_key,
+                    pillar=rec.pillar,
+                    agent=rec.agent,
+                    principle=rec.principle,
+                    title=rec.title,
+                    rationale=rec.rationale,
+                    script=rec.script,
+                    channel=rec.channel,
+                    mode=rec.mode,
+                    impact_score=rec.impact_score,
+                )
+            )
         elif action.status == ActionStatus.SUGGESTED:
             # Keep the wording current with the numbers, but never resurrect a
             # decision the user already made.
@@ -233,7 +251,10 @@ async def sync_actions(
     # A recommendation that no longer applies (the gap was closed) is marked
     # done rather than deleted, so the user sees what they achieved.
     for key, action in existing.items():
-        if key not in by_key and action.status in (ActionStatus.SUGGESTED, ActionStatus.IN_PROGRESS):
+        if key not in by_key and action.status in (
+            ActionStatus.SUGGESTED,
+            ActionStatus.IN_PROGRESS,
+        ):
             action.status = ActionStatus.DONE
             action.completed_at = datetime.now(UTC)
 
@@ -282,9 +303,15 @@ def serialize_action(action: AuthorityAction) -> dict[str, Any]:
         "mode": mode.value,
         "executable": automations.is_executable(action.action_key),
         "needs_confirmation": automations.needs_confirmation(action.action_key),
-        "status": action.status.value if isinstance(action.status, ActionStatus) else str(action.status),
+        "status": (
+            action.status.value
+            if isinstance(action.status, ActionStatus)
+            else str(action.status)
+        ),
         "impact_score": action.impact_score,
-        "completed_at": action.completed_at.isoformat() if action.completed_at else None,
+        "completed_at": (
+            action.completed_at.isoformat() if action.completed_at else None
+        ),
     }
 
 
@@ -306,7 +333,9 @@ async def set_action_status(
     return action
 
 
-async def get_trend(db: AsyncSession, user_id: uuid.UUID, limit: int = 60) -> list[dict[str, Any]]:
+async def get_trend(
+    db: AsyncSession, user_id: uuid.UUID, limit: int = 60
+) -> list[dict[str, Any]]:
     result = await db.execute(
         select(AuthoritySnapshot)
         .where(AuthoritySnapshot.user_id == user_id)
@@ -324,18 +353,20 @@ async def get_trend(db: AsyncSession, user_id: uuid.UUID, limit: int = 60) -> li
     ]
 
 
-def analyze_trend(trend: list[dict[str, Any]], current: dict[str, Any]) -> dict[str, Any]:
+def analyze_trend(
+    trend: list[dict[str, Any]], current: dict[str, Any]
+) -> dict[str, Any]:
     """The chart analyst.
 
     Reads the series the way someone who knows what a small sample is would:
     two points are a difference, not a trend, and it says so.
     """
-    weakest = min(
-        current.items(), key=lambda kv: kv[1].get("score", 0)
-    ) if current else None
-    strongest = max(
-        current.items(), key=lambda kv: kv[1].get("score", 0)
-    ) if current else None
+    weakest = (
+        min(current.items(), key=lambda kv: kv[1].get("score", 0)) if current else None
+    )
+    strongest = (
+        max(current.items(), key=lambda kv: kv[1].get("score", 0)) if current else None
+    )
 
     base: dict[str, Any] = {
         "direction": "unknown",
@@ -353,7 +384,8 @@ def analyze_trend(trend: list[dict[str, Any]], current: dict[str, Any]) -> dict[
         base["detail"] = (
             f"Tu pilar más flojo hoy es «{pillar_calc.PILLARS[weakest[0]][0]}» "
             f"({weakest[1]['score']} de 100). Ahí es donde cada hora de trabajo rinde más."
-            if weakest else ""
+            if weakest
+            else ""
         )
         return base
 
@@ -381,7 +413,11 @@ def analyze_trend(trend: list[dict[str, Any]], current: dict[str, Any]) -> dict[
             f" {abs(delta)} puntos. Son dos puntos: es un cambio, todavía no una tendencia."
         )
     else:
-        verb = "viene subiendo" if delta > 0 else "viene bajando" if delta < 0 else "está estancada"
+        verb = (
+            "viene subiendo"
+            if delta > 0
+            else "viene bajando" if delta < 0 else "está estancada"
+        )
         base["headline"] = (
             f"Tu autoridad {verb}: {abs(delta)} puntos entre el {first['date']} y el {last['date']}, "
             f"sobre {len(trend)} mediciones."
@@ -456,22 +492,26 @@ async def personalize_script(
         from app.core.database import AsyncSessionLocal
         from app.domains.agents.llm_provider import generate_with_fallback
 
-        system = SystemMessage(content=(
-            "Sos un especialista en comunicación de marca para pymes de Latinoamérica. "
-            "Reescribís un mensaje para que suene humano, concreto y en la voz del negocio. "
-            "Reglas estrictas: no inventes datos, precios, plazos ni estadísticas; no prometas "
-            "resultados; no uses urgencia falsa; mantené los marcadores entre llaves tal como "
-            "están; escribí en español rioplatense, tuteando, en menos de 120 palabras."
-        ))
-        human = HumanMessage(content=(
-            f"Negocio: {context.get('business_name') or 'sin nombre'}\n"
-            f"Rubro: {context.get('industry') or context.get('business_type') or 'no declarado'}\n"
-            f"Público: {context.get('target_audience') or 'no declarado'}\n"
-            f"Propuesta de valor: {context.get('value_proposition') or 'no declarada'}\n"
-            f"Canal: {action.channel or 'general'}\n"
-            f"Objetivo del mensaje: {action.title}\n\n"
-            f"Mensaje base a reescribir:\n{action.script}"
-        ))
+        system = SystemMessage(
+            content=(
+                "Sos un especialista en comunicación de marca para pymes de Latinoamérica. "
+                "Reescribís un mensaje para que suene humano, concreto y en la voz del negocio. "
+                "Reglas estrictas: no inventes datos, precios, plazos ni estadísticas; no prometas "
+                "resultados; no uses urgencia falsa; mantené los marcadores entre llaves tal como "
+                "están; escribí en español rioplatense, tuteando, en menos de 120 palabras."
+            )
+        )
+        human = HumanMessage(
+            content=(
+                f"Negocio: {context.get('business_name') or 'sin nombre'}\n"
+                f"Rubro: {context.get('industry') or context.get('business_type') or 'no declarado'}\n"
+                f"Público: {context.get('target_audience') or 'no declarado'}\n"
+                f"Propuesta de valor: {context.get('value_proposition') or 'no declarada'}\n"
+                f"Canal: {action.channel or 'general'}\n"
+                f"Objetivo del mensaje: {action.title}\n\n"
+                f"Mensaje base a reescribir:\n{action.script}"
+            )
+        )
 
         # Its own short-lived session, deliberately. The LLM path touches
         # several optional tables (business context builder, usage caps,

@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Personality Schemas ==========
 
+
 class AgentPersonalityBase(BaseModel):
     slug: str
     name: str
@@ -29,6 +30,7 @@ class AgentPersonalityResponse(AgentPersonalityBase):
 
 
 # ========== Config Schemas ==========
+
 
 class AgentConfigCreate(BaseModel):
     personality_id: UUID
@@ -64,6 +66,7 @@ class AgentConfigResponse(BaseModel):
 
 
 # ========== Conversation & Message Schemas ==========
+
 
 class AgentConversationCreate(BaseModel):
     business_id: UUID
@@ -109,6 +112,7 @@ class AgentConversationDetailResponse(AgentConversationResponse):
 
 # ========== Auto-Pilot Voice Config ==========
 
+
 class AutopilotVoiceConfig(BaseModel):
     personality_slug: str
     voice_personality_slug: str | None = None
@@ -121,6 +125,7 @@ class AutopilotVoiceConfigResponse(BaseModel):
 
 # ========== Chat Response ==========
 
+
 class AgentChatResponse(BaseModel):
     message: AgentMessageResponse
     conversation_id: UUID
@@ -129,6 +134,7 @@ class AgentChatResponse(BaseModel):
 
 
 # ========== ReAct Chat ==========
+
 
 class ReactChatRequest(BaseModel):
     message: str
@@ -146,6 +152,7 @@ class ReactChatResponse(BaseModel):
 
 
 # ========== Planning ==========
+
 
 class PlanStepResponse(BaseModel):
     id: str
@@ -169,6 +176,7 @@ class PlanResponse(BaseModel):
 
 
 # ========== Swarm Schemas ==========
+
 
 class SwarmExecuteRequest(BaseModel):
     task: str

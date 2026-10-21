@@ -19,10 +19,12 @@ if not security_logger.handlers:
 
 # Patrones sospechosos de ataque
 SUSPICIOUS_PATTERNS = [
-    re.compile(r"(union\s+select|insert\s+into|delete\s+from|drop\s+table)", re.IGNORECASE),
+    re.compile(
+        r"(union\s+select|insert\s+into|delete\s+from|drop\s+table)", re.IGNORECASE
+    ),
     re.compile(r"(<script|javascript:|on\w+\s*=)", re.IGNORECASE),
     re.compile(r"(\.\./|\.\.\\|%2e%2e%2f)", re.IGNORECASE),
-    re.compile(r"(eval\s*\(|expression\s*\(|url\s*\()")
+    re.compile(r"(eval\s*\(|expression\s*\(|url\s*\()"),
 ]
 
 # IPs privadas / loopback (no analizar como VPN)
@@ -32,7 +34,9 @@ PRIVATE_IPS = re.compile(
 
 # Dummy hash estático para mitigación de timing attacks
 # bcrypt hash de "dummy" precomputado
-_TIMING_ATTACK_DUMMY_HASH = "$2b$12$dummy.hash.for.timing.attack.mitigation.123456789012"
+_TIMING_ATTACK_DUMMY_HASH = (
+    "$2b$12$dummy.hash.for.timing.attack.mitigation.123456789012"
+)
 
 
 def _is_trusted_proxy(ip: str) -> bool:
@@ -44,12 +48,12 @@ def _is_trusted_proxy(ip: str) -> bool:
 
 def get_client_ip(request: Request) -> str:
     """Obtiene la IP real del cliente validando proxies confiables.
-    
+
     Solo confía en X-Forwarded-For si la conexión directa proviene
     de una IP privada (proxy interno). Esto previene spoofing.
     """
     direct_ip = request.client.host if request.client else "unknown"
-    
+
     # Solo leer headers de proxy si la conexión directa es confiable
     if _is_trusted_proxy(direct_ip):
         forwarded = request.headers.get("x-forwarded-for")
@@ -59,21 +63,21 @@ def get_client_ip(request: Request) -> str:
         real_ip = request.headers.get("x-real-ip")
         if real_ip:
             return real_ip.strip()
-    
+
     return direct_ip
 
 
 async def _get_body_without_consuming(request: Request) -> bytes:
     """Lee el body del request sin consumirlo para downstream handlers.
-    
+
     Reemplaza el receive del request con uno que cachea el body,
     permitiendo que los endpoints lo lean posteriormente.
     """
     body = await request.body()
-    
+
     async def receive():
         return {"type": "http.request", "body": body}
-    
+
     request._receive = receive
     return body
 
@@ -136,12 +140,16 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
             "duration_ms": round(duration_ms, 2),
             "suspicious": len(suspicious_triggers) > 0,
             "suspicious_triggers": suspicious_triggers,
-            "cloudflare": {
-                "is_cloudflare": cf_info.get("is_cloudflare", False),
-                "cf_ray": cf_info.get("cf_ray"),
-                "cf_country": cf_info.get("cf_country"),
-                "cf_valid_origin": cf_valid,
-            } if cf_info else None,
+            "cloudflare": (
+                {
+                    "is_cloudflare": cf_info.get("is_cloudflare", False),
+                    "cf_ray": cf_info.get("cf_ray"),
+                    "cf_country": cf_info.get("cf_country"),
+                    "cf_valid_origin": cf_valid,
+                }
+                if cf_info
+                else None
+            ),
         }
 
         # Alertas específicas de seguridad
@@ -156,6 +164,8 @@ class SecurityAuditMiddleware(BaseHTTPMiddleware):
             security_logger.info(json.dumps(log_entry, ensure_ascii=False))
 
         # Añadir header de correlación para trazabilidad
-        response.headers["X-Request-ID"] = getattr(request.state, "request_id", "unknown")
+        response.headers["X-Request-ID"] = getattr(
+            request.state, "request_id", "unknown"
+        )
 
         return response

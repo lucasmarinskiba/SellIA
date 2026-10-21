@@ -75,7 +75,7 @@ async def calculate_price(
             base_price=request.base_price,
             discount_code=request.discount_code,
             checkin_id=request.checkin_id,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -93,13 +93,15 @@ async def log_pricing_transaction(
     try:
         result = DynamicPricingService.log_pricing_transaction(
             location_id=request.location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=UUID(
+                "00000000-0000-0000-0000-000000000000"
+            ),  # TODO: from location
             order_id=request.order_id,
             base_price=request.base_price,
             final_price=request.final_price,
             discount_code=request.discount_code,
             discount_amount=request.discount_amount,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -136,7 +138,7 @@ async def update_pricing_tier(
             tier=request.tier,
             tier_multiplier=request.tier_multiplier,
             peak_discount_pct=request.peak_discount_pct,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -161,7 +163,7 @@ async def create_discount_code(
             discount_type=request.discount_type,
             valid_days=request.valid_days,
             usage_limit=request.usage_limit,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -201,7 +203,7 @@ async def create_ab_test(
             variant_a_price=request.variant_a_price,
             variant_b_price=request.variant_b_price,
             test_duration_days=request.test_duration_days,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -235,7 +237,7 @@ async def get_revenue_impact(
             location_id=location_id,
             business_id=UUID("00000000-0000-0000-0000-000000000000"),
             date=date,
-            db=db
+            db=db,
         )
         return result
     except Exception as e:
@@ -258,10 +260,15 @@ async def get_pricing_analytics(
         cutoff = datetime.now(UTC) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
-        impacts = db.query(LocationRevenueImpact).filter(
-            LocationRevenueImpact.location_id == location_id,
-            LocationRevenueImpact.date >= cutoff_str
-        ).order_by(LocationRevenueImpact.date.desc()).all()
+        impacts = (
+            db.query(LocationRevenueImpact)
+            .filter(
+                LocationRevenueImpact.location_id == location_id,
+                LocationRevenueImpact.date >= cutoff_str,
+            )
+            .order_by(LocationRevenueImpact.date.desc())
+            .all()
+        )
 
         total_base = sum(float(i.total_base_revenue) for i in impacts)
         total_final = sum(float(i.total_final_revenue) for i in impacts)
@@ -288,10 +295,8 @@ async def get_pricing_analytics(
             "total_discounts_given": total_discounts,
             "net_revenue_impact": total_final - total_base,
             "impact_pct": ((total_final - total_base) / max(total_base, 0.01)) * 100,
-            "daily_breakdown": impact_data
+            "daily_breakdown": impact_data,
         }
     except Exception as e:
         logger.exception("get_pricing_analytics: error inesperado")
         raise HTTPException(status_code=400, detail=str(e))
-
-

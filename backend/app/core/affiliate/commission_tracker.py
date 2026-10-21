@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CommissionStatus(Enum):
     """Commission statuses."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -22,6 +23,7 @@ class CommissionStatus(Enum):
 @dataclass
 class AffiliateCommission:
     """Single commission record."""
+
     commission_id: str
     affiliate_id: str
     product_id: str
@@ -39,6 +41,7 @@ class AffiliateCommission:
 @dataclass
 class AffiliatePerformance:
     """Performance metrics for affiliate."""
+
     affiliate_id: str
     total_clicks: int = 0
     total_conversions: int = 0
@@ -86,9 +89,7 @@ class CommissionTracker:
         self.commissions[commission_id] = commission
         self._update_performance(affiliate_id, commission)
 
-        logger.info(
-            f"Recorded commission: {commission_id} (${commission_amount:.2f})"
-        )
+        logger.info(f"Recorded commission: {commission_id} (${commission_amount:.2f})")
         return commission
 
     def approve_commission(self, commission_id: str) -> bool:
@@ -135,14 +136,10 @@ class CommissionTracker:
             comm.status = CommissionStatus.PAID
             comm.payout_date = payout["payout_date"]
 
-        logger.info(
-            f"Processed payout {payout['payout_id']}: ${total_amount:.2f}"
-        )
+        logger.info(f"Processed payout {payout['payout_id']}: ${total_amount:.2f}")
         return payout
 
-    def _update_performance(
-        self, affiliate_id: str, commission: AffiliateCommission
-    ):
+    def _update_performance(self, affiliate_id: str, commission: AffiliateCommission):
         """Update affiliate performance metrics."""
         if affiliate_id not in self.affiliate_performance:
             self.affiliate_performance[affiliate_id] = AffiliatePerformance(
@@ -158,18 +155,12 @@ class CommissionTracker:
         if commission.product_id not in perf.active_products:
             perf.active_products.append(commission.product_id)
 
-        perf.conversion_rate = (
-            perf.total_conversions / max(perf.total_clicks, 1)
-        )
-        perf.average_order_value = (
-            perf.total_sales_amount / perf.total_conversions
-        )
+        perf.conversion_rate = perf.total_conversions / max(perf.total_clicks, 1)
+        perf.average_order_value = perf.total_sales_amount / perf.total_conversions
 
         # Find top product
         product_commissions = [
-            c
-            for c in self.commissions.values()
-            if c.affiliate_id == affiliate_id
+            c for c in self.commissions.values() if c.affiliate_id == affiliate_id
         ]
         if product_commissions:
             top_product = max(
@@ -185,9 +176,7 @@ class CommissionTracker:
     def get_affiliate_earnings(self, affiliate_id: str) -> dict[str, Any]:
         """Get total earnings for affiliate."""
         affiliate_comms = [
-            c
-            for c in self.commissions.values()
-            if c.affiliate_id == affiliate_id
+            c for c in self.commissions.values() if c.affiliate_id == affiliate_id
         ]
 
         if not affiliate_comms:

@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class EmailProvider(Enum):
     """Proveedores de email soportados."""
+
     SENDGRID = "sendgrid"
     AWS_SES = "aws_ses"
     SMTP = "smtp"
@@ -31,6 +32,7 @@ class EmailProvider(Enum):
 
 class EmailTemplate(Enum):
     """Templates predefinidas."""
+
     ORDER_CONFIRMATION = "order_confirmation"
     SHIPMENT_NOTIFICATION = "shipment_notification"
     DELIVERY_CONFIRMATION = "delivery_confirmation"
@@ -43,6 +45,7 @@ class EmailTemplate(Enum):
 @dataclass
 class EmailRecipient:
     """Destinatario de email."""
+
     email: str
     name: str | None = None
     variables: dict[str, Any] = None
@@ -51,6 +54,7 @@ class EmailRecipient:
 @dataclass
 class EmailMessage:
     """Estructura de email."""
+
     to: list[EmailRecipient]
     subject: str
     html_content: str
@@ -280,7 +284,10 @@ class EmailTemplateEngine:
             raise ValueError(f"Template {template.value} not found")
 
         # Escape HTML en valores de usuario
-        safe_vars = {k: html.escape(str(v)) if isinstance(v, str) else v for k, v in variables.items()}
+        safe_vars = {
+            k: html.escape(str(v)) if isinstance(v, str) else v
+            for k, v in variables.items()
+        }
 
         # Render simple template (puede mejorarse con Jinja2)
         result = html_content
@@ -312,6 +319,7 @@ class EmailService:
         """Inicializa SendGrid."""
         try:
             from sendgrid import SendGridAPIClient
+
             api_key = os.getenv("SENDGRID_API_KEY")
             if not api_key:
                 raise ValueError("SENDGRID_API_KEY not configured")
@@ -325,7 +333,10 @@ class EmailService:
         """Inicializa AWS SES."""
         try:
             import boto3
-            self.ses_client = boto3.client("ses", region_name=os.getenv("AWS_REGION", "us-east-1"))
+
+            self.ses_client = boto3.client(
+                "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
             logger.info("AWS SES initialized")
         except ImportError:
             logger.error("boto3 package not installed")
@@ -369,7 +380,9 @@ class EmailService:
             "shipping_country": shipping_addr.get("country", ""),
         }
 
-        html_content = self.template_engine.render(EmailTemplate.ORDER_CONFIRMATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.ORDER_CONFIRMATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
@@ -406,13 +419,19 @@ class EmailService:
             "tracking_url": tracking_url,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.SHIPMENT_NOTIFICATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.SHIPMENT_NOTIFICATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
             subject=f"Tu Pedido Ha Sido Despachado - Seguimiento: {tracking_number}",
             html_content=html_content,
-            metadata={"order_id": order_id, "tracking_number": tracking_number, "type": "shipment"},
+            metadata={
+                "order_id": order_id,
+                "tracking_number": tracking_number,
+                "type": "shipment",
+            },
         )
 
         return await self.send(message)
@@ -440,7 +459,9 @@ class EmailService:
             "retry_payment_url": retry_url,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.PAYMENT_FAILED, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.PAYMENT_FAILED, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
@@ -472,13 +493,19 @@ class EmailService:
             "refund_eta": refund_eta,
         }
 
-        html_content = self.template_engine.render(EmailTemplate.REFUND_NOTIFICATION, variables)
+        html_content = self.template_engine.render(
+            EmailTemplate.REFUND_NOTIFICATION, variables
+        )
 
         message = EmailMessage(
             to=[EmailRecipient(email=customer_email, name=customer_name)],
             subject=f"✅ Reembolso Aprobado - ${refund_amount:.2f}",
             html_content=html_content,
-            metadata={"order_id": order_id, "type": "refund", "amount": str(refund_amount)},
+            metadata={
+                "order_id": order_id,
+                "type": "refund",
+                "amount": str(refund_amount),
+            },
         )
 
         return await self.send(message)
@@ -486,7 +513,9 @@ class EmailService:
     async def send(self, message: EmailMessage) -> dict[str, Any]:
         """Envía email genérico."""
 
-        logger.info(f"Sending email to {[r.email for r in message.to]}: {message.subject}")
+        logger.info(
+            f"Sending email to {[r.email for r in message.to]}: {message.subject}"
+        )
 
         try:
             if self.provider == EmailProvider.SENDGRID:
@@ -587,7 +616,9 @@ class EmailService:
                 port=self.smtp_config["port"],
             ) as smtp:
                 if self.smtp_config["user"]:
-                    await smtp.login(self.smtp_config["user"], self.smtp_config["password"])
+                    await smtp.login(
+                        self.smtp_config["user"], self.smtp_config["password"]
+                    )
 
                 await smtp.send_message(msg)
 

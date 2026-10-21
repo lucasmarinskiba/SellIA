@@ -1,4 +1,5 @@
 """Phase 5A: Location Endpoints."""
+
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -161,4 +162,8 @@ def end_visit(
     visit = LocationService.end_location_visit(db, visit_id)
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
-    return {"id": visit.id, "dwell_minutes": visit.dwell_minutes, "message": "Visit ended"}
+    return {
+        "id": visit.id,
+        "dwell_minutes": visit.dwell_minutes,
+        "message": "Visit ended",
+    }

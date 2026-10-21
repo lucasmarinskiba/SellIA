@@ -39,6 +39,7 @@ from app.core.clock import utc_now
 @dataclass
 class ContextSnapshot:
     """Snapshot de contexto compartido del cerebro."""
+
     timestamp: str
     user_id: str
     deal_id: str
@@ -77,16 +78,19 @@ class ContextEngine:
         self.contexts[context_key] = context
 
         # Registra en histórico
-        self.history.append({
-            "timestamp": utc_now().isoformat(),
-            "key": context_key,
-            "old_stage": old_context.stage if old_context else None,
-            "new_stage": context.stage,
-            "signals": context.signals,
-        })
+        self.history.append(
+            {
+                "timestamp": utc_now().isoformat(),
+                "key": context_key,
+                "old_stage": old_context.stage if old_context else None,
+                "new_stage": context.stage,
+                "signals": context.signals,
+            }
+        )
 
-    def update_signal(self, context_key: str, signal_name: str,
-                     signal_value: Any) -> None:
+    def update_signal(
+        self, context_key: str, signal_name: str, signal_value: Any
+    ) -> None:
         """Actualiza una señal específica."""
         context = self.get_context(context_key)
         if context:
@@ -194,6 +198,7 @@ class AgentSelector:
 @dataclass
 class OrchestratedDecision:
     """Decisión orquestada de múltiples agentes."""
+
     timestamp: str
     context_key: str
     stage: str
@@ -223,8 +228,9 @@ class BrainOrchestrator:
         # self.neural_paths: NeuralPathwayRegistry
         # self.capabilities: CapabilitiesOrchestrator
 
-    async def decide(self, context_key: str, stage: str,
-                    signals: dict[str, Any]) -> OrchestratedDecision:
+    async def decide(
+        self, context_key: str, stage: str, signals: dict[str, Any]
+    ) -> OrchestratedDecision:
         """
         Toma decisión coordinada:
         1. Actualiza contexto
@@ -256,10 +262,12 @@ class BrainOrchestrator:
         for agent_id in agent_ids[1:]:
             result = await self._execute_agent(agent_id, context)
             if result:
-                secondary_inputs.append({
-                    "agent": agent_id,
-                    "output": result,
-                })
+                secondary_inputs.append(
+                    {
+                        "agent": agent_id,
+                        "output": result,
+                    }
+                )
 
         # 5. Integra resultados
         integrated_decision = self._integrate_decisions(
@@ -281,8 +289,9 @@ class BrainOrchestrator:
         self.decisions.append(orchestrated)
         return orchestrated
 
-    async def _execute_agent(self, agent_id: str,
-                            context: ContextSnapshot) -> dict[str, Any] | None:
+    async def _execute_agent(
+        self, agent_id: str, context: ContextSnapshot
+    ) -> dict[str, Any] | None:
         """Ejecuta un agente (mock)."""
         # En production, invoca real agent
         return {
@@ -291,8 +300,9 @@ class BrainOrchestrator:
             "confidence": 0.8,
         }
 
-    def _integrate_decisions(self, primary: dict[str, Any],
-                            secondary: list[dict[str, Any]]) -> dict[str, Any]:
+    def _integrate_decisions(
+        self, primary: dict[str, Any], secondary: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Integra múltiples decisiones en una sola."""
         # Weighted average de confidencias
         confidences = [primary.get("confidence", 0.5)]
@@ -311,14 +321,16 @@ class BrainOrchestrator:
             "secondary_alignment": self._check_alignment(primary, secondary),
         }
 
-    def _check_alignment(self, primary: dict[str, Any],
-                        secondary: list[dict[str, Any]]) -> bool:
+    def _check_alignment(
+        self, primary: dict[str, Any], secondary: list[dict[str, Any]]
+    ) -> bool:
         """¿Agentes alineados?"""
         if not secondary:
             return True
         primary_action = primary.get("action")
         aligned = sum(
-            1 for sec in secondary
+            1
+            for sec in secondary
             if sec.get("output", {}).get("action") == primary_action
         )
         return aligned >= len(secondary) / 2
@@ -332,6 +344,7 @@ class BrainOrchestrator:
 @dataclass
 class DecisionOutcome:
     """Outcome de decisión para aprendizaje."""
+
     decision_id: str
     successful: bool
     stage: str
@@ -375,11 +388,14 @@ class LearningLoopManager:
 
     def get_agent_performance(self, agent_id: str) -> dict[str, float]:
         """Obtiene performance de un agente."""
-        return self.agent_performance.get(agent_id, {
-            "decisions": 0,
-            "successes": 0,
-            "success_rate": 0.5,
-        })
+        return self.agent_performance.get(
+            agent_id,
+            {
+                "decisions": 0,
+                "successes": 0,
+                "success_rate": 0.5,
+            },
+        )
 
     def suggest_improvements(self, stage: str) -> list[str]:
         """Sugiere mejoras basadas en aprendizajes."""
@@ -390,10 +406,14 @@ class LearningLoopManager:
         if not stage_outcomes:
             return improvements
 
-        success_rate = sum(1 for o in stage_outcomes if o.successful) / len(stage_outcomes)
+        success_rate = sum(1 for o in stage_outcomes if o.successful) / len(
+            stage_outcomes
+        )
 
         if success_rate < 0.6:
-            improvements.append(f"Stage {stage}: Success rate {success_rate:.0%}, improve tactics")
+            improvements.append(
+                f"Stage {stage}: Success rate {success_rate:.0%}, improve tactics"
+            )
 
         return improvements
 
@@ -406,6 +426,7 @@ class LearningLoopManager:
 @dataclass
 class HealthMetric:
     """Métrica de salud del cerebro."""
+
     metric_name: str
     value: float  # 0–1
     timestamp: str = ""
@@ -476,28 +497,33 @@ class UnifiedBrainController:
         self.learning_manager = LearningLoopManager()
         self.health_monitor = BrainHealthMonitor()
 
-    async def process(self, context_key: str, stage: str,
-                     signals: dict[str, Any]) -> dict[str, Any]:
+    async def process(
+        self, context_key: str, stage: str, signals: dict[str, Any]
+    ) -> dict[str, Any]:
         """Procesa señal + toma decisión."""
 
         # 1. Orquesta decisión
         decision = await self.orchestrator.decide(context_key, stage, signals)
 
         # 2. Registra métrica
-        self.health_monitor.record_metric(HealthMetric(
-            "decision_confidence",
-            decision.confidence,
-        ))
+        self.health_monitor.record_metric(
+            HealthMetric(
+                "decision_confidence",
+                decision.confidence,
+            )
+        )
 
         return {
             "decision": decision.primary_decision,
             "action": decision.action_recommended,
             "confidence": decision.confidence,
-            "agents": [decision.primary_agent] + [s["agent"] for s in decision.secondary_inputs],
+            "agents": [decision.primary_agent]
+            + [s["agent"] for s in decision.secondary_inputs],
         }
 
-    def record_outcome(self, decision_id: str, successful: bool,
-                      stage: str, agents: list[str]) -> None:
+    def record_outcome(
+        self, decision_id: str, successful: bool, stage: str, agents: list[str]
+    ) -> None:
         """Registra outcome para aprendizaje."""
         outcome = DecisionOutcome(
             decision_id=decision_id,

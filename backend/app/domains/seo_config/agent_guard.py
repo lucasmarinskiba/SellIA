@@ -88,14 +88,18 @@ class SEOAgentGuard:
                 platform_name = platform_status.platform_name
 
         agent_node = AGENT_BRAIN_ID.get(agent_name)
-        if agent_node and not await is_brain_capability_enabled(self.db, business_id, agent_node):
+        if agent_node and not await is_brain_capability_enabled(
+            self.db, business_id, agent_node
+        ):
             logger.info(
                 f"SEO agent guard: {agent_name} BLOCKED for business {business_id} (Brain Map node {agent_node} is OFF)"
             )
             return False
 
         platform_node = platform_brain_id(platform_name)
-        if platform_node and not await is_brain_capability_enabled(self.db, business_id, platform_node):
+        if platform_node and not await is_brain_capability_enabled(
+            self.db, business_id, platform_node
+        ):
             logger.info(
                 f"SEO agent guard: {agent_name} BLOCKED for business {business_id} (Brain Map node {platform_node} is OFF)"
             )

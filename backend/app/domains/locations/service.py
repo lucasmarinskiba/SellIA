@@ -1,4 +1,5 @@
 """Phase 5A: Location Management Service - Async."""
+
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -49,14 +50,18 @@ class LocationService:
         return loc
 
     @staticmethod
-    async def list_locations(db: AsyncSession, business_id: UUID) -> list[LocationProfile]:
+    async def list_locations(
+        db: AsyncSession, business_id: UUID
+    ) -> list[LocationProfile]:
         result = await db.execute(
             select(LocationProfile).where(LocationProfile.business_id == business_id)
         )
         return result.scalars().all()
 
     @staticmethod
-    async def detect_business_model(db: AsyncSession, business_id: UUID) -> BusinessModel:
+    async def detect_business_model(
+        db: AsyncSession, business_id: UUID
+    ) -> BusinessModel:
         result = await db.execute(
             select(LocationProfile).where(LocationProfile.business_id == business_id)
         )
@@ -189,10 +194,15 @@ class LocationService:
         return event
 
     @staticmethod
-    async def get_location_metrics(db: AsyncSession, business_id: UUID, location_id: UUID) -> dict:
+    async def get_location_metrics(
+        db: AsyncSession, business_id: UUID, location_id: UUID
+    ) -> dict:
         result = await db.execute(
             select(LocationVisit).where(
-                and_(LocationVisit.business_id == business_id, LocationVisit.location_id == location_id)
+                and_(
+                    LocationVisit.business_id == business_id,
+                    LocationVisit.location_id == location_id,
+                )
             )
         )
         visits = result.scalars().all()
@@ -201,7 +211,9 @@ class LocationService:
         total_dwell_minutes = sum(v.dwell_minutes for v in visits) if visits else 0
         avg_dwell = total_dwell_minutes / total_visits if total_visits > 0 else 0
         purchase_visits = sum(1 for v in visits if v.purchase_made) if visits else 0
-        conversion_rate = (purchase_visits / total_visits * 100) if total_visits > 0 else 0
+        conversion_rate = (
+            (purchase_visits / total_visits * 100) if total_visits > 0 else 0
+        )
         total_purchase_value = sum(v.purchase_value for v in visits) if visits else 0
 
         return {

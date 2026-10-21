@@ -32,7 +32,7 @@ class CompetitiveIntelligenceService:
         latitude: float | None = None,
         longitude: float | None = None,
         threat_level: str = "medium",
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Add new competitor to tracking."""
         if not db:
@@ -47,7 +47,7 @@ class CompetitiveIntelligenceService:
             latitude=latitude,
             longitude=longitude,
             threat_level=threat_level,
-            status=CompetitorStatus.MONITORING
+            status=CompetitorStatus.MONITORING,
         )
 
         db.add(competitor)
@@ -60,7 +60,7 @@ class CompetitiveIntelligenceService:
             "competitor_id": str(competitor.id),
             "name": name,
             "type": competitor_type,
-            "threat_level": threat_level
+            "threat_level": threat_level,
         }
 
     @staticmethod
@@ -73,7 +73,7 @@ class CompetitiveIntelligenceService:
         discounted_price: Decimal | None = None,
         in_stock: bool = True,
         source: str = "website",
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Log competitor product pricing snapshot."""
         if not db:
@@ -84,7 +84,9 @@ class CompetitiveIntelligenceService:
 
         discount_pct = None
         if discounted_price and base_price > 0:
-            discount_pct = Decimal(str(round(((base_price - discounted_price) / base_price) * 100, 2)))
+            discount_pct = Decimal(
+                str(round(((base_price - discounted_price) / base_price) * 100, 2))
+            )
 
         pricing = CompetitorPricing(
             competitor_id=competitor_id,
@@ -96,7 +98,7 @@ class CompetitiveIntelligenceService:
             discount_pct=discount_pct,
             in_stock=in_stock,
             date_observed=date,
-            source=source
+            source=source,
         )
 
         db.add(pricing)
@@ -109,7 +111,7 @@ class CompetitiveIntelligenceService:
             "base_price": float(base_price),
             "discounted_price": float(discounted_price) if discounted_price else None,
             "discount_pct": float(discount_pct) if discount_pct else None,
-            "date": date
+            "date": date,
         }
 
     @staticmethod
@@ -123,7 +125,7 @@ class CompetitiveIntelligenceService:
         features: list[str] | None = None,
         our_has_equivalent: bool = False,
         competitive_advantage: str | None = None,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Log competitor product/service offering."""
         if not db:
@@ -138,7 +140,7 @@ class CompetitiveIntelligenceService:
             description=description,
             features=features or [],
             our_has_equivalent=our_has_equivalent,
-            competitive_advantage=competitive_advantage
+            competitive_advantage=competitive_advantage,
         )
 
         db.add(offering)
@@ -151,14 +153,12 @@ class CompetitiveIntelligenceService:
             "offering_id": str(offering.id),
             "offering_name": offering_name,
             "category": category,
-            "our_has_equivalent": our_has_equivalent
+            "our_has_equivalent": our_has_equivalent,
         }
 
     @staticmethod
     def get_competitive_position(
-        business_id: UUID,
-        date: str | None = None,
-        db: Session = None
+        business_id: UUID, date: str | None = None, db: Session = None
     ) -> dict:
         """Get competitive position summary."""
         if not db:
@@ -168,34 +168,56 @@ class CompetitiveIntelligenceService:
             date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Count competitors
-        all_competitors = db.query(Competitor).filter(
-            Competitor.business_id == business_id,
-            Competitor.status == CompetitorStatus.ACTIVE
-        ).all()
+        all_competitors = (
+            db.query(Competitor)
+            .filter(
+                Competitor.business_id == business_id,
+                Competitor.status == CompetitorStatus.ACTIVE,
+            )
+            .all()
+        )
 
         total_competitors = len(all_competitors)
-        direct_competitors = len([c for c in all_competitors if c.competitor_type == CompetitorType.DIRECT])
-        high_threat = len([c for c in all_competitors if c.threat_level == "critical" or c.threat_level == "high"])
+        direct_competitors = len(
+            [c for c in all_competitors if c.competitor_type == CompetitorType.DIRECT]
+        )
+        high_threat = len(
+            [
+                c
+                for c in all_competitors
+                if c.threat_level == "critical" or c.threat_level == "high"
+            ]
+        )
 
         # Price analysis
-        pricing_data = db.query(CompetitorPricing).filter(
-            CompetitorPricing.business_id == business_id,
-            CompetitorPricing.date_observed == date
-        ).all()
+        pricing_data = (
+            db.query(CompetitorPricing)
+            .filter(
+                CompetitorPricing.business_id == business_id,
+                CompetitorPricing.date_observed == date,
+            )
+            .all()
+        )
 
         avg_competitor_price = None
         if pricing_data:
             prices = [float(p.base_price) for p in pricing_data if p.base_price]
-            avg_competitor_price = Decimal(str(sum(prices) / len(prices))) if prices else None
+            avg_competitor_price = (
+                Decimal(str(sum(prices) / len(prices))) if prices else None
+            )
 
         # Rating analysis
         ratings = [float(c.google_rating) for c in all_competitors if c.google_rating]
         avg_rating = Decimal(str(sum(ratings) / len(ratings))) if ratings else None
-        avg_reviews = sum(c.google_review_count for c in all_competitors) // max(len(all_competitors), 1)
+        avg_reviews = sum(c.google_review_count for c in all_competitors) // max(
+            len(all_competitors), 1
+        )
 
         # Discount frequency
         discounts = [p.discount_pct for p in pricing_data if p.discount_pct]
-        most_common_discount = Decimal(str(sum(discounts) / len(discounts))) if discounts else None
+        most_common_discount = (
+            Decimal(str(sum(discounts) / len(discounts))) if discounts else None
+        )
 
         position = CompetitivePosition(
             business_id=business_id,
@@ -206,7 +228,7 @@ class CompetitiveIntelligenceService:
             avg_competitor_price=avg_competitor_price,
             avg_competitor_rating=avg_rating,
             avg_review_count=avg_reviews,
-            most_common_discount_pct=most_common_discount
+            most_common_discount_pct=most_common_discount,
         )
 
         db.add(position)
@@ -220,22 +242,23 @@ class CompetitiveIntelligenceService:
             "competitor_counts": {
                 "total": total_competitors,
                 "direct": direct_competitors,
-                "high_threat": high_threat
+                "high_threat": high_threat,
             },
             "market_metrics": {
-                "avg_competitor_price": float(avg_competitor_price) if avg_competitor_price else None,
+                "avg_competitor_price": (
+                    float(avg_competitor_price) if avg_competitor_price else None
+                ),
                 "avg_competitor_rating": float(avg_rating) if avg_rating else None,
                 "avg_review_count": avg_reviews,
-                "most_common_discount_pct": float(most_common_discount) if most_common_discount else None
-            }
+                "most_common_discount_pct": (
+                    float(most_common_discount) if most_common_discount else None
+                ),
+            },
         }
 
     @staticmethod
     def get_price_benchmarking(
-        business_id: UUID,
-        product_name: str,
-        days: int = 30,
-        db: Session = None
+        business_id: UUID, product_name: str, days: int = 30, db: Session = None
     ) -> dict:
         """Compare our pricing vs competitors."""
         if not db:
@@ -244,11 +267,15 @@ class CompetitiveIntelligenceService:
         cutoff = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
 
         # Get competitor pricing for product
-        competitor_pricing = db.query(CompetitorPricing).filter(
-            CompetitorPricing.business_id == business_id,
-            CompetitorPricing.product_name.ilike(f"%{product_name}%"),
-            CompetitorPricing.date_observed >= cutoff
-        ).all()
+        competitor_pricing = (
+            db.query(CompetitorPricing)
+            .filter(
+                CompetitorPricing.business_id == business_id,
+                CompetitorPricing.product_name.ilike(f"%{product_name}%"),
+                CompetitorPricing.date_observed >= cutoff,
+            )
+            .all()
+        )
 
         if not competitor_pricing:
             return {"benchmarking_available": False}
@@ -257,11 +284,18 @@ class CompetitiveIntelligenceService:
         by_competitor: dict[str, dict] = {}
         for pricing in competitor_pricing:
             comp_id = str(pricing.competitor_id)
-            if comp_id not in by_competitor or pricing.date_observed > by_competitor[comp_id]["date"]:
+            if (
+                comp_id not in by_competitor
+                or pricing.date_observed > by_competitor[comp_id]["date"]
+            ):
                 by_competitor[comp_id] = {
                     "date": pricing.date_observed,
                     "price": float(pricing.base_price),
-                    "discounted": float(pricing.discounted_price) if pricing.discounted_price else None
+                    "discounted": (
+                        float(pricing.discounted_price)
+                        if pricing.discounted_price
+                        else None
+                    ),
                 }
 
         prices = [p["price"] for p in by_competitor.values()]
@@ -280,30 +314,29 @@ class CompetitiveIntelligenceService:
             "price_range": {
                 "min": min_price,
                 "max": max_price,
-                "avg": round(avg_price, 2)
+                "avg": round(avg_price, 2),
             },
             "competitors": [
                 {
                     "competitor_id": cid,
                     "price": data["price"],
-                    "discounted": data["discounted"]
+                    "discounted": data["discounted"],
                 }
                 for cid, data in list(by_competitor.items())[:10]
-            ]
+            ],
         }
 
     @staticmethod
-    def get_offering_gaps(
-        business_id: UUID,
-        db: Session = None
-    ) -> dict:
+    def get_offering_gaps(business_id: UUID, db: Session = None) -> dict:
         """Identify feature/offering gaps vs competitors."""
         if not db:
             raise ValueError("Database session required")
 
-        offerings = db.query(CompetitorOffering).filter(
-            CompetitorOffering.business_id == business_id
-        ).all()
+        offerings = (
+            db.query(CompetitorOffering)
+            .filter(CompetitorOffering.business_id == business_id)
+            .all()
+        )
 
         if not offerings:
             return {"gaps_identified": 0}
@@ -320,30 +353,29 @@ class CompetitiveIntelligenceService:
         for category, items in by_category.items():
             missing = [o for o in items if not o.our_has_equivalent]
             if missing:
-                gaps.append({
-                    "category": category,
-                    "gaps": len(missing),
-                    "offerings": [
-                        {
-                            "offering": o.offering_name,
-                            "competitor": str(o.competitor_id),
-                            "advantage": o.competitive_advantage
-                        }
-                        for o in missing[:5]
-                    ]
-                })
+                gaps.append(
+                    {
+                        "category": category,
+                        "gaps": len(missing),
+                        "offerings": [
+                            {
+                                "offering": o.offering_name,
+                                "competitor": str(o.competitor_id),
+                                "advantage": o.competitive_advantage,
+                            }
+                            for o in missing[:5]
+                        ],
+                    }
+                )
 
-        return {
-            "total_gaps": len(gaps),
-            "by_category": gaps
-        }
+        return {"total_gaps": len(gaps), "by_category": gaps}
 
     @staticmethod
     def get_competitor_list(
         business_id: UUID,
         threat_level: str | None = None,
         limit: int = 20,
-        db: Session = None
+        db: Session = None,
     ) -> dict:
         """Get list of tracked competitors."""
         if not db:
@@ -365,10 +397,12 @@ class CompetitiveIntelligenceService:
                     "type": c.competitor_type.value,
                     "threat_level": c.threat_level,
                     "website": c.website,
-                    "google_rating": float(c.google_rating) if c.google_rating else None,
+                    "google_rating": (
+                        float(c.google_rating) if c.google_rating else None
+                    ),
                     "followers": c.social_media_followers,
-                    "location": c.primary_address
+                    "location": c.primary_address,
                 }
                 for c in competitors
-            ]
+            ],
         }

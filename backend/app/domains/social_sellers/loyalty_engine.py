@@ -26,40 +26,40 @@ logger = get_logger(__name__)
 
 DEFAULT_BADGES = [
     {
-        'badge_type': 'champion',
-        'name': 'Campeón',
-        'description': '5 o más compras completadas. Cliente elite.',
-        'criteria': {'min_purchases': 5},
+        "badge_type": "champion",
+        "name": "Campeón",
+        "description": "5 o más compras completadas. Cliente elite.",
+        "criteria": {"min_purchases": 5},
     },
     {
-        'badge_type': 'ambassador',
-        'name': 'Embajador',
-        'description': 'Refirió a al menos una persona.',
-        'criteria': {'min_referrals': 1},
+        "badge_type": "ambassador",
+        "name": "Embajador",
+        "description": "Refirió a al menos una persona.",
+        "criteria": {"min_referrals": 1},
     },
     {
-        'badge_type': 'fan_1',
-        'name': 'Fan #1',
-        'description': 'Mayor LTV del negocio. Incondicional.',
-        'criteria': {'top_ltv': True},
+        "badge_type": "fan_1",
+        "name": "Fan #1",
+        "description": "Mayor LTV del negocio. Incondicional.",
+        "criteria": {"top_ltv": True},
     },
     {
-        'badge_type': 'comeback_kid',
-        'name': 'Resucitado',
-        'description': 'Volvió a comprar después de 90+ días de inactividad.',
-        'criteria': {'return_after_days': 90},
+        "badge_type": "comeback_kid",
+        "name": "Resucitado",
+        "description": "Volvió a comprar después de 90+ días de inactividad.",
+        "criteria": {"return_after_days": 90},
     },
     {
-        'badge_type': 'big_spender',
-        'name': 'Gran Gastador',
-        'description': 'Compra única mayor a $500.',
-        'criteria': {'min_single_purchase': 500},
+        "badge_type": "big_spender",
+        "name": "Gran Gastador",
+        "description": "Compra única mayor a $500.",
+        "criteria": {"min_single_purchase": 500},
     },
     {
-        'badge_type': 'regular',
-        'name': 'Regular',
-        'description': 'Compra mensualmente durante 6+ meses.',
-        'criteria': {'min_months': 6},
+        "badge_type": "regular",
+        "name": "Regular",
+        "description": "Compra mensualmente durante 6+ meses.",
+        "criteria": {"min_months": 6},
     },
 ]
 
@@ -74,17 +74,17 @@ class LoyaltyEngine:
             existing = await self.db.execute(
                 select(CustomerLoyaltyBadge).where(
                     CustomerLoyaltyBadge.business_id == business_id,
-                    CustomerLoyaltyBadge.badge_type == badge_data['badge_type'],
+                    CustomerLoyaltyBadge.badge_type == badge_data["badge_type"],
                 )
             )
             if existing.scalar_one_or_none():
                 continue
             badge = CustomerLoyaltyBadge(
                 business_id=business_id,
-                badge_type=badge_data['badge_type'],
-                name=badge_data['name'],
-                description=badge_data['description'],
-                criteria=badge_data['criteria'],
+                badge_type=badge_data["badge_type"],
+                name=badge_data["name"],
+                description=badge_data["description"],
+                criteria=badge_data["criteria"],
             )
             self.db.add(badge)
         await self.db.commit()
@@ -100,16 +100,26 @@ class LoyaltyEngine:
         result = await self.db.execute(
             select(
                 SellerCustomerRelationship.customer_id,
-                func.sum(SellerCustomerRelationship.total_revenue).label('ltv'),
-                func.sum(SellerCustomerRelationship.deals_closed).label('total_purchases'),
-                func.max(SellerCustomerRelationship.last_contact_at).label('last_purchase_at'),
-                func.max(SellerCustomerRelationship.first_contact_at).label('first_contact_at'),
+                func.sum(SellerCustomerRelationship.total_revenue).label("ltv"),
+                func.sum(SellerCustomerRelationship.deals_closed).label(
+                    "total_purchases"
+                ),
+                func.max(SellerCustomerRelationship.last_contact_at).label(
+                    "last_purchase_at"
+                ),
+                func.max(SellerCustomerRelationship.first_contact_at).label(
+                    "first_contact_at"
+                ),
             )
-            .where(SellerCustomerRelationship.seller_id.in_(
-                select(SocialSeller.id).where(SocialSeller.business_id == business_id)
-            ))
+            .where(
+                SellerCustomerRelationship.seller_id.in_(
+                    select(SocialSeller.id).where(
+                        SocialSeller.business_id == business_id
+                    )
+                )
+            )
             .group_by(SellerCustomerRelationship.customer_id)
-            .order_by(desc('ltv'))
+            .order_by(desc("ltv"))
             .limit(limit)
         )
         rows = result.all()
@@ -125,14 +135,26 @@ class LoyaltyEngine:
         conversations = {c.id: c for c in conv_result.scalars().all()}
 
         # Cargar conexiones de canal para obtener plataformas
-        channel_ids = [c.channel_connection_id for c in conversations.values() if c.channel_connection_id]
+        channel_ids = [
+            c.channel_connection_id
+            for c in conversations.values()
+            if c.channel_connection_id
+        ]
         channel_platforms = {}
         if channel_ids:
             from app.domains.channels.models import ChannelConnection
+
             ch_result = await self.db.execute(
                 select(ChannelConnection).where(ChannelConnection.id.in_(channel_ids))
             )
-            channel_platforms = {ch.id: ch.platform.value if hasattr(ch.platform, 'value') else str(ch.platform) for ch in ch_result.scalars().all()}
+            channel_platforms = {
+                ch.id: (
+                    ch.platform.value
+                    if hasattr(ch.platform, "value")
+                    else str(ch.platform)
+                )
+                for ch in ch_result.scalars().all()
+            }
 
         # Cargar badges asignados
         badge_result = await self.db.execute(
@@ -142,7 +164,10 @@ class LoyaltyEngine:
                 CustomerLoyaltyBadge.name,
                 CustomerLoyaltyBadge.icon_url,
             )
-            .join(CustomerLoyaltyBadge, CustomerBadgeAssignment.badge_id == CustomerLoyaltyBadge.id)
+            .join(
+                CustomerLoyaltyBadge,
+                CustomerBadgeAssignment.badge_id == CustomerLoyaltyBadge.id,
+            )
             .where(
                 CustomerBadgeAssignment.customer_id.in_(customer_ids),
                 CustomerBadgeAssignment.business_id == business_id,
@@ -151,27 +176,43 @@ class LoyaltyEngine:
         badge_rows = badge_result.all()
         customer_badges: dict[uuid.UUID, list[dict[str, str]]] = {}
         for br in badge_rows:
-            customer_badges.setdefault(br.customer_id, []).append({
-                'badge_type': br.badge_type,
-                'name': br.name,
-                'icon_url': br.icon_url,
-            })
+            customer_badges.setdefault(br.customer_id, []).append(
+                {
+                    "badge_type": br.badge_type,
+                    "name": br.name,
+                    "icon_url": br.icon_url,
+                }
+            )
 
         wall = []
         for row in rows:
             conv = conversations.get(row.customer_id)
-            name = conv.lead_name if conv and conv.lead_name else 'Cliente Anónimo'
-            platform = channel_platforms.get(conv.channel_connection_id, 'unknown') if conv else 'unknown'
-            wall.append({
-                'customer_id': str(row.customer_id),
-                'name': name,
-                'ltv': float(row.ltv or 0),
-                'total_purchases': int(row.total_purchases or 0),
-                'last_purchase_at': row.last_purchase_at.isoformat() if row.last_purchase_at else None,
-                'first_contact_at': row.first_contact_at.isoformat() if row.first_contact_at else None,
-                'platform': platform,
-                'badges': customer_badges.get(row.customer_id, []),
-            })
+            name = conv.lead_name if conv and conv.lead_name else "Cliente Anónimo"
+            platform = (
+                channel_platforms.get(conv.channel_connection_id, "unknown")
+                if conv
+                else "unknown"
+            )
+            wall.append(
+                {
+                    "customer_id": str(row.customer_id),
+                    "name": name,
+                    "ltv": float(row.ltv or 0),
+                    "total_purchases": int(row.total_purchases or 0),
+                    "last_purchase_at": (
+                        row.last_purchase_at.isoformat()
+                        if row.last_purchase_at
+                        else None
+                    ),
+                    "first_contact_at": (
+                        row.first_contact_at.isoformat()
+                        if row.first_contact_at
+                        else None
+                    ),
+                    "platform": platform,
+                    "badges": customer_badges.get(row.customer_id, []),
+                }
+            )
 
         return wall
 
@@ -188,7 +229,9 @@ class LoyaltyEngine:
             select(SellerCustomerRelationship).where(
                 SellerCustomerRelationship.customer_id == customer_id,
                 SellerCustomerRelationship.seller_id.in_(
-                    select(SocialSeller.id).where(SocialSeller.business_id == business_id)
+                    select(SocialSeller.id).where(
+                        SocialSeller.business_id == business_id
+                    )
                 ),
             )
         )
@@ -203,11 +246,13 @@ class LoyaltyEngine:
 
         # Obtener ordenes para criterios adicionales
         order_result = await self.db.execute(
-            select(Order).where(
+            select(Order)
+            .where(
                 Order.conversation_id == customer_id,
                 Order.business_id == business_id,
-                Order.status.in_(['paid', 'shipped', 'delivered']),
-            ).order_by(Order.created_at)
+                Order.status.in_(["paid", "shipped", "delivered"]),
+            )
+            .order_by(Order.created_at)
         )
         orders = list(order_result.scalars().all())
 
@@ -241,7 +286,9 @@ class LoyaltyEngine:
 
         # Obtener todos los badges del negocio
         badge_result = await self.db.execute(
-            select(CustomerLoyaltyBadge).where(CustomerLoyaltyBadge.business_id == business_id)
+            select(CustomerLoyaltyBadge).where(
+                CustomerLoyaltyBadge.business_id == business_id
+            )
         )
         badges = list(badge_result.scalars().all())
 
@@ -252,14 +299,24 @@ class LoyaltyEngine:
             criteria = badge.criteria or {}
             earned = False
 
-            if badge.badge_type == 'champion' and total_purchases >= criteria.get('min_purchases', 5) or badge.badge_type == 'big_spender' and max_single_order >= criteria.get('min_single_purchase', 500) or badge.badge_type == 'regular' and distinct_months >= criteria.get('min_months', 6) or badge.badge_type == 'comeback_kid' and comeback:
+            if (
+                badge.badge_type == "champion"
+                and total_purchases >= criteria.get("min_purchases", 5)
+                or badge.badge_type == "big_spender"
+                and max_single_order >= criteria.get("min_single_purchase", 500)
+                or badge.badge_type == "regular"
+                and distinct_months >= criteria.get("min_months", 6)
+                or badge.badge_type == "comeback_kid"
+                and comeback
+            ):
                 earned = True
-            elif badge.badge_type == 'fan_1':
+            elif badge.badge_type == "fan_1":
                 # Fan #1 se asigna solo si es el top LTV del negocio (evaluado por separado)
                 pass
-            elif badge.badge_type == 'ambassador':
+            elif badge.badge_type == "ambassador":
                 # Ambassador se verifica contra referral_codes
                 from app.domains.retention.models import ReferralCode
+
                 ref_result = await self.db.execute(
                     select(func.count(ReferralCode.id)).where(
                         ReferralCode.business_id == business_id,
@@ -277,25 +334,31 @@ class LoyaltyEngine:
                     business_id=business_id,
                 )
                 self.db.add(assignment)
-                assigned.append({
-                    'badge_id': str(badge.id),
-                    'badge_type': badge.badge_type,
-                    'name': badge.name,
-                })
+                assigned.append(
+                    {
+                        "badge_id": str(badge.id),
+                        "badge_type": badge.badge_type,
+                        "name": badge.name,
+                    }
+                )
 
         # Asignar Fan #1 al top LTV del negocio (uno solo)
-        fan_1_badge = next((b for b in badges if b.badge_type == 'fan_1'), None)
+        fan_1_badge = next((b for b in badges if b.badge_type == "fan_1"), None)
         if fan_1_badge and fan_1_badge.id not in existing_badge_ids:
             top_result = await self.db.execute(
                 select(
                     SellerCustomerRelationship.customer_id,
-                    func.sum(SellerCustomerRelationship.total_revenue).label('ltv'),
+                    func.sum(SellerCustomerRelationship.total_revenue).label("ltv"),
                 )
-                .where(SellerCustomerRelationship.seller_id.in_(
-                    select(SocialSeller.id).where(SocialSeller.business_id == business_id)
-                ))
+                .where(
+                    SellerCustomerRelationship.seller_id.in_(
+                        select(SocialSeller.id).where(
+                            SocialSeller.business_id == business_id
+                        )
+                    )
+                )
                 .group_by(SellerCustomerRelationship.customer_id)
-                .order_by(desc('ltv'))
+                .order_by(desc("ltv"))
                 .limit(1)
             )
             top_row = top_result.one_or_none()
@@ -306,11 +369,13 @@ class LoyaltyEngine:
                     business_id=business_id,
                 )
                 self.db.add(assignment)
-                assigned.append({
-                    'badge_id': str(fan_1_badge.id),
-                    'badge_type': fan_1_badge.badge_type,
-                    'name': fan_1_badge.name,
-                })
+                assigned.append(
+                    {
+                        "badge_id": str(fan_1_badge.id),
+                        "badge_type": fan_1_badge.badge_type,
+                        "name": fan_1_badge.name,
+                    }
+                )
 
         if assigned:
             await self.db.commit()
@@ -331,18 +396,21 @@ class LoyaltyEngine:
                 CustomerLoyaltyBadge.description,
                 CustomerLoyaltyBadge.icon_url,
             )
-            .join(CustomerLoyaltyBadge, CustomerBadgeAssignment.badge_id == CustomerLoyaltyBadge.id)
+            .join(
+                CustomerLoyaltyBadge,
+                CustomerBadgeAssignment.badge_id == CustomerLoyaltyBadge.id,
+            )
             .where(CustomerBadgeAssignment.customer_id == customer_id)
             .order_by(desc(CustomerBadgeAssignment.earned_at))
         )
         return [
             {
-                'id': str(r.id),
-                'badge_type': r.badge_type,
-                'name': r.name,
-                'description': r.description,
-                'icon_url': r.icon_url,
-                'earned_at': r.earned_at.isoformat() if r.earned_at else None,
+                "id": str(r.id),
+                "badge_type": r.badge_type,
+                "name": r.name,
+                "description": r.description,
+                "icon_url": r.icon_url,
+                "earned_at": r.earned_at.isoformat() if r.earned_at else None,
             }
             for r in result.all()
         ]
@@ -355,8 +423,8 @@ class LoyaltyEngine:
         result = await self.db.execute(
             select(
                 CustomerSegment.segment,
-                func.count(CustomerSegment.id).label('count'),
-                func.avg(CustomerSegment.total_revenue).label('avg_revenue'),
+                func.count(CustomerSegment.id).label("count"),
+                func.avg(CustomerSegment.total_revenue).label("avg_revenue"),
             )
             .where(CustomerSegment.business_id == business_id)
             .group_by(CustomerSegment.segment)
@@ -366,17 +434,19 @@ class LoyaltyEngine:
         segments = {}
         total_customers = 0
         for row in rows:
-            key = row.segment.value if hasattr(row.segment, 'value') else str(row.segment)
+            key = (
+                row.segment.value if hasattr(row.segment, "value") else str(row.segment)
+            )
             segments[key] = {
-                'count': row.count,
-                'avg_revenue': float(row.avg_revenue or 0),
+                "count": row.count,
+                "avg_revenue": float(row.avg_revenue or 0),
             }
             total_customers += row.count
 
         return {
-            'business_id': str(business_id),
-            'total_customers': total_customers,
-            'segments': segments,
+            "business_id": str(business_id),
+            "total_customers": total_customers,
+            "segments": segments,
         }
 
     async def create_loyalty_action(
@@ -386,22 +456,27 @@ class LoyaltyEngine:
         action_type: str,
     ) -> dict[str, Any]:
         """Registra una acción de fidelización."""
-        valid_actions = {'send_gift', 'offer_vip', 'request_testimonial', 'invite_referral'}
+        valid_actions = {
+            "send_gift",
+            "offer_vip",
+            "request_testimonial",
+            "invite_referral",
+        }
         if action_type not in valid_actions:
-            raise ValueError(f'Acción inválida. Usá una de: {valid_actions}')
+            raise ValueError(f"Acción inválida. Usá una de: {valid_actions}")
 
         action_messages = {
-            'send_gift': 'Regalo enviado al cliente.',
-            'offer_vip': 'Oferta VIP enviada al cliente.',
-            'request_testimonial': 'Solicitud de testimonio enviada.',
-            'invite_referral': 'Invitación a referir enviada.',
+            "send_gift": "Regalo enviado al cliente.",
+            "offer_vip": "Oferta VIP enviada al cliente.",
+            "request_testimonial": "Solicitud de testimonio enviada.",
+            "invite_referral": "Invitación a referir enviada.",
         }
 
         return {
-            'status': 'success',
-            'action': action_type,
-            'business_id': str(business_id),
-            'customer_id': str(customer_id),
-            'message': action_messages.get(action_type, 'Acción registrada.'),
-            'created_at': datetime.now(UTC).isoformat(),
+            "status": "success",
+            "action": action_type,
+            "business_id": str(business_id),
+            "customer_id": str(customer_id),
+            "message": action_messages.get(action_type, "Acción registrada."),
+            "created_at": datetime.now(UTC).isoformat(),
         }

@@ -120,7 +120,7 @@ class AnalyticsReportingManager:
     def execute_report(self, report_id: str) -> dict:
         """Execute scheduled report."""
         if report_id not in self.reports:
-            return {'success': False, 'error': 'Report not found'}
+            return {"success": False, "error": "Report not found"}
 
         report = self.reports[report_id]
 
@@ -128,18 +128,20 @@ class AnalyticsReportingManager:
             # Placeholder: actual query execution
             rows = self._execute_query(report.query)
 
-            file_url = f"https://storage.example.com/reports/{report_id}.{report.format}"
+            file_url = (
+                f"https://storage.example.com/reports/{report_id}.{report.format}"
+            )
 
             return {
-                'success': True,
-                'file_url': file_url,
-                'row_count': len(rows),
-                'format': report.format,
-                'recipients': report.recipients,
+                "success": True,
+                "file_url": file_url,
+                "row_count": len(rows),
+                "format": report.format,
+                "recipients": report.recipients,
             }
         except Exception as e:
             logger.exception("execute_report: error inesperado")
-            return {'success': False, 'error': str(e)}
+            return {"success": False, "error": str(e)}
 
     def export_data(
         self,
@@ -158,35 +160,35 @@ class AnalyticsReportingManager:
             file_url = f"https://storage.example.com/exports/{export_id}.{format}"
 
             self.exports[export_id] = {
-                'user_id': user_id,
-                'entity_type': entity_type,
-                'format': format,
-                'file_url': file_url,
-                'row_count': len(rows),
-                'created_at': utc_now().isoformat(),
+                "user_id": user_id,
+                "entity_type": entity_type,
+                "format": format,
+                "file_url": file_url,
+                "row_count": len(rows),
+                "created_at": utc_now().isoformat(),
             }
 
             return {
-                'success': True,
-                'export_id': export_id,
-                'file_url': file_url,
-                'row_count': len(rows),
+                "success": True,
+                "export_id": export_id,
+                "file_url": file_url,
+                "row_count": len(rows),
             }
         except Exception as e:
             logger.exception("export_data: error inesperado")
-            return {'success': False, 'error': str(e)}
+            return {"success": False, "error": str(e)}
 
     def get_realtime_metrics(self, user_id: str) -> dict:
         """Get real-time metrics dashboard."""
         return {
-            'timestamp': utc_now().isoformat(),
-            'metrics': {
-                'total_calls_today': 42,
-                'avg_call_duration': 145,
-                'deals_closed_today': 3,
-                'revenue_today': 45000,
-                'active_calls': 2,
-                'sentiment_avg': 0.82,
+            "timestamp": utc_now().isoformat(),
+            "metrics": {
+                "total_calls_today": 42,
+                "avg_call_duration": 145,
+                "deals_closed_today": 3,
+                "revenue_today": 45000,
+                "active_calls": 2,
+                "sentiment_avg": 0.82,
             },
         }
 
@@ -195,8 +197,8 @@ class AnalyticsReportingManager:
         try:
             key = f"{user_id}:{metric_name}"
             self.metrics[key] = {
-                'value': value,
-                'timestamp': utc_now().isoformat(),
+                "value": value,
+                "timestamp": utc_now().isoformat(),
             }
             return True
         except Exception:
@@ -213,8 +215,8 @@ class AnalyticsReportingManager:
         # Placeholder: actual history retrieval
         return [
             {
-                'timestamp': (utc_now() - timedelta(days=i)).isoformat(),
-                'value': 100 + (i * 5),
+                "timestamp": (utc_now() - timedelta(days=i)).isoformat(),
+                "value": 100 + (i * 5),
             }
             for i in range(days)
         ]

@@ -44,7 +44,9 @@ def _key(value: Any) -> str | None:
     return str(getattr(value, "value", value))
 
 
-def severity_for(level: str | None, default: AlertSeverity = AlertSeverity.INFO) -> AlertSeverity:
+def severity_for(
+    level: str | None, default: AlertSeverity = AlertSeverity.INFO
+) -> AlertSeverity:
     """Map a caller's level name ("high", "low", ...) to an AlertSeverity that exists."""
     return _LEVEL_TO_SEVERITY.get((level or "").lower(), default)
 

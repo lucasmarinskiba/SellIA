@@ -1,4 +1,5 @@
 """Phase X6: FOMO Dynamics API Endpoints."""
+
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -26,7 +27,14 @@ async def create_fomo_offer(
 ) -> dict:
     """Create psychology-driven FOMO offer with auto-optimization."""
     offer = await FOMODynamicsService.create_dynamic_offer(
-        db, business_id, product_id, strategy, base_price, total_stock, ends_at, headline
+        db,
+        business_id,
+        product_id,
+        strategy,
+        base_price,
+        total_stock,
+        ends_at,
+        headline,
     )
     return {
         "offer_id": offer.id,
@@ -44,7 +52,9 @@ async def update_dynamic_price(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Update price based on demand (scarcity psychology)."""
-    new_price = await FOMODynamicsService.update_price_based_on_demand(db, offer_id, purchases_count)
+    new_price = await FOMODynamicsService.update_price_based_on_demand(
+        db, offer_id, purchases_count
+    )
     return {
         "offer_id": offer_id,
         "new_price": new_price,
@@ -80,7 +90,9 @@ async def update_social_proof(
     viewer_increment: int = 1,
 ) -> dict:
     """Update real-time social proof signals."""
-    proof = await FOMODynamicsService.update_social_proof(db, offer_id, new_purchase, viewer_increment)
+    proof = await FOMODynamicsService.update_social_proof(
+        db, offer_id, new_purchase, viewer_increment
+    )
     return {
         "today_sales": proof.today_sales,
         "recent_views": proof.recent_views,
@@ -126,5 +138,7 @@ async def get_conversion_probability(
         "user_id": user_id,
         "product_id": product_id,
         "conversion_probability": round(probability, 2),
-        "estimated_likelihood": "High" if probability > 0.65 else "Medium" if probability > 0.4 else "Low",
+        "estimated_likelihood": (
+            "High" if probability > 0.65 else "Medium" if probability > 0.4 else "Low"
+        ),
     }

@@ -26,8 +26,12 @@ from app.domains.users.models import User
 router = APIRouter(tags=["knowledge"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -59,7 +63,9 @@ async def get_winning_phrases(
     conversations -- what words show up more often in conversations that
     closed. Real counts, not a language model."""
     await _get_business_for_user(business_id, current_user, db)
-    phrases = await ConversationPatternAnalyzer.get_winning_phrases(db, business_id, limit)
+    phrases = await ConversationPatternAnalyzer.get_winning_phrases(
+        db, business_id, limit
+    )
     return {"business_id": str(business_id), "phrases": phrases}
 
 
@@ -72,5 +78,7 @@ async def get_summary(
     """Combined dashboard view: win/loss patterns + top winning/losing phrases."""
     await _get_business_for_user(business_id, current_user, db)
     patterns = await ConversationPatternAnalyzer.get_win_loss_patterns(db, business_id)
-    phrases = await ConversationPatternAnalyzer.get_winning_phrases(db, business_id, limit=10)
+    phrases = await ConversationPatternAnalyzer.get_winning_phrases(
+        db, business_id, limit=10
+    )
     return {"business_id": str(business_id), "patterns": patterns, "phrases": phrases}

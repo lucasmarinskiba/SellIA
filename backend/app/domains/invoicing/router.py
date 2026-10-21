@@ -135,7 +135,9 @@ async def record_payment(
 ):
     """Record payment."""
     svc = PaymentService(db)
-    return await svc.record_payment(invoice_id, body.amount_aed, body.method, body.reference)
+    return await svc.record_payment(
+        invoice_id, body.amount_aed, body.method, body.reference
+    )
 
 
 @router.get("/payments", response_model=list[PaymentOut])

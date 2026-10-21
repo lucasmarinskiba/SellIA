@@ -17,7 +17,11 @@ from app.domains.documents.models import BusinessDocument, DocumentChunk
 logger = get_logger(__name__)
 settings = get_settings()
 
-STORAGE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))) / "storage" / "documents"
+STORAGE_DIR = (
+    Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+    / "storage"
+    / "documents"
+)
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 CHUNK_SIZE_CHARS = 1000
@@ -32,6 +36,7 @@ class EmbeddingService:
         self._fallback = False
         try:
             import openai
+
             if settings.OPENAI_API_KEY:
                 self._client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
             else:
@@ -50,7 +55,9 @@ class EmbeddingService:
                 )
                 return [item.embedding for item in response.data]
             except Exception as exc:
-                logger.warning(f"OpenAI embedding failed: {exc}; using fallback", exc_info=True)
+                logger.warning(
+                    f"OpenAI embedding failed: {exc}; using fallback", exc_info=True
+                )
                 self._fallback = True
         return [self._random_vector(768) for _ in texts]
 
@@ -74,6 +81,7 @@ def _extract_text_pdf(file_path: str) -> str:
     # Try pdfplumber first (better quality)
     try:
         import pdfplumber
+
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
                 page_text = page.extract_text()
@@ -86,6 +94,7 @@ def _extract_text_pdf(file_path: str) -> str:
     # Fallback to PyPDF2
     try:
         import PyPDF2
+
         with open(file_path, "rb") as f:
             reader = PyPDF2.PdfReader(f)
             for page in reader.pages:
@@ -103,6 +112,7 @@ def _extract_text_pdf(file_path: str) -> str:
 def _extract_text_docx(file_path: str) -> str:
     try:
         import docx
+
         doc = docx.Document(file_path)
         return "\n".join(p.text for p in doc.paragraphs if p.text)
     except Exception:
@@ -124,7 +134,9 @@ def _extract_text(file_path: str, file_type: str) -> str:
     return ""
 
 
-def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS) -> list[dict[str, Any]]:
+def _chunk_text(
+    text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CHUNK_OVERLAP_CHARS
+) -> list[dict[str, Any]]:
     """Split text into overlapping chunks by paragraphs."""
     paragraphs = [p.strip() for p in text.split("\n") if p.strip()]
     if not paragraphs:
@@ -143,7 +155,7 @@ def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CH
                 # Try to start at a paragraph boundary within the overlap
                 split_idx = current_text.find("\n")
                 if split_idx != -1:
-                    current_text = current_text[split_idx + 1:]
+                    current_text = current_text[split_idx + 1 :]
             else:
                 current_text = ""
             current_paras = []
@@ -159,8 +171,12 @@ def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE_CHARS, overlap: int = CH
 class DocumentProcessor:
     """Process business documents: extract, chunk, embed, store."""
 
-    async def process_document(self, db: AsyncSession, document_id: uuid.UUID, file_path: str, file_type: str) -> None:
-        result = await db.execute(select(BusinessDocument).where(BusinessDocument.id == document_id))
+    async def process_document(
+        self, db: AsyncSession, document_id: uuid.UUID, file_path: str, file_type: str
+    ) -> None:
+        result = await db.execute(
+            select(BusinessDocument).where(BusinessDocument.id == document_id)
+        )
         doc = result.scalar_one_or_none()
         if not doc:
             logger.error(f"Document {document_id} not found for processing")
@@ -182,7 +198,9 @@ class DocumentProcessor:
             embeddings = await embedding_service.embed([c["text"] for c in chunks])
 
             # Delete any existing chunks for this document (re-processing)
-            await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document_id))
+            await db.execute(
+                delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
+            )
 
             for idx, (chunk_data, emb) in enumerate(zip(chunks, embeddings)):
                 chunk = DocumentChunk(
@@ -207,7 +225,9 @@ class DocumentProcessor:
             doc.extra_data = {**(doc.extra_data or {}), "error": str(exc)}
             await db.commit()
 
-    async def search_documents(self, db: AsyncSession, business_id: uuid.UUID, query: str, k: int = 5) -> list[dict[str, Any]]:
+    async def search_documents(
+        self, db: AsyncSession, business_id: uuid.UUID, query: str, k: int = 5
+    ) -> list[dict[str, Any]]:
         query_embedding = (await embedding_service.embed([query]))[0]
 
         # Use pgvector <=> operator (cosine distance) if available
@@ -231,11 +251,14 @@ class DocumentProcessor:
                 ORDER BY dc.embedding <=> CAST(:vec AS vector(768))
                 LIMIT :k
             """)
-            result = await db.execute(sql, {
-                "vec": vec_str,
-                "business_id": str(business_id),
-                "k": k,
-            })
+            result = await db.execute(
+                sql,
+                {
+                    "vec": vec_str,
+                    "business_id": str(business_id),
+                    "k": k,
+                },
+            )
             rows = result.mappings().all()
             return [
                 {
@@ -251,12 +274,17 @@ class DocumentProcessor:
                 for row in rows
             ]
         except Exception as exc:
-            logger.warning(f"Vector search failed ({exc}), falling back to text search", exc_info=True)
+            logger.warning(
+                f"Vector search failed ({exc}), falling back to text search",
+                exc_info=True,
+            )
             await db.rollback()
             # Fallback: simple text search on content
             result = await db.execute(
                 select(DocumentChunk, BusinessDocument.title)
-                .join(BusinessDocument, DocumentChunk.document_id == BusinessDocument.id)
+                .join(
+                    BusinessDocument, DocumentChunk.document_id == BusinessDocument.id
+                )
                 .where(
                     DocumentChunk.business_id == business_id,
                     BusinessDocument.status == "ready",
@@ -280,7 +308,9 @@ class DocumentProcessor:
             ]
 
     async def delete_document(self, db: AsyncSession, document_id: uuid.UUID) -> bool:
-        result = await db.execute(select(BusinessDocument).where(BusinessDocument.id == document_id))
+        result = await db.execute(
+            select(BusinessDocument).where(BusinessDocument.id == document_id)
+        )
         doc = result.scalar_one_or_none()
         if not doc:
             return False
@@ -291,7 +321,9 @@ class DocumentProcessor:
             if fp.exists():
                 fp.unlink()
         except Exception as exc:
-            logger.warning(f"Could not delete file {doc.file_path}: {exc}", exc_info=True)
+            logger.warning(
+                f"Could not delete file {doc.file_path}: {exc}", exc_info=True
+            )
 
         # Delete chunks and document (cascade handles chunks in DB)
         await db.delete(doc)

@@ -12,7 +12,9 @@ from app.domains.perception_engineering.models import (
 )
 from app.domains.perception_engineering.service import PerceptionEngineeringAgent
 
-router = APIRouter(prefix="/api/v1/perception-engineering", tags=["perception-engineering"])
+router = APIRouter(
+    prefix="/api/v1/perception-engineering", tags=["perception-engineering"]
+)
 
 
 @router.post("/analyze-gap")
@@ -60,7 +62,13 @@ async def generate_shift_campaign(
 ) -> dict:
     """Generate AI-powered perception shift campaign."""
     campaign = await PerceptionEngineeringAgent.generate_perception_shift_campaign(
-        db, business_id, product_id, target_dimension, current_score, target_score, customer_segment
+        db,
+        business_id,
+        product_id,
+        target_dimension,
+        current_score,
+        target_score,
+        customer_segment,
     )
 
     return {
@@ -88,7 +96,12 @@ async def optimize_value_perception(
 ) -> dict:
     """Optimize perceived value using psychological techniques."""
     optimizer = await PerceptionEngineeringAgent.optimize_value_perception(
-        db, business_id, product_id, base_price, current_perceived_value, competitor_prices
+        db,
+        business_id,
+        product_id,
+        base_price,
+        current_perceived_value,
+        competitor_prices,
     )
 
     return {
@@ -147,5 +160,9 @@ async def predict_impact(
         "revenue_impact": impact["revenue_impact_percent"],
         "predicted_perception_score": impact["perception_increase"],
         "roi_estimate": f"{impact['roi_estimate']:.1f}x",
-        "recommendation": "High ROI potential" if impact["conversion_lift_percent"] > 25 else "Moderate potential",
+        "recommendation": (
+            "High ROI potential"
+            if impact["conversion_lift_percent"] > 25
+            else "Moderate potential"
+        ),
     }

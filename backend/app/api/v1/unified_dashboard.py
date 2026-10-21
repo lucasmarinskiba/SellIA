@@ -42,10 +42,7 @@ async def aggregate_location_metrics(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.aggregate_location_day(
-                location_id=location_id,
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                location_id=location_id, business_id=business_id, date=date, db=sync_db
             )
         )
         return result
@@ -67,9 +64,7 @@ async def generate_business_summary(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.generate_business_summary(
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                business_id=business_id, date=date, db=sync_db
             )
         )
         return result
@@ -91,9 +86,7 @@ async def compare_locations(
     try:
         result = await db.run_sync(
             lambda sync_db: UnifiedDashboardService.compare_locations(
-                business_id=business_id,
-                date=date,
-                db=sync_db
+                business_id=business_id, date=date, db=sync_db
             )
         )
         return result
@@ -119,10 +112,15 @@ async def get_location_unified_metrics(
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         def _load(db: Session) -> list:
-            return db.query(UnifiedLocationMetric).filter(
-                UnifiedLocationMetric.location_id == location_id,
-                UnifiedLocationMetric.date >= cutoff_str
-            ).order_by(UnifiedLocationMetric.date.desc()).all()
+            return (
+                db.query(UnifiedLocationMetric)
+                .filter(
+                    UnifiedLocationMetric.location_id == location_id,
+                    UnifiedLocationMetric.date >= cutoff_str,
+                )
+                .order_by(UnifiedLocationMetric.date.desc())
+                .all()
+            )
 
         metrics = await db.run_sync(_load)
 
@@ -143,7 +141,7 @@ async def get_location_unified_metrics(
         return {
             "location_id": str(location_id),
             "period_days": days,
-            "data_points": metric_data
+            "data_points": metric_data,
         }
     except Exception as e:
         logger.exception("get_location_unified_metrics: error inesperado")
@@ -165,9 +163,11 @@ async def get_business_dashboard(
         )
 
         def _load(db: Session) -> BusinessDashboardSummary | None:
-            return db.query(BusinessDashboardSummary).filter(
-                BusinessDashboardSummary.business_id == business_id
-            ).first()
+            return (
+                db.query(BusinessDashboardSummary)
+                .filter(BusinessDashboardSummary.business_id == business_id)
+                .first()
+            )
 
         summary = await db.run_sync(_load)
 
@@ -192,7 +192,7 @@ async def get_business_dashboard(
                 "stock_outs": summary.total_stock_outs,
             },
             "health_score": summary.overall_health_score,
-            "last_updated": summary.timestamp.isoformat()
+            "last_updated": summary.timestamp.isoformat(),
         }
     except Exception as e:
         logger.exception("get_business_dashboard: error inesperado")

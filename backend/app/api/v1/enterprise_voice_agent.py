@@ -17,8 +17,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
-    result = await db.execute(select(Business).where(Business.id == business_id, Business.user_id == user.id))
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
+    result = await db.execute(
+        select(Business).where(Business.id == business_id, Business.user_id == user.id)
+    )
     business = result.scalar_one_or_none()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
@@ -45,14 +49,22 @@ async def update_agent_config(
     """
     await _get_business_for_user(business_id, current_user, db)
     config = await VoiceAgentManager.update_config(
-        business_id, db, voice_id=voice_id, language=language, greeting_message=greeting_message,
-        agent_name=agent_name, system_prompt=system_prompt, temperature=temperature,
+        business_id,
+        db,
+        voice_id=voice_id,
+        language=language,
+        greeting_message=greeting_message,
+        agent_name=agent_name,
+        system_prompt=system_prompt,
+        temperature=temperature,
     )
     return {
         "status": "ok",
         "config": {
-            "agent_name": config.agent_name, "voice_id": config.voice_id,
-            "language": config.language, "temperature": config.temperature,
+            "agent_name": config.agent_name,
+            "voice_id": config.voice_id,
+            "language": config.language,
+            "temperature": config.temperature,
         },
     }
 
@@ -69,8 +81,10 @@ async def get_agent_config(
     return {
         "status": "ok",
         "config": {
-            "agent_name": config.agent_name, "voice_id": config.voice_id,
-            "language": config.language, "greeting_message": config.greeting_message,
+            "agent_name": config.agent_name,
+            "voice_id": config.voice_id,
+            "language": config.language,
+            "greeting_message": config.greeting_message,
             "temperature": config.temperature,
         },
     }
@@ -87,8 +101,17 @@ async def initiate_outbound_call(
 ):
     """Initiate outbound call."""
     await _get_business_for_user(business_id, current_user, db)
-    call = await VoiceAgentManager.initiate_outbound_call(business_id, customer_id, phone_number, db, conversation_id)
-    return {"status": "ok", "call": {"id": str(call.id), "phone_number": call.phone_number, "status": call.status}}
+    call = await VoiceAgentManager.initiate_outbound_call(
+        business_id, customer_id, phone_number, db, conversation_id
+    )
+    return {
+        "status": "ok",
+        "call": {
+            "id": str(call.id),
+            "phone_number": call.phone_number,
+            "status": call.status,
+        },
+    }
 
 
 @router.post("/voice/calls/inbound/{business_id}")
@@ -102,8 +125,17 @@ async def handle_inbound_call(
 ):
     """Handle inbound call."""
     await _get_business_for_user(business_id, current_user, db)
-    call = await VoiceAgentManager.handle_inbound_call(business_id, customer_id, phone_number, db, conversation_id)
-    return {"status": "ok", "call": {"id": str(call.id), "phone_number": call.phone_number, "status": call.status}}
+    call = await VoiceAgentManager.handle_inbound_call(
+        business_id, customer_id, phone_number, db, conversation_id
+    )
+    return {
+        "status": "ok",
+        "call": {
+            "id": str(call.id),
+            "phone_number": call.phone_number,
+            "status": call.status,
+        },
+    }
 
 
 @router.post("/voice/calls/{call_id}/transcript")
@@ -119,7 +151,9 @@ async def add_transcript(
     """Add transcript line to call."""
     await _get_business_for_user(business_id, current_user, db)
     try:
-        call = await VoiceAgentManager.append_transcript_segment(call_id, business_id, speaker, text, db, timestamp)
+        call = await VoiceAgentManager.append_transcript_segment(
+            call_id, business_id, speaker, text, db, timestamp
+        )
     except ValueError:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
     return {"status": "ok", "transcript": call.transcript_segments[-1]}
@@ -136,10 +170,19 @@ async def update_call_status(
     """Update call status."""
     await _get_business_for_user(business_id, current_user, db)
     try:
-        call = await VoiceAgentManager.update_call_status(call_id, business_id, status, db)
+        call = await VoiceAgentManager.update_call_status(
+            call_id, business_id, status, db
+        )
     except ValueError:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
-    return {"status": "ok", "call": {"id": str(call.id), "status": call.status, "duration_seconds": call.recording_duration}}
+    return {
+        "status": "ok",
+        "call": {
+            "id": str(call.id),
+            "status": call.status,
+            "duration_seconds": call.recording_duration,
+        },
+    }
 
 
 @router.put("/voice/calls/{call_id}/recording")
@@ -153,10 +196,15 @@ async def set_recording_url(
     """Set recording URL."""
     await _get_business_for_user(business_id, current_user, db)
     try:
-        call = await VoiceAgentManager.set_recording_url(call_id, business_id, recording_url, db)
+        call = await VoiceAgentManager.set_recording_url(
+            call_id, business_id, recording_url, db
+        )
     except ValueError:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
-    return {"status": "ok", "call": {"id": str(call.id), "recording_url": call.recording_url}}
+    return {
+        "status": "ok",
+        "call": {"id": str(call.id), "recording_url": call.recording_url},
+    }
 
 
 @router.put("/voice/calls/{call_id}/transcript-summary")
@@ -188,10 +236,18 @@ async def analyze_sentiment(
     """Set sentiment analysis result."""
     await _get_business_for_user(business_id, current_user, db)
     try:
-        call = await VoiceAgentManager.analyze_sentiment(call_id, business_id, sentiment, score, db)
+        call = await VoiceAgentManager.analyze_sentiment(
+            call_id, business_id, sentiment, score, db
+        )
     except ValueError:
         raise HTTPException(status_code=404, detail="Llamada no encontrada")
-    return {"status": "ok", "call": {"id": str(call.id), **{k: call.extra_data.get(k) for k in ("sentiment", "sentiment_score")}}}
+    return {
+        "status": "ok",
+        "call": {
+            "id": str(call.id),
+            **{k: call.extra_data.get(k) for k in ("sentiment", "sentiment_score")},
+        },
+    }
 
 
 @router.get("/voice/calls/{call_id}")
@@ -209,9 +265,14 @@ async def get_call_detail(
     return {
         "status": "ok",
         "call": {
-            "id": str(call.id), "phone_number": call.phone_number, "direction": call.direction,
-            "status": call.status, "recording_url": call.recording_url, "ai_summary": call.ai_summary,
-            "outcome": call.outcome, "created_at": call.created_at.isoformat() if call.created_at else None,
+            "id": str(call.id),
+            "phone_number": call.phone_number,
+            "direction": call.direction,
+            "status": call.status,
+            "recording_url": call.recording_url,
+            "ai_summary": call.ai_summary,
+            "outcome": call.outcome,
+            "created_at": call.created_at.isoformat() if call.created_at else None,
         },
         "transcript_segments": call.transcript_segments or [],
     }
@@ -231,8 +292,11 @@ async def get_business_calls(
         "status": "ok",
         "calls": [
             {
-                "id": str(c.id), "phone_number": c.phone_number, "direction": c.direction,
-                "status": c.status, "recording_duration": c.recording_duration,
+                "id": str(c.id),
+                "phone_number": c.phone_number,
+                "direction": c.direction,
+                "status": c.status,
+                "recording_duration": c.recording_duration,
                 "sentiment": (c.extra_data or {}).get("sentiment"),
                 "created_at": c.created_at.isoformat() if c.created_at else None,
             }
@@ -274,7 +338,9 @@ async def websocket_call(websocket: WebSocket, call_id: str):
                 await websocket.send_json({"type": "pong"})
             elif data.startswith("transcript:"):
                 text = data.replace("transcript:", "")
-                await websocket.send_json({"type": "transcript_received", "text": text, "timestamp": 0})
+                await websocket.send_json(
+                    {"type": "transcript_received", "text": text, "timestamp": 0}
+                )
     except Exception as e:
         logger.exception("websocket_call: error inesperado")
         print(f"WebSocket error: {e}")
@@ -303,6 +369,8 @@ async def handle_twilio_webhook(
 
     call = await VoiceAgentManager.find_call_by_twilio_id(twilio_call_id, db)
     if call:
-        await VoiceAgentManager.update_call_status(call.id, call.business_id, call_status, db)
+        await VoiceAgentManager.update_call_status(
+            call.id, call.business_id, call_status, db
+        )
 
     return {"status": "ok", "processed": bool(call)}

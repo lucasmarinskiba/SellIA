@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class CacheService:
     def __init__(self):
-        self.redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+        self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         self.redis = redis.from_url(self.redis_url, decode_responses=True)
         self.default_ttl = 3600  # 1 hour
 

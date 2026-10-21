@@ -27,9 +27,15 @@ class CredentialService:
         if not key:
             # Fallback: derive from secret key (not ideal for production but works for dev)
             from app.core.config import get_settings
+
             settings = get_settings()
-            base = settings.SECRET_KEY[:32] if hasattr(settings, "SECRET_KEY") else "default-secret-key-32-chars-long!!"
+            base = (
+                settings.SECRET_KEY[:32]
+                if hasattr(settings, "SECRET_KEY")
+                else "default-secret-key-32-chars-long!!"
+            )
             import base64
+
             key = base64.urlsafe_b64encode(base.encode()[:32].ljust(32, b"0"))
         return Fernet(key)
 
@@ -134,10 +140,12 @@ class CredentialService:
 
     async def list_for_user(self, user_id: uuid.UUID) -> list[SiteCredential]:
         result = await self.db.execute(
-            select(SiteCredential).where(
+            select(SiteCredential)
+            .where(
                 SiteCredential.user_id == user_id,
                 SiteCredential.is_active == True,
-            ).order_by(SiteCredential.platform_name)
+            )
+            .order_by(SiteCredential.platform_name)
         )
         return list(result.scalars().all())
 

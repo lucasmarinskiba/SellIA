@@ -27,7 +27,11 @@ async def get_blocked_countries() -> set[str]:
             result = await db.execute(select(SecurityConfig))
             config = result.scalar_one_or_none()
             if config and config.blocked_countries:
-                return {c.strip().upper() for c in config.blocked_countries.split(",") if c.strip()}
+                return {
+                    c.strip().upper()
+                    for c in config.blocked_countries.split(",")
+                    if c.strip()
+                }
     except Exception:
         logger.exception("get_blocked_countries: error inesperado")
 

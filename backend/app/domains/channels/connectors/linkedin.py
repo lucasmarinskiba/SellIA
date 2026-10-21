@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class LinkedInConnector(BaseChannelConnector):
     """Conector para LinkedIn Messages usando LinkedIn API."""
+
     platform = "linkedin"
     BASE_URL = "https://api.linkedin.com/v2"
 
@@ -22,7 +23,9 @@ class LinkedInConnector(BaseChannelConnector):
         self.access_token = credentials.get("access_token")
         self.sender_urn = credentials.get("sender_urn")
 
-    async def send_message(self, recipient_id: str, content: str, content_type: str = "text") -> dict[str, Any]:
+    async def send_message(
+        self, recipient_id: str, content: str, content_type: str = "text"
+    ) -> dict[str, Any]:
         if not self.access_token:
             raise ValueError("Faltan credenciales de LinkedIn")
 

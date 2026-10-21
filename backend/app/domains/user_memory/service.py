@@ -39,7 +39,9 @@ class UserMemoryService:
         )
         return result.scalar_one_or_none()
 
-    async def update_memory(self, user_id: UUID, update_data: UserMemoryUpdate) -> UserMemory:
+    async def update_memory(
+        self, user_id: UUID, update_data: UserMemoryUpdate
+    ) -> UserMemory:
         """Update UserMemory con nuevos datos"""
         memory = await self.get_or_create(user_id)
 
@@ -59,14 +61,20 @@ class UserMemoryService:
 
         return memory
 
-    async def log_event(self, user_id: UUID, event_data: UserMemoryEventCreate) -> UserMemoryEvent:
+    async def log_event(
+        self, user_id: UUID, event_data: UserMemoryEventCreate
+    ) -> UserMemoryEvent:
         """Log un evento de memoria (mensaje, acción, etc.)"""
         event = UserMemoryEvent(
             user_id=user_id,
             event_type=event_data.event_type,
             event_data=event_data.event_data,
-            conversation_id=UUID(event_data.conversation_id) if event_data.conversation_id else None,
-            business_id=UUID(event_data.business_id) if event_data.business_id else None,
+            conversation_id=(
+                UUID(event_data.conversation_id) if event_data.conversation_id else None
+            ),
+            business_id=(
+                UUID(event_data.business_id) if event_data.business_id else None
+            ),
             agent_id=UUID(event_data.agent_id) if event_data.agent_id else None,
         )
         self.db.add(event)
@@ -109,24 +117,31 @@ class UserMemoryService:
 
         return memory
 
-    async def add_favorite_agent(self, user_id: UUID, agent_id: UUID, agent_name: str) -> UserMemory:
+    async def add_favorite_agent(
+        self, user_id: UUID, agent_id: UUID, agent_name: str
+    ) -> UserMemory:
         """Track favorite agent usage"""
         memory = await self.get_or_create(user_id)
 
         # Find or create agent entry in favorite_agents
-        agent_entry = next((a for a in memory.favorite_agents if a.get("agent_id") == str(agent_id)), None)
+        agent_entry = next(
+            (a for a in memory.favorite_agents if a.get("agent_id") == str(agent_id)),
+            None,
+        )
 
         if agent_entry:
             agent_entry["count"] = agent_entry.get("count", 0) + 1
             agent_entry["last_used"] = datetime.now(UTC).isoformat()
         else:
-            memory.favorite_agents.append({
-                "agent_id": str(agent_id),
-                "agent_name": agent_name,
-                "count": 1,
-                "first_used": datetime.now(UTC).isoformat(),
-                "last_used": datetime.now(UTC).isoformat(),
-            })
+            memory.favorite_agents.append(
+                {
+                    "agent_id": str(agent_id),
+                    "agent_name": agent_name,
+                    "count": 1,
+                    "first_used": datetime.now(UTC).isoformat(),
+                    "last_used": datetime.now(UTC).isoformat(),
+                }
+            )
 
         memory.updated_at = datetime.now(UTC)
         self.db.add(memory)
@@ -149,7 +164,9 @@ class UserMemoryService:
 
         return memory
 
-    async def set_preference(self, user_id: UUID, preference_key: str, preference_value: dict[str, Any]) -> UserPreference:
+    async def set_preference(
+        self, user_id: UUID, preference_key: str, preference_value: dict[str, Any]
+    ) -> UserPreference:
         """Set o update una preferencia granular"""
         result = await self.db.execute(
             select(UserPreference).where(
@@ -175,7 +192,9 @@ class UserMemoryService:
 
         return pref
 
-    async def get_preference(self, user_id: UUID, preference_key: str) -> UserPreference | None:
+    async def get_preference(
+        self, user_id: UUID, preference_key: str
+    ) -> UserPreference | None:
         """Get una preferencia granular"""
         result = await self.db.execute(
             select(UserPreference).where(
@@ -185,7 +204,9 @@ class UserMemoryService:
         )
         return result.scalar_one_or_none()
 
-    async def get_recent_events(self, user_id: UUID, limit: int = 50) -> list[UserMemoryEvent]:
+    async def get_recent_events(
+        self, user_id: UUID, limit: int = 50
+    ) -> list[UserMemoryEvent]:
         """Get últimos eventos del usuario"""
         result = await self.db.execute(
             select(UserMemoryEvent)

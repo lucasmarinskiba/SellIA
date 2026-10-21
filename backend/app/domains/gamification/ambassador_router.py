@@ -91,4 +91,8 @@ async def publish_expert_profile(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     profile = await publish_profile(db, current_user.id, data)
-    return {"message": "Profile published", "slug": profile.slug, "url": f"/expert/{profile.slug}"}
+    return {
+        "message": "Profile published",
+        "slug": profile.slug,
+        "url": f"/expert/{profile.slug}",
+    }

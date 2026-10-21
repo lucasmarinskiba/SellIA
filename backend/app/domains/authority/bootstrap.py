@@ -27,12 +27,18 @@ async def ensure_authority_tables() -> None:
             Testimonial,
             TrustScore,
         )
+
         tables += [
-            Testimonial.__table__, Award.__table__, Review.__table__,
-            TrustScore.__table__, SellerBio.__table__,
+            Testimonial.__table__,
+            Award.__table__,
+            Review.__table__,
+            TrustScore.__table__,
+            SellerBio.__table__,
         ]
     except Exception as e:  # noqa: BLE001
-        logger.warning("authority bootstrap: E-E-A-T models unavailable: %s", str(e)[:160])
+        logger.warning(
+            "authority bootstrap: E-E-A-T models unavailable: %s", str(e)[:160]
+        )
 
     for table in tables:
         try:
@@ -41,7 +47,9 @@ async def ensure_authority_tables() -> None:
                     lambda sync_conn, t=table: t.create(bind=sync_conn, checkfirst=True)
                 )
         except Exception as e:  # noqa: BLE001
-            logger.warning("authority bootstrap: table %s skipped: %s", table.name, str(e)[:160])
+            logger.warning(
+                "authority bootstrap: table %s skipped: %s", table.name, str(e)[:160]
+            )
     logger.info("✅ authority tables ensured (%s)", len(tables))
     await _migrate_impact_score()
 
@@ -84,4 +92,6 @@ async def _migrate_impact_score() -> None:
             async with engine.begin() as conn:
                 await conn.execute(text(statement))
         except Exception as e:  # noqa: BLE001
-            logger.warning("authority bootstrap: impact_score migration: %s", str(e)[:160])
+            logger.warning(
+                "authority bootstrap: impact_score migration: %s", str(e)[:160]
+            )

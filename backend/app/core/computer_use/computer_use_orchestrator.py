@@ -58,12 +58,14 @@ class ComputerUseOrchestrator:
             try:
                 result = await self.browser_agent.execute_action(action)
 
-                self.current_workflow["results"].append({
-                    "action": i + 1,
-                    "type": action.get("type"),
-                    "status": result.get("status"),
-                    "error": result.get("error"),
-                })
+                self.current_workflow["results"].append(
+                    {
+                        "action": i + 1,
+                        "type": action.get("type"),
+                        "status": result.get("status"),
+                        "error": result.get("error"),
+                    }
+                )
 
                 if result.get("status") == "success":
                     self.current_workflow["completed"] += 1
@@ -74,12 +76,14 @@ class ComputerUseOrchestrator:
             except Exception as e:
                 logger.exception(f"Action {i+1} exception")
                 self.current_workflow["failed"] += 1
-                self.current_workflow["results"].append({
-                    "action": i + 1,
-                    "type": action.get("type"),
-                    "status": "error",
-                    "error": str(e),
-                })
+                self.current_workflow["results"].append(
+                    {
+                        "action": i + 1,
+                        "type": action.get("type"),
+                        "status": "error",
+                        "error": str(e),
+                    }
+                )
 
                 # Si es crítico, parar
                 if action.get("critical", False):
@@ -112,32 +116,52 @@ class ComputerUseOrchestrator:
 
         actions = [
             # ========== MercadoLibre ==========
-            {"type": "navigate", "params": {"url": "https://www.mercadolibre.com.ar"}, "site": "mercadolibre"},
+            {
+                "type": "navigate",
+                "params": {"url": "https://www.mercadolibre.com.ar"},
+                "site": "mercadolibre",
+            },
             {"type": "click", "params": {"selector": "a[href*='vender']"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='titulo']": product.get("name"),
-                "input[name='precio']": str(product.get("price")),
-                "textarea[name='descripcion']": product.get("description"),
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[name='titulo']": product.get("name"),
+                        "input[name='precio']": str(product.get("price")),
+                        "textarea[name='descripcion']": product.get("description"),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button[type='submit']"}},
             {"type": "screenshot", "params": {"filename": "mercadolibre_listed.png"}},
-
             # ========== Shopify (si tiene tienda) ==========
-            {"type": "navigate", "params": {"url": "https://admin.shopify.com/products"}},
+            {
+                "type": "navigate",
+                "params": {"url": "https://admin.shopify.com/products"},
+            },
             {"type": "click", "params": {"selector": "button:has-text('Add product')"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='title']": product.get("name"),
-                "input[name='price']": str(product.get("price")),
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[name='title']": product.get("name"),
+                        "input[name='price']": str(product.get("price")),
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": "button:has-text('Save')"}},
-
             # ========== eBay ==========
             {"type": "navigate", "params": {"url": "https://sell.ebay.com/"}},
             {"type": "click", "params": {"selector": "a[href*='create']"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='title']": product.get("name"),
-                "input[placeholder*='price']": str(product.get("price")),
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[placeholder*='title']": product.get("name"),
+                        "input[placeholder*='price']": str(product.get("price")),
+                    }
+                },
+            },
         ]
 
         return await self.execute_workflow(f"list_product_{product.get('id')}", actions)
@@ -155,35 +179,61 @@ class ComputerUseOrchestrator:
             # ========== WhatsApp Web ==========
             {"type": "navigate", "params": {"url": "https://web.whatsapp.com"}},
             {"type": "click", "params": {"selector": "span:has-text('Nuevo chat')"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='Buscar']": recipient,
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[placeholder*='Buscar']": recipient,
+                    }
+                },
+            },
             {"type": "click", "params": {"selector": f"span:has-text('{recipient}')"}},
-            {"type": "fill_form", "params": {"fields": {
-                "footer input[aria-label*='Mensaje']": message,
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "footer input[aria-label*='Mensaje']": message,
+                    }
+                },
+            },
             {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
             {"type": "screenshot", "params": {"filename": "whatsapp_sent.png"}},
-
             # ========== Gmail ==========
             {"type": "navigate", "params": {"url": "https://mail.google.com"}},
             {"type": "click", "params": {"selector": "a:has-text('Redactar')"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[aria-label='Para']": recipient,
-                "input[aria-label='Asunto']": "Mensaje importante",
-                "div[contenteditable='true']": message,
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[aria-label='Para']": recipient,
+                        "input[aria-label='Asunto']": "Mensaje importante",
+                        "div[contenteditable='true']": message,
+                    }
+                },
+            },
             {"type": "keyboard_shortcut", "params": {"shortcut": "Tab+Enter"}},  # Send
-
             # ========== LinkedIn ==========
             {"type": "navigate", "params": {"url": "https://linkedin.com/messaging"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='Buscar']": recipient,
-            }}},
-            {"type": "click", "params": {"selector": f"button:has-text('{recipient}')"}},
-            {"type": "fill_form", "params": {"fields": {
-                "div[contenteditable='true']": message,
-            }}},
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "input[placeholder*='Buscar']": recipient,
+                    }
+                },
+            },
+            {
+                "type": "click",
+                "params": {"selector": f"button:has-text('{recipient}')"},
+            },
+            {
+                "type": "fill_form",
+                "params": {
+                    "fields": {
+                        "div[contenteditable='true']": message,
+                    }
+                },
+            },
             {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
         ]
 
@@ -201,40 +251,71 @@ class ComputerUseOrchestrator:
         actions = []
 
         # 1. List on MercadoLibre
-        actions.extend([
-            {"type": "navigate", "params": {"url": "https://mercadolibre.com/vender"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[name='titulo']": product.get("name"),
-                "input[name='precio']": str(product.get("price")),
-            }}},
-            {"type": "click", "params": {"selector": "button[type='submit']"}},
-            {"type": "screenshot", "params": {"filename": "step1_listed.png"}},
-        ])
+        actions.extend(
+            [
+                {
+                    "type": "navigate",
+                    "params": {"url": "https://mercadolibre.com/vender"},
+                },
+                {
+                    "type": "fill_form",
+                    "params": {
+                        "fields": {
+                            "input[name='titulo']": product.get("name"),
+                            "input[name='precio']": str(product.get("price")),
+                        }
+                    },
+                },
+                {"type": "click", "params": {"selector": "button[type='submit']"}},
+                {"type": "screenshot", "params": {"filename": "step1_listed.png"}},
+            ]
+        )
 
         # 2. Message buyer on WhatsApp
-        actions.extend([
-            {"type": "navigate", "params": {"url": "https://web.whatsapp.com"}},
-            {"type": "fill_form", "params": {"fields": {
-                "input[placeholder*='Buscar']": buyer.get("phone"),
-            }}},
-            {"type": "fill_form", "params": {"fields": {
-                "div[contenteditable='true']": f"Hola! Te interesa {product.get('name')}?",
-            }}},
-            {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
-        ])
+        actions.extend(
+            [
+                {"type": "navigate", "params": {"url": "https://web.whatsapp.com"}},
+                {
+                    "type": "fill_form",
+                    "params": {
+                        "fields": {
+                            "input[placeholder*='Buscar']": buyer.get("phone"),
+                        }
+                    },
+                },
+                {
+                    "type": "fill_form",
+                    "params": {
+                        "fields": {
+                            "div[contenteditable='true']": f"Hola! Te interesa {product.get('name')}?",
+                        }
+                    },
+                },
+                {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
+            ]
+        )
 
         # 3. Send checkout link via WhatsApp
-        actions.extend([
-            {"type": "fill_form", "params": {"fields": {
-                "div[contenteditable='true']": f"Aquí está el link: https://checkout.example.com/{product.get('id')}",
-            }}},
-            {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
-        ])
+        actions.extend(
+            [
+                {
+                    "type": "fill_form",
+                    "params": {
+                        "fields": {
+                            "div[contenteditable='true']": f"Aquí está el link: https://checkout.example.com/{product.get('id')}",
+                        }
+                    },
+                },
+                {"type": "keyboard_shortcut", "params": {"shortcut": "Enter"}},
+            ]
+        )
 
         # 4. Confirmation screenshot
-        actions.extend([
-            {"type": "screenshot", "params": {"filename": "step4_confirmed.png"}},
-        ])
+        actions.extend(
+            [
+                {"type": "screenshot", "params": {"filename": "step4_confirmed.png"}},
+            ]
+        )
 
         return await self.execute_workflow(
             f"complete_funnel_{product.get('id')}_{buyer.get('email')}",
@@ -256,7 +337,9 @@ class ComputerUseOrchestrator:
         successful_actions = sum(w.get("completed", 0) for w in workflows)
         failed_actions = sum(w.get("failed", 0) for w in workflows)
 
-        success_rate = (successful_actions / total_actions * 100) if total_actions > 0 else 0
+        success_rate = (
+            (successful_actions / total_actions * 100) if total_actions > 0 else 0
+        )
 
         return {
             "total_workflows": total_workflows,

@@ -90,8 +90,13 @@ async def update_bot(
     if "active_hours" in changes:
         hours = changes["active_hours"]
         changes["active_hours"] = (
-            {"from": hours["from_hour"], "to": hours["to_hour"], "utc_offset": hours["utc_offset"]}
-            if hours else None
+            {
+                "from": hours["from_hour"],
+                "to": hours["to_hour"],
+                "utc_offset": hours["utc_offset"],
+            }
+            if hours
+            else None
         )
     bot = await service.upsert_bot(db, business_ids[0], platform, changes)
     return service.serialize(bot)
@@ -109,7 +114,9 @@ async def list_playbooks(
     from . import playbooks
 
     return {
-        "playbooks": [playbooks.describe(platform) for platform in sorted(playbooks.PLAYBOOKS)],
+        "playbooks": [
+            playbooks.describe(platform) for platform in sorted(playbooks.PLAYBOOKS)
+        ],
         "default": playbooks.describe("default"),
     }
 

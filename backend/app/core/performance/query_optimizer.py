@@ -45,15 +45,23 @@ class QueryOptimizer:
     ) -> dict[str, Any]:
         """Analyze query performance."""
 
-        efficiency = (1.0 if execution_time_ms < 100 else 0.5) if rows_scanned > 0 else 0
+        efficiency = (
+            (1.0 if execution_time_ms < 100 else 0.5) if rows_scanned > 0 else 0
+        )
 
         return {
             "query": query[:100],
             "execution_time_ms": execution_time_ms,
             "rows_scanned": rows_scanned,
             "efficiency": round(efficiency, 2),
-            "status": "good" if execution_time_ms < 100 else "slow" if execution_time_ms < 1000 else "very_slow",
-            "recommendation": "Add index" if rows_scanned > 10000 else "Query is efficient",
+            "status": (
+                "good"
+                if execution_time_ms < 100
+                else "slow" if execution_time_ms < 1000 else "very_slow"
+            ),
+            "recommendation": (
+                "Add index" if rows_scanned > 10000 else "Query is efficient"
+            ),
         }
 
     @staticmethod
@@ -66,23 +74,27 @@ class QueryOptimizer:
         recommendations = []
 
         for filter_col in frequent_filters:
-            recommendations.append({
-                "table": table,
-                "column": filter_col,
-                "type": "B-tree",
-                "priority": "High" if len(frequent_filters) == 1 else "Medium",
-                "query_impact": "-50% to -80% execution time",
-            })
+            recommendations.append(
+                {
+                    "table": table,
+                    "column": filter_col,
+                    "type": "B-tree",
+                    "priority": "High" if len(frequent_filters) == 1 else "Medium",
+                    "query_impact": "-50% to -80% execution time",
+                }
+            )
 
         # Composite index
         if len(frequent_filters) > 1:
-            recommendations.append({
-                "table": table,
-                "columns": frequent_filters[:3],
-                "type": "Composite B-tree",
-                "priority": "Very High",
-                "query_impact": "-80% to -95% execution time",
-            })
+            recommendations.append(
+                {
+                    "table": table,
+                    "columns": frequent_filters[:3],
+                    "type": "Composite B-tree",
+                    "priority": "Very High",
+                    "query_impact": "-80% to -95% execution time",
+                }
+            )
 
         return recommendations
 
@@ -97,24 +109,30 @@ class QueryOptimizer:
 
         # If query has OR conditions, suggest UNION
         if " OR " in query:
-            optimizations.append({
-                "type": "Use UNION instead of OR",
-                "expected_improvement": "20-30%",
-            })
+            optimizations.append(
+                {
+                    "type": "Use UNION instead of OR",
+                    "expected_improvement": "20-30%",
+                }
+            )
 
         # If query joins many tables, suggest denormalization
         if query.count("JOIN") > 3:
-            optimizations.append({
-                "type": "Consider denormalization",
-                "expected_improvement": "40-60%",
-            })
+            optimizations.append(
+                {
+                    "type": "Consider denormalization",
+                    "expected_improvement": "40-60%",
+                }
+            )
 
         # If query lacks LIMIT, add it
         if "LIMIT" not in query:
-            optimizations.append({
-                "type": "Add LIMIT clause",
-                "expected_improvement": "Reduce memory usage",
-            })
+            optimizations.append(
+                {
+                    "type": "Add LIMIT clause",
+                    "expected_improvement": "Reduce memory usage",
+                }
+            )
 
         return {
             "original_query": query[:100],

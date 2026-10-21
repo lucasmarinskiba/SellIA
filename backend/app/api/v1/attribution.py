@@ -17,7 +17,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/api/v1", tags=["attribution"])
 
 
-async def _get_business_for_user(business_id: UUID, user: User, db: AsyncSession) -> Business:
+async def _get_business_for_user(
+    business_id: UUID, user: User, db: AsyncSession
+) -> Business:
     """Same convention as websites.py/catalog.py/channels.py/payments.py.
     All 4 routes below had zero authentication until this fix."""
     result = await db.execute(
@@ -51,7 +53,12 @@ async def log_touchpoint(
 ):
     await _get_business_for_user(business_id, current_user, db)
     return await AttributionService.log_touchpoint(
-        business_id, customer_id, request.channel, request.source or "", request.interaction_type, db
+        business_id,
+        customer_id,
+        request.channel,
+        request.source or "",
+        request.interaction_type,
+        db,
     )
 
 
@@ -63,7 +70,13 @@ async def attribute_revenue(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     await _get_business_for_user(business_id, current_user, db)
-    return await AttributionService.attribute_revenue(request.order_id, business_id, request.order_value, request.attribution_model, db)
+    return await AttributionService.attribute_revenue(
+        request.order_id,
+        business_id,
+        request.order_value,
+        request.attribution_model,
+        db,
+    )
 
 
 @router.get("/businesses/{business_id}/channel-performance")

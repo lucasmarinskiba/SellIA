@@ -21,7 +21,9 @@ from app.domains.agents.prompts.business_context_adapter import (
 logger = get_logger(__name__)
 
 
-def _build_financial_prompt(historical_data: dict[str, Any], assumptions: dict[str, Any]) -> str:
+def _build_financial_prompt(
+    historical_data: dict[str, Any], assumptions: dict[str, Any]
+) -> str:
     return (
         f"Datos históricos (últimos meses):\n"
         f"{json.dumps(historical_data, ensure_ascii=False, indent=2)[:4000]}\n\n"
@@ -55,7 +57,7 @@ async def create_financial_plan(
             '"optimistic": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}, '
             '"base": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}, '
             '"pessimistic": {"monthly_data": [...], "total_revenue": 0.0, "total_expense": 0.0, "net_result": 0.0}'
-            '}, '
+            "}, "
             '"metrics": {"ltv": 0.0, "cac": 0.0, "runway_months": 0, "ltv_cac_ratio": 0.0}}\n'
             "Los montos deben ser números (float). Incluye exactamente 12 meses."
         )
@@ -90,7 +92,9 @@ async def create_financial_plan(
                 content = content.split("```")[1].split("```")[0].strip()
             parsed = json.loads(content)
         except Exception as e:
-            logger.warning(f"Failed to parse financial plan LLM output: {e}", exc_info=True)
+            logger.warning(
+                f"Failed to parse financial plan LLM output: {e}", exc_info=True
+            )
 
     plan = FinancialPlan(
         business_id=business_id,
@@ -147,28 +151,34 @@ async def export_plan(plan: FinancialPlan, format: str = "csv") -> dict[str, Any
     # CSV export
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["month", "revenue", "expense", "cash_inflow", "cash_outflow", "cash_net"])
+    writer.writerow(
+        ["month", "revenue", "expense", "cash_inflow", "cash_outflow", "cash_net"]
+    )
     rev = {r["month"]: r["amount"] for r in plan.revenue_projections}
     exp = {e["month"]: e["amount"] for e in plan.expense_projections}
     cf = {c["month"]: c for c in plan.cash_flow}
     for month in range(1, 13):
-        writer.writerow([
-            month,
-            rev.get(month, 0.0),
-            exp.get(month, 0.0),
-            cf.get(month, {}).get("inflow", 0.0),
-            cf.get(month, {}).get("outflow", 0.0),
-            cf.get(month, {}).get("net", 0.0),
-        ])
+        writer.writerow(
+            [
+                month,
+                rev.get(month, 0.0),
+                exp.get(month, 0.0),
+                cf.get(month, {}).get("inflow", 0.0),
+                cf.get(month, {}).get("outflow", 0.0),
+                cf.get(month, {}).get("net", 0.0),
+            ]
+        )
     writer.writerow([])
     writer.writerow(["scenario", "total_revenue", "total_expense", "net_result"])
     for scenario_name, scenario_data in (plan.scenarios or {}).items():
-        writer.writerow([
-            scenario_name,
-            scenario_data.get("total_revenue", 0.0),
-            scenario_data.get("total_expense", 0.0),
-            scenario_data.get("net_result", 0.0),
-        ])
+        writer.writerow(
+            [
+                scenario_name,
+                scenario_data.get("total_revenue", 0.0),
+                scenario_data.get("total_expense", 0.0),
+                scenario_data.get("net_result", 0.0),
+            ]
+        )
     writer.writerow([])
     writer.writerow(["metric", "value"])
     for k, v in (plan.metrics or {}).items():

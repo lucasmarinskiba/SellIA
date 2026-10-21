@@ -4,7 +4,6 @@ Pricing: ~$0.05/image (via API proxy como imagineapi.dev o midjourney-api.com)
 Strengths: Aesthetic quality, artistic style, community trends
 """
 
-
 import logging
 from typing import ClassVar
 
@@ -42,7 +41,9 @@ class MidjourneyProvider(BaseProvider):
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         if not self.is_available:
-            return GenerationResult(success=False, error_message="MIDJOURNEY_API_KEY no configurada")
+            return GenerationResult(
+                success=False, error_message="MIDJOURNEY_API_KEY no configurada"
+            )
 
         try:
             import aiohttp
@@ -58,21 +59,27 @@ class MidjourneyProvider(BaseProvider):
             if config.aspect_ratio:
                 payload["aspect_ratio"] = config.aspect_ratio
 
-            async with aiohttp.ClientSession() as session, session.post(
-                "https://api.imagineapi.dev/items/images",
-                headers=headers,
-                json=payload,
-            ) as resp:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    "https://api.imagineapi.dev/items/images",
+                    headers=headers,
+                    json=payload,
+                ) as resp,
+            ):
                 data = await resp.json()
 
             image_id = data.get("data", {}).get("id")
             if not image_id:
-                return GenerationResult(success=False, error_message="Midjourney no devolvió ID")
+                return GenerationResult(
+                    success=False, error_message="Midjourney no devolvió ID"
+                )
 
             # Poll
             image_url = None
             for _ in range(60):
                 import asyncio
+
                 await asyncio.sleep(5)
                 async with (
                     aiohttp.ClientSession() as session,
@@ -87,15 +94,22 @@ class MidjourneyProvider(BaseProvider):
                         image_url = poll_data.get("data", {}).get("url")
                         break
                     elif status == "failed":
-                        return GenerationResult(success=False, error_message="Midjourney generation failed")
+                        return GenerationResult(
+                            success=False, error_message="Midjourney generation failed"
+                        )
 
             if not image_url:
-                return GenerationResult(success=False, error_message="Midjourney timeout")
+                return GenerationResult(
+                    success=False, error_message="Midjourney timeout"
+                )
 
             image_bytes = await download_url(image_url)
             compressed = None
             if image_bytes:
-                compressed = compress_image(image_bytes, quality=smart_quality_for_size(get_image_size_kb(image_bytes)))
+                compressed = compress_image(
+                    image_bytes,
+                    quality=smart_quality_for_size(get_image_size_kb(image_bytes)),
+                )
 
             return GenerationResult(
                 success=True,

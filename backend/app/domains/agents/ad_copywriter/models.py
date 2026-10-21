@@ -11,7 +11,12 @@ class AdCampaign(Base):
     __tablename__ = "ad_campaigns"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     campaign_name = Column(String(255), nullable=False)
     platform = Column(String(50), nullable=False)  # meta/google/tiktok
     objective = Column(String(100), nullable=False)
@@ -19,14 +24,23 @@ class AdCampaign(Base):
     budget = Column(Numeric(12, 2), nullable=True)
     status = Column(String(50), default="draft", nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
 
 class AdVariant(Base):
     __tablename__ = "ad_variants"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey("ad_campaigns.id", ondelete="CASCADE"), nullable=False, index=True)
+    campaign_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("ad_campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     variant_name = Column(String(255), nullable=False)
     headline = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)

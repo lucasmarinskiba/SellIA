@@ -32,7 +32,10 @@ class FOMABTestService:
         # Validate variants exist
         variants = await self.db.execute(
             select(PublicationLinkFOMO).where(
-                PublicationLinkFOMO.id.in_([variant_a_id, variant_b_id] + ([variant_c_id] if variant_c_id else []))
+                PublicationLinkFOMO.id.in_(
+                    [variant_a_id, variant_b_id]
+                    + ([variant_c_id] if variant_c_id else [])
+                )
             )
         )
         if len(variants.scalars().all()) < 2:
@@ -61,7 +64,9 @@ class FOMABTestService:
         """Get test by ID, scoped to the business that owns it — test_id alone
         is a caller-supplied path param, not proof of ownership."""
         result = await self.db.execute(
-            select(FOMABTest).where(FOMABTest.id == test_id, FOMABTest.business_id == business_id)
+            select(FOMABTest).where(
+                FOMABTest.id == test_id, FOMABTest.business_id == business_id
+            )
         )
         return result.scalar_one_or_none()
 
@@ -75,7 +80,9 @@ class FOMABTestService:
         )
         return result.scalars().all()
 
-    async def check_and_announce_winner(self, business_id: UUID, test_id: UUID) -> FOMABTest | None:
+    async def check_and_announce_winner(
+        self, business_id: UUID, test_id: UUID
+    ) -> FOMABTest | None:
         """Check if test has enough conversions to declare winner."""
         test = await self.get_test(business_id, test_id)
         if not test or test.status != "running":
@@ -104,7 +111,11 @@ class FOMABTestService:
             return test
 
         # Find winner (highest conversion count)
-        winner_id = max(variant_counts, key=variant_counts.get) if variant_counts else test.variant_a_id
+        winner_id = (
+            max(variant_counts, key=variant_counts.get)
+            if variant_counts
+            else test.variant_a_id
+        )
 
         test.winner_variant_id = winner_id
         test.status = "completed"
@@ -120,7 +131,9 @@ class FOMABTestService:
         )
         return test
 
-    async def apply_winner_to_link(self, business_id: UUID, test_id: UUID) -> PublicationLink | None:
+    async def apply_winner_to_link(
+        self, business_id: UUID, test_id: UUID
+    ) -> PublicationLink | None:
         """Apply winning FOMO variant to the publication link."""
         test = await self.get_test(business_id, test_id)
         if not test or not test.winner_variant_id:
@@ -145,9 +158,7 @@ class FOMABTestService:
 
         # In production: would sync winner copy to actual platform here
         # For now: just log + return link
-        logger.info(
-            f"Applied winner FOMO {test.winner_variant_id} to link {link.id}"
-        )
+        logger.info(f"Applied winner FOMO {test.winner_variant_id} to link {link.id}")
 
         return link
 
@@ -171,7 +182,10 @@ class FOMABTestService:
             .group_by(ConversionEvent.fomo_variant_id)
         )
 
-        variant_data = {row[0]: {"conversions": row[1], "revenue": float(row[2] or 0)} for row in results.all()}
+        variant_data = {
+            row[0]: {"conversions": row[1], "revenue": float(row[2] or 0)}
+            for row in results.all()
+        }
 
         return {
             "test_id": str(test.id),
@@ -181,20 +195,34 @@ class FOMABTestService:
             "variant_a": {
                 "id": str(test.variant_a_id),
                 "split": test.variant_a_split,
-                **variant_data.get(test.variant_a_id, {"conversions": 0, "revenue": 0.0}),
+                **variant_data.get(
+                    test.variant_a_id, {"conversions": 0, "revenue": 0.0}
+                ),
             },
             "variant_b": {
                 "id": str(test.variant_b_id),
                 "split": test.variant_b_split,
-                **variant_data.get(test.variant_b_id, {"conversions": 0, "revenue": 0.0}),
+                **variant_data.get(
+                    test.variant_b_id, {"conversions": 0, "revenue": 0.0}
+                ),
             },
             "variant_c": (
                 {
                     "id": str(test.variant_c_id),
                     "split": test.variant_c_split,
-                    **variant_data.get(test.variant_c_id, {"conversions": 0, "revenue": 0.0}),
-                } if test.variant_c_id else None
+                    **variant_data.get(
+                        test.variant_c_id, {"conversions": 0, "revenue": 0.0}
+                    ),
+                }
+                if test.variant_c_id
+                else None
             ),
-            "winner_id": str(test.winner_variant_id) if test.winner_variant_id else None,
-            "winner_announced_at": test.winner_announced_at.isoformat() if test.winner_announced_at else None,
+            "winner_id": (
+                str(test.winner_variant_id) if test.winner_variant_id else None
+            ),
+            "winner_announced_at": (
+                test.winner_announced_at.isoformat()
+                if test.winner_announced_at
+                else None
+            ),
         }

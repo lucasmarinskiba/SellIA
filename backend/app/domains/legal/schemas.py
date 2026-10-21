@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class ComplianceChecklistItemCreate(BaseModel):
     """Create compliance requirement."""
+
     category: str = Field(..., min_length=1, max_length=100)
     requirement: str = Field(..., min_length=1, max_length=500)
     jurisdiction: str = Field(default="AE", max_length=50)
@@ -15,6 +16,7 @@ class ComplianceChecklistItemCreate(BaseModel):
 
 class ComplianceChecklistItemUpdate(BaseModel):
     """Update compliance requirement status."""
+
     status: str = Field(..., pattern="^(pending|compliant|non_compliant|waived)$")
     verified_by: str | None = Field(None, max_length=255)
     notes: str | None = None
@@ -22,6 +24,7 @@ class ComplianceChecklistItemUpdate(BaseModel):
 
 class ComplianceChecklistItemOut(BaseModel):
     """Compliance requirement response."""
+
     id: UUID
     business_id: UUID
     category: str
@@ -39,6 +42,7 @@ class ComplianceChecklistItemOut(BaseModel):
 
 class ContractTemplateCreate(BaseModel):
     """Create contract template."""
+
     name: str = Field(..., min_length=1, max_length=255)
     contract_type: str = Field(..., min_length=1, max_length=50)
     template_html: str = Field(..., min_length=1)
@@ -46,6 +50,7 @@ class ContractTemplateCreate(BaseModel):
 
 class ContractTemplateOut(BaseModel):
     """Contract template response."""
+
     id: UUID
     business_id: UUID
     name: str
@@ -61,11 +66,15 @@ class ContractTemplateOut(BaseModel):
 
 class ContractRenderRequest(BaseModel):
     """Render contract with variables."""
-    variables: dict[str, str] = Field(..., description="Variables to replace in template")
+
+    variables: dict[str, str] = Field(
+        ..., description="Variables to replace in template"
+    )
 
 
 class ContractRenderOut(BaseModel):
     """Rendered contract."""
+
     template_id: UUID
     contract_type: str
     rendered_html: str
@@ -74,6 +83,7 @@ class ContractRenderOut(BaseModel):
 
 class AuditLogOut(BaseModel):
     """Audit log response."""
+
     id: UUID
     business_id: UUID
     entity_type: str
@@ -89,6 +99,7 @@ class AuditLogOut(BaseModel):
 
 class ComplianceStatusResponse(BaseModel):
     """Compliance status overview."""
+
     total_requirements: int
     compliant: int
     non_compliant: int

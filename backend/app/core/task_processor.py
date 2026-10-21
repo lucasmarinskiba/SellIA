@@ -2,6 +2,7 @@
 Task Processor - Executes email scheduler queue.
 Runs in background thread/worker process.
 """
+
 import asyncio
 import logging
 from datetime import datetime
@@ -14,6 +15,7 @@ from app.db import AsyncSessionLocal
 from app.db.models import EmailLog, Lead, WorkflowExecution
 
 logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # TASK PROCESSOR
@@ -96,7 +98,7 @@ class TaskProcessor:
                 to=lead_email,
                 subject=subject,
                 body=body,
-                tracking_id=f"wf_{workflow_execution_id}"
+                tracking_id=f"wf_{workflow_execution_id}",
             )
 
             # Update DB
@@ -119,7 +121,7 @@ class TaskProcessor:
                     lead_email=lead_email,
                     subject=subject,
                     provider=result.get("provider"),
-                    status=result.get("status")
+                    status=result.get("status"),
                 )
                 session.add(email_log)
 
@@ -150,7 +152,7 @@ class TaskProcessor:
                     to=lead_email,
                     subject=subject,
                     body=body,
-                    tracking_id=f"batch_{workflow_id}_{lead_id}"
+                    tracking_id=f"batch_{workflow_id}_{lead_id}",
                 )
 
                 logger.info(f"✅ Batch email sent: {lead_email}")
@@ -176,7 +178,9 @@ class TaskProcessor:
                     lead.updated_at = datetime.now()
                     await session.commit()
 
-                    logger.info(f"📊 Lead {lead_id} score updated: {score_delta} ({reason})")
+                    logger.info(
+                        f"📊 Lead {lead_id} score updated: {score_delta} ({reason})"
+                    )
 
         except Exception as e:
             logger.error(f"Score update failed: {e}")
@@ -201,16 +205,20 @@ class TaskProcessor:
                     execution.email_status = "scheduled"
                     await session.commit()
 
-                    logger.info(f"⏭️ Workflow progressed: {workflow_execution_id} → step {next_step}")
+                    logger.info(
+                        f"⏭️ Workflow progressed: {workflow_execution_id} → step {next_step}"
+                    )
 
         except Exception as e:
             logger.error(f"Workflow progress failed: {e}")
             raise
 
+
 # ============================================================
 # GLOBAL PROCESSOR INSTANCE
 # ============================================================
 processor: TaskProcessor = None
+
 
 async def init_processor(scheduler: EmailScheduler) -> TaskProcessor:
     """Initialize global processor."""
@@ -218,15 +226,18 @@ async def init_processor(scheduler: EmailScheduler) -> TaskProcessor:
     processor = TaskProcessor(scheduler)
     return processor
 
+
 async def start_processor() -> None:
     """Start processor (call from app startup)."""
     if processor:
         await processor.start()
 
+
 async def stop_processor() -> None:
     """Stop processor (call from app shutdown)."""
     if processor:
         await processor.stop()
+
 
 async def get_processor_stats() -> dict:
     """Get processor queue stats."""

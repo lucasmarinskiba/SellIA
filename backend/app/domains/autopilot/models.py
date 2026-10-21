@@ -51,10 +51,17 @@ class AutopilotActionType(str, enum.Enum):
 
 class AutopilotConfig(Base):
     """Per-business configuration for what the autopilot can do autonomously."""
+
     __tablename__ = "autopilot_configs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
 
     # Toggles for autonomous actions (default: False = require approval)
     auto_qualify_leads = Column(Boolean, default=False, nullable=False)
@@ -64,31 +71,47 @@ class AutopilotConfig(Base):
     auto_create_orders = Column(Boolean, default=False, nullable=False)
     auto_request_reviews = Column(Boolean, default=False, nullable=False)
     auto_activate_recovery_workflows = Column(Boolean, default=False, nullable=False)
-    auto_escalate_to_human = Column(Boolean, default=True, nullable=False)  # default True for safety
+    auto_escalate_to_human = Column(
+        Boolean, default=True, nullable=False
+    )  # default True for safety
 
     # Thresholds and limits
-    approval_threshold_amount = Column(Numeric(14, 2), default=5000, nullable=False)  # Orders above this require approval
+    approval_threshold_amount = Column(
+        Numeric(14, 2), default=5000, nullable=False
+    )  # Orders above this require approval
     max_daily_auto_messages = Column(Integer, default=50, nullable=False)
     max_daily_auto_closes = Column(Integer, default=10, nullable=False)
     max_daily_auto_orders = Column(Integer, default=10, nullable=False)
 
     # Human escalation config
-    human_escalation_channels = Column(JSONB, default=list, nullable=False)  # ["email", "whatsapp", "in_app"]
+    human_escalation_channels = Column(
+        JSONB, default=list, nullable=False
+    )  # ["email", "whatsapp", "in_app"]
     escalation_email = Column(String(255), nullable=True)
     escalation_whatsapp = Column(String(100), nullable=True)
 
     # Master toggle
-    is_active = Column(Boolean, default=False, nullable=False)  # Opt-in: autopilot OFF by default
+    is_active = Column(
+        Boolean, default=False, nullable=False
+    )  # Opt-in: autopilot OFF by default
     is_paused = Column(Boolean, default=False, nullable=False)  # Emergency pause
     paused_reason = Column(Text, nullable=True)
     paused_at = Column(DateTime(timezone=True), nullable=True)
 
     # AI explanation settings
-    require_ai_explanation = Column(Boolean, default=True, nullable=False)  # Always explain why
-    explanation_language = Column(String(10), default="es", nullable=False)  # es, en, pt
+    require_ai_explanation = Column(
+        Boolean, default=True, nullable=False
+    )  # Always explain why
+    explanation_language = Column(
+        String(10), default="es", nullable=False
+    )  # es, en, pt
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     __table_args__ = (
         Index("ix_autopilot_configs_business_active", "business_id", "is_active"),
@@ -97,13 +120,21 @@ class AutopilotConfig(Base):
 
 class AutopilotActionLog(Base):
     """Audit log of every decision the autopilot makes."""
+
     __tablename__ = "autopilot_action_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     action_type = Column(Enum(AutopilotActionType), nullable=False, index=True)
-    entity_type = Column(String(50), nullable=False)  # "deal", "conversation", "order", "workflow", "recommendation"
+    entity_type = Column(
+        String(50), nullable=False
+    )  # "deal", "conversation", "order", "workflow", "recommendation"
     entity_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # AI-generated explanation
@@ -112,9 +143,16 @@ class AutopilotActionLog(Base):
     confidence_score = Column(Integer, default=0, nullable=False)  # 0-100 AI confidence
 
     # Context snapshot
-    context_data = Column(JSONB, default=dict, nullable=False)  # Relevant data at decision time
+    context_data = Column(
+        JSONB, default=dict, nullable=False
+    )  # Relevant data at decision time
 
-    status = Column(Enum(AutopilotActionStatus), default=AutopilotActionStatus.EXECUTED, nullable=False, index=True)
+    status = Column(
+        Enum(AutopilotActionStatus),
+        default=AutopilotActionStatus.EXECUTED,
+        nullable=False,
+        index=True,
+    )
     error_message = Column(Text, nullable=True)
 
     # For pending/escalated actions
@@ -139,10 +177,16 @@ class AutopilotActionLog(Base):
 
 class AutopilotDailyReport(Base):
     """Summary of what the autopilot did in a day."""
+
     __tablename__ = "autopilot_daily_reports"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    business_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("businesses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     report_date = Column(DateTime(timezone=True), nullable=False, index=True)
 
     # Actions summary
@@ -164,11 +208,20 @@ class AutopilotDailyReport(Base):
     actions_rejected = Column(Integer, default=0, nullable=False)
 
     # AI-generated summary
-    ai_summary = Column(Text, nullable=True)  # "Hoy contactaste 12 leads, cerraste 3 deals..."
-    highlights = Column(JSONB, default=list, nullable=False)  # [{"type": "deal_closed", "description": "..."}]
+    ai_summary = Column(
+        Text, nullable=True
+    )  # "Hoy contactaste 12 leads, cerraste 3 deals..."
+    highlights = Column(
+        JSONB, default=list, nullable=False
+    )  # [{"type": "deal_closed", "description": "..."}]
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
-        Index("ix_autopilot_reports_business_date", "business_id", "report_date", unique=True),
+        Index(
+            "ix_autopilot_reports_business_date",
+            "business_id",
+            "report_date",
+            unique=True,
+        ),
     )

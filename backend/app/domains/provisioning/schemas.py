@@ -12,7 +12,9 @@ class ResourceRequestCreate(BaseModel):
 
 
 class ResourceRequestUpdate(BaseModel):
-    status: str | None = Field(None, pattern="^(pending|processing|completed|failed|cancelled)$")
+    status: str | None = Field(
+        None, pattern="^(pending|processing|completed|failed|cancelled)$"
+    )
     error_message: str | None = None
     provider_reference: str | None = None
 

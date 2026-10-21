@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class MessageSource(str, Enum):
     """Origen del mensaje."""
+
     WHATSAPP = "whatsapp"
     INSTAGRAM_DM = "instagram_dm"
     INSTAGRAM_COMMENT = "instagram_comment"
@@ -37,6 +38,7 @@ class MessageSource(str, Enum):
 
 class MessageType(str, Enum):
     """Tipo de mensaje."""
+
     DIRECT_MESSAGE = "direct_message"
     COMMENT = "comment"
     REVIEW = "review"
@@ -117,7 +119,9 @@ class WhatsAppWebhookHandler:
                 source=MessageSource.WHATSAPP,
                 message_type=MessageType.DIRECT_MESSAGE,
                 content=content,
-                platform_timestamp=datetime.fromtimestamp(int(msg_data.get("timestamp", 0)), UTC).replace(tzinfo=None),
+                platform_timestamp=datetime.fromtimestamp(
+                    int(msg_data.get("timestamp", 0)), UTC
+                ).replace(tzinfo=None),
                 raw_data=payload,
             )
 

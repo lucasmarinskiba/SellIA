@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 # Pydantic Structured Output Models
 # ------------------------------------------------------------------
 
+
 class CausalAnalysis(BaseModel):
     surface_reason: str
     root_cause: str
@@ -64,6 +65,7 @@ class RecommendationsWrapper(BaseModel):
 # CausalAnalyzer
 # ------------------------------------------------------------------
 
+
 class CausalAnalyzer:
     """Analyzes sales conversations to find root causes and patterns."""
 
@@ -97,13 +99,13 @@ class CausalAnalyzer:
             "Eres un experto en análisis causal de ventas. Tu trabajo es identificar la "
             "CAUSA RAÍZ de por qué falló una conversación de ventas, NO solo el síntoma.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "surface_reason": "Lo que dijo el cliente (síntoma)",\n'
             '  "root_cause": "La verdadera causa raíz del rechazo",\n'
             '  "contributing_factors": ["factor 1", "factor 2"],\n'
             '  "recommended_fix": "Qué debería hacerse diferente la próxima vez",\n'
             '  "confidence": 0.85\n'
-            '}\n\n'
+            "}\n\n"
             "Reglas:\n"
             "- surface_reason: la objeción superficial del cliente.\n"
             "- root_cause: el verdadero motivo (ej: falta de percepción de valor, no urgencia).\n"
@@ -214,9 +216,9 @@ class CausalAnalyzer:
             "Eres un analista de datos de ventas. Analiza los resultados de conversaciones "
             "y detecta patrones de objeciones recurrentes.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "patterns": [\n'
-            '    {\n'
+            "    {\n"
             '      "pattern_name": "Nombre corto del patrón",\n'
             '      "objection_text": "Texto típico de la objeción",\n'
             '      "root_cause": "Causa raíz identificada",\n'
@@ -224,9 +226,9 @@ class CausalAnalyzer:
             '      "overcome_rate": 15.0,\n'
             '      "affected_segments": ["segmento1", "segmento2"],\n'
             '      "recommended_response": "Cómo responder recomendado"\n'
-            '    }\n'
-            '  ]\n'
-            '}\n\n'
+            "    }\n"
+            "  ]\n"
+            "}\n\n"
             "Reglas:\n"
             "- frequency_percent: porcentaje estimado de conversaciones afectadas.\n"
             "- overcome_rate: porcentaje estimado en que la objeción fue superada.\n"
@@ -313,7 +315,9 @@ class CausalAnalyzer:
         for record in saved:
             await self.db.refresh(record)
 
-        logger.info(f"Synced {len(saved)} objection patterns for business {business_id}")
+        logger.info(
+            f"Synced {len(saved)} objection patterns for business {business_id}"
+        )
         return saved
 
     # ------------------------------------------------------------------
@@ -370,16 +374,16 @@ class CausalAnalyzer:
             "Eres un estratega de ventas senior. Basado en los análisis causales y patrones "
             "de objeciones, genera recomendaciones concretas para mejorar los pitches.\n\n"
             "Devuelve SOLO un JSON válido con esta estructura exacta:\n"
-            '{\n'
+            "{\n"
             '  "recommendations": [\n'
-            '    {\n'
+            "    {\n"
             '      "segment": "Segmento o situación objetivo",\n'
             '      "insight": "Insight clave descubierto",\n'
             '      "recommended_action": "Acción concreta y específica",\n'
             '      "priority": "high"\n'
-            '    }\n'
-            '  ]\n'
-            '}\n\n'
+            "    }\n"
+            "  ]\n"
+            "}\n\n"
             "Reglas:\n"
             "- segment: a quién o en qué situación aplica.\n"
             "- insight: qué descubrimiento causal justifica la recomendación.\n"
@@ -411,7 +415,9 @@ class CausalAnalyzer:
                 return parsed.recommendations
             return []
         except Exception as e:
-            logger.warning(f"Pitch recommendation generation failed: {e}", exc_info=True)
+            logger.warning(
+                f"Pitch recommendation generation failed: {e}", exc_info=True
+            )
             return []
 
     # ------------------------------------------------------------------
@@ -457,8 +463,7 @@ class CausalAnalyzer:
     ) -> uuid.UUID:
         """Resolve business_id from a conversation."""
         result = await self.db.execute(
-            select(Conversation.business_id)
-            .where(Conversation.id == conversation_id)
+            select(Conversation.business_id).where(Conversation.id == conversation_id)
         )
         business_id = result.scalar_one_or_none()
         return business_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
@@ -467,6 +472,7 @@ class CausalAnalyzer:
 # ------------------------------------------------------------------
 # JSON parsing helper
 # ------------------------------------------------------------------
+
 
 def _parse_json_response(text: str, model_class) -> Any | None:
     """Robustly parse a JSON response into a Pydantic model."""

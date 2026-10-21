@@ -1,6 +1,5 @@
 """Platform Script Registry — maps domains to platform script classes."""
 
-
 from .amazon import AmazonScript
 from .base import PlatformScript
 from .facebook_business import FacebookBusinessScript

@@ -16,7 +16,9 @@ from app.domains.users.models import User
 router = APIRouter(prefix="/{business_id}/bi", tags=["Business Intelligence"])
 
 
-@router.post("/funnel", response_model=FunnelMetricsResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/funnel", response_model=FunnelMetricsResponse, status_code=status.HTTP_201_CREATED
+)
 async def generate_funnel(
     business_id: UUID,
     period: str,

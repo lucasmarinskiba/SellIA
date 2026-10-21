@@ -14,6 +14,7 @@ from app.domains.support.models import (
 
 # ===== FAQ Schemas =====
 
+
 class FAQCreate(BaseModel):
     question: str = Field(..., max_length=500)
     answer: str
@@ -42,6 +43,7 @@ class FAQResponse(BaseModel):
 
 
 # ===== Knowledge Base Schemas =====
+
 
 class KnowledgeBaseArticleCreate(BaseModel):
     title: str = Field(..., max_length=255)
@@ -79,6 +81,7 @@ class KBSearchResult(BaseModel):
 
 # ===== Ticket Message Schemas =====
 
+
 class TicketMessageCreate(BaseModel):
     content: str
     is_internal: bool = False
@@ -97,6 +100,7 @@ class TicketMessageResponse(BaseModel):
 
 
 # ===== Ticket Schemas =====
+
 
 class SupportTicketCreate(BaseModel):
     business_id: uuid.UUID | None = None
@@ -148,12 +152,14 @@ class SupportTicketListResponse(BaseModel):
 
 # ===== CSAT Schema =====
 
+
 class CSATSubmit(BaseModel):
     rating: int = Field(..., ge=1, le=5)
     comment: str | None = None
 
 
 # ===== Admin Stats Schema =====
+
 
 class SupportStatsResponse(BaseModel):
     total_tickets: int

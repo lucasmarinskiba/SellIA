@@ -14,7 +14,11 @@ async def identify_churn_risk(seller_id: str = Query(...)):
             {
                 "customer_id": f"cust-{i}",
                 "churn_probability": 0.6 + (i * 0.1),
-                "reason": ["No activity 30+ days", "Upcoming renewal", "Support complaints"],
+                "reason": [
+                    "No activity 30+ days",
+                    "Upcoming renewal",
+                    "Support complaints",
+                ],
                 "ltv_at_risk": 50000,
             }
             for i in range(3)
@@ -23,7 +27,9 @@ async def identify_churn_risk(seller_id: str = Query(...)):
 
 
 @router.post("/playbooks/trigger")
-async def trigger_retention_playbook(customer_id: str = Query(...), risk_level: str = Query(...)):
+async def trigger_retention_playbook(
+    customer_id: str = Query(...), risk_level: str = Query(...)
+):
     """Trigger automated retention playbook."""
     playbooks = {
         "high": ["Personal outreach", "Executive briefing", "Discount offer"],
@@ -45,5 +51,9 @@ async def customer_ltv_forecast(seller_id: str = Query(...)):
         "avg_ltv": 100000,
         "ltv_trend": "up",
         "churn_rate": 0.05,
-        "recommendations": ["Increase support quality", "Launch loyalty program", "Proactive renewals"],
+        "recommendations": [
+            "Increase support quality",
+            "Launch loyalty program",
+            "Proactive renewals",
+        ],
     }

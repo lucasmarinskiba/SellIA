@@ -56,7 +56,7 @@ async def export_user_data(db: AsyncSession, user_id: uuid.UUID) -> dict[str, An
 
 def _random_overwrite(length: int) -> str:
     """Genera una cadena aleatoria para sobrescritura."""
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 async def secure_delete_user(db: AsyncSession, user_id: uuid.UUID) -> bool:
@@ -83,16 +83,23 @@ async def secure_delete_user(db: AsyncSession, user_id: uuid.UUID) -> bool:
     # `AttributeError: type object 'SessionNonce' has no attribute 'user_id'`
     # before reaching any of the deletions below, confirmed live.
     models_to_delete = [
-        UserLoginLog, UserSession, PushSubscription, TwoFABackupCode,
-        BreachCheckLog, EmailOTP, WebAuthnCredential, SecurityKey,
-        TrustedDevice, IPAllowlist, LoginAnomaly,
-        SubscriptionAccessLog, ChargebackAlert,
+        UserLoginLog,
+        UserSession,
+        PushSubscription,
+        TwoFABackupCode,
+        BreachCheckLog,
+        EmailOTP,
+        WebAuthnCredential,
+        SecurityKey,
+        TrustedDevice,
+        IPAllowlist,
+        LoginAnomaly,
+        SubscriptionAccessLog,
+        ChargebackAlert,
     ]
 
     for model in models_to_delete:
-        await db.execute(
-            model.__table__.delete().where(model.user_id == user_id)
-        )
+        await db.execute(model.__table__.delete().where(model.user_id == user_id))
 
     await db.commit()
     logger.info(f"User {user_id} data securely deleted")
