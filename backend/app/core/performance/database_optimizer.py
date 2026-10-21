@@ -88,7 +88,7 @@ class DatabaseOptimizer:
     }
 
     # Slow query log storage (in-memory, could be persisted to Redis)
-    _slow_query_log: list[SlowQuery] = []
+    _slow_query_log: ClassVar[list[SlowQuery]] = []
     _max_log_size = 10000
 
     def __init__(self):

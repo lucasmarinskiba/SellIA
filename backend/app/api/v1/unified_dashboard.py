@@ -31,9 +31,9 @@ router = APIRouter(prefix="/api/v1", tags=["unified-dashboard"])
 @router.post("/locations/{location_id}/metrics/aggregate")
 async def aggregate_location_metrics(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Aggregate all metrics for location on given date."""
     location = await get_owned_location(db, location_id, current_user)
@@ -57,9 +57,9 @@ async def aggregate_location_metrics(
 @router.post("/businesses/{business_id}/summary")
 async def generate_business_summary(
     business_id: UUID,
-    date: str | None = Query(None),  # YYYY-MM-DD, default today
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    date: Annotated[str | None, Query()] = None,  # YYYY-MM-DD, default today
 ) -> dict:
     """Generate high-level business summary."""
     await get_owned_business(db, business_id, current_user)
@@ -81,9 +81,9 @@ async def generate_business_summary(
 @router.post("/businesses/{business_id}/location-comparison")
 async def compare_locations(
     business_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Compare metrics across locations."""
     await get_owned_business(db, business_id, current_user)

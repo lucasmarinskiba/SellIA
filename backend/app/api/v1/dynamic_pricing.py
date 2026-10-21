@@ -226,8 +226,8 @@ async def get_ab_test_results(
 @router.get("/locations/{location_id}/revenue-impact")
 async def get_revenue_impact(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    db: Session = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Get revenue impact for date."""
     try:

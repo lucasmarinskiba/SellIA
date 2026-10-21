@@ -3,7 +3,6 @@
 Single source of truth for mapping ChannelPlatform -> Connector class.
 """
 
-from typing import Type
 
 from app.domains.channels.connectors.amazon import AmazonSellerConnector
 from app.domains.channels.connectors.base import BaseChannelConnector
@@ -57,7 +56,6 @@ __all__ = [
     "TikTokAdsConnector",
     "TikTokConnector",
     "TikTokShopConnector",
-    "Type",
     "WebChatConnector",
     "WhatsAppConnector",
     "WooCommerceConnector",

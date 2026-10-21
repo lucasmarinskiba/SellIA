@@ -99,16 +99,18 @@ class LeonardoProvider(BaseProvider):
             for _ in range(30):
                 import asyncio
                 await asyncio.sleep(2)
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
                         f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}",
                         headers=headers,
-                    ) as poll_resp:
-                        poll_data = await poll_resp.json()
-                        images = poll_data.get("generations_by_pk", {}).get("generated_images", [])
-                        if images:
-                            image_url = images[0].get("url")
-                            break
+                    ) as poll_resp,
+                ):
+                    poll_data = await poll_resp.json()
+                    images = poll_data.get("generations_by_pk", {}).get("generated_images", [])
+                    if images:
+                        image_url = images[0].get("url")
+                        break
 
             if not image_url:
                 return GenerationResult(success=False, error_message="Leonardo timeout")

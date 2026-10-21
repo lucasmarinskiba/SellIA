@@ -65,21 +65,23 @@ class WebhookService:
 
         for attempt in range(retry_count):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.post(
                         url,
                         data=body,
                         headers=headers,
                         timeout=self._delivery_timeout,
-                    ) as resp:
-                        last_status = resp.status
-                        if resp.status < 400:
-                            logger.info(f"Webhook delivered: {event} → {url} (HTTP {resp.status})")
-                            return True, resp.status, None
-                        else:
-                            resp_text = await resp.text()
-                            last_error = f"HTTP {resp.status}: {resp_text[:200]}"
-                            logger.warning(f"Webhook failed: {event} → {url} ({last_error})")
+                    ) as resp,
+                ):
+                    last_status = resp.status
+                    if resp.status < 400:
+                        logger.info(f"Webhook delivered: {event} → {url} (HTTP {resp.status})")
+                        return True, resp.status, None
+                    else:
+                        resp_text = await resp.text()
+                        last_error = f"HTTP {resp.status}: {resp_text[:200]}"
+                        logger.warning(f"Webhook failed: {event} → {url} ({last_error})")
             except Exception as e:
                 last_error = str(e)
                 logger.warning(f"Webhook delivery error (attempt {attempt + 1}): {e}", exc_info=True)

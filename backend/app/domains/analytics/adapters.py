@@ -8,7 +8,7 @@ Maps each of the 11 business types to:
 - Dashboard KPI priorities
 """
 
-from typing import Any
+from typing import Any, ClassVar
 
 from app.domains.business_context.models import BusinessType
 
@@ -16,7 +16,7 @@ from app.domains.business_context.models import BusinessType
 class FunnelAdapter:
     """Returns business-type-specific funnel definitions."""
 
-    STAGES: dict[BusinessType, list[dict[str, Any]]] = {
+    STAGES: ClassVar[dict[BusinessType, list[dict[str, Any]]]] = {
         BusinessType.SOFTWARE: [
             {"key": "trial_signup", "label": "Trial Signup", "order": 1},
             {"key": "activation", "label": "Activation", "order": 2},
@@ -104,7 +104,7 @@ class FunnelAdapter:
 class ChurnAdapter:
     """Returns business-type-specific churn risk logic."""
 
-    THRESHOLDS: dict[BusinessType, dict[str, int]] = {
+    THRESHOLDS: ClassVar[dict[BusinessType, dict[str, int]]] = {
         BusinessType.SOFTWARE: {
             "inactive_days_critical": 14,
             "inactive_days_warning": 7,
@@ -173,7 +173,7 @@ class ChurnAdapter:
         },
     }
 
-    ACTIONS: dict[BusinessType, str] = {
+    ACTIONS: ClassVar[dict[BusinessType, str]] = {
         BusinessType.SOFTWARE: "Ofrecer onboarding personalizado o descuento en renovación anual",
         BusinessType.CONSULTING: "Enviar case study o invitar a webinar exclusivo",
         BusinessType.SERVICES: "Ofrecer descuento en próximo servicio o paquete",
@@ -199,7 +199,7 @@ class ChurnAdapter:
 class LtvAdapter:
     """Returns business-type-specific LTV prediction adjustments."""
 
-    MULTIPLIERS: dict[BusinessType, dict[str, float]] = {
+    MULTIPLIERS: ClassVar[dict[BusinessType, dict[str, float]]] = {
         BusinessType.SOFTWARE: {"predicted_orders_multiplier": 1.5, "confidence_boost": 0.1},
         BusinessType.CONSULTING: {"predicted_orders_multiplier": 0.8, "confidence_boost": 0.05},
         BusinessType.SERVICES: {"predicted_orders_multiplier": 1.0, "confidence_boost": 0.0},
@@ -221,7 +221,7 @@ class LtvAdapter:
 class AlertAdapter:
     """Returns business-type-specific anomaly detection thresholds."""
 
-    REVENUE_THRESHOLDS: dict[BusinessType, dict[str, float]] = {
+    REVENUE_THRESHOLDS: ClassVar[dict[BusinessType, dict[str, float]]] = {
         BusinessType.SOFTWARE: {"drop_critical": -15.0, "growth_opportunity": 30.0},
         BusinessType.CONSULTING: {"drop_critical": -25.0, "growth_opportunity": 40.0},
         BusinessType.SERVICES: {"drop_critical": -20.0, "growth_opportunity": 35.0},
@@ -235,7 +235,7 @@ class AlertAdapter:
         BusinessType.OTHER: {"drop_critical": -20.0, "growth_opportunity": 50.0},
     }
 
-    RECOMMENDATIONS: dict[BusinessType, dict[str, str]] = {
+    RECOMMENDATIONS: ClassVar[dict[BusinessType, dict[str, str]]] = {
         BusinessType.SOFTWARE: {
             "drop": "Revisar churn de usuarios activos y ofrecer descuento en renovación anual",
             "growth": "Aumentar presupuesto de ads y lanzar programa de referrals",
@@ -294,7 +294,7 @@ class AlertAdapter:
 class DashboardKPIAdapter:
     """Returns prioritized KPIs for the dashboard summary."""
 
-    KPIs: dict[BusinessType, list[dict[str, Any]]] = {
+    KPIs: ClassVar[dict[BusinessType, list[dict[str, Any]]]] = {
         BusinessType.SOFTWARE: [
             {"key": "mrr", "label": "MRR", "priority": 1},
             {"key": "active_users", "label": "Usuarios Activos", "priority": 2},

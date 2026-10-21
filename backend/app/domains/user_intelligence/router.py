@@ -54,7 +54,7 @@ async def get_personalized_messaging(
 async def update_journey_stage(
     user_id: str,
     stage: str,  # awareness, consideration, decision, onboarding, retention
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Move user through journey stages."""
     journey = await UserIntelligenceAgent.update_journey_stage(db, user_id, stage)

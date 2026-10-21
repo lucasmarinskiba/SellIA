@@ -582,11 +582,8 @@ class LeadEnricher:
         """Verifica que email sea válido."""
         try:
             # Validación básica
-            if not re.match(r'[\w\.-]+@[\w\.-]+\.\w+', email):
-                return False
-
             # En producción: usar servicio de verificación (Apollo, ZeroBounce, etc)
-            return True
+            return bool(re.match(r'[\w\.-]+@[\w\.-]+\.\w+', email))
 
         except Exception as e:
             logger.warning(f"Error verifying email: {e!s}", exc_info=True)

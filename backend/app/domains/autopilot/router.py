@@ -109,9 +109,9 @@ async def get_autopilot_status(
 @router.get("/overview/{business_id}", response_model=AutopilotOverviewResponse)
 async def get_autopilot_overview(
     business_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     period: str = "last_24h",  # last_24h, last_7d
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
     AutopilotEngine(db)
     report_service = AutopilotReportService(db)

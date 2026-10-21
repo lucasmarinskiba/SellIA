@@ -6,6 +6,7 @@ Simple permission system: roles have permissions, users have roles per business.
 import uuid
 from collections.abc import Callable
 from functools import wraps
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
@@ -105,8 +106,8 @@ def require_permission(resource: str, action: str = "read"):
         @wraps(func)
         async def wrapper(
             business_id: uuid.UUID,
-            db: AsyncSession = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            db: Annotated[AsyncSession, Depends(get_db)],
+            current_user: Annotated[User, Depends(get_current_user)],
             *args,
             **kwargs,
         ):

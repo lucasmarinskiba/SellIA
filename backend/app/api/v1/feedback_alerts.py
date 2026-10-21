@@ -187,9 +187,9 @@ async def get_nps_dashboard(
 @router.post("/locations/{location_id}/sentiment-trend")
 async def calculate_sentiment_trend(
     location_id: UUID,
-    date: str = Query(...),  # YYYY-MM-DD
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    date: Annotated[str, Query()],  # YYYY-MM-DD
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Calculate daily sentiment trend."""
     try:

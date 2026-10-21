@@ -108,9 +108,9 @@ def get_audit_trail(
 @router.post("/businesses/{business_id}/compliance-report")
 def generate_compliance_report(
     business_id: UUID,
-    report_type: str = Query(...),  # audit_trail, gdpr_dsar, ccpa_dsar
-    days: int = Query(30, ge=1, le=365),
-    db: Session = Depends(get_db)
+    report_type: Annotated[str, Query()],  # audit_trail, gdpr_dsar, ccpa_dsar
+    db: Annotated[Session, Depends(get_db)],
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
 ):
     """Generate compliance report."""
     return TenantIsolationService.generate_compliance_report(

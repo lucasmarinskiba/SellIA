@@ -1,5 +1,6 @@
 """Business Document Service Layer"""
 
+import asyncio
 import uuid
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,7 @@ from fastapi import UploadFile
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.documents.models import BusinessDocument
 from app.domains.documents.processor import STORAGE_DIR, document_processor
@@ -53,8 +55,7 @@ class DocumentService:
         unique_name = f"{uuid.uuid4().hex}_{file.filename}"
         file_path = STORAGE_DIR / unique_name
 
-        with open(file_path, "wb") as f:
-            f.write(content)
+        await asyncio.to_thread(write_file, file_path, "wb", data=content)
 
         doc = BusinessDocument(
             id=uuid.uuid4(),

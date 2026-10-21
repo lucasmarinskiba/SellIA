@@ -3,6 +3,7 @@
 import asyncio
 import json
 from collections.abc import AsyncGenerator
+from typing import ClassVar
 from uuid import UUID, uuid4
 
 from sqlalchemy import insert, select
@@ -31,7 +32,7 @@ class WebhookService:
   it would need a real broker (Redis pub/sub, etc.) to survive more than one.
   """
 
-  _subscribers: dict[str, list[asyncio.Queue]] = {}
+  _subscribers: ClassVar[dict[str, list[asyncio.Queue]]] = {}
 
   def __init__(self, db: AsyncSession):
     self.db = db

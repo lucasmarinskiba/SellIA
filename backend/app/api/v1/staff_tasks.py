@@ -211,8 +211,8 @@ async def auto_assign_shift_tasks(
     staff_id: UUID,
     location_id: UUID,
     shift_start: str,  # ISO8601
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict:
     """Auto-assign pending tasks to staff for shift."""
     try:
@@ -285,8 +285,8 @@ async def get_shift_readiness_report(
     staff_id: UUID,
     location_id: UUID,
     shift_start: str,  # ISO8601
-    shift_end: str | None = Query(None),
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
+    shift_end: Annotated[str | None, Query()] = None,
 ) -> dict:
     """Generate shift readiness report."""
     try:

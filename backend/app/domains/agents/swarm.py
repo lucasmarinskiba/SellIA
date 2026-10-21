@@ -6,7 +6,7 @@ structured rounds of discussion, critique, and consensus building.
 
 import json
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 from langchain_core.messages import SystemMessage
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -166,7 +166,7 @@ def _check_consensus(messages: list[dict[str, Any]]) -> bool:
 class SwarmCoordinator:
     """Assigns roles and selects agent personas for swarm tasks."""
 
-    ROLE_DESCRIPTIONS: dict[str, str] = {
+    ROLE_DESCRIPTIONS: ClassVar[dict[str, str]] = {
         "researcher": "Gathers information, analyzes data, and provides evidence-based insights.",
         "copywriter": "Crafts compelling messaging, hooks, and persuasive copy.",
         "closer": "Focuses on closing deals, overcoming final resistance, and sealing agreements.",

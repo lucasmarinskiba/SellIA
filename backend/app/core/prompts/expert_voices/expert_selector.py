@@ -103,9 +103,8 @@ class ExpertSelector:
         if scenario.deal_stage == "decision":
             if expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.TRUMP]:
                 score += 0.15
-        elif scenario.deal_stage == "awareness":
-            if expert_type in [ExpertType.ELLIOTT, ExpertType.MINER, ExpertType.GARYVEE]:
-                score += 0.15
+        elif scenario.deal_stage == "awareness" and expert_type in [ExpertType.ELLIOTT, ExpertType.MINER, ExpertType.GARYVEE]:
+            score += 0.15
 
         # Urgency fit (10% weight)
         if scenario.urgency > 7 and expert_type in [ExpertType.BELFORT, ExpertType.CARDONE, ExpertType.TRUMP]:
@@ -121,25 +120,22 @@ class ExpertSelector:
         elif scenario.customer_personality == "expressive":
             if expert_type in [ExpertType.BELFORT, ExpertType.ROBBINS, ExpertType.GARYVEE]:
                 score += 0.10
-        elif scenario.customer_personality == "amiable":
-            if expert_type in [ExpertType.MINER, ExpertType.RIBAS, ExpertType.ROBBINS]:
-                score += 0.10
+        elif scenario.customer_personality == "amiable" and expert_type in [ExpertType.MINER, ExpertType.RIBAS, ExpertType.ROBBINS]:
+            score += 0.10
 
         # Price sensitivity fit (10% weight - conditional)
         if scenario.price_sensitivity > 7:
             if expert_type in [ExpertType.HORMOZI, ExpertType.KIYOSAKI, ExpertType.RAVIKANT]:
                 score += 0.10
-        elif scenario.price_sensitivity < 3:
-            if expert_type in [ExpertType.TRUMP, ExpertType.BELFORT, ExpertType.CARDONE]:
-                score += 0.10
+        elif scenario.price_sensitivity < 3 and expert_type in [ExpertType.TRUMP, ExpertType.BELFORT, ExpertType.CARDONE]:
+            score += 0.10
 
         # Relationship stage fit (5% weight)
         if scenario.relationship_stage == "cold":
             if expert_type in [ExpertType.BELFORT, ExpertType.ELLIOTT]:
                 score += 0.05
-        elif scenario.relationship_stage == "established":
-            if expert_type in [ExpertType.DALIO, ExpertType.BUFFETT, ExpertType.RIBAS]:
-                score += 0.05
+        elif scenario.relationship_stage == "established" and expert_type in [ExpertType.DALIO, ExpertType.BUFFETT, ExpertType.RIBAS]:
+            score += 0.05
 
         # Competitive pressure fit (5% weight)
         if scenario.competitive_pressure > 7 and expert_type in [ExpertType.TRUMP, ExpertType.GARYVEE, ExpertType.CARDONE]:

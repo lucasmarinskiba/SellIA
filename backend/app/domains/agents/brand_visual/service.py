@@ -3,6 +3,7 @@
 Handles brand kit generation via DALL-E 3 / Stable Diffusion.
 """
 
+import asyncio
 import io
 import json
 import uuid
@@ -15,6 +16,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.agents.brand_visual.models import BrandAsset, BrandKitJob
 from app.domains.agents.prompts.business_context_adapter import (
@@ -384,8 +386,7 @@ class BrandVisualService:
                     # Download and store locally
                     img_resp = await client.get(image_url, timeout=httpx.Timeout(60.0))
                     img_resp.raise_for_status()
-                    with open(file_path, "wb") as f:
-                        f.write(img_resp.content)
+                    await asyncio.to_thread(write_file, file_path, "wb", data=img_resp.content)
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
                 logger.warning(f"DALL-E 3 generation failed: {e}", exc_info=True)
@@ -407,8 +408,7 @@ class BrandVisualService:
                         },
                     )
                     response.raise_for_status()
-                    with open(file_path, "wb") as f:
-                        f.write(response.content)
+                    await asyncio.to_thread(write_file, file_path, "wb", data=response.content)
                     return f"/storage/media/brand/{file_name}"
             except Exception as e:
                 logger.warning(f"Stable Diffusion generation failed: {e}", exc_info=True)

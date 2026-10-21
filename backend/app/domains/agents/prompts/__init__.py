@@ -7,7 +7,6 @@ Each category file exports an AGENTS dict: {slug: prompt_text}.
 import importlib.util
 import os
 from pathlib import Path
-from typing import Dict
 
 
 def _load_category_prompts() -> dict[str, str]:
@@ -52,7 +51,6 @@ AGENT_PROMPTS: dict[str, str] = _load_category_prompts()
 from app.domains.agents.prompts.composer import compose_system_prompt
 
 __all__ = [
-    "Dict",
     "Path",
     "compose_system_prompt",
     "importlib",

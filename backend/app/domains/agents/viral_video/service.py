@@ -3,6 +3,7 @@
 Handles viral video generation with script optimization and video synthesis.
 """
 
+import asyncio
 import json
 import os
 import uuid
@@ -14,6 +15,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.agents.prompts.business_context_adapter import (
     format_business_context_for_prompt,
@@ -97,8 +99,7 @@ class ViralVideoService:
         music_path = STORAGE_DIR / f"music_{job.id}.mp3"
         if not music_path.exists():
             # Create dummy music file for demo
-            with open(music_path, "wb") as f:
-                f.write(b"\xff\xfb" + os.urandom(2048))
+            await asyncio.to_thread(write_file, music_path, "wb", data=b"\xff\xfb" + os.urandom(2048))
 
         job.status = "completed"
         job.provider_used = provider
@@ -214,17 +215,14 @@ class ViralVideoService:
             try:
                 video_bytes = await caller(prompt, api_key)
                 if video_bytes:
-                    with open(file_path, "wb") as f:
-                        f.write(video_bytes)
+                    await asyncio.to_thread(write_file, file_path, "wb", data=video_bytes)
                     return file_path, provider_name
             except Exception as e:
                 logger.warning(f"{provider_name} video generation failed: {e}", exc_info=True)
 
         # Fallback: create a dummy video file
         logger.info("Video generation fallback: creating dummy file")
-        with open(file_path, "wb") as f:
-            # Minimal MP4 box (ftyp + moov) — not playable but acts as placeholder
-            f.write(b"\x00\x00\x00\x20ftypisomisommp41\x00\x00\x00\x08moov")
+        await asyncio.to_thread(write_file, file_path, "wb", data=b"\x00\x00\x00\x20ftypisomisommp41\x00\x00\x00\x08moov")
         return file_path, "mock"
 
     async def _generate_thumbnail(

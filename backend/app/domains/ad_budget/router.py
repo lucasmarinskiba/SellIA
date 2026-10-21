@@ -106,8 +106,10 @@ async def run_cycle(
     business_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    body: RunCycleRequest = RunCycleRequest(),
+    body: RunCycleRequest | None = None,
 ):
+    if body is None:
+        body = RunCycleRequest()
     return await AdBudgetService(db).run_cycle(
         business_id, force=body.force, auto_apply=body.auto_apply
     )

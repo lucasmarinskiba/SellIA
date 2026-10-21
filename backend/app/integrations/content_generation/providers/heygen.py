@@ -71,16 +71,18 @@ class HeyGenProvider(BaseProvider):
             for _ in range(40):
                 import asyncio
                 await asyncio.sleep(5)
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
                         f"https://api.heygen.com/v1/video_status.get?video_id={video_id}",
                         headers=headers,
-                    ) as poll_resp:
-                        poll_data = await poll_resp.json()
-                        status = poll_data.get("data", {}).get("status")
-                        if status == "completed":
-                            video_url = poll_data.get("data", {}).get("video_url")
-                            break
+                    ) as poll_resp,
+                ):
+                    poll_data = await poll_resp.json()
+                    status = poll_data.get("data", {}).get("status")
+                    if status == "completed":
+                        video_url = poll_data.get("data", {}).get("video_url")
+                        break
 
             if not video_url:
                 return GenerationResult(success=False, error_message="HeyGen timeout")

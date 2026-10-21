@@ -42,6 +42,7 @@ class ContinuousLearner:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
             commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
 
@@ -94,6 +95,7 @@ class ContinuousLearner:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                check=False,
             )
             commit_hash = result.stdout.strip()[:8] if result.returncode == 0 else "unknown"
 

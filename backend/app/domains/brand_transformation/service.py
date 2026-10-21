@@ -134,7 +134,7 @@ def _ask_json(prompt: str, fallback: dict) -> dict:
         start, end = text.find("{"), text.rfind("}") + 1
         data = json.loads(text[start:end])
         if not isinstance(data, dict):
-            raise ValueError("not an object")
+            raise TypeError("not an object")
         return data
     except Exception as e:  # noqa: BLE001
         logger.warning("brand_transformation: LLM call failed, using fallback: %s", str(e)[:200])

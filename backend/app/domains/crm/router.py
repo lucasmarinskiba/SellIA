@@ -526,9 +526,9 @@ async def get_lead_score(
 
 @router.get("/summary", response_model=CRMSummaryResponse)
 async def get_crm_summary(
-    business_id: UUID = Query(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    business_id: Annotated[UUID, Query()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     # Deals stats
     deals_result = await db.execute(

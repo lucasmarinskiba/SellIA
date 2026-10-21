@@ -123,20 +123,22 @@ async def push_to_elasticsearch(document: dict) -> bool:
     }
     
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
                 url,
                 headers=headers,
                 json=document,
                 timeout=aiohttp.ClientTimeout(total=5),
-            ) as resp:
-                if resp.status in (200, 201):
-                    return True
-                else:
-                    body = await resp.text()
-                    from app.core.logger import get_logger
-                    get_logger(__name__).error(f"Elasticsearch error {resp.status}: {body[:200]}")
-                    return False
+            ) as resp,
+        ):
+            if resp.status in (200, 201):
+                return True
+            else:
+                body = await resp.text()
+                from app.core.logger import get_logger
+                get_logger(__name__).error(f"Elasticsearch error {resp.status}: {body[:200]}")
+                return False
     except Exception as e:
         logger.exception("push_to_elasticsearch: error inesperado")
         from app.core.logger import get_logger

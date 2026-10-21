@@ -3,6 +3,7 @@
 Handles music generation via Suno / Mureka APIs.
 """
 
+import asyncio
 import os
 import uuid
 from pathlib import Path
@@ -12,6 +13,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.domains.agents.music_agent.models import MusicGenerationJob, MusicTrack
 
@@ -76,8 +78,7 @@ class MusicService:
             audio_bytes = b"\xff\xfb" + os.urandom(1024)  # minimal mp3-ish header
             provider = "mock"
 
-        with open(file_path, "wb") as f:
-            f.write(audio_bytes)
+        await asyncio.to_thread(write_file, file_path, "wb", data=audio_bytes)
 
         file_url = f"/storage/media/music/{file_name}"
 

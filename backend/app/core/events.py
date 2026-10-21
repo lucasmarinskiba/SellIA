@@ -9,7 +9,7 @@ import json
 import logging
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import Any, Optional, Self
+from typing import Any, ClassVar, Optional, Self
 
 import redis.asyncio as redis
 
@@ -28,7 +28,7 @@ class EventBus:
 
     _instance: Optional["EventBus"] = None
     _redis_pool: redis.Redis | None = None
-    _handlers: dict[str, list[EventHandler]] = {}
+    _handlers: ClassVar[dict[str, list[EventHandler]]] = {}
     _pubsub: redis.client.PubSub | None = None
     _listener_task: asyncio.Task | None = None
 

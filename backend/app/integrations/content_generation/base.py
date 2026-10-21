@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 
 class ContentQuality(str, Enum):
@@ -70,7 +70,7 @@ class BaseProvider(ABC):
 
     name: str = ""
     slug: str = ""
-    supports: list[ContentType] = []
+    supports: ClassVar[list[ContentType]] = []
 
     @property
     @abstractmethod

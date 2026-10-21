@@ -5,6 +5,7 @@ log de acciones, y resumen ejecutivo. Usa Playwright para renderizar
 HTML a PDF (ya instalado) sin librerías adicionales.
 """
 
+import asyncio
 import base64
 import json
 import os
@@ -12,6 +13,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from app.core.config import get_settings
+from app.core.fileio import write_file, write_json
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -218,8 +220,7 @@ class PDFExportService:
             ])
 
         output_path = os.path.join(self.storage_dir, f"steps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-        with open(output_path, "w", newline="", encoding="utf-8") as f:
-            f.write(output.getvalue())
+        await asyncio.to_thread(write_file, output_path, "w", newline="", encoding="utf-8", data=output.getvalue())
 
         return output_path
 
@@ -233,7 +234,6 @@ class PDFExportService:
         }
 
         output_path = os.path.join(self.storage_dir, f"session_{session_data.get('id')}.json")
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(export_data, f, ensure_ascii=False, indent=2, default=str)
+        await asyncio.to_thread(write_json, output_path, export_data)
 
         return output_path

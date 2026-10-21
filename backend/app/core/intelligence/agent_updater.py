@@ -5,6 +5,7 @@ Actualiza automáticamente los agentes IA cuando los modelos ML mejoran.
 Guarda versiones anteriores para rollback.
 """
 
+import asyncio
 import os
 from datetime import UTC, datetime
 from typing import Any
@@ -12,6 +13,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.fileio import read_pickle
 from app.core.logger import get_logger
 from app.domains.agents.models import AgentPersonality
 
@@ -34,10 +36,8 @@ async def check_and_deploy_model_updates(db: AsyncSession) -> dict[str, Any]:
     # Check intent classifier
     model_path = f"{MODELS_DIR}/intent_classifier.pkl"
     if os.path.exists(model_path):
-        import pickle
         try:
-            with open(model_path, "rb") as f:
-                data = pickle.load(f)
+            data = await asyncio.to_thread(read_pickle, model_path)
             new_accuracy = data.get("accuracy", 0.0)
             new_version = data.get("version", "unknown")
 

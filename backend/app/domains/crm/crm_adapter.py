@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -285,7 +285,7 @@ class MockCRMAdapter(CRMAdapter):
 class CRMAdapterFactory:
     """Factory for creating CRM adapters."""
 
-    _adapters: dict[CRMType, CRMAdapter] = {}
+    _adapters: ClassVar[dict[CRMType, CRMAdapter]] = {}
 
     @classmethod
     async def create_adapter(

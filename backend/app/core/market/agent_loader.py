@@ -1,7 +1,7 @@
 """Agent Loader — Load agents dynamically per market."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from app.core.market.market_detector import MarketProfile
 
@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 class AgentLoader:
     """Load and cache agents per market."""
 
-    _agent_cache: dict[str, Any] = {}
-    _loaded_modules: set[str] = set()
+    _agent_cache: ClassVar[dict[str, Any]] = {}
+    _loaded_modules: ClassVar[set[str]] = set()
 
     @staticmethod
     def load_agents_for_market(market_profile: "MarketProfile") -> list[Any]:

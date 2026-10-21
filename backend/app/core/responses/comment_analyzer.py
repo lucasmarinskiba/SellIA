@@ -243,9 +243,8 @@ class CommentAnalyzer:
                     UrgencyLevel.CRITICAL if urgency_scores[primary_urgency] > 0
                     else primary_urgency
                 )
-            if user_history.get("engagement_rate", 0) > 0.1:  # High engagement
-                if primary_urgency == UrgencyLevel.MEDIUM:
-                    primary_urgency = UrgencyLevel.HIGH
+            if user_history.get("engagement_rate", 0) > 0.1 and primary_urgency == UrgencyLevel.MEDIUM:  # High engagement
+                primary_urgency = UrgencyLevel.HIGH
 
         score = urgency_scores.get(primary_urgency, 0) * 25
 

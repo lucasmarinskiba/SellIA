@@ -15,6 +15,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.fileio import write_file
 from app.core.logger import get_logger
 from app.core.metrics import (
     COMPUTER_USE_ACTIVE_SESSIONS,
@@ -222,8 +223,7 @@ class ComputerUseSessionManagerV2:
 
                 # Save screenshot
                 screenshot_path = os.path.join(self._screenshots_dir, f"step_{self.current_step}.jpg")
-                with open(screenshot_path, "wb") as f:
-                    f.write(screenshot_bytes)
+                await asyncio.to_thread(write_file, screenshot_path, "wb", data=screenshot_bytes)
                 relative_path = f"screenshots/{self.session_id}/step_{self.current_step}.jpg"
 
                 # Detect stale state
