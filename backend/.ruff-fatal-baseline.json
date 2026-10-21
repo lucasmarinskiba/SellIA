@@ -162,12 +162,6 @@
   "count": 1
  },
  {
-  "file": "core/payments/mercadopago_processor.py",
-  "rule": "F821",
-  "name": "timedelta",
-  "count": 1
- },
- {
   "file": "core/performance/optimization_engine.py",
   "rule": "F821",
   "name": "time",
