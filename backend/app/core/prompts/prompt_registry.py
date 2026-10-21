@@ -1,8 +1,10 @@
+
 """Prompt Registry — Index, lookup, version, and track all 200 prompts."""
 
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +120,7 @@ class PromptRegistry:
                     self.tags_index[tag] = set()
                 self.tags_index[tag].add(prompt_id)
 
-    def get_prompt(self, prompt_id: str) -> any | None:
+    def get_prompt(self, prompt_id: str) -> Any | None:
         """Retrieve a prompt by ID."""
         prompt = self.prompts.get(prompt_id)
         if prompt and prompt_id in self.metadata:
