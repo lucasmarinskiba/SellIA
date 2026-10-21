@@ -24,6 +24,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from app.core.clock import utc_now
 from app.core.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,7 @@ async def get_travel_mode_status(seller_id: str) -> dict[str, Any]:
 
         if status and status["is_active"]:
             end_dt = datetime.fromisoformat(status["end_date"])
-            days_left = (end_dt - datetime.utcnow()).days
+            days_left = (end_dt - utc_now()).days
 
             return {
                 "status": "success",
@@ -238,7 +239,7 @@ async def is_travel_mode_active(seller_id: str) -> bool:
     travel_mode = await _get_travel_mode_db(seller_id)
     if travel_mode and travel_mode.get("is_active"):
         end_date = datetime.fromisoformat(travel_mode["end_date"])
-        if datetime.utcnow() < end_date:
+        if utc_now() < end_date:
             return True
     return False
 
@@ -315,7 +316,7 @@ async def _save_travel_mode_db(
                 if end_date:
                     travel_mode.end_date = end_date
                 travel_mode.notes = notes
-                travel_mode.updated_at = datetime.utcnow()
+                travel_mode.updated_at = utc_now()
             else:
                 # Crear nuevo
                 travel_mode = TravelMode(

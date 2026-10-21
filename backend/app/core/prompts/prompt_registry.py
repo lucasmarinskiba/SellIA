@@ -3,8 +3,9 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class PromptRegistry:
                 category=category,
                 tags=tags,
                 industry_variations=getattr(prompt, 'industry_variations', {}),
-                created_at=datetime.utcnow().isoformat()
+                created_at=utc_now().isoformat()
             )
 
             # Index by category
@@ -232,7 +233,7 @@ class PromptRegistry:
             current_sum = meta.avg_effectiveness_score * max(meta.times_used - 1, 0)
             new_avg = (current_sum + effectiveness_score) / meta.times_used
             meta.avg_effectiveness_score = new_avg
-            meta.last_updated = datetime.utcnow().isoformat()
+            meta.last_updated = utc_now().isoformat()
 
     def get_top_prompts_by_effectiveness(self, limit: int = 10) -> list[dict[str, any]]:
         """Get top prompts by effectiveness score."""

@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
+from app.core.clock import utc_now
+
 try:
     import xgboost as xgb
 except ImportError:
@@ -84,7 +86,7 @@ class DealProbabilityModel:
             model_data = {
                 "model": self.model,
                 "version": self.model_version,
-                "training_date": datetime.utcnow(),
+                "training_date": utc_now(),
                 "auc_score": self.auc_score,
                 "features": self.FEATURES,
             }
@@ -116,7 +118,7 @@ class DealProbabilityModel:
         """Extract feature vector from deal data."""
         features = []
 
-        now = datetime.utcnow()
+        now = utc_now()
         deal_created = deal_data.get("created_at", now)
         if isinstance(deal_created, str):
             deal_created = datetime.fromisoformat(deal_created)
@@ -298,7 +300,7 @@ class DealProbabilityModel:
                 self.model.fit(X_train, y_train)
                 self.auc_score = None
 
-            self.training_date = datetime.utcnow()
+            self.training_date = utc_now()
 
             logger.info(f"Model training complete. AUC: {self.auc_score}")
 

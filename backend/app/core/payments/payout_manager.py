@@ -14,12 +14,14 @@ Database model: Payout (needs to be added to payment_models)
 
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any
 
 from sqlalchemy.orm import Session
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -187,8 +189,8 @@ class PayoutManager:
             net_amount = payout_calc["net_payout"]
 
             # Create payout record
-            payout_id = f"payout_{seller_id}_{int(datetime.utcnow().timestamp())}"
-            now = datetime.utcnow()
+            payout_id = f"payout_{seller_id}_{int(utc_now().timestamp())}"
+            now = utc_now()
 
             # Determine scheduled date based on frequency
             if frequency == PayoutFrequency.DAILY:
@@ -397,7 +399,7 @@ class PayoutManager:
                 "seller_id": seller_id,
                 "current_balance": 0.0,
                 "estimated_payout": 0.0,
-                "estimated_date": datetime.utcnow() + timedelta(days=7),
+                "estimated_date": utc_now() + timedelta(days=7),
                 "frequency": PAYOUT_SCHEDULE,
             }
 

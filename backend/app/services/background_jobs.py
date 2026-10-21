@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +46,7 @@ class BackgroundJob:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
 
 class BackgroundJobQueue:
@@ -100,11 +102,11 @@ class BackgroundJobQueue:
             status=JobStatus.PENDING,
             priority=priority,
             payload=payload,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         if delay_seconds > 0:
-            job.next_retry_at = datetime.utcnow() + timedelta(seconds=delay_seconds)
+            job.next_retry_at = utc_now() + timedelta(seconds=delay_seconds)
 
         self.jobs[job_id] = job
         logger.info(f"Enqueued job {job_id} ({job_type}, priority={priority})")
@@ -123,7 +125,7 @@ class BackgroundJobQueue:
         if pending:
             job = min(pending, key=lambda j: j.created_at)
             job.status = JobStatus.RUNNING
-            job.started_at = datetime.utcnow()
+            job.started_at = utc_now()
             return job
 
         return None
@@ -169,14 +171,14 @@ class BackgroundJobQueue:
 
         job.status = JobStatus.COMPLETED
         job.result = result
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
     def _mark_failed(self, job: BackgroundJob, error: str) -> None:
         """Mark job as permanently failed."""
 
         job.status = JobStatus.FAILED
         job.error = error
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
     def _handle_retry(self, job: BackgroundJob, error: str) -> None:
         """
@@ -197,7 +199,7 @@ class BackgroundJobQueue:
             job.retry_count += 1
             # Exponential backoff: base_backoff * (2 ^ retry_count)
             backoff_seconds = base_backoff * (2 ** (job.retry_count - 1))
-            job.next_retry_at = datetime.utcnow() + timedelta(seconds=backoff_seconds)
+            job.next_retry_at = utc_now() + timedelta(seconds=backoff_seconds)
             job.status = JobStatus.RETRYING
             logger.warning(
                 f"Job {job.id} will retry ({job.retry_count}/{max_retries}) in {backoff_seconds}s"

@@ -20,11 +20,12 @@ import hashlib
 import hmac
 import logging
 import os
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import requests
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,7 @@ class MercadoPagoProcessor:
                 "preference_id": preference_id,
                 "checkout_url": init_point,
                 "init_point": init_point,
-                "expires_at": datetime.utcnow(),
+                "expires_at": utc_now(),
                 "external_reference": external_reference,
             }
 
@@ -343,7 +344,7 @@ class MercadoPagoProcessor:
                 "price": amount,
                 "currency_id": currency,
                 "expires_at": (
-                    datetime.utcnow() + timedelta(days=expiration_days)
+                    utc_now() + timedelta(days=expiration_days)
                 ).isoformat(),
             }
 

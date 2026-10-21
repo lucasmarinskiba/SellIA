@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +27,7 @@ class PropertyAnalysis:
     condition_assessment: str = "average"
     major_repairs_needed: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -132,7 +134,7 @@ class PropertyAnalyzerAgent:
         ) / total_weight
 
         # Adjust for time (appreciation/depreciation)
-        months_since_sale = [(datetime.utcnow() - c.sale_date).days // 30 for c in top_comps]
+        months_since_sale = [(utc_now() - c.sale_date).days // 30 for c in top_comps]
         avg_months = statistics.mean(months_since_sale)
 
         # Assume 3% annual appreciation
@@ -156,7 +158,7 @@ class PropertyAnalyzerAgent:
             confidence += 0.05
 
         # Recent sales = higher confidence
-        recent_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days <= 90]
+        recent_comps = [c for c in comps if (utc_now() - c.sale_date).days <= 90]
         if len(recent_comps) >= 3:
             confidence += 0.15
         elif len(recent_comps) >= 1:
@@ -185,7 +187,7 @@ class PropertyAnalyzerAgent:
         """Identify major repairs from property data."""
         repairs = []
         year_built = property_data.get("year_built", 0)
-        current_year = datetime.utcnow().year
+        current_year = utc_now().year
         property_age = current_year - year_built
 
         # Age-based assessment
@@ -211,8 +213,8 @@ class PropertyAnalyzerAgent:
         """Estimate future appreciation potential."""
         # Check market trend
         if comps:
-            recent_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days <= 180]
-            old_comps = [c for c in comps if (datetime.utcnow() - c.sale_date).days > 180]
+            recent_comps = [c for c in comps if (utc_now() - c.sale_date).days <= 180]
+            old_comps = [c for c in comps if (utc_now() - c.sale_date).days > 180]
 
             if recent_comps and old_comps:
                 recent_price = statistics.mean([c.price_per_sqft for c in recent_comps])

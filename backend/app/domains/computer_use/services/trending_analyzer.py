@@ -4,8 +4,9 @@ Analiza qué está trending en Instagram/TikTok → genera posts automático.
 """
 
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class TrendingTopic:
         self.volume = volume
         self.growth_rate = growth_rate
         self.best_time_utc = best_time_utc
-        self.detected_at = datetime.utcnow()
+        self.detected_at = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         return {

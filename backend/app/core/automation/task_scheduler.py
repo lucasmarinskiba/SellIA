@@ -23,6 +23,8 @@ from typing import Any
 
 from croniter import croniter
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +53,7 @@ class TaskScheduler:
 
     async def get_tasks_for_now(self) -> list[Any]:
         """Obtiene tasks que deben ejecutarse ahora."""
-        now = datetime.utcnow()
+        now = utc_now()
         tasks_due = []
 
         async with self.lock:
@@ -117,7 +119,7 @@ class TaskScheduler:
         """Calcula próxima ejecución basado en cron expression."""
         try:
             # Validar y obtener próxima ejecución
-            cron = croniter(schedule, datetime.utcnow())
+            cron = croniter(schedule, utc_now())
             next_run = cron.get_next(datetime)
             return next_run
         except Exception as e:
@@ -128,7 +130,7 @@ class TaskScheduler:
         """Registra que una tarea fue ejecutada."""
         async with self.lock:
             if task_id in self.tasks:
-                self.tasks[task_id].last_run = datetime.utcnow()
+                self.tasks[task_id].last_run = utc_now()
 
 
 # Built-in task definitions
@@ -244,7 +246,7 @@ class SmartScheduler:
             self.performance_history[task_name] = []
 
         self.performance_history[task_name].append({
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "execution_time": execution_time,
             "success": success,
             "engagement": engagement_metric,

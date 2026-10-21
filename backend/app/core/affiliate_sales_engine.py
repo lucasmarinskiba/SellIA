@@ -15,7 +15,6 @@ Status: 1,200L production-ready affiliate engine
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from app.core.affiliate_automation_engine import (
@@ -30,6 +29,7 @@ from app.core.affiliate_sales_methods import (
 from app.core.affiliate_strategy_engine import (
     create_strategy_engine,
 )
+from app.core.clock import utc_now
 from app.core.commission_tracker import (
     AffiliateSale,
     SaleStatus,
@@ -50,14 +50,14 @@ class AffiliateSalesEngine:
         self.strategy_engine = create_strategy_engine()
         self.automation_engine = create_automation_engine()
 
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.status = "initialized"
         logger.info("Affiliate Sales Engine initialized")
 
     def get_system_status(self) -> dict[str, Any]:
         """Get complete system status."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "status": self.status,
             "initialized": True,
             "version": "1.0",
@@ -82,7 +82,7 @@ class AffiliateSalesEngine:
         """Analyze affiliate opportunity in niche."""
         return {
             "niche": niche,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "analysis": {
                 "platforms": self.market_analyzer.get_market_summary(),
                 "recommended_methods": self.methods_library.get_quick_start_methods()[:3],
@@ -107,7 +107,7 @@ class AffiliateSalesEngine:
         return {
             "status": "affiliate_program_started",
             "niche": niche,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "strategy_selected": strategy,
             "automation_workflows": len(workflows["sub_workflows"]),
             "next_steps": [
@@ -153,11 +153,11 @@ class AffiliateSalesEngine:
 
         # Create sale object
         sale = AffiliateSale(
-            sale_id=f"sale_{datetime.utcnow().timestamp()}",
+            sale_id=f"sale_{utc_now().timestamp()}",
             product_id=product_id,
             method=method,
             channel=channel,
-            sale_date=datetime.utcnow(),
+            sale_date=utc_now(),
             sale_amount=amount,
             commission_pct=commission_pct,
             commission_earned=amount * commission_pct,
@@ -193,7 +193,7 @@ class AffiliateSalesEngine:
 
         dashboard = self.commission_tracker.get_dashboard()
         report = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "optimization_actions": [],
         }
 
@@ -224,7 +224,7 @@ class AffiliateSalesEngine:
     def get_comprehensive_report(self) -> dict[str, Any]:
         """Get comprehensive affiliate system report."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "system_status": self.get_system_status(),
             "dashboard": self.get_dashboard(),
             "daily_optimization": self.run_daily_optimization(),
@@ -249,7 +249,7 @@ class AffiliateSalesOrchestrator:
     def start_new_campaign(self, niche: str, email: str, budget: float = 0,
                           target_income: float = 5000) -> dict[str, Any]:
         """Start new affiliate campaign."""
-        campaign_id = f"campaign_{datetime.utcnow().timestamp()}"
+        campaign_id = f"campaign_{utc_now().timestamp()}"
 
         campaign = {
             "campaign_id": campaign_id,
@@ -257,7 +257,7 @@ class AffiliateSalesOrchestrator:
             "email": email,
             "budget": budget,
             "target_income": target_income,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
             "status": "launching",
             "program": self.engine.start_affiliate_program(niche, budget, email),
         }
@@ -278,7 +278,7 @@ class AffiliateSalesOrchestrator:
     def get_system_summary(self) -> dict[str, Any]:
         """Get summary of affiliate system."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "system": self.engine.get_system_status(),
             "active_campaigns": len(self.active_programs),
             "available_features": [

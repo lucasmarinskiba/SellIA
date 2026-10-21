@@ -9,13 +9,13 @@ Endpoints:
 
 import json
 import logging
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now
 from app.core.database.models import Order, get_db
 from app.core.integrations.sendgrid_email import EmailService
 from app.core.integrations.stripe_payment import (
@@ -58,7 +58,7 @@ async def create_checkout(
             customer_email=request.customer_email,
             product_name=request.product_name,
             amount_usd=request.amount_usd,
-            order_id=f"order_{datetime.utcnow().timestamp()}",
+            order_id=f"order_{utc_now().timestamp()}",
             success_url=request.success_url,
             cancel_url=request.cancel_url,
         )
@@ -139,7 +139,7 @@ async def stripe_webhook(
             if order:
                 order.payment_status = "confirmed"
                 order.status = "paid"
-                order.completed_at = datetime.utcnow()
+                order.completed_at = utc_now()
                 db.commit()
 
                 logger.info(f"Order {order_id} marked as paid")

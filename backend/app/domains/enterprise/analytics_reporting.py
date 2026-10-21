@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class ReportFormat(str, Enum):
     CSV = "csv"
@@ -75,7 +77,7 @@ class AnalyticsReportingManager:
             name=name,
             widgets=[DashboardWidget(**w) for w in widgets],
             is_default=is_default,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         self.dashboards[dashboard_id] = dashboard
         return dashboard
@@ -157,7 +159,7 @@ class AnalyticsReportingManager:
                 'format': format,
                 'file_url': file_url,
                 'row_count': len(rows),
-                'created_at': datetime.utcnow().isoformat(),
+                'created_at': utc_now().isoformat(),
             }
 
             return {
@@ -172,7 +174,7 @@ class AnalyticsReportingManager:
     def get_realtime_metrics(self, user_id: str) -> dict:
         """Get real-time metrics dashboard."""
         return {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': utc_now().isoformat(),
             'metrics': {
                 'total_calls_today': 42,
                 'avg_call_duration': 145,
@@ -189,7 +191,7 @@ class AnalyticsReportingManager:
             key = f"{user_id}:{metric_name}"
             self.metrics[key] = {
                 'value': value,
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': utc_now().isoformat(),
             }
             return True
         except Exception:
@@ -205,7 +207,7 @@ class AnalyticsReportingManager:
         # Placeholder: actual history retrieval
         return [
             {
-                'timestamp': (datetime.utcnow() - timedelta(days=i)).isoformat(),
+                'timestamp': (utc_now() - timedelta(days=i)).isoformat(),
                 'value': 100 + (i * 5),
             }
             for i in range(days)

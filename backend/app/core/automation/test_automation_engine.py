@@ -13,7 +13,7 @@ Covers:
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
@@ -34,6 +34,8 @@ from retry_handler import RetryPolicy as RetryHandlerPolicy
 from state_manager import StateManager
 from task_scheduler import TaskScheduler
 from workflow_builder import WorkflowBuilder, WorkflowTrigger
+
+from app.core.clock import utc_now
 
 # ========== FIXTURES ==========
 
@@ -117,9 +119,9 @@ class TestJobCreation:
             payload={},
         )
 
-        job.started_at = datetime.utcnow()
+        job.started_at = utc_now()
         await asyncio.sleep(0.1)
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
         assert job.duration_seconds > 0.1
 
@@ -176,7 +178,7 @@ class TestTaskScheduler:
             priority=Priority.HIGH,
             schedule="0 9 * * *",
             payload={},
-            next_run=datetime.utcnow() - timedelta(minutes=1),
+            next_run=utc_now() - timedelta(minutes=1),
         )
 
         await scheduler.add_task(task)
@@ -351,9 +353,9 @@ class TestStateManager:
                 payload={},
                 status=JobStatus.SUCCESS if i < 4 else JobStatus.FAILED,
                 attempts=1,
-                completed_at=datetime.utcnow(),
+                completed_at=utc_now(),
             )
-            job.started_at = datetime.utcnow()
+            job.started_at = utc_now()
             await state_manager.create(job)
 
         stats = await state_manager.get_statistics(hours=1)
@@ -481,8 +483,8 @@ class TestMonitoringDashboard:
             payload={},
         )
 
-        job.started_at = datetime.utcnow()
-        job.completed_at = datetime.utcnow()
+        job.started_at = utc_now()
+        job.completed_at = utc_now()
 
         await monitoring.record_success(job)
         metrics = await monitoring.metrics_collector.get_all_metrics()

@@ -1,11 +1,12 @@
 """Smart auto-rotation: regenerate FOMO when decay detected, auto-test winner."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.domains.seo_config.fomo_abtest_service import FOMABTestService
 from app.domains.seo_config.fomo_decay_service import FOMADecayService
 from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
@@ -92,7 +93,7 @@ class FOMAAutoRotator:
             'current_ctr': link.get('current_ctr'),
             'decay': link.get('decay_percentage'),
             'new_test_id': str(test_result.id),
-            'rotated_at': datetime.utcnow().isoformat(),
+            'rotated_at': utc_now().isoformat(),
           })
       except Exception as e:
         print(f'Auto-rotation failed for link {link_obj.id}: {e}')
@@ -109,7 +110,7 @@ class FOMAAutoRotator:
     days: int = 7,
   ) -> list[dict[str, object]]:
     """Get recent auto-rotations (query A/B tests that started due to decay)."""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = utc_now() - timedelta(days=days)
 
     # Query A/B tests created after decay was detected
     # (in real implementation, would add auto_rotation flag to FOMABTest)

@@ -44,7 +44,7 @@ class BrainOrchestratorV3:
             "market_profile": market_profile,
             "agents": agents,
             "rules": rules,
-            "initialized_at": str(__import__("datetime").datetime.utcnow()),
+            "initialized_at": str(__import__("datetime").utc_now()),
         }
 
         return {

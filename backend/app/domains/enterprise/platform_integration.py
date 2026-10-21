@@ -12,6 +12,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class Platform(Enum):
     """Supported marketplace platforms."""
@@ -376,7 +378,7 @@ class DynamicPricingEngine:
         # Mock: would fetch all products + competitor prices
         results = {
             "platform": platform.value,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "frequency": frequency,
             "products_repriced": 150,
             "price_changes": {

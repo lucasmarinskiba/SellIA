@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +22,7 @@ class Recommendation:
     confidence: float
     reasoning: list[str] = field(default_factory=list)
     alternatives: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

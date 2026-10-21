@@ -43,7 +43,7 @@ async def create_ab_test(
             "metric": metric,
             "sample_size": sample_size,
             "duration_days": duration_days,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": utc_now().isoformat(),
             "status": "running",
             "hypothesis": f"{treatment_strategy} outperforms {control_strategy} on {metric}",
         },
@@ -52,7 +52,7 @@ async def create_ab_test(
             "treatment": f"50% of {sample_size} = {sample_size // 2} leads",
         },
         "expected_results_date": (
-            datetime.utcnow() + timedelta(days=duration_days)
+            utc_now() + timedelta(days=duration_days)
         ).isoformat(),
     }
 
@@ -100,7 +100,7 @@ async def get_test_results(test_id: str) -> dict[str, Any]:
                 else "CONTINUE TEST - need more data for significance"
             ),
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -122,7 +122,7 @@ async def allocate_lead_to_test(
             "strategy": "Balanced" if group == "control" else "Aggressive",
             "message": f"Lead {lead_id} assigned to {group} group ({group.title()} Strategy)",
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -177,8 +177,10 @@ async def compare_strategies() -> dict[str, Any]:
             "reason": "Best combination of close rate, deal size, and customer satisfaction",
             "secondary": "Strategic for enterprise deals targeting high expansion",
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
 from datetime import timedelta
+
+from app.core.clock import utc_now

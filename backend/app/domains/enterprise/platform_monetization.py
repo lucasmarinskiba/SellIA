@@ -8,9 +8,10 @@
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 
 class UserSegment(Enum):
@@ -214,7 +215,7 @@ class UpgradeTriggerEngine:
             "trigger_id": "trig-" + user_id,
             "user_id": user_id,
             "channels_sent": ["email", "in-app", "push"],
-            "sent_at": datetime.utcnow().isoformat(),
+            "sent_at": utc_now().isoformat(),
             "urgency_message": trigger.get("urgency_message"),
             "offer": trigger.get("offer"),
         }
@@ -234,7 +235,7 @@ class ABTestOrchestrator:
             "element_type": element_type,
             "variants": variants,
             "sample_size": sample_size,
-            "start_date": datetime.utcnow().isoformat(),
+            "start_date": utc_now().isoformat(),
             "status": "active",
         }
 

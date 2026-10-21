@@ -1,8 +1,8 @@
 """Enrich leads with additional data based on business model."""
 
 import logging
-from datetime import datetime
 
+from app.core.clock import utc_now
 from app.domains.business_intelligence.business_model_detector import BusinessProfile
 
 from .lead_generator import Lead, LeadQuality
@@ -37,7 +37,7 @@ class LeadEnricher:
             "purchase_cycle": "1-7 days",
             "pain_points": ["convenience", "location", "hours"],
             "offers_that_work": ["loyalty program", "opening hours extended", "delivery"],
-            "enriched_at": datetime.utcnow().isoformat()
+            "enriched_at": utc_now().isoformat()
         })
         lead.enriched = True
         return lead
@@ -54,7 +54,7 @@ class LeadEnricher:
             "purchase_cycle": "1-30 days",
             "pain_points": ["shipping cost", "delivery time", "returns"],
             "offers_that_work": ["free shipping", "discount", "guarantee"],
-            "enriched_at": datetime.utcnow().isoformat()
+            "enriched_at": utc_now().isoformat()
         })
         lead.enriched = True
         return lead
@@ -71,7 +71,7 @@ class LeadEnricher:
             "decision_speed": "fast",
             "pain_points": ["time availability", "trust", "price"],
             "offers_that_work": ["same day service", "24/7 availability", "guarantees"],
-            "enriched_at": datetime.utcnow().isoformat()
+            "enriched_at": utc_now().isoformat()
         })
         lead.quality = LeadQuality.HOT
         lead.enriched = True
@@ -90,7 +90,7 @@ class LeadEnricher:
             "pain_points": ["roi", "implementation", "support"],
             "offers_that_work": ["demo", "trial", "references"],
             "requires_proposal": True,
-            "enriched_at": datetime.utcnow().isoformat()
+            "enriched_at": utc_now().isoformat()
         })
         lead.enriched = True
         return lead
@@ -101,7 +101,7 @@ class LeadEnricher:
             "relevance_score": 0.5,
             "preferred_contact": lead.contact_method,
             "typical_budget": business.average_ticket_size or 500,
-            "enriched_at": datetime.utcnow().isoformat()
+            "enriched_at": utc_now().isoformat()
         })
         lead.enriched = True
         return lead

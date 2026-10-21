@@ -4,11 +4,12 @@ Servicios para crear, ejecutar y monitorear misiones cross-plataforma.
 """
 
 import uuid
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.clock import utc_now
 
 from .diagnostic_engine import run_diagnostic
 from .models import BusinessDiagnostic, Mission, MissionStep
@@ -182,7 +183,7 @@ class MissionService:
             return None
 
         mission.status = "approved"
-        mission.approved_at = datetime.utcnow()
+        mission.approved_at = utc_now()
 
         if approve_all_steps:
             for step in mission.steps:
@@ -202,13 +203,13 @@ class MissionService:
             return None
 
         mission.status = "running"
-        mission.started_at = datetime.utcnow()
+        mission.started_at = utc_now()
 
         # Marcar primer paso ejecutable como running
         for step in mission.steps:
             if step.status == "pending" and (not step.requires_approval or step.approved_by_user):
                 step.status = "running"
-                step.started_at = datetime.utcnow()
+                step.started_at = utc_now()
                 break
 
         await self.db.commit()
@@ -238,7 +239,7 @@ class MissionService:
 
         # Si el paso se completó, avanzar al siguiente
         if data.status == "completed":
-            step.completed_at = datetime.utcnow()
+            step.completed_at = utc_now()
             await self._advance_to_next_step(step.mission)
 
         # Si el paso falló, marcar misión como failed
@@ -255,7 +256,7 @@ class MissionService:
         all_completed = all(s.status in ("completed", "skipped") for s in mission.steps)
         if all_completed:
             mission.status = "completed"
-            mission.completed_at = datetime.utcnow()
+            mission.completed_at = utc_now()
             return
 
         # Buscar siguiente paso pendiente
@@ -265,7 +266,7 @@ class MissionService:
                     step.status = "waiting_approval"
                 else:
                     step.status = "running"
-                    step.started_at = datetime.utcnow()
+                    step.started_at = utc_now()
                 break
 
     # ─── Diagnósticos ──────────────────────────────────────────────────────────
@@ -309,7 +310,7 @@ class MissionService:
                 id=uuid.uuid4(),
                 user_id=user_id,
                 business_id=business_id,
-                diagnostic_date=datetime.utcnow(),
+                diagnostic_date=utc_now(),
                 category=diag_data.category,
                 severity=diag_data.severity,
                 finding=diag_data.finding,
@@ -355,7 +356,7 @@ class MissionService:
         if not diag:
             return False
         diag.is_resolved = True
-        diag.resolved_at = datetime.utcnow()
+        diag.resolved_at = utc_now()
         await self.db.commit()
         return True
 

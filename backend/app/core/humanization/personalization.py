@@ -16,6 +16,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,8 +56,8 @@ class BuyerProfile:
     churn_risk: bool = False
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -331,7 +333,7 @@ class PersonalizationEngine:
 
         # Check recency of last contact
         if buyer_profile.last_contact:
-            days_since = (datetime.utcnow() - buyer_profile.last_contact).days
+            days_since = (utc_now() - buyer_profile.last_contact).days
             if days_since > 14:
                 urgency += 2
             elif days_since < 7:

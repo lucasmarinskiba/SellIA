@@ -9,6 +9,8 @@ from typing import Any
 import numpy as np
 from scipy import stats
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +40,7 @@ class CompetitorProfile:
     recent_moves: list[dict[str, Any]] = field(default_factory=list)
     estimated_revenue: float | None = None
     customer_satisfaction: float | None = None
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -72,7 +74,7 @@ class CompetitiveIntelligence:
         if competitor_id not in self.price_history:
             self.price_history[competitor_id] = []
 
-        timestamp = timestamp or datetime.utcnow()
+        timestamp = timestamp or utc_now()
         self.price_history[competitor_id].append((timestamp, price))
 
         # Log if significant price change
@@ -87,7 +89,7 @@ class CompetitiveIntelligence:
         move = {
             "competitor_id": competitor_id,
             "type": move_type,
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
             "details": details,
         }
         self.move_log.append(move)
@@ -103,7 +105,7 @@ class CompetitiveIntelligence:
             return None
 
         history = self.price_history[competitor_id]
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utc_now() - timedelta(days=days)
         recent = [(t, p) for t, p in history if t >= cutoff]
 
         if len(recent) < 2:
@@ -140,7 +142,7 @@ class CompetitiveIntelligence:
             "top_competitors": [
                 c.name for c in sorted(self.competitors.values(), key=lambda x: x.market_share, reverse=True)[:3]
             ],
-            "competitive_intensity": len(self.move_log) / max(1, (datetime.utcnow() - self.move_log[0]["timestamp"]).days)
+            "competitive_intensity": len(self.move_log) / max(1, (utc_now() - self.move_log[0]["timestamp"]).days)
             if self.move_log
             else 0,
         }
@@ -294,8 +296,8 @@ class OwnAnalyzer:
 
         # Sales velocity
         if self.sales_history:
-            time_span = (self.sales_history[-1].get("timestamp", datetime.utcnow()) - self.sales_history[0].get(
-                "timestamp", datetime.utcnow()
+            time_span = (self.sales_history[-1].get("timestamp", utc_now()) - self.sales_history[0].get(
+                "timestamp", utc_now()
             )).days
             self.sales_velocity = total_sales / max(1, time_span)
 

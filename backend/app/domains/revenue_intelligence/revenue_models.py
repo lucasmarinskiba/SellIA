@@ -2,11 +2,13 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 import numpy as np
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +164,7 @@ class RevenueForecaster:
             CloseRiskLevel.LOW: 30,
         }[risk_level]
 
-        expected_close = (datetime.utcnow() + timedelta(days=days_remaining)).isoformat()
+        expected_close = (utc_now() + timedelta(days=days_remaining)).isoformat()
 
         # Key drivers and risks
         key_drivers = []

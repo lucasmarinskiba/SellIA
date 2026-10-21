@@ -5,9 +5,9 @@ Orquesta: Find → Contact → Respond → Close → Pay → Grow → Loyalty
 
 import logging
 import uuid
-from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.computer_use.services.auto_responder import get_auto_responder_service
 from app.domains.computer_use.services.conversion_tracker import get_conversion_tracker
 from app.domains.computer_use.services.customer_loyalty import (
@@ -73,7 +73,7 @@ class SalesFunnelOrchestrator:
         Ejecuta pipeline completo: Find → Contact → Response → Close → Pay → Grow → Loyalty
         """
         try:
-            self.campaign_id = f"campaign_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            self.campaign_id = f"campaign_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             self.logger.info(f"Starting pipeline: {self.campaign_id}")
 

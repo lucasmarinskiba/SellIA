@@ -25,6 +25,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,7 +92,7 @@ class ToneProfile:
     preferred_emojis: list[str] = field(default_factory=list)
 
     # Created metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     confidence_score: float = 0.8
 
 

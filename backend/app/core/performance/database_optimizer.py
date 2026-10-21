@@ -10,6 +10,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -117,7 +119,7 @@ class DatabaseOptimizer:
             rows_scanned=rows_scanned,
             rows_returned=rows_returned,
             database="postgres",
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             user_id=user_id,
             endpoint=endpoint,
             error=error,
@@ -140,8 +142,8 @@ class DatabaseOptimizer:
                 "max_time_ms": 0.0,
                 "min_time_ms": float("inf"),
                 "rows_scanned_total": 0,
-                "first_seen": datetime.utcnow(),
-                "last_seen": datetime.utcnow(),
+                "first_seen": utc_now(),
+                "last_seen": utc_now(),
             }
 
         stats = self.slow_queries[query_hash]
@@ -151,7 +153,7 @@ class DatabaseOptimizer:
         stats["max_time_ms"] = max(stats["max_time_ms"], execution_time_ms)
         stats["min_time_ms"] = min(stats["min_time_ms"], execution_time_ms)
         stats["rows_scanned_total"] += rows_scanned
-        stats["last_seen"] = datetime.utcnow()
+        stats["last_seen"] = utc_now()
 
         # Log warning if exceeds threshold
         if execution_time_ms > self.QUERY_THRESHOLDS[QueryPriority.HIGH]:
@@ -186,7 +188,7 @@ class DatabaseOptimizer:
 
     def get_recent_slow_queries(self, minutes: int = 5, limit: int = 100) -> list[dict[str, Any]]:
         """Get slow queries from the last N minutes."""
-        cutoff_time = datetime.utcnow() - timedelta(minutes=minutes)
+        cutoff_time = utc_now() - timedelta(minutes=minutes)
 
         recent = [
             q for q in self._slow_query_log
@@ -382,7 +384,7 @@ class DatabaseOptimizer:
                 "row_count": row_count,
                 "size_mb": round(size_mb, 2),
                 "avg_row_size_bytes": round((size_mb * 1024 * 1024 / max(row_count, 1)), 2),
-                "last_analyzed": datetime.utcnow().isoformat(),
+                "last_analyzed": utc_now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Error analyzing table stats for {table_name}: {e}")

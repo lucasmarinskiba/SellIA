@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +44,7 @@ class ScheduledPost:
         self.strategy = strategy
         self.priority = priority
         self.status = "scheduled"  # scheduled, publishing, published, failed
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.published_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -84,7 +86,7 @@ class PublishScheduler:
                 scheduled_time = custom_time
 
             # Crear post
-            post_id = f"post_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            post_id = f"post_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             post = ScheduledPost(
                 post_id=post_id,
@@ -111,7 +113,7 @@ class PublishScheduler:
         strategy: PublishingStrategy,
     ) -> datetime:
         """Obtiene próxima hora de publicación."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Peak times por platform
         if platform == "tiktok":
@@ -155,7 +157,7 @@ class PublishScheduler:
 
     async def get_publishing_queue(self, limit: int = 10) -> list[ScheduledPost]:
         """Obtiene posts próximos a publicar."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Filtrar posts scheduled y ordenar por tiempo
         pending = [
@@ -182,7 +184,7 @@ class PublishScheduler:
         post.status = status
 
         if status == "published":
-            post.published_at = datetime.utcnow()
+            post.published_at = utc_now()
             self.logger.info(f"Post published: {post_id}")
 
         return True

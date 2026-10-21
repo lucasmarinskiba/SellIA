@@ -12,8 +12,10 @@ Maneja:
 import asyncio
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +87,7 @@ class StateManager:
     async def get_recent(self, hours: int = 1, limit: int = 100) -> list[Any]:
         """Obtiene jobs recientes."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = utc_now() - timedelta(hours=hours)
             recent = [
                 job for job in self.jobs.values()
                 if job.created_at >= cutoff
@@ -122,7 +124,7 @@ class StateManager:
     async def get_statistics(self, hours: int = 24) -> dict[str, Any]:
         """Estadísticas de jobs (últimas N horas)."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = utc_now() - timedelta(hours=hours)
             recent_jobs = [
                 job for job in self.jobs.values()
                 if job.created_at >= cutoff
@@ -179,7 +181,7 @@ class StateManager:
     async def cleanup_old(self, days: int = 7) -> int:
         """Limpia jobs viejos (archive)."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff = utc_now() - timedelta(days=days)
             original_count = len(self.jobs)
 
             # Keep only recent jobs + pending jobs
@@ -206,7 +208,7 @@ class StateManager:
         async with self.lock:
             stats = await self.get_statistics(hours=24)
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
                 "jobs_total": len(self.jobs),
                 "status_distribution": dict(
                     (status, len(job_ids))
@@ -237,7 +239,7 @@ class JobRecovery:
             # Mark as failed (will be retried if applicable)
             job.status = JobStatus.FAILED
             job.error = "Job interrupted due to system restart"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.state_manager.update(job.id, job)
             recovered += 1
 

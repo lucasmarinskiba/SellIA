@@ -4,11 +4,11 @@ Deal forecasting, churn prevention, expansion scoring.
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.core.clock import utc_now
 from app.domains.revenue_intelligence.revenue_models import (
     ChurnPredictor,
     ExpansionScorer,
@@ -79,7 +79,7 @@ async def forecast_deal_close(
                     else "REASSESS FIT"
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "@context": "https://schema.org",
             "@type": "Dataset",
             "name": "Deal Close Forecast",
@@ -131,7 +131,7 @@ async def forecast_revenue(
                 "weighted_forecast_usd": round(forecast["weighted_forecast"], 2),
                 "forecast_confidence": "Medium - based on stage and engagement",
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -209,7 +209,7 @@ async def predict_churn(
                     else ["Monitor engagement", "Quarterly business review"]
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -265,7 +265,7 @@ async def score_expansion(
                     else "Monitor growth"
                 ),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -323,5 +323,5 @@ async def customer_health_dashboard() -> dict[str, Any]:
             "Expansion pipeline worth $450k waiting to be activated",
             "Average deal cycle: 21 days (target: 14 days)",
         ],
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }

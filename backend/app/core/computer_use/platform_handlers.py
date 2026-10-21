@@ -13,8 +13,9 @@ Usa Computer Use + visión para no depender de APIs (escalabilidad infinita).
 
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class MercadoLibreComputerUseHandler:
             "duration_seconds": 5.3,
         }
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         try:
             logger.info(f"Posting product to Mercado Libre: {name}")
@@ -159,7 +160,7 @@ class MercadoLibreComputerUseHandler:
                 timeout=15,
             )
 
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (utc_now() - start_time).total_seconds()
             logger.info(f"Product posted successfully in {duration:.1f}s")
 
             return {
@@ -170,7 +171,7 @@ class MercadoLibreComputerUseHandler:
             }
 
         except Exception as e:
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (utc_now() - start_time).total_seconds()
             logger.error(f"Failed to post product: {e!s}")
             return {
                 "success": False,

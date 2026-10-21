@@ -19,6 +19,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
+from app.core.clock import utc_now
+
 
 class CampaignType(str, Enum):
     LIVE_VISITOR_COUNT = "live_visitor_count"
@@ -52,7 +54,7 @@ class CustomerFOMOCampaignConfig(BaseModel):
     campaign_type: CampaignType
     name: str
     description: str | None = None
-    start_date: datetime = Field(default_factory=datetime.utcnow)
+    start_date: datetime = Field(default_factory=utc_now)
     end_date: datetime | None = None
     target_pages: list[str] = []
     target_products: list[str] = []
@@ -141,8 +143,8 @@ class CustomerFOMOCampaign:
     status = Column(String(20), default="draft")
     config = Column(JSONB, nullable=False)
     performance = Column(JSONB, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
 class CustomerFOMOWidget:
@@ -154,7 +156,7 @@ class CustomerFOMOWidget:
     config = Column(JSONB, nullable=False)
     embed_code = Column(Text, nullable=False)
     active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class CustomerFOMOEvent:
@@ -164,7 +166,7 @@ class CustomerFOMOEvent:
     campaign_id = Column(UUID(as_uuid=True), ForeignKey("customer_fomo_campaigns.id"))
     event_type = Column(String(50), nullable=False)
     data = Column(JSONB, nullable=False)
-    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow)
+    timestamp = Column(DateTime(timezone=True), default=utc_now)
 
 
 class CustomerFOMOAutomation:
@@ -177,7 +179,7 @@ class CustomerFOMOAutomation:
     config = Column(JSONB, nullable=False)
     active = Column(Boolean, default=True)
     executions = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
 
 class CustomerFOMOAnalytics:
@@ -192,4 +194,4 @@ class CustomerFOMOAnalytics:
     revenue = Column(Float, default=0.0)
     avg_conversion_lift = Column(Float, default=0.0)
     roi = Column(Float, default=0.0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)

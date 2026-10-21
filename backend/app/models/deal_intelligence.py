@@ -1,6 +1,5 @@
 """Deal Intelligence models for Phase 27."""
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -16,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -48,7 +48,7 @@ class DealStakeholder(Base):
 
     # Status
     status = Column(String(50), default="active")  # active, churned, dormant, prospect
-    identified_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    identified_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_deal_stakeholders_deal", "deal_id"),
@@ -74,7 +74,7 @@ class DealProbabilityScore(Base):
 
     # Model metadata
     model_version = Column(String(50))
-    prediction_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    prediction_date = Column(DateTime, default=utc_now, nullable=False)
 
     # Confidence intervals
     probability_low = Column(Float)  # 90% CI lower bound
@@ -114,7 +114,7 @@ class DealHealthSnapshot(Base):
     recommended_actions = Column(JSONB)  # [{action: str, priority: str}]
 
     # Metadata
-    snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    snapshot_date = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_health_deal", "deal_id"),
@@ -143,7 +143,7 @@ class DealHealthAlert(Base):
     action_type = Column(String(50))  # call, email, meeting, escalate
 
     # Alert lifecycle
-    triggered_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    triggered_at = Column(DateTime, default=utc_now, nullable=False)
     acknowledged_at = Column(DateTime)
     resolved_at = Column(DateTime)
     action_taken = Column(Boolean, default=False)
@@ -171,7 +171,7 @@ class StakeholderEngagementEvent(Base):
     # Event details
     event_details = Column(JSONB)  # {email_subject: "...", call_duration: 15}
 
-    event_timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    event_timestamp = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_engagement_deal_person", "deal_id", "person_id"),
@@ -190,7 +190,7 @@ class ModelPredictionsCache(Base):
     # Cached prediction
     prediction_json = Column(JSONB, nullable=False)  # Full prediction object
 
-    cache_created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    cache_created_at = Column(DateTime, default=utc_now, nullable=False)
     cache_expires_at = Column(DateTime, nullable=False)
 
     __table_args__ = (

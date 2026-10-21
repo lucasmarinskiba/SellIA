@@ -1,10 +1,10 @@
 """User model for seller accounts."""
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, String
 
+from app.core.clock import utc_now
 from app.database import Base
 
 
@@ -19,7 +19,7 @@ class User(Base):
     seller_name = Column(String(255), nullable=False)
     business_name = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     is_active = Column(Boolean, default=True)

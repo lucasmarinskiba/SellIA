@@ -6,7 +6,7 @@ Run:
     pytest app/core/payments/tests.py -v --cov=app/core/payments
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 import pytest
@@ -31,6 +31,8 @@ from stripe_processor import (
     WebhookEventType,
 )
 
+from app.core.clock import utc_now
+
 # ============= STRIPE TESTS =============
 
 class TestStripeProcessor:
@@ -42,7 +44,7 @@ class TestStripeProcessor:
             mock_create.return_value = {
                 "id": "cs_test_123",
                 "url": "https://checkout.stripe.com/pay/cs_test_123",
-                "expires_at": int((datetime.utcnow() + timedelta(hours=24)).timestamp()),
+                "expires_at": int((utc_now() + timedelta(hours=24)).timestamp()),
             }
 
             result = StripeProcessor.create_checkout_session(
@@ -166,7 +168,7 @@ class TestMercadoPagoProcessor:
                     "currency_id": "USD",
                     "payer": {"email": "test@example.com"},
                     "installments": 1,
-                    "date_created": datetime.utcnow().isoformat(),
+                    "date_created": utc_now().isoformat(),
                 }
             )
 

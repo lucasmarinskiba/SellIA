@@ -8,12 +8,12 @@ Endpoints:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
 from app.core.intelligence.market_analyzer import MarketAnalyzer
 from app.core.intelligence.strategy_generator import (
     StrategyGenerator,
@@ -84,7 +84,7 @@ async def analyze_market(product: ProductInput):
             "threats": analysis.threats,
             "recommended_positioning": analysis.recommended_positioning,
             "confidence": analysis.confidence,
-            "analyzed_at": datetime.utcnow().isoformat(),
+            "analyzed_at": utc_now().isoformat(),
         }
 
         return {
@@ -156,7 +156,7 @@ async def generate_strategy(product: ProductInput):
             "strategy": strategy,
             "recommendations": recommendations,
             "next_actions": next_actions,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -295,7 +295,7 @@ async def generate_full_report(product: ProductInput):
             "recommendations": recommendations,
             "roadmap_90_days": strategy["roadmap_90days"],
             "next_actions": next_actions,
-            "report_generated_at": datetime.utcnow().isoformat(),
+            "report_generated_at": utc_now().isoformat(),
         }
 
     except Exception as e:

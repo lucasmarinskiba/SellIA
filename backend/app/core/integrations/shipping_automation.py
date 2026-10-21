@@ -13,10 +13,11 @@ Sistema:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class ShippingAutomation:
             payload = {
                 "shipments": [
                     {
-                        "plannedShippingDateAndTime": datetime.utcnow().isoformat(),
+                        "plannedShippingDateAndTime": utc_now().isoformat(),
                         "pickup": {
                             "isRequested": False,
                         },
@@ -205,7 +206,7 @@ class ShippingAutomation:
                             },
                         }
                     ],
-                    "shipDatestamp": datetime.utcnow().strftime("%Y-%m-%d"),
+                    "shipDatestamp": utc_now().strftime("%Y-%m-%d"),
                     "serviceType": "INTERNATIONAL_PRIORITY",
                     "packages": [
                         {

@@ -13,6 +13,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ class SalesSignal:
         self.signal_type = signal_type  # price_inquiry, timeline, objection_raised, etc
         self.confidence = confidence  # 0-1
         self.urgency_level = urgency_level  # 1-10
-        self.detected_at = datetime.utcnow()
+        self.detected_at = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         return {

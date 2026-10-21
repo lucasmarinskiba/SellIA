@@ -1,6 +1,5 @@
 """Phase 30 Churn Prevention models."""
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -16,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -32,8 +32,8 @@ class ChurnPrediction(Base):
     churn_reasons = Column(JSONB)  # [{"reason": "...", "impact": 0.35}]
     predicted_churn_date = Column(DateTime, nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_customer_risk", "customer_id", "risk_level"),
@@ -57,7 +57,7 @@ class ExpansionOpportunity(Base):
     likelihood_score = Column(Float)  # 0-1
     recommended_message = Column(Text)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_customer_opp", "customer_id", "opportunity_type"),
@@ -78,7 +78,7 @@ class ABMIntentScore(Base):
     top_signals = Column(JSONB)  # [{"signal": "page_views", "weight": 0.2, "value": "15"}]
     trending = Column(String(50))  # UP, DOWN, FLAT
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index("idx_account_intent", "account_id", "intent_score"),
@@ -128,7 +128,7 @@ class WinBackPlaybook(Base):
     executive_escalation_message = Column(Text)
 
     success_rate = Column(Float)  # historical conversion %
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_reason_segment", "churn_reason", "segment"),
@@ -152,7 +152,7 @@ class CustomerEngagementMetrics(Base):
     nps_score = Column(Integer)  # 0-10
     health_score = Column(Integer)  # 0-100: composite
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_customer_date", "customer_id", "metric_date"),
@@ -181,7 +181,7 @@ class CustomerHealthScorecard(Base):
     trending = Column(String(50))  # UP, DOWN, FLAT
     recommended_action = Column(Text)
 
-    snapshot_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    snapshot_date = Column(DateTime, default=utc_now, nullable=False)
 
     __table_args__ = (
         Index("idx_customer_health", "customer_id", "health_level"),

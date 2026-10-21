@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
 from app.core.config import get_settings
 from app.domains.computer_use.integrations import (
     get_google_ads_connector,
@@ -87,7 +88,7 @@ class AdCampaign:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -337,7 +338,7 @@ class AdOrchestrator:
             for platform in platforms:
                 # Was minute-precision only (no seconds) — widened plus a random
                 # suffix to guarantee uniqueness regardless of timing.
-                campaign_id = f"camp_{platform.value}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+                campaign_id = f"camp_{platform.value}_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
                 campaign = AdCampaign(
                     campaign_id=campaign_id,
@@ -348,8 +349,8 @@ class AdOrchestrator:
                     creatives=creatives,
                     target_audience=target_audience or self._default_audience(),
                     daily_budget=daily_budget,
-                    start_date=datetime.utcnow(),
-                    end_date=datetime.utcnow() + timedelta(days=duration_days),
+                    start_date=utc_now(),
+                    end_date=utc_now() + timedelta(days=duration_days),
                 )
 
                 self.campaigns[campaign_id] = campaign

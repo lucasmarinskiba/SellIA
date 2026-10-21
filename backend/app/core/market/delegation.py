@@ -132,7 +132,7 @@ class DelegationLayer:
         result = {
             "session_id": session_id,
             "escalation_reason": reason,
-            "escalated_at": __import__("datetime").datetime.utcnow().isoformat(),
+            "escalated_at": __import__("datetime").utc_now().isoformat(),
         }
 
         # Log escalation

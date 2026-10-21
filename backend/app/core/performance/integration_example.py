@@ -11,12 +11,12 @@ This file demonstrates production-ready integration patterns for:
 
 import logging
 import time
-from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.core.performance import (
     AsyncJobQueue,
@@ -237,7 +237,7 @@ async def get_performance_dashboard(
     report = monitor.get_performance_report()
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "health": report["health"],
         "top_metrics": report["top_metrics"],
         "bottlenecks": report["detected_bottlenecks"],
@@ -261,7 +261,7 @@ async def get_slow_queries(
     return {
         "count": len(slow_queries),
         "queries": slow_queries,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     }
 
 
@@ -287,7 +287,7 @@ async def run_load_test(
 
     # Configuration
     config = LoadTestConfig(
-        name=f"load_test_{datetime.utcnow().timestamp()}",
+        name=f"load_test_{utc_now().timestamp()}",
         target_function=simulate_api_request,
         concurrent_users=concurrent_users,
         requests_per_second=concurrent_users * 10,

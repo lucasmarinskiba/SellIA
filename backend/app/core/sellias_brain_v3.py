@@ -11,13 +11,13 @@ Status: 15,000+ lines, 100% production ready
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from app.core.agents.authenticity_engine import AuthenticityEngine
 from app.core.agents.ethical_framework import EthicalFramework
 from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
 from app.core.agents.virtue_agent import VirtueAgent
+from app.core.clock import utc_now
 from app.core.growth.bootstrap_growth import BootstrapGrowth
 from app.core.growth.momentum_tracker import MomentumTracker
 from app.core.growth.viral_mechanics import ViralMechanics
@@ -58,7 +58,7 @@ class SellIABrainV3:
         """Initialize system configuration."""
         return {
             "version": "3.0.0",
-            "initialized_at": datetime.utcnow().isoformat(),
+            "initialized_at": utc_now().isoformat(),
             "blocks_loaded": ["A", "B", "C", "D"],
             "production_ready": True,
             "features": {
@@ -99,7 +99,7 @@ class SellIABrainV3:
 
         return {
             "message_approved": all_passed,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "scores": {
                 "virtue": virtue_score["virtue_score"],
                 "ethics": ethical_score["ethical_score"],
@@ -210,7 +210,7 @@ class SellIABrainV3:
         """Monitor system performance & health."""
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "status": "healthy",
             "modules_active": {
                 "virtue_enforcement": True,

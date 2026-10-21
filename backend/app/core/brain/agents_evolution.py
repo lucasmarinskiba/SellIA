@@ -21,9 +21,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 # ─────────────────────────────────────────────────────────────────────────
 # REASONING ENGINES (Núcleo de IA)
@@ -44,7 +45,7 @@ class DecisionContext:
     def __init__(self, target_id: str, signal_dict: dict[str, Any]):
         self.target_id = target_id  # Lead ID, deal ID, customer ID, etc.
         self.signals = signal_dict   # {signal_name: value}
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utc_now()
         self.history: list[dict[str, Any]] = []
         self.metadata: dict[str, Any] = {}
 
@@ -57,7 +58,7 @@ class DecisionContext:
         self.history.append({
             "event": event,
             "outcome": outcome,
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
         })
 
     def get_pattern(self, event_type: str) -> dict[str, int]:
@@ -192,7 +193,7 @@ class AgentMemory:
                        decision: str, confidence: float) -> None:
         """Registra decisión + confianza."""
         self.decisions.append({
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "target": context.target_id,
             "decision": decision,
             "confidence": confidence,
@@ -203,7 +204,7 @@ class AgentMemory:
                       reason: str = "") -> None:
         """Registra outcome (exitoso/fallido)."""
         self.outcomes.append({
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "target": target_id,
             "success": success,
             "reason": reason,
@@ -240,7 +241,7 @@ class BaseAgent(ABC):
         self.memory = AgentMemory(agent_id)
         self.context_buffer: dict[str, DecisionContext] = {}
         self.last_decision: dict[str, Any] | None = None
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
 
     @abstractmethod
     async def decide(self, context: DecisionContext) -> dict[str, Any]:

@@ -18,6 +18,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 # ─────────────────────────────────────────────────────────────────────────
 # TOOL FRAMEWORK
 # ─────────────────────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ class ToolOutput:
         if self.secondary_results is None:
             self.secondary_results = {}
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -98,7 +100,7 @@ class BaseTool(ABC):
 
     async def invoke(self, **kwargs) -> ToolOutput:
         """Invocar con tracking."""
-        self.last_invocation = datetime.utcnow()
+        self.last_invocation = utc_now()
         result = await self.execute(**kwargs)
         self.metrics.calls_total += 1
         return result

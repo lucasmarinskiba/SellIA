@@ -23,6 +23,7 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
 from app.core.intelligence.strategy_generator import StrategyGenerator
 from app.core.resilience import (
     InputValidator,
@@ -70,7 +71,7 @@ class AutonomousEvent(BaseModel):
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
+            self.timestamp = utc_now()
 
 
 class SalesResponse(BaseModel):
@@ -197,7 +198,7 @@ class FlowExecutor:
             strategy_used=agent_id,
             confidence=0.95,
             next_action="follow_up en 24h" if agent_id == "cardone_agent" else None,
-            logged_at=datetime.utcnow()
+            logged_at=utc_now()
         )
 
 
@@ -217,7 +218,7 @@ class EventLogger:
         """
 
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "account_id": event.context.get("account_id"),
             "contact_id": event.contact_id,
             "event_type": event.event_type.value,
@@ -570,7 +571,7 @@ async def crm_sync_contact(
             "contact_id": contact_id,
             "crm": result.get("crm", "unknown"),
             "fields_synced": result.get("fields_synced", 0),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -586,8 +587,8 @@ async def crm_sync_contact(
             "status": "queued",
             "contact_id": contact_id,
             "reason": f"crm_error: {e!s}",
-            "retry_at": (datetime.utcnow() + timedelta(minutes=30)).isoformat(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "retry_at": (utc_now() + timedelta(minutes=30)).isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
 
@@ -639,9 +640,9 @@ async def smart_follow_up_schedule(
         # 5. Retornar timestamp óptimo
 
         # Simulado por ahora
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
-        next_optimal = datetime.utcnow() + timedelta(days=2, hours=10)  # Miércoles 10am
+        next_optimal = utc_now() + timedelta(days=2, hours=10)  # Miércoles 10am
 
         return {
             "contact_id": contact_id,

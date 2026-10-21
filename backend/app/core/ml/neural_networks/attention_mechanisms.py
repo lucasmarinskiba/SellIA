@@ -8,6 +8,8 @@ from typing import Any
 import numpy as np
 from scipy.special import softmax
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +20,7 @@ class AttentionWeights:
     weights: dict[str, float]  # feature/position -> weight
     top_k: list[tuple[str, float]]  # top k most important
     entropy: float  # attention entropy (0 = concentrated, 1 = dispersed)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

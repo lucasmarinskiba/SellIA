@@ -5,11 +5,12 @@ Usuario responde 5 preguntas → Sistema deduce contexto → Auto-activa stack �
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+from app.core.clock import utc_now
 
 router = APIRouter(prefix="/api/v1/quickstart", tags=["onboarding"])
 logger = logging.getLogger(__name__)
@@ -81,7 +82,7 @@ async def quickstart_onboarding(input_data: QuickstartInput):
             cycle_estimate = "variable"
 
         # 2. Generar account_id
-        account_id = f"acc_{datetime.utcnow().timestamp():.0f}"
+        account_id = f"acc_{utc_now().timestamp():.0f}"
 
         # 3. Determinar primeros pasos
         first_steps = [

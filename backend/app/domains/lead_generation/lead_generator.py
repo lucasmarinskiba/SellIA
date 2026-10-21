@@ -10,6 +10,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class LeadSource(str, Enum):
     GOOGLE_MAPS = "google_maps"
@@ -45,5 +47,5 @@ class Lead:
     estimated_timeline: str | None = None
     contact_method: str = "email"
     raw_data: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     enriched: bool = False

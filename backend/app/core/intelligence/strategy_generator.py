@@ -6,9 +6,10 @@ Output: Estrategia única, adaptada, evoluciona con performance.
 """
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ class StrategyGenerator:
             "roadmap_90days": roadmap,
             "success_kpis": kpis,
             "adaptability_score": 0.8,  # Qué tan flexible es estrategia
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
         }
 
     @staticmethod
@@ -275,6 +276,6 @@ class StrategyOptimizer:
         optimized_strategy = current_strategy.copy()
         optimized_strategy["optimization_iteration"] = iteration
         optimized_strategy["changes_recommended"] = changes
-        optimized_strategy["optimized_at"] = datetime.utcnow().isoformat()
+        optimized_strategy["optimized_at"] = utc_now().isoformat()
 
         return optimized_strategy

@@ -16,11 +16,13 @@ Database models:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 from sqlalchemy.orm import Session
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,7 @@ class PaymentReconciler:
             # Update order status
             order.payment_status = "succeeded"
             order.status = "payment_received"
-            order.completed_at = datetime.utcnow()
+            order.completed_at = utc_now()
 
             # Link payment to order
             payment = Payment(
@@ -306,7 +308,7 @@ class PaymentReconciler:
                 Payment,  # NOTE: same unreachable-package issue
             )
 
-            cutoff_date = datetime.utcnow() - timedelta(days=days_ago)
+            cutoff_date = utc_now() - timedelta(days=days_ago)
 
             unmatched = (
                 db.query(Payment)
@@ -392,7 +394,7 @@ class FulfillmentOrchestrator:
             # TODO: Update order.fulfilled = True, order.fulfilled_at = now()
 
             order.fulfilled = True
-            order.fulfilled_at = datetime.utcnow()
+            order.fulfilled_at = utc_now()
             order.delivery_type = "digital"
             db.commit()
 

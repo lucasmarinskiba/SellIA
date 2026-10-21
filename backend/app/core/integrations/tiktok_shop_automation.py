@@ -23,11 +23,13 @@ Timeout: 30 seconds per request
 import hashlib
 import hmac
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -627,7 +629,7 @@ class TikTokShopAutomation:
             logger.info(f"Checking rate limit for shop {self.shop_id}")
             return {
                 "remaining_requests": 10000,
-                "reset_at": datetime.utcnow() + timedelta(days=1),
+                "reset_at": utc_now() + timedelta(days=1),
             }
 
         except Exception as e:

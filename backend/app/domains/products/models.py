@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -17,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 # Association table for product categories
@@ -69,8 +69,8 @@ class Product(Base):
     extra_data = Column("metadata", JSON(), default=dict)  # Custom fields, seo data, etc.
     status = Column(String(50), default='DRAFT')  # DRAFT, PUBLISHED, ARCHIVED
     is_active = Column(Boolean(), default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     variants = relationship('app.domains.products.models.ProductVariant', back_populates='product', cascade='all, delete-orphan')
@@ -96,7 +96,7 @@ class ProductVariant(Base):
     inventory_count = Column(Integer(), default=0)
     attributes = Column(JSON(), default=dict)  # {color: "red", size: "XL"}
     is_available = Column(Boolean(), default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
     product = relationship('app.domains.products.models.Product', back_populates='variants')
@@ -120,7 +120,7 @@ class ProductCategory(Base):
     image_url = Column(String(2048), nullable=True)
     is_active = Column(Boolean(), default=True)
     display_order = Column(Integer(), default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
     products = relationship('app.domains.products.models.Product', secondary=product_categories, back_populates='categories')
@@ -147,8 +147,8 @@ class ShoppingCart(Base):
     customer_email = Column(String(255), nullable=True)
     customer_phone = Column(String(20), nullable=True)
     extra_data = Column("metadata", JSON(), default=dict)  # see Product.extra_data for why
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     abandoned_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -170,8 +170,8 @@ class CartItem(Base):
     quantity = Column(Integer(), default=1)
     unit_price = Column(Numeric(10, 2), nullable=False)  # Price at time of add-to-cart
     line_total = Column(Numeric(10, 2), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     # Relationships
     cart = relationship('app.domains.products.models.ShoppingCart', back_populates='items')
@@ -207,8 +207,8 @@ class Order(Base):
     billing_address = Column(JSON(), nullable=True)
     notes = Column(Text(), nullable=True)
     extra_data = Column("metadata", JSON(), default=dict)  # see Product.extra_data for why
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
     paid_at = Column(DateTime(timezone=True), nullable=True)
     shipped_at = Column(DateTime(timezone=True), nullable=True)
     delivered_at = Column(DateTime(timezone=True), nullable=True)

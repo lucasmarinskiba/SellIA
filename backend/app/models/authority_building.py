@@ -1,11 +1,11 @@
 """Phase 3 Database Models - Authority Building (E-E-A-T Signals)."""
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -26,8 +26,8 @@ class Testimonial(Base):
     metrics = Column(Text, nullable=True)  # "Increased sales by 40%", JSON
     is_verified = Column(Boolean, default=False)  # Verified purchase/review
     is_featured = Column(Boolean, default=False)  # Pinned on homepage
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_seller_testimonials', 'seller_id', 'is_verified'),
@@ -50,7 +50,7 @@ class Award(Base):
     valid_until = Column(DateTime, nullable=True)  # Expiry date
     verification_url = Column(String(500), nullable=True)  # Link to verify badge
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_seller_awards', 'seller_id', 'is_active'),
@@ -75,7 +75,7 @@ class Review(Base):
     seller_response = Column(Text, nullable=True)
     response_date = Column(DateTime, nullable=True)
     is_flagged = Column(Boolean, default=False)  # Spam/abuse
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_seller_reviews', 'seller_id', 'rating'),
@@ -89,7 +89,7 @@ class TrustScore(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     seller_id = Column(String(255), nullable=False)
-    score_date = Column(DateTime, default=datetime.utcnow)
+    score_date = Column(DateTime, default=utc_now)
 
     # Component scores (0-100 each)
     review_rating_score = Column(Float, default=0)  # Avg review rating
@@ -102,7 +102,7 @@ class TrustScore(Base):
     trust_score = Column(Float, default=0)  # Weighted average (0-100)
     rank_tier = Column(String(50), default="bronze")  # bronze, silver, gold, platinum
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     __table_args__ = (
         Index('idx_trust_seller', 'seller_id', 'score_date'),
@@ -131,8 +131,8 @@ class SellerBio(Base):
     avatar_url = Column(String(500), nullable=True)
     certification_text = Column(Text, nullable=True)  # "Certified [XYZ]"
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     __table_args__ = (
         Index('idx_seller_bio', 'seller_id'),

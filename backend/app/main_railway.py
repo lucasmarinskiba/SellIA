@@ -85,7 +85,7 @@ async def health():
 async def memory_test():
     """Test endpoint to verify memory routes are loaded"""
     logger.info("Memory test endpoint called")
-    return {"status": "ok", "message": "memory router working", "timestamp": str(__import__('datetime').datetime.utcnow())}
+    return {"status": "ok", "message": "memory router working", "timestamp": str(__import__('datetime').utc_now())}
 
 
 # Load routers that work — skip any that fail

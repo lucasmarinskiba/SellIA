@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -123,7 +125,7 @@ class CalendarService:
         days_from_now: int = 3,
     ) -> str | None:
         """Schedule follow-up call."""
-        follow_up_time = datetime.utcnow() + timedelta(days=days_from_now)
+        follow_up_time = utc_now() + timedelta(days=days_from_now)
         follow_up_time = follow_up_time.replace(hour=10, minute=0)
 
         return await self.schedule_event(

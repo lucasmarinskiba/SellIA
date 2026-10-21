@@ -104,8 +104,8 @@ class DocusignService:
                 "status": "sent",
                 "recipient_email": recipient_email,
                 "signing_link": f"https://demo.docusign.net/signing/envelope/{datetime.now().timestamp()}",
-                "created_at": datetime.utcnow().isoformat(),
-                "deadline": (datetime.utcnow() + timedelta(days=signing_deadline_days)).isoformat(),
+                "created_at": utc_now().isoformat(),
+                "deadline": (utc_now() + timedelta(days=signing_deadline_days)).isoformat(),
             }
 
         except Exception as e:
@@ -122,7 +122,7 @@ class DocusignService:
             return {
                 "envelope_id": envelope_id,
                 "status": "signed",  # signed, sent, delivered, declined
-                "signed_at": datetime.utcnow().isoformat(),
+                "signed_at": utc_now().isoformat(),
                 "signers": [
                     {
                         "email": "john@company.com",
@@ -150,3 +150,5 @@ class DocusignService:
 
 
 from datetime import timedelta
+
+from app.core.clock import utc_now

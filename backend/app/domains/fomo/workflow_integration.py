@@ -1,8 +1,9 @@
 """FOMO Workflow Integration - Trigger workflows from FOMO campaigns"""
 
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 
 class FOOMWorkflowTrigger(str, Enum):
@@ -37,7 +38,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.VISITOR_ARRIVED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "visitor_id": visitor_data.get("session_id"),
                 "page_url": visitor_data.get("page_url"),
@@ -64,7 +65,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.PURCHASE_DETECTED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "order_id": purchase_data.get("order_id"),
                 "customer_email": purchase_data.get("customer_email"),
@@ -100,7 +101,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_ABANDONED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "cart_id": cart_data.get("cart_id"),
                 "customer_email": cart_data.get("customer_email"),
@@ -139,7 +140,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_RECOVERED.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "payload": {
                 "order_id": recovery_data.get("order_id"),
                 "customer_email": recovery_data.get("customer_email"),
@@ -170,7 +171,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CONVERSION_MILESTONE.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "milestone_number": milestone_number,
             "payload": {
                 "conversions": milestone_data.get("conversions"),
@@ -203,7 +204,7 @@ class FOOMToWorkflowIntegration:
         return {
             "workflow_trigger": FOOMWorkflowTrigger.REVENUE_MILESTONE.value,
             "campaign_id": campaign_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "milestone_amount": milestone_amount,
             "payload": {
                 "total_revenue": float(milestone_data.get("total_revenue", 0)),

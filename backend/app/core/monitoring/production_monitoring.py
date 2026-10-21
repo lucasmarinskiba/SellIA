@@ -82,7 +82,7 @@ class ProductionMonitoring:
         return {
             "status": "healthy" if all_healthy else "degraded",
             "checks": checks,
-            "timestamp": str(__import__("datetime").datetime.utcnow()),
+            "timestamp": str(__import__("datetime").utc_now()),
         }
 
     async def _check_api(self) -> dict[str, Any]:

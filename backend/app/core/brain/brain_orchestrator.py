@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 # Imports from evolution modules
 # from app.core.brain.agents_evolution import (
@@ -50,7 +51,7 @@ class ContextSnapshot:
         merged_signals = {**self.signals, **other.signals}
         merged_metadata = {**self.metadata, **other.metadata}
         return ContextSnapshot(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=utc_now().isoformat(),
             user_id=self.user_id,
             deal_id=self.deal_id,
             stage=other.stage or self.stage,
@@ -77,7 +78,7 @@ class ContextEngine:
 
         # Registra en histórico
         self.history.append({
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "key": context_key,
             "old_stage": old_context.stage if old_context else None,
             "new_stage": context.stage,
@@ -204,7 +205,7 @@ class OrchestratedDecision:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
 
 class BrainOrchestrator:
@@ -235,7 +236,7 @@ class BrainOrchestrator:
 
         # 1. Actualiza contexto
         context = ContextSnapshot(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=utc_now().isoformat(),
             user_id=signals.get("user_id", "unknown"),
             deal_id=signals.get("deal_id", "unknown"),
             stage=stage,
@@ -267,7 +268,7 @@ class BrainOrchestrator:
 
         # 6. Crea decisión orquestada
         orchestrated = OrchestratedDecision(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=utc_now().isoformat(),
             context_key=context_key,
             stage=stage,
             primary_decision=integrated_decision.get("decision", "none"),
@@ -340,7 +341,7 @@ class DecisionOutcome:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
 
 class LearningLoopManager:
@@ -411,7 +412,7 @@ class HealthMetric:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
     def is_healthy(self) -> bool:
         return self.value > 0.7
@@ -452,7 +453,7 @@ class BrainHealthMonitor:
     def generate_health_report(self) -> dict[str, Any]:
         """Genera reporte de salud."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "overall_health": self.get_overall_health(),
             "metrics": {
                 name: metrics[-1].value if metrics else 0.0

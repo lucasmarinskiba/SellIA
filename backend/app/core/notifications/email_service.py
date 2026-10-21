@@ -14,9 +14,10 @@ import html
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -358,7 +359,7 @@ class EmailService:
         variables = {
             "customer_name": customer_name,
             "order_id": order_id,
-            "order_date": datetime.utcnow().strftime("%d/%m/%Y"),
+            "order_date": utc_now().strftime("%d/%m/%Y"),
             "total_amount": f"{total_amount:.2f}",
             "currency": currency,
             "products_html": products_html,

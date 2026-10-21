@@ -7,6 +7,8 @@ from typing import Any
 
 import numpy as np
 
+from app.core.clock import utc_now
+
 from .attention_mechanisms import (
     CrossModalAttention,
     FeatureAttention,
@@ -69,7 +71,7 @@ class BrainState:
     optimization_models_trained: bool = False
     pattern_recognizers_trained: bool = False
     learning_models_initialized: bool = False
-    last_update: datetime = field(default_factory=datetime.utcnow)
+    last_update: datetime = field(default_factory=utc_now)
     total_predictions_made: int = 0
     model_accuracy: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -101,7 +103,7 @@ class ComprehensiveInsight:
     opportunities: list[str]
     patterns_detected: list[str]
     next_actions: list[str]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -236,7 +238,7 @@ class SelliasNeuralBrain:
 
                 # Aggregate model accuracy
                 self.state.model_accuracy = 0.85
-                self.state.last_update = datetime.utcnow()
+                self.state.last_update = utc_now()
 
                 logger.info("All neural networks trained successfully")
 
@@ -444,7 +446,7 @@ class SelliasNeuralBrain:
             update_result = self.online_learner.update(new_data, labels)
 
             self.state.total_predictions_made += len(new_data)
-            self.state.last_update = datetime.utcnow()
+            self.state.last_update = utc_now()
 
             return {
                 "update_success": True,

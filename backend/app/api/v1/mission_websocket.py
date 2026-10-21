@@ -46,7 +46,7 @@ async def mission_websocket(
             msg_type = data.get("type", "")
 
             if msg_type == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": str(__import__('datetime').datetime.utcnow())})
+                await websocket.send_json({"type": "pong", "timestamp": str(__import__('datetime').utc_now())})
 
             elif msg_type == "approve_step":
                 # Handle step approval via websocket

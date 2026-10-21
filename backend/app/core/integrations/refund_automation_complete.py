@@ -17,6 +17,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +55,7 @@ class RefundRequest:
     reason: DisputeReason
     description: str
     photos: list[str] = field(default_factory=list)
-    requested_date: datetime = field(default_factory=datetime.utcnow)
+    requested_date: datetime = field(default_factory=utc_now)
     customer_name: str = ""
     customer_email: str = ""
     customer_phone: str = ""
@@ -416,7 +418,7 @@ class RefundAutomationComplete:
                 "order_id": order_id,
                 "amount": refund_amount,
                 "channel": refund_channel.value,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
 
         except Exception as e:
@@ -657,9 +659,9 @@ class RefundAutomationComplete:
 
         return {
             "status": "success",
-            "credit_id": f"CREDIT-{customer_id}-{int(datetime.utcnow().timestamp())}",
+            "credit_id": f"CREDIT-{customer_id}-{int(utc_now().timestamp())}",
             "amount": amount,
-            "valid_until": (datetime.utcnow() + timedelta(days=valid_until_days)).isoformat(),
+            "valid_until": (utc_now() + timedelta(days=valid_until_days)).isoformat(),
         }
 
     # ========== REPORTING & ANALYTICS ==========

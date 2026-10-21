@@ -5,9 +5,10 @@ Envía primer mensaje frío → sigue si no responde → personaliza por lead.
 
 import logging
 import uuid
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class OutreachCampaign:
         self.follow_up_days = follow_up_days
 
         self.status = "draft"  # draft, active, paused, completed
-        self.created_at = datetime.utcnow()
+        self.created_at = utc_now()
         self.stats = {
             "sent": 0,
             "opened": 0,
@@ -122,7 +123,7 @@ We help teams fix this. Worth a quick chat?
     ) -> OutreachCampaign:
         """Crea campaña de outreach."""
         try:
-            campaign_id = f"camp_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            campaign_id = f"camp_{utc_now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
 
             # Usar template default si no se proporciona
             if not message_template:
@@ -192,7 +193,7 @@ We help teams fix this. Worth a quick chat?
                     "campaign_id": campaign.campaign_id,
                     "lead_id": lead.lead_id,
                     "channel": campaign.channel.value,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utc_now().isoformat(),
                     "status": "sent",
                 })
 

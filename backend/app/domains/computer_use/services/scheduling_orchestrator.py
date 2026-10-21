@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
 from app.domains.computer_use.services.calendar_integration import (
     CalendarEvent,
     CalendarIntegrationService,
@@ -35,7 +36,7 @@ class SchedulingState:
 
     def __init__(self, customer_id: str):
         self.customer_id = customer_id
-        self.requested_at = datetime.utcnow()
+        self.requested_at = utc_now()
         self.preferred_date: datetime | None = None
         self.preferred_time: str | None = None
         self.duration_minutes: int = 60
@@ -196,7 +197,7 @@ class SchedulingOrchestrator:
     def _parse_date(self, message: str) -> datetime | None:
         """Parsea fecha del mensaje."""
         msg_lower = message.lower()
-        today = datetime.utcnow().date()
+        today = utc_now().date()
 
         days_map = {
             "lunes": 0,

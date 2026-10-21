@@ -8,7 +8,6 @@ Validar:
 4. Decorador @retry funciona
 """
 
-from datetime import datetime
 
 import pytest
 from retry_engine import (
@@ -18,6 +17,8 @@ from retry_engine import (
     RetryPolicy,
     retry,
 )
+
+from app.core.clock import utc_now
 
 
 @pytest.mark.asyncio
@@ -161,7 +162,7 @@ async def test_circuit_breaker_recovery():
     assert cb.state == CircuitBreakerState.OPEN
 
     # Intentar half-open (simulando timeout pasado)
-    cb.last_failure_time = datetime.utcnow() - __import__("datetime").timedelta(seconds=61)
+    cb.last_failure_time = utc_now() - __import__("datetime").timedelta(seconds=61)
     cb.can_attempt()  # Esto transita a HALF_OPEN
 
     assert cb.state == CircuitBreakerState.HALF_OPEN

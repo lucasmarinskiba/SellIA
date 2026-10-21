@@ -18,7 +18,6 @@ Migrations:
 
 import enum
 import os
-from datetime import datetime
 
 from sqlalchemy import (
     JSON,
@@ -37,6 +36,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
+
+from app.core.clock import utc_now
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sellia")
 
@@ -93,8 +94,8 @@ class FacebookShop(Base):
     is_active = Column(Boolean, default=True)
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)  # settings, features, etc
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("FacebookOrder", back_populates="shop")
     products = relationship("FacebookProduct", back_populates="shop")
@@ -123,8 +124,8 @@ class FacebookProduct(Base):
     category = Column(String)
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("FacebookShop", back_populates="products")
 
@@ -153,8 +154,8 @@ class FacebookOrder(Base):
     tracking_number = Column(String)
     notes = Column(Text)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("FacebookShop", back_populates="orders")
 
@@ -176,8 +177,8 @@ class InstagramShop(Base):
     last_sync = Column(DateTime)
     analytics = Column(JSON, default=dict)  # profile_views, website_clicks, etc
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("InstagramOrder", back_populates="shop")
     products = relationship("InstagramProduct", back_populates="shop")
@@ -206,8 +207,8 @@ class InstagramProduct(Base):
     linked_post_id = Column(String)  # Instagram post/reel
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("InstagramShop", back_populates="products")
 
@@ -236,8 +237,8 @@ class InstagramOrder(Base):
     shipping_address = Column(JSON)
     tracking_number = Column(String)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("InstagramShop", back_populates="orders")
 
@@ -262,8 +263,8 @@ class TikTokShop(Base):
     quota_reset_at = Column(DateTime)  # For rate limit tracking
     quota_used = Column(Integer, default=0)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     orders = relationship("TikTokOrder", back_populates="shop")
     products = relationship("TikTokProduct", back_populates="shop")
@@ -292,8 +293,8 @@ class TikTokProduct(Base):
     category = Column(String)
     metadata = Column(JSON, default=dict)
     synced_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("TikTokShop", back_populates="products")
 
@@ -324,8 +325,8 @@ class TikTokOrder(Base):
     tracking_provider = Column(String)
     estimated_delivery = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     shop = relationship("TikTokShop", back_populates="orders")
 
@@ -352,8 +353,8 @@ class CalendlyAccount(Base):
     timezone = Column(String, default="UTC")
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     events = relationship("CalendlyEvent", back_populates="account")
 
@@ -385,8 +386,8 @@ class CalendlyEvent(Base):
     reminder_sent = Column(Boolean, default=False)
     cancellation_reason = Column(String)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     account = relationship("CalendlyAccount", back_populates="events")
 
@@ -412,8 +413,8 @@ class SlackWorkspace(Base):
     notification_channel = Column(String)  # Default channel for alerts
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     commands = relationship("SlackCommand", back_populates="workspace")
     messages = relationship("SlackMessage", back_populates="workspace")
@@ -432,7 +433,7 @@ class SlackCommand(Base):
     text_input = Column(String)
     response = Column(Text)
     status_code = Column(Integer)
-    executed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    executed_at = Column(DateTime, default=utc_now, index=True)
 
     workspace = relationship("SlackWorkspace", back_populates="commands")
 
@@ -448,7 +449,7 @@ class SlackMessage(Base):
     message_type = Column(String)  # alert, report, notification
     title = Column(String)
     content = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
 
     workspace = relationship("SlackWorkspace", back_populates="messages")
 
@@ -475,8 +476,8 @@ class TelegramBot(Base):
     last_update_id = Column(Integer, default=0)  # For polling fallback
     last_sync = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     users = relationship("TelegramUser", back_populates="bot")
     messages = relationship("TelegramMessage", back_populates="bot")
@@ -505,8 +506,8 @@ class TelegramUser(Base):
     last_interaction = Column(DateTime)
     conversation_state = Column(JSON, default=dict)  # For maintaining context
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     bot = relationship("TelegramBot", back_populates="users")
     messages = relationship("TelegramMessage", back_populates="user")
@@ -526,7 +527,7 @@ class TelegramMessage(Base):
     message_type = Column(String)  # text, command, notification, alert
     response_text = Column(Text)
     response_sent = Column(Boolean, default=False)
-    sent_at = Column(DateTime, default=datetime.utcnow, index=True)
+    sent_at = Column(DateTime, default=utc_now, index=True)
 
     bot = relationship("TelegramBot", back_populates="messages")
     user = relationship("TelegramUser", back_populates="messages")
@@ -555,7 +556,7 @@ class PlatformWebhookEvent(Base):
     processed = Column(Boolean, default=False, index=True)
     error_message = Column(Text)
     retry_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     processed_at = Column(DateTime)
 
 
@@ -576,8 +577,8 @@ class PlatformCredential(Base):
     credential_value = Column(String)  # Encrypted
     expires_at = Column(DateTime)
     metadata = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= RATE LIMIT TRACKING =============
@@ -598,8 +599,8 @@ class PlatformRateLimit(Base):
     requests_limit = Column(Integer)
     reset_at = Column(DateTime, index=True)
     last_request_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= SYNC STATUS =============
@@ -621,8 +622,8 @@ class PlatformSyncStatus(Base):
     items_synced = Column(Integer, default=0)
     status = Column(String, default="idle")  # idle, syncing, error
     error_message = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 # ============= DATABASE INIT =============

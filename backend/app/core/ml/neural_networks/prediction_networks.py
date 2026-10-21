@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ class SalesPrediction:
     risk_factors: list[str] = field(default_factory=list)
     opportunity_factors: list[str] = field(default_factory=list)
     recommended_actions: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -51,7 +53,7 @@ class ChurnPrediction:
     churn_reasons: list[str] = field(default_factory=list)
     retention_actions: list[str] = field(default_factory=list)
     retention_offer: str | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -77,7 +79,7 @@ class DemandForecast:
     growth_trend: float  # -1 to 1
     seasonality_factor: float
     external_factors: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -106,7 +108,7 @@ class LeadQuality:
     need_score: float  # 0-100
     recommendation: str  # "hot", "warm", "cold"
     next_best_action: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,7 +136,7 @@ class ContactTiming:
     alternative_times: list[dict[str, Any]] = field(default_factory=list)
     avoid_times: list[dict[str, Any]] = field(default_factory=list)
     timezone_adjusted: bool = False
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -159,7 +161,7 @@ class PriceElasticity:
     demand_curve: list[tuple[float, float]]  # (price, demand) pairs
     revenue_impact_if_increase_10pct: float
     revenue_impact_if_decrease_10pct: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

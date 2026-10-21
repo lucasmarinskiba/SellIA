@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +37,7 @@ class Alert:
     title: str
     message: str
     affected_users: int
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     resolved: bool = False
     resolution_time_minutes: int | None = None
 
@@ -45,7 +47,7 @@ class PerformanceMetric:
     metric_name: str
     value: float
     unit: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 class MonitoringSystem:
@@ -106,7 +108,7 @@ class MonitoringSystem:
                 "severity": a.severity.value,
                 "title": a.title,
                 "affected_users": a.affected_users,
-                "minutes_ago": (datetime.utcnow() - a.timestamp).seconds // 60
+                "minutes_ago": (utc_now() - a.timestamp).seconds // 60
             }
             for a in active
         ]

@@ -3,8 +3,9 @@
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class PromptOrchestrator:
             context_vars=context_vars,
             executed_prompt_text=executed_prompt_text if success else "",
             result=result_text,
-            execution_timestamp=datetime.utcnow().isoformat(),
+            execution_timestamp=utc_now().isoformat(),
             duration_ms=duration_ms,
             success=success,
             error_message=error_message

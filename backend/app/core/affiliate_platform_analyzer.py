@@ -19,9 +19,10 @@ Status: 600L production-ready analyzer
 
 import json
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -453,7 +454,7 @@ class AffiliateMarketAnalyzer:
         """Compare affiliate potential across platforms for a niche."""
         return {
             "niche": niche,
-            "analysis_date": datetime.utcnow().isoformat(),
+            "analysis_date": utc_now().isoformat(),
             "platforms": {
                 "hotmart": "High commission (30-50%) but lower volume",
                 "mercado_libre": "Medium commission (8-20%) but high volume for resellers",
@@ -465,7 +466,7 @@ class AffiliateMarketAnalyzer:
     def get_market_summary(self) -> dict[str, Any]:
         """Get summary of all affiliate platforms."""
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "platforms_analyzed": 3,
             "total_categories": (
                 len(self.hotmart.product_categories) +

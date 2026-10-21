@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
+
+from app.core.clock import utc_now
 
 # ─────────────────────────────────────────────────────────────────────────
 # BAYESIAN NETWORKS
@@ -255,7 +256,7 @@ class State:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utc_now().isoformat()
 
     def distance_to(self, other: State) -> float:
         """Distancia Euclidiana a otro estado."""

@@ -23,6 +23,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,7 +81,7 @@ class Job:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
     @property
     def duration_seconds(self) -> float:
@@ -110,7 +112,7 @@ class Task:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utc_now()
 
 
 class AutomationEngine:
@@ -163,7 +165,7 @@ class AutomationEngine:
         try:
             while self.is_running and (cycle_limit is None or self.cycle_count < cycle_limit):
                 self.cycle_count += 1
-                cycle_start = datetime.utcnow()
+                cycle_start = utc_now()
 
                 try:
                     # 1. Obtener tasks del scheduler
@@ -178,7 +180,7 @@ class AutomationEngine:
                     await self._process_jobs()
 
                     # 4. Monitor health
-                    cycle_duration = (datetime.utcnow() - cycle_start).total_seconds()
+                    cycle_duration = (utc_now() - cycle_start).total_seconds()
                     await self.monitoring.record_cycle(
                         self.cycle_count,
                         cycle_duration,
@@ -230,7 +232,7 @@ class AutomationEngine:
 
     async def _execute_job(self, job: Job) -> None:
         """Ejecuta un job."""
-        job.started_at = datetime.utcnow()
+        job.started_at = utc_now()
         job.status = JobStatus.RUNNING
 
         try:
@@ -269,7 +271,7 @@ class AutomationEngine:
             await self.monitoring.record_failure(job)
 
         finally:
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.state_manager.update(job.id, job)
 
     async def add_recurring_task(
@@ -360,7 +362,7 @@ class AutomationEngine:
                 "escalated": escalated_jobs,
             },
             "metrics": await self.monitoring.get_metrics(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     async def graceful_shutdown(self) -> None:

@@ -8,12 +8,12 @@ Orquesta la ejecución secuencial de pasos de una misión, integrando:
 
 import asyncio
 import uuid
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.config import get_settings
 from app.domains.computer_use.models import ComputerUseSession
 from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManagerV2
@@ -54,12 +54,12 @@ class MissionOrchestrator:
                 continue
 
             # Ejecutar paso
-            await self._update_step_status(step.id, "running", started_at=datetime.utcnow())
+            await self._update_step_status(step.id, "running", started_at=utc_now())
             await mission_ws_manager.broadcast_mission_progress(user_id_str, str(mission_id), str(step.id), "running", {"title": step.title, "platform": step.platform})
 
             try:
                 result = await self._execute_step(step, user_id)
-                await self._update_step_status(step.id, "completed", result=result, completed_at=datetime.utcnow())
+                await self._update_step_status(step.id, "completed", result=result, completed_at=utc_now())
                 await mission_ws_manager.broadcast_mission_progress(user_id_str, str(mission_id), str(step.id), "completed", {"result": result})
             except Exception as e:
                 await self._update_step_status(step.id, "failed", error_message=str(e))
@@ -207,7 +207,7 @@ class MissionOrchestrator:
             await self.db.execute(
                 update(Mission)
                 .where(Mission.id == mission_id)
-                .values(status="completed", completed_at=datetime.utcnow())
+                .values(status="completed", completed_at=utc_now())
             )
         elif any_failed:
             any_completed = any(s.status == "completed" for s in steps)
@@ -215,7 +215,7 @@ class MissionOrchestrator:
                 await self.db.execute(
                     update(Mission)
                     .where(Mission.id == mission_id)
-                    .values(status="completed", completed_at=datetime.utcnow())
+                    .values(status="completed", completed_at=utc_now())
                 )
             else:
                 await self.db.execute(update(Mission).where(Mission.id == mission_id).values(status="failed"))

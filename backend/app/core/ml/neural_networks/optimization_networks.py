@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +28,7 @@ class PricingOptimization:
     revenue_at_recommended: float
     risk_level: str  # low, medium, high
     competitors_avg_price: float | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -56,7 +58,7 @@ class ChannelOptimization:
     timing_by_channel: dict[str, str]  # channel -> recommended time
     message_tone_by_channel: dict[str, str]  # channel -> tone
     confidence: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -84,7 +86,7 @@ class MessageTimingOptimization:
     expected_conversion_rate: float
     reason_for_timing: str
     alternative_times: list[str] = field(default_factory=list)  # ISO format
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -112,7 +114,7 @@ class BudgetAllocation:
     confidence: float
     reallocation_reason: str
     performance_by_allocation: dict[str, float]  # allocation -> expected performance
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,7 +138,7 @@ class FeatureImportance:
     feature_scores: dict[str, float]  # feature -> score
     key_drivers: list[str]  # most important features
     surprising_findings: list[str]  # unexpected important features
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

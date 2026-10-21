@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +46,7 @@ class Job:
     status: JobStatus = JobStatus.PENDING
     result: Any = None
     error: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     started_at: datetime | None = None
     completed_at: datetime | None = None
     retries: int = 0
@@ -126,7 +128,7 @@ class AsyncJobQueue:
         # Sort by priority (lower number = higher priority)
         self.queue.append(job)
         self.queue.sort(
-            key=lambda j: (j.scheduled_for > datetime.utcnow() if j.scheduled_for else False, j.priority.value)
+            key=lambda j: (j.scheduled_for > utc_now() if j.scheduled_for else False, j.priority.value)
         )
 
         self.stats["total_jobs"] += 1
@@ -138,7 +140,7 @@ class AsyncJobQueue:
         """Execute a single job."""
 
         job.status = JobStatus.RUNNING
-        job.started_at = datetime.utcnow()
+        job.started_at = utc_now()
         self.running_jobs[job.id] = job
 
         try:
@@ -152,7 +154,7 @@ class AsyncJobQueue:
                 job.result = await self._execute_task(job)
 
             job.status = JobStatus.COMPLETED
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             self.completed_jobs[job.id] = job
             self.stats["completed"] += 1
 
@@ -230,7 +232,7 @@ class AsyncJobQueue:
 
             for i, job in enumerate(self.queue):
                 # Check if job is scheduled for future
-                if job.scheduled_for and job.scheduled_for > datetime.utcnow():
+                if job.scheduled_for and job.scheduled_for > utc_now():
                     continue
 
                 job_to_run = self.queue.pop(i)
@@ -301,7 +303,7 @@ class AsyncJobQueue:
 
     def clear_history(self, older_than_hours: int = 24) -> int:
         """Clear job history older than specified hours."""
-        cutoff = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff = utc_now() - timedelta(hours=older_than_hours)
         count = 0
 
         # Clear completed jobs

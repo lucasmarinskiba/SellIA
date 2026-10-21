@@ -4,9 +4,10 @@ import json
 import logging
 import os
 import subprocess
-from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ContinuousLearner:
         updates = {
             "realEstate": self._check_realEstate_updates(),
             "comercial": self._check_comercial_updates(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
         return updates
 
@@ -64,7 +65,7 @@ class ContinuousLearner:
                     "commit": commit_hash,
                     "agents": new_agents,
                     "tools": new_tools,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utc_now().isoformat(),
                 }
                 self._save_versions()
                 logger.info(f"Real Estate system updated: {commit_hash}")
@@ -109,7 +110,7 @@ class ContinuousLearner:
                 self.versions["comercial"] = {
                     "commit": commit_hash,
                     "agents": new_agents,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": utc_now().isoformat(),
                 }
                 self._save_versions()
                 logger.info(f"Commercial Advisor system updated: {commit_hash}")
@@ -196,7 +197,7 @@ class ContinuousLearner:
         """Get current learning/sync status."""
         return {
             "versions": self.versions,
-            "last_check": datetime.utcnow().isoformat(),
+            "last_check": utc_now().isoformat(),
             "realEstate_connected": os.path.exists(self.realEstate_repo),
             "comercial_connected": os.path.exists(self.comercial_repo),
         }

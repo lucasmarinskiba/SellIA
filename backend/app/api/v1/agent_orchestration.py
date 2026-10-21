@@ -4,11 +4,11 @@ Phase 7: Multi-Agent Orchestration
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.core.clock import utc_now
 from app.domains.agents.agent_router import AgentRouter
 from app.domains.agents.base_agent import AgentContext, AgentType
 
@@ -76,7 +76,7 @@ async def route_lead(
             timeline=timeline,
             source=source,
             current_stage="lead_source",
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         logger.info(f"Starting lead routing for {lead_id}: {company}")
@@ -87,7 +87,7 @@ async def route_lead(
         return {
             "status": "success",
             "routing_result": result,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -134,7 +134,7 @@ async def batch_route_leads(
                 timeline=lead.get("timeline"),
                 source=lead.get("source", "batch_import"),
                 current_stage="lead_source",
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
             for i, lead in enumerate(leads)
         ]
@@ -146,7 +146,7 @@ async def batch_route_leads(
             "status": "success",
             "leads_processed": len(results),
             "results": results,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
     except Exception as e:
@@ -170,7 +170,7 @@ async def get_agent_performance() -> dict[str, Any]:
 
         return {
             "status": "success",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "agents": performance,
             "summary": {
                 "total_agents": len(performance),

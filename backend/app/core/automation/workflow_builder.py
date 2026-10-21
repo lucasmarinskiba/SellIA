@@ -38,6 +38,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,7 +91,7 @@ class Workflow:
     schedule: str | None = None  # Cron if SCHEDULE trigger
     steps: list[WorkflowStep] = field(default_factory=list)
     enabled: bool = True
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
     last_run: datetime | None = None
     execution_count: int = 0
     failure_count: int = 0
@@ -246,7 +248,7 @@ class WorkflowExecutor:
         logger.info(f"Executing workflow: {workflow.name} (exec: {execution_id})")
 
         workflow.execution_count += 1
-        workflow.last_run = datetime.utcnow()
+        workflow.last_run = utc_now()
 
         if workflow.id not in self.execution_history:
             self.execution_history[workflow.id] = []
@@ -255,7 +257,7 @@ class WorkflowExecutor:
             "execution_id": execution_id,
             "workflow_id": workflow.id,
             "status": "running",
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": utc_now().isoformat(),
             "steps_executed": [],
         }
 
@@ -279,7 +281,7 @@ class WorkflowExecutor:
             execution_result["error"] = str(e)
             workflow.failure_count += 1
 
-        execution_result["completed_at"] = datetime.utcnow().isoformat()
+        execution_result["completed_at"] = utc_now().isoformat()
         self.execution_history[workflow.id].append(execution_result)
 
         return execution_result
@@ -315,7 +317,7 @@ class WorkflowExecutor:
             "step_id": step.id,
             "step_name": step.name,
             "job_id": job.id,
-            "executed_at": datetime.utcnow().isoformat(),
+            "executed_at": utc_now().isoformat(),
         })
 
         # TODO: Wait for job completion (implement future/promise pattern)

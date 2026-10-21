@@ -5,8 +5,10 @@ Monitora crecimiento + propone optimizaciones.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +101,7 @@ class GrowthAnalytics:
                 "shares": 34,
                 "engagement_rate": 8.5,
                 "reach": 15000,
-                "published_at": (datetime.utcnow() - timedelta(days=2)).isoformat(),
+                "published_at": (utc_now() - timedelta(days=2)).isoformat(),
             },
             {
                 "post_id": "post_002",
@@ -109,7 +111,7 @@ class GrowthAnalytics:
                 "shares": 28,
                 "engagement_rate": 7.2,
                 "reach": 13500,
-                "published_at": (datetime.utcnow() - timedelta(days=4)).isoformat(),
+                "published_at": (utc_now() - timedelta(days=4)).isoformat(),
             },
         ]
 
@@ -224,7 +226,7 @@ class GrowthAnalytics:
         return {
             "platform": platform,
             "account_id": account_id,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "summary": {
                 "followers": metrics.followers_today,
                 "daily_growth": f"+{metrics.daily_growth_rate:.1f}%",

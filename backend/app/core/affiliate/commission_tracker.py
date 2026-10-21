@@ -2,9 +2,11 @@
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 from typing import Any
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +80,7 @@ class CommissionTracker:
             commission_percentage=commission_percentage,
             commission_amount=commission_amount,
             platform=platform,
-            sale_date=datetime.utcnow().isoformat(),
+            sale_date=utc_now().isoformat(),
         )
 
         self.commissions[commission_id] = commission
@@ -96,7 +98,7 @@ class CommissionTracker:
 
         commission = self.commissions[commission_id]
         commission.status = CommissionStatus.APPROVED
-        commission.approval_date = datetime.utcnow().isoformat()
+        commission.approval_date = utc_now().isoformat()
 
         logger.info(f"Approved commission: {commission_id}")
         return True
@@ -117,12 +119,12 @@ class CommissionTracker:
         total_amount = sum(c.commission_amount for c in affiliate_comms)
 
         payout = {
-            "payout_id": f"payout_{affiliate_id}_{datetime.utcnow().timestamp()}",
+            "payout_id": f"payout_{affiliate_id}_{utc_now().timestamp()}",
             "affiliate_id": affiliate_id,
             "amount": total_amount,
             "method": method,
             "commissions": len(affiliate_comms),
-            "payout_date": datetime.utcnow().isoformat(),
+            "payout_date": utc_now().isoformat(),
             "status": "pending",
         }
 
@@ -212,7 +214,7 @@ class CommissionTracker:
 
     def get_leaderboard(self, period_days: int = 30, top_n: int = 10) -> list[dict]:
         """Get top affiliates by earnings in period."""
-        cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+        cutoff_date = utc_now() - timedelta(days=period_days)
         cutoff_iso = cutoff_date.isoformat()
 
         earnings_by_affiliate = {}

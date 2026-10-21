@@ -13,10 +13,11 @@ Flujo:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +157,7 @@ class FeedIABridge:
             "content": content,
             "platform": "instagram",
             "published_by": "sellias_computer_use",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         try:
@@ -185,7 +186,7 @@ class FeedIABridge:
             "content": content,
             "platform": "tiktok",
             "published_by": "sellias_computer_use",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         try:
@@ -219,7 +220,7 @@ class FeedIABridge:
             "platform": platform,
             "metrics": metrics,
             "reported_by": "sellias_system",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
         try:

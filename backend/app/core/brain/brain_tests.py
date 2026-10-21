@@ -12,10 +12,11 @@ Suite de tests para validar:
 Run: pytest backend/app/core/brain/brain_tests.py -v
 """
 
-from datetime import datetime
 from typing import Any
 
 import pytest
+
+from app.core.clock import utc_now
 
 # Imports (commented out para permitir test sin deps)
 # from app.core.brain.agents_evolution import (
@@ -45,7 +46,7 @@ class MockDecisionContext:
     def __init__(self, target_id: str, signals: dict[str, Any]):
         self.target_id = target_id
         self.signals = signals
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utc_now()
         self.history = []
 
     def add_signal(self, name: str, value: Any) -> None:
@@ -55,7 +56,7 @@ class MockDecisionContext:
         self.history.append({
             "event": event,
             "outcome": outcome,
-            "timestamp": datetime.utcnow(),
+            "timestamp": utc_now(),
         })
 
 
@@ -290,9 +291,9 @@ class TestPatternRecognition:
         # from app.core.brain.capabilities_evolution import CustomerBehaviorPatternRecognition
         # recognizer = CustomerBehaviorPatternRecognition()
         # interactions = [
-        #     {"type": "purchase", "timestamp": datetime.utcnow().isoformat(), "value": 100},
-        #     {"type": "purchase", "timestamp": (datetime.utcnow() - timedelta(days=30)).isoformat(), "value": 100},
-        #     {"type": "purchase", "timestamp": (datetime.utcnow() - timedelta(days=60)).isoformat(), "value": 100},
+        #     {"type": "purchase", "timestamp": utc_now().isoformat(), "value": 100},
+        #     {"type": "purchase", "timestamp": (utc_now() - timedelta(days=30)).isoformat(), "value": 100},
+        #     {"type": "purchase", "timestamp": (utc_now() - timedelta(days=60)).isoformat(), "value": 100},
         # ]
         # patterns = await recognizer.analyze_behavior(interactions)
         # assert any(p.name == "regular_purchaser" for p in patterns)
@@ -368,7 +369,7 @@ class TestContextEngine:
         # from app.core.brain.brain_orchestrator import ContextEngine, ContextSnapshot
         # engine = ContextEngine()
         # context = ContextSnapshot(
-        #     timestamp=datetime.utcnow().isoformat(),
+        #     timestamp=utc_now().isoformat(),
         #     user_id="user_1",
         #     deal_id="deal_1",
         #     stage="proposal",
@@ -383,7 +384,7 @@ class TestContextEngine:
         """Actualizar signal funciona."""
         # engine = ContextEngine()
         # context = ContextSnapshot(
-        #     timestamp=datetime.utcnow().isoformat(),
+        #     timestamp=utc_now().isoformat(),
         #     user_id="user_1",
         #     deal_id="deal_1",
         #     stage="proposal",
@@ -509,21 +510,21 @@ class TestPerformance:
     @pytest.mark.asyncio
     async def test_decision_latency_under_500ms(self):
         """Decisión simple < 500ms."""
-        # start = datetime.utcnow()
+        # start = utc_now()
         # orchestrator = BrainOrchestrator()
         # decision = await orchestrator.decide(
         #     "deal_1", "proposal", {"deal_value": 5000}
         # )
-        # latency = (datetime.utcnow() - start).total_seconds() * 1000
+        # latency = (utc_now() - start).total_seconds() * 1000
         # assert latency < 500, f"Latency {latency}ms > 500ms"
 
     @pytest.mark.asyncio
     async def test_prediction_latency_under_5s(self):
         """Predicción < 5s."""
-        # start = datetime.utcnow()
+        # start = utc_now()
         # cap = DemandForecastingCapability()
         # forecast = await cap.forecast([100, 110, 120, 130, 140] * 10)
-        # latency = (datetime.utcnow() - start).total_seconds()
+        # latency = (utc_now() - start).total_seconds()
         # assert latency < 5, f"Latency {latency}s > 5s"
 
 

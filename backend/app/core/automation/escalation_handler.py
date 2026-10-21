@@ -19,6 +19,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,7 +80,7 @@ class EscalationHandler:
             job_type=job.job_type.value,
             severity=severity,
             reason=reason,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
 
         async with self.lock:
@@ -151,7 +153,7 @@ class EscalationHandler:
             escalation = self.escalations[escalation_id]
             escalation.resolved = True
             escalation.resolution = resolution
-            escalation.resolved_at = datetime.utcnow()
+            escalation.resolved_at = utc_now()
             escalation.assigned_to = assigned_to
 
             logger.info(f"Escalation resolved: {escalation_id}")
@@ -179,7 +181,7 @@ class EscalationHandler:
     async def get_escalation_stats(self, hours: int = 24) -> dict[str, Any]:
         """Estadísticas de escalaciones."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(hours=hours)
+            cutoff = utc_now() - timedelta(hours=hours)
             recent = [
                 e for e in self.escalations.values()
                 if e.created_at >= cutoff
@@ -255,7 +257,7 @@ ACTION REQUIRED: Review and resolve this escalation in the dashboard.
     async def cleanup_old(self, days: int = 30) -> int:
         """Limpia escalaciones viejas."""
         async with self.lock:
-            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff = utc_now() - timedelta(days=days)
             original_count = len(self.escalations)
 
             escalations_to_keep = {

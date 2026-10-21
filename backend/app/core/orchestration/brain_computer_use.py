@@ -9,6 +9,8 @@ import asyncio
 import logging
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -210,8 +212,7 @@ class BrainComputerUseCoordinator:
 
     def _current_timestamp(self) -> str:
         """Timestamp actual."""
-        from datetime import datetime
-        return datetime.utcnow().isoformat()
+        return utc_now().isoformat()
 
     async def run_continuous_optimization(self, account_id: str, interval_hours: int = 6):
         """

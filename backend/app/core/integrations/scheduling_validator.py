@@ -11,6 +11,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +46,7 @@ async def validate_scheduling_request(
             }
 
         # 2. Check if time is in the past
-        if scheduled_time < datetime.utcnow():
+        if scheduled_time < utc_now():
             return {
                 "allowed": False,
                 "error": "time_in_past",

@@ -3,12 +3,12 @@
 import asyncio
 import json
 from collections.abc import AsyncGenerator
-from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.models import PublicationLink
 from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEvent
@@ -107,7 +107,7 @@ class WebhookService:
       'platform': platform,
       'amount': payload.amount,
       'email': payload.customer_email,
-      'timestamp': (payload.timestamp or datetime.utcnow()).isoformat(),
+      'timestamp': (payload.timestamp or utc_now()).isoformat(),
     })
 
     return {
@@ -138,7 +138,7 @@ class WebhookService:
     event_json = json.dumps({
       'type': event_type,
       'data': data,
-      'timestamp': datetime.utcnow().isoformat(),
+      'timestamp': utc_now().isoformat(),
     })
 
     for queue in queues:

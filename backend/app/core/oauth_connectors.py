@@ -1,11 +1,12 @@
 """OAuth Connectors for Mercado Libre, Amazon, Hotmart."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.config import get_settings
 from app.models.platform_integration import PlatformCredential
 
@@ -152,7 +153,7 @@ async def store_platform_credential(
     token_expiry_minutes: int = 3600,
 ) -> PlatformCredential:
     """Store platform OAuth credential in database."""
-    token_expiry = datetime.utcnow() + timedelta(minutes=token_expiry_minutes)
+    token_expiry = utc_now() + timedelta(minutes=token_expiry_minutes)
 
     cred = PlatformCredential(
         seller_id=seller_id,

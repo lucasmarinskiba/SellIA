@@ -5,7 +5,6 @@ browser profiles, proxy configs, session sharing, y batch operations.
 """
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
@@ -21,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
+from app.core.clock import utc_now
 from app.core.database import Base
 
 
@@ -40,8 +40,8 @@ class ComputerUseTemplate(Base):
     is_public = Column(Boolean, default=False)
     usage_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_templates")
 
@@ -70,8 +70,8 @@ class ComputerUseScheduledTask(Base):
     success_count = Column(Integer, default=0)
     fail_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_scheduled_tasks")
     last_session = relationship("ComputerUseSession", foreign_keys=[last_session_id])
@@ -91,8 +91,8 @@ class ComputerUseAnnotation(Base):
     y_coordinate = Column(Integer, nullable=True)
     color = Column(String(20), default="#f59e0b")  # Hex color for marker
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     session = relationship("ComputerUseSession", backref="annotations")
 
@@ -116,8 +116,8 @@ class ComputerUseBrowserProfile(Base):
     geolocation = Column(JSONB, nullable=True)  # {"latitude": -34.6, "longitude": -58.4}
     is_default = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_browser_profiles")
 
@@ -140,8 +140,8 @@ class ComputerUseProxyConfig(Base):
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     use_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_proxy_configs")
 
@@ -160,7 +160,7 @@ class ComputerUseSessionShare(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     session = relationship("ComputerUseSession", backref="shares")
     shared_by = relationship("User", foreign_keys=[shared_by_user_id], backref="shared_sessions")
@@ -195,7 +195,7 @@ class ComputerUseBatchJob(Base):
     total_count = Column(Integer, default=0)
     results_summary = Column(JSONB, default=dict)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -211,7 +211,7 @@ class ComputerUseSessionTag(Base):
     tag = Column(String(50), nullable=False, index=True)
     color = Column(String(20), default="#3b82f6")
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     session = relationship("ComputerUseSession", backref="session_tags")
 
@@ -231,8 +231,8 @@ class ComputerUseSessionNote(Base):
     content = Column(Text, nullable=False)
     is_pinned = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     session = relationship("ComputerUseSession", backref="notes")
 
@@ -249,7 +249,7 @@ class ComputerUseSessionBookmark(Base):
     label = Column(String(200), nullable=False)
     color = Column(String(20), default="#3b82f6")
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
 
     session = relationship("ComputerUseSession", backref="bookmarks")
 
@@ -271,7 +271,7 @@ class ComputerUseWebhook(Base):
     last_status_code = Column(Integer, nullable=True)
     failure_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", backref="computer_use_webhooks")

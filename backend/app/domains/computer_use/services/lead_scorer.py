@@ -14,6 +14,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,7 +64,7 @@ class LeadScore:
         self.score = score  # 0-100
         self.temperature = temperature
         self.breakdown = breakdown
-        self.scored_at = datetime.utcnow()
+        self.scored_at = utc_now()
         self.next_action = self._recommend_action()
 
     def _recommend_action(self) -> str:
@@ -300,7 +302,7 @@ class LeadScoringService:
         # Parse timestamp (asumiendo ISO format)
         try:
             last_date = datetime.fromisoformat(last_timestamp)
-            days_ago = (datetime.utcnow() - last_date).days
+            days_ago = (utc_now() - last_date).days
 
             if days_ago == 0:  # Today
                 return 10.0  # Max

@@ -11,6 +11,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +25,7 @@ class LearningUpdate:
     accuracy: float | None = None
     learning_rate: float = 0.001
     batch_size: int = 32
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -46,7 +48,7 @@ class TransferLearningResults:
     layers_transferred: int
     fine_tuning_required: bool
     estimated_training_time_saved: int  # hours
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -69,7 +71,7 @@ class MetaLearningResult:
     learned_tasks: int
     meta_strategy: str
     performance_improvement: float  # % improvement
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {

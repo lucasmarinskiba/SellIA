@@ -1,11 +1,12 @@
 """Slack integration for alerts and notifications."""
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ class SlackService:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": f"__{datetime.utcnow().isoformat()}__",
+                        "text": f"__{utc_now().isoformat()}__",
                     }
                 ],
             }

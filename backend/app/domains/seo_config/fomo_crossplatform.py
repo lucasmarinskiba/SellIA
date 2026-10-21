@@ -1,12 +1,13 @@
 """Cross-platform FOMO pattern synthesis."""
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
 from app.domains.seo_config.models import PublicationLinkFOMO
@@ -33,7 +34,7 @@ class FOMAPatternSynthesizer:
             ...
         }
         """
-        end_date = datetime.utcnow().date()
+        end_date = utc_now().date()
         start_date = end_date - timedelta(days=days)
 
         result = await self.db.execute(

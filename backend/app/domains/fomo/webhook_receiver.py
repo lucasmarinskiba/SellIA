@@ -7,6 +7,8 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 
 class WebhookEventType(str, Enum):
     VISITOR_ARRIVED = "visitor.arrived"
@@ -48,7 +50,7 @@ class WebhookPayload:
             "campaign_id": data.get("campaign_id"),
             "user_id": data.get("user_id"),
             "session_id": data.get("session_id"),
-            "timestamp": datetime.fromisoformat(data.get("timestamp", datetime.utcnow().isoformat())),
+            "timestamp": datetime.fromisoformat(data.get("timestamp", utc_now().isoformat())),
             "data": {
                 "product_id": data.get("product_id"),
                 "product_name": data.get("product_name"),

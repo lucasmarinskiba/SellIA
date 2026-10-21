@@ -1,11 +1,12 @@
 """Closed-loop FOMO feedback system."""
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.logger import get_logger
 from app.domains.seo_config.analytics_models import PublicationLinkMetrics
 from app.domains.seo_config.fomo_models import ConversionEvent
@@ -36,7 +37,7 @@ class FOMAFeedbackLoop:
             "fomo_id": str(fomo_id),
             "link_id": str(link_id),
             "converted": converted,
-            "recorded_at": datetime.utcnow().isoformat(),
+            "recorded_at": utc_now().isoformat(),
         }
 
         logger.info(f"Conversion feedback: FOMO {fomo_id} -> {converted}")
@@ -51,7 +52,7 @@ class FOMAFeedbackLoop:
 
         Compares predicted conversion probability vs actual conversions.
         """
-        end_date = datetime.utcnow().date()
+        end_date = utc_now().date()
         start_date = end_date - timedelta(days=days)
 
         # Get all conversions in period
@@ -119,8 +120,8 @@ class FOMAFeedbackLoop:
 
         Compares prediction accuracy over time windows.
         """
-        week_ago = (datetime.utcnow() - timedelta(days=7)).date()
-        month_ago = (datetime.utcnow() - timedelta(days=30)).date()
+        week_ago = (utc_now() - timedelta(days=7)).date()
+        month_ago = (utc_now() - timedelta(days=30)).date()
 
         week_accuracy = await self.get_prediction_accuracy(business_id, days=7)
         month_accuracy = await self.get_prediction_accuracy(business_id, days=30)
@@ -142,7 +143,7 @@ class FOMAFeedbackLoop:
         days: int = 30,
     ) -> dict:
         """Track FOMO effectiveness over time for a specific link."""
-        end_date = datetime.utcnow().date()
+        end_date = utc_now().date()
         start_date = end_date - timedelta(days=days)
 
         result = await self.db.execute(

@@ -9,6 +9,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger("research_cu_bridge")
 
 
@@ -32,7 +34,7 @@ class ResearchInsightPacket:
     insights: dict[str, Any]
     research_agents_involved: list[str]
     confidence_score: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     urgency: str = "medium"  # critical, high, medium, low
     ttl_seconds: int = 3600  # Time to live
 
@@ -459,7 +461,7 @@ class ResearchInsightsCoordinator:
             "market_insights": market_insights,
             "competitor_alerts": competitor_alerts,
             "trend_alerts": trend_alerts,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
         }
 
 

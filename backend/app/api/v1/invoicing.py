@@ -9,6 +9,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.clock import utc_now
+
 router = APIRouter(prefix="/api/v1/invoicing", tags=["invoicing"])
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ async def create_invoice(
         total = subtotal + tax_amount
 
         # Generar número de factura (TODO: incrementar desde última)
-        invoice_number = f"INV-{datetime.utcnow().strftime('%Y')}-0001"
+        invoice_number = f"INV-{utc_now().strftime('%Y')}-0001"
         invoice_id = f"inv_{order_id}"
 
         # Crear factura
@@ -85,8 +87,8 @@ async def create_invoice(
             "tax_pct": tax_pct,
             "tax_amount": round(tax_amount, 2),
             "total": round(total, 2),
-            "issued_at": datetime.utcnow().isoformat(),
-            "due_date": datetime.utcnow().isoformat(),  # TODO: +30 días si crédito
+            "issued_at": utc_now().isoformat(),
+            "due_date": utc_now().isoformat(),  # TODO: +30 días si crédito
             "status": "issued",
         }
 

@@ -29,6 +29,8 @@ from typing import Any
 
 import requests
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 # Configuration
@@ -114,7 +116,7 @@ class CryptoProcessor:
 
             # Generate invoice ID for tracking
             invoice_id = hashlib.sha256(
-                f"{customer_id}-{datetime.utcnow().isoformat()}".encode()
+                f"{customer_id}-{utc_now().isoformat()}".encode()
             ).hexdigest()[:16]
 
             logger.info(
@@ -128,7 +130,7 @@ class CryptoProcessor:
                 "blockchain": blockchain,
                 "customer_id": customer_id,
                 "invoice_id": invoice_id,
-                "expires_at": datetime.utcnow() + timedelta(hours=24),
+                "expires_at": utc_now() + timedelta(hours=24),
                 "confirmation_threshold": (
                     MIN_CONFIRMATIONS_TRON
                     if blockchain == "tron"
@@ -343,7 +345,7 @@ class CryptoProcessor:
                 "confirmed": is_confirmed and not is_failed,
                 "block_number": block_number,
                 "gas_used": gas_used,
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:
@@ -394,7 +396,7 @@ class CryptoProcessor:
                 "rate": rate,
                 "from": from_currency.upper(),
                 "to": to_currency.upper(),
-                "timestamp": datetime.utcnow(),
+                "timestamp": utc_now(),
             }
 
         except Exception as e:

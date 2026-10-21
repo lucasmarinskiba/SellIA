@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +22,7 @@ class PlatformMetrics:
     active_campaigns: int
     system_uptime_percent: float
     api_response_time_ms: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
 
 @dataclass
@@ -32,7 +34,7 @@ class UserMetrics:
     deals_closed: int
     revenue_generated: float
     last_activity: datetime
-    trial_ends_at: datetime = field(default_factory=lambda: datetime.utcnow() + timedelta(days=14))
+    trial_ends_at: datetime = field(default_factory=lambda: utc_now() + timedelta(days=14))
 
 
 class PlatformDashboard:
@@ -64,7 +66,7 @@ class PlatformDashboard:
             leads_generated=450,
             deals_closed=12,
             revenue_generated=6000.0,
-            last_activity=datetime.utcnow()
+            last_activity=utc_now()
         )
 
     def get_trending_metrics(self) -> dict[str, Any]:

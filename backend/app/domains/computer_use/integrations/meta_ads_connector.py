@@ -5,10 +5,11 @@ Soporta: Facebook, Instagram, Audience Network, Messenger.
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +201,7 @@ class MetaAdsConnector:
             }
 
             data = {
-                "name": f"creative_{datetime.utcnow().timestamp()}",
+                "name": f"creative_{utc_now().timestamp()}",
                 "object_story_spec": {
                     "link_data": {
                         "image_hash": image_url,  # URL pública

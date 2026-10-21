@@ -15,10 +15,11 @@ Sistema:
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import httpx
+
+from app.core.clock import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -370,7 +371,7 @@ class MercadoLibreAutomation:
         return {
             "status": "success",
             "order_id": order_id,
-            "saved_at": datetime.utcnow().isoformat(),
+            "saved_at": utc_now().isoformat(),
         }
 
     # ========== TOKEN REFRESH ==========

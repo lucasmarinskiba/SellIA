@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -6,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.businesses.models import Business
@@ -182,7 +182,7 @@ async def update_product(
     if data.metadata is not None:
         product.extra_data = data.metadata  # ORM attribute renamed; see Product.extra_data
 
-    product.updated_at = datetime.utcnow()
+    product.updated_at = utc_now()
     await db.commit()
     await db.refresh(product)
 
@@ -289,7 +289,7 @@ async def add_to_cart(
 
     cart.subtotal = sum(item.line_total for item in items)
     cart.total = cart.subtotal + cart.tax + cart.shipping - cart.discount
-    cart.updated_at = datetime.utcnow()
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(cart)
@@ -350,7 +350,7 @@ async def remove_from_cart(
 
     cart.subtotal = sum(item.line_total for item in items)
     cart.total = cart.subtotal + cart.tax + cart.shipping - cart.discount
-    cart.updated_at = datetime.utcnow()
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(cart)
@@ -387,7 +387,7 @@ async def checkout(
         select(func.count(Order.id)).where(Order.website_id == website_id)
     )
     order_count = order_count_result.scalar() or 0
-    order_number = f"ORD-{datetime.utcnow().year}-{order_count + 1:06d}"
+    order_number = f"ORD-{utc_now().year}-{order_count + 1:06d}"
 
     # Create order
     order = Order(
@@ -430,7 +430,7 @@ async def checkout(
 
     # Mark cart as converted
     cart.status = 'CONVERTED'
-    cart.updated_at = datetime.utcnow()
+    cart.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(order)
@@ -522,9 +522,9 @@ async def update_order(
     if 'payment_status' in data:
         order.payment_status = data['payment_status']
         if data['payment_status'] == 'PAID':
-            order.paid_at = datetime.utcnow()
+            order.paid_at = utc_now()
 
-    order.updated_at = datetime.utcnow()
+    order.updated_at = utc_now()
     await db.commit()
     await db.refresh(order)
 

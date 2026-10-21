@@ -18,6 +18,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from app.core.clock import utc_now
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +77,7 @@ class IncomingMessage:
 
     def __post_init__(self):
         if self.received_at is None:
-            self.received_at = datetime.utcnow()
+            self.received_at = utc_now()
 
 
 class WhatsAppWebhookHandler:
