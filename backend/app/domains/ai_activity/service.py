@@ -32,8 +32,8 @@ async def _safe_rollback(db: AsyncSession) -> None:
     """
     try:
         await db.rollback()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception:
+        logger.exception("_safe_rollback: error ignorado")
 
 
 async def log_ai_action(

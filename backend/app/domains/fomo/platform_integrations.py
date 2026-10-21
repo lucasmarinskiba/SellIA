@@ -73,9 +73,7 @@ class TikTokIntegration:
     ):
         """Generate TikTok videos daily"""
         for day in range(1, schedule_days + 1):
-            if day <= 3:
-                pass
-            elif day <= 5:
+            if day <= 3 or day <= 5:
                 pass
             else:
                 pass

@@ -7,11 +7,15 @@ which yields a coherent, non-crossing predictive distribution.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
 from app.domains.forecasting.types import ForecastResult, TimeSeries
+
+logger = logging.getLogger(__name__)
 
 
 class EnsembleForecaster(Forecaster):
@@ -26,7 +30,8 @@ class EnsembleForecaster(Forecaster):
         for m in self.members:
             try:
                 self._fitted.append(m.fit(ts))
-            except Exception:  # noqa: BLE001
+            except Exception:
+                logger.exception("fit: error ignorado")
                 continue
         if not self._fitted:
             raise RuntimeError("ensemble: no member fit successfully")

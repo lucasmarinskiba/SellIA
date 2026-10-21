@@ -177,16 +177,15 @@ class APIKeyService:
             return None
 
         # Check IP whitelist
-        if api_key.ip_whitelist and ip_address:
-            if not self._check_ip_whitelist(ip_address, api_key.ip_whitelist):
-                logger.warning(
-                    "API key access denied by IP whitelist",
-                    extra={
-                        "key_id": str(api_key.id),
-                        "ip": ip_address,
-                    },
-                )
-                return None
+        if (api_key.ip_whitelist and ip_address) and not self._check_ip_whitelist(ip_address, api_key.ip_whitelist):
+            logger.warning(
+                "API key access denied by IP whitelist",
+                extra={
+                    "key_id": str(api_key.id),
+                    "ip": ip_address,
+                },
+            )
+            return None
 
         # Update last_used_at
         api_key.last_used_at = datetime.now(UTC)

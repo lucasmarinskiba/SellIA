@@ -144,8 +144,8 @@ class PositioningScoreService:
 
             return connector
 
-        except Exception as e:
-            logger.exception(f"Error getting ranking connector: {str(e)[:200]}")
+        except Exception:
+            logger.exception("Error getting ranking connector")
             return None
 
     async def compute_score_for_link(
@@ -180,8 +180,8 @@ class PositioningScoreService:
         try:
             external_id = link.url  # connectors resolve their own id shape internally where needed
             signals = await connector.get_ranking_signals(external_id)
-        except Exception as e:
-            logger.exception(f"Failed to fetch ranking signals for link {link.id}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Failed to fetch ranking signals for link {link.id}")
             return None
 
         if platform == "instagram":

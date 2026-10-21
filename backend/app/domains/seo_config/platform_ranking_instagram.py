@@ -51,8 +51,8 @@ class InstagramRankingConnector(PlatformRankingConnector):
                     timeout=10,
                 )
                 return resp.status_code == 200
-        except Exception as e:
-            logger.exception(f"Instagram ranking credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("Instagram ranking credentials validation failed")
             return False
 
     async def resolve_media_id(self, client: httpx.AsyncClient, url: str) -> str | None:

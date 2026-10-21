@@ -91,10 +91,9 @@ class OpportunityDetector:
 
             days_until = (candidate.date() - reference_date.date()).days
 
-            if 0 <= days_until <= lead_time_days:
-                if closest_days is None or days_until < closest_days:
-                    closest = event
-                    closest_days = days_until
+            if 0 <= days_until <= lead_time_days and (closest_days is None or days_until < closest_days):
+                closest = event
+                closest_days = days_until
 
         if closest is None:
             return None

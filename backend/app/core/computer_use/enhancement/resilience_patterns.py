@@ -109,10 +109,9 @@ class CircuitBreaker:
             self.metrics["successes"] += 1
 
             # Half-open → closed
-            if self.state == CircuitBreakerState.HALF_OPEN:
-                if self.success_count >= self.config.success_threshold:
-                    self._set_state(CircuitBreakerState.CLOSED)
-                    logger.info(f"CB {self.name}: recovered, transitioning to CLOSED")
+            if self.state == CircuitBreakerState.HALF_OPEN and self.success_count >= self.config.success_threshold:
+                self._set_state(CircuitBreakerState.CLOSED)
+                logger.info(f"CB {self.name}: recovered, transitioning to CLOSED")
 
             return (True, result)
 
@@ -124,10 +123,9 @@ class CircuitBreaker:
             self.last_failure_time = datetime.now()
 
             # Closed → open
-            if self.state == CircuitBreakerState.CLOSED:
-                if self.failure_count >= self.config.failure_threshold:
-                    self._set_state(CircuitBreakerState.OPEN)
-                    logger.error(f"CB {self.name}: threshold exceeded, transitioning to OPEN")
+            if self.state == CircuitBreakerState.CLOSED and self.failure_count >= self.config.failure_threshold:
+                self._set_state(CircuitBreakerState.OPEN)
+                logger.error(f"CB {self.name}: threshold exceeded, transitioning to OPEN")
 
             # Half-open → open (cualquier fallo)
             if self.state == CircuitBreakerState.HALF_OPEN:

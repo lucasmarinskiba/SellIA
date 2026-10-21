@@ -38,9 +38,9 @@ def detect_opportunities_task():
                     logger.info(
                         f"Detected {len(opportunities)} opportunities for business {business_id}"
                     )
-                except Exception as e:
+                except Exception:
                     logger.exception(
-                        f"Opportunity detection failed for business {business_id}: {e}"
+                        f"Opportunity detection failed for business {business_id}"
                     )
                     # The error may have aborted this session's transaction; without a
                     # rollback every remaining business fails with InFailedSQLTransactionError.

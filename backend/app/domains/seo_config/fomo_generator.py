@@ -117,8 +117,8 @@ class PublicationFOMOGenerator:
             logger.info(f"Generated FOMO copy for link {link.id} (score: {fomo_score})")
             return fomo_entry
 
-        except Exception as e:
-            logger.exception(f"Error generating FOMO for link {link.id}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Error generating FOMO for link {link.id}")
             return None
 
     async def generate_fomo_for_business(self, business_id: UUID) -> dict:
@@ -238,6 +238,6 @@ class PublicationFOMOGenerator:
             logger.info(f"Generated FOMO copy for link {link_id} [{language}] (score: {fomo_score})")
             return fomo_entry
 
-        except Exception as e:
-            logger.exception(f"Error generating FOMO for link {link_id}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Error generating FOMO for link {link_id}")
             return None

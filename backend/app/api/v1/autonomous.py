@@ -307,8 +307,8 @@ async def webhook_whatsapp(
             "rejected": messages_rejected
         }
 
-    except Exception as e:
-        logger.error(f"Error en webhook WhatsApp: {e!s}", exc_info=True)
+    except Exception:
+        logger.exception("Error en webhook WhatsApp")
         # Retorna 200 aunque haya error: webhook no debe reintentar
         return {"status": "ok", "warning": "error_processing_webhook"}
 
@@ -446,8 +446,8 @@ async def process_autonomous_event(event: AutonomousEvent):
         EventLogger.log_event(event, response, result="sent")
         logger.info(f"[{account_id}] Evento procesado exitosamente con estrategia {strategy.get('segment')}")
 
-    except Exception as e:
-        logger.error(f"[{account_id}] Excepción no capturada procesando evento: {e!s}", exc_info=True)
+    except Exception:
+        logger.exception(f"[{account_id}] Excepción no capturada procesando evento")
         # Notificar a admin: hay bug que requiere investigación
         # TODO: send_admin_alert(account_id, "autonomous_event_error", str(e))
 
@@ -574,7 +574,7 @@ async def crm_sync_contact(
 
     except Exception as e:
         # Falla CRM: log + queue local, no falla completamente
-        logger.error(f"[{account_id}] CRM sync falló: {e!s}", exc_info=True)
+        logger.exception(f"[{account_id}] CRM sync falló")
         health_tracker.record_failure(crm_name)
 
         # Degradation: guardar en queue local para retry después

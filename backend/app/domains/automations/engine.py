@@ -159,9 +159,8 @@ class WorkflowEngine:
                 return False
 
         # Channel filter
-        if "channels" in config and trigger_data.get("channel"):
-            if trigger_data["channel"] not in config["channels"]:
-                return False
+        if ("channels" in config and trigger_data.get("channel")) and trigger_data["channel"] not in config["channels"]:
+            return False
 
         # Minimum delay check
         if "delay_minutes" in config:

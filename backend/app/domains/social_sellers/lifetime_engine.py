@@ -488,9 +488,8 @@ class CustomerLifetimeEngine:
         for keyword in BUYING_INTENT_KEYWORDS:
             count = content_lower.count(keyword)
             buying_count += count
-            if keyword in ('precio', 'precios', 'cuanto', 'cuesta', 'costo', 'valor'):
-                if count > 0:
-                    price_asked = True
+            if keyword in ('precio', 'precios', 'cuanto', 'cuesta', 'costo', 'valor') and count > 0:
+                price_asked = True
 
         # Inteligencia de conversación
         conv_intel = await self.db.execute(

@@ -89,6 +89,6 @@ class ThreadsConnector(BaseChannelConnector):
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers, timeout=30.0)
                 return response.status_code == 200
-        except Exception as exc:
-            logger.exception("Threads credential validation failed: %s", exc)
+        except Exception:
+            logger.exception("Threads credential validation failed: %s")
             return False

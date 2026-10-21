@@ -6,6 +6,7 @@ variant, because there is no such thing as "the platform's links".
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Annotated, Any
 
@@ -20,6 +21,8 @@ from app.domains.users.models import User
 
 from . import analyzer, fetcher, service, suggestions
 from .models import PLATFORM_KINDS, BusinessLink
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/web-presence", tags=["Web Presence"])
 
@@ -274,8 +277,8 @@ async def get_structured_data(
             city = ctx.city
             country = ctx.country
             has_physical = bool(ctx.has_physical_location)
-    except Exception:  # noqa: BLE001 -- schema is still generated without context
-        pass
+    except Exception:
+        logger.exception("get_structured_data: error ignorado")
 
     node = service.build_structured_data(
         business_name=business_name,

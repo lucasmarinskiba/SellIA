@@ -226,14 +226,12 @@ class PersonalizationEngine:
         if level in [PersonalizationLevel.LIGHT, PersonalizationLevel.MODERATE, PersonalizationLevel.DEEP]:
             # Add name greeting (respects usage rules)
             name_uses = self.NAME_USAGE_RULES.get(context.message_type, 0)
-            if name_uses > 0 and buyer_profile.first_name:
-                # Insert name naturally at start if not already there
-                if not personalized.startswith(buyer_profile.first_name):
-                    if language == "es":
-                        personalized = f"{buyer_profile.first_name}, {personalized}"
-                    else:
-                        personalized = f"{buyer_profile.first_name}, {personalized}"
-                    elements_added.append(f"name_greeting:{buyer_profile.first_name}")
+            if (name_uses > 0 and buyer_profile.first_name) and not personalized.startswith(buyer_profile.first_name):
+                if language == "es":
+                    personalized = f"{buyer_profile.first_name}, {personalized}"
+                else:
+                    personalized = f"{buyer_profile.first_name}, {personalized}"
+                elements_added.append(f"name_greeting:{buyer_profile.first_name}")
 
         if level in [PersonalizationLevel.MODERATE, PersonalizationLevel.DEEP]:
             # Add industry-specific language
@@ -242,16 +240,14 @@ class PersonalizationEngine:
                 if industry_vocab:
                     # Try to weave in 1-2 industry keywords
                     for keyword in industry_vocab.get("keywords", [])[:2]:
-                        if keyword not in personalized.lower():
-                            # Find good place to add it
-                            if "your" in personalized:
-                                personalized = personalized.replace(
-                                    "your",
-                                    f"your {keyword}",
-                                    1
-                                )
-                                elements_added.append(f"industry_keyword:{keyword}")
-                                break
+                        if keyword not in personalized.lower() and "your" in personalized:
+                            personalized = personalized.replace(
+                                "your",
+                                f"your {keyword}",
+                                1
+                            )
+                            elements_added.append(f"industry_keyword:{keyword}")
+                            break
 
             # Add company reference
             if buyer_profile.company and "your company" in personalized:
@@ -262,13 +258,12 @@ class PersonalizationEngine:
                 elements_added.append(f"company:{buyer_profile.company}")
 
             # Add role reference
-            if buyer_profile.role and buyer_profile.role.lower() not in personalized.lower():
-                if "your role" in personalized or "your position" in personalized:
-                    personalized = personalized.replace(
-                        "your role",
-                        f"your {buyer_profile.role.lower()} role"
-                    )
-                    elements_added.append(f"role:{buyer_profile.role}")
+            if (buyer_profile.role and buyer_profile.role.lower() not in personalized.lower()) and ("your role" in personalized or "your position" in personalized):
+                personalized = personalized.replace(
+                    "your role",
+                    f"your {buyer_profile.role.lower()} role"
+                )
+                elements_added.append(f"role:{buyer_profile.role}")
 
             # Add purchase history reference
             if buyer_profile.past_purchases:

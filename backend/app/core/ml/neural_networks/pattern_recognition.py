@@ -357,19 +357,18 @@ class CommunicationPatternRecognizer:
         # Response rate patterns
         response_rates = [m.get("response_rate", 0) for m in messages]
 
-        if len(response_rates) > 1:
-            if all(r > 0.5 for r in response_rates[-3:]):
-                patterns.append(
-                    Pattern(
-                        pattern_type=PatternType.TREND,
-                        confidence=0.85,
-                        description="High response rate trend in recent messages",
-                        data_points=response_rates,
-                        trend_direction="up",
-                        impact="high",
-                        recommendations=["Continue current messaging strategy", "Increase send frequency"],
-                    )
+        if len(response_rates) > 1 and all(r > 0.5 for r in response_rates[-3:]):
+            patterns.append(
+                Pattern(
+                    pattern_type=PatternType.TREND,
+                    confidence=0.85,
+                    description="High response rate trend in recent messages",
+                    data_points=response_rates,
+                    trend_direction="up",
+                    impact="high",
+                    recommendations=["Continue current messaging strategy", "Increase send frequency"],
                 )
+            )
 
         # Message type effectiveness
         by_type = {}

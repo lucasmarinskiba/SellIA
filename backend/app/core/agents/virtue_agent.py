@@ -97,38 +97,35 @@ class VirtueAgent:
         # Check 2: Unverified superlatives
         superlatives = ["best", "fastest", "cheapest", "#1", "only"]
         for word in superlatives:
-            if word.lower() in claim.lower():
-                if not product_data.get(f"verified_{word}", False):
-                    details["warnings"].append({
-                        "type": "unverified_superlative",
-                        "severity": HonestySeverity.HIGH,
-                        "claim": word,
-                        "reason": f"'{word}' not verified in product data",
-                        "suggestion": "Use 'among the', 'typically', or remove superlative",
-                    })
+            if word.lower() in claim.lower() and not product_data.get(f"verified_{word}", False):
+                details["warnings"].append({
+                    "type": "unverified_superlative",
+                    "severity": HonestySeverity.HIGH,
+                    "claim": word,
+                    "reason": f"'{word}' not verified in product data",
+                    "suggestion": "Use 'among the', 'typically', or remove superlative",
+                })
 
         # Check 3: Certainty language (should use possibility)
         certainty_words = ["will", "always", "never", "guaranteed", "certain"]
         for word in certainty_words:
-            if word.lower() in claim.lower():
-                if not product_data.get("highly_predictable", False):
-                    details["warnings"].append({
-                        "type": "overconfident_language",
-                        "severity": HonestySeverity.MEDIUM,
-                        "word": word,
-                        "reason": "Using absolute certainty without verification",
-                        "suggestion": "Replace with 'typically', 'often', 'can', 'might'",
-                    })
+            if word.lower() in claim.lower() and not product_data.get("highly_predictable", False):
+                details["warnings"].append({
+                    "type": "overconfident_language",
+                    "severity": HonestySeverity.MEDIUM,
+                    "word": word,
+                    "reason": "Using absolute certainty without verification",
+                    "suggestion": "Replace with 'typically', 'often', 'can', 'might'",
+                })
 
         # Check 4: Missing required transparency
         for required_type, requirement in VirtueAgent.REQUIRED_TRANSPARENCY.items():
-            if required_type in product_data:
-                if not claim.lower().__contains__(required_type) and product_data.get(f"must_disclose_{required_type}", True):
-                    details["suggestions"].append({
-                        "type": "missing_transparency",
-                        "requirement": required_type,
-                        "message": requirement,
-                    })
+            if required_type in product_data and (not claim.lower().__contains__(required_type) and product_data.get(f"must_disclose_{required_type}", True)):
+                details["suggestions"].append({
+                    "type": "missing_transparency",
+                    "requirement": required_type,
+                    "message": requirement,
+                })
 
         return details["is_honest"], details
 
@@ -251,17 +248,15 @@ class VirtueAgent:
 
         for pattern, keywords in dark_patterns.items():
             for keyword in keywords:
-                if keyword.lower() in message.lower():
-                    # Check if claim is verified
-                    if not audience.get(f"verified_{pattern}", False):
-                        details["violations"].append({
-                            "type": "dark_pattern",
-                            "pattern": pattern,
-                            "keyword": keyword,
-                            "severity": HonestySeverity.HIGH,
-                            "message": f"Unverified '{pattern}' detected",
-                        })
-                        details["respectful"] = False
+                if keyword.lower() in message.lower() and not audience.get(f"verified_{pattern}", False):
+                    details["violations"].append({
+                        "type": "dark_pattern",
+                        "pattern": pattern,
+                        "keyword": keyword,
+                        "severity": HonestySeverity.HIGH,
+                        "message": f"Unverified '{pattern}' detected",
+                    })
+                    details["respectful"] = False
 
         # Manipulation check: targeting vulnerabilities
         emotional_triggers = ["desperate", "fail", "stupid", "worthless", "shame", "afraid"]

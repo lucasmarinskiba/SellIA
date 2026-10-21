@@ -7,8 +7,12 @@ the models smooth multi-scale seasonality.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 try:  # optional
     import holidays as _holidays_pkg
@@ -38,8 +42,8 @@ def _holiday_set(country: str, years: list[int]) -> set:
     if _HAS_HOLIDAYS:
         try:
             return set(_holidays_pkg.country_holidays(country, years=years).keys())
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("_holiday_set: error ignorado")
     fixed = _FALLBACK_FIXED.get(country, _FALLBACK_FIXED["AR"])
     out = set()
     for y in years:

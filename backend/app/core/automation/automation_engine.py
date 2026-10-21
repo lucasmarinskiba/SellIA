@@ -191,7 +191,7 @@ class AutomationEngine:
                     await asyncio.sleep(1)
 
                 except Exception as e:
-                    logger.error(f"Cycle {self.cycle_count} error: {e!s}", exc_info=True)
+                    logger.exception(f"Cycle {self.cycle_count} error")
                     await self.monitoring.record_error("automation_cycle_error", str(e))
 
         except KeyboardInterrupt:
@@ -227,8 +227,8 @@ class AutomationEngine:
 
                 await self._execute_job(job)
 
-            except Exception as e:
-                logger.error(f"Job processing error: {e!s}", exc_info=True)
+            except Exception:
+                logger.exception("Job processing error")
 
     async def _execute_job(self, job: Job) -> None:
         """Ejecuta un job."""
@@ -252,7 +252,7 @@ class AutomationEngine:
             await self.monitoring.record_success(job)
 
         except Exception as e:
-            logger.error(f"Job failed: {job.id}: {e!s}", exc_info=True)
+            logger.exception(f"Job failed: {job.id}")
             job.error = str(e)
             job.attempts += 1
 

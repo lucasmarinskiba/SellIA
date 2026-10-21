@@ -79,8 +79,8 @@ def _resolve_api_key() -> str | None:
         key = getattr(get_settings(), "ANTHROPIC_API_KEY", None)
         if key:
             return key
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception:
+        logger.exception("_resolve_api_key: error ignorado")
     for name in _KEY_ENV_NAMES:
         if os.environ.get(name):
             return os.environ[name]

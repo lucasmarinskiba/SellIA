@@ -248,9 +248,8 @@ async def _evaluate_chatbot_rules(
     for rule in rules:
         if rule.channel_filter and platform.value not in rule.channel_filter:
             continue
-        if rule.keywords:
-            if any(kw.lower() in content_lower for kw in rule.keywords):
-                return rule
+        if rule.keywords and any(kw.lower() in content_lower for kw in rule.keywords):
+            return rule
 
     # Phase 2: AI intent classification (when no keyword match)
     available_intents = [r.intent for r in rules if r.intent]
@@ -384,8 +383,8 @@ async def _maybe_ai_auto_reply(
         )
         try:
             await db.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception:
+            logger.exception("_maybe_ai_auto_reply: error ignorado")
 
     if platform_bot is not None and not platform_bot.enabled:
         return  # the seller turned the bot off for this platform
@@ -467,8 +466,8 @@ async def _maybe_ai_auto_reply(
                 get_logger(__name__).warning("frustration check failed: %s", str(e)[:160])
                 try:
                     await db.rollback()
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception:
+                    logger.exception("_maybe_ai_auto_reply: error ignorado")
 
     # Check business AI auto-reply config
     from app.domains.agents.models import AgentConfig

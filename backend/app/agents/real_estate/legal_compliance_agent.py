@@ -59,10 +59,9 @@ class LegalComplianceAgent:
                 required_disclosures.append(disc)
 
         # Check HOA/community status
-        if property_data.get("is_condo"):
-            if not property_data.get("hoa_approval"):
-                issues.append({"type": "hoa", "description": "HOA approval not confirmed"})
-                severity_level = "medium"
+        if property_data.get("is_condo") and not property_data.get("hoa_approval"):
+            issues.append({"type": "hoa", "description": "HOA approval not confirmed"})
+            severity_level = "medium"
 
         # Check environmental compliance
         environmental_risk = property_data.get("environmental_risk_level", "low")

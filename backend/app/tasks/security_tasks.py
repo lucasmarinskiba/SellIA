@@ -462,10 +462,9 @@ def security_audit_report():
                             f"• Active sessions: {report['active_sessions_now']}"
                         )
                     }
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(wh.url, json=payload) as resp:
-                            if resp.status >= 400:
-                                logger.warning(f"Webhook {wh.id} returned {resp.status}")
+                    async with aiohttp.ClientSession() as session, session.post(wh.url, json=payload) as resp:
+                        if resp.status >= 400:
+                            logger.warning(f"Webhook {wh.id} returned {resp.status}")
                 except Exception as e:
                     logger.warning(f"Failed to send audit report to webhook {wh.id}: {e}", exc_info=True)
 

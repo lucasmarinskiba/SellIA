@@ -94,12 +94,11 @@ class AutopilotEngine:
 
         # Check amount threshold for orders/deals
         amount = context.get("amount", Decimal(0))
-        if action_type in (AutopilotActionType.CREATE_ORDER, AutopilotActionType.CLOSE_DEAL):
-            if amount > config.approval_threshold_amount:
-                return False, (
-                    f"Amount ${amount:,.2f} exceeds approval threshold "
-                    f"${config.approval_threshold_amount:,.2f}. Requires manual approval."
-                )
+        if action_type in (AutopilotActionType.CREATE_ORDER, AutopilotActionType.CLOSE_DEAL) and amount > config.approval_threshold_amount:
+            return False, (
+                f"Amount ${amount:,.2f} exceeds approval threshold "
+                f"${config.approval_threshold_amount:,.2f}. Requires manual approval."
+            )
 
         return True, "Autopilot authorized this action."
 

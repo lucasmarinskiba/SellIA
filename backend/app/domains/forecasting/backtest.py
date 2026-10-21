@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 
 import numpy as np
 
@@ -13,6 +14,8 @@ from app.domains.forecasting.types import (
     FoldMetrics,
     TimeSeries,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class RollingOriginBacktester:
@@ -80,7 +83,8 @@ class RollingOriginBacktester:
                 try:
                     model.fit(train)
                     fr = model.predict(len(actual), fut_index, fut_exog, self.quantiles).clip_nonnegative()
-                except Exception:  # noqa: BLE001
+                except Exception:
+                    logger.exception("run: error ignorado")
                     continue
                 mt = M.all_metrics(
                     actual, fr.mean, train.values, season=season,

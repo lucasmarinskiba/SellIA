@@ -138,8 +138,8 @@ async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
             logger.warning("next_steps: %s failed: %s", builder.__name__, str(e)[:200])
             try:
                 await db.rollback()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:
+                logger.exception("compute_actions: error ignorado")
 
     actions.sort(key=lambda a: (URGENCY_ORDER.get(a.urgency, 3), -a.size))
     return {

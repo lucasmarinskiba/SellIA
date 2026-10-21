@@ -246,10 +246,9 @@ async def create_shipment(db: AsyncSession, business_id: uuid.UUID, data: dict[s
             # Update order with shipping info
             order.shipping_provider = carrier
             order.tracking_number = shipment.tracking_number
-            if shipment.status in (ShipmentStatus.LABEL_CREATED, ShipmentStatus.PICKED_UP, ShipmentStatus.IN_TRANSIT):
-                if order.status == OrderStatus.PAID:
-                    order.status = OrderStatus.SHIPPED
-                    order.shipped_at = datetime.now(UTC)
+            if shipment.status in (ShipmentStatus.LABEL_CREATED, ShipmentStatus.PICKED_UP, ShipmentStatus.IN_TRANSIT) and order.status == OrderStatus.PAID:
+                order.status = OrderStatus.SHIPPED
+                order.shipped_at = datetime.now(UTC)
 
         except Exception as e:
             logger.exception("create_shipment: error inesperado")

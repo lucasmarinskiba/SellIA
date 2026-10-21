@@ -126,10 +126,8 @@ class AutoCloseEvaluator:
                         doubt_score += 1
 
         # Decision logic
-        if buying_score >= 2 and doubt_score == 0 and latest_inbound:
-            # Strong buying signal, no doubt
-            if deal.stage in ["negotiating", "proposal_sent", "qualified"]:
-                return await self._auto_close_deal(deal, latest_inbound, config)
+        if (buying_score >= 2 and doubt_score == 0 and latest_inbound) and deal.stage in ["negotiating", "proposal_sent", "qualified"]:
+            return await self._auto_close_deal(deal, latest_inbound, config)
 
         # Check if order already exists for this deal (payment received)
         order_result = await self.db.execute(

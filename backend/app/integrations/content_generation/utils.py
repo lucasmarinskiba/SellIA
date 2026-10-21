@@ -70,11 +70,10 @@ def get_image_size_kb(image_bytes: bytes) -> float:
 async def download_url(url: str, timeout: int = 60) -> bytes | None:
     """Descarga contenido de una URL."""
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
-                if resp.status == 200:
-                    return await resp.read()
-                return None
+        async with aiohttp.ClientSession() as session, session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
+            if resp.status == 200:
+                return await resp.read()
+            return None
     except Exception:
         logger.exception("download_url: error inesperado")
         return None

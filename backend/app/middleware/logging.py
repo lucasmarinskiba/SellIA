@@ -196,9 +196,8 @@ def example_structured_logging():
     try:
         raise ZeroDivisionError("división de prueba")
     except ZeroDivisionError:
-        logger.error(
+        logger.exception(
             "Database calculation failed",
-            exc_info=True,
             extra={
                 "query": "SELECT AVG(value) FROM deals",
                 "db_host": "db.internal",

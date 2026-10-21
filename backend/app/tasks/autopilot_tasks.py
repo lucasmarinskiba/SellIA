@@ -245,10 +245,8 @@ def director_executive_loop():
                     # If autopilot is active, execute action plans
                     if config and config.is_active and not config.is_paused:
                         for action in briefing.get("action_plan", []):
-                            if action.get("priority") == "high":
-                                # Activate recovery workflow
-                                if config.auto_activate_recovery_workflows:
-                                    logger.info(f"Director auto-activated recovery for business {business.id}: {action['action']}")
+                            if action.get("priority") == "high" and config.auto_activate_recovery_workflows:
+                                logger.info(f"Director auto-activated recovery for business {business.id}: {action['action']}")
                                     # In full implementation, would trigger actual workflow
 
                     logger.info(f"Director executive loop completed for business {business.id}")

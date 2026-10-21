@@ -17,12 +17,15 @@ each recommendation is derived from the account's own figures.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
 from . import pillars as pillar_calc
 from .models import ActionMode
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -504,6 +507,7 @@ def run_agents(pillars: dict[str, Any], context: dict[str, Any]) -> list[Recomme
     for agent in AGENTS:
         try:
             recommendations.extend(agent.analyze(pillars, context))
-        except Exception:  # noqa: BLE001 -- one agent must not break the panel
+        except Exception:
+            logger.exception("run_agents: error ignorado")
             continue
     return sorted(recommendations, key=lambda r: -r.impact_score)

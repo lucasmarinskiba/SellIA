@@ -143,8 +143,8 @@ class AmazonStoreRankingConnector(StorePositioningConnector):
                     f"{self.base_url}{STORES_LIST_PATH}", headers=await self._headers(client), timeout=10
                 )
                 return resp.status_code == 200
-        except Exception as e:
-            logger.exception(f"Amazon store ranking credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("Amazon store ranking credentials validation failed")
             return False
 
     async def get_store_signals(self, store_external_id: str | None = None) -> list[RankingSignal]:

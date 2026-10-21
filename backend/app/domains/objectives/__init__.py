@@ -2,9 +2,9 @@ from app.domains.objectives.models import KPI, BusinessObjective, Department, Ke
 from app.domains.objectives.services import ObjectiveService
 
 __all__ = [
+    "KPI",
     "BusinessObjective",
     "Department",
-    "KPI",
     "KeyResult",
     "ObjectiveService",
 ]

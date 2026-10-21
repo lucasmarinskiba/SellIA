@@ -86,18 +86,17 @@ class DynamicPricingService:
 
             if code_obj:
                 now = datetime.now(UTC)
-                if code_obj.valid_from <= now <= code_obj.valid_until:
-                    if code_obj.usage_limit is None or code_obj.current_usage < code_obj.usage_limit:
-                        if code_obj.discount_type == "percentage":
-                            code_discount = price_after_peak * (code_obj.discount_value / Decimal(100))
-                        else:
-                            code_discount = code_obj.discount_value
+                if code_obj.valid_from <= now <= code_obj.valid_until and (code_obj.usage_limit is None or code_obj.current_usage < code_obj.usage_limit):
+                    if code_obj.discount_type == "percentage":
+                        code_discount = price_after_peak * (code_obj.discount_value / Decimal(100))
+                    else:
+                        code_discount = code_obj.discount_value
 
-                        if code_obj.max_discount_cap:
-                            code_discount = min(code_discount, code_obj.max_discount_cap)
+                    if code_obj.max_discount_cap:
+                        code_discount = min(code_discount, code_obj.max_discount_cap)
 
-                        code_used = code_obj.code
-                        code_obj.current_usage += 1
+                    code_used = code_obj.code
+                    code_obj.current_usage += 1
 
         final_price = max(price_after_peak - code_discount, Decimal(0))
 

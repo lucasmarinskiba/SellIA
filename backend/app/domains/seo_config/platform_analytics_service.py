@@ -69,8 +69,8 @@ class PlatformAnalyticsService:
 
             return connector
 
-        except Exception as e:
-            logger.exception(f"Error getting analytics connector: {str(e)[:200]}")
+        except Exception:
+            logger.exception("Error getting analytics connector")
             return None
 
     async def fetch_and_store_metrics(
@@ -149,8 +149,8 @@ class PlatformAnalyticsService:
 
             return metrics
 
-        except Exception as e:
-            logger.exception(f"Error fetching metrics for {link.id}: {str(e)[:200]}")
+        except Exception:
+            logger.exception(f"Error fetching metrics for {link.id}")
             return None
 
     async def compute_performance_summary(
@@ -206,6 +206,6 @@ class PlatformAnalyticsService:
             logger.info(f"Computed summary for {link_id}: {total_conversions} conversions")
             return summary
 
-        except Exception as e:
-            logger.exception(f"Error computing summary: {str(e)[:200]}")
+        except Exception:
+            logger.exception("Error computing summary")
             return None

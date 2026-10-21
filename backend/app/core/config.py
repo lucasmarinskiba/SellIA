@@ -397,13 +397,11 @@ class Settings(BaseSettings):
                 "DATABASE_URL es requerido en todos los entornos. "
                 "Configure la variable de entorno DATABASE_URL con credentials seguros."
             )
-        if "devpassword123" in self.DATABASE_URL or "password" in self.DATABASE_URL.lower() and "postgres://" in self.DATABASE_URL:
-            # Check for common insecure patterns
-            if any(weak in self.DATABASE_URL.lower() for weak in ["devpassword", "password123", "postgres://user:password@"]):
-                raise ValueError(
-                    "DATABASE_URL contiene credenciales débiles o por defecto. "
-                    "Use contraseñas seguras (mínimo 16 caracteres alfanuméricos + símbolos)."
-                )
+        if ("devpassword123" in self.DATABASE_URL or "password" in self.DATABASE_URL.lower() and "postgres://" in self.DATABASE_URL) and any(weak in self.DATABASE_URL.lower() for weak in ["devpassword", "password123", "postgres://user:password@"]):
+            raise ValueError(
+                "DATABASE_URL contiene credenciales débiles o por defecto. "
+                "Use contraseñas seguras (mínimo 16 caracteres alfanuméricos + símbolos)."
+            )
 
         # P0: SECRET_KEY is always required - NEVER auto-assign even in dev
         if not self.SECRET_KEY:
@@ -431,11 +429,10 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY debe tener al menos 32 caracteres.")
 
         # Production-specific checks
-        if self.ENVIRONMENT == "production":
-            if not self.SIDECAR_SHARED_SECRET:
-                raise ValueError(
-                    "SIDECAR_SHARED_SECRET es requerido en producción cuando se usa Envoy sidecar."
-                )
+        if self.ENVIRONMENT == "production" and not self.SIDECAR_SHARED_SECRET:
+            raise ValueError(
+                "SIDECAR_SHARED_SECRET es requerido en producción cuando se usa Envoy sidecar."
+            )
 
         # Validate FERNET_SECRET if defined
         fernet_secret = os.environ.get("FERNET_SECRET")

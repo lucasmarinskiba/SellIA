@@ -219,9 +219,7 @@ class GrowthAutomationEngine:
         """Publica post usando browser automation."""
         try:
             # Usar platform automation para publicar
-            if platform == "instagram":
-                pass  # placeholder
-            elif platform == "tiktok":
+            if platform == "instagram" or platform == "tiktok":
                 pass  # placeholder
             else:
                 return False, None

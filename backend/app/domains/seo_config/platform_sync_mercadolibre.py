@@ -36,8 +36,8 @@ class MercadoLibreListingSync(PlatformListingSyncConnector):
                     timeout=10,
                 )
                 return resp.status_code == 200
-        except Exception as e:
-            logger.exception(f"MercadoLibre credentials validation failed: {str(e)[:100]}")
+        except Exception:
+            logger.exception("MercadoLibre credentials validation failed")
             return False
 
     async def extract_listing_id(self, url: str) -> str | None:

@@ -51,8 +51,8 @@ class IntegrationService:
                     platform_name=platform_name,
                 )
                 logger.info(f"Auto-created SEO config for {platform_name}")
-            except Exception as e:
-                logger.exception(f"Failed to auto-create SEO config: {str(e)[:100]}")
+            except Exception:
+                logger.exception("Failed to auto-create SEO config")
                 # Don't fail the connection creation if SEO config fails
 
         await self.db.commit()
