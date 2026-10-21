@@ -393,9 +393,13 @@ class NPSDashboardService:
     def calculate_sentiment_trend(
         location_id: UUID,
         date: str,
-        db: Session = None
+        db: Session = None,
+        business_id: UUID | None = None,
     ) -> dict:
-        """Calculate daily sentiment trend."""
+        """Calculate daily sentiment trend.
+
+        ``business_id`` defaults to the business of the location's own feedback rows.
+        """
         if not db:
             raise ValueError("Database session required")
 
@@ -446,7 +450,7 @@ class NPSDashboardService:
 
         trend = SentimentTrend(
             location_id=location_id,
-            business_id=UUID("00000000-0000-0000-0000-000000000000"),  # TODO: from location
+            business_id=business_id or feedback_list[0].business_id,
             date=date,
             positive_pct=Decimal(str(round(positive_pct, 2))),
             neutral_pct=Decimal(str(round(neutral_pct, 2))),

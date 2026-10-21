@@ -109,145 +109,173 @@ class TestPasswordRequirements:
         assert data.get("requires_2fa_setup") is True
 
 
+PASSWORD = "SecurePass123@"
+
+
+def _signup(api_client):
+    """Create a throwaway account; returns (email, user_id, auth headers)."""
+    email = f"test-{uuid4().hex[:8]}@test.local"
+    response = api_client.post(
+        "/api/v1/auth/signup",
+        json={"email": email, "password": PASSWORD, "full_name": "Test User"},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    return email, data["user_id"], {"Authorization": f"Bearer {data['access_token']}"}
+
+
+def _enable_2fa(api_client, headers):
+    """Run the whole enrolment the way the signup screen does; returns the TOTP secret."""
+    import pyotp
+
+    setup = api_client.post("/api/v1/auth/2fa/setup", headers=headers)
+    assert setup.status_code == 200, setup.text
+    secret = setup.json()["secret"]
+    verify = api_client.post(
+        "/api/v1/auth/2fa/verify",
+        params={"code": pyotp.TOTP(secret).now()},
+        headers=headers,
+    )
+    assert verify.status_code == 200, verify.text
+    return secret
+
+
 class TestTwoFactorAuth:
-    """Test 2FA endpoints."""
+    """2FA enrolment: one authenticated flow, identity from the session token.
 
-    def test_enable_2fa_returns_qr_code(self, api_client):
-        """Enable 2FA returns QR code and secret."""
-        user_id = str(uuid4())
+    POST /auth/2fa/setup -> secret + QR for the signed-in caller, then
+    POST /auth/2fa/verify?code=NNNNNN. The server generates and stores the secret;
+    the client never names a user or supplies a secret.
+    """
 
-        response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
+    def test_setup_requires_authentication(self, api_client):
+        response = api_client.post("/api/v1/auth/2fa/setup")
+        assert response.status_code == 401
+
+    def test_verify_requires_authentication(self, api_client):
+        response = api_client.post("/api/v1/auth/2fa/verify", params={"code": "123456"})
+        assert response.status_code == 401
+
+    def test_disable_requires_authentication(self, api_client):
+        response = api_client.post("/api/v1/auth/2fa/disable", params={"code": "123456"})
+        assert response.status_code == 401
+
+    def test_setup_returns_qr_code_and_secret(self, api_client):
+        _, _, headers = _signup(api_client)
+
+        response = api_client.post("/api/v1/auth/2fa/setup", headers=headers)
 
         assert response.status_code == 200
         data = response.json()
-        assert "secret" in data
-        assert "qr_code" in data
         assert data["qr_code"].startswith("data:image/png;base64,")
+        assert data["provisioning_uri"].startswith("otpauth://totp/")
+        assert data["secret"] in data["provisioning_uri"]
 
-    def test_enable_2fa_secret_is_base32(self, api_client):
-        """2FA secret is valid base32 format."""
-        user_id = str(uuid4())
+    def test_setup_secret_is_base32(self, api_client):
+        import re
 
-        response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
+        _, _, headers = _signup(api_client)
 
-        assert response.status_code == 200
-        data = response.json()
-        secret = data["secret"]
+        secret = api_client.post("/api/v1/auth/2fa/setup", headers=headers).json()["secret"]
 
         # Base32 alphabet: A-Z, 2-7, and padding =
-        import re
         assert re.match(r"^[A-Z2-7]+=*$", secret), "Secret not valid base32"
 
-    def test_verify_2fa_with_valid_code(self, api_client):
-        """Verify 2FA accepts valid TOTP code."""
-        user_id = str(uuid4())
-
-        # Enable 2FA
-        enable_response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
-        secret = enable_response.json()["secret"]
-
-        # Generate valid TOTP code
+    def test_verify_with_valid_code(self, api_client):
         import pyotp
-        totp = pyotp.TOTP(secret)
-        code = totp.now()
 
-        # Verify
+        _, _, headers = _signup(api_client)
+        secret = api_client.post("/api/v1/auth/2fa/setup", headers=headers).json()["secret"]
+
         response = api_client.post(
             "/api/v1/auth/2fa/verify",
-            json={
-                "user_id": user_id,
-                "secret": secret,
-                "totp_code": code,
-            }
+            params={"code": pyotp.TOTP(secret).now()},
+            headers=headers,
         )
 
         assert response.status_code == 200
-        assert response.json()["message"] == "2FA enabled successfully"
+        data = response.json()
+        assert data["message"] == "2FA activado correctamente"
+        # Recovery codes are shown once, right here, and the signup screen displays them.
+        assert len(data["backup_codes"]) == 8
 
-    def test_verify_2fa_rejects_invalid_code(self, api_client):
-        """Verify 2FA rejects invalid TOTP code."""
-        user_id = str(uuid4())
+    def test_verify_rejects_invalid_code(self, api_client):
+        _, _, headers = _signup(api_client)
+        api_client.post("/api/v1/auth/2fa/setup", headers=headers)
 
-        # Enable 2FA
-        enable_response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
-        secret = enable_response.json()["secret"]
-
-        # Try with invalid code
         response = api_client.post(
-            "/api/v1/auth/2fa/verify",
-            json={
-                "user_id": user_id,
-                "secret": secret,
-                "totp_code": "000000",
-            }
+            "/api/v1/auth/2fa/verify", params={"code": "000000"}, headers=headers
         )
 
         assert response.status_code == 400
 
-    def test_disable_2fa_requires_password(self, api_client):
-        """Disable 2FA requires password confirmation."""
-        # First signup
-        email = f"test-{uuid4().hex[:8]}@test.local"
-        password = "SecurePass123@"
-        response = api_client.post(
-            "/api/v1/auth/signup",
-            json={
-                "email": email,
-                "password": password,
-                "full_name": "Test User",
-            }
-        )
-        user_id = response.json()["user_id"]
+    def test_verify_without_setup_is_rejected(self, api_client):
+        _, _, headers = _signup(api_client)
 
-        # Try disable without password
+        response = api_client.post(
+            "/api/v1/auth/2fa/verify", params={"code": "123456"}, headers=headers
+        )
+
+        assert response.status_code == 400
+
+    def test_cannot_enable_2fa_on_someone_elses_account(self, api_client):
+        """A client-supplied user_id/secret must never reach another user's account.
+
+        The retired signup-time endpoints took {user_id, secret, totp_code} with no
+        session and flipped is_2fa_enabled on ANY account, locking its owner out.
+        """
+        import pyotp
+
+        victim_email, victim_id, _ = _signup(api_client)
+        _, _, attacker_headers = _signup(api_client)
+        secret = pyotp.random_base32()
+
+        response = api_client.post(
+            "/api/v1/auth/2fa/verify",
+            json={
+                "user_id": victim_id,
+                "secret": secret,
+                "totp_code": pyotp.TOTP(secret).now(),
+            },
+            headers=attacker_headers,
+        )
+
+        assert response.status_code == 422  # `code` is a required query parameter
+        signin = api_client.post(
+            "/api/v1/auth/signin", json={"email": victim_email, "password": PASSWORD}
+        )
+        assert signin.status_code == 200
+        assert "access_token" in signin.json()
+        assert signin.json().get("requires_2fa") is not True
+
+    def test_disable_2fa_requires_valid_code(self, api_client):
+        _, _, headers = _signup(api_client)
+        _enable_2fa(api_client, headers)
+
+        response = api_client.post(
+            "/api/v1/auth/2fa/disable", params={"code": "000000"}, headers=headers
+        )
+
+        assert response.status_code == 400
+
+    def test_disable_2fa_with_valid_code(self, api_client):
+        import pyotp
+
+        email, _, headers = _signup(api_client)
+        secret = _enable_2fa(api_client, headers)
+
         response = api_client.post(
             "/api/v1/auth/2fa/disable",
-            json={
-                "user_id": user_id,
-                "password": "WrongPassword123@",
-            }
-        )
-
-        assert response.status_code == 401
-
-    def test_disable_2fa_with_correct_password(self, api_client):
-        """Disable 2FA with correct password."""
-        # Signup
-        email = f"test-{uuid4().hex[:8]}@test.local"
-        password = "SecurePass123@"
-        response = api_client.post(
-            "/api/v1/auth/signup",
-            json={
-                "email": email,
-                "password": password,
-                "full_name": "Test User",
-            }
-        )
-        user_id = response.json()["user_id"]
-
-        # Disable with correct password
-        response = api_client.post(
-            "/api/v1/auth/2fa/disable",
-            json={
-                "user_id": user_id,
-                "password": password,
-            }
+            params={"code": pyotp.TOTP(secret).now()},
+            headers=headers,
         )
 
         assert response.status_code == 200
-        assert response.json()["message"] == "2FA disabled"
+        assert response.json()["message"] == "2FA desactivado correctamente"
+        signin = api_client.post(
+            "/api/v1/auth/signin", json={"email": email, "password": PASSWORD}
+        )
+        assert "access_token" in signin.json()
 
 
 class TestSigninWithTwoFactor:
@@ -255,97 +283,47 @@ class TestSigninWithTwoFactor:
 
     def test_signin_returns_requires_2fa_flag(self, api_client):
         """Signin returns requires_2fa when 2FA is enabled."""
-        # Signup
-        email = f"test-{uuid4().hex[:8]}@test.local"
-        password = "SecurePass123@"
-        response = api_client.post(
-            "/api/v1/auth/signup",
-            json={
-                "email": email,
-                "password": password,
-                "full_name": "Test User",
-            }
-        )
-        user_id = response.json()["user_id"]
+        email, _, headers = _signup(api_client)
+        _enable_2fa(api_client, headers)
 
-        # Enable 2FA
-        enable_response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
-        secret = enable_response.json()["secret"]
-
-        # Verify 2FA
-        verify_response = api_client.post(
-            "/api/v1/auth/2fa/verify",
-            json={
-                "user_id": user_id,
-                "secret": secret,
-                "totp_code": __import__("pyotp").TOTP(secret).now(),
-            }
-        )
-        assert verify_response.status_code == 200
-
-        # Try signin without 2FA code
         signin_response = api_client.post(
-            "/api/v1/auth/signin",
-            json={
-                "email": email,
-                "password": password,
-            }
+            "/api/v1/auth/signin", json={"email": email, "password": PASSWORD}
         )
 
         assert signin_response.status_code == 200
         assert signin_response.json().get("requires_2fa") is True
+        assert "access_token" not in signin_response.json()
 
     def test_signin_with_2fa_code_succeeds(self, api_client):
         """Signin succeeds with valid 2FA code."""
-        # Signup
-        email = f"test-{uuid4().hex[:8]}@test.local"
-        password = "SecurePass123@"
-        response = api_client.post(
-            "/api/v1/auth/signup",
-            json={
-                "email": email,
-                "password": password,
-                "full_name": "Test User",
-            }
-        )
-        user_id = response.json()["user_id"]
-
-        # Enable 2FA
-        enable_response = api_client.post(
-            "/api/v1/auth/2fa/enable",
-            json={"user_id": user_id}
-        )
-        secret = enable_response.json()["secret"]
-
-        # Verify 2FA
         import pyotp
-        code = pyotp.TOTP(secret).now()
-        verify_response = api_client.post(
-            "/api/v1/auth/2fa/verify",
-            json={
-                "user_id": user_id,
-                "secret": secret,
-                "totp_code": code,
-            }
-        )
-        assert verify_response.status_code == 200
 
-        # Signin with 2FA code
-        new_code = pyotp.TOTP(secret).now()
+        email, _, headers = _signup(api_client)
+        secret = _enable_2fa(api_client, headers)
+
         signin_response = api_client.post(
             "/api/v1/auth/signin",
             json={
                 "email": email,
-                "password": password,
-                "totp_code": new_code,
-            }
+                "password": PASSWORD,
+                "totp_code": pyotp.TOTP(secret).now(),
+            },
         )
 
         assert signin_response.status_code == 200
         assert "access_token" in signin_response.json()
+
+    def test_signin_with_wrong_2fa_code_fails(self, api_client):
+        """A wrong code is rejected even with the right password."""
+        email, _, headers = _signup(api_client)
+        _enable_2fa(api_client, headers)
+
+        signin_response = api_client.post(
+            "/api/v1/auth/signin",
+            json={"email": email, "password": PASSWORD, "totp_code": "000000"},
+        )
+
+        assert signin_response.status_code == 401
 
 
 class TestSecurityHeaders:

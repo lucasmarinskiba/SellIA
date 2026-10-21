@@ -32,8 +32,8 @@ async def run_followup_loop() -> None:
         try:
             async with AsyncSessionLocal() as db:
                 await scan_and_send_followups(db)
-        except Exception as e:
-            logger.error(f"Follow-up loop iteration failed: {e}")
+        except Exception:
+            logger.exception("Follow-up loop iteration failed")
 
         await asyncio.sleep(FOLLOWUP_SCAN_INTERVAL_SECONDS)
 
