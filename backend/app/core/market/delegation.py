@@ -4,6 +4,8 @@ import logging
 from enum import Enum
 from typing import Any
 
+from app.core.market.market_detector import MarketProfile
+
 logger = logging.getLogger(__name__)
 
 

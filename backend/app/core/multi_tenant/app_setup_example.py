@@ -5,7 +5,7 @@ Copy these patterns into your app/main.py
 
 from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,7 @@ from app.core.multi_tenant import (
     get_tenant_context,
 )
 from app.core.multi_tenant.example_implementation import router as tenant_router
+from app.core.multi_tenant.tenant_context import TenantContext
 
 # ============================================================================
 # Application Setup

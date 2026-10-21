@@ -40,8 +40,9 @@ class VirtueAgent:
         "guaranteed results",
         "100% success",
         "risk-free",
-        "money-back guaranteed" if not verified else "",
-        "fastest in market" if not verified else "",
+        # Sin verificación a nivel de clase: estas frases se prohíben por defecto.
+        "money-back guaranteed",
+        "fastest in market",
         "only solution",
         "works for everyone",
     ]

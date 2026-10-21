@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.domains.customer_360.customer_360_models import CustomerScores as CustomerScore
 from app.domains.predictive.predictive_models import (
     DynamicSegment,
     PredictiveMetrics,

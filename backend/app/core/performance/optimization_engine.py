@@ -6,6 +6,7 @@ Caching, database optimization, async operations, batch processing.
 
 import hashlib
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)

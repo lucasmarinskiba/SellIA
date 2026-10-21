@@ -5,12 +5,17 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.domains.services import services as service_services
-from app.domains.services.models import Appointment, ServiceDelivery
+from app.domains.services.models import (
+    Appointment,
+    ServiceDelivery,
+    ServiceDeliveryStatus,
+)
 from app.domains.services.schemas import (
     AppointmentActionResponse,
     AppointmentCreate,
