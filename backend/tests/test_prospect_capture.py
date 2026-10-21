@@ -157,7 +157,7 @@ async def test_network_failure_maps_to_places_api_error(monkeypatch):
 # ---------- CSV import ----------
 
 def test_csv_accepts_valid_rows_and_normalizes_email():
-    raw = "Name,Email,Phone\nMaría,MARIA@Mail.com,+54 11 4444-5555\n".encode("utf-8")
+    raw = "Name,Email,Phone\nMaría,MARIA@Mail.com,+54 11 4444-5555\n".encode()
 
     result = parse_csv_contacts(raw)
 
@@ -168,13 +168,13 @@ def test_csv_accepts_valid_rows_and_normalizes_email():
 
 def test_csv_rejects_bad_rows_with_reasons():
     raw = (
-        "name,email,phone\n"
-        ",ana@mail.com,\n"            # sin nombre
-        "Juan,,\n"                    # sin email ni teléfono
-        "Lu,no-es-email,\n"           # email inválido
-        "Pedro,pedro@mail.com,\n"
-        "Pedro 2,PEDRO@mail.com,\n"   # duplicado dentro del archivo
-    ).encode("utf-8")
+        b"name,email,phone\n"
+        b",ana@mail.com,\n"            # sin nombre
+        b"Juan,,\n"                    # sin email ni teléfono
+        b"Lu,no-es-email,\n"           # email inválido
+        b"Pedro,pedro@mail.com,\n"
+        b"Pedro 2,PEDRO@mail.com,\n"   # duplicado dentro del archivo
+    )
 
     result = parse_csv_contacts(raw)
 
@@ -189,7 +189,7 @@ def test_csv_rejects_bad_rows_with_reasons():
 
 
 def test_csv_duplicate_phone_inside_file_is_rejected():
-    raw = "name,phone\nA,+54 11 4444-5555\nB,54 11 4444 5555\n".encode("utf-8")
+    raw = b"name,phone\nA,+54 11 4444-5555\nB,54 11 4444 5555\n"
 
     result = parse_csv_contacts(raw)
 
@@ -199,7 +199,7 @@ def test_csv_duplicate_phone_inside_file_is_rejected():
 
 def test_csv_without_name_column_is_fatal():
     with pytest.raises(ValueError, match="columna 'name'"):
-        parse_csv_contacts("email\nana@mail.com\n".encode("utf-8"))
+        parse_csv_contacts(b"email\nana@mail.com\n")
 
 
 def test_csv_non_utf8_is_fatal():
@@ -209,7 +209,7 @@ def test_csv_non_utf8_is_fatal():
 
 def test_csv_row_limit_is_fatal():
     rows = "\n".join(f"Persona {i},p{i}@mail.com," for i in range(MAX_CSV_ROWS + 1))
-    raw = f"name,email,phone\n{rows}\n".encode("utf-8")
+    raw = f"name,email,phone\n{rows}\n".encode()
 
     with pytest.raises(ValueError, match="máximo"):
         parse_csv_contacts(raw)
