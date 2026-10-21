@@ -2,14 +2,13 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest, LocalOutlierFactor
-from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +29,14 @@ class Pattern:
     pattern_type: PatternType
     confidence: float
     description: str
-    data_points: List[float]
-    period: Optional[int] = None  # For cyclical patterns
-    trend_direction: Optional[str] = None  # "up", "down", "stable"
+    data_points: list[float]
+    period: int | None = None  # For cyclical patterns
+    trend_direction: str | None = None  # "up", "down", "stable"
     impact: str = "medium"  # low, medium, high
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "pattern_type": self.pattern_type.value,
             "confidence": float(self.confidence),
@@ -55,14 +54,14 @@ class Pattern:
 class MarketPattern:
     """Market pattern detected."""
 
-    patterns: List[Pattern]
+    patterns: list[Pattern]
     market_sentiment: str  # "bullish", "neutral", "bearish"
     volatility: float  # 0-1
     trend_strength: float  # 0-1
-    key_insights: List[str] = field(default_factory=list)
+    key_insights: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "patterns": [p.to_dict() for p in self.patterns],
             "market_sentiment": self.market_sentiment,
@@ -87,7 +86,7 @@ class BehaviorPattern:
     similar_customer_count: int
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "behavior_type": self.behavior_type,
             "frequency": self.frequency,
@@ -108,12 +107,12 @@ class Anomaly:
     anomaly_score: float  # 0-1, higher = more anomalous
     severity: str  # "low", "medium", "high", "critical"
     description: str
-    affected_features: List[str]
+    affected_features: list[str]
     potential_cause: str
     recommended_action: str
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "anomaly_score": float(self.anomaly_score),
             "severity": self.severity,
@@ -238,7 +237,7 @@ class CustomerBehaviorRecognizer:
         logger.info("Customer behavior recognizer trained")
         return self
 
-    def recognize_behavior(self, X: np.ndarray, customer_data: Dict[str, Any]) -> BehaviorPattern:
+    def recognize_behavior(self, X: np.ndarray, customer_data: dict[str, Any]) -> BehaviorPattern:
         """Recognize customer behavior pattern."""
         if not self.is_trained:
             raise ValueError("Recognizer must be trained first")
@@ -293,7 +292,7 @@ class CompetitorPatternRecognizer:
         logger.info("Competitor pattern recognizer trained")
         return self
 
-    def recognize_patterns(self, competitor_data: List[Dict[str, Any]]) -> List[Pattern]:
+    def recognize_patterns(self, competitor_data: list[dict[str, Any]]) -> list[Pattern]:
         """Recognize competitor patterns."""
         patterns = []
 
@@ -346,7 +345,7 @@ class CommunicationPatternRecognizer:
         logger.info("Communication pattern recognizer trained")
         return self
 
-    def recognize_patterns(self, messages: List[Dict[str, Any]]) -> List[Pattern]:
+    def recognize_patterns(self, messages: list[dict[str, Any]]) -> list[Pattern]:
         """Recognize communication patterns."""
         patterns = []
 
@@ -414,7 +413,7 @@ class AnomalyDetector:
         logger.info("Anomaly detector trained")
         return self
 
-    def detect_anomalies(self, X: np.ndarray) -> List[Anomaly]:
+    def detect_anomalies(self, X: np.ndarray) -> list[Anomaly]:
         """Detect anomalies."""
         if not self.is_trained:
             raise ValueError("Detector must be trained first")

@@ -7,29 +7,29 @@ available across 5 categories with real case studies and metrics.
 
 # Import expansion pack libraries
 from .expansion_pack_1 import (
+    BLUE_OCEAN_STRATEGIES,
     BlueOceanExpansionPack1,
     BlueOceanStrategy,
-    BLUE_OCEAN_STRATEGIES,
 )
 from .expansion_pack_2 import (
-    SalesMethodsExpansionPack2,
-    SalesMethod,
     CONSULTATIVE_SALES_METHODS,
+    SalesMethod,
+    SalesMethodsExpansionPack2,
 )
 from .expansion_pack_3 import (
+    PRICING_STRATEGIES,
     PricingExpansionPack3,
     PricingStrategy,
-    PRICING_STRATEGIES,
 )
 from .expansion_pack_4 import (
+    ACQUISITION_METHODS,
     AcquisitionExpansionPack4,
     AcquisitionMethod,
-    ACQUISITION_METHODS,
 )
 from .expansion_pack_5 import (
+    VERTICAL_STRATEGIES,
     VerticalExpansionPack5,
     VerticalStrategy,
-    VERTICAL_STRATEGIES,
 )
 
 

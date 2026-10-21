@@ -4,12 +4,21 @@ Supports: showrooms, retail stores, factories, offices, service centers, pickup 
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
-from pydantic import BaseModel, Field, validator
-from sqlalchemy import Column, String, Float, Boolean, DateTime, ForeignKey, Text, Enum as SQLEnum, JSON, Index
+from pydantic import BaseModel, Field
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -87,8 +96,8 @@ class Location(Base):
     # Metadata
     location_metadata = Column(JSON, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     business = relationship("Business", back_populates="locations")
@@ -120,13 +129,13 @@ class LocationHours(BaseModel):
 
 class LocationHoursWeekly(BaseModel):
     """Operating hours for a full week."""
-    monday: Optional[LocationHours] = None
-    tuesday: Optional[LocationHours] = None
-    wednesday: Optional[LocationHours] = None
-    thursday: Optional[LocationHours] = None
-    friday: Optional[LocationHours] = None
-    saturday: Optional[LocationHours] = None
-    sunday: Optional[LocationHours] = None
+    monday: LocationHours | None = None
+    tuesday: LocationHours | None = None
+    wednesday: LocationHours | None = None
+    thursday: LocationHours | None = None
+    friday: LocationHours | None = None
+    saturday: LocationHours | None = None
+    sunday: LocationHours | None = None
 
     class Config:
         json_schema_extra = {

@@ -1,21 +1,24 @@
 """Objectives & KPIs API Router."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from uuid import UUID
-from typing import Any
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.objectives.models import Department, BusinessObjective, KPI
+from app.domains.objectives.models import Department
 from app.domains.objectives.schemas import (
-    DepartmentCreate, DepartmentResponse,
-    BusinessObjectiveCreate, BusinessObjectiveResponse,
-    KPICreate, KPIResponse,
+    BusinessObjectiveCreate,
+    BusinessObjectiveResponse,
+    DepartmentCreate,
+    DepartmentResponse,
+    KPICreate,
+    KPIResponse,
 )
 from app.domains.objectives.services import ObjectiveService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/objectives", tags=["Objectives & KPIs"])
 

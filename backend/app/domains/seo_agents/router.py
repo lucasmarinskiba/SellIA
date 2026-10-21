@@ -8,42 +8,42 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
 from app.domains.seo_agents.models import GeneratedContent, KeywordOpportunity
+from app.domains.seo_agents.orchestrator import SEOAuditOrchestrator
 from app.domains.seo_agents.schemas import (
-    GenerateContentRequest,
-    GeneratedContentOut,
-    CompetitorKeywordGapIn,
-    CompetitorKeywordGapOut,
-    KeywordOpportunityOut,
     BacklinkOpportunityIn,
     BacklinkOpportunityOut,
+    CitationConsistencyReportOut,
+    CompetitorKeywordGapIn,
+    CompetitorKeywordGapOut,
+    ContentCalendarEntryOut,
+    CreateClusterRequest,
+    CreateEntityRequest,
+    CreateLocationRequest,
+    EntitySignalOut,
+    GenerateCalendarRequest,
+    GenerateContentRequest,
+    GeneratedContentOut,
+    KeywordOpportunityOut,
+    LocationSEOProfileOut,
+    ReviewAggregateOut,
     ReviewCampaignIn,
     ReviewCampaignOut,
-    ReviewAggregateOut,
-    GenerateCalendarRequest,
-    ContentCalendarEntryOut,
-    CreateEntityRequest,
-    EntitySignalOut,
-    CreateLocationRequest,
-    LocationSEOProfileOut,
-    CitationConsistencyReportOut,
-    CreateClusterRequest,
     TopicalClusterOut,
 )
 from app.domains.seo_agents.service import (
-    ContentGenerationService,
-    CompetitorKeywordService,
     BacklinkStrategyService,
-    ReviewOrchestrationService,
+    CompetitorKeywordService,
     ContentCalendarService,
+    ContentGenerationService,
     EntityOptimizationService,
     MultiLocationSEOService,
+    ReviewOrchestrationService,
     TopicalClusterService,
 )
-from app.domains.seo_agents.orchestrator import SEOAuditOrchestrator
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/seo-agents", tags=["SEO Agents"])

@@ -10,8 +10,8 @@ does it step aside for a human.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +34,7 @@ FOCUS_LABELS: dict[str, str] = {
 }
 
 
-def _clean_hours(value: Any) -> Optional[dict[str, int]]:
+def _clean_hours(value: Any) -> dict[str, int] | None:
     """Validate the active-hours window, or store nothing.
 
     A half-filled or out-of-range window would silence the bot at hours the
@@ -58,7 +58,7 @@ def _clean_hours(value: Any) -> Optional[dict[str, int]]:
 
 async def get_bot(
     db: AsyncSession, business_id: uuid.UUID, platform: str
-) -> Optional[PlatformBot]:
+) -> PlatformBot | None:
     result = await db.execute(
         select(PlatformBot).where(
             PlatformBot.business_id == business_id,
@@ -117,7 +117,10 @@ async def platform_stats(
     """Real traffic per platform: how much came in, how much the AI answered,
     and how much is still waiting. Counted from messages, not claimed."""
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     if not business_ids:
@@ -190,7 +193,10 @@ async def platform_performance(
     is unknown is not attributed to anyone.
     """
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.data_science.stats import MIN_TO_READ, Proportion, median
     from app.domains.orders.models import Order
@@ -356,7 +362,7 @@ async def overview(db: AsyncSession, business_ids: list[uuid.UUID]) -> dict[str,
         "focus_options": [
             {"value": value, "label": label} for value, label in FOCUS_LABELS.items()
         ],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 

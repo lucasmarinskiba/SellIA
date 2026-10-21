@@ -3,18 +3,15 @@ Metadata API v1 — SEO-optimized structured data endpoints
 Generates dynamic JSON-LD schemas for each entity type.
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select
-import json
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.businesses.models import Business
-from app.domains.automations.models import Workflow as AutomationWorkflow
-from app.domains.users.models import User
 
 router = APIRouter(tags=["metadata"])
 
@@ -22,7 +19,7 @@ SITE_URL = "https://sellia-brain.vercel.app"
 
 
 @router.get("/organization")
-async def get_organization_metadata() -> Dict[str, Any]:
+async def get_organization_metadata() -> dict[str, Any]:
     """Get Organization structured data for SellIA"""
     return {
         "@context": "https://schema.org",
@@ -49,7 +46,7 @@ async def get_organization_metadata() -> Dict[str, Any]:
 
 
 @router.get("/software-application")
-async def get_software_application_metadata() -> Dict[str, Any]:
+async def get_software_application_metadata() -> dict[str, Any]:
     """Get SoftwareApplication schema for SellIA Brain"""
     return {
         "@context": "https://schema.org",
@@ -90,7 +87,7 @@ async def get_software_application_metadata() -> Dict[str, Any]:
 async def get_business_metadata(
     business_id: str,
     session: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get Business entity metadata as LocalBusiness schema"""
     try:
         result = await session.execute(
@@ -105,7 +102,7 @@ async def get_business_metadata(
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             "name": business.name,
-            "description": f"B2B business using SellIA for sales automation",
+            "description": "B2B business using SellIA for sales automation",
             "url": f"{SITE_URL}/businesses/{business_id}",
             "image": business.logo_url or f"{SITE_URL}/default-logo.png",
             "address": {
@@ -129,11 +126,11 @@ async def get_business_metadata(
         }
 
     except Exception as e:
-        raise HTTPException(500, f"Error fetching business metadata: {str(e)}")
+        raise HTTPException(500, f"Error fetching business metadata: {e!s}")
 
 
 @router.get("/faq")
-async def get_faq_metadata() -> Dict[str, Any]:
+async def get_faq_metadata() -> dict[str, Any]:
     """Get FAQ schema for SellIA common questions"""
     return {
         "@context": "https://schema.org",
@@ -178,7 +175,7 @@ async def get_faq_metadata() -> Dict[str, Any]:
 @router.get("/breadcrumb")
 async def get_breadcrumb_metadata(
     path: str = Query(..., description="Current page path"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get BreadcrumbList schema for current page"""
     # Parse path into breadcrumbs
     parts = [p for p in path.split("/") if p]
@@ -205,7 +202,7 @@ async def get_breadcrumb_metadata(
 @router.get("/product/{product_id}")
 async def get_product_metadata(
     product_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get Product schema (for future e-commerce integrations)"""
     return {
         "@context": "https://schema.org",
@@ -228,7 +225,7 @@ async def get_product_metadata(
 
 
 @router.get("/event/{event_id}")
-async def get_event_metadata(event_id: str) -> Dict[str, Any]:
+async def get_event_metadata(event_id: str) -> dict[str, Any]:
     """Get Event schema (for webinars, demos, workshops)"""
     return {
         "@context": "https://schema.org",
@@ -252,7 +249,7 @@ async def get_event_metadata(event_id: str) -> Dict[str, Any]:
 
 
 @router.get("/review/{review_id}")
-async def get_review_metadata(review_id: str) -> Dict[str, Any]:
+async def get_review_metadata(review_id: str) -> dict[str, Any]:
     """Get Review/Testimonial schema for client reviews"""
     return {
         "@context": "https://schema.org",
@@ -275,7 +272,7 @@ async def get_review_metadata(review_id: str) -> Dict[str, Any]:
 
 
 @router.get("/aggregate-review")
-async def get_aggregate_review_metadata() -> Dict[str, Any]:
+async def get_aggregate_review_metadata() -> dict[str, Any]:
     """Get AggregateRating schema for SellIA organization"""
     return {
         "@context": "https://schema.org",
@@ -294,7 +291,7 @@ async def get_aggregate_review_metadata() -> Dict[str, Any]:
 
 
 @router.get("/person/{person_id}")
-async def get_person_metadata(person_id: str) -> Dict[str, Any]:
+async def get_person_metadata(person_id: str) -> dict[str, Any]:
     """Get Person schema for team members, founders, experts"""
     return {
         "@context": "https://schema.org",
@@ -322,7 +319,7 @@ async def get_person_metadata(person_id: str) -> Dict[str, Any]:
 
 
 @router.get("/organization-expanded")
-async def get_organization_expanded_metadata() -> Dict[str, Any]:
+async def get_organization_expanded_metadata() -> dict[str, Any]:
     """Get expanded Organization schema with E-E-A-T signals (Expertise, Experience, Authority, Trustworthiness)"""
     return {
         "@context": "https://schema.org",

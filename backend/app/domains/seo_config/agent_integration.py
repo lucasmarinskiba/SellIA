@@ -5,6 +5,7 @@ Call these before the actual agent methods.
 """
 
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger

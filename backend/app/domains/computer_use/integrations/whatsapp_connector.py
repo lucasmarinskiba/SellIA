@@ -4,7 +4,7 @@ Usa Meta WhatsApp Business API para enviar mensajes.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class WhatsAppConnector:
         self,
         recipient_phone: str,
         message: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Envía mensaje de texto vía WhatsApp.
 
@@ -72,8 +72,8 @@ class WhatsAppConnector:
         recipient_phone: str,
         template_name: str,
         template_language: str = "en",
-        parameters: Optional[list] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        parameters: list | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Envía mensaje usando template pre-aprobado.
 
@@ -121,8 +121,8 @@ class WhatsAppConnector:
         recipient_phone: str,
         media_type: str,  # image, video, document, audio
         media_url: str,
-        caption: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        caption: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Envía media (image, video, documento).
 

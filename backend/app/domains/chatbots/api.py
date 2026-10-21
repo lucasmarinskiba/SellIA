@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -33,16 +33,16 @@ class ActiveHours(BaseModel):
 
 
 class BotIn(BaseModel):
-    enabled: Optional[bool] = None
-    personality_slug: Optional[str] = Field(None, max_length=50)
-    focus: Optional[BotFocus] = None
-    custom_instructions: Optional[str] = Field(None, max_length=4000)
-    handoff_keywords: Optional[list[str]] = None
-    max_ai_replies: Optional[int] = Field(None, ge=1, le=50)
-    active_hours: Optional[ActiveHours] = None
-    after_hours_message: Optional[str] = Field(None, max_length=600)
-    escalate_on_frustration: Optional[bool] = None
-    hold_on_policy_violation: Optional[bool] = None
+    enabled: bool | None = None
+    personality_slug: str | None = Field(None, max_length=50)
+    focus: BotFocus | None = None
+    custom_instructions: str | None = Field(None, max_length=4000)
+    handoff_keywords: list[str] | None = None
+    max_ai_replies: int | None = Field(None, ge=1, le=50)
+    active_hours: ActiveHours | None = None
+    after_hours_message: str | None = Field(None, max_length=600)
+    escalate_on_frustration: bool | None = None
+    hold_on_policy_violation: bool | None = None
 
 
 class TestIn(BaseModel):

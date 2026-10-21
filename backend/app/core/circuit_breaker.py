@@ -3,11 +3,12 @@
 Prevents cascading failures when external services are down.
 """
 
-import time
 import asyncio
+import time
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable, Optional
 from functools import wraps
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -44,7 +45,7 @@ class CircuitBreaker:
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self._lock = asyncio.Lock()
 
     async def call(self, func: Callable, *args, **kwargs):
@@ -59,7 +60,7 @@ class CircuitBreaker:
 
         try:
             result = await func(*args, **kwargs)
-        except self.expected_exception as e:
+        except self.expected_exception:
             await self._on_failure()
             raise
 
@@ -97,7 +98,6 @@ class CircuitBreaker:
 
 class CircuitBreakerOpen(Exception):
     """Raised when the circuit breaker is open."""
-    pass
 
 
 # Pre-configured breakers for common external services

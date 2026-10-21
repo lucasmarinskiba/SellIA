@@ -1,24 +1,21 @@
 """Voice Sales + Playbook Management (Phase 29)."""
 
+import json
+import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-from sqlalchemy import select
+from datetime import datetime
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.models.voice_sales import (
-    VoiceCall,
     CallTranscript,
-    VoiceCallMetrics,
-    SalesPlaybook,
-    PlaybookExecution,
-    SalesRepPerformance,
-    AICallScript,
     MeetingBooking,
+    SalesPlaybook,
+    VoiceCall,
+    VoiceCallMetrics,
 )
 from celery_app import celery_app
-import logging
-import json
 
 try:
     from anthropic import Anthropic
@@ -55,7 +52,7 @@ class PlaybookRecommendation:
 class VoiceCallManager:
     """Manage AI voice calls via Twilio + Claude."""
 
-    def __init__(self, db: Session, twilio_client=None, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, twilio_client=None, claude_api_key: str | None = None):
         self.db = db
         self.twilio = twilio_client
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
@@ -64,7 +61,9 @@ class VoiceCallManager:
         """Initiate AI voice call with prospect."""
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             # 1. Get prospect + deal context
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
@@ -181,7 +180,7 @@ class VoiceCallManager:
             logger.error(f"Error handling call input: {e}")
             return "I didn't catch that. Could you repeat?"
 
-    def end_call(self, call_id: str, outcome: str = "unqualified") -> Dict[str, Any]:
+    def end_call(self, call_id: str, outcome: str = "unqualified") -> dict[str, Any]:
         """End call, analyze, and update metrics."""
 
         try:
@@ -246,7 +245,7 @@ class VoiceCallManager:
     def _generate_voice_script(self, prospect_id: str, deal_id: str) -> str:
         """Generate voice script from Phase 28."""
 
-        script = f"""
+        script = """
         Hi, this is SellIA AI calling. I'm reaching out to [Prospect Name] at [Company].
 
         The reason for my call is [brief value prop].
@@ -256,7 +255,7 @@ class VoiceCallManager:
 
         return script
 
-    def _get_conversation_history(self, call_id: str) -> List[Dict[str, str]]:
+    def _get_conversation_history(self, call_id: str) -> list[dict[str, str]]:
         """Get conversation turn history."""
 
         turns = self.db.query(CallTranscript).filter(
@@ -265,7 +264,7 @@ class VoiceCallManager:
 
         return [{"speaker": t.speaker, "text": t.text} for t in turns]
 
-    def _analyze_call(self, transcript: str) -> Dict[str, Any]:
+    def _analyze_call(self, transcript: str) -> dict[str, Any]:
         """Analyze call using Claude."""
 
         if not self.claude:
@@ -306,11 +305,11 @@ class VoiceCallManager:
 class PlaybookExtractor:
     """Extract sales playbooks from top performer patterns."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def extract_playbooks(self, top_performer_ids: List[str]) -> List[Dict[str, Any]]:
+    def extract_playbooks(self, top_performer_ids: list[str]) -> list[dict[str, Any]]:
         """Extract playbooks from top 20% performers."""
 
         try:
@@ -349,7 +348,7 @@ class PlaybookExtractor:
             logger.error(f"Error extracting playbooks: {e}")
             return []
 
-    def _extract_from_call(self, call: VoiceCall) -> Optional[Dict[str, Any]]:
+    def _extract_from_call(self, call: VoiceCall) -> dict[str, Any] | None:
         """Extract playbook elements from single call."""
 
         if not self.claude or not call.transcript:
@@ -383,7 +382,7 @@ class PlaybookExtractor:
             logger.error(f"Error extracting from call: {e}")
             return None
 
-    def _cluster_playbooks(self, playbooks: List[Dict]) -> List[List[Dict]]:
+    def _cluster_playbooks(self, playbooks: list[dict]) -> list[list[dict]]:
         """Cluster similar playbooks."""
 
         # Simplified: group by deal outcome pattern
@@ -397,7 +396,7 @@ class PlaybookExtractor:
 
         return list(clusters.values())
 
-    def _consolidate_cluster(self, cluster: List[Dict]) -> Optional[SalesPlaybook]:
+    def _consolidate_cluster(self, cluster: list[dict]) -> SalesPlaybook | None:
         """Create playbook from cluster."""
 
         try:
@@ -421,11 +420,13 @@ class PlaybookRecommender:
     def __init__(self, db: Session):
         self.db = db
 
-    def recommend_playbook(self, deal_id: str) -> Optional[PlaybookRecommendation]:
+    def recommend_playbook(self, deal_id: str) -> PlaybookRecommendation | None:
         """Get recommended playbook for deal."""
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
             if not deal:
@@ -462,7 +463,7 @@ class PlaybookRecommender:
 
 
 @celery_app.task(bind=True, max_retries=3)
-def extract_playbooks_async(self, top_performer_ids: List[str]):
+def extract_playbooks_async(self, top_performer_ids: list[str]):
     """Extract playbooks in background."""
     try:
         from app.core.database import SessionLocal

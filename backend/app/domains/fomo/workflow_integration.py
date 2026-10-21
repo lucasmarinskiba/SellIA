@@ -1,8 +1,8 @@
 """FOMO Workflow Integration - Trigger workflows from FOMO campaigns"""
 
 from datetime import datetime
-from typing import Dict, List, Any, Optional
 from enum import Enum
+from typing import Any
 
 
 class FOOMWorkflowTrigger(str, Enum):
@@ -32,7 +32,7 @@ class FOOMToWorkflowIntegration:
     """Map FOMO events to workflow triggers"""
 
     @staticmethod
-    def create_visitor_workflow_trigger(campaign_id: str, visitor_data: Dict[str, Any]) -> Dict[str, Any]:
+    def create_visitor_workflow_trigger(campaign_id: str, visitor_data: dict[str, Any]) -> dict[str, Any]:
         """Create workflow trigger for new visitor"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.VISITOR_ARRIVED.value,
@@ -58,8 +58,8 @@ class FOOMToWorkflowIntegration:
     @staticmethod
     def create_purchase_workflow_trigger(
         campaign_id: str,
-        purchase_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        purchase_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for purchase completion"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.PURCHASE_DETECTED.value,
@@ -94,8 +94,8 @@ class FOOMToWorkflowIntegration:
     @staticmethod
     def create_cart_abandoned_workflow_trigger(
         campaign_id: str,
-        cart_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cart_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for abandoned cart"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_ABANDONED.value,
@@ -133,8 +133,8 @@ class FOOMToWorkflowIntegration:
     @staticmethod
     def create_cart_recovered_workflow_trigger(
         campaign_id: str,
-        recovery_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        recovery_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger for cart recovery"""
         return {
             "workflow_trigger": FOOMWorkflowTrigger.CART_RECOVERED.value,
@@ -163,8 +163,8 @@ class FOOMToWorkflowIntegration:
     @staticmethod
     def create_conversion_milestone_trigger(
         campaign_id: str,
-        milestone_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        milestone_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger when conversion milestone is reached"""
         milestone_number = milestone_data.get("milestone_number")
         return {
@@ -196,8 +196,8 @@ class FOOMToWorkflowIntegration:
     @staticmethod
     def create_revenue_milestone_trigger(
         campaign_id: str,
-        milestone_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        milestone_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create workflow trigger when revenue milestone is reached"""
         milestone_amount = milestone_data.get("milestone_amount")
         return {
@@ -225,7 +225,7 @@ class WorkflowConditionBuilder:
     """Build complex conditional logic for workflow actions"""
 
     @staticmethod
-    def build_customer_segment_condition(segment: str) -> Dict[str, Any]:
+    def build_customer_segment_condition(segment: str) -> dict[str, Any]:
         """Build condition for customer segment"""
         segments = {
             "high_value": {"lifetime_value": {"operator": "gte", "value": 1000}},
@@ -237,7 +237,7 @@ class WorkflowConditionBuilder:
         return segments.get(segment, {})
 
     @staticmethod
-    def build_behavior_condition(behavior: str) -> Dict[str, Any]:
+    def build_behavior_condition(behavior: str) -> dict[str, Any]:
         """Build condition based on user behavior"""
         behaviors = {
             "high_engagement": {
@@ -259,7 +259,7 @@ class WorkflowConditionBuilder:
         return behaviors.get(behavior, {})
 
     @staticmethod
-    def build_time_based_condition(condition: str) -> Dict[str, Any]:
+    def build_time_based_condition(condition: str) -> dict[str, Any]:
         """Build time-based conditions"""
         conditions = {
             "business_hours": {
@@ -280,7 +280,7 @@ class WorkflowActionSequence:
     """Define multi-step workflow sequences triggered by FOMO"""
 
     @staticmethod
-    def cart_abandonment_sequence() -> List[Dict[str, Any]]:
+    def cart_abandonment_sequence() -> list[dict[str, Any]]:
         """Complete 3-email cart abandonment workflow"""
         return [
             {
@@ -314,7 +314,7 @@ class WorkflowActionSequence:
         ]
 
     @staticmethod
-    def post_purchase_sequence() -> List[Dict[str, Any]]:
+    def post_purchase_sequence() -> list[dict[str, Any]]:
         """Complete post-purchase workflow"""
         return [
             {
@@ -350,7 +350,7 @@ class WorkflowActionSequence:
         ]
 
     @staticmethod
-    def churn_prevention_sequence() -> List[Dict[str, Any]]:
+    def churn_prevention_sequence() -> list[dict[str, Any]]:
         """Churn prevention workflow for at-risk customers"""
         return [
             {

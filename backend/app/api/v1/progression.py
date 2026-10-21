@@ -4,17 +4,17 @@ Lead Progression Endpoints
 - No-engagement timeout checks
 - Workflow progression monitoring
 """
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-from app.db import get_db
-from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.db.models import Lead, WorkflowExecution
-from app.services.progression_service import get_progression_service
-
 import logging
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.deps import get_current_user
+from app.db import get_db
+from app.db.models import Lead, WorkflowExecution
+from app.domains.users.models import User
+from app.services.progression_service import get_progression_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/progression", tags=["progression"])

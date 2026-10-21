@@ -25,8 +25,8 @@ from __future__ import annotations
 import uuid
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,10 +78,10 @@ class Ctx:
     now: datetime
 
 
-def _aware(value: Optional[datetime]) -> Optional[datetime]:
+def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 
 async def _business_ids(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]:
@@ -93,7 +93,7 @@ async def _business_ids(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]
 
 async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
     """The prioritised list of what to do, each item with its numbers."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     business_ids = await _business_ids(db, user.id)
     if not business_ids:
         return {
@@ -157,11 +157,14 @@ async def compute_actions(db: AsyncSession, user: Any) -> dict[str, Any]:
     }
 
 
-async def _waiting_conversations(ctx: "Ctx") -> list[Action]:
+async def _waiting_conversations(ctx: Ctx) -> list[Action]:
     """Buyers whose last message got no answer."""
     db, business_ids, now = ctx.db, ctx.business_ids, ctx.now
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
     convs = await db.execute(
@@ -220,11 +223,14 @@ async def _waiting_conversations(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _bot_off_where_traffic_is(ctx: "Ctx") -> list[Action]:
+async def _bot_off_where_traffic_is(ctx: Ctx) -> list[Action]:
     """Platforms that receive questions while their bot is switched off."""
     db, business_ids = ctx.db, ctx.business_ids
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.chatbots.models import PlatformBot
 
@@ -287,7 +293,7 @@ async def _bot_off_where_traffic_is(ctx: "Ctx") -> list[Action]:
     return actions
 
 
-async def _unpaid_orders(ctx: "Ctx") -> list[Action]:
+async def _unpaid_orders(ctx: Ctx) -> list[Action]:
     """Orders that were closed but never paid."""
     db, business_ids, now = ctx.db, ctx.business_ids, ctx.now
     from app.domains.orders.models import Order, OrderStatus
@@ -333,7 +339,7 @@ async def _unpaid_orders(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _unshipped_orders(ctx: "Ctx") -> list[Action]:
+async def _unshipped_orders(ctx: Ctx) -> list[Action]:
     """Paid orders that never moved."""
     db, business_ids, now = ctx.db, ctx.business_ids, ctx.now
     from app.domains.orders.models import Order, OrderStatus
@@ -376,7 +382,7 @@ async def _unshipped_orders(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _customers_without_contact(ctx: "Ctx") -> list[Action]:
+async def _customers_without_contact(ctx: Ctx) -> list[Action]:
     """Sales you cannot follow up, because nobody recorded who bought."""
     db, business_ids = ctx.db, ctx.business_ids
     from app.domains.orders.models import Order
@@ -412,7 +418,7 @@ async def _customers_without_contact(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _dormant_customers(ctx: "Ctx") -> list[Action]:
+async def _dormant_customers(ctx: Ctx) -> list[Action]:
     """Customers who bought once and have not come back."""
     db, business_ids, now = ctx.db, ctx.business_ids, ctx.now
     from app.domains.orders.models import Order, PaymentStatus
@@ -473,7 +479,7 @@ async def _dormant_customers(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _incomplete_profile(ctx: "Ctx") -> list[Action]:
+async def _incomplete_profile(ctx: Ctx) -> list[Action]:
     """Configuration the AI needs and does not have."""
     from app.domains.preferences import service as preferences
 
@@ -502,7 +508,7 @@ async def _incomplete_profile(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _ai_not_configured(ctx: "Ctx") -> list[Action]:
+async def _ai_not_configured(ctx: Ctx) -> list[Action]:
     """No AI provider key means every "AI" answer is a template."""
     from app.domains.integrations import registry
 
@@ -543,7 +549,7 @@ async def _ai_not_configured(ctx: "Ctx") -> list[Action]:
 # in a separate tab.
 
 
-async def _channel_gaps(ctx: "Ctx") -> list[Action]:
+async def _channel_gaps(ctx: Ctx) -> list[Action]:
     """Channels this kind of business needs and does not have connected."""
     from app.domains.business_context.service import BusinessContextService
 
@@ -582,7 +588,7 @@ async def _channel_gaps(ctx: "Ctx") -> list[Action]:
     ]
 
 
-async def _reach_opportunity(ctx: "Ctx") -> list[Action]:
+async def _reach_opportunity(ctx: Ctx) -> list[Action]:
     """When the business could sell beyond where it sells today."""
     from app.domains.business_context.service import BusinessContextService
 

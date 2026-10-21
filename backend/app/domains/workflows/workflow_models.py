@@ -1,12 +1,20 @@
 """Workflow automation models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -100,10 +108,10 @@ class Workflow(Base):
     # Statistics
     total_executions = Column(Integer, default=0)
     total_failures = Column(Integer, default=0)
-    last_executed_at = Column(DateTime(timezone.utc), nullable=True)
+    last_executed_at = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_active", "business_id", "is_active"),
@@ -127,7 +135,7 @@ class WorkflowCondition(Base):
     # Logic
     logic_operator = Column(String(10), default="AND")  # AND, OR
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_workflow_condition", "workflow_id"),
@@ -151,7 +159,7 @@ class WorkflowAction(Base):
     order = Column(Integer, default=0)  # Execution order
     run_after_delay = Column(Integer, default=0)  # Delay in minutes before running
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_workflow_action", "workflow_id", "order"),
@@ -181,8 +189,8 @@ class WorkflowExecution(Base):
     execution_log = Column(JSONB, nullable=True)  # Detailed action logs
 
     # Timing
-    started_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)
     execution_time_ms = Column(Integer, nullable=True)
 
     __table_args__ = (
@@ -222,7 +230,7 @@ class WorkflowMetrics(Base):
     executions_7d = Column(Integer, default=0)
     success_rate_7d = Column(Integer, default=0)  # percentage
 
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_workflow", "business_id", "workflow_id"),

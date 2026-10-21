@@ -1,7 +1,6 @@
 """50 Marketing Prompts — Content, campaigns, channels, audience, conversion, retention."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
 
 
@@ -27,13 +26,13 @@ class PromptTemplate:
     category: str
     business_context: str
     prompt_text: str
-    variables: List[str]
+    variables: list[str]
     example_input: str
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class MarketingPrompts:
@@ -1581,7 +1580,7 @@ For next year:
     # Due to line limits, showing template structure for remaining prompts
 
     @staticmethod
-    def get_all_marketing_prompts() -> Dict[str, PromptTemplate]:
+    def get_all_marketing_prompts() -> dict[str, PromptTemplate]:
         """Return all 50 marketing prompts indexed by ID."""
         return {
             "marketing_001": MarketingPrompts.blog_post_generator(),

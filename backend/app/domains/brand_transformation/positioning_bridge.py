@@ -16,7 +16,6 @@ a competitor with only a name is reported as skipped.
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -98,7 +97,9 @@ class PositioningBridge:
 
         # monitors
         try:
-            from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
+            from app.domains.competitive.intelligence_engine import (
+                CompetitiveIntelligenceEngine,
+            )
 
             engine = CompetitiveIntelligenceEngine(self.db)
             for m in plan["monitors"]:

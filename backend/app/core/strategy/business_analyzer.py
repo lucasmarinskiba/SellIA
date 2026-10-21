@@ -1,9 +1,9 @@
 """Business Analyzer — Parse business profile → structured data for strategy selection."""
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Dict, Any, List
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -73,30 +73,30 @@ class BusinessProfile:
 
     # Market Position
     market_position: str = "unknown"  # niche, competitive, market_leader
-    competitive_advantages: List[str] = field(default_factory=list)
-    competitive_disadvantages: List[str] = field(default_factory=list)
-    differentiation_strategy: Optional[str] = None
-    target_customer_segment: Optional[str] = None
-    customer_pain_points: List[str] = field(default_factory=list)
+    competitive_advantages: list[str] = field(default_factory=list)
+    competitive_disadvantages: list[str] = field(default_factory=list)
+    differentiation_strategy: str | None = None
+    target_customer_segment: str | None = None
+    customer_pain_points: list[str] = field(default_factory=list)
 
     # Financial Info
     financials: FinancialProfile = field(default_factory=FinancialProfile)
 
     # Inventory/Assets
-    assets: List[str] = field(default_factory=list)  # What they own
-    liabilities: List[str] = field(default_factory=list)  # What they owe
+    assets: list[str] = field(default_factory=list)  # What they own
+    liabilities: list[str] = field(default_factory=list)  # What they owe
 
     # Constraints
     budget_available: float = 0.0
     talent_availability: str = "limited"  # limited, moderate, strong
     technology_maturity: str = "low"  # low, medium, high
-    regulatory_constraints: List[str] = field(default_factory=list)
+    regulatory_constraints: list[str] = field(default_factory=list)
 
     # Historical Performance
-    success_factors: List[str] = field(default_factory=list)
-    failure_factors: List[str] = field(default_factory=list)
-    recent_wins: List[str] = field(default_factory=list)
-    challenges: List[str] = field(default_factory=list)
+    success_factors: list[str] = field(default_factory=list)
+    failure_factors: list[str] = field(default_factory=list)
+    recent_wins: list[str] = field(default_factory=list)
+    challenges: list[str] = field(default_factory=list)
 
 
 class BusinessAnalyzer:
@@ -104,9 +104,8 @@ class BusinessAnalyzer:
 
     def __init__(self):
         """Initialize business analyzer."""
-        pass
 
-    def analyze_business(self, company_data: Dict[str, Any]) -> BusinessProfile:
+    def analyze_business(self, company_data: dict[str, Any]) -> BusinessProfile:
         """
         Extract and structure business profile data.
 
@@ -152,11 +151,11 @@ class BusinessAnalyzer:
         logger.info(f"Analyzed business: stage={profile.stage}, model={profile.business_model}")
         return profile
 
-    def identify_business_model(self, company_data: Dict[str, Any]) -> BusinessModel:
+    def identify_business_model(self, company_data: dict[str, Any]) -> BusinessModel:
         """Identify business model type (B2B, SaaS, etc.)."""
         return self._identify_business_model(company_data)
 
-    def calculate_unit_economics(self, business_profile: BusinessProfile) -> Dict[str, float]:
+    def calculate_unit_economics(self, business_profile: BusinessProfile) -> dict[str, float]:
         """
         Calculate key unit economics:
         - CAC (Customer Acquisition Cost)
@@ -195,7 +194,7 @@ class BusinessAnalyzer:
             "churn_rate": financials.churn_rate,
         }
 
-    def assess_competitive_advantage(self, business_profile: BusinessProfile) -> Dict[str, Any]:
+    def assess_competitive_advantage(self, business_profile: BusinessProfile) -> dict[str, Any]:
         """
         Assess competitive advantages:
         - Unique vs commodity
@@ -210,7 +209,7 @@ class BusinessAnalyzer:
             "defensibility": self._assess_defensibility(business_profile),
         }
 
-    def evaluate_market_size(self, company_data: Dict[str, Any]) -> Dict[str, float]:
+    def evaluate_market_size(self, company_data: dict[str, Any]) -> dict[str, float]:
         """
         Estimate market size:
         - TAM (Total Addressable Market)
@@ -226,7 +225,7 @@ class BusinessAnalyzer:
             "tam_reachable": company_data.get("tam_reachable", False),
         }
 
-    def identify_constraints(self, business_profile: BusinessProfile) -> Dict[str, List[str]]:
+    def identify_constraints(self, business_profile: BusinessProfile) -> dict[str, list[str]]:
         """Identify constraints on growth."""
         constraints = {
             "capital": [],
@@ -263,7 +262,7 @@ class BusinessAnalyzer:
 
     # Private helper methods
 
-    def _identify_business_model(self, company_data: Dict[str, Any]) -> BusinessModel:
+    def _identify_business_model(self, company_data: dict[str, Any]) -> BusinessModel:
         """Identify business model from company data."""
         description = (company_data.get("description", "") + " " + company_data.get("business_name", "")).lower()
 
@@ -286,7 +285,7 @@ class BusinessAnalyzer:
 
         return BusinessModel.HYBRID
 
-    def _classify_stage(self, company_data: Dict[str, Any]) -> BusinessStage:
+    def _classify_stage(self, company_data: dict[str, Any]) -> BusinessStage:
         """Classify business stage based on revenue and growth."""
         financials = company_data.get("financials", {})
         annual_revenue = financials.get("annual_revenue", 0.0)
@@ -306,7 +305,7 @@ class BusinessAnalyzer:
 
         return BusinessStage.MATURE
 
-    def _analyze_financials(self, financials_data: Dict[str, Any]) -> FinancialProfile:
+    def _analyze_financials(self, financials_data: dict[str, Any]) -> FinancialProfile:
         """Parse financial data."""
         return FinancialProfile(
             annual_revenue=financials_data.get("annual_revenue", 0.0),

@@ -4,15 +4,15 @@ Loads agent prompts from category files in the categories/ directory.
 Each category file exports an AGENTS dict: {slug: prompt_text}.
 """
 
-import os
 import importlib.util
+import os
 from pathlib import Path
 from typing import Dict
 
 
-def _load_category_prompts() -> Dict[str, str]:
+def _load_category_prompts() -> dict[str, str]:
     """Dynamically load all agent prompts from category files."""
-    prompts: Dict[str, str] = {}
+    prompts: dict[str, str] = {}
     categories_dir = Path(__file__).parent / "categories"
 
     if not categories_dir.exists():
@@ -45,7 +45,7 @@ def _load_category_prompts() -> Dict[str, str]:
     return prompts
 
 
-AGENT_PROMPTS: Dict[str, str] = _load_category_prompts()
+AGENT_PROMPTS: dict[str, str] = _load_category_prompts()
 
 
 # Re-export composer for convenience

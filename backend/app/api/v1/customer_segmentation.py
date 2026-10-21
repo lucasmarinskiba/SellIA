@@ -1,9 +1,8 @@
 """Customer segmentation API — RFM + behavioral + churn prediction."""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
@@ -53,7 +52,7 @@ def calculate_clv_scores(
 @router.get("/businesses/{business_id}/segmentation-summary")
 def get_segment_summary(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get segmentation summary and metrics."""

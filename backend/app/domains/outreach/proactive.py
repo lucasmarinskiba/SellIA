@@ -4,19 +4,19 @@ The system INITIATES conversations autonomously.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.outreach.models import OutreachLog, OutreachLogStatus
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.channels.models import Conversation
-from app.domains.crm.models import LeadScore, Deal
-from app.domains.orders.models import Order
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.channels.models import Conversation
+from app.domains.crm.models import Deal, LeadScore
+from app.domains.orders.models import Order
+from app.domains.outreach.models import OutreachLog
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -126,7 +126,7 @@ class ProactiveOutreachEngine:
         business_id: uuid.UUID,
         outreach_type: str,
         conversation_id: uuid.UUID,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Generate a proactive outreach message for a conversation."""
         config = OUTREACH_TYPES.get(outreach_type)
         if not config:
@@ -235,14 +235,14 @@ class ProactiveOutreachEngine:
         outreach_type: str,
         config: dict,
         conversation: Conversation,
-        score: Optional[LeadScore],
-        deal: Optional[Deal],
-        last_order: Optional[Order],
+        score: LeadScore | None,
+        deal: Deal | None,
+        last_order: Order | None,
     ) -> str:
         """Build contextual prompt for outreach generation."""
         parts = [f"Tipo de outreach: {config['name']}"]
         parts.append(f"Descripción: {config['description']}")
-        parts.append(f"Canal preferido: WhatsApp")
+        parts.append("Canal preferido: WhatsApp")
         parts.append(f"Lead: {conversation.lead_name or 'Cliente'}")
         parts.append(f"Canal de origen: {conversation.lead_source or 'desconocido'}")
 
@@ -255,7 +255,7 @@ class ProactiveOutreachEngine:
                 parts.append(f"Valor del deal: ${deal.value} {deal.currency}")
 
         if last_order:
-            days_ago = (datetime.now(timezone.utc) - last_order.created_at).days if last_order.created_at else 0
+            days_ago = (datetime.now(UTC) - last_order.created_at).days if last_order.created_at else 0
             parts.append(f"Última compra: hace {days_ago} días - ${last_order.total_amount}")
 
         # Type-specific instructions
@@ -305,7 +305,7 @@ class ProactiveOutreachEngine:
         frequency_days = config["frequency_days"]
         max_per_day = config["max_per_day"]
 
-        since = datetime.now(timezone.utc) - timedelta(days=frequency_days)
+        since = datetime.now(UTC) - timedelta(days=frequency_days)
 
         if target_segment == "cold":
             # Leads with score < 40 and no activity in frequency_days
@@ -342,13 +342,16 @@ class ProactiveOutreachEngine:
                 select(Order.conversation_id).where(
                     Order.business_id == business_id,
                     Order.status == "pending",
-                    Order.created_at < datetime.now(timezone.utc) - timedelta(days=1),
+                    Order.created_at < datetime.now(UTC) - timedelta(days=1),
                 ).limit(max_per_day)
             )
             return [row[0] for row in result.all() if row[0]]
 
         elif target_segment == "at_risk":
-            from app.domains.retention.models import CustomerSegment, CustomerSegmentType
+            from app.domains.retention.models import (
+                CustomerSegment,
+                CustomerSegmentType,
+            )
             result = await self.db.execute(
                 select(CustomerSegment.conversation_id).where(
                     CustomerSegment.business_id == business_id,
@@ -358,7 +361,10 @@ class ProactiveOutreachEngine:
             return [row[0] for row in result.all()]
 
         elif target_segment == "champions":
-            from app.domains.retention.models import CustomerSegment, CustomerSegmentType
+            from app.domains.retention.models import (
+                CustomerSegment,
+                CustomerSegmentType,
+            )
             result = await self.db.execute(
                 select(CustomerSegment.conversation_id).where(
                     CustomerSegment.business_id == business_id,
@@ -372,7 +378,7 @@ class ProactiveOutreachEngine:
                 select(Order.conversation_id).where(
                     Order.business_id == business_id,
                     Order.status == "paid",
-                    Order.paid_at >= datetime.now(timezone.utc) - timedelta(days=7),
+                    Order.paid_at >= datetime.now(UTC) - timedelta(days=7),
                 ).limit(max_per_day)
             )
             return [row[0] for row in result.all() if row[0]]

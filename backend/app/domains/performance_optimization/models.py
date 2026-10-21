@@ -1,8 +1,19 @@
 """Phase 5: Performance Optimization - Query, Cache, Index Strategy."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -45,10 +56,10 @@ class PerformanceMetrics(Base):
     performance_score = Column(Integer, default=100)
 
     metric_period = Column(String(20), default="last_hour")  # last_hour, last_day, last_week
-    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class SlowQuery(Base):
@@ -80,11 +91,11 @@ class SlowQuery(Base):
     # Urgency (0-100)
     optimization_urgency = Column(Integer, default=50)
 
-    first_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_seen_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    first_seen_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    last_seen_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class IndexRecommendation(Base):
@@ -113,11 +124,11 @@ class IndexRecommendation(Base):
     estimated_index_size_mb = Column(Float, default=0)
     maintenance_cost = Column(String(20), default="low")  # "low", "medium", "high"
 
-    recommended_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    recommended_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     implemented_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class CacheStrategy(Base):
@@ -150,8 +161,8 @@ class CacheStrategy(Base):
 
     status = Column(String(20), default="proposed")  # "proposed", "active", "disabled"
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class QueryOptimization(Base):
@@ -181,9 +192,9 @@ class QueryOptimization(Base):
     performance_verified = Column(Boolean, default=False)
     verified_improvement_percent = Column(Float, nullable=True)
 
-    identified_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    identified_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     implemented_at = Column(DateTime(timezone=True), nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))

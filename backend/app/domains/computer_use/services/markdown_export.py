@@ -4,7 +4,7 @@ Genera reportes en Markdown para documentación y sharing.
 """
 
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -16,15 +16,15 @@ class MarkdownExportService:
 
     def export_session(
         self,
-        session_data: Dict[str, Any],
-        steps: List[Dict[str, Any]],
-        annotations: List[Dict[str, Any]],
+        session_data: dict[str, Any],
+        steps: list[dict[str, Any]],
+        annotations: list[dict[str, Any]],
     ) -> str:
         """Genera un reporte Markdown de la sesión."""
         lines = []
 
         # Header
-        lines.append(f"# 🖥️ Reporte de Sesión — Caja de Cristal")
+        lines.append("# 🖥️ Reporte de Sesión — Caja de Cristal")
         lines.append("")
         lines.append(f"**Tarea:** {session_data.get('task_description', 'N/A')}")
         lines.append(f"**Estado:** {session_data.get('status', 'N/A')}")
@@ -85,7 +85,7 @@ class MarkdownExportService:
 
         return "\n".join(lines)
 
-    def export_steps_table(self, steps: List[Dict[str, Any]]) -> str:
+    def export_steps_table(self, steps: list[dict[str, Any]]) -> str:
         """Genera una tabla Markdown de los pasos."""
         lines = []
         lines.append("| Paso | Acción | Parámetros | Resultado |")

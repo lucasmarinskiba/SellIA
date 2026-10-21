@@ -12,11 +12,10 @@ Flujo:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class RefundRequest:
     order_id: str
     reason: DisputeReason
     description: str
-    photos: List[str] = field(default_factory=list)
+    photos: list[str] = field(default_factory=list)
     requested_date: datetime = field(default_factory=datetime.utcnow)
     customer_name: str = ""
     customer_email: str = ""
@@ -95,9 +94,9 @@ class RefundAutomationComplete:
         self,
         order_id: str,
         buyer_message: str,
-        photos: Optional[List[str]] = None,
+        photos: list[str] | None = None,
         order_amount: float = 0.0,
-        customer_info: Optional[Dict[str, Any]] = None,
+        customer_info: dict[str, Any] | None = None,
     ) -> RefundAnalysis:
         """
         Analiza reclamo completo.
@@ -217,7 +216,7 @@ class RefundAutomationComplete:
 
         return DisputeReason.FRAUD  # Default fallback
 
-    def _estimate_confidence(self, message: str, photos: Optional[List[str]]) -> float:
+    def _estimate_confidence(self, message: str, photos: list[str] | None) -> float:
         """Estima confianza en reclamo (0-1)."""
 
         confidence = 0.4  # Base
@@ -250,7 +249,7 @@ class RefundAutomationComplete:
         self,
         order_id: str,
         amount: float,
-        customer_info: Dict[str, Any],
+        customer_info: dict[str, Any],
     ) -> float:
         """Calcula fraud score (0-1)."""
 
@@ -373,7 +372,7 @@ class RefundAutomationComplete:
         analysis: RefundAnalysis,
         payment_method: str,  # stripe, mercadolibre, wallet
         refund_channel: RefundChannel = RefundChannel.ORIGINAL_PAYMENT,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Procesa reembolso según estrategia y canal.
 
@@ -421,7 +420,7 @@ class RefundAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Refund processing exception: {str(e)}")
+            logger.error(f"Refund processing exception: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _process_stripe_refund(
@@ -429,7 +428,7 @@ class RefundAutomationComplete:
         order_id: str,
         amount: float,
         channel: RefundChannel,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Procesa refund en Stripe."""
 
         reason_map = {
@@ -444,7 +443,7 @@ class RefundAutomationComplete:
             )
             return refund_result
         except Exception as e:
-            logger.error(f"Stripe refund error: {str(e)}")
+            logger.error(f"Stripe refund error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _process_ml_refund(
@@ -452,20 +451,20 @@ class RefundAutomationComplete:
         order_id: str,
         amount: float,
         channel: RefundChannel,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Procesa refund en Mercado Libre."""
 
         try:
             refund_result = await self.ml.process_refund(order_id, amount, "customer_request")
             return refund_result
         except Exception as e:
-            logger.error(f"ML refund error: {str(e)}")
+            logger.error(f"ML refund error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _notify_refund_processed(
         self,
         analysis: RefundAnalysis,
-        refund_result: Dict[str, Any],
+        refund_result: dict[str, Any],
     ) -> None:
         """Notifica customer que refund fue procesado."""
 
@@ -484,7 +483,7 @@ class RefundAutomationComplete:
                     refund_reason=analysis.reason.value,
                 )
             except Exception as e:
-                logger.error(f"Failed to send refund email: {str(e)}")
+                logger.error(f"Failed to send refund email: {e!s}")
 
         # SMS
         if request.customer_phone:
@@ -495,7 +494,7 @@ class RefundAutomationComplete:
                     refund_amount=amount,
                 )
             except Exception as e:
-                logger.error(f"Failed to send refund SMS: {str(e)}")
+                logger.error(f"Failed to send refund SMS: {e!s}")
 
     # ========== CHARGEBACK HANDLING ==========
 
@@ -505,7 +504,7 @@ class RefundAutomationComplete:
         chargeback_amount: float,
         reason_code: str,
         chargeback_date: datetime,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Maneja chargeback automático.
 
@@ -543,10 +542,10 @@ class RefundAutomationComplete:
             return {"status": "chargeback_accepted", "order_id": order_id}
 
         except Exception as e:
-            logger.error(f"Chargeback handling error: {str(e)}")
+            logger.error(f"Chargeback handling error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _gather_chargeback_evidence(self, order_id: str) -> Dict[str, Any]:
+    async def _gather_chargeback_evidence(self, order_id: str) -> dict[str, Any]:
         """Reúne evidencia de transacción válida."""
 
         evidence = {}
@@ -560,7 +559,7 @@ class RefundAutomationComplete:
 
         return evidence
 
-    def _is_strong_evidence(self, evidence: Dict[str, Any]) -> bool:
+    def _is_strong_evidence(self, evidence: dict[str, Any]) -> bool:
         """Determina si evidencia es fuerte."""
         # Necesita: payment proof + shipping label + tracking + delivery confirmation
         required_keys = [
@@ -578,7 +577,7 @@ class RefundAutomationComplete:
         original_product_id: str,
         customer_email: str,
         customer_phone: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Procesa reemplazo de producto.
 
@@ -608,7 +607,7 @@ class RefundAutomationComplete:
                     {
                         "to": customer_email,
                         "subject": f"Reemplazo Procesado - Orden #{replacement_order['id']}",
-                        "body": f"Tu reemplazo ha sido generado. Enviaremos el nuevo producto pronto.",
+                        "body": "Tu reemplazo ha sido generado. Enviaremos el nuevo producto pronto.",
                     }
                 )
 
@@ -620,19 +619,19 @@ class RefundAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Replacement processing error: {str(e)}")
+            logger.error(f"Replacement processing error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _create_replacement_order(
         self,
         original_order_id: str,
         product_id: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Crea nueva orden de reemplazo."""
         # TODO: Implementar
         return {"id": f"REP-{original_order_id}", "status": "created"}
 
-    async def _generate_return_label(self, order_id: str) -> Dict[str, Any]:
+    async def _generate_return_label(self, order_id: str) -> dict[str, Any]:
         """Genera etiqueta de devolución."""
         # TODO: Implementar
         return {"tracking_number": "123456789", "label_url": "https://..."}
@@ -645,7 +644,7 @@ class RefundAutomationComplete:
         amount: float,
         reason: str,
         valid_until_days: int = 90,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Emite crédito de tienda (wallet).
 
@@ -665,7 +664,7 @@ class RefundAutomationComplete:
 
     # ========== REPORTING & ANALYTICS ==========
 
-    async def get_refund_stats(self, days: int = 30) -> Dict[str, Any]:
+    async def get_refund_stats(self, days: int = 30) -> dict[str, Any]:
         """Obtiene estadísticas de refunds."""
 
         # TODO: Implementar
@@ -679,7 +678,7 @@ class RefundAutomationComplete:
             "approval_rate": 0.0,
         }
 
-    async def get_fraud_report(self) -> Dict[str, Any]:
+    async def get_fraud_report(self) -> dict[str, Any]:
         """Obtiene reporte de fraude detectado."""
 
         # TODO: Implementar

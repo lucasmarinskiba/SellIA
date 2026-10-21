@@ -6,19 +6,28 @@ Onboarding Guide, and Predictive Churn Shield.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, and_
 
 from app.core.logger import get_logger
-from app.domains.consumo.models import AICallLog, OnboardingProgress, ChurnRiskSignal, QualityGateConfig
-from app.domains.users.models import User
-from app.domains.subscriptions.models import Subscription, SubscriptionPlan, UsageTracking
 from app.domains.agents.models import AgentConfig
-from app.domains.channels.models import ChannelConnection, Conversation
 from app.domains.businesses.models import Business
+from app.domains.channels.models import ChannelConnection, Conversation
+from app.domains.consumo.models import (
+    AICallLog,
+    ChurnRiskSignal,
+    OnboardingProgress,
+    QualityGateConfig,
+)
+from app.domains.subscriptions.models import (
+    Subscription,
+    SubscriptionPlan,
+    UsageTracking,
+)
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 
@@ -27,12 +36,12 @@ logger = get_logger(__name__)
 
 async def get_cost_attribution_summary(
     db: AsyncSession,
-    user_id: Optional[uuid.UUID] = None,
-    business_id: Optional[uuid.UUID] = None,
+    user_id: uuid.UUID | None = None,
+    business_id: uuid.UUID | None = None,
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return aggregated AI cost data."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     query = select(AICallLog).where(AICallLog.created_at >= since)
     if user_id:
@@ -73,9 +82,9 @@ async def get_cost_attribution_summary(
     }
 
 
-async def get_user_margins(db: AsyncSession, days: int = 30) -> List[Dict[str, Any]]:
+async def get_user_margins(db: AsyncSession, days: int = 30) -> list[dict[str, Any]]:
     """For admin: margin analysis per user (cost vs revenue)."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     result = await db.execute(
         select(
@@ -116,17 +125,17 @@ async def get_user_margins(db: AsyncSession, days: int = 30) -> List[Dict[str, A
 async def log_ai_call(
     db: AsyncSession,
     user_id: uuid.UUID,
-    business_id: Optional[uuid.UUID],
+    business_id: uuid.UUID | None,
     provider: str,
     model: str,
     task_type: str,
     tokens_input: int,
     tokens_output: int,
     cost_usd: float,
-    latency_ms: Optional[float] = None,
+    latency_ms: float | None = None,
     cache_hit: bool = False,
     was_batched: bool = False,
-    metadata: Optional[Dict] = None,
+    metadata: dict | None = None,
 ):
     """Record a single AI API call with cost."""
     log = AICallLog(
@@ -163,7 +172,7 @@ async def get_or_create_quality_gate_config(db: AsyncSession, user_id: uuid.UUID
 
 
 async def update_quality_gate_config(
-    db: AsyncSession, user_id: uuid.UUID, data: Dict[str, Any]
+    db: AsyncSession, user_id: uuid.UUID, data: dict[str, Any]
 ) -> QualityGateConfig:
     config = await get_or_create_quality_gate_config(db, user_id)
     for field, value in data.items():
@@ -176,7 +185,7 @@ async def update_quality_gate_config(
 
 # ===== PLAN RECOMMENDATION =====
 
-async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> Dict[str, Any]:
+async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
     """Analyze usage and suggest keep/upgrade/downgrade."""
     from sqlalchemy import select
 
@@ -195,7 +204,7 @@ async def get_plan_recommendation(db: AsyncSession, user_id: uuid.UUID) -> Dict[
     ai_limit = plan_limits.get("ai_messages_monthly", 0)
 
     # Get 30-day usage
-    since = datetime.now(timezone.utc) - timedelta(days=30)
+    since = datetime.now(UTC) - timedelta(days=30)
     usage_result = await db.execute(
         select(func.sum(UsageTracking.quantity)).where(
             UsageTracking.user_id == user_id,
@@ -300,7 +309,7 @@ async def refresh_onboarding_progress(db: AsyncSession, user_id: uuid.UUID) -> O
     return prog
 
 
-async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current_step: str, context: Optional[str]) -> Dict[str, Any]:
+async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current_step: str, context: str | None) -> dict[str, Any]:
     """Generate contextual help for the current onboarding step."""
     step_guides = {
         "business_created": {
@@ -345,7 +354,7 @@ async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current
     # Update intervention count
     prog = await get_or_create_onboarding_progress(db, user_id)
     prog.ai_interventions_count += 1
-    prog.help_requested_at = datetime.now(timezone.utc)
+    prog.help_requested_at = datetime.now(UTC)
     prog.help_context = context
     await db.commit()
 
@@ -358,11 +367,11 @@ async def generate_onboarding_help(db: AsyncSession, user_id: uuid.UUID, current
 
 # ===== PREDICTIVE CHURN SHIELD =====
 
-async def run_churn_analysis(db: AsyncSession) -> List[ChurnRiskSignal]:
+async def run_churn_analysis(db: AsyncSession) -> list[ChurnRiskSignal]:
     """Analyze all active users for churn risk signals. Runs daily via Celery."""
     from sqlalchemy import select
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=7)
 
     # Get all active subscriptions
@@ -450,7 +459,7 @@ async def run_churn_analysis(db: AsyncSession) -> List[ChurnRiskSignal]:
     return signals_created
 
 
-async def get_pending_churn_signals(db: AsyncSession, limit: int = 50) -> List[ChurnRiskSignal]:
+async def get_pending_churn_signals(db: AsyncSession, limit: int = 50) -> list[ChurnRiskSignal]:
     """Get unresolved churn signals for admin action."""
     result = await db.execute(
         select(ChurnRiskSignal)
@@ -464,9 +473,9 @@ async def get_pending_churn_signals(db: AsyncSession, limit: int = 50) -> List[C
 
 # ===== CONSUMO ADVANCED ANALYTICS =====
 
-async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> List[Dict[str, Any]]:
+async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> list[dict[str, Any]]:
     """Return AI usage heatmap by hour of day and day of week."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(AICallLog).where(
             AICallLog.user_id == user_id,
@@ -478,7 +487,7 @@ async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30
     # Initialize heatmap matrix (7 days x 24 hours)
     heatmap = {}
     for log in logs:
-        dt = log.created_at.astimezone(timezone.utc)
+        dt = log.created_at.astimezone(UTC)
         day = dt.strftime("%A")  # Monday, Tuesday, etc.
         hour = dt.hour
         key = f"{day}_{hour}"
@@ -490,9 +499,9 @@ async def get_usage_heatmap(db: AsyncSession, user_id: uuid.UUID, days: int = 30
     return list(heatmap.values())
 
 
-async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> Dict[str, Any]:
+async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
     """Compare current month vs previous month."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     prev_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
 
@@ -533,9 +542,9 @@ async def get_monthly_comparison(db: AsyncSession, user_id: uuid.UUID) -> Dict[s
     }
 
 
-async def get_cost_per_lead(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> Dict[str, Any]:
+async def get_cost_per_lead(db: AsyncSession, user_id: uuid.UUID, days: int = 30) -> dict[str, Any]:
     """Calculate AI cost per lead and per conversation."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Get AI costs
     cost_result = await db.execute(

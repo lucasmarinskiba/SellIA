@@ -1,23 +1,22 @@
 """User Memory API — Endpoints para gestionar memoria persistente del usuario"""
 
-from uuid import UUID
-from typing import Optional, List, Dict, Any
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.user_memory.service import UserMemoryService
 from app.domains.user_memory.schemas import (
-    UserMemoryResponse,
-    UserMemoryUpdate,
     UserMemoryEventCreate,
     UserMemoryEventResponse,
-    UserPreferenceUpdate,
+    UserMemoryResponse,
+    UserMemoryUpdate,
     UserPreferenceResponse,
+    UserPreferenceUpdate,
 )
+from app.domains.user_memory.service import UserMemoryService
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -242,7 +241,7 @@ async def get_preference(
     )
 
 
-@router.get("/events", response_model=List[UserMemoryEventResponse])
+@router.get("/events", response_model=list[UserMemoryEventResponse])
 async def get_recent_events(
     limit: int = 50,
     db: AsyncSession = Depends(get_db),

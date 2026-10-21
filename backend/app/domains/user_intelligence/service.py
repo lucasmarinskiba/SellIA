@@ -1,7 +1,13 @@
 """Phase X9: AI User Intelligence Agent Service."""
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.domains.user_intelligence.models import UserRiskProfile, UserJourneyStage, UserPersonalityType
+
+from app.domains.user_intelligence.models import (
+    UserJourneyStage,
+    UserPersonalityType,
+    UserRiskProfile,
+)
 
 
 class UserIntelligenceAgent:
@@ -161,7 +167,7 @@ class UserIntelligenceAgent:
         stage = UserJourneyStage(
             user_id=user_id,
             stage=new_stage,
-            entry_date=datetime.now(timezone.utc),
+            entry_date=datetime.now(UTC),
             momentum="accelerating",
         )
         db.add(stage)

@@ -1,17 +1,17 @@
 """Phase 5D: Offline Analytics Service."""
-from typing import List, Optional, Dict
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, func, select
+
+from app.domains.locations.models import LocationVisit, OfflineConversion
 from app.domains.offline_analytics.models import (
-    OfflineToOnlineAttribution,
     OfflineAnalyticsMetrics,
-    LocationFootTrafficHourly,
+    OfflineToOnlineAttribution,
     PostVisitSequence,
     PostVisitSequenceExecution,
 )
-from app.domains.locations.models import LocationVisit, OfflineConversion
 
 
 class OfflineAnalyticsService:
@@ -20,11 +20,11 @@ class OfflineAnalyticsService:
         db: AsyncSession,
         business_id: UUID,
         user_id: UUID,
-        first_online_channel: Optional[str] = None,
-        first_online_date: Optional[datetime] = None,
-        location_visited_id: Optional[UUID] = None,
-        location_visit_date: Optional[datetime] = None,
-        post_visit_order_date: Optional[datetime] = None,
+        first_online_channel: str | None = None,
+        first_online_date: datetime | None = None,
+        location_visited_id: UUID | None = None,
+        location_visit_date: datetime | None = None,
+        post_visit_order_date: datetime | None = None,
         post_visit_order_value: float = 0,
         conversion_type: str = "online_to_offline",
     ) -> OfflineToOnlineAttribution:
@@ -148,7 +148,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         sequence_name: str,
         trigger_type: str,
-        location_id: Optional[UUID] = None,
+        location_id: UUID | None = None,
     ) -> PostVisitSequence:
         seq = PostVisitSequence(
             business_id=business_id,
@@ -167,7 +167,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         sequence_id: UUID,
         user_id: UUID,
-        offline_conversion_id: Optional[UUID] = None,
+        offline_conversion_id: UUID | None = None,
     ) -> PostVisitSequenceExecution:
         execution = PostVisitSequenceExecution(
             business_id=business_id,
@@ -186,7 +186,7 @@ class OfflineAnalyticsService:
         business_id: UUID,
         days: int = 30,
     ) -> dict:
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
         result = await db.execute(
             select(OfflineToOnlineAttribution).where(
                 and_(

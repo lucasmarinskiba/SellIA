@@ -10,10 +10,10 @@ BrainActivityBus already follows, just persisted this time).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -38,13 +38,13 @@ async def _safe_rollback(db: AsyncSession) -> None:
 
 async def log_ai_action(
     *,
-    user_id: Optional[uuid.UUID | str],
+    user_id: uuid.UUID | str | None,
     action: str,
     summary: str,
-    business_id: Optional[uuid.UUID | str] = None,
+    business_id: uuid.UUID | str | None = None,
     actor_type: str = "system",
-    actor_id: Optional[str] = None,
-    payload: Optional[dict[str, Any]] = None,
+    actor_id: str | None = None,
+    payload: dict[str, Any] | None = None,
     status: str = "success",
 ) -> None:
     """Persist one AI/automation action. Silent no-op if user_id is missing --
@@ -53,6 +53,7 @@ async def log_ai_action(
         return
     try:
         from app.core.database import AsyncSessionLocal
+
         from .models import AIActionLog
 
         async with AsyncSessionLocal() as db:
@@ -112,11 +113,15 @@ async def get_account_kpis(db: AsyncSession, user) -> dict[str, Any]:
     this endpoint exists to replace. Every number below is scoped through
     Business.user_id, and an account with nothing yet honestly gets zeros.
     """
-    from .models import AIActionLog
     from app.domains.businesses.models import Business
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
+
+    from .models import AIActionLog
 
     biz_ids_q = select(Business.id).where(Business.user_id == user.id)
 
@@ -181,7 +186,7 @@ async def get_account_kpis(db: AsyncSession, user) -> dict[str, Any]:
         "messages_ai": messages_ai,
         "ai_actions_total": ai_actions_total,
         "last_action_at": last_action_at.isoformat() if last_action_at else None,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -199,10 +204,13 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
     """
     from app.domains.businesses.models import Business
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
     from app.domains.orders.models import Order, OrderStatus
-    from app.domains.websites.models import Website, Domain
+    from app.domains.websites.models import Domain, Website
 
     biz_rows = await db.execute(
         select(Business.id, Business.name).where(Business.user_id == user.id)
@@ -210,7 +218,7 @@ async def get_business_snapshot(db: AsyncSession, user) -> dict[str, Any]:
     businesses = biz_rows.all()
     business_ids = [b[0] for b in businesses]
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     created = getattr(user, "created_at", None)
     account_age_days = (now - created).days if created else 0
 
@@ -379,8 +387,9 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
     business-context questionnaire it has actually answered, and what SellIA's
     AI has actually done for it since.
     """
-    from .models import AIActionLog
     from app.domains.business_context.service import BusinessContextService
+
+    from .models import AIActionLog
 
     registration = {
         "email": user.email,
@@ -442,7 +451,7 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
     }
     try:
         from app.domains.businesses.models import Business
-        from app.domains.websites.models import Website, Domain
+        from app.domains.websites.models import Domain, Website
 
         biz_result = await db.execute(
             select(Business.id).where(Business.user_id == user.id).limit(1)
@@ -494,5 +503,5 @@ async def get_account_summary(db: AsyncSession, user) -> dict[str, Any]:
             "total_actions": total_actions,
             "last_action_at": last_action_at.isoformat() if last_action_at else None,
         },
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }

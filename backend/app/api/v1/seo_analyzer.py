@@ -1,7 +1,8 @@
 """SEO Analysis endpoints - Core Web Vitals, structured data, keyword research."""
 
-from fastapi import APIRouter, Query
 from datetime import datetime
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/seo", tags=["seo"])
 

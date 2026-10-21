@@ -8,7 +8,7 @@ Endpoints:
 - GET  /training/leaderboard
 """
 
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,16 +16,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.training import service as training_service
 from app.domains.training.schemas import (
+    LeaderboardEntry,
+    SimulationRunOut,
     SimulationScenarioCreate,
     SimulationScenarioOut,
     SimulationScenarioUpdate,
     SimulationStartRequest,
-    SimulationRunOut,
-    LeaderboardEntry,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/training", tags=["training"])
 
@@ -42,7 +42,7 @@ async def list_scenarios(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     business_id: UUID,
-    difficulty: Optional[str] = Query(None, pattern=r"^(easy|medium|hard|expert)$"),
+    difficulty: str | None = Query(None, pattern=r"^(easy|medium|hard|expert)$"),
 ):
     """List active simulation scenarios for a business."""
     scenarios = await training_service.list_scenarios(db, business_id, difficulty=difficulty)
@@ -84,7 +84,6 @@ async def delete_scenario(
     deleted = await training_service.delete_scenario(db, scenario_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Scenario not found")
-    return None
 
 
 # ===== Simulations =====

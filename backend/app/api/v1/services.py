@@ -1,22 +1,26 @@
 """Services API Router"""
 
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.services import services as service_services
-from app.domains.services.models import ServiceDelivery, Appointment
+from app.domains.services.models import Appointment, ServiceDelivery
 from app.domains.services.schemas import (
-    ServiceDeliveryCreate, ServiceDeliveryUpdate, ServiceDeliveryResponse,
-    AppointmentCreate, AppointmentUpdate, AppointmentResponse, AppointmentListResponse,
-    AppointmentActionResponse, ServiceDeliveryActionResponse,
+    AppointmentActionResponse,
+    AppointmentCreate,
+    AppointmentResponse,
+    AppointmentUpdate,
+    ServiceDeliveryActionResponse,
+    ServiceDeliveryCreate,
+    ServiceDeliveryResponse,
+    ServiceDeliveryUpdate,
 )
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -47,8 +51,8 @@ async def get_delivery_by_order(
 @router.get("/deliveries", response_model=dict)
 async def list_deliveries(
     business_id: UUID,
-    status: Optional[str] = None,
-    order_id: Optional[UUID] = None,
+    status: str | None = None,
+    order_id: UUID | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -66,7 +70,7 @@ async def create_delivery(
 ):
     try:
         return await service_services.create_service_delivery(db, data.order_id, data.model_dump())
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating delivery")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -128,9 +132,9 @@ async def cancel_delivery(
 @router.get("/appointments", response_model=dict)
 async def list_appointments(
     business_id: UUID,
-    status: Optional[str] = None,
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
+    status: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -160,7 +164,7 @@ async def create_appointment(
 ):
     try:
         return await service_services.create_appointment(db, current_user.businesses[0].id if hasattr(current_user, 'businesses') else data.order_id, data.model_dump())
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating appointment")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -246,7 +250,7 @@ async def mark_no_show(
 @router.post("/appointments/{appointment_id}/send-reminder")
 async def send_reminder(
     appointment_id: UUID,
-    channel: Optional[str] = "whatsapp",
+    channel: str | None = "whatsapp",
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -259,7 +263,7 @@ async def send_reminder(
 @router.post("/appointments/{appointment_id}/request-confirmation")
 async def request_confirmation(
     appointment_id: UUID,
-    channel: Optional[str] = "whatsapp",
+    channel: str | None = "whatsapp",
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -272,7 +276,7 @@ async def request_confirmation(
 @router.post("/appointments/{appointment_id}/request-feedback")
 async def request_feedback(
     appointment_id: UUID,
-    channel: Optional[str] = "whatsapp",
+    channel: str | None = "whatsapp",
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -314,7 +318,7 @@ async def get_service_analytics(
 ):
     """Get service delivery and appointment analytics."""
     from datetime import timedelta
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Total deliveries
     total_result = await db.execute(

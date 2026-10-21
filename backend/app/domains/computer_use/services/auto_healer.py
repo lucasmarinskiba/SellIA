@@ -5,9 +5,8 @@ encontrar alternativas automáticamente: buscar por texto similar,
 usar atributos ARIA, o fallback a coordenadas cercanas.
 """
 
-import re
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -17,8 +16,8 @@ logger = get_logger(__name__)
 @dataclass
 class HealResult:
     success: bool
-    new_selector: Optional[str]
-    new_coords: Optional[Dict[str, int]]
+    new_selector: str | None
+    new_coords: dict[str, int] | None
     strategy: str
     confidence: float
 
@@ -31,7 +30,7 @@ class AutoHealer:
         page,
         original_x: int,
         original_y: int,
-        expected_text: Optional[str] = None,
+        expected_text: str | None = None,
     ) -> HealResult:
         """Intenta recuperar un click fallido."""
         strategies = []
@@ -109,7 +108,7 @@ class AutoHealer:
     async def heal_type(
         self,
         page,
-        original_selector: Optional[str] = None,
+        original_selector: str | None = None,
     ) -> HealResult:
         """Intenta recuperar un typing fallido encontrando un input enfocable."""
         try:
@@ -161,7 +160,7 @@ class AutoHealer:
 
         return HealResult(success=False, new_selector=None, new_coords=None, strategy="exhausted", confidence=0.0)
 
-    def get_heal_summary(self, heals: List[HealResult]) -> Dict[str, Any]:
+    def get_heal_summary(self, heals: list[HealResult]) -> dict[str, Any]:
         """Resumen de recuperaciones."""
         successful = [h for h in heals if h.success]
         return {

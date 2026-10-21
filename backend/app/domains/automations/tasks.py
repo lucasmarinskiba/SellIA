@@ -1,23 +1,23 @@
 """Celery tasks for Automation Toggles."""
 
-from celery import shared_task
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timezone, timedelta
-import pytz
-from dateutil.rrule import rrulestr
 import logging
+from datetime import UTC, datetime
 
+import pytz
+from celery import shared_task
+from dateutil.rrule import rrulestr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.core.async_bridge import run_async
 from app.core.config import get_settings
 from app.domains.automations.models import (
-    ToggleSchedule,
     AutomationToggle,
-    ToggleNotificationRule,
     ToggleNotificationLog,
-    ToggleNotificationEventType,
+    ToggleNotificationRule,
+    ToggleSchedule,
 )
-from app.core.async_bridge import run_async
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -50,7 +50,7 @@ async def send_toggle_notification(
                 "toggle_id": str(toggle_id),
                 "toggle_name": toggle_name,
                 "event_type": event_type,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
             # Email notification
@@ -72,8 +72,8 @@ async def send_toggle_notification(
                     async with httpx.AsyncClient(timeout=5) as client:
                         headers = {}
                         if rule.webhook_secret:
-                            import hmac
                             import hashlib
+                            import hmac
                             signature = hmac.new(
                                 rule.webhook_secret.encode(),
                                 str(payload).encode(),
@@ -124,7 +124,7 @@ async def _execute_schedules():
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as db:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Find all active schedules due for execution
         result = await db.execute(
@@ -183,7 +183,7 @@ async def _execute_schedules():
                         # Get next occurrence after now
                         next_time = rrule.after(now_tz, inc=False)
                         if next_time:
-                            schedule.next_execution_at = next_time.astimezone(timezone.utc)
+                            schedule.next_execution_at = next_time.astimezone(UTC)
                         else:
                             # No more occurrences, disable schedule
                             schedule.is_active = False
@@ -191,7 +191,7 @@ async def _execute_schedules():
                     except Exception as e:
                         logger.error(f"Error parsing recurrence rule for schedule {schedule.id}: {e}")
                         schedule.failed_count += 1
-                        schedule.last_error = f"Recurrence parsing error: {str(e)}"
+                        schedule.last_error = f"Recurrence parsing error: {e!s}"
                         failed += 1
                         await db.commit()
                         continue

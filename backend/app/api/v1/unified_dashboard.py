@@ -1,11 +1,11 @@
 """Unified analytics dashboard API endpoints."""
 
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import Optional
-from datetime import timezone, timedelta, datetime
 
 from app.core.business_access import get_owned_business, get_owned_location
 from app.core.database import get_db
@@ -52,7 +52,7 @@ async def aggregate_location_metrics(
 @router.post("/businesses/{business_id}/summary")
 async def generate_business_summary(
     business_id: UUID,
-    date: Optional[str] = Query(None),  # YYYY-MM-DD, default today
+    date: str | None = Query(None),  # YYYY-MM-DD, default today
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -108,7 +108,7 @@ async def get_location_unified_metrics(
     try:
         from app.domains.analytics.unified_dashboard_models import UnifiedLocationMetric
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         def _load(db: Session) -> list:
@@ -152,7 +152,9 @@ async def get_business_dashboard(
     await get_owned_business(db, business_id, current_user)
 
     try:
-        from app.domains.analytics.unified_dashboard_models import BusinessDashboardSummary
+        from app.domains.analytics.unified_dashboard_models import (
+            BusinessDashboardSummary,
+        )
 
         def _load(db: Session) -> BusinessDashboardSummary | None:
             return db.query(BusinessDashboardSummary).filter(

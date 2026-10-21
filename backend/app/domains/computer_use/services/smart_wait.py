@@ -5,7 +5,6 @@ Mejora la velocidad y robustez de las sesiones.
 """
 
 import asyncio
-from typing import Optional, Callable
 
 from app.core.logger import get_logger
 
@@ -43,7 +42,7 @@ class SmartWait:
     async def wait_for_navigation(
         self,
         page,
-        url_pattern: Optional[str] = None,
+        url_pattern: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         """Espera a que ocurra una navegación."""
@@ -61,7 +60,7 @@ class SmartWait:
         self,
         page,
         text: str,
-        selector: Optional[str] = None,
+        selector: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> bool:
         """Espera a que aparezca un texto en la página."""

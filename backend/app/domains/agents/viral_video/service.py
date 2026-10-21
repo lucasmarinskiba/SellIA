@@ -3,24 +3,23 @@
 Handles viral video generation with script optimization and video synthesis.
 """
 
-import uuid
 import json
 import os
-from datetime import datetime, timezone
+import uuid
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.agents.viral_video.models import VideoGenerationJob, VideoScript
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.agents.viral_video.models import VideoGenerationJob, VideoScript
 
 logger = get_logger(__name__)
 
@@ -109,7 +108,7 @@ class ViralVideoService:
         await self.db.refresh(job)
         return job
 
-    async def list_videos(self, business_id: uuid.UUID) -> List[VideoGenerationJob]:
+    async def list_videos(self, business_id: uuid.UUID) -> list[VideoGenerationJob]:
         result = await self.db.execute(
             select(VideoGenerationJob)
             .where(VideoGenerationJob.business_id == business_id)
@@ -117,13 +116,13 @@ class ViralVideoService:
         )
         return result.scalars().all()
 
-    async def get_video(self, job_id: uuid.UUID) -> Optional[VideoGenerationJob]:
+    async def get_video(self, job_id: uuid.UUID) -> VideoGenerationJob | None:
         result = await self.db.execute(
             select(VideoGenerationJob).where(VideoGenerationJob.id == job_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_script(self, job_id: uuid.UUID) -> Optional[VideoScript]:
+    async def get_script(self, job_id: uuid.UUID) -> VideoScript | None:
         result = await self.db.execute(
             select(VideoScript).where(VideoScript.job_id == job_id)
         )
@@ -140,7 +139,7 @@ class ViralVideoService:
         platform: str,
         duration: int,
         settings: Any,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Generate an optimized viral video script."""
         ctx = await get_agent_prompt_context(self.db, business_id)
         context_block = format_business_context_for_prompt(ctx)
@@ -195,7 +194,7 @@ class ViralVideoService:
         self,
         prompt: str,
         settings: Any,
-    ) -> tuple[Optional[Path], str]:
+    ) -> tuple[Path | None, str]:
         """Generate video using Kling, Minimax, Runway, Pika, or Gemini."""
         job_id = uuid.uuid4()
         file_name = f"video_{job_id}.mp4"
@@ -233,7 +232,7 @@ class ViralVideoService:
         topic: str,
         platform: str,
         settings: Any,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a thumbnail image."""
         if settings.OPENAI_API_KEY:
             try:
@@ -262,7 +261,7 @@ class ViralVideoService:
                 logger.warning(f"Thumbnail generation failed: {e}")
         return None
 
-    def _build_srt(self, script_data: Dict[str, str], duration: int) -> str:
+    def _build_srt(self, script_data: dict[str, str], duration: int) -> str:
         """Build a simple SRT subtitle file."""
         parts = [
             (script_data.get("hook", ""), 0, 3),

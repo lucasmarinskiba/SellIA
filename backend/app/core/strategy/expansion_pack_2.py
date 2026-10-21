@@ -1,8 +1,8 @@
 """Expansion Pack 2: 30 Sales Methods - Consultative, Transactional, Inside Sales Scripts."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class SalesMethod(str, Enum):
@@ -53,33 +53,33 @@ class SalesMethodDetail:
     category: str  # consultative, transactional, inside_sales
 
     # Real Case Studies
-    case_study_1: Dict[str, Any]
-    case_study_2: Dict[str, Any]
-    case_study_3: Dict[str, Any]
+    case_study_1: dict[str, Any]
+    case_study_2: dict[str, Any]
+    case_study_3: dict[str, Any]
 
     # Sales Scripts & Templates
     opening_statement: str
-    key_questions: List[str]
-    value_propositions: List[str]
-    objection_handlers: Dict[str, str]  # objection -> response
-    closing_statements: List[str]
+    key_questions: list[str]
+    value_propositions: list[str]
+    objection_handlers: dict[str, str]  # objection -> response
+    closing_statements: list[str]
 
     # Metrics & Performance
     typical_conversion_rate: float  # %
-    typical_deal_size: Dict[str, str]  # min, avg, max
+    typical_deal_size: dict[str, str]  # min, avg, max
     average_sales_cycle_days: int
     win_rate_vs_competition: float  # %
     customer_satisfaction_nps: int
 
     # Implementation
-    required_skills: List[str]
-    tools_needed: List[str]
+    required_skills: list[str]
+    tools_needed: list[str]
     training_hours_needed: int
     ramp_time_weeks: int
 
     # Applicability
-    best_for_industries: List[str]
-    best_for_business_models: List[str]
+    best_for_industries: list[str]
+    best_for_business_models: list[str]
     best_for_deal_sizes: str  # small, mid, enterprise
     customer_segment: str  # self-serve, SMB, mid-market, enterprise
 
@@ -841,21 +841,21 @@ class SalesMethodsExpansionPack2:
     """Sales methods expansion pack 2: 30 proven sales techniques with scripts."""
 
     @staticmethod
-    def get_consultative_methods() -> Dict[SalesMethod, SalesMethodDetail]:
+    def get_consultative_methods() -> dict[SalesMethod, SalesMethodDetail]:
         """Get all consultative sales methods."""
         return CONSULTATIVE_SALES_METHODS
 
     @staticmethod
-    def get_high_conversion() -> List[SalesMethodDetail]:
+    def get_high_conversion() -> list[SalesMethodDetail]:
         """Get sales methods with >50% conversion rate."""
         return [m for m in CONSULTATIVE_SALES_METHODS.values() if m.typical_conversion_rate > 0.50]
 
     @staticmethod
-    def get_enterprise_focused() -> List[SalesMethodDetail]:
+    def get_enterprise_focused() -> list[SalesMethodDetail]:
         """Get methods best for enterprise deals."""
         return [m for m in CONSULTATIVE_SALES_METHODS.values() if "enterprise" in m.best_for_deal_sizes]
 
     @staticmethod
-    def get_quick_learning() -> List[SalesMethodDetail]:
+    def get_quick_learning() -> list[SalesMethodDetail]:
         """Get sales methods with short ramp time (<=6 weeks)."""
         return [m for m in CONSULTATIVE_SALES_METHODS.values() if m.ramp_time_weeks <= 6]

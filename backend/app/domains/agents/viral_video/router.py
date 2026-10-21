@@ -9,13 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.viral_video.schemas import (
-    ViralVideoGenerateRequest,
     VideoGenerationJobResponse,
     VideoScriptResponse,
+    ViralVideoGenerateRequest,
 )
-from app.domains.agents.viral_video.service import ViralVideoService, STORAGE_DIR
+from app.domains.agents.viral_video.service import STORAGE_DIR, ViralVideoService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/agents/viral-video", tags=["viral-video"])
 

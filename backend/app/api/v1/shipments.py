@@ -1,21 +1,26 @@
 """Shipments API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.shipments import services as shipment_services
-from app.domains.shipments.models import Shipment, ShipmentConfig, ShipmentTrackingEvent
 from app.domains.shipments.schemas import (
-    ShipmentCreate, ShipmentUpdate, ShipmentResponse, ShipmentDetailResponse,
-    ShipmentConfigCreate, ShipmentConfigUpdate, ShipmentConfigResponse,
-    RefreshTrackingResponse, NotifyCustomerResponse, CarrierInfo,
+    CarrierInfo,
+    NotifyCustomerResponse,
+    RefreshTrackingResponse,
+    ShipmentConfigCreate,
+    ShipmentConfigResponse,
+    ShipmentConfigUpdate,
+    ShipmentCreate,
+    ShipmentDetailResponse,
+    ShipmentResponse,
+    ShipmentUpdate,
 )
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -82,7 +87,6 @@ async def delete_config(
     if not config:
         raise HTTPException(status_code=404, detail="Configuración no encontrada")
     await shipment_services.delete_shipment_config(db, config)
-    return None
 
 
 @router.post("/configs/{config_id}/test")
@@ -103,9 +107,9 @@ async def test_config(
 @router.get("", response_model=dict)
 async def list_shipments(
     business_id: UUID,
-    status: Optional[str] = None,
-    carrier: Optional[str] = None,
-    search: Optional[str] = None,
+    status: str | None = None,
+    carrier: str | None = None,
+    search: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -133,7 +137,7 @@ async def create_shipment(
         return shipment
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         from app.core.logger import get_logger
         get_logger(__name__).exception("Error creating shipment")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -177,7 +181,6 @@ async def delete_shipment(
     if not shipment:
         raise HTTPException(status_code=404, detail="Envío no encontrado")
     await shipment_services.cancel_shipment(db, shipment)
-    return None
 
 
 @router.post("/{shipment_id}/refresh-tracking", response_model=RefreshTrackingResponse)
@@ -196,7 +199,7 @@ async def refresh_tracking(
 @router.post("/{shipment_id}/notify-customer", response_model=NotifyCustomerResponse)
 async def notify_customer(
     shipment_id: UUID,
-    channel: Optional[str] = None,
+    channel: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

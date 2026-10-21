@@ -1,17 +1,17 @@
 """Gamification Domain — Making SellIA feel like home."""
 
 from app.domains.gamification.models import (
-    UserGamificationProfile,
     Achievement,
-    UserAchievement,
     CelebrationEvent,
     DailyMoodLog,
+    UserAchievement,
+    UserGamificationProfile,
 )
 
 __all__ = [
-    "UserGamificationProfile",
     "Achievement",
-    "UserAchievement",
     "CelebrationEvent",
     "DailyMoodLog",
+    "UserAchievement",
+    "UserGamificationProfile",
 ]

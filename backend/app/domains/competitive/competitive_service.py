@@ -1,17 +1,19 @@
 """Competitive intelligence service — competitor tracking + market analysis."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional, List, Dict
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.competitive.competitive_models import (
-    Competitor, CompetitorPricing, CompetitorOffering, CompetitivePosition,
-    CompetitorType, CompetitorStatus
+    CompetitivePosition,
+    Competitor,
+    CompetitorOffering,
+    CompetitorPricing,
+    CompetitorStatus,
+    CompetitorType,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +80,7 @@ class CompetitiveIntelligenceService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         discount_pct = None
         if discounted_price and base_price > 0:
@@ -118,7 +120,7 @@ class CompetitiveIntelligenceService:
         offering_name: str,
         category: str = None,
         description: str = None,
-        features: List[str] = None,
+        features: list[str] = None,
         our_has_equivalent: bool = False,
         competitive_advantage: str = None,
         db: Session = None
@@ -163,7 +165,7 @@ class CompetitiveIntelligenceService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Count competitors
         all_competitors = db.query(Competitor).filter(
@@ -239,7 +241,7 @@ class CompetitiveIntelligenceService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+        cutoff = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
 
         # Get competitor pricing for product
         competitor_pricing = db.query(CompetitorPricing).filter(
@@ -252,7 +254,7 @@ class CompetitiveIntelligenceService:
             return {"benchmarking_available": False}
 
         # Latest price per competitor
-        by_competitor: Dict[str, dict] = {}
+        by_competitor: dict[str, dict] = {}
         for pricing in competitor_pricing:
             comp_id = str(pricing.competitor_id)
             if comp_id not in by_competitor or pricing.date_observed > by_competitor[comp_id]["date"]:
@@ -307,7 +309,7 @@ class CompetitiveIntelligenceService:
             return {"gaps_identified": 0}
 
         # Group by category
-        by_category: Dict[str, list] = {}
+        by_category: dict[str, list] = {}
         for offering in offerings:
             cat = offering.category or "other"
             if cat not in by_category:
@@ -339,7 +341,7 @@ class CompetitiveIntelligenceService:
     @staticmethod
     def get_competitor_list(
         business_id: UUID,
-        threat_level: Optional[str] = None,
+        threat_level: str | None = None,
         limit: int = 20,
         db: Session = None
     ) -> dict:

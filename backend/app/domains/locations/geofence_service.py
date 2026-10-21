@@ -1,14 +1,14 @@
 """Geofence trigger service — auto check-in on proximity."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional
 
 from sqlalchemy.orm import Session
-from app.domains.proximity.proximity_engine import ProximityEngine
-from app.domains.locations.checkin_service import LocationCheckinService
+
 from app.domains.locations.checkin_models import CheckinType
+from app.domains.locations.checkin_service import LocationCheckinService
+from app.domains.proximity.proximity_engine import ProximityEngine
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class GeofenceTriggerService:
         user_lng: float,
         business_id: UUID,
         locations: list,  # List of Location objects with lat/lng
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> dict:
         """Check if user near any location. Auto check-in if enabled.
 
@@ -45,7 +45,7 @@ class GeofenceTriggerService:
                 recent_checkin = db.query(LocationCheckin).filter(
                     LocationCheckin.location_id == loc.id,
                     LocationCheckin.user_id == user_id,
-                    LocationCheckin.checkin_time >= datetime.now(timezone.utc) - timedelta(minutes=5)
+                    LocationCheckin.checkin_time >= datetime.now(UTC) - timedelta(minutes=5)
                 ).first()
 
                 if recent_checkin:

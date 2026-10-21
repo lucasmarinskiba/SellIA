@@ -9,8 +9,6 @@ Complex strategy → GPT-4o / Claude 3.5 Sonnet
 Typical savings: 40-60% on mixed workloads.
 """
 
-import re
-from typing import Tuple, Optional
 from enum import Enum
 
 from app.core.logger import get_logger
@@ -95,7 +93,7 @@ def route_model(
     prompt: str,
     ollama_available: bool = False,
     groq_available: bool = False,
-) -> Tuple[str, str, TaskComplexity]:
+) -> tuple[str, str, TaskComplexity]:
     """
     Returns (provider, model, complexity) for the given prompt.
 

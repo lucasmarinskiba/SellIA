@@ -1,30 +1,28 @@
 """Stage 1: Response Engine, Humanization, and Context Recall"""
 
-from .response_engine import (
-    ResponseEngine,
-    Message,
-    Response,
-    MessagePriority,
-    get_response_engine,
-    set_response_generator,
+from .context_recall import (
+    ContextRetriever,
+    ConversationMemory,
+    ConversationTurn,
+    Intent,
+    Sentiment,
+    UserProfile,
+    get_context_retriever,
+    get_conversation_memory,
 )
-
 from .humanizer import (
     Humanizer,
     PersonalityProfile,
     Tone,
     get_humanizer,
 )
-
-from .context_recall import (
-    ConversationMemory,
-    ContextRetriever,
-    Intent,
-    Sentiment,
-    UserProfile,
-    ConversationTurn,
-    get_conversation_memory,
-    get_context_retriever,
+from .response_engine import (
+    Message,
+    MessagePriority,
+    Response,
+    ResponseEngine,
+    get_response_engine,
+    set_response_generator,
 )
 
 __all__ = [

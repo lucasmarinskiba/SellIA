@@ -1,14 +1,19 @@
 """Service to sync FOMO copy to platform APIs."""
 
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog
-from app.domains.seo_config.platform_sync_mercadolibre import MercadoLibreListingSync
-from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector
+from app.domains.seo_config.models import (
+    PlatformSyncLog,
+    PublicationLink,
+    PublicationLinkFOMO,
+)
 from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
+from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector
+from app.domains.seo_config.platform_sync_mercadolibre import MercadoLibreListingSync
 
 logger = get_logger(__name__)
 
@@ -44,7 +49,9 @@ class PlatformListingSyncService:
 
         try:
             # Get connection credentials from integrations table
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(

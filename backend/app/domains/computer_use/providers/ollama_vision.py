@@ -12,12 +12,16 @@ Requiere: Ollama corriendo localmente con un modelo de visión cargado.
 
 import json
 import re
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.domains.computer_use.prompts import (
+    COMPUTER_USE_SUMMARY_PROMPT,
+    COMPUTER_USE_SYSTEM_PROMPT,
+)
 from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.prompts import COMPUTER_USE_SYSTEM_PROMPT, COMPUTER_USE_SUMMARY_PROMPT
+
 from .base import ComputerUseProvider
 
 logger = get_logger(__name__)
@@ -49,7 +53,7 @@ class OllamaVisionProvider(ComputerUseProvider):
         self,
         prompt: str,
         image_base64: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Llama a Ollama /api/generate con imagen."""
         try:
             import aiohttp
@@ -65,17 +69,16 @@ class OllamaVisionProvider(ComputerUseProvider):
                 },
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.base_url}/api/generate",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=120),
-                ) as resp:
-                    if resp.status != 200:
-                        text = await resp.text()
-                        logger.error(f"Ollama returned {resp.status}: {text}")
-                        return None
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error(f"Ollama returned {resp.status}: {text}")
+                    return None
+                data = await resp.json()
 
             return data.get("response", "")
 
@@ -165,9 +168,9 @@ class OllamaVisionProvider(ComputerUseProvider):
         self,
         screenshot_bytes: bytes,
         task: str,
-        history: List[Dict[str, Any]] = None,
-        user_message: Optional[str] = None,
-        page_info: Optional[Dict[str, str]] = None,
+        history: list[dict[str, Any]] = None,
+        user_message: str | None = None,
+        page_info: dict[str, str] | None = None,
     ) -> ComputerUseAction:
         if history is None:
             history = []
@@ -219,7 +222,7 @@ For done: {{"action_type": "done", "params": {{"summary": "Task completed"}}, "r
 
         return self._parse_action(response)
 
-    async def generate_summary(self, actions_log: List[Dict[str, Any]]) -> str:
+    async def generate_summary(self, actions_log: list[dict[str, Any]]) -> str:
         actions_text = "\n".join(
             f"Step {a.get('step_number', i+1)}: {a.get('action_type')}"
             for i, a in enumerate(actions_log)

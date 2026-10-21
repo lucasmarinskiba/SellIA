@@ -6,29 +6,32 @@ their bill and improve efficiency.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.core.logger import get_logger
-from app.domains.subscriptions.models import UsageTracking, Subscription, SubscriptionPlan
 from app.domains.conversations.models import Conversation, Message
-from app.domains.users.models import User
+from app.domains.subscriptions.models import (
+    Subscription,
+    SubscriptionPlan,
+    UsageTracking,
+)
 
 logger = get_logger(__name__)
 
 
 class UsageAdvice:
-    def __init__(self, type: str, title: str, description: str, potential_savings: str, action_link: Optional[str] = None):
+    def __init__(self, type: str, title: str, description: str, potential_savings: str, action_link: str | None = None):
         self.type = type
         self.title = title
         self.description = description
         self.potential_savings = potential_savings
         self.action_link = action_link
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "title": self.title,
@@ -38,9 +41,9 @@ class UsageAdvice:
         }
 
 
-async def get_usage_advice(db: AsyncSession, user_id: uuid.UUID) -> List[Dict[str, Any]]:
+async def get_usage_advice(db: AsyncSession, user_id: uuid.UUID) -> list[dict[str, Any]]:
     """Generate personalized cost/usage advice for a user."""
-    advice: List[UsageAdvice] = []
+    advice: list[UsageAdvice] = []
 
     # 1. Check if near plan limits
     subscription = await _get_active_subscription(db, user_id)
@@ -109,7 +112,7 @@ async def get_usage_advice(db: AsyncSession, user_id: uuid.UUID) -> List[Dict[st
     return [a.to_dict() for a in advice]
 
 
-async def _get_active_subscription(db: AsyncSession, user_id: uuid.UUID) -> Optional[Subscription]:
+async def _get_active_subscription(db: AsyncSession, user_id: uuid.UUID) -> Subscription | None:
     result = await db.execute(
         select(Subscription).where(
             Subscription.user_id == user_id,
@@ -119,8 +122,8 @@ async def _get_active_subscription(db: AsyncSession, user_id: uuid.UUID) -> Opti
     return result.scalar_one_or_none()
 
 
-async def _get_recent_usage(db: AsyncSession, user_id: uuid.UUID, days: int) -> Dict[str, int]:
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+async def _get_recent_usage(db: AsyncSession, user_id: uuid.UUID, days: int) -> dict[str, int]:
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.sum(UsageTracking.ai_messages_used)).where(
             UsageTracking.user_id == user_id,
@@ -131,8 +134,8 @@ async def _get_recent_usage(db: AsyncSession, user_id: uuid.UUID, days: int) -> 
     return {"ai_messages": int(total)}
 
 
-async def _get_conversation_stats(db: AsyncSession, user_id: uuid.UUID, days: int) -> Dict[str, float]:
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+async def _get_conversation_stats(db: AsyncSession, user_id: uuid.UUID, days: int) -> dict[str, float]:
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.count(Conversation.id)).where(
             Conversation.user_id == user_id,
@@ -157,7 +160,7 @@ async def _get_recent_generations(db: AsyncSession, user_id: uuid.UUID, days: in
     # Placeholder: in production this would count GeneratedContent rows
     # For now, return 0 so it doesn't trigger unless real data exists
     from app.domains.automations.models import GeneratedContent
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(
         select(func.count(GeneratedContent.id)).where(
             GeneratedContent.created_at >= since,
@@ -170,6 +173,7 @@ async def _get_cache_hit_rate(user_id: uuid.UUID) -> float:
     """Fetch semantic cache hit rate from Redis metrics."""
     try:
         import redis.asyncio as redis
+
         from app.core.config import get_settings
         r = redis.from_url(get_settings().REDIS_URL, decode_responses=True)
         hits = int(await r.get("sellia:metrics:semantic_cache:hits") or 0)

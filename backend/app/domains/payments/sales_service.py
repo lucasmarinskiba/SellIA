@@ -14,7 +14,7 @@ the qualification pitch from process_incoming_message still goes out.
 """
 
 import re
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -49,7 +49,7 @@ def has_buy_intent(message_text: str) -> bool:
 
 async def _resolve_catalog_item(
     db: AsyncSession, business_id: UUID, message_text: str
-) -> Optional[CatalogItem]:
+) -> CatalogItem | None:
     """Pick the catalog item the customer means, or None if ambiguous."""
     result = await db.execute(
         select(CatalogItem).where(
@@ -96,7 +96,7 @@ async def maybe_trigger_checkout(
     business_id: UUID,
     conversation: Conversation,
     message_text: str,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Entry point called from the inbound-message pipeline.
 
     Returns the checkout dict ({checkout_url, transaction_id, ...}) if one

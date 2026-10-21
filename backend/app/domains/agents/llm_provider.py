@@ -5,24 +5,23 @@ with automatic fallback when the primary provider fails.
 """
 
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Any
 
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
-
-from app.domains.businesses.models import Business
-from app.domains.subscriptions.models import UserAPIKey
 from app.core.encryption import decrypt_value
 from app.core.logger import get_logger
+from app.domains.businesses.models import Business
+from app.domains.subscriptions.models import UserAPIKey
 
 logger = get_logger(__name__)
 
 
 class LLMResponse:
     """Standardized response from any LLM provider."""
-    def __init__(self, content: str, model: str, provider: str, tokens_used: Optional[int] = None):
+    def __init__(self, content: str, model: str, provider: str, tokens_used: int | None = None):
         self.content = content
         self.model = model
         self.provider = provider
@@ -35,12 +34,12 @@ class BaseLLMProvider:
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,
         model: str,
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         raise NotImplementedError
 
 
@@ -49,12 +48,12 @@ class OpenAIProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,
         model: str = "gpt-4o-mini",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         try:
             from langchain_openai import ChatOpenAI
             llm = ChatOpenAI(
@@ -80,12 +79,12 @@ class OllamaProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,  # Not used, but kept for interface compatibility
         model: str = "llama3.1",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         from app.core.config import get_settings
         settings = get_settings()
         base_url = settings.OLLAMA_BASE_URL.rstrip("/")
@@ -113,17 +112,16 @@ class OllamaProvider(BaseLLMProvider):
                 },
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{base_url}/api/chat",
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=120),
-                ) as resp:
-                    if resp.status != 200:
-                        text = await resp.text()
-                        logger.error(f"Ollama returned {resp.status}: {text}")
-                        return None
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                f"{base_url}/api/chat",
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    text = await resp.text()
+                    logger.error(f"Ollama returned {resp.status}: {text}")
+                    return None
+                data = await resp.json()
 
             content = data.get("message", {}).get("content", "")
             if not content:
@@ -148,12 +146,12 @@ class KimiProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,
         model: str = "kimi-k2-5",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         try:
             from langchain_openai import ChatOpenAI
             llm = ChatOpenAI(
@@ -180,14 +178,15 @@ class GroqProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,
         model: str = "llama-3.3-70b-versatile",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         try:
             from langchain_openai import ChatOpenAI
+
             from app.core.config import get_settings
             base_url = get_settings().GROQ_BASE_URL.rstrip("/")
             llm = ChatOpenAI(
@@ -213,12 +212,12 @@ class AnthropicProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         api_key: str,
         model: str = "claude-3-5-sonnet-20241022",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         try:
             from langchain_anthropic import ChatAnthropic
             llm = ChatAnthropic(
@@ -251,16 +250,16 @@ class FallbackProvider(BaseLLMProvider):
 
     async def generate(
         self,
-        messages: List[BaseMessage],
+        messages: list[BaseMessage],
         ollama_available: bool = False,
-        groq_key: Optional[str] = None,
-        kimi_key: Optional[str] = None,
-        openai_key: Optional[str] = None,
-        anthropic_key: Optional[str] = None,
+        groq_key: str | None = None,
+        kimi_key: str | None = None,
+        openai_key: str | None = None,
+        anthropic_key: str | None = None,
         model: str = "llama3.1",
         temperature: float = 0.7,
         max_tokens: int = 1500,
-    ) -> Optional[LLMResponse]:
+    ) -> LLMResponse | None:
         # Try Ollama first (free, local)
         if ollama_available:
             result = await self.ollama.generate(messages, "", model, temperature, max_tokens)
@@ -319,7 +318,7 @@ async def _is_ollama_available() -> bool:
 async def resolve_api_keys(
     db: AsyncSession,
     business_id: uuid.UUID,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Resolve API keys for a business. Returns {"kimi": key, "openai": key, "anthropic": key, "ollama": bool}."""
     result = await db.execute(
         select(Business).where(Business.id == business_id)
@@ -346,7 +345,7 @@ async def resolve_api_keys(
             "groq": env_groq, "ollama": False,
         }
 
-    keys: Dict[str, Any] = {
+    keys: dict[str, Any] = {
         "kimi": None,
         "openai": env_openai,
         "anthropic": env_anthropic,
@@ -384,11 +383,10 @@ async def resolve_api_keys(
 
 
 def _inject_business_context_into_messages(
-    messages: List[BaseMessage],
-    business_context: Dict[str, Any],
+    messages: list[BaseMessage],
+    business_context: dict[str, Any],
 ) -> None:
     """Inject business context into the first SystemMessage, or prepend one."""
-    from app.domains.agents.prompts.composer import _finalize_prompt
 
     # Find existing system message
     system_idx = None
@@ -431,6 +429,7 @@ async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.U
     enforced that one time.
     """
     from datetime import date as date_cls
+
     from app.domains.agents.llm_usage_models import LLMDailyUsage
     from app.domains.business_context.models import BusinessContext
 
@@ -479,14 +478,14 @@ async def _check_and_increment_daily_usage(db: AsyncSession, business_id: uuid.U
 async def generate_with_fallback(
     db: AsyncSession,
     business_id: uuid.UUID,
-    messages: List[BaseMessage],
+    messages: list[BaseMessage],
     model: str = "llama3.1",
     temperature: float = 0.7,
     max_tokens: int = 1500,
     use_semantic_cache: bool = True,
     use_smart_router: bool = True,
-    business_context: Optional[Dict[str, Any]] = None,
-) -> Optional[LLMResponse]:
+    business_context: dict[str, Any] | None = None,
+) -> LLMResponse | None:
     """Generate a response using smart routing, semantic cache, and fallback.
 
     If business_context is not provided but business_id is given,

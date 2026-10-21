@@ -10,10 +10,10 @@ Flujo:
 """
 
 import logging
-import stripe
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-import json
+from typing import Any
+
+import stripe
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +29,10 @@ class StripeAutomation:
 
     async def create_checkout_session(
         self,
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        buyer: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Crea Stripe checkout session automáticamente.
 
@@ -97,14 +97,14 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Stripe error: {str(e)}")
+            logger.error(f"Stripe error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def create_subscription_checkout(
         self,
-        plan: Dict[str, Any],
-        buyer: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        plan: dict[str, Any],
+        buyer: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Crea checkout para suscripción recurrente.
 
@@ -151,12 +151,12 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Stripe subscription error: {str(e)}")
+            logger.error(f"Stripe subscription error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== WEBHOOK HANDLING ==========
 
-    async def handle_webhook(self, payload: bytes, sig_header: str) -> Dict[str, Any]:
+    async def handle_webhook(self, payload: bytes, sig_header: str) -> dict[str, Any]:
         """
         Maneja webhooks de Stripe con verificación de firma obligatoria.
 
@@ -177,10 +177,10 @@ class StripeAutomation:
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, self.webhook_secret)
         except ValueError as e:
-            logger.error(f"Invalid payload: {str(e)}")
+            logger.error(f"Invalid payload: {e!s}")
             return {"status": "error", "error": "Invalid payload", "code": "invalid_payload"}
         except stripe.error.SignatureError as e:
-            logger.error(f"Invalid signature: {str(e)}")
+            logger.error(f"Invalid signature: {e!s}")
             return {"status": "error", "error": "Invalid signature", "code": "invalid_signature"}
 
         # Handle event
@@ -203,7 +203,7 @@ class StripeAutomation:
             logger.info(f"Unhandled event type: {event['type']}")
             return {"status": "ignored", "event_type": event["type"]}
 
-    async def _handle_checkout_complete(self, session: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_checkout_complete(self, session: dict[str, Any]) -> dict[str, Any]:
         """Maneja checkout completado."""
 
         logger.info(f"Checkout completed: {session['id']}")
@@ -226,7 +226,7 @@ class StripeAutomation:
             "fulfillment": fulfillment_result,
         }
 
-    async def _handle_payment_success(self, payment_intent: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_payment_success(self, payment_intent: dict[str, Any]) -> dict[str, Any]:
         """Maneja payment exitoso. Persiste en DB."""
 
         logger.info(f"Payment succeeded: {payment_intent['id']}")
@@ -235,9 +235,10 @@ class StripeAutomation:
 
         # P1: Guardar payment en DB real
         try:
+            from datetime import datetime
+
             from app.core.database import AsyncSessionLocal
             from app.core.database.payment_models import Payment
-            from datetime import datetime
 
             async with AsyncSessionLocal() as db:
                 payment = Payment(
@@ -257,7 +258,7 @@ class StripeAutomation:
                 await db.commit()
                 logger.info(f"Payment {payment_intent['id']} saved to database")
         except Exception as e:
-            logger.error(f"Failed to save payment to DB: {str(e)}")
+            logger.error(f"Failed to save payment to DB: {e!s}")
             # No fallar el webhook, pero loguear el error
 
         return {
@@ -268,7 +269,7 @@ class StripeAutomation:
             "payment_id": payment_intent["id"],
         }
 
-    async def _handle_payment_failed(self, payment_intent: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_payment_failed(self, payment_intent: dict[str, Any]) -> dict[str, Any]:
         """Maneja payment fallido."""
 
         logger.warning(f"Payment failed: {payment_intent['id']}")
@@ -280,7 +281,7 @@ class StripeAutomation:
             "reason": payment_intent.get("last_payment_error", {}).get("message", "Unknown"),
         }
 
-    async def _handle_refund(self, charge: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_refund(self, charge: dict[str, Any]) -> dict[str, Any]:
         """Maneja refund."""
 
         logger.info(f"Refund processed: {charge['id']}")
@@ -293,7 +294,7 @@ class StripeAutomation:
             "amount_refunded": charge.get("amount_refunded", 0) / 100,
         }
 
-    async def _handle_subscription_update(self, subscription: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_subscription_update(self, subscription: dict[str, Any]) -> dict[str, Any]:
         """Maneja subscription update."""
 
         logger.info(f"Subscription updated: {subscription['id']}")
@@ -314,7 +315,7 @@ class StripeAutomation:
         product_id: str,
         customer_email: str,
         amount_paid: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Dispara fulfillment (entrega) automáticamente post-pago.
 
@@ -340,8 +341,8 @@ class StripeAutomation:
     async def process_refund(
         self,
         payment_intent_id: str,
-        reason: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        reason: str | None = None,
+    ) -> dict[str, Any]:
         """
         Procesa refund automáticamente.
         """
@@ -364,7 +365,7 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Refund error: {str(e)}")
+            logger.error(f"Refund error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== INVOICE AUTOMATION ==========
@@ -375,7 +376,7 @@ class StripeAutomation:
         amount: float,
         description: str,
         due_date_days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Crea invoice automáticamente (para pagos diferidos).
         """
@@ -416,7 +417,7 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Invoice error: {str(e)}")
+            logger.error(f"Invoice error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== CUSTOMER MANAGEMENT ==========
@@ -425,9 +426,9 @@ class StripeAutomation:
         self,
         email: str,
         name: str,
-        phone: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        phone: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Crea customer en Stripe.
         """
@@ -448,10 +449,10 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Customer creation error: {str(e)}")
+            logger.error(f"Customer creation error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def get_customer_balance(self, customer_id: str) -> Dict[str, Any]:
+    async def get_customer_balance(self, customer_id: str) -> dict[str, Any]:
         """
         Obtiene balance/history de customer.
         """
@@ -479,5 +480,5 @@ class StripeAutomation:
             }
 
         except stripe.error.StripeError as e:
-            logger.error(f"Get balance error: {str(e)}")
+            logger.error(f"Get balance error: {e!s}")
             return {"status": "error"}

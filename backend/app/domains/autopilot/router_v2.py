@@ -4,20 +4,24 @@ Listens to events from the event bus and routes them to appropriate autopilot ac
 """
 
 import uuid
-from typing import Optional, Any
+from datetime import UTC
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.autopilot.service import AutopilotEngine, AutopilotExecutor, AutopilotActionType, AutopilotActionStatus
-from app.domains.autopilot.models import AutopilotConfig
-from app.domains.intelligence.models import MessageAnalysis
-from app.domains.crm.models import Deal, LeadScore
-from app.domains.channels.models import Conversation
-from app.domains.channels.handoff import mark_awaiting_human
-from app.domains.retention.models import HealthScoreRecord
-from app.core.logger import get_logger
-from app.core.events import event_bus
 from app.core.database import AsyncSessionLocal
+from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.autopilot.models import AutopilotConfig
+from app.domains.autopilot.service import (
+    AutopilotActionStatus,
+    AutopilotActionType,
+    AutopilotEngine,
+    AutopilotExecutor,
+)
+from app.domains.channels.handoff import mark_awaiting_human
+from app.domains.channels.models import Conversation
+from app.domains.crm.models import Deal, LeadScore
 
 logger = get_logger(__name__)
 
@@ -100,7 +104,7 @@ class SmartActionRouter:
 
         return actions
 
-    async def _handle_buying_signal(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_buying_signal(self, context: dict, config: AutopilotConfig) -> dict | None:
         """When buying signals are detected, close deal or send proposal."""
         conversation_id = uuid.UUID(context["conversation_id"])
 
@@ -125,8 +129,8 @@ class SmartActionRouter:
             if can_close and config.auto_close_deals:
                 # Close the deal
                 deal.stage = "closed_won"
-                from datetime import datetime, timezone
-                deal.actual_close_date = datetime.now(timezone.utc)
+                from datetime import datetime
+                deal.actual_close_date = datetime.now(UTC)
                 deal.close_reason = "Auto-closed: buying signal detected by AI"
                 await self.db.commit()
 
@@ -169,7 +173,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_intent(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_intent(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Route based on detected intent."""
         intent_type = context.get("intent_type")
         conversation_id = uuid.UUID(context["conversation_id"])
@@ -233,7 +237,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_objection(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_objection(self, context: dict, config: AutopilotConfig) -> dict | None:
         """When objections are raised, send counter-message via objection handler agent."""
         if not config.auto_send_followups:
             return None
@@ -273,7 +277,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_lead_score_change(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_lead_score_change(self, context: dict, config: AutopilotConfig) -> dict | None:
         """When lead score changes significantly, take action."""
         conversation_id = uuid.UUID(context.get("conversation_id", context.get("conversation_id")))
 
@@ -321,7 +325,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_deal_stalled(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_deal_stalled(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Re-activate stalled deals."""
         if not config.auto_activate_recovery_workflows:
             return None
@@ -340,7 +344,7 @@ class SmartActionRouter:
         )
         return {"action": "activate_recovery", "deal_id": deal_id, "log_id": str(log.id)}
 
-    async def _handle_no_reply(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_no_reply(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Send re-engagement after no reply."""
         if not config.auto_send_followups:
             return None
@@ -379,7 +383,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_health_declined(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_health_declined(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Activate recovery for declining health score."""
         if not config.auto_activate_recovery_workflows:
             return None
@@ -396,7 +400,7 @@ class SmartActionRouter:
         )
         return {"action": "activate_retention", "conversation_id": str(conversation_id), "log_id": str(log.id)}
 
-    async def _handle_churn_risk(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_churn_risk(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Handle churn risk detected."""
         conversation_id = uuid.UUID(context["conversation_id"])
         sentiment_score = context.get("sentiment_score", 0)
@@ -435,7 +439,7 @@ class SmartActionRouter:
 
         return None
 
-    async def _handle_inbound_lead(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_inbound_lead(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Handle new inbound lead capture."""
         lead_id = context.get("lead_id")
         source_type = context.get("source_type")
@@ -453,7 +457,7 @@ class SmartActionRouter:
             return {"action": "enroll_value_sequence", "lead_id": lead_id, "log_id": str(log.id)}
         return None
 
-    async def _handle_lead_magnet_converted(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_lead_magnet_converted(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Handle lead magnet conversion."""
         conversation_id = context.get("conversation_id")
         log = await self.autopilot.log_action(
@@ -466,7 +470,7 @@ class SmartActionRouter:
         )
         return {"action": "schedule_followup", "conversation_id": conversation_id, "log_id": str(log.id)}
 
-    async def _handle_referral_signup(self, context: dict, config: AutopilotConfig) -> Optional[dict]:
+    async def _handle_referral_signup(self, context: dict, config: AutopilotConfig) -> dict | None:
         """Handle new referral signup."""
         new_conversation_id = context.get("new_conversation_id")
         log = await self.autopilot.log_action(
@@ -481,7 +485,7 @@ class SmartActionRouter:
 
 
 # Singleton instance for event bus subscription
-_smart_router: Optional[SmartActionRouter] = None
+_smart_router: SmartActionRouter | None = None
 
 
 async def init_smart_router():

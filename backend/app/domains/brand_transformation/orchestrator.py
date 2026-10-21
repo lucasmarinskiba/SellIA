@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -129,7 +129,9 @@ class TransformationOrchestrator:
         cfg = program.auto_bridges or {}
         try:
             if stage_key == "positioning" and cfg.get("competitive"):
-                from app.domains.brand_transformation.positioning_bridge import PositioningBridge
+                from app.domains.brand_transformation.positioning_bridge import (
+                    PositioningBridge,
+                )
 
                 st = await PositioningAgent(self.db).latest(program.business_id)
                 comps = cfg.get("competitors")  # optional [{name,url}]
@@ -141,7 +143,9 @@ class TransformationOrchestrator:
                         st, owner_user_id=program.owner_user_id, competitors=comps,
                     )
             elif stage_key == "brand_identity" and cfg.get("assets"):
-                from app.domains.brand_transformation.identity_bridge import IdentityBridge
+                from app.domains.brand_transformation.identity_bridge import (
+                    IdentityBridge,
+                )
 
                 it = await BrandIdentityAgent(self.db).latest(program.business_id)
                 if it:
@@ -225,9 +229,9 @@ class TransformationOrchestrator:
 
                 # Log successful execution of SEO agents
                 if stage_key == "positioning":
-                    await seo_wrapper.log_positioning_execution(program.business_id, f"Generated positioning statement")
+                    await seo_wrapper.log_positioning_execution(program.business_id, "Generated positioning statement")
                 elif stage_key == "fomo_engine":
-                    await seo_wrapper.log_fomo_execution(program.business_id, None, f"Generated FOMO playbook")
+                    await seo_wrapper.log_fomo_execution(program.business_id, None, "Generated FOMO playbook")
 
         # advance program
         completed = list(program.completed_stages or [])
@@ -740,7 +744,7 @@ Return JSON:
         result.setdefault("severity", "ok")
         result.setdefault("alert", False)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         automation.last_run_at = now
         automation.last_result = result
         automation.runs_count = (automation.runs_count or 0) + 1

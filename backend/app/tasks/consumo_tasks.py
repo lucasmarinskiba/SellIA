@@ -6,10 +6,10 @@ Periodic tasks for Predictive Churn Shield and onboarding progress updates.
 
 from celery import shared_task
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.consumo.service import run_churn_analysis
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 

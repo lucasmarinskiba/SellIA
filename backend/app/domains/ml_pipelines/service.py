@@ -1,10 +1,14 @@
 """Phase 2: ML Pipeline Service - Predictive Models."""
-from typing import Optional
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel, ChannelRoutingModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.ml_pipelines.models import (
+    ChurnPredictionModel,
+    CLVModel,
+    LeadScoringModel,
+)
 
 
 class MLPipelineService:
@@ -125,7 +129,7 @@ class MLPipelineService:
         total_lifetime_value: float,
         purchase_frequency_per_month: float,
         support_tickets: int,
-        nps_score: Optional[int] = None,
+        nps_score: int | None = None,
     ) -> ChurnPredictionModel:
         """Predict churn probability."""
         # Churn risk factors (simplified)

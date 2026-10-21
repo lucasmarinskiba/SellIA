@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 async def ensure_ledger_tables() -> None:
-    from app.core.database import Base, engine  # noqa: WPS433 (late import)
+    from app.core.database import engine  # noqa: WPS433 (late import)
     from app.domains.ledger.models import LEDGER_TABLES
 
     created = 0

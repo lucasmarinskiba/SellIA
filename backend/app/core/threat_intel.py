@@ -7,11 +7,10 @@ Inteligencia de amenazas básica para detección de:
 
 import hashlib
 import ipaddress
-from typing import Set
 
 # Tor exit nodes públicos (lista estática reducida; en producción se sincroniza periódicamente)
 # Fuente: https://check.torproject.org/exit-addresses
-KNOWN_TOR_EXITS: Set[str] = set()
+KNOWN_TOR_EXITS: set[str] = set()
 
 # Rangos IP conocidos de proveedores VPN/Hosting populares (muestra representativa)
 # En producción se debe integrar con una API como IPHub, IPinfo, o AbuseIPDB.

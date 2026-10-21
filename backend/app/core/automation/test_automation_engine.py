@@ -12,28 +12,28 @@ Covers:
 - Integration tests
 """
 
-import pytest
 import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, Any
+
+import pytest
 
 # Import automation components
 from automation_engine import (
     AutomationEngine,
     Job,
-    Task,
-    JobType,
     JobStatus,
+    JobType,
     Priority,
+    Task,
 )
-from task_scheduler import TaskScheduler
-from job_queue import JobQueue, BatchJobQueue
-from state_manager import StateManager, JobRecovery
-from retry_handler import RetryHandler, RetryPolicy as RetryHandlerPolicy
 from escalation_handler import EscalationHandler, EscalationPolicy
+from job_queue import JobQueue
 from monitoring_dashboard import MonitoringDashboard
-from workflow_builder import WorkflowBuilder, WorkflowExecutor, WorkflowTrigger
-
+from retry_handler import RetryHandler
+from retry_handler import RetryPolicy as RetryHandlerPolicy
+from state_manager import StateManager
+from task_scheduler import TaskScheduler
+from workflow_builder import WorkflowBuilder, WorkflowTrigger
 
 # ========== FIXTURES ==========
 

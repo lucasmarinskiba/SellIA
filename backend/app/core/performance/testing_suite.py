@@ -1,7 +1,7 @@
 """Testing Suite — Load, chaos, performance regression."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class TestingSuite:
     """Production testing framework."""
 
     @staticmethod
-    def load_testing_config() -> Dict[str, Any]:
+    def load_testing_config() -> dict[str, Any]:
         """Load testing strategy."""
 
         return {
@@ -42,7 +42,7 @@ class TestingSuite:
         }
 
     @staticmethod
-    def chaos_engineering_tests() -> List[Dict[str, Any]]:
+    def chaos_engineering_tests() -> list[dict[str, Any]]:
         """Chaos engineering scenarios."""
 
         return [
@@ -69,7 +69,7 @@ class TestingSuite:
         ]
 
     @staticmethod
-    def performance_regression_testing() -> Dict[str, Any]:
+    def performance_regression_testing() -> dict[str, Any]:
         """Prevent performance regressions."""
 
         return {
@@ -86,7 +86,7 @@ class TestingSuite:
         }
 
     @staticmethod
-    def continuous_stress_testing() -> Dict[str, Any]:
+    def continuous_stress_testing() -> dict[str, Any]:
         """Ongoing stress testing."""
 
         return {
@@ -98,7 +98,7 @@ class TestingSuite:
         }
 
     @staticmethod
-    def synthetic_monitoring() -> Dict[str, Any]:
+    def synthetic_monitoring() -> dict[str, Any]:
         """Synthetic monitoring (uptime checks)."""
 
         return {

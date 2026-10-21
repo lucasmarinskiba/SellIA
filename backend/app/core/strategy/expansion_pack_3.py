@@ -1,8 +1,8 @@
 """Expansion Pack 3: 30 Pricing Strategies - Dynamic, Psychological, Value-Based with Real ROI."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class PricingStrategy(str, Enum):
@@ -57,13 +57,13 @@ class PricingStrategyDetail:
     description: str
 
     # Real Case Studies
-    case_study_1: Dict[str, Any]
-    case_study_2: Dict[str, Any]
-    case_study_3: Dict[str, Any]
+    case_study_1: dict[str, Any]
+    case_study_2: dict[str, Any]
+    case_study_3: dict[str, Any]
 
     # Pricing Model
     pricing_model: str  # How customers are charged
-    pricing_structure: List[str]  # Tier descriptions if applicable
+    pricing_structure: list[str]  # Tier descriptions if applicable
     average_price_point: str  # e.g. "$99/month" or "$10k-100k"
     pricing_elasticity: float  # Price sensitivity (1-10, 10=very elastic)
 
@@ -74,8 +74,8 @@ class PricingStrategyDetail:
     customer_acquisition_impact: float  # % CAC change
 
     # Implementation
-    implementation_steps: List[str]
-    required_tools: List[str]
+    implementation_steps: list[str]
+    required_tools: list[str]
     rollout_approach: str  # gradual, grandfathering, hard cutover
     expected_rollout_risk: str  # low, medium, high
 
@@ -86,8 +86,8 @@ class PricingStrategyDetail:
     fairness_perception: str  # How fair customers perceive pricing
 
     # Applicability
-    best_for_industries: List[str]
-    best_for_business_models: List[str]
+    best_for_industries: list[str]
+    best_for_business_models: list[str]
     best_for_deal_sizes: str  # small, mid, enterprise, all
     minimum_scale_needed: str  # How much data/volume needed
     competitive_advantage_duration: str
@@ -99,8 +99,8 @@ class PricingStrategyDetail:
     customer_backlash_risk: str  # low, medium, high
 
     # Success Metrics
-    success_metrics: List[str]
-    key_performance_indicators: List[str]
+    success_metrics: list[str]
+    key_performance_indicators: list[str]
 
 
 # ============================================================================
@@ -1126,33 +1126,33 @@ class PricingExpansionPack3:
     """Pricing strategies expansion pack 3: 30 pricing methods with real ROI data."""
 
     @staticmethod
-    def get_all_strategies() -> Dict[PricingStrategy, PricingStrategyDetail]:
+    def get_all_strategies() -> dict[PricingStrategy, PricingStrategyDetail]:
         """Get all pricing strategies."""
         return PRICING_STRATEGIES
 
     @staticmethod
-    def get_by_revenue_impact(min_lift: float) -> List[PricingStrategyDetail]:
+    def get_by_revenue_impact(min_lift: float) -> list[PricingStrategyDetail]:
         """Get strategies with minimum revenue lift."""
         return [s for s in PRICING_STRATEGIES.values() if s.expected_revenue_lift >= min_lift]
 
     @staticmethod
-    def get_high_margin() -> List[PricingStrategyDetail]:
+    def get_high_margin() -> list[PricingStrategyDetail]:
         """Get strategies with highest margin impact."""
         return sorted([s for s in PRICING_STRATEGIES.values()],
                       key=lambda s: s.expected_margin_impact, reverse=True)
 
     @staticmethod
-    def get_low_risk() -> List[PricingStrategyDetail]:
+    def get_low_risk() -> list[PricingStrategyDetail]:
         """Get low-risk pricing strategies (medium or higher fairness perception)."""
         return [s for s in PRICING_STRATEGIES.values()
                 if s.execution_risk in ["low", "low-medium"]]
 
     @staticmethod
-    def get_easy_to_implement() -> List[PricingStrategyDetail]:
+    def get_easy_to_implement() -> list[PricingStrategyDetail]:
         """Get easy-to-implement strategies (low complexity)."""
         return [s for s in PRICING_STRATEGIES.values() if s.implementation_complexity <= 4.0]
 
     @staticmethod
-    def get_for_industry(industry: str) -> List[PricingStrategyDetail]:
+    def get_for_industry(industry: str) -> list[PricingStrategyDetail]:
         """Get strategies suitable for specific industry."""
         return [s for s in PRICING_STRATEGIES.values() if industry.lower() in [i.lower() for i in s.best_for_industries]]

@@ -18,7 +18,7 @@ Status: PRODUCTION READY
 """
 
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(
@@ -43,52 +43,49 @@ __status__ = "PRODUCTION"
 
 try:
     from .computer_use_orchestrator_v2 import (
-        ComputerUseOrchestrator,
-        BrowserSession,
         Action,
         ActionResult,
         ActionType,
-        PlatformType,
-        StrategyType,
-        WorkflowExecution,
-        LeadData,
-        OrderData,
-        VisionEngine,
         BrowserAutomationUtils,
+        BrowserSession,
+        ComputerUseOrchestrator,
         ErrorHandler,
         LeadCaptureEngine,
+        LeadData,
+        OrderData,
+        PlatformType,
+        StrategyType,
+        VisionEngine,
+        WorkflowExecution,
     )
-
-    from .platform_handlers import (
-        MercadoLibreComputerUseHandler,
-        ShopifyComputerUseHandler,
-        FacebookComputerUseHandler,
-        WhatsAppComputerUseHandler,
-        EmailComputerUseHandler,
-        PlatformHandlerFactory,
-    )
-
-    from .lead_capture_and_intelligence import (
-        WebFormFiller,
-        DirectoryScraper,
-        MessageLeadExtractor,
-        LeadEnricher,
-        EnrichedLead,
-        LeadScore,
-    )
-
     from .integration_and_workflows import (
-        WorkflowOrchestrator,
-        ProspectingWorkflow,
-        SellingWorkflow,
         NurturingWorkflow,
+        ProspectingWorkflow,
         RetentionWorkflow,
-        WorkflowPhase,
+        SellingWorkflow,
         WorkflowConfig,
+        WorkflowOrchestrator,
+        WorkflowPhase,
+    )
+    from .lead_capture_and_intelligence import (
+        DirectoryScraper,
+        EnrichedLead,
+        LeadEnricher,
+        LeadScore,
+        MessageLeadExtractor,
+        WebFormFiller,
+    )
+    from .platform_handlers import (
+        EmailComputerUseHandler,
+        FacebookComputerUseHandler,
+        MercadoLibreComputerUseHandler,
+        PlatformHandlerFactory,
+        ShopifyComputerUseHandler,
+        WhatsAppComputerUseHandler,
     )
 
 except ImportError as e:
-    logger.warning(f"Could not import all modules: {str(e)}")
+    logger.warning(f"Could not import all modules: {e!s}")
 
 # ============================================================================
 # CONVENIENCE FUNCTIONS
@@ -108,7 +105,7 @@ async def create_orchestrator() -> ComputerUseOrchestrator:
 
 
 async def create_workflow_orchestrator(
-    computer_use_orchestrator: Optional[ComputerUseOrchestrator] = None,
+    computer_use_orchestrator: ComputerUseOrchestrator | None = None,
 ) -> WorkflowOrchestrator:
     """
     Crea orquestador de workflows (prospecting → selling → nurturing → retention).

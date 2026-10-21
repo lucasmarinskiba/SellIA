@@ -9,16 +9,16 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import uuid
-from typing import Any, Optional, Callable, Awaitable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from datetime import datetime, timezone, timedelta
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.pipeline_agents import PipelineStage, PipelineContext
+from app.domains.agents.pipeline_agents import PipelineStage
 
 logger = get_logger(__name__)
 
@@ -102,15 +102,7 @@ class AutomationRule:
             operator = condition.get("operator", "eq")
             expected = condition.get("value")
 
-            if operator == "eq" and field_val != expected:
-                return False
-            elif operator == "gt" and not (isinstance(field_val, (int, float)) and field_val > expected):
-                return False
-            elif operator == "lt" and not (isinstance(field_val, (int, float)) and field_val < expected):
-                return False
-            elif operator == "contains" and expected not in str(field_val):
-                return False
-            elif operator == "not_null" and field_val is None:
+            if operator == "eq" and field_val != expected or operator == "gt" and not (isinstance(field_val, (int, float)) and field_val > expected) or operator == "lt" and not (isinstance(field_val, (int, float)) and field_val < expected) or operator == "contains" and expected not in str(field_val) or operator == "not_null" and field_val is None:
                 return False
         return True
 
@@ -686,7 +678,7 @@ class PipelineAutomationEngine:
         trigger: TriggerType,
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str] = None,
+        deal_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Procesa un evento y ejecuta todas las reglas aplicables."""
         results = []
@@ -723,7 +715,7 @@ class PipelineAutomationEngine:
         rule: AutomationRule,
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str],
+        deal_id: str | None,
     ) -> dict[str, Any]:
         """Ejecuta las acciones de una regla."""
         executed_actions = []
@@ -751,7 +743,7 @@ class PipelineAutomationEngine:
         action: dict[str, Any],
         context: dict[str, Any],
         business_id: str,
-        deal_id: Optional[str],
+        deal_id: str | None,
     ) -> dict[str, Any]:
         """Despacha una acción específica al sistema correspondiente."""
 
@@ -791,7 +783,6 @@ class PipelineAutomationEngine:
         """Genera y envía mensaje automatizado vía canal del prospecto."""
         try:
             from app.domains.channels.services import send_outbound_message
-            from app.domains.agents.ai_reply import generate_raw_ai_response
 
             conversation_id = context.get("conversation_id")
             if not conversation_id:
@@ -812,14 +803,14 @@ class PipelineAutomationEngine:
             logger.error(f"[PipelineAuto] Message send error: {e}")
             return {"status": "error", "error": str(e)}
 
-    async def _update_crm(self, fields: dict, deal_id: Optional[str], business_id: str) -> dict:
+    async def _update_crm(self, fields: dict, deal_id: str | None, business_id: str) -> dict:
         """Actualiza campos del deal en el CRM."""
         try:
             if not deal_id:
                 return {"status": "skipped", "reason": "no_deal_id"}
 
             from app.domains.crm.models import Deal
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             resolved_fields = {
                 k: now if v == "now" else v
@@ -838,7 +829,7 @@ class PipelineAutomationEngine:
             return {"status": "error", "error": str(e)}
 
     async def _advance_pipeline_stage(
-        self, deal_id: Optional[str], to_stage: PipelineStage, business_id: str
+        self, deal_id: str | None, to_stage: PipelineStage, business_id: str
     ) -> dict:
         """Avanza el deal a la siguiente etapa del pipeline."""
         try:
@@ -851,7 +842,7 @@ class PipelineAutomationEngine:
                 .where(Deal.id == uuid.UUID(deal_id))
                 .values(
                     pipeline_stage=to_stage.value,
-                    stage_changed_at=datetime.now(timezone.utc),
+                    stage_changed_at=datetime.now(UTC),
                 )
             )
             await self.db.commit()
@@ -926,7 +917,7 @@ class PipelineAutomationEngine:
             return {"status": "error", "error": str(e)}
 
     async def _escalate_to_human(
-        self, action: dict, context: dict, business_id: str, deal_id: Optional[str]
+        self, action: dict, context: dict, business_id: str, deal_id: str | None
     ) -> dict:
         """Escala la conversación a un humano."""
         try:
@@ -940,7 +931,7 @@ class PipelineAutomationEngine:
                 .where(Conversation.id == uuid.UUID(conversation_id))
                 .values(
                     needs_human=True,
-                    human_requested_at=datetime.now(timezone.utc),
+                    human_requested_at=datetime.now(UTC),
                     human_request_reason=action.get("reason", "Escalación automática"),
                 )
             )

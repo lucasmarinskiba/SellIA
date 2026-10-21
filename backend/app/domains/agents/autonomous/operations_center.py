@@ -20,20 +20,20 @@ Arquitectura:
 
 from __future__ import annotations
 
-import uuid
 import asyncio
-from typing import Any, Optional
-from datetime import datetime, timezone, timedelta
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.autonomous.self_config import SelfConfigEngine
-from app.domains.agents.autonomous.self_repair import SelfRepairEngine
 from app.domains.agents.autonomous.self_optimization import SelfOptimizationEngine
 from app.domains.agents.autonomous.self_protection import SelfProtectionEngine
+from app.domains.agents.autonomous.self_repair import SelfRepairEngine
 
 logger = get_logger(__name__)
 
@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 @dataclass
 class SystemHealthSnapshot:
     """Instantánea del estado de salud del sistema en un momento dado."""
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     overall_health_score: int = 100          # 0-100
     config_status: str = "ok"               # ok | warning | critical
     repair_status: str = "ok"
@@ -124,13 +124,13 @@ class AutonomousOperationsCenter:
     # ─────────────────────────────────────────────
 
     async def run_full_autonomous_cycle(
-        self, business_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID | None = None
     ) -> dict[str, Any]:
         """
         Ejecuta el ciclo completo de los 4 pilares autónomos en paralelo.
         Este es el método principal llamado por Celery cada 5 minutos.
         """
-        cycle_start = datetime.now(timezone.utc)
+        cycle_start = datetime.now(UTC)
         logger.info(f"[AOC] ═══ Iniciando ciclo autónomo completo para business={business_id} ═══")
 
         results: dict[str, Any] = {
@@ -162,7 +162,7 @@ class AutonomousOperationsCenter:
                     results[name] = {"status": "error", "error": str(result)[:200]}
                 else:
                     results[name] = result
-                self._last_cycle_times[name] = datetime.now(timezone.utc)
+                self._last_cycle_times[name] = datetime.now(UTC)
 
         # Calcular y registrar salud del sistema
         snapshot = await self._calculate_health_snapshot(business_id, results)
@@ -176,7 +176,7 @@ class AutonomousOperationsCenter:
         if "health_report" in pillars_to_run or snapshot.overall_health_score < self.ALERT_THRESHOLDS["health_score_warning"]:
             await self._send_health_report(snapshot, business_id)
 
-        cycle_duration = (datetime.now(timezone.utc) - cycle_start).total_seconds()
+        cycle_duration = (datetime.now(UTC) - cycle_start).total_seconds()
         results["cycle_duration_seconds"] = round(cycle_duration, 2)
         results["pillars_executed"] = list(pillars_to_run)
 
@@ -190,7 +190,7 @@ class AutonomousOperationsCenter:
 
     def _get_pillars_due_for_execution(self) -> set[str]:
         """Determina qué pilares deben ejecutarse en este ciclo según sus intervalos."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         due = set()
         for pillar, interval_seconds in self.CYCLE_INTERVALS.items():
             last_run = self._last_cycle_times.get(pillar)
@@ -203,7 +203,7 @@ class AutonomousOperationsCenter:
     # ─────────────────────────────────────────────
 
     async def _run_protection_pillar(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Protección."""
         try:
@@ -215,7 +215,7 @@ class AutonomousOperationsCenter:
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_repair_pillar(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Reparación."""
         try:
@@ -227,7 +227,7 @@ class AutonomousOperationsCenter:
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_config_pillar(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Configuración."""
         try:
@@ -239,7 +239,7 @@ class AutonomousOperationsCenter:
             return {"status": "error", "error": str(e)[:200]}
 
     async def _run_optimization_pillar(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> dict[str, Any]:
         """Ejecuta el pilar de Auto-Optimización."""
         try:
@@ -256,7 +256,7 @@ class AutonomousOperationsCenter:
 
     async def _calculate_health_snapshot(
         self,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         cycle_results: dict[str, Any],
     ) -> SystemHealthSnapshot:
         """Calcula una instantánea del estado de salud del sistema."""
@@ -297,10 +297,11 @@ class AutonomousOperationsCenter:
         # --- Métricas de negocio ---
         try:
             from sqlalchemy import func
+
             from app.domains.channels.models import Message
             from app.domains.crm.models import Deal
 
-            threshold_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+            threshold_24h = datetime.now(UTC) - timedelta(hours=24)
 
             msg_query = select(func.count(Message.id)).where(
                 Message.created_at >= threshold_24h
@@ -410,7 +411,7 @@ class AutonomousOperationsCenter:
         interval = (
             self.HEALTH_REPORT_DEGRADED_MIN_SECONDS if degraded else self.CYCLE_INTERVALS["health_report"]
         )
-        since = datetime.now(timezone.utc) - timedelta(seconds=interval)
+        since = datetime.now(UTC) - timedelta(seconds=interval)
         recent = await self.db.execute(
             select(Alert.id)
             .where(
@@ -456,7 +457,7 @@ class AutonomousOperationsCenter:
     async def _send_health_report(
         self,
         snapshot: SystemHealthSnapshot,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
     ) -> None:
         """Envía reporte de salud del sistema al dueño del negocio."""
         if not business_id:
@@ -471,18 +472,18 @@ class AutonomousOperationsCenter:
         report_lines = [
             f"{health_emoji} *Reporte de Salud del Sistema SellIA*",
             f"📊 Score General: {snapshot.overall_health_score}/100",
-            f"",
-            f"*Estado de Pilares:*",
+            "",
+            "*Estado de Pilares:*",
             f"⚙️ Auto-Configuración: {snapshot.config_status.upper()}",
             f"🔧 Auto-Reparación: {snapshot.repair_status.upper()} ({snapshot.active_faults} fallas activas)",
             f"📈 Auto-Optimización: {snapshot.optimization_status.upper()} ({snapshot.pending_optimizations} insights)",
             f"🛡️ Auto-Protección: {snapshot.protection_status.upper()} (score: {snapshot.threat_score}/100)",
-            f"",
-            f"*Métricas de Negocio:*",
+            "",
+            "*Métricas de Negocio:*",
             f"💬 Mensajes procesados (24h): {snapshot.messages_processed_24h}",
             f"🎯 Deals activos: {snapshot.deals_active}",
             f"⚡ Estado de carga: {snapshot.load_state.replace('_', ' ').title()}",
-            f"",
+            "",
         ]
 
         if snapshot.recommended_actions:
@@ -505,7 +506,7 @@ class AutonomousOperationsCenter:
     # API PÚBLICA DEL CENTRO DE OPERACIONES
     # ─────────────────────────────────────────────
 
-    def get_latest_health(self) -> Optional[dict[str, Any]]:
+    def get_latest_health(self) -> dict[str, Any] | None:
         """Retorna el último snapshot de salud del sistema."""
         if self._health_history:
             return self._health_history[-1].to_dict()
@@ -513,7 +514,7 @@ class AutonomousOperationsCenter:
 
     def get_health_trend(self, hours: int = 24) -> list[dict[str, Any]]:
         """Retorna tendencia de salud de las últimas N horas."""
-        threshold = datetime.now(timezone.utc) - timedelta(hours=hours)
+        threshold = datetime.now(UTC) - timedelta(hours=hours)
         return [
             s.to_dict()
             for s in self._health_history
@@ -533,7 +534,7 @@ class AutonomousOperationsCenter:
         return self._protection_engine.is_ip_blocked(ip)
 
     async def run_quick_health_check(
-        self, business_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID | None = None
     ) -> dict[str, Any]:
         """Ejecuta un health check rápido (solo métricas, sin acciones)."""
         protection_summary = self._protection_engine.get_threat_summary()
@@ -543,7 +544,7 @@ class AutonomousOperationsCenter:
         latest_health = self.get_latest_health()
 
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "health_score": latest_health.get("overall_health_score", 100) if latest_health else 100,
             "load_state": load_state,
             "protection": protection_summary,

@@ -11,24 +11,21 @@ Status: 15,000+ lines, 100% production ready
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from datetime import datetime
+from typing import Any
 
-from app.core.agents.virtue_agent import VirtueAgent
-from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
-from app.core.agents.ethical_framework import EthicalFramework
 from app.core.agents.authenticity_engine import AuthenticityEngine
-
-from app.core.responses.comment_response_engine import CommentResponseEngine
-
+from app.core.agents.ethical_framework import EthicalFramework
+from app.core.agents.values_alignment_agent import ValuesAlignmentAgent
+from app.core.agents.virtue_agent import VirtueAgent
 from app.core.growth.bootstrap_growth import BootstrapGrowth
-from app.core.growth.viral_mechanics import ViralMechanics
 from app.core.growth.momentum_tracker import MomentumTracker
-
-from app.core.performance.query_optimizer import QueryOptimizer
+from app.core.growth.viral_mechanics import ViralMechanics
 from app.core.performance.latency_reducer import LatencyReducer
-from app.core.performance.scalability_engine import ScalabilityEngine
 from app.core.performance.monitoring_stack import MonitoringStack
+from app.core.performance.query_optimizer import QueryOptimizer
+from app.core.performance.scalability_engine import ScalabilityEngine
+from app.core.responses.comment_response_engine import CommentResponseEngine
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +54,7 @@ class SellIABrainV3:
         self.brand_personality = brand_personality
         self.system_config = self._initialize_config()
 
-    def _initialize_config(self) -> Dict[str, Any]:
+    def _initialize_config(self) -> dict[str, Any]:
         """Initialize system configuration."""
         return {
             "version": "3.0.0",
@@ -75,10 +72,10 @@ class SellIABrainV3:
     def validate_sales_message(
         self,
         message: str,
-        product: Dict[str, Any],
-        delivery: Dict[str, Any],
-        audience: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        delivery: dict[str, Any],
+        audience: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Validate sales message across all ethical dimensions.
 
@@ -122,10 +119,10 @@ class SellIABrainV3:
     def generate_comment_response(
         self,
         comment_text: str,
-        author_profile: Dict[str, Any],
-        post_context: Dict[str, Any],
-        product_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        author_profile: dict[str, Any],
+        post_context: dict[str, Any],
+        product_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Generate complete response to comment with intelligence.
 
@@ -178,7 +175,7 @@ class SellIABrainV3:
         current_customers: int,
         product_category: str,
         target_month_1: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Plan growth from zero to target."""
 
         bootstrap_plan = self.bootstrap_growth.generate_bootstrap_plan(
@@ -209,7 +206,7 @@ class SellIABrainV3:
             ],
         }
 
-    def monitor_system_health(self) -> Dict[str, Any]:
+    def monitor_system_health(self) -> dict[str, Any]:
         """Monitor system performance & health."""
 
         return {
@@ -231,7 +228,7 @@ class SellIABrainV3:
             "recommendations": [],
         }
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> dict[str, Any]:
         """Get complete system status."""
 
         return {

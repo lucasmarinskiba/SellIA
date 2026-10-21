@@ -1,16 +1,36 @@
 #!/usr/bin/env python3
 """Initialize database - Phase 2-5 only (no FK dependencies)."""
 import asyncio
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-from app.core.database import Base, engine
-from app.domains.ml_pipelines.models import LeadScoringModel, ChurnPredictionModel, CLVModel
-from app.domains.channel_routing.models import ChannelAffinityModel, MessageRouting, ChannelPerformanceMetrics
-from app.domains.competitive_intelligence.models import CompetitorProfile, PriceOptimization, MarketAnalysis, CompetitiveIntelligenceFeed
-from app.domains.performance_optimization.models import PerformanceMetrics, SlowQuery, IndexRecommendation, CacheStrategy, QueryOptimization
+from app.core.database import engine
+from app.domains.channel_routing.models import (
+    ChannelAffinityModel,
+    ChannelPerformanceMetrics,
+    MessageRouting,
+)
+from app.domains.competitive_intelligence.models import (
+    CompetitiveIntelligenceFeed,
+    CompetitorProfile,
+    MarketAnalysis,
+    PriceOptimization,
+)
+from app.domains.ml_pipelines.models import (
+    ChurnPredictionModel,
+    CLVModel,
+    LeadScoringModel,
+)
+from app.domains.performance_optimization.models import (
+    CacheStrategy,
+    IndexRecommendation,
+    PerformanceMetrics,
+    QueryOptimization,
+    SlowQuery,
+)
+
 
 async def init_phase2_5():
     """Create Phase 2-5 tables only."""

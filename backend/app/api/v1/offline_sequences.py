@@ -1,16 +1,16 @@
 """API endpoints for offline-triggered re-engagement sequences."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional, List
 from enum import Enum
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["offline-sequences"])
 
@@ -54,15 +54,15 @@ class OfflineSequenceTriggerRequest(BaseModel):
     location_id: UUID
     conversion_id: UUID
     visit_type: VisitType
-    dwell_minutes: Optional[int] = None
+    dwell_minutes: int | None = None
 
 
 class OfflineSequenceTriggerResponse(BaseModel):
     """Response from sequence trigger."""
     success: bool
     message: str
-    sequence_id: Optional[UUID] = None
-    next_action: Optional[str] = None
+    sequence_id: UUID | None = None
+    next_action: str | None = None
 
 
 # Pre-defined templates (10+ sequences)
@@ -198,28 +198,28 @@ async def trigger_offline_sequence(
     except Exception as e:
         return OfflineSequenceTriggerResponse(
             success=False,
-            message=f"Error triggering sequence: {str(e)}"
+            message=f"Error triggering sequence: {e!s}"
         )
 
 
 @router.get(
     "/offline-sequences/templates",
-    response_model=List[OfflineSequenceTemplate],
+    response_model=list[OfflineSequenceTemplate],
 )
 async def list_sequence_templates(
     current_user: User = Depends(get_current_user),
-) -> List[OfflineSequenceTemplate]:
+) -> list[OfflineSequenceTemplate]:
     """List all available offline sequence templates."""
     return OFFLINE_TEMPLATES
 
 
 @router.get(
     "/offline-sequences/triggers",
-    response_model=List[dict],
+    response_model=list[dict],
 )
 async def list_trigger_types(
     current_user: User = Depends(get_current_user),
-) -> List[dict]:
+) -> list[dict]:
     """List all offline trigger types."""
     return [
         {"type": t.value, "name": t.name}

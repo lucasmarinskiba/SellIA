@@ -7,11 +7,11 @@ Env vars required:
 - STRIPE_WEBHOOK_SECRET
 """
 
-import os
 import logging
+import os
+from typing import Any
+
 import stripe
-from typing import Dict, Any, Optional
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,8 @@ class StripePaymentProcessor:
         amount_usd: float,
         product_name: str,
         order_id: str,
-        description: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+    ) -> dict[str, Any]:
         """
         Crea payment intent para checkout.
 
@@ -74,7 +74,7 @@ class StripePaymentProcessor:
             logger.error("Stripe authentication error")
             return {"status": "error", "message": "Payment service authentication failed"}
         except Exception as e:
-            logger.error(f"Unexpected error creating payment intent: {str(e)}")
+            logger.error(f"Unexpected error creating payment intent: {e!s}")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
@@ -85,7 +85,7 @@ class StripePaymentProcessor:
         order_id: str,
         success_url: str,
         cancel_url: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Crea Stripe Checkout session (hosted checkout).
 
@@ -127,11 +127,11 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating checkout session: {str(e)}")
+            logger.error(f"Error creating checkout session: {e!s}")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def retrieve_payment_intent(payment_intent_id: str) -> Dict[str, Any]:
+    def retrieve_payment_intent(payment_intent_id: str) -> dict[str, Any]:
         """Obtiene estado payment intent."""
 
         try:
@@ -146,11 +146,11 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error retrieving payment intent: {str(e)}")
+            logger.error(f"Error retrieving payment intent: {e!s}")
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def refund_payment(payment_intent_id: str, amount_usd: Optional[float] = None) -> Dict[str, Any]:
+    def refund_payment(payment_intent_id: str, amount_usd: float | None = None) -> dict[str, Any]:
         """Reembolsa pago (total o parcial)."""
 
         try:
@@ -170,7 +170,7 @@ class StripePaymentProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error refunding payment: {str(e)}")
+            logger.error(f"Error refunding payment: {e!s}")
             return {"status": "error", "message": str(e)}
 
 
@@ -188,11 +188,11 @@ class StripeWebhookHandler:
             logger.error("Invalid webhook signature")
             return False
         except Exception as e:
-            logger.error(f"Webhook verification error: {str(e)}")
+            logger.error(f"Webhook verification error: {e!s}")
             return False
 
     @staticmethod
-    def handle_webhook(event: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_webhook(event: dict[str, Any]) -> dict[str, Any]:
         """Maneja evento webhook."""
 
         event_type = event.get("type")
@@ -208,7 +208,7 @@ class StripeWebhookHandler:
             return {"status": "acknowledged", "event_type": event_type}
 
     @staticmethod
-    def _handle_payment_succeeded(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_succeeded(event: dict[str, Any]) -> dict[str, Any]:
         """Payment intent succeeded."""
 
         payment_intent = event["data"]["object"]
@@ -231,7 +231,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_payment_failed(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_failed(event: dict[str, Any]) -> dict[str, Any]:
         """Payment intent failed."""
 
         payment_intent = event["data"]["object"]
@@ -248,7 +248,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_refund(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_refund(event: dict[str, Any]) -> dict[str, Any]:
         """Charge refunded."""
 
         refund = event["data"]["object"]

@@ -5,10 +5,10 @@ Soporta: Google Calendar, Calendly.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, timedelta, time
 from dataclasses import dataclass
+from datetime import datetime, time, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class TimeSlot:
     def duration_minutes(self) -> int:
         return int((self.end - self.start).total_seconds() / 60)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "start": self.start.isoformat(),
             "end": self.end.isoformat(),
@@ -46,19 +46,19 @@ class CalendarEvent:
     """Evento de calendario."""
 
     title: str
-    description: Optional[str] = None
-    start: Optional[datetime] = None
-    end: Optional[datetime] = None
+    description: str | None = None
+    start: datetime | None = None
+    end: datetime | None = None
     duration_minutes: int = 60
-    organizer_email: Optional[str] = None
-    attendee_email: Optional[str] = None
-    attendee_name: Optional[str] = None
-    meeting_url: Optional[str] = None  # Zoom/Meet link
+    organizer_email: str | None = None
+    attendee_email: str | None = None
+    attendee_name: str | None = None
+    meeting_url: str | None = None  # Zoom/Meet link
     provider: CalendarProvider = CalendarProvider.GOOGLE_CALENDAR
-    event_id: Optional[str] = None  # ID en plataforma
-    metadata: Optional[Dict[str, Any]] = None
+    event_id: str | None = None  # ID en plataforma
+    metadata: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "title": self.title,
             "description": self.description,
@@ -77,7 +77,7 @@ class CalendarEvent:
 class GoogleCalendarClient:
     """Cliente para Google Calendar API (placeholder)."""
 
-    def __init__(self, credentials_dict: Dict[str, Any]):
+    def __init__(self, credentials_dict: dict[str, Any]):
         """
         Inicializa cliente con credenciales.
 
@@ -90,8 +90,8 @@ class GoogleCalendarClient:
         self,
         date: datetime,
         duration_minutes: int = 60,
-        working_hours: Tuple[time, time] = (time(9, 0), time(18, 0)),
-    ) -> List[TimeSlot]:
+        working_hours: tuple[time, time] = (time(9, 0), time(18, 0)),
+    ) -> list[TimeSlot]:
         """
         Obtiene slots disponibles para fecha.
 
@@ -121,7 +121,7 @@ class GoogleCalendarClient:
 
         return slots
 
-    async def create_event(self, event: CalendarEvent) -> Tuple[bool, Optional[str]]:
+    async def create_event(self, event: CalendarEvent) -> tuple[bool, str | None]:
         """
         Crea evento en Google Calendar.
 
@@ -149,7 +149,7 @@ class CalendlyClient:
         self,
         date: datetime,
         duration_minutes: int = 60,
-    ) -> List[TimeSlot]:
+    ) -> list[TimeSlot]:
         """Obtiene slots disponibles de evento tipo en Calendly."""
         # TODO: Llamar Calendly API v2 /availability_schedules
         slots = []
@@ -171,7 +171,7 @@ class CalendlyClient:
 
         return slots
 
-    async def create_event(self, event: CalendarEvent) -> Tuple[bool, Optional[str]]:
+    async def create_event(self, event: CalendarEvent) -> tuple[bool, str | None]:
         """Crea evento en Calendly."""
         logger.info(f"Creating Calendly event: {event.title} at {event.start}")
         return True, "event_id_placeholder"
@@ -182,8 +182,8 @@ class CalendarIntegrationService:
 
     def __init__(
         self,
-        google_credentials: Optional[Dict[str, Any]] = None,
-        calendly_token: Optional[str] = None,
+        google_credentials: dict[str, Any] | None = None,
+        calendly_token: str | None = None,
     ):
         self.google_client = GoogleCalendarClient(google_credentials) if google_credentials else None
         self.calendly_client = CalendlyClient(calendly_token) if calendly_token else None
@@ -192,8 +192,8 @@ class CalendarIntegrationService:
         self,
         date: datetime,
         duration_minutes: int = 60,
-        provider: Optional[CalendarProvider] = None,
-    ) -> List[TimeSlot]:
+        provider: CalendarProvider | None = None,
+    ) -> list[TimeSlot]:
         """Obtiene slots disponibles (unifica múltiples calendarios)."""
         all_slots = []
 
@@ -217,7 +217,7 @@ class CalendarIntegrationService:
     async def create_event(
         self,
         event: CalendarEvent,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea evento en calendario seleccionado."""
         if event.provider == CalendarProvider.GOOGLE_CALENDAR:
             if not self.google_client:
@@ -236,7 +236,7 @@ class CalendarIntegrationService:
     async def check_conflicts(
         self,
         event: CalendarEvent,
-    ) -> Tuple[bool, Optional[List[str]]]:
+    ) -> tuple[bool, list[str] | None]:
         """
         Verifica si hay conflictos.
 
@@ -247,8 +247,8 @@ class CalendarIntegrationService:
 
 
 def get_calendar_service(
-    google_credentials: Optional[Dict[str, Any]] = None,
-    calendly_token: Optional[str] = None,
+    google_credentials: dict[str, Any] | None = None,
+    calendly_token: str | None = None,
 ) -> CalendarIntegrationService:
     """Factory para obtener servicio calendar."""
     return CalendarIntegrationService(google_credentials, calendly_token)

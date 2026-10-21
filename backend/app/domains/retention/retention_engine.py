@@ -1,9 +1,9 @@
 """Phase 17: Customer retention and expansion automation."""
 
-from dataclasses import dataclass
-from typing import Dict, Any, List
-from enum import Enum
 import logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class RetentionPlan:
     churn_risk_score: float
     churn_probability: str  # low, medium, high, critical
     days_until_churn: int
-    recommended_actions: List[RetentionAction]
+    recommended_actions: list[RetentionAction]
     upsell_opportunity: str
     upsell_amount: float
     suggested_discount: float
@@ -41,7 +41,7 @@ class RetentionPlan:
 class RetentionEngine:
     """Automate customer retention and growth"""
 
-    def detect_churn_signals(self, customer_data: Dict[str, Any]) -> List[ChurnSignal]:
+    def detect_churn_signals(self, customer_data: dict[str, Any]) -> list[ChurnSignal]:
         """Detect customer churn signals"""
 
         signals = []
@@ -93,7 +93,7 @@ class RetentionEngine:
 
         return signals
 
-    def calculate_churn_risk(self, customer_data: Dict[str, Any]) -> float:
+    def calculate_churn_risk(self, customer_data: dict[str, Any]) -> float:
         """Calculate 0-1 churn risk score"""
 
         signals = self.detect_churn_signals(customer_data)
@@ -116,7 +116,7 @@ class RetentionEngine:
             return 60
 
     def generate_retention_plan(
-        self, customer_id: str, customer_data: Dict[str, Any]
+        self, customer_id: str, customer_data: dict[str, Any]
     ) -> RetentionPlan:
         """Generate personalized retention plan"""
 
@@ -184,7 +184,7 @@ class RetentionEngine:
 
         return plan
 
-    def generate_retention_offer(self, plan: RetentionPlan) -> Dict[str, Any]:
+    def generate_retention_offer(self, plan: RetentionPlan) -> dict[str, Any]:
         """Generate personalized retention offer"""
 
         base_price = plan.upsell_amount

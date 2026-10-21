@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
+from app.domains.analytics.models import AnalyticsEvent, Conversion, EventType
 from app.domains.businesses.models import Business
+from app.domains.users.models import User
 from app.domains.websites.models import Website
-from app.domains.analytics.models import AnalyticsEvent, EventType, Conversion
 
 router = APIRouter()
 
@@ -82,7 +83,7 @@ async def track_conversion(data: dict, request: Request, db: AsyncSession = Depe
 @router.get("/businesses/{business_id}/analytics/summary")
 async def get_analytics_summary(business_id: UUID, days: int = 30, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     website = await _get_website_for_user(business_id, current_user, db)
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     views_result = await db.execute(select(func.count(AnalyticsEvent.id)).where(AnalyticsEvent.website_id == website.id, AnalyticsEvent.event_type == EventType.PAGE_VIEW, AnalyticsEvent.created_at >= since))
     total_views = views_result.scalar() or 0
     sessions_result = await db.execute(select(func.count(func.distinct(AnalyticsEvent.session_id))).where(AnalyticsEvent.website_id == website.id, AnalyticsEvent.created_at >= since))
@@ -97,7 +98,7 @@ async def get_analytics_summary(business_id: UUID, days: int = 30, db: AsyncSess
 @router.get("/businesses/{business_id}/analytics/pages")
 async def get_top_pages(business_id: UUID, days: int = 30, limit: int = 10, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     website = await _get_website_for_user(business_id, current_user, db)
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(select(AnalyticsEvent.page_url, AnalyticsEvent.page_title, func.count(AnalyticsEvent.id).label("views"), func.count(func.distinct(AnalyticsEvent.session_id)).label("sessions")).where(AnalyticsEvent.website_id == website.id, AnalyticsEvent.event_type == EventType.PAGE_VIEW, AnalyticsEvent.created_at >= since).group_by(AnalyticsEvent.page_url, AnalyticsEvent.page_title).order_by(func.count(AnalyticsEvent.id).desc()).limit(limit))
     pages = [{"page_url": r[0], "page_title": r[1], "views": r[2], "sessions": r[3]} for r in result.fetchall()]
     return {"pages": pages}
@@ -105,7 +106,7 @@ async def get_top_pages(business_id: UUID, days: int = 30, limit: int = 10, db: 
 @router.get("/businesses/{business_id}/analytics/conversions")
 async def get_conversions(business_id: UUID, days: int = 30, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     website = await _get_website_for_user(business_id, current_user, db)
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     result = await db.execute(select(Conversion.conversion_type, func.count(Conversion.id).label("count"), func.sum(Conversion.conversion_value).label("total_value")).where(Conversion.website_id == website.id, Conversion.created_at >= since).group_by(Conversion.conversion_type).order_by(func.count(Conversion.id).desc()))
     conversions = [{"type": r[0], "count": r[1], "total_value": round(r[2] or 0, 2), "avg_value": round((r[2] or 0) / r[1], 2) if r[1] > 0 else 0} for r in result.fetchall()]
     return {"conversions": conversions}

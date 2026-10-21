@@ -6,8 +6,19 @@ browser profiles, proxy configs, session sharing, y batch operations.
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, JSON, Boolean, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base

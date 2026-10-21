@@ -1,11 +1,12 @@
 """Staff task management models — task dispatch + completion tracking."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Enum as SQLEnum, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -52,7 +53,7 @@ class StaffTask(Base):
     # Assignment
     assigned_to_staff_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     assigned_by_staff_id = Column(UUID(as_uuid=True), nullable=True)  # Manager who assigned
-    assigned_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    assigned_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
     # Task details
     task_type = Column(SQLEnum(TaskType), nullable=False)
@@ -83,8 +84,8 @@ class StaffTask(Base):
     tags = Column(JSONB, default=list)  # ["urgent", "vip", "visitor_request"]
     task_metadata = Column(JSONB, default=dict)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -105,7 +106,7 @@ class TaskNotification(Base):
 
     # Notification details
     notification_type = Column(String(50), nullable=False)  # push, sms, email, in_app
-    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     read_at = Column(DateTime(timezone=True), nullable=True)
     delivery_status = Column(String(50), default="sent")  # sent, failed, bounced
 
@@ -142,7 +143,7 @@ class TaskTemplate(Base):
     checklist_items = Column(JSONB, default=list)  # ["step 1", "step 2", ...]
 
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_active", "business_id", "is_active"),
@@ -178,7 +179,7 @@ class ShiftReadinessReport(Base):
     # Notes
     summary_notes = Column(String(1000), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 

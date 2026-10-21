@@ -5,12 +5,12 @@ OAuth2 flow para usuarios.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from google_auth_oauthlib.flow import Flow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+from typing import Any
+
 from google.api_core.exceptions import GoogleAPIError
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class GoogleCalendarConnector:
     def get_credentials_from_code(
         self,
         auth_code: str,
-    ) -> Tuple[bool, Optional[Credentials]]:
+    ) -> tuple[bool, Credentials | None]:
         """
         Intercambia auth code por credenciales.
 
@@ -95,11 +95,11 @@ class GoogleCalendarConnector:
 
     async def get_available_slots(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         date: datetime,
         duration_minutes: int = 60,
-        working_hours: Tuple[int, int] = (9, 18),
-    ) -> List[Dict[str, Any]]:
+        working_hours: tuple[int, int] = (9, 18),
+    ) -> list[dict[str, Any]]:
         """
         Obtiene slots disponibles para fecha.
 
@@ -164,14 +164,14 @@ class GoogleCalendarConnector:
 
     async def create_event(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         title: str,
         start: datetime,
         end: datetime,
         description: str = "",
-        attendee_email: Optional[str] = None,
-        meeting_url: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        attendee_email: str | None = None,
+        meeting_url: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea evento en Google Calendar.
 
@@ -226,7 +226,7 @@ class GoogleCalendarConnector:
 
     async def delete_event(
         self,
-        credentials: Dict[str, Any],
+        credentials: dict[str, Any],
         event_id: str,
     ) -> bool:
         """Elimina evento de Google Calendar."""

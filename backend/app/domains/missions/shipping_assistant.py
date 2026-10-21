@@ -4,8 +4,7 @@ Módulo de lógica pura para recomendaciones de logística, carriers,
 cotizaciones estimadas y requisitos cross-border.
 """
 
-from typing import List, Dict, Any, Optional
-
+from typing import Any
 
 # ─── Datos de carriers ─────────────────────────────────────────────────────────
 
@@ -214,7 +213,7 @@ CARRIER_SETUP_STEPS = {
 class ShippingConnectorAssistant:
     """Asistente de recomendaciones y configuración de carriers de envío."""
 
-    def get_carrier_recommendations(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_carrier_recommendations(self, context: dict[str, Any]) -> list[dict[str, Any]]:
         """Recomendar carriers según país, alcance y tipo de producto.
 
         Args:
@@ -279,7 +278,7 @@ class ShippingConnectorAssistant:
         recommendations.sort(key=lambda x: x["score"], reverse=True)
         return recommendations
 
-    def generate_setup_steps(self, carrier: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def generate_setup_steps(self, carrier: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Devolver paso a paso para configurar un carrier específico.
 
         Args:
@@ -317,8 +316,8 @@ class ShippingConnectorAssistant:
         origin: str,
         destination: str,
         weight_kg: float,
-        dimensions: Optional[Dict[str, float]] = None,
-    ) -> Dict[str, Any]:
+        dimensions: dict[str, float] | None = None,
+    ) -> dict[str, Any]:
         """Estimar costos de envío por carrier.
 
         Args:
@@ -381,7 +380,7 @@ class ShippingConnectorAssistant:
             "estimates": estimates,
         }
 
-    def get_cross_border_requirements(self, target_country: str) -> Dict[str, Any]:
+    def get_cross_border_requirements(self, target_country: str) -> dict[str, Any]:
         """Obtener requisitos aduaneros, fiscales y documentación para un país destino.
 
         Args:

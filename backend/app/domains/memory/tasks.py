@@ -1,15 +1,13 @@
 """Memory Engine Celery Tasks"""
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.channels.models import Conversation
 from app.domains.memory.summarizer import summarize_conversation
@@ -18,7 +16,7 @@ logger = get_logger(__name__)
 
 
 @shared_task(name="app.domains.memory.tasks.summarize_conversation_task")
-def summarize_conversation_task(conversation_id: Optional[str] = None):
+def summarize_conversation_task(conversation_id: str | None = None):
     """Celery task that summarizes a conversation and extracts customer facts.
 
     If conversation_id is not provided, processes all active conversations
@@ -33,7 +31,7 @@ def summarize_conversation_task(conversation_id: Optional[str] = None):
 
     async def _run_all():
         async with AsyncSessionLocal() as db:
-            since = datetime.now(timezone.utc) - timedelta(hours=24)
+            since = datetime.now(UTC) - timedelta(hours=24)
             result = await db.execute(
                 select(Conversation.id)
                 .where(

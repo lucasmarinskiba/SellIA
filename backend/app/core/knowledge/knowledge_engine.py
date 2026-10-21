@@ -7,16 +7,15 @@ de los conocimientos aplicados.
 
 import json
 import os
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from functools import lru_cache
+from typing import Any
 
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def _emit_activity(category: Optional[str], mode: str) -> None:
+def _emit_activity(category: str | None, mode: str) -> None:
     """Emite un evento real al bus de actividad del cerebro (best-effort)."""
     if not category:
         return
@@ -39,13 +38,13 @@ class KnowledgeItem:
     subcategory: str
     principle: str
     tactic: str
-    framework: Optional[str]
-    script_template: Optional[str]
-    when_to_use: List[str]
-    when_not_to_use: List[str]
-    tags: List[str]
+    framework: str | None
+    script_template: str | None
+    when_to_use: list[str]
+    when_not_to_use: list[str]
+    tags: list[str]
     # Atributos internos (nunca revelados al usuario)
-    _source_hint: Optional[str] = None
+    _source_hint: str | None = None
     _confidence_weight: float = 1.0
 
 
@@ -60,15 +59,15 @@ class KnowledgeEngine:
     ]
 
     def __init__(self):
-        self._items: List[KnowledgeItem] = []
-        self._index: Dict[str, List[KnowledgeItem]] = {}
+        self._items: list[KnowledgeItem] = []
+        self._index: dict[str, list[KnowledgeItem]] = {}
         self._loaded = False
         # Categorías efectivamente cargadas (se completa en _load_all).
-        self.categories: List[str] = []
+        self.categories: list[str] = []
         # Cache de embeddings por id de item (búsqueda semántica).
-        self._vectors: Dict[str, List[float]] = {}
+        self._vectors: dict[str, list[float]] = {}
 
-    def _discover_categories(self, base_path: str) -> List[str]:
+    def _discover_categories(self, base_path: str) -> list[str]:
         """Descubre categorías por los `*.json` presentes en library/.
 
         Respeta el orden curado y añade el resto alfabéticamente, así los
@@ -88,7 +87,7 @@ class KnowledgeEngine:
         return ordered + extras
 
     @staticmethod
-    def _validate_item(item_data: Dict[str, Any], category: str) -> Optional[str]:
+    def _validate_item(item_data: dict[str, Any], category: str) -> str | None:
         """Valida el schema de un item. Retorna mensaje de error o None si OK.
 
         Antes la carga era permisiva: un `_confidence_weight` string o un `tags`
@@ -131,7 +130,7 @@ class KnowledgeEngine:
     )
 
     @classmethod
-    def _normalize_item(cls, item_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_item(cls, item_data: dict[str, Any]) -> dict[str, Any]:
         """Rellena principle/tactic desde sus sinónimos si faltan. No
         pisa un principle/tactic ya presente y no-vacío."""
         normalized = dict(item_data)
@@ -206,12 +205,12 @@ class KnowledgeEngine:
 
     def query(
         self,
-        category: Optional[str] = None,
-        subcategory: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        context: Optional[str] = None,
+        category: str | None = None,
+        subcategory: str | None = None,
+        tags: list[str] | None = None,
+        context: str | None = None,
         top_k: int = 5,
-    ) -> List[KnowledgeItem]:
+    ) -> list[KnowledgeItem]:
         """Consulta la biblioteca y retorna los items más relevantes.
 
         Args:
@@ -266,9 +265,9 @@ class KnowledgeEngine:
     async def semantic_query(
         self,
         context: str,
-        category: Optional[str] = None,
+        category: str | None = None,
         top_k: int = 5,
-    ) -> List[KnowledgeItem]:
+    ) -> list[KnowledgeItem]:
         """Búsqueda semántica por embeddings (cosine similarity).
 
         Más precisa que `query()` (que es overlap de keywords). Si el servicio
@@ -286,6 +285,7 @@ class KnowledgeEngine:
 
         try:
             import numpy as np
+
             from app.core.embeddings import embedding_service
 
             # Embeber los items que aún no tengan vector (batch).
@@ -298,7 +298,7 @@ class KnowledgeEngine:
             q = np.asarray(await embedding_service.embed_text(context), dtype="float32")
             q_norm = float(np.linalg.norm(q)) or 1.0
 
-            scored: List[tuple[float, KnowledgeItem]] = []
+            scored: list[tuple[float, KnowledgeItem]] = []
             for c in candidates:
                 vec = self._vectors.get(c.id)
                 if vec is None:
@@ -317,7 +317,7 @@ class KnowledgeEngine:
             logger.warning(f"semantic_query fell back to keyword search: {e}")
             return self.query(category=category, context=context, top_k=top_k)
 
-    def get_by_id(self, item_id: str) -> Optional[KnowledgeItem]:
+    def get_by_id(self, item_id: str) -> KnowledgeItem | None:
         """Obtiene un item por su ID."""
         self._load_all()
         for item in self._items:
@@ -325,7 +325,7 @@ class KnowledgeEngine:
                 return item
         return None
 
-    def get_random_insight(self, category: Optional[str] = None) -> Optional[KnowledgeItem]:
+    def get_random_insight(self, category: str | None = None) -> KnowledgeItem | None:
         """Obtiene un insight aleatorio (para variar respuestas)."""
         import random
         self._load_all()
@@ -336,7 +336,7 @@ class KnowledgeEngine:
             return None
         return random.choice(pool)
 
-    def get_framework(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_framework(self, name: str) -> dict[str, Any] | None:
         """Obtiene un framework completo por nombre."""
         self._load_all()
         for item in self._items:
@@ -349,14 +349,14 @@ class KnowledgeEngine:
                 }
         return None
 
-    def get_script(self, situation: str) -> Optional[str]:
+    def get_script(self, situation: str) -> str | None:
         """Obtiene un script template para una situación específica."""
         items = self.query(context=situation, top_k=1)
         if items and items[0].script_template:
             return items[0].script_template
         return None
 
-    def count(self) -> Dict[str, int]:
+    def count(self) -> dict[str, int]:
         """Estadísticas de la biblioteca."""
         self._load_all()
         stats = {}
@@ -367,7 +367,7 @@ class KnowledgeEngine:
 
 
 # Singleton instance
-_knowledge_engine: Optional[KnowledgeEngine] = None
+_knowledge_engine: KnowledgeEngine | None = None
 
 
 def get_knowledge_engine() -> KnowledgeEngine:

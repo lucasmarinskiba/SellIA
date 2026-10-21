@@ -1,5 +1,3 @@
-import os
-from typing import Optional
 from dataclasses import dataclass
 
 
@@ -7,9 +5,9 @@ from dataclasses import dataclass
 class IntegrationConfig:
     provider: str
     api_key: str
-    api_secret: Optional[str] = None
-    subdomain: Optional[str] = None
-    webhook_url: Optional[str] = None
+    api_secret: str | None = None
+    subdomain: str | None = None
+    webhook_url: str | None = None
 
 
 class IntegrationsManager:

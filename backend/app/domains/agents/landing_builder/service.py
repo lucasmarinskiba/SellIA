@@ -1,24 +1,22 @@
 """Landing Page Builder Service"""
 
-import uuid
 import json
 import os
+import uuid
 import zipfile
-import io
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.core.logger import get_logger
 from app.core.config import get_settings
+from app.core.logger import get_logger
 from app.domains.agents.landing_builder.models import LandingPageJob
 from app.domains.agents.llm_provider import generate_with_fallback
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
@@ -31,7 +29,7 @@ def _get_storage_dir() -> str:
     return base
 
 
-async def _fetch_product_data(db: AsyncSession, product_id: Optional[uuid.UUID]) -> Dict[str, Any]:
+async def _fetch_product_data(db: AsyncSession, product_id: uuid.UUID | None) -> dict[str, Any]:
     if not product_id:
         return {}
     from app.domains.catalogs.models import CatalogItem
@@ -52,10 +50,10 @@ async def _fetch_product_data(db: AsyncSession, product_id: Optional[uuid.UUID])
 async def _generate_copy_with_llm(
     db: AsyncSession,
     business_id: uuid.UUID,
-    product_data: Dict[str, Any],
+    product_data: dict[str, Any],
     style: str,
     variant_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     ctx = await get_agent_prompt_context(db, business_id)
     context_block = format_business_context_for_prompt(ctx)
 
@@ -120,7 +118,7 @@ async def _generate_copy_with_llm(
         }
 
 
-def _build_nextjs_page(copy: Dict[str, Any], product_data: Dict[str, Any], variant_name: str) -> str:
+def _build_nextjs_page(copy: dict[str, Any], product_data: dict[str, Any], variant_name: str) -> str:
     """Construye una página Next.js + Tailwind básica a partir del copy."""
     cs = copy.get("color_scheme", {})
     primary = cs.get("primary", "#3B82F6")
@@ -247,7 +245,7 @@ export default function LandingPage() {{
 async def generate_landing_page(
     db: AsyncSession,
     business_id: uuid.UUID,
-    product_id: Optional[uuid.UUID],
+    product_id: uuid.UUID | None,
     style: str = "modern",
 ) -> LandingPageJob:
     """Genera una landing page con variantes A/B."""
@@ -266,8 +264,8 @@ async def generate_landing_page(
     try:
         product_data = await _fetch_product_data(db, product_id)
 
-        variants: List[Dict[str, Any]] = []
-        files: Dict[str, str] = {}
+        variants: list[dict[str, Any]] = []
+        files: dict[str, str] = {}
 
         variant_names = ["Variante A (Directa)", "Variante B (Emocional)", "Variante C (Social Proof)"]
         for variant_name in variant_names:
@@ -319,7 +317,7 @@ async def generate_landing_page(
     return job
 
 
-async def get_landing_code(db: AsyncSession, job_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+async def get_landing_code(db: AsyncSession, job_id: uuid.UUID) -> dict[str, Any] | None:
     result = await db.execute(select(LandingPageJob).where(LandingPageJob.id == job_id))
     job = result.scalar_one_or_none()
     if not job:
@@ -331,7 +329,7 @@ async def get_landing_code(db: AsyncSession, job_id: uuid.UUID) -> Optional[Dict
     }
 
 
-async def get_landing_zip(job_id: uuid.UUID) -> Optional[bytes]:
+async def get_landing_zip(job_id: uuid.UUID) -> bytes | None:
     storage_dir = _get_storage_dir()
     zip_path = os.path.join(storage_dir, f"{job_id}.zip")
     if not os.path.exists(zip_path):
@@ -340,7 +338,7 @@ async def get_landing_zip(job_id: uuid.UUID) -> Optional[bytes]:
         return f.read()
 
 
-async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> List[LandingPageJob]:
+async def list_jobs(db: AsyncSession, business_id: uuid.UUID) -> list[LandingPageJob]:
     result = await db.execute(
         select(LandingPageJob)
         .where(LandingPageJob.business_id == business_id)

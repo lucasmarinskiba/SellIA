@@ -1,17 +1,15 @@
 """Production ML models using scikit-learn for real data."""
 
-import numpy as np
-from typing import Dict, List, Any, Tuple, Optional
-from datetime import datetime, timedelta
 import logging
-import pickle
 import os
+from typing import Any
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+import joblib
+import numpy as np
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-import joblib
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class DealClosePredictor:
     Trained on historical sales data.
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         self.model = None
         self.scaler = StandardScaler()
         self.feature_names = [
@@ -55,7 +53,7 @@ class DealClosePredictor:
         )
         logger.info("Initialized RandomForest model for deal close prediction")
 
-    def train(self, training_data: List[Dict[str, Any]], labels: List[int]):
+    def train(self, training_data: list[dict[str, Any]], labels: list[int]):
         """
         Train model on historical deal data.
 
@@ -84,7 +82,7 @@ class DealClosePredictor:
             f"Deal close model trained: train_score={train_score:.3f}, test_score={test_score:.3f}"
         )
 
-    def predict(self, deal_data: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
+    def predict(self, deal_data: dict[str, Any]) -> tuple[float, dict[str, float]]:
         """
         Predict close probability for a deal.
 
@@ -107,7 +105,7 @@ class DealClosePredictor:
 
         return probability, importance_dict
 
-    def _extract_features(self, deal_data: Dict[str, Any]) -> List[float]:
+    def _extract_features(self, deal_data: dict[str, Any]) -> list[float]:
         """Extract feature vector from deal data."""
         stage_map = {
             "qualification": 1,
@@ -137,7 +135,7 @@ class DealClosePredictor:
 class ChurnPredictor:
     """Production churn prediction using Gradient Boosting."""
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         self.model = None
         self.feature_names = [
             "subscription_months",
@@ -167,7 +165,7 @@ class ChurnPredictor:
         logger.info("Initialized GradientBoosting model for churn prediction")
 
     def train(
-        self, training_data: List[Dict[str, Any]], labels: List[int]
+        self, training_data: list[dict[str, Any]], labels: list[int]
     ):
         """Train on historical customer data."""
         if not training_data:
@@ -190,7 +188,7 @@ class ChurnPredictor:
             f"Churn model trained: train_score={train_score:.3f}, test_score={test_score:.3f}"
         )
 
-    def predict(self, customer_data: Dict[str, Any]) -> Tuple[float, List[str]]:
+    def predict(self, customer_data: dict[str, Any]) -> tuple[float, list[str]]:
         """
         Predict churn probability.
 
@@ -218,7 +216,7 @@ class ChurnPredictor:
 
         return probability, risk_signals
 
-    def _extract_features(self, customer_data: Dict[str, Any]) -> List[float]:
+    def _extract_features(self, customer_data: dict[str, Any]) -> list[float]:
         """Extract feature vector from customer data."""
         return [
             customer_data.get("subscription_months", 0),
@@ -241,7 +239,7 @@ class ChurnPredictor:
 class ExpansionScorer:
     """Expansion opportunity scoring using Logistic Regression."""
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         self.model = None
         self.feature_names = [
             "tier_utilization",
@@ -262,7 +260,7 @@ class ExpansionScorer:
         self.model = LogisticRegression(random_state=42)
         logger.info("Initialized LogisticRegression model for expansion scoring")
 
-    def train(self, training_data: List[Dict[str, Any]], labels: List[int]):
+    def train(self, training_data: list[dict[str, Any]], labels: list[int]):
         """Train on historical expansion data."""
         if not training_data:
             logger.warning("No training data provided")
@@ -284,7 +282,7 @@ class ExpansionScorer:
             f"Expansion model trained: train_score={train_score:.3f}, test_score={test_score:.3f}"
         )
 
-    def predict(self, customer_data: Dict[str, Any]) -> float:
+    def predict(self, customer_data: dict[str, Any]) -> float:
         """Predict expansion probability."""
         if not self.model:
             self._initialize_model()
@@ -294,7 +292,7 @@ class ExpansionScorer:
 
         return probability
 
-    def _extract_features(self, customer_data: Dict[str, Any]) -> List[float]:
+    def _extract_features(self, customer_data: dict[str, Any]) -> list[float]:
         """Extract feature vector."""
         return [
             customer_data.get("tier_utilization", 0.5),

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,15 +54,15 @@ class ComplianceService:
         self,
         item_id: uuid.UUID,
         status: str,
-        verified_by: Optional[str] = None,
-        notes: Optional[str] = None,
+        verified_by: str | None = None,
+        notes: str | None = None,
     ) -> ComplianceChecklistItem:
         """Update compliance status (pending, compliant, non_compliant, waived)."""
         item = await self.get_requirement(item_id)
         old_status = item.status
         item.status = status
         if status in ("compliant", "non_compliant", "waived"):
-            item.verified_at = datetime.now(timezone.utc)
+            item.verified_at = datetime.now(UTC)
             item.verified_by = verified_by or "system"
         if notes:
             item.notes = notes
@@ -163,7 +162,7 @@ class ContractService:
             "template_id": template_id,
             "contract_type": template.contract_type,
             "rendered_html": rendered_html,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(UTC),
         }
 
 
@@ -180,7 +179,7 @@ class AuditLogService:
         entity_id: uuid.UUID,
         action: str,
         actor: str,
-        details: Optional[dict] = None,
+        details: dict | None = None,
     ) -> AuditLog:
         """Log an audit event."""
         log = AuditLog(

@@ -1,46 +1,75 @@
 """SEO Config API endpoints."""
 
 from uuid import UUID
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query, Request
+
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.seo_config.service import SEOConfigService, PublicationLinkService
-from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
-from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
+from app.domains.seo_config.analytics_models import (
+    PublicationLinkMetrics,
+    PublicationLinkPerformanceSummary,
+)
 from app.domains.seo_config.bulk_import import BulkListingImporter
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, PlatformSyncLog, PlatformSEOStatus
-from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
-from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
-from app.domains.seo_config.fomo_service import FOMAConversionService
-from app.domains.seo_config.fomo_models import ConversionEvent
 from app.domains.seo_config.fomo_abtest_service import FOMABTestService
-from app.domains.seo_config.fomo_decay_service import FOMADecayService
-from app.domains.seo_config.fomo_predictive import FOMAPredictor
+from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
 from app.domains.seo_config.fomo_crossplatform import FOMAPatternSynthesizer
+from app.domains.seo_config.fomo_decay_service import FOMADecayService
 from app.domains.seo_config.fomo_feedback_loop import FOMAFeedbackLoop
-from app.domains.seo_config.webhook_service import WebhookService
+from app.domains.seo_config.fomo_generator import PublicationFOMOGenerator
+from app.domains.seo_config.fomo_language_generator import FOMALanguageGenerator
+from app.domains.seo_config.fomo_predictive import FOMAPredictor
+from app.domains.seo_config.fomo_service import FOMAConversionService
 from app.domains.seo_config.mercadolibre_webhook_service import (
     NotificationRejected,
     authenticate_channel,
     parse_notification,
     run_order_notification,
 )
-from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEventResponse
-from app.domains.seo_config.fomo_auto_rotation import FOMAAutoRotator
-from app.domains.seo_config.fomo_language_generator import FOMALanguageGenerator
-from app.domains.seo_config.platform_algorithm_knowledge import (
-    GUIDANCE_ONLY, MEASURED, PROFILES, canonical_platform, coverage_for, get_profile, profile_to_dict,
+from app.domains.seo_config.models import (
+    PlatformSyncLog,
+    PublicationLink,
+    PublicationLinkFOMO,
 )
-from app.domains.seo_config.positioning_score_service import PositioningScoreService, recommendation_payload
-from app.domains.seo_config.store_positioning_service import StorePositioningScoreService
+from app.domains.seo_config.platform_algorithm_knowledge import (
+    GUIDANCE_ONLY,
+    MEASURED,
+    PROFILES,
+    canonical_platform,
+    coverage_for,
+    get_profile,
+    profile_to_dict,
+)
+from app.domains.seo_config.platform_analytics_service import PlatformAnalyticsService
+from app.domains.seo_config.platform_sync_service import PlatformListingSyncService
+from app.domains.seo_config.positioning_score_service import (
+    PositioningScoreService,
+    recommendation_payload,
+)
+from app.domains.seo_config.service import PublicationLinkService, SEOConfigService
+from app.domains.seo_config.store_positioning_service import (
+    StorePositioningScoreService,
+)
+from app.domains.seo_config.webhook_models import (
+    ConversionWebhookPayload,
+    WebhookEventResponse,
+)
+from app.domains.seo_config.webhook_service import WebhookService
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 

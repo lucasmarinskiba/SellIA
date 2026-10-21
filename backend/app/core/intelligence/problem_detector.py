@@ -6,9 +6,9 @@ Output: Lista de problemas específicos + severity + root cause.
 """
 
 import logging
-from typing import Dict, List, Any
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class DetectedProblem:
     description: str
     root_cause: str
     affected_stage: str  # awareness, consideration, decision, retention
-    metrics_affected: List[str]
+    metrics_affected: list[str]
     business_impact: str
 
 
@@ -40,10 +40,10 @@ class ProblemDetector:
     @staticmethod
     def analyze(
         product_name: str,
-        market_analysis: Dict[str, Any],
-        performance_data: Dict[str, Any],
-        strategy: Dict[str, Any],
-    ) -> List[DetectedProblem]:
+        market_analysis: dict[str, Any],
+        performance_data: dict[str, Any],
+        strategy: dict[str, Any],
+    ) -> list[DetectedProblem]:
         """
         Analiza sistema completo, identifica problemas.
 
@@ -235,7 +235,7 @@ class ProblemSolver:
     """Resuelve problemas usando conocimiento de grandes mentes."""
 
     @staticmethod
-    def solve(problem: DetectedProblem, business_minds: List[str]) -> Dict[str, Any]:
+    def solve(problem: DetectedProblem, business_minds: list[str]) -> dict[str, Any]:
         """
         Resuelve problema usando frameworks de grandes mentes.
 

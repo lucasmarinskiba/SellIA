@@ -1,14 +1,24 @@
 """Business Context Service"""
 
 import uuid
-from typing import Optional, List, Dict, Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import BusinessContext, BusinessType, SalesModel, GeographicReach, PresenceType
+from .models import (
+    BusinessContext,
+    BusinessType,
+    GeographicReach,
+    PresenceType,
+    SalesModel,
+)
 from .schemas import (
-    BusinessContextCreate, BusinessContextUpdate, BusinessContextRead,
-    ReachAnalysis, ChannelGapAnalysis, BusinessContextWizardState, BusinessContextWizardStep
+    BusinessContextRead,
+    BusinessContextUpdate,
+    BusinessContextWizardState,
+    BusinessContextWizardStep,
+    ChannelGapAnalysis,
+    ReachAnalysis,
 )
 
 
@@ -16,7 +26,7 @@ class BusinessContextService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_or_create_context(self, user_id: uuid.UUID, business_id: Optional[uuid.UUID] = None) -> BusinessContext:
+    async def get_or_create_context(self, user_id: uuid.UUID, business_id: uuid.UUID | None = None) -> BusinessContext:
         query = select(BusinessContext).where(BusinessContext.user_id == user_id)
         if business_id:
             query = query.where(BusinessContext.business_id == business_id)
@@ -29,7 +39,7 @@ class BusinessContextService:
             await self.db.refresh(ctx)
         return ctx
 
-    async def update_context(self, user_id: uuid.UUID, context_id: uuid.UUID, data: BusinessContextUpdate) -> Optional[BusinessContext]:
+    async def update_context(self, user_id: uuid.UUID, context_id: uuid.UUID, data: BusinessContextUpdate) -> BusinessContext | None:
         result = await self.db.execute(
             select(BusinessContext).where(BusinessContext.id == context_id, BusinessContext.user_id == user_id)
         )
@@ -164,7 +174,7 @@ class BusinessContextService:
             estimated_addressable_market=market_size,
         )
 
-    async def analyze_channel_gaps(self, user_id: uuid.UUID, context_id: uuid.UUID) -> List[ChannelGapAnalysis]:
+    async def analyze_channel_gaps(self, user_id: uuid.UUID, context_id: uuid.UUID) -> list[ChannelGapAnalysis]:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(
@@ -201,7 +211,7 @@ class BusinessContextService:
                 ))
         return sorted(gaps, key=lambda x: {"critical": 0, "high": 1, "medium": 2, "low": 3}[x.priority])
 
-    async def generate_recommended_playbooks(self, user_id: uuid.UUID, context_id: uuid.UUID) -> List[str]:
+    async def generate_recommended_playbooks(self, user_id: uuid.UUID, context_id: uuid.UUID) -> list[str]:
         ctx = await self.get_or_create_context(user_id, None)
         if ctx.id != context_id:
             result = await self.db.execute(

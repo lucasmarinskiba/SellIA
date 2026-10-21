@@ -1,9 +1,16 @@
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from app.domains.channels.models import ChannelPlatform, ChannelStatus, ConversationStatus, MessageDirection, MessageStatus
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.domains.channels.models import (
+    ChannelPlatform,
+    ChannelStatus,
+    ConversationStatus,
+    MessageDirection,
+    MessageStatus,
+)
 
 
 # ChannelConnection schemas

@@ -2,13 +2,13 @@
 
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any
 
 from app.domains.agents.base_agent import (
-    AgentType,
     AgentContext,
     AgentDecision,
+    AgentType,
 )
 from app.domains.agents.specialized_agents import AGENT_REGISTRY
 
@@ -24,9 +24,9 @@ class AgentRouter:
     def __init__(self, max_hops: int = 10, escalation_threshold: int = 3):
         self.max_hops = max_hops
         self.escalation_threshold = escalation_threshold
-        self.routing_history: List[Dict[str, Any]] = []
+        self.routing_history: list[dict[str, Any]] = []
 
-    async def route_lead(self, context: AgentContext) -> Dict[str, Any]:
+    async def route_lead(self, context: AgentContext) -> dict[str, Any]:
         """
         Main orchestration: Route lead through agent pipeline
         until closed, escalated to human, or max hops reached.
@@ -108,7 +108,7 @@ class AgentRouter:
                     f"Agent execution failed: {next_agent_type} for lead {context.lead_id}"
                 )
                 return await self._escalate_to_human(
-                    context, f"Agent error: {str(e)}"
+                    context, f"Agent error: {e!s}"
                 )
 
         # Max hops reached
@@ -116,15 +116,15 @@ class AgentRouter:
             f"Max hops ({self.max_hops}) reached for lead {context.lead_id}"
         )
         return await self._escalate_to_human(
-            context, f"Pipeline max hops exceeded"
+            context, "Pipeline max hops exceeded"
         )
 
-    async def _find_best_agent(self, context: AgentContext) -> Optional[AgentType]:
+    async def _find_best_agent(self, context: AgentContext) -> AgentType | None:
         """
         Evaluate all agents and find best match for current context.
         Agents are scored by suitability.
         """
-        scores: Dict[AgentType, float] = {}
+        scores: dict[AgentType, float] = {}
 
         for agent_type, agent in AGENT_REGISTRY.items():
             try:
@@ -154,7 +154,7 @@ class AgentRouter:
 
     async def _escalate_to_human(
         self, context: AgentContext, reason: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Escalate to human sales representative."""
         logger.warning(f"Escalating lead {context.lead_id}: {reason}")
 
@@ -169,7 +169,7 @@ class AgentRouter:
 
     async def _finalize_lead(
         self, context: AgentContext, final_decision: AgentDecision
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Finalize completed lead journey."""
         return {
             "status": "completed",
@@ -183,7 +183,7 @@ class AgentRouter:
             "agent_path": [h["agent"] for h in context.agent_history],
         }
 
-    async def get_agent_performance(self) -> Dict[str, Any]:
+    async def get_agent_performance(self) -> dict[str, Any]:
         """Get metrics for all agents."""
         performance = {}
 
@@ -199,8 +199,8 @@ class AgentRouter:
         return performance
 
     async def batch_route_leads(
-        self, contexts: List[AgentContext]
-    ) -> List[Dict[str, Any]]:
+        self, contexts: list[AgentContext]
+    ) -> list[dict[str, Any]]:
         """Route multiple leads in parallel."""
         logger.info(f"Batch routing {len(contexts)} leads")
 

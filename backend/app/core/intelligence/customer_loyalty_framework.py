@@ -5,7 +5,7 @@ Estrategias: health scoring, churn prediction, win-back, referral loops, upsell 
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class CustomerLoyaltyFramework:
     }
 
     @staticmethod
-    def calculate_customer_health_score(customer: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_customer_health_score(customer: dict[str, Any]) -> dict[str, Any]:
         """
         Calcula health score 0-100.
 
@@ -94,7 +94,7 @@ class CustomerLoyaltyFramework:
         }
 
     @staticmethod
-    def build_win_back_sequence(customer: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def build_win_back_sequence(customer: dict[str, Any]) -> list[dict[str, Any]]:
         """Construye win-back sequence para churn-risk customer."""
 
         return [
@@ -109,7 +109,7 @@ class CustomerLoyaltyFramework:
                 "day": 3,
                 "channel": "email",
                 "subject": "Exclusive: 30% off (48h only)",
-                "message": f"Special offer just for you",
+                "message": "Special offer just for you",
                 "cta": "Claim discount",
             },
             {
@@ -129,7 +129,7 @@ class CustomerLoyaltyFramework:
         ]
 
     @staticmethod
-    def build_nps_optimization_plan(nps_segments: Dict[str, List[str]]) -> Dict[str, Any]:
+    def build_nps_optimization_plan(nps_segments: dict[str, list[str]]) -> dict[str, Any]:
         """
         Optimiza NPS por segment (promoters, passives, detractors).
 
@@ -175,7 +175,7 @@ class CustomerLoyaltyFramework:
         }
 
     @staticmethod
-    def calculate_lifetime_value(customer: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_lifetime_value(customer: dict[str, Any]) -> dict[str, Any]:
         """Calcula LTV + predice future value."""
 
         # LTV = ARPU × margin × lifetime (years)
@@ -202,7 +202,7 @@ class CustomerLoyaltyFramework:
         }
 
     @staticmethod
-    def upsell_timing_engine(customer: Dict[str, Any]) -> Dict[str, Any]:
+    def upsell_timing_engine(customer: dict[str, Any]) -> dict[str, Any]:
         """Detecta momento óptimo para upsell (based on usage + adoption)."""
 
         usage_score = customer.get("feature_adoption_score", 0)  # 0-100

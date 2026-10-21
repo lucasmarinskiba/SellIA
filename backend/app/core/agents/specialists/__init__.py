@@ -14,16 +14,21 @@ SellIA Specialist Agents Module
 - Storytelling and communication
 """
 
-from .methodology_agent import MethodologyAgent, BusinessStage, BusinessType
-from .sales_agent import SalesAgent, SalesMethodology, SalesStage, ObjectionType
-from .marketing_agent import MarketingAgent, MarketingChannel, AudienceSegment
-from .advertising_agent import AdvertisingAgent, AdPlatform, BidStrategy
-from .business_agent import BusinessAgent, RevenueModel, CostType, UnitEconomics
-from .innovation_agent import InnovationAgent, DisruptionType
-from .development_agent import DevelopmentAgent, TechStackLayer, GrowthHackingTactic
-from .financial_agent import FinancialAgent, PricingStrategy, FinancialMetric, PricingModel
-from .negotiation_agent import NegotiationAgent, NegotiationType, NegotiationPhase
-from .storytelling_agent import StorytellingAgent, StoryType, CommunicationFramework
+from .advertising_agent import AdPlatform, AdvertisingAgent, BidStrategy
+from .business_agent import BusinessAgent, CostType, RevenueModel, UnitEconomics
+from .development_agent import DevelopmentAgent, GrowthHackingTactic, TechStackLayer
+from .financial_agent import (
+    FinancialAgent,
+    FinancialMetric,
+    PricingModel,
+    PricingStrategy,
+)
+from .innovation_agent import DisruptionType, InnovationAgent
+from .marketing_agent import AudienceSegment, MarketingAgent, MarketingChannel
+from .methodology_agent import BusinessStage, BusinessType, MethodologyAgent
+from .negotiation_agent import NegotiationAgent, NegotiationPhase, NegotiationType
+from .sales_agent import ObjectionType, SalesAgent, SalesMethodology, SalesStage
+from .storytelling_agent import CommunicationFramework, StorytellingAgent, StoryType
 
 __all__ = [
     # Methodology Agent

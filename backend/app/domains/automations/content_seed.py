@@ -10,11 +10,15 @@ Workflows para generación automática de contenido con IA:
 """
 
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.automations.models import (
-    Workflow, WorkflowTriggerType, WorkflowActionType, WorkflowStatus,
+    Workflow,
+    WorkflowActionType,
+    WorkflowStatus,
+    WorkflowTriggerType,
 )
 
 

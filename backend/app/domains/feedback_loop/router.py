@@ -1,9 +1,9 @@
 """Feedback loop API: Conversion data improves X9 profiles."""
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.feedback_loop.service import FeedbackLoopAgent
-
 
 router = APIRouter(prefix="/api/v1/feedback-loop", tags=["feedback-loop"])
 

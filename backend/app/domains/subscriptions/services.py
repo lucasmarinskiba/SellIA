@@ -1,11 +1,17 @@
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.subscriptions.models import (
-    Subscription, SubscriptionPlan, SubscriptionStatus, UsageTracking, Invoice,
-    DEFAULT_PLAN_LIMITS, DEFAULT_PLAN_FEATURES
+    DEFAULT_PLAN_FEATURES,
+    DEFAULT_PLAN_LIMITS,
+    Invoice,
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+    UsageTracking,
 )
 
 
@@ -205,7 +211,7 @@ async def _check_subscription_limit_inner(
         return {"metric": metric_type, "used": 0, "limit": -1, "remaining": -1, "has_limit": False, "allowed": True}
 
     # Get current usage for this month
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month = datetime.now(UTC).strftime("%Y-%m")
     result = await db.execute(
         select(func.coalesce(func.sum(UsageTracking.quantity), 0))
         .where(
@@ -235,7 +241,7 @@ async def track_usage(
     quantity: int = 1,
     business_id: Any = None,
 ) -> None:
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month = datetime.now(UTC).strftime("%Y-%m")
     tracking = UsageTracking(
         user_id=user_id,
         business_id=business_id,
@@ -295,7 +301,7 @@ def get_plan_price(plan: SubscriptionPlan, region: str, billing_cycle: str) -> t
 async def generate_invoice_number(db: AsyncSession) -> str:
     """Generate a unique invoice number (SELL-YYYY-XXXXX format)."""
     from sqlalchemy import func
-    current_year = datetime.now(timezone.utc).year
+    current_year = datetime.now(UTC).year
     prefix = f"SELL-{current_year}"
     
     result = await db.execute(
@@ -325,7 +331,7 @@ async def create_invoice(
         invoice_type = "C"  # Default to consumidor final
     
     period_days = 30 if billing_cycle == "monthly" else 365
-    period_start = datetime.now(timezone.utc)
+    period_start = datetime.now(UTC)
     period_end = period_start + timedelta(days=period_days)
     
     invoice = Invoice(
@@ -361,14 +367,15 @@ async def generate_bank_transfer_order(
     billing_cycle: str,
 ) -> "BankTransferPayment":
     """Generate a professional bank transfer payment order."""
-    from app.domains.subscriptions.models import BankTransferPayment, BankTransferStatus
-    from app.core.config import get_settings
     from sqlalchemy import func
+
+    from app.core.config import get_settings
+    from app.domains.subscriptions.models import BankTransferPayment, BankTransferStatus
 
     settings = get_settings()
 
     # Generate order number
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     prefix = f"SELL-{now.year}{now.month:02d}"
     result = await db.execute(
         select(func.count(BankTransferPayment.id)).where(
@@ -395,8 +402,8 @@ async def generate_bank_transfer_order(
     if cbu:
         instructions += f"CBU: {cbu}\n"
     instructions += (
-        f"\nUna vez realizada, volvé a esta pantalla y confirmá el pago. "
-        f"Tenés 48 horas para completarlo."
+        "\nUna vez realizada, volvé a esta pantalla y confirmá el pago. "
+        "Tenés 48 horas para completarlo."
     )
 
     order = BankTransferPayment(
@@ -411,7 +418,7 @@ async def generate_bank_transfer_order(
         account_holder=holder,
         instructions=instructions,
         status=BankTransferStatus.PENDING.value,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
+        expires_at=datetime.now(UTC) + timedelta(hours=48),
     )
     db.add(order)
     await db.commit()

@@ -15,23 +15,22 @@ business owner (or an automation) can act on directly.
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_intelligence.service import PageOptimizationService, KeywordService
-from app.domains.fomo_seo.service import FOMOSEOCopyService, A_B_TestService
-from app.domains.seo_optimization.service import OptimizationTaskService
+from app.domains.fomo_seo.service import A_B_TestService, FOMOSEOCopyService
 from app.domains.seo_agents.service import (
-    ContentGenerationService,
-    CompetitorKeywordService,
     BacklinkStrategyService,
-    ReviewOrchestrationService,
+    CompetitorKeywordService,
     ContentCalendarService,
+    ContentGenerationService,
     MultiLocationSEOService,
+    ReviewOrchestrationService,
     TopicalClusterService,
 )
+from app.domains.seo_intelligence.service import KeywordService, PageOptimizationService
+from app.domains.seo_optimization.service import OptimizationTaskService
 
 logger = get_logger(__name__)
 

@@ -5,12 +5,11 @@ Sync: operating hours, photos, posts, service areas.
 """
 
 import logging
-from typing import Any, Optional
-from uuid import UUID
+from typing import Any
 
-from app.domains.channels.schemas import WebhookPayload
-from app.domains.channels.connectors.base import BaseChannelConnector
 from app.domains.businesses.location_models import Location, LocationHoursWeekly
+from app.domains.channels.connectors.base import BaseChannelConnector
+from app.domains.channels.schemas import WebhookPayload
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +131,7 @@ class GoogleBusinessProfileConnector(BaseChannelConnector):
         location: Location,
         post_content: str,
         post_type: str = "STANDARD",
-        call_to_action_url: Optional[str] = None
+        call_to_action_url: str | None = None
     ) -> dict[str, Any]:
         """Create post on location's Google Business Profile.
 

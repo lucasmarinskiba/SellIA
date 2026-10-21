@@ -1,19 +1,20 @@
 """Fraud detection service — order + account fraud scoring."""
 
-import logging
 import hashlib
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional
+import logging
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from statistics import stdev, mean
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.fraud.fraud_models import (
-    OrderFraudScore, AccountFraudScore, FraudBlacklist, FraudMetrics,
-    FraudRiskLevel, FraudReason
+    AccountFraudScore,
+    FraudBlacklist,
+    FraudMetrics,
+    FraudReason,
+    FraudRiskLevel,
+    OrderFraudScore,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,17 +40,18 @@ class FraudDetectionService:
             raise ValueError("Database session required")
 
         from app.domains.customers.models import Customer
+
         from app.domains.orders.models import Order
 
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         if not customer:
             raise ValueError(f"Customer {customer_id} not found")
 
-        fraud_score = Decimal("0")
+        fraud_score = Decimal(0)
         signals = {}
 
         # Signal 1: Velocity (orders in last 24h)
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         recent_orders = db.query(Order).filter(
             Order.customer_id == customer_id,
             Order.created_at >= cutoff
@@ -60,7 +62,7 @@ class FraudDetectionService:
             fraud_score += Decimal(str(velocity_score))
 
         # Signal 2: New account
-        account_age = (datetime.now(timezone.utc) - customer.created_at).days
+        account_age = (datetime.now(UTC) - customer.created_at).days
         if account_age < 7:
             new_account_score = 35
             signals["new_account_score"] = Decimal(str(new_account_score))
@@ -93,8 +95,8 @@ class FraudDetectionService:
             ).first()
             if blacklist:
                 blacklist_hit = True
-                signals["blacklist_match_score"] = Decimal("30")
-                fraud_score += Decimal("30")
+                signals["blacklist_match_score"] = Decimal(30)
+                fraud_score += Decimal(30)
 
         # Calculate risk level
         fraud_score = min(100, fraud_score)
@@ -171,16 +173,17 @@ class FraudDetectionService:
             raise ValueError("Database session required")
 
         from app.domains.customers.models import Customer
+
         from app.domains.orders.models import Order
 
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         if not customer:
             raise ValueError(f"Customer {customer_id} not found")
 
-        fraud_score = Decimal("0")
+        fraud_score = Decimal(0)
 
         # Signal 1: New account
-        account_age = (datetime.now(timezone.utc) - customer.created_at).days
+        account_age = (datetime.now(UTC) - customer.created_at).days
         if account_age < 7:
             fraud_score += 40
         elif account_age < 30:
@@ -314,7 +317,7 @@ class FraudDetectionService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Count by risk level
         order_scores = db.query(OrderFraudScore).filter(

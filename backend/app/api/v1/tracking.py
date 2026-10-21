@@ -6,12 +6,12 @@ from email clients via image pixels and link redirects.
 
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
-from app.domains.automations.models import SequenceEmailLog, EmailSequence
+from app.domains.automations.models import EmailSequence, SequenceEmailLog
 
 router = APIRouter(tags=["tracking"])
 

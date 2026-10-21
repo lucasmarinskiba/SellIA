@@ -4,21 +4,21 @@ Identifies root causes of failed deals, detects objection patterns across
 conversations, and generates data-driven pitch recommendations.
 """
 
-import uuid
 import json
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timezone, timedelta
+import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.models_causal import CausalAnalysis as CausalAnalysisModel
-from app.domains.channels.models import Conversation, Message
+from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.prompt_optimizer import ConversationOutcome
+from app.domains.channels.models import Conversation, Message
 
 logger = get_logger(__name__)
 
@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 class CausalAnalysis(BaseModel):
     surface_reason: str
     root_cause: str
-    contributing_factors: List[str] = Field(default_factory=list)
+    contributing_factors: list[str] = Field(default_factory=list)
     recommended_fix: str
     confidence: float = Field(ge=0.0, le=1.0)
 
@@ -41,7 +41,7 @@ class ObjectionPattern(BaseModel):
     root_cause: str
     frequency_percent: float
     overcome_rate: float
-    affected_segments: List[str] = Field(default_factory=list)
+    affected_segments: list[str] = Field(default_factory=list)
     recommended_response: str
 
 
@@ -53,11 +53,11 @@ class Recommendation(BaseModel):
 
 
 class PatternsWrapper(BaseModel):
-    patterns: List[ObjectionPattern] = Field(default_factory=list)
+    patterns: list[ObjectionPattern] = Field(default_factory=list)
 
 
 class RecommendationsWrapper(BaseModel):
-    recommendations: List[Recommendation] = Field(default_factory=list)
+    recommendations: list[Recommendation] = Field(default_factory=list)
 
 
 # ------------------------------------------------------------------
@@ -77,7 +77,7 @@ class CausalAnalyzer:
     async def analyze_failed_deal(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[CausalAnalysis]:
+    ) -> CausalAnalysis | None:
         """For lost deals, identifies root cause:
 
         - "El cliente rechazó porque el precio era alto RELATIVO a su percepción de valor"
@@ -170,7 +170,7 @@ class CausalAnalyzer:
         self,
         business_id: uuid.UUID,
         days: int = 30,
-    ) -> List[ObjectionPattern]:
+    ) -> list[ObjectionPattern]:
         """Aggregates across conversations:
 
         - Pattern: "Precio alto" → Cause: "Falta de comunicación de valor"
@@ -178,7 +178,7 @@ class CausalAnalyzer:
         - Pattern: "Lo voy a pensar" → Cause: "Falta de urgencia/scarcity"
           → Frequency: 31% → Overcome rate: 8%
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         # Get all conversations with outcomes in the period
         result = await self.db.execute(
@@ -268,8 +268,8 @@ class CausalAnalyzer:
     async def sync_objection_patterns(
         self,
         business_id: uuid.UUID,
-        patterns: List[ObjectionPattern],
-    ) -> List[ObjectionPatternModel]:
+        patterns: list[ObjectionPattern],
+    ) -> list[ObjectionPatternModel]:
         """Upsert detected objection patterns into the database."""
         saved = []
         for pattern in patterns:
@@ -291,7 +291,7 @@ class CausalAnalyzer:
                 existing.overcome_rate = pattern.overcome_rate
                 existing.affected_segments = pattern.affected_segments
                 existing.recommended_response = pattern.recommended_response
-                existing.updated_at = datetime.now(timezone.utc)
+                existing.updated_at = datetime.now(UTC)
                 saved.append(existing)
             else:
                 record = ObjectionPatternModel(
@@ -323,7 +323,7 @@ class CausalAnalyzer:
     async def generate_pitch_recommendations(
         self,
         business_id: uuid.UUID,
-    ) -> List[Recommendation]:
+    ) -> list[Recommendation]:
         """Based on causal analysis:
 
         - "Para segmento X, enfatizar Y en los primeros 3 mensajes"
@@ -421,7 +421,7 @@ class CausalAnalyzer:
     async def _build_transcript(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Build a text transcript from conversation messages."""
         result = await self.db.execute(
             select(Message)
@@ -441,7 +441,7 @@ class CausalAnalyzer:
     async def _get_outcome(
         self,
         conversation_id: uuid.UUID,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the recorded outcome for a conversation."""
         result = await self.db.execute(
             select(ConversationOutcome.outcome)
@@ -468,7 +468,7 @@ class CausalAnalyzer:
 # JSON parsing helper
 # ------------------------------------------------------------------
 
-def _parse_json_response(text: str, model_class) -> Optional[Any]:
+def _parse_json_response(text: str, model_class) -> Any | None:
     """Robustly parse a JSON response into a Pydantic model."""
     text = text.strip()
 

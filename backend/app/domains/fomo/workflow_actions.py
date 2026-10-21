@@ -3,14 +3,13 @@ FOMO Workflow Actions - Integration with Workflow Engine
 Triggers FOMO campaigns from workflow events
 """
 
-from typing import Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.fomo.service import fomo_service
-from app.domains.fomo.models import FOMOCampaign
 
 
 class FOMOWorkflowActions:
@@ -108,8 +107,8 @@ class FOMOWorkflowActions:
         customer_id: UUID,
         product_id: UUID,
         event_type: str = 'purchase',
-        customer_name: Optional[str] = None,
-        product_name: Optional[str] = None,
+        customer_name: str | None = None,
+        product_name: str | None = None,
         **kwargs: Any,
     ) -> dict:
         """
@@ -166,7 +165,7 @@ class FOMOWorkflowActions:
             customer_id=customer_id,
             metadata={
                 'countdown_hours': countdown_hours,
-                'deadline': (datetime.now(timezone.utc).isoformat()),
+                'deadline': (datetime.now(UTC).isoformat()),
             },
         )
 

@@ -1,21 +1,20 @@
 """Phase 33 Celery Tasks - Async operations for multi-platform automation."""
 
-from celery import shared_task
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from typing import List
+
+from celery import shared_task
 
 from app.database import SessionLocal
 from app.domains.enterprise.platform_integration import (
-    PlatformSyncEngine,
     DynamicPricingEngine,
     Platform,
+    PlatformSyncEngine,
 )
 from app.models.platform_integration import (
-    Product,
-    PlatformListing,
-    SellerMetrics,
     Order,
+    PlatformListing,
+    Product,
+    SellerMetrics,
 )
 
 
@@ -230,7 +229,7 @@ def generate_review_requests_task():
                     "order_id": order.id,
                     "buyer_id": order.buyer_id,
                     "platform": order.platform,
-                    "message": f"We'd love your feedback on your recent purchase! Leave a review and help others.",
+                    "message": "We'd love your feedback on your recent purchase! Leave a review and help others.",
                     "created_at": datetime.utcnow().isoformat(),
                 }
             )

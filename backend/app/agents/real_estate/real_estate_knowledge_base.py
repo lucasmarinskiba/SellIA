@@ -1,7 +1,7 @@
 """Real Estate Knowledge Base — Regional compliance, market data, regulations."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class RealEstateKnowledgeBase:
         self.market_data = {}
         self.property_standards = self._load_property_standards()
 
-    def _load_regional_regulations(self) -> Dict[str, Dict[str, Any]]:
+    def _load_regional_regulations(self) -> dict[str, dict[str, Any]]:
         """Load regional-specific regulations."""
         return {
             "Argentina": {
@@ -80,7 +80,7 @@ class RealEstateKnowledgeBase:
             },
         }
 
-    def _load_compliance_requirements(self) -> Dict[str, List[str]]:
+    def _load_compliance_requirements(self) -> dict[str, list[str]]:
         """Load compliance requirements by region."""
         return {
             "Argentina": [
@@ -117,7 +117,7 @@ class RealEstateKnowledgeBase:
             ],
         }
 
-    def _load_property_standards(self) -> Dict[str, Dict[str, Any]]:
+    def _load_property_standards(self) -> dict[str, dict[str, Any]]:
         """Load property evaluation standards."""
         return {
             "residential": {
@@ -168,7 +168,7 @@ class RealEstateKnowledgeBase:
             },
         }
 
-    def get_regional_info(self, region: str) -> Optional[Dict[str, Any]]:
+    def get_regional_info(self, region: str) -> dict[str, Any] | None:
         """Get regional information."""
         if region not in self.regional_regulations:
             logger.warning(f"Region {region} not in knowledge base")
@@ -180,13 +180,13 @@ class RealEstateKnowledgeBase:
             "compliance_requirements": self.compliance_requirements.get(region, []),
         }
 
-    def get_compliance_checklist(self, region: str) -> List[Dict[str, Any]]:
+    def get_compliance_checklist(self, region: str) -> list[dict[str, Any]]:
         """Get compliance checklist for region."""
         requirements = self.compliance_requirements.get(region, [])
 
         return [{"item": req, "status": "pending", "notes": ""} for req in requirements]
 
-    def get_inheritance_rules(self, region: str) -> Dict[str, Any]:
+    def get_inheritance_rules(self, region: str) -> dict[str, Any]:
         """Get inheritance-specific rules for region."""
         inheritance_info = {
             "Argentina": {
@@ -220,7 +220,7 @@ class RealEstateKnowledgeBase:
 
         return inheritance_info.get(region, {})
 
-    def get_rights_and_restrictions(self, property_type: str, region: str) -> Dict[str, Any]:
+    def get_rights_and_restrictions(self, property_type: str, region: str) -> dict[str, Any]:
         """Get rights and restrictions info."""
         info = {
             "derechos_piso": {
@@ -262,7 +262,7 @@ class RealEstateKnowledgeBase:
 
         return info
 
-    def get_market_trends(self, region: str, property_type: str = "residential") -> Dict[str, Any]:
+    def get_market_trends(self, region: str, property_type: str = "residential") -> dict[str, Any]:
         """Get market trend data."""
         return {
             "region": region,
@@ -280,7 +280,7 @@ class RealEstateKnowledgeBase:
             },
         }
 
-    def search_knowledge(self, query: str) -> List[Dict[str, Any]]:
+    def search_knowledge(self, query: str) -> list[dict[str, Any]]:
         """Search knowledge base."""
         results = []
 

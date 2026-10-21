@@ -1,22 +1,22 @@
 """Lead Qualifier Auto-Agent Router"""
 
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.lead_qualifier import service as lq_service
 from app.domains.agents.lead_qualifier.schemas import (
-    QualifyLeadOut,
     LeadQualificationOut,
     QualifyingQuestionOut,
+    QualifyLeadOut,
     RouteLeadIn,
     RouteLeadOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/lead-qualifier", tags=["lead-qualifier"])
 
@@ -30,7 +30,7 @@ async def get_db():
 async def qualify_lead(
     conversation_id: UUID,
     business_id: UUID = Query(...),
-    customer_id: Optional[UUID] = Query(None),
+    customer_id: UUID | None = Query(None),
     db: Annotated[AsyncSession, Depends(get_db)] = None,
     current_user: Annotated[User, Depends(get_current_user)] = None,
 ):

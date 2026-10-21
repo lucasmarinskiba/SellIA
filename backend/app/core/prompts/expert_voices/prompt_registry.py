@@ -3,9 +3,9 @@ Expert Voice Prompt Registry (350 total prompts)
 Central index for all 20 expert voices and their prompts
 """
 
-from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from enum import Enum
+
 
 class ExpertType(Enum):
     """All 20 expert types"""
@@ -57,12 +57,12 @@ class ExpertMetadata:
     """Metadata for each expert"""
     name: str
     expertise: str
-    key_books: List[str]
-    famous_quotes: List[str]
+    key_books: list[str]
+    famous_quotes: list[str]
     total_prompts: int
-    primary_focus: List[str]
+    primary_focus: list[str]
     style: str
-    best_for: List[SalesContext]
+    best_for: list[SalesContext]
 
 
 # Expert metadata registry
@@ -545,7 +545,7 @@ def get_expert_metadata(expert_type: ExpertType) -> ExpertMetadata:
     return EXPERT_METADATA[expert_type]
 
 
-def get_best_experts_for_context(context: SalesContext) -> List[Tuple[ExpertType, ExpertMetadata]]:
+def get_best_experts_for_context(context: SalesContext) -> list[tuple[ExpertType, ExpertMetadata]]:
     """Get experts ranked by relevance to a specific sales context"""
     experts_by_relevance = []
     for expert_type, metadata in EXPERT_METADATA.items():
@@ -554,12 +554,12 @@ def get_best_experts_for_context(context: SalesContext) -> List[Tuple[ExpertType
     return experts_by_relevance
 
 
-def get_all_expert_types() -> List[ExpertType]:
+def get_all_expert_types() -> list[ExpertType]:
     """Get all 20 expert types"""
     return list(ExpertType)
 
 
-def get_prompt_distribution() -> Dict[str, int]:
+def get_prompt_distribution() -> dict[str, int]:
     """Get distribution of prompts by expert"""
     return {
         expert.name: count
@@ -588,15 +588,15 @@ CONTEXT_RECOMMENDATIONS = {
 
 
 __all__ = [
-    "ExpertType",
-    "SalesContext",
-    "ExpertMetadata",
+    "CONTEXT_RECOMMENDATIONS",
     "EXPERT_METADATA",
     "PROMPT_INVENTORY",
     "TOTAL_PROMPTS",
-    "CONTEXT_RECOMMENDATIONS",
-    "get_expert_metadata",
-    "get_best_experts_for_context",
+    "ExpertMetadata",
+    "ExpertType",
+    "SalesContext",
     "get_all_expert_types",
+    "get_best_experts_for_context",
+    "get_expert_metadata",
     "get_prompt_distribution",
 ]

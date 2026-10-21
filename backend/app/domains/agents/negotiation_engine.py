@@ -1,11 +1,9 @@
 """Advanced Negotiation Engine - Dynamic pricing & contract optimization."""
 
-from typing import Dict, Any, List, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
-import asyncio
-from datetime import datetime, timedelta
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +30,7 @@ class PricingTier:
     name: str
     annual_price: float
     monthly_price: float
-    features: List[str]
+    features: list[str]
     discount_percent: float = 0.0
     payment_terms: str = "net_30"
     implementation_days: int = 30
@@ -77,7 +75,7 @@ class NegotiationEngine:
         self.base_price = 75000  # Default annual price
         self.discount_authority_matrix = self._build_authority_matrix()
 
-    def _build_authority_matrix(self) -> Dict[CompanySize, DiscountAuthority]:
+    def _build_authority_matrix(self) -> dict[CompanySize, DiscountAuthority]:
         """Build discount authority rules by company size."""
         return {
             CompanySize.STARTUP: DiscountAuthority(
@@ -115,7 +113,7 @@ class NegotiationEngine:
         }
 
     async def estimate_company_size(
-        self, employee_count: Optional[int] = None, company_name: Optional[str] = None
+        self, employee_count: int | None = None, company_name: str | None = None
     ) -> CompanySize:
         """Estimate company size from employee count or name."""
         if employee_count:
@@ -135,10 +133,10 @@ class NegotiationEngine:
         self,
         intent_score: float,
         company_size: CompanySize,
-        prospect_budget: Optional[float] = None,
+        prospect_budget: float | None = None,
         expansion_potential: float = 0.0,
-        competitor_price: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        competitor_price: float | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate optimal pricing based on:
         - Intent score (0-1): higher intent = more flexibility
@@ -199,7 +197,7 @@ class NegotiationEngine:
         self,
         final_price: float,
         company_size: CompanySize,
-    ) -> List[PricingTier]:
+    ) -> list[PricingTier]:
         """Generate 3-tier pricing options (standard, professional, enterprise)."""
         discount = 1.0 - (final_price / self.base_price)
 
@@ -254,7 +252,7 @@ class NegotiationEngine:
         prospect_industry: str,
         company_size: CompanySize,
         annual_price: float,
-        prospect_preferences: Optional[Dict[str, Any]] = None,
+        prospect_preferences: dict[str, Any] | None = None,
     ) -> ContractTerms:
         """
         Optimize contract terms based on industry, size, and price point.
@@ -358,7 +356,7 @@ class NegotiationEngine:
 
     async def get_strategy_playbook(
         self, strategy: NegotiationStrategy
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get negotiation tactics for selected strategy."""
         playbooks = {
             NegotiationStrategy.AGGRESSIVE: {

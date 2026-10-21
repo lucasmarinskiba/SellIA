@@ -4,11 +4,8 @@ Time-Based Access Control
 Restricción de login por horario.
 """
 
-import uuid
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -16,9 +13,9 @@ logger = get_logger(__name__)
 
 
 def check_time_restrictions(
-    restrictions: Optional[Dict[str, Any]],
+    restrictions: dict[str, Any] | None,
     timestamp: datetime = None,
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """
     Verifica si el login está dentro del horario permitido.
 
@@ -29,7 +26,7 @@ def check_time_restrictions(
         return True, None
 
     if timestamp is None:
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
     # Convert to user's timezone if specified
     user_tz = restrictions.get("timezone", "UTC")

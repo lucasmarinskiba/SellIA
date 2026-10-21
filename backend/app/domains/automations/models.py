@@ -3,15 +3,24 @@
 Engine for sales automation: triggers, actions, email sequences, chatbot rules.
 """
 
+import enum
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Boolean, JSON, Interval, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
-import enum
-
 
 # ========== Workflow Engine ==========
 
@@ -95,8 +104,8 @@ class Workflow(Base):
     execution_count = Column(Integer, default=0)
     conversion_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class WorkflowExecution(Base):
@@ -110,7 +119,7 @@ class WorkflowExecution(Base):
     actions_executed = Column(JSONB, default=list, nullable=False)
     status = Column(String(50), default="completed", nullable=False)  # completed, failed, running
     error_message = Column(Text, nullable=True)
-    executed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    executed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class WorkflowVariant(Base):
@@ -127,8 +136,8 @@ class WorkflowVariant(Base):
     execution_count = Column(Integer, default=0)
     conversion_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 # ========== Email Templates & Sequences ==========
@@ -145,8 +154,8 @@ class EmailTemplate(Base):
     variables = Column(JSONB, default=list, nullable=False)  # ["lead_name", "product_name"]
     category = Column(String(100), nullable=True)  # welcome, sales, follow_up, abandoned_cart
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class EmailSequence(Base):
@@ -163,8 +172,8 @@ class EmailSequence(Base):
     opens_count = Column(Integer, default=0)
     clicks_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class SequenceStep(Base):
@@ -181,7 +190,7 @@ class SequenceStep(Base):
     condition = Column(String(200), nullable=True)  # ej. "opened_previous:yes", "clicked:no"
     extra_data = Column(JSONB, default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SequenceSubscription(Base):
@@ -194,13 +203,13 @@ class SequenceSubscription(Base):
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     current_step_index = Column(Integer, default=0, nullable=False)
-    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     last_sent_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(20), default="active", nullable=False)  # active, completed, paused, cancelled
     extra_data = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class SequenceEmailLog(Base):
@@ -223,7 +232,7 @@ class SequenceEmailLog(Base):
     status = Column(String(20), default="pending", nullable=False)  # pending, sent, bounced, failed
     extra_data = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # ========== Chatbot Intelligence Rules ==========
@@ -243,8 +252,8 @@ class ChatbotRule(Base):
     requires_human = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     usage_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 # ========== AI Content Generation ==========
@@ -302,8 +311,8 @@ class GeneratedContent(Base):
     generation_cost = Column(Integer, default=0, nullable=False)  # Costo en créditos o moneda base (centavos)
     ai_model_used = Column(String(100), nullable=True)  # dalle-3, midjourney, sora, runway, etc.
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class ContentCalendar(Base):
@@ -366,8 +375,8 @@ class ContentCalendar(Base):
 
     # Extra
     extra_data = Column(JSONB, default=dict, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 # ========== Automation Toggles (Control Center) ==========
@@ -406,8 +415,8 @@ class AutomationToggle(Base):
     icon = Column(String(50), nullable=True)  # "🤖", "📧", etc
 
     # Auditoría
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
     changed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     __table_args__ = (
@@ -437,7 +446,7 @@ class ToggleAuditLog(Base):
     leads_affected = Column(Integer, nullable=True)
     estimated_impact_pct = Column(Integer, nullable=True)  # % cambio esperado en conversión
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_business_toggle_audit", "business_id", "toggle_id"),
@@ -472,8 +481,8 @@ class ToggleSchedule(Base):
     failed_count = Column(Integer, default=0, nullable=False)
     last_error = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_business_toggle_schedule", "business_id", "toggle_id"),
@@ -517,8 +526,8 @@ class ToggleNotificationRule(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Metadata
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_business_toggle_notification", "business_id", "toggle_id"),
@@ -545,7 +554,7 @@ class ToggleNotificationLog(Base):
     status = Column(String(50), default="sent", nullable=False)  # "sent", "failed", "pending"
     error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_business_toggle_notif_log", "business_id", "toggle_id"),

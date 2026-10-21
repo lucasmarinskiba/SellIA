@@ -4,20 +4,18 @@ Sistema de notificaciones de seguridad:
 - Webhooks a Slack, Discord, Telegram
 """
 
-import json
 import os
-from datetime import datetime, timezone
-from typing import Optional
-
-import httpx
-import aiosmtplib
-from email.mime.text import MIMEText
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+import aiosmtplib
+import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.domains.security.models import SecurityWebhook, SecurityConfig
+from app.domains.security.models import SecurityWebhook
 
 settings = get_settings()
 
@@ -73,7 +71,7 @@ def format_slack_message(event: str, title: str, description: str, details: dict
                     for k, v in details.items()
                 ],
                 "footer": "SellIA Security",
-                "ts": int(datetime.now(timezone.utc).timestamp()),
+                "ts": int(datetime.now(UTC).timestamp()),
             }
         ]
     }
@@ -93,7 +91,7 @@ def format_discord_message(event: str, title: str, description: str, details: di
                 "description": description,
                 "color": color,
                 "fields": fields,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "footer": {"text": "SellIA Security"},
             }
         ]
@@ -133,7 +131,7 @@ async def send_webhook(webhook: SecurityWebhook, event: str, title: str, descrip
                 "title": title,
                 "description": description,
                 "details": details,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -164,10 +162,10 @@ async def notify_security_event(
     title: str,
     description: str,
     details: dict,
-    user_email: Optional[str] = None,
-    email_subject: Optional[str] = None,
-    email_body_html: Optional[str] = None,
-    email_body_text: Optional[str] = None,
+    user_email: str | None = None,
+    email_subject: str | None = None,
+    email_body_html: str | None = None,
+    email_body_text: str | None = None,
 ):
     """
     Notifica un evento de seguridad por todos los canales configurados:

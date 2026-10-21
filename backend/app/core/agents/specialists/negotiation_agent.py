@@ -10,9 +10,8 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -352,7 +351,7 @@ class NegotiationAgent:
         negotiation_type: NegotiationType,
         other_party: str,
         objective: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepare for negotiation."""
         preparation = {
             "negotiation_type": negotiation_type.value,
@@ -385,11 +384,11 @@ class NegotiationAgent:
 
     @staticmethod
     def analyze_negotiation_position(
-        current_offer: Dict[str, Any],
-        must_haves: List[str],
-        nice_to_haves: List[str],
+        current_offer: dict[str, Any],
+        must_haves: list[str],
+        nice_to_haves: list[str],
         batna_value: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze your negotiation position."""
         analysis = {
             "current_offer": current_offer,
@@ -410,7 +409,7 @@ class NegotiationAgent:
         base_value: float,
         margin: float,
         anchor_strategy: str = "high"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create opening offer."""
         if anchor_strategy == "high":
             # For selling, anchor high
@@ -432,8 +431,8 @@ class NegotiationAgent:
     @staticmethod
     def handle_objection(
         objection: str,
-        your_position: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        your_position: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle objection in negotiation."""
         strategies = {
             "price_objection": {
@@ -470,8 +469,8 @@ class NegotiationAgent:
     def build_deal_structure(
         base_transaction_value: float,
         timeline_months: int,
-        key_terms: List[str]
-    ) -> Dict[str, Any]:
+        key_terms: list[str]
+    ) -> dict[str, Any]:
         """Build optimized deal structure."""
         return {
             "base_value": base_transaction_value,
@@ -503,14 +502,14 @@ class NegotiationAgent:
         }
 
     @staticmethod
-    def get_negotiation_framework(negotiation_type: NegotiationType) -> Dict[str, Any]:
+    def get_negotiation_framework(negotiation_type: NegotiationType) -> dict[str, Any]:
         """Get framework for negotiation type."""
         return NegotiationAgent.NEGOTIATION_SCENARIOS.get(negotiation_type, {})
 
     @staticmethod
     def negotiation_checklist(
         negotiation_type: NegotiationType
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Get pre-negotiation checklist."""
         return {
             "research": [
@@ -543,7 +542,7 @@ class NegotiationAgent:
         }
 
     @staticmethod
-    def closing_strategies() -> Dict[str, Dict[str, Any]]:
+    def closing_strategies() -> dict[str, dict[str, Any]]:
         """Get deal closing strategies."""
         return {
             "summary_close": {

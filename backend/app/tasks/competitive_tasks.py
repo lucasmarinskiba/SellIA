@@ -4,11 +4,11 @@ Competitive Intelligence Celery Tasks
 Tareas periodicas que escanean competidores y generan alertas.
 """
 
-from celery import shared_task
-from datetime import datetime, timezone
 
-from app.core.database import AsyncSessionLocal
+from celery import shared_task
+
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
 
@@ -21,6 +21,7 @@ def competitive_intelligence_scanner():
     async def _run():
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select
+
             from app.domains.competitive.models import CompetitiveMonitor
 
             engine = CompetitiveIntelligenceEngine(db)

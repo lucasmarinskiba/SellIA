@@ -45,7 +45,7 @@ class BudgetApplier:
                       "message": f"El conector de {channel.platform} no permite escribir presupuesto todavía"}
 
         if result.get("applied"):
-            channel.current_daily_budget = new_budget if not pause else Decimal("0")
+            channel.current_daily_budget = new_budget if not pause else Decimal(0)
             if pause:
                 channel.is_paused = True
         return result

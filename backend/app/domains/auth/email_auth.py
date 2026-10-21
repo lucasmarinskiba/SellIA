@@ -1,19 +1,18 @@
 """Email authentication & account approval service."""
 
+import logging
+import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, List
-import secrets
-import logging
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.email_auth import (
-    EmailVerificationToken,
     AccountApproval,
     ApprovalAuditLog,
     EmailTemplate,
+    EmailVerificationToken,
 )
 from app.models.user import User
 from celery_app import celery_app
@@ -29,7 +28,7 @@ class EmailVerificationResult:
     user_id: str
     email: str
     message: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 @dataclass
@@ -39,8 +38,8 @@ class ApprovalRequest:
     user_id: str
     email: str
     full_name: str
-    company: Optional[str]
-    role: Optional[str]
+    company: str | None
+    role: str | None
     auto_approved: bool
 
 
@@ -134,8 +133,8 @@ class EmailAuthManager:
         user_id: str,
         email: str,
         full_name: str,
-        company: Optional[str] = None,
-        role: Optional[str] = None,
+        company: str | None = None,
+        role: str | None = None,
     ) -> ApprovalRequest:
         """Create account approval request."""
 
@@ -185,7 +184,7 @@ class EmailAuthManager:
             auto_approved=auto_approved,
         )
 
-    def approve_account(self, approval_id: str, admin_id: str, notes: Optional[str] = None) -> bool:
+    def approve_account(self, approval_id: str, admin_id: str, notes: str | None = None) -> bool:
         """Approve account (admin action)."""
 
         approval = self.db.query(AccountApproval).filter(AccountApproval.id == approval_id).first()
@@ -246,7 +245,7 @@ class EmailAuthManager:
 
         return True
 
-    def get_pending_approvals(self, limit: int = 100) -> List[dict]:
+    def get_pending_approvals(self, limit: int = 100) -> list[dict]:
         """Get pending account approvals."""
 
         approvals = (
@@ -269,7 +268,7 @@ class EmailAuthManager:
             for a in approvals
         ]
 
-    def get_approval_status(self, user_id: str) -> Optional[dict]:
+    def get_approval_status(self, user_id: str) -> dict | None:
         """Get account approval status for user."""
 
         approval = (
@@ -289,7 +288,7 @@ class EmailAuthManager:
             "auto_approved": approval.auto_approved,
         }
 
-    def _check_auto_approval(self, email: str, company: Optional[str]) -> bool:
+    def _check_auto_approval(self, email: str, company: str | None) -> bool:
         """Check if should auto-approve based on rules."""
         # TODO: Implement auto-approval logic
         return False
@@ -300,7 +299,7 @@ class EmailAuthManager:
 # ============================================================
 
 
-def get_email_template(template_name: str, db: Session) -> Optional[EmailTemplate]:
+def get_email_template(template_name: str, db: Session) -> EmailTemplate | None:
     """Get email template by name."""
     return db.query(EmailTemplate).filter(EmailTemplate.template_name == template_name).first()
 

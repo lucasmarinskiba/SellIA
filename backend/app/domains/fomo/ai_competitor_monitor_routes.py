@@ -1,8 +1,8 @@
 """Fase F: AI Competitor FOMO Monitor — API routes"""
 
-from typing import Dict, Optional, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_competitor_monitor_agent import (
@@ -24,8 +24,8 @@ async def extract_competitor_offer(
 
 @router.post("/detect-change")
 async def detect_price_change(
-    current: Dict[str, Any] = Body(...),
-    previous: Optional[Dict[str, Any]] = Body(None),
+    current: dict[str, Any] = Body(...),
+    previous: dict[str, Any] | None = Body(None),
     current_user=Depends(get_current_user),
 ):
     """Compare a new extraction snapshot against the last known one"""
@@ -50,10 +50,10 @@ async def generate_competitive_message(
 async def full_monitor_cycle(
     raw_text: str = Body(...),
     competitor_name: str = Query(...),
-    previous_snapshot: Optional[Dict[str, Any]] = Body(None),
-    our_price: Optional[float] = Query(None),
-    our_product_name: Optional[str] = Query(None),
-    our_recommended_discount_percent: Optional[float] = Query(None),
+    previous_snapshot: dict[str, Any] | None = Body(None),
+    our_price: float | None = Query(None),
+    our_product_name: str | None = Query(None),
+    our_recommended_discount_percent: float | None = Query(None),
     current_user=Depends(get_current_user),
 ):
     """Full pipeline: extract -> detect change -> alert -> competitive messaging"""
@@ -71,9 +71,9 @@ async def full_monitor_cycle(
 async def fetch_and_monitor(
     url: str = Query(..., description="A URL the user explicitly configured to monitor"),
     competitor_name: str = Query(...),
-    previous_snapshot: Optional[Dict[str, Any]] = Body(None),
-    our_price: Optional[float] = Query(None),
-    our_product_name: Optional[str] = Query(None),
+    previous_snapshot: dict[str, Any] | None = Body(None),
+    our_price: float | None = Query(None),
+    our_product_name: str | None = Query(None),
     current_user=Depends(get_current_user),
 ):
     """Fetch a single configured competitor URL and run the full monitor cycle on it"""

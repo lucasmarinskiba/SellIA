@@ -4,10 +4,10 @@ Failsafe Engine — Asegura ventas. Si falla WhatsApp, email. Si email falla, SM
 Multi-channel redundancy. Escalation automática. Guaranteed delivery.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import asyncio
+import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +43,11 @@ class FailsafeEngine:
 
     @staticmethod
     async def send_with_fallback(
-        buyer: Dict[str, Any],
+        buyer: dict[str, Any],
         message: str,
         campaign_id: str,
-        preferred_channel: Optional[Channel] = None,
-    ) -> Dict[str, Any]:
+        preferred_channel: Channel | None = None,
+    ) -> dict[str, Any]:
         """
         Envía mensaje con fallback automático.
 
@@ -111,10 +111,10 @@ class FailsafeEngine:
 
     @staticmethod
     async def _send_via_channel(
-        buyer: Dict[str, Any],
+        buyer: dict[str, Any],
         message: str,
         channel: Channel,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía vía canal específico."""
 
         try:
@@ -165,7 +165,7 @@ class FailsafeEngine:
                 return {"status": "error", "error": "Unknown channel", "retryable": False}
 
         except Exception as e:
-            logger.error(f"Error sending via {channel.value}: {str(e)}")
+            logger.error(f"Error sending via {channel.value}: {e!s}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -173,7 +173,7 @@ class FailsafeEngine:
             }
 
     @staticmethod
-    def _reorder_channels(preferred: Channel) -> List[Channel]:
+    def _reorder_channels(preferred: Channel) -> list[Channel]:
         """Reordena canales con preferencia al inicio."""
 
         channels = list(FailsafeEngine.CHANNEL_FALLBACK_ORDER)
@@ -183,7 +183,7 @@ class FailsafeEngine:
         return channels
 
     @staticmethod
-    async def escalate_if_stuck(campaign_id: str, buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def escalate_if_stuck(campaign_id: str, buyer: dict[str, Any]) -> dict[str, Any]:
         """
         Si ciclo atascado (72h+ sin respuesta), escala a humano.
 
@@ -222,8 +222,8 @@ class FailsafeEngine:
     @staticmethod
     async def verify_delivery(
         campaign_id: str,
-        buyer: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Post-sale verification: ¿cliente recibió? ¿accedió? ¿usó?
 

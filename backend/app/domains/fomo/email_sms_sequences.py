@@ -1,9 +1,7 @@
 """Email + SMS Campaign Sequences - Multi-touch automation"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
-from uuid import UUID
 
 from app.domains.notifications.service import email_service, sms_service
 
@@ -98,7 +96,7 @@ class EmailSequence:
         await asyncio.sleep(82800)
         await email_service.send(
             to=user_email,
-            subject=f"⏰ Última oportunidad",
+            subject="⏰ Última oportunidad",
             template="cart_abandoned_2",
             context={
                 "items": items,
@@ -187,7 +185,7 @@ class EmailSequence:
         - At expiration: final email
         """
 
-        hours_until_expiration = (trial_expires_at - datetime.now(timezone.utc)).total_seconds() / 3600
+        hours_until_expiration = (trial_expires_at - datetime.now(UTC)).total_seconds() / 3600
 
         # Email 1: 7 days before
         await asyncio.sleep(max(0, (hours_until_expiration - 168) * 3600))

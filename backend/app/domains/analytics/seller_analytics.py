@@ -1,9 +1,9 @@
 """Phase 14: Real-time analytics and seller dashboard."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ class ChannelPerformance:
 class DashboardData:
     seller_id: str
     current_metrics: SellerMetrics
-    period_metrics: Dict[str, SellerMetrics]
-    channel_performance: List[ChannelPerformance]
-    daily_trend: List[Dict[str, Any]]
-    top_products: List[Dict[str, Any]]
-    top_customers: List[Dict[str, Any]]
-    revenue_forecast: Dict[str, float]
-    alerts: List[Dict[str, str]]
+    period_metrics: dict[str, SellerMetrics]
+    channel_performance: list[ChannelPerformance]
+    daily_trend: list[dict[str, Any]]
+    top_products: list[dict[str, Any]]
+    top_customers: list[dict[str, Any]]
+    revenue_forecast: dict[str, float]
+    alerts: list[dict[str, str]]
 
 
 class SellerAnalyticsEngine:
@@ -72,7 +72,7 @@ class SellerAnalyticsEngine:
 
         return metrics
 
-    def get_channel_performance(self, seller_id: str) -> List[ChannelPerformance]:
+    def get_channel_performance(self, seller_id: str) -> list[ChannelPerformance]:
         """Rank channels by performance"""
 
         channels = [

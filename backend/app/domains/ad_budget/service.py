@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class AdBudgetService:
@@ -118,7 +118,7 @@ class AdBudgetService:
         )
 
     async def run_cycle(
-        self, business_id: uuid.UUID, *, force: bool = False, auto_apply: Optional[bool] = None
+        self, business_id: uuid.UUID, *, force: bool = False, auto_apply: bool | None = None
     ) -> dict[str, Any]:
         cfg = await self.get_or_create_config(business_id)
         if not force and (not cfg.is_active or cfg.is_paused):
@@ -138,7 +138,7 @@ class AdBudgetService:
                     channel_id=str(ch.id),
                     platform=ch.platform,
                     name=ch.display_name,
-                    current_budget=ch.current_daily_budget or Decimal("0"),
+                    current_budget=ch.current_daily_budget or Decimal(0),
                     spend=metrics["spend"],
                     revenue=metrics["revenue"],
                     conversions=metrics["conversions"],
@@ -188,7 +188,7 @@ class AdBudgetService:
         }
 
     async def apply_reallocation(
-        self, business_id: uuid.UUID, realloc_id: uuid.UUID, user_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID, realloc_id: uuid.UUID, user_id: uuid.UUID | None = None
     ) -> BudgetReallocation:
         res = await self.db.execute(
             select(BudgetReallocation).where(
@@ -224,7 +224,7 @@ class AdBudgetService:
         return realloc
 
     async def _apply(
-        self, business_id: uuid.UUID, realloc: BudgetReallocation, applied_by: Optional[uuid.UUID]
+        self, business_id: uuid.UUID, realloc: BudgetReallocation, applied_by: uuid.UUID | None
     ) -> None:
         applier = BudgetApplier(self.db)
         channels = {str(c.id): c for c in await self.list_channels(business_id)}
@@ -272,16 +272,16 @@ class AdBudgetService:
         cfg = await self.get_or_create_config(business_id)
         channels = await self.list_channels(business_id)
         rows = []
-        total_spend = Decimal("0")
-        total_rev = Decimal("0")
-        total_budget = Decimal("0")
+        total_spend = Decimal(0)
+        total_rev = Decimal(0)
+        total_budget = Decimal(0)
         for ch in channels:
             snap = await self.perf.latest_snapshot(ch.id)
-            spend = snap.spend if snap else Decimal("0")
-            rev = snap.revenue if snap else Decimal("0")
+            spend = snap.spend if snap else Decimal(0)
+            rev = snap.revenue if snap else Decimal(0)
             total_spend += spend
             total_rev += rev
-            total_budget += ch.current_daily_budget or Decimal("0")
+            total_budget += ch.current_daily_budget or Decimal(0)
             rows.append({
                 "id": str(ch.id),
                 "platform": ch.platform,

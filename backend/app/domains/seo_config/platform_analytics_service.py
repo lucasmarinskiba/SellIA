@@ -1,16 +1,20 @@
 """Service to fetch and store analytics from platforms."""
 
+from datetime import date, timedelta
 from uuid import UUID
-from datetime import date, datetime, timedelta
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.domains.seo_config.analytics_models import (
+    PublicationLinkMetrics,
+    PublicationLinkPerformanceSummary,
+)
 from app.domains.seo_config.models import PublicationLink
-from app.domains.seo_config.analytics_models import PublicationLinkMetrics, PublicationLinkPerformanceSummary
-from app.domains.seo_config.platform_analytics_mercadolibre import MercadoLibreAnalytics
-from app.domains.seo_config.platform_analytics_base import PlatformAnalyticsConnector
 from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
+from app.domains.seo_config.platform_analytics_base import PlatformAnalyticsConnector
+from app.domains.seo_config.platform_analytics_mercadolibre import MercadoLibreAnalytics
 
 logger = get_logger(__name__)
 
@@ -37,7 +41,9 @@ class PlatformAnalyticsService:
             return None
 
         try:
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(

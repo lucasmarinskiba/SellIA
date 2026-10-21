@@ -14,16 +14,16 @@ Flujo:
 """
 
 import logging
-import asyncio
-from typing import Dict, List, Any, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
-from .visual_analyzer import VisualAnalyzer, PageAnalysis
-from .vision_navigator import VisionNavigator, ElementType, ElementMatch
-from .visual_confirmation import VisualConfirmation, Confirmation, ActionResult
-from .vision_screenshot_parser import VisionScreenshotParser, PageStructure
-from .visual_automation_executor import VisualAutomationExecutor, ActionType
-from .vision_debug import VisionDebugLogger, VisionDebugAnnotator, VisionComparator
+from .vision_debug import VisionDebugLogger
+from .vision_navigator import ElementMatch, ElementType, VisionNavigator
+from .vision_screenshot_parser import PageStructure, VisionScreenshotParser
+from .visual_analyzer import PageAnalysis, VisualAnalyzer
+from .visual_automation_executor import VisualAutomationExecutor
+from .visual_confirmation import ActionResult, Confirmation, VisualConfirmation
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +33,12 @@ class VisionExecutionContext:
     """Contexto de ejecución."""
     session_id: str
     step: int = 0
-    screenshot_getter: Optional[Callable] = None
-    browser_controller: Optional[Any] = None
-    anthropic_client: Optional[Any] = None
-    google_vision_client: Optional[Any] = None
+    screenshot_getter: Callable | None = None
+    browser_controller: Any | None = None
+    anthropic_client: Any | None = None
+    google_vision_client: Any | None = None
     debug_enabled: bool = False
-    debug_logger: Optional[VisionDebugLogger] = None
+    debug_logger: VisionDebugLogger | None = None
 
 
 class VisionOrchestrator:
@@ -59,7 +59,7 @@ class VisionOrchestrator:
         screenshot_getter: Callable,
         browser_controller: Any,
         session_id: str,
-        google_vision_client: Optional[Any] = None,
+        google_vision_client: Any | None = None,
         debug_enabled: bool = False
     ):
         self.context = VisionExecutionContext(
@@ -132,7 +132,7 @@ class VisionOrchestrator:
         self,
         description: str,
         threshold: float = 0.7
-    ) -> Optional[ElementMatch]:
+    ) -> ElementMatch | None:
         """Encuentra un botón por descripción."""
         screenshot = await self.get_current_screenshot()
 
@@ -157,7 +157,7 @@ class VisionOrchestrator:
         self,
         label: str,
         threshold: float = 0.7
-    ) -> Optional[ElementMatch]:
+    ) -> ElementMatch | None:
         """Encuentra un campo de formulario."""
         screenshot = await self.get_current_screenshot()
 
@@ -184,9 +184,9 @@ class VisionOrchestrator:
     async def find_element(
         self,
         description: str,
-        element_type: Optional[ElementType] = None,
+        element_type: ElementType | None = None,
         threshold: float = 0.7
-    ) -> Optional[ElementMatch]:
+    ) -> ElementMatch | None:
         """Encuentra cualquier elemento."""
         screenshot = await self.get_current_screenshot()
 
@@ -207,7 +207,7 @@ class VisionOrchestrator:
 
         return element
 
-    async def find_all_clickable(self, max_results: int = 10) -> List[ElementMatch]:
+    async def find_all_clickable(self, max_results: int = 10) -> list[ElementMatch]:
         """Encuentra todos los elementos clickeables."""
         screenshot = await self.get_current_screenshot()
         return await self.navigator.find_clickable_areas(screenshot, max_results)
@@ -216,7 +216,7 @@ class VisionOrchestrator:
         self,
         description: str,
         verify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Clickea un elemento."""
         screenshot_before = await self.get_current_screenshot()
 
@@ -244,7 +244,7 @@ class VisionOrchestrator:
         field_label: str,
         value: str,
         verify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Rellena un campo de formulario."""
         screenshot_before = await self.get_current_screenshot()
 
@@ -270,9 +270,9 @@ class VisionOrchestrator:
 
     async def fill_form(
         self,
-        form_data: Dict[str, str],
+        form_data: dict[str, str],
         verify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Rellena un formulario completo."""
         screenshot = await self.get_current_screenshot()
 
@@ -301,7 +301,7 @@ class VisionOrchestrator:
         field_label: str,
         option_value: str,
         verify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Selecciona una opción en un dropdown."""
         screenshot_before = await self.get_current_screenshot()
 
@@ -329,7 +329,7 @@ class VisionOrchestrator:
         self,
         checkbox_label: str,
         verify: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Marca un checkbox."""
         screenshot_before = await self.get_current_screenshot()
 
@@ -345,9 +345,9 @@ class VisionOrchestrator:
 
     async def execute_action_sequence(
         self,
-        actions: List[str],
+        actions: list[str],
         verify_each: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Ejecuta una secuencia de acciones."""
         logger.info(f"Executing sequence of {len(actions)} actions")
 
@@ -360,7 +360,7 @@ class VisionOrchestrator:
     async def verify_action_succeeded(
         self,
         action_description: str,
-        expected_indicators: Optional[List[str]] = None
+        expected_indicators: list[str] | None = None
     ) -> Confirmation:
         """Verifica que una acción tuvo éxito.
 
@@ -434,12 +434,12 @@ class VisionOrchestrator:
         screenshot = await self.get_current_screenshot()
         return await self.parser.extract_all_text(screenshot)
 
-    async def get_all_ui_elements(self) -> Dict[str, Any]:
+    async def get_all_ui_elements(self) -> dict[str, Any]:
         """Obtiene todos los elementos UI."""
         screenshot = await self.get_current_screenshot()
         return await self.parser.identify_all_ui_elements(screenshot)
 
-    async def detect_errors(self) -> List[str]:
+    async def detect_errors(self) -> list[str]:
         """Detecta mensajes de error."""
         screenshot = await self.get_current_screenshot()
         return await self.confirmation.detect_errors(screenshot)
@@ -449,15 +449,14 @@ class VisionOrchestrator:
         screenshot = await self.get_current_screenshot()
         return await self.confirmation.detect_loading_state(screenshot)
 
-    async def detect_modal(self) -> Dict[str, Any]:
+    async def detect_modal(self) -> dict[str, Any]:
         """Detecta si hay un modal abierto."""
         screenshot = await self.get_current_screenshot()
         return await self.confirmation.detect_modal_popup(screenshot)
 
-    def debug_annotate_current_page(self, output_path: Optional[str] = None) -> bytes:
+    def debug_annotate_current_page(self, output_path: str | None = None) -> bytes:
         """Anota la página actual con elementos detectados."""
         # Implementar anotación
-        pass
 
     def get_debug_report(self) -> str:
         """Retorna reporte de debug."""
@@ -465,7 +464,7 @@ class VisionOrchestrator:
             return self.context.debug_logger.generate_report()
         return "Debug logging not enabled"
 
-    def save_debug_report(self, output_file: Optional[str] = None) -> str:
+    def save_debug_report(self, output_file: str | None = None) -> str:
         """Guarda reporte de debug."""
         if self.context.debug_logger:
             return self.context.debug_logger.save_report(output_file)
@@ -488,14 +487,14 @@ class VisionOrchestrator:
         analysis = await self.analyze_current_page()
 
         lines = [
-            f"VISION ORCHESTRATOR SUMMARY",
+            "VISION ORCHESTRATOR SUMMARY",
             f"Session: {self.context.session_id}",
             f"Step: {self.context.step}",
-            f"",
+            "",
             f"Current Page: {analysis.page_type}",
             f"Confidence: {analysis.confidence_score:.0%}",
-            f"",
-            f"Elements Detected:",
+            "",
+            "Elements Detected:",
             f"  Buttons: {len(analysis.buttons)}",
             f"  Form Fields: {len(analysis.form_fields)}",
             f"  Text Regions: {len(analysis.all_text)}",

@@ -4,12 +4,13 @@ Manages campaigns, adsets, ads, and lead retrieval beyond basic lead webhooks.
 Docs: https://developers.facebook.com/docs/marketing-api
 """
 
+from typing import Any
+
 import httpx
-from typing import Any, Optional
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class MetaAdsConnector(BaseChannelConnector):
@@ -26,7 +27,7 @@ class MetaAdsConnector(BaseChannelConnector):
         self.app_secret = credentials.get("app_secret")
         self.pixel_id = credentials.get("pixel_id")
 
-    async def _api_get(self, endpoint: str, params: Optional[dict] = None) -> dict[str, Any]:
+    async def _api_get(self, endpoint: str, params: dict | None = None) -> dict[str, Any]:
         """Helper for Meta Graph API GET requests."""
         if not self.access_token:
             raise ValueError("Falta access_token de Meta")
@@ -102,7 +103,7 @@ class MetaAdsConnector(BaseChannelConnector):
     async def resume_campaign(self, campaign_id: str) -> dict[str, Any]:
         return await self._api_post(campaign_id, {"status": "ACTIVE"})
 
-    async def create_campaign(self, name: str, objective: str = "OUTCOME_LEADS", daily_budget: Optional[int] = None) -> dict[str, Any]:
+    async def create_campaign(self, name: str, objective: str = "OUTCOME_LEADS", daily_budget: int | None = None) -> dict[str, Any]:
         """Create a new Meta Ads campaign."""
         account = self.ad_account_id or "act_me"
         data = {

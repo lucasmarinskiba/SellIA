@@ -2,17 +2,20 @@
 
 import logging
 import random
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.pricing.pricing_models import (
-    LocationPricingTier, LocationDiscountCode, PricingABTest, PricingTransaction,
-    LocationRevenueImpact, PricingTier, TestVariant, DiscountTrigger
+    LocationDiscountCode,
+    LocationPricingTier,
+    LocationRevenueImpact,
+    PricingABTest,
+    PricingTier,
+    PricingTransaction,
+    TestVariant,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,11 +53,11 @@ class DynamicPricingService:
         tier_adjusted_price = base_price * tier_multiplier
 
         # Check for peak hour discount
-        peak_discount = Decimal("0")
+        peak_discount = Decimal(0)
         applied_peak = False
 
         if tier:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             current_hour = now.hour
             current_day = now.weekday()
 
@@ -65,13 +68,13 @@ class DynamicPricingService:
             )
 
             if is_peak and tier.peak_discount_pct > 0:
-                peak_discount = tier_adjusted_price * (tier.peak_discount_pct / Decimal("100"))
+                peak_discount = tier_adjusted_price * (tier.peak_discount_pct / Decimal(100))
                 applied_peak = True
 
         price_after_peak = tier_adjusted_price - peak_discount
 
         # Check for discount code
-        code_discount = Decimal("0")
+        code_discount = Decimal(0)
         code_used = None
 
         if discount_code:
@@ -82,11 +85,11 @@ class DynamicPricingService:
             ).first()
 
             if code_obj:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 if code_obj.valid_from <= now <= code_obj.valid_until:
                     if code_obj.usage_limit is None or code_obj.current_usage < code_obj.usage_limit:
                         if code_obj.discount_type == "percentage":
-                            code_discount = price_after_peak * (code_obj.discount_value / Decimal("100"))
+                            code_discount = price_after_peak * (code_obj.discount_value / Decimal(100))
                         else:
                             code_discount = code_obj.discount_value
 
@@ -96,7 +99,7 @@ class DynamicPricingService:
                         code_used = code_obj.code
                         code_obj.current_usage += 1
 
-        final_price = max(price_after_peak - code_discount, Decimal("0"))
+        final_price = max(price_after_peak - code_discount, Decimal(0))
 
         # Check for A/B test
         test_variant = None
@@ -180,7 +183,7 @@ class DynamicPricingService:
             location_tier_multiplier=tier_multiplier,
             tier_adjusted_price=tier_adjusted_price,
             discount_code=discount_code,
-            discount_amount=discount_amount or Decimal("0"),
+            discount_amount=discount_amount or Decimal(0),
             final_price=final_price,
             applied_peak_discount=applied_peak,
             applied_ab_test=test_id,
@@ -251,7 +254,7 @@ class DynamicPricingService:
                 business_id=business_id,
                 tier=PricingTier[tier.upper()],
                 tier_multiplier=tier_multiplier,
-                peak_discount_pct=peak_discount_pct or Decimal("0")
+                peak_discount_pct=peak_discount_pct or Decimal(0)
             )
             db.add(existing)
 
@@ -286,7 +289,7 @@ class DiscountCodeService:
         if not db:
             raise ValueError("Database session required")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         valid_until = now + timedelta(days=valid_days)
 
         discount_code = LocationDiscountCode(
@@ -330,7 +333,7 @@ class DiscountCodeService:
         if not discount:
             return {"valid": False, "reason": "Code not found"}
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if now < discount.valid_from:
             return {"valid": False, "reason": "Code not yet active"}
@@ -374,8 +377,8 @@ class ABTestService:
             control_price=control_price,
             variant_a_price=variant_a_price,
             variant_b_price=variant_b_price,
-            started_at=datetime.now(timezone.utc),
-            ended_at=datetime.now(timezone.utc) + timedelta(days=test_duration_days)
+            started_at=datetime.now(UTC),
+            ended_at=datetime.now(UTC) + timedelta(days=test_duration_days)
         )
 
         db.add(test)

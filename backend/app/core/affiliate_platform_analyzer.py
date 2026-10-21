@@ -17,11 +17,11 @@ Includes:
 Status: 600L production-ready analyzer
 """
 
-import logging
-from typing import Dict, List, Any, Tuple, Optional
-from datetime import datetime, timedelta
-from enum import Enum
 import json
+import logging
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +188,7 @@ class HotmartAnalyzer:
             }
         }
 
-    def analyze_product_category(self, category: ProductCategory) -> Dict[str, Any]:
+    def analyze_product_category(self, category: ProductCategory) -> dict[str, Any]:
         """Deep analysis of a Hotmart product category."""
         cat_data = self.product_categories[category]
         return {
@@ -208,7 +208,7 @@ class HotmartAnalyzer:
         }
 
     def find_high_profit_niches(self, min_commission: float = 0.30,
-                                min_demand: str = "high") -> List[Dict[str, Any]]:
+                                min_demand: str = "high") -> list[dict[str, Any]]:
         """Find most profitable niches to target."""
         profitable = []
 
@@ -235,7 +235,7 @@ class HotmartAnalyzer:
 
         return sorted(profitable, key=lambda x: x["profitability_score"], reverse=True)
 
-    def get_successful_method(self, method_name: str) -> Dict[str, Any]:
+    def get_successful_method(self, method_name: str) -> dict[str, Any]:
         """Get deep analysis of a successful affiliate method."""
         if method_name not in self.successful_affiliate_patterns:
             return {}
@@ -252,7 +252,7 @@ class HotmartAnalyzer:
             "startup_cost": f"${pattern.get('startup_cost', 0)}",
         }
 
-    def list_all_methods(self) -> List[str]:
+    def list_all_methods(self) -> list[str]:
         """List all analyzed affiliate methods."""
         return list(self.successful_affiliate_patterns.keys())
 
@@ -300,11 +300,11 @@ class MercadoLibreAnalyzer:
             },
         }
 
-    def get_commission_by_category(self, category: str) -> Optional[float]:
+    def get_commission_by_category(self, category: str) -> float | None:
         """Get commission rate for category."""
         return self.commission_by_category.get(category)
 
-    def list_high_commission_categories(self, min_commission: float = 0.12) -> List[Tuple[str, float]]:
+    def list_high_commission_categories(self, min_commission: float = 0.12) -> list[tuple[str, float]]:
         """List categories with highest commissions."""
         return sorted(
             [(cat, rate) for cat, rate in self.commission_by_category.items()
@@ -313,7 +313,7 @@ class MercadoLibreAnalyzer:
             reverse=True
         )
 
-    def get_strategy_guide(self, strategy: str) -> Dict[str, Any]:
+    def get_strategy_guide(self, strategy: str) -> dict[str, Any]:
         """Get detailed guide for a Mercado Libre strategy."""
         if strategy not in self.successful_strategies:
             return {}
@@ -384,7 +384,7 @@ class AmazonAssociatesAnalyzer:
             "extended": 90,  # 90 hours for some categories
         }
 
-    def find_high_commission_products(self, min_commission: float = 0.05) -> List[Tuple[str, float]]:
+    def find_high_commission_products(self, min_commission: float = 0.05) -> list[tuple[str, float]]:
         """Find highest commission products."""
         return sorted(
             [(cat, rate) for cat, rate in self.commission_by_category.items()
@@ -393,7 +393,7 @@ class AmazonAssociatesAnalyzer:
             reverse=True
         )
 
-    def get_strategy_guide(self) -> Dict[str, Any]:
+    def get_strategy_guide(self) -> dict[str, Any]:
         """Amazon Associates success strategy."""
         return {
             "strategy": "Amazon Associates Monetization",
@@ -424,7 +424,7 @@ class AmazonAssociatesAnalyzer:
     def estimate_earnings(self, monthly_clicks: int,
                          avg_commission_pct: float = 0.05,
                          conversion_rate: float = 0.02,
-                         avg_order_value: float = 50) -> Dict[str, Any]:
+                         avg_order_value: float = 50) -> dict[str, Any]:
         """Estimate Amazon Associates earnings."""
         purchases = int(monthly_clicks * conversion_rate)
         total_revenue = purchases * avg_order_value
@@ -449,7 +449,7 @@ class AffiliateMarketAnalyzer:
         self.mercado_libre = MercadoLibreAnalyzer()
         self.amazon = AmazonAssociatesAnalyzer()
 
-    def compare_platforms_for_niche(self, niche: str) -> Dict[str, Any]:
+    def compare_platforms_for_niche(self, niche: str) -> dict[str, Any]:
         """Compare affiliate potential across platforms for a niche."""
         return {
             "niche": niche,
@@ -462,7 +462,7 @@ class AffiliateMarketAnalyzer:
             "recommendation": "Start with Hotmart for high-ticket digital products, use Amazon for lower-ticket items",
         }
 
-    def get_market_summary(self) -> Dict[str, Any]:
+    def get_market_summary(self) -> dict[str, Any]:
         """Get summary of all affiliate platforms."""
         return {
             "timestamp": datetime.utcnow().isoformat(),

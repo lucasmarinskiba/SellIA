@@ -7,12 +7,12 @@ for the SellIA SaaS subscription system.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+from app.core.circuit_breaker import stripe_breaker
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.core.circuit_breaker import stripe_breaker
 
 logger = get_logger(__name__)
 
@@ -419,11 +419,11 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "status": "paid",
                 "billing_reason": getattr(invoice, "billing_reason", None),
                 "period_start": (
-                    datetime.fromtimestamp(period_start, tz=timezone.utc)
+                    datetime.fromtimestamp(period_start, tz=UTC)
                     if period_start else None
                 ),
                 "period_end": (
-                    datetime.fromtimestamp(period_end, tz=timezone.utc)
+                    datetime.fromtimestamp(period_end, tz=UTC)
                     if period_end else None
                 ),
                 "hosted_invoice_url": getattr(invoice, "hosted_invoice_url", None),
@@ -472,7 +472,7 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "status": "payment_failed",
                 "attempt_count": attempt_count,
                 "next_payment_attempt": (
-                    datetime.fromtimestamp(next_payment_attempt, tz=timezone.utc)
+                    datetime.fromtimestamp(next_payment_attempt, tz=UTC)
                     if next_payment_attempt else None
                 ),
                 "last_error": last_error,
@@ -506,11 +506,11 @@ def process_stripe_webhook(event: Any) -> dict[str, Any]:
                 "status": "cancelled",
                 "cancel_at_period_end": getattr(subscription, "cancel_at_period_end", False),
                 "canceled_at": (
-                    datetime.fromtimestamp(canceled_at, tz=timezone.utc)
+                    datetime.fromtimestamp(canceled_at, tz=UTC)
                     if canceled_at else None
                 ),
                 "ended_at": (
-                    datetime.fromtimestamp(ended_at, tz=timezone.utc)
+                    datetime.fromtimestamp(ended_at, tz=UTC)
                     if ended_at else None
                 ),
                 "metadata": metadata,

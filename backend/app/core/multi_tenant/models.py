@@ -1,18 +1,25 @@
 """Multi-tenant models: Tenant, API Keys, Billing, Audit records."""
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, Integer, Float, ForeignKey,
-    Text, JSON, Index, UniqueConstraint
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.core.encrypted_types import EncryptedString, EncryptedJSONB
+from app.core.encrypted_types import EncryptedJSONB, EncryptedString
 
 
 class Tenant(Base):
@@ -52,8 +59,8 @@ class Tenant(Base):
     features = Column(JSONB, default=dict, nullable=False)  # Feature flags for tenant
 
     # Audit
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
     api_keys = relationship("TenantAPIKey", back_populates="tenant", cascade="all, delete-orphan")
@@ -81,11 +88,11 @@ class TenantMember(Base):
 
     # Audit
     invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    invited_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    invited_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     accepted_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
     tenant = relationship("Tenant", back_populates="members", foreign_keys=[tenant_id])
@@ -132,8 +139,8 @@ class TenantAPIKey(Base):
 
     # Audit
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
 
     # Statistics
@@ -161,8 +168,8 @@ class TenantBilling(Base):
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     # Billing period
-    billing_period_start = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    billing_period_end = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc) + timedelta(days=30), nullable=False)
+    billing_period_start = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    billing_period_end = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC) + timedelta(days=30), nullable=False)
 
     # Usage metrics
     api_calls_used = Column(Integer, default=0, nullable=False)
@@ -184,8 +191,8 @@ class TenantBilling(Base):
     stripe_invoice_id = Column(String(255), nullable=True)
     payment_method_id = Column(EncryptedString, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
     tenant = relationship("Tenant", back_populates="billing", foreign_keys=[tenant_id])
@@ -236,7 +243,7 @@ class AuditLog(Base):
     new_values = Column(EncryptedJSONB, nullable=True)  # After snapshot
 
     # Compliance
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
     tenant = relationship("Tenant", back_populates="audit_logs", foreign_keys=[tenant_id])

@@ -21,11 +21,11 @@ Scheduling:
 """
 
 import logging
-import httpx
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import json
 import re
+from datetime import datetime, timedelta
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +38,10 @@ class WhatsAppAutomation:
     def __init__(
         self,
         mode: str = "api",  # "api" o "computer_use"
-        waba_token: Optional[str] = None,
-        waba_phone_id: Optional[str] = None,
-        computer_vision_engine: Optional[Any] = None,
-        calendar_service: Optional[Any] = None,
+        waba_token: str | None = None,
+        waba_phone_id: str | None = None,
+        computer_vision_engine: Any | None = None,
+        calendar_service: Any | None = None,
     ):
         self.mode = mode  # API or Computer Use
         self.waba_token = waba_token
@@ -53,7 +53,7 @@ class WhatsAppAutomation:
 
     # ========== WEBHOOK HANDLING (API MODE) ==========
 
-    async def handle_incoming_message(self, webhook_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_incoming_message(self, webhook_payload: dict[str, Any]) -> dict[str, Any]:
         """
         Procesa mensaje incoming desde WhatsApp Business API.
 
@@ -89,7 +89,7 @@ class WhatsAppAutomation:
 
             elif message_type == "scheduling":
                 # Extraer fecha/hora, agendar
-                logger.info(f"Scheduling request detected")
+                logger.info("Scheduling request detected")
                 return await self._handle_scheduling_request(sender_id, message_text)
 
             else:
@@ -97,7 +97,7 @@ class WhatsAppAutomation:
                 return await self._generate_response(sender_id, message_text)
 
         except Exception as e:
-            logger.error(f"Handle message failed: {str(e)}")
+            logger.error(f"Handle message failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     def _classify_message(self, text: str) -> str:
@@ -115,7 +115,7 @@ class WhatsAppAutomation:
 
         return "standard"
 
-    async def _route_to_human(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _route_to_human(self, sender_id: str, message: str) -> dict[str, Any]:
         """Ruta mensaje urgente a humano."""
 
         logger.warning(f"Routing to human: {sender_id}")
@@ -130,7 +130,7 @@ class WhatsAppAutomation:
             "message": message,
         }
 
-    async def _handle_scheduling_request(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _handle_scheduling_request(self, sender_id: str, message: str) -> dict[str, Any]:
         """Extrae fecha/hora del mensaje, agendando en Google Calendar."""
 
         logger.info(f"Scheduling request: {message}")
@@ -191,7 +191,7 @@ class WhatsAppAutomation:
 
         return {"status": "error", "reason": "calendar_service_not_configured"}
 
-    async def _generate_response(self, sender_id: str, message: str) -> Dict[str, Any]:
+    async def _generate_response(self, sender_id: str, message: str) -> dict[str, Any]:
         """Genera respuesta (bot o Computer Use)."""
 
         logger.info(f"Generating response for: {message}")
@@ -223,7 +223,7 @@ class WhatsAppAutomation:
 
         return {"status": "default_response", "response": default_response}
 
-    def _check_bot_response(self, message: str) -> Optional[str]:
+    def _check_bot_response(self, message: str) -> str | None:
         """Busca bot response prediseñado para el mensaje."""
 
         message_lower = message.lower()
@@ -247,7 +247,7 @@ class WhatsAppAutomation:
 
         return None
 
-    async def _send_message(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_message(self, recipient_id: str, text: str) -> dict[str, Any]:
         """Envía mensaje via WhatsApp API o Computer Use."""
 
         if self.mode == "api":
@@ -255,7 +255,7 @@ class WhatsAppAutomation:
         else:
             return await self._send_via_computer_use(recipient_id, text)
 
-    async def _send_via_api(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_via_api(self, recipient_id: str, text: str) -> dict[str, Any]:
         """Envía via WhatsApp Business API."""
 
         logger.info(f"Sending via API to {recipient_id}")
@@ -283,10 +283,10 @@ class WhatsAppAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Send via API failed: {str(e)}")
+            logger.error(f"Send via API failed: {e!s}")
             return {"status": "error"}
 
-    async def _send_via_computer_use(self, recipient_id: str, text: str) -> Dict[str, Any]:
+    async def _send_via_computer_use(self, recipient_id: str, text: str) -> dict[str, Any]:
         """Envía via Computer Use (WhatsApp Web)."""
 
         logger.info(f"Sending via Computer Use to {recipient_id}")
@@ -308,9 +308,9 @@ class WhatsAppBotBuilder:
     """Builder para crear bots personalizados sin code."""
 
     def __init__(self):
-        self.bots: Dict[str, Dict[str, str]] = {}
+        self.bots: dict[str, dict[str, str]] = {}
 
-    def add_bot(self, bot_name: str, patterns: List[str], response: str) -> None:
+    def add_bot(self, bot_name: str, patterns: list[str], response: str) -> None:
         """Agrega bot prediseñado."""
 
         self.bots[bot_name] = {
@@ -320,7 +320,7 @@ class WhatsAppBotBuilder:
 
         logger.info(f"Bot added: {bot_name}")
 
-    def get_response(self, message: str) -> Optional[str]:
+    def get_response(self, message: str) -> str | None:
         """Obtiene respuesta si hay match."""
 
         message_lower = message.lower()
@@ -332,11 +332,11 @@ class WhatsAppBotBuilder:
 
         return None
 
-    def export_config(self) -> Dict[str, Any]:
+    def export_config(self) -> dict[str, Any]:
         """Exporta configuración de bots."""
         return self.bots
 
-    def import_config(self, config: Dict[str, Any]) -> None:
+    def import_config(self, config: dict[str, Any]) -> None:
         """Importa configuración de bots."""
         self.bots = config
         logger.info(f"Imported {len(self.bots)} bots")

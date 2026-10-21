@@ -1,10 +1,10 @@
 """Phase 22: Monitoring & Alerting System."""
 
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class Alert:
     affected_users: int
     timestamp: datetime = field(default_factory=datetime.utcnow)
     resolved: bool = False
-    resolution_time_minutes: Optional[int] = None
+    resolution_time_minutes: int | None = None
 
 
 @dataclass
@@ -52,8 +52,8 @@ class MonitoringSystem:
     """Monitor system health and alerts"""
 
     def __init__(self):
-        self.alerts: List[Alert] = []
-        self.metrics: List[PerformanceMetric] = []
+        self.alerts: list[Alert] = []
+        self.metrics: list[PerformanceMetric] = []
 
     def create_alert(
         self, alert_type: AlertType, severity: AlertSeverity,
@@ -84,7 +84,7 @@ class MonitoringSystem:
             # Send email/SMS/Slack
             logger.critical(f"CRITICAL ALERT: {alert.title}")
 
-    def resolve_alert(self, alert_id: str) -> Dict[str, Any]:
+    def resolve_alert(self, alert_id: str) -> dict[str, Any]:
         """Resolve alert"""
 
         for alert in self.alerts:
@@ -95,7 +95,7 @@ class MonitoringSystem:
 
         return {"status": "error", "message": "Alert not found"}
 
-    def get_active_alerts(self) -> List[Dict[str, Any]]:
+    def get_active_alerts(self) -> list[dict[str, Any]]:
         """Get active alerts"""
 
         active = [a for a in self.alerts if not a.resolved]
@@ -140,7 +140,7 @@ class MonitoringSystem:
                     message=f"{metric.metric_name} is {metric.value}{metric.unit}"
                 )
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics"""
 
         if not self.metrics:
@@ -156,7 +156,7 @@ class MonitoringSystem:
             "uptime_percent": 99.95
         }
 
-    def get_alert_summary(self) -> Dict[str, Any]:
+    def get_alert_summary(self) -> dict[str, Any]:
         """Get alert summary"""
 
         active = [a for a in self.alerts if not a.resolved]

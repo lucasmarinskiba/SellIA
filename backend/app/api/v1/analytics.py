@@ -3,10 +3,10 @@ Analytics & Monitoring API v1 — Phase 5
 Real-time dashboards, conversion funnels, A/B testing, anomaly detection
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
-import json
+from typing import Any
+
+from fastapi import APIRouter, Query
 
 router = APIRouter(tags=["analytics"])
 
@@ -16,10 +16,10 @@ SITE_URL = "https://sellia-brain.vercel.app"
 @router.post("/track-event")
 async def track_event(
     event_name: str,
-    user_id: Optional[str] = None,
-    page: Optional[str] = None,
-    properties: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    user_id: str | None = None,
+    page: str | None = None,
+    properties: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Track user event for analytics
     Events: page_view, click, scroll, form_submit, purchase_intent
@@ -42,7 +42,7 @@ async def track_event(
 async def get_conversion_funnel(
     funnel_name: str = Query("default", description="Funnel: default|premium|testimonials"),
     days: int = Query(7, ge=1, le=90),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get conversion funnel data
     Funnels: landing → signup → trial → paid
@@ -168,7 +168,7 @@ async def get_conversion_funnel(
 
 
 @router.get("/ab-test/active")
-async def get_active_ab_tests() -> Dict[str, Any]:
+async def get_active_ab_tests() -> dict[str, Any]:
     """Get all active A/B tests and their performance"""
     return {
         "@context": "https://schema.org",
@@ -236,7 +236,7 @@ async def create_ab_test(
     control_url: str,
     variant_url: str,
     traffic_split: int = 50,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create new A/B test"""
     return {
         "status": "created",
@@ -251,7 +251,7 @@ async def create_ab_test(
 
 
 @router.get("/anomalies/seo")
-async def detect_seo_anomalies() -> Dict[str, Any]:
+async def detect_seo_anomalies() -> dict[str, Any]:
     """Detect SEO anomalies in traffic, rankings, indexing"""
     return {
         "@context": "https://schema.org",
@@ -304,7 +304,7 @@ async def detect_seo_anomalies() -> Dict[str, Any]:
 
 
 @router.get("/performance/core-web-vitals")
-async def get_core_web_vitals() -> Dict[str, Any]:
+async def get_core_web_vitals() -> dict[str, Any]:
     """Get Core Web Vitals metrics"""
     return {
         "@context": "https://schema.org",
@@ -342,7 +342,7 @@ async def get_core_web_vitals() -> Dict[str, Any]:
 @router.get("/personalization/user-segment")
 async def get_user_segment(
     user_id: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get ML personalization score for user
     Uses Phase 4 embeddings to score content affinity
@@ -380,7 +380,7 @@ async def get_user_segment(
 
 
 @router.get("/dashboard/seo-metrics")
-async def get_seo_dashboard() -> Dict[str, Any]:
+async def get_seo_dashboard() -> dict[str, Any]:
     """Real-time SEO metrics dashboard"""
     return {
         "@context": "https://schema.org",
@@ -442,7 +442,7 @@ async def get_seo_dashboard() -> Dict[str, Any]:
 
 
 @router.get("/dashboard/marketing-metrics")
-async def get_marketing_dashboard() -> Dict[str, Any]:
+async def get_marketing_dashboard() -> dict[str, Any]:
     """Real-time marketing & conversion dashboard"""
     return {
         "@context": "https://schema.org",

@@ -1,9 +1,9 @@
 """Phase X10: FOMO Generation Agent API."""
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.fomo_generation.service import FOMOGenerationAgent
-
 
 router = APIRouter(prefix="/api/v1/fomo-generation", tags=["fomo-generation"])
 

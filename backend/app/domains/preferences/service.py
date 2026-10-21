@@ -10,7 +10,7 @@ table would create two versions of the same fact, and the AI reads the originals
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ MAX_LIST_ITEMS = 30
 MAX_ITEM_LENGTH = 80
 
 
-def _clean_list(values: Any, *, allowed: Optional[set[str]] = None) -> list[str]:
+def _clean_list(values: Any, *, allowed: set[str] | None = None) -> list[str]:
     """Trim, de-duplicate and cap a list of short strings, preserving order."""
     if not isinstance(values, list):
         return []
@@ -65,7 +65,7 @@ async def _get_or_create_prefs(db: AsyncSession, business_id: uuid.UUID) -> Sell
     return prefs
 
 
-async def _get_context(db: AsyncSession, user_id: uuid.UUID, business_id: Optional[uuid.UUID]):
+async def _get_context(db: AsyncSession, user_id: uuid.UUID, business_id: uuid.UUID | None):
     from app.domains.business_context.models import BusinessContext
 
     query = select(BusinessContext).where(BusinessContext.user_id == user_id)
@@ -85,7 +85,7 @@ async def _get_memory(db: AsyncSession, user_id: uuid.UUID):
 async def load_profile(
     db: AsyncSession,
     user_id: uuid.UUID,
-    business_id: Optional[uuid.UUID],
+    business_id: uuid.UUID | None,
 ) -> dict[str, Any]:
     """Everything the configuration screen shows, plus what is still missing.
 
@@ -198,7 +198,11 @@ async def save_profile(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     """Write each field back to the table that owns it. Absent keys are left alone."""
-    from app.domains.business_context.models import BusinessContext, BusinessType, SalesModel
+    from app.domains.business_context.models import (
+        BusinessContext,
+        BusinessType,
+        SalesModel,
+    )
     from app.domains.user_memory.models import UserMemory
 
     prefs = await _get_or_create_prefs(db, business_id)

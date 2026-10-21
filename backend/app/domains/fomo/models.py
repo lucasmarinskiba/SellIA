@@ -4,11 +4,23 @@ Creates urgency, scarcity, and social proof to drive conversions.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Boolean, Date, Numeric, UniqueConstraint, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -66,8 +78,8 @@ class FOMOCampaign(Base):
     # Status & lifecycle
     status = Column(String(20), default='active', nullable=False)  # active | paused | draft
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     events = relationship("FOMOEvent", back_populates="campaign", cascade="all, delete-orphan")
@@ -85,7 +97,7 @@ class FOMOEvent(Base):
     customer_id = Column(UUID(as_uuid=True), nullable=True)
     product_id = Column(UUID(as_uuid=True), nullable=True)
     event_metadata = Column("metadata", JSONB, nullable=True)  # {revenue, customerName, productName, etc}
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     # Relationships
     campaign = relationship("FOMOCampaign", back_populates="events")
@@ -115,7 +127,7 @@ class FOMOABTest(Base):
     # Results
     winner = Column(String(1), nullable=True)  # 'A' | 'B'
     status = Column(String(20), default='running', nullable=False)  # running | completed
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
@@ -160,4 +172,4 @@ class SocialProofEvent(Base):
     time_ago_text = Column(String(50), nullable=True)
     is_shown = Column(Boolean, default=False, nullable=False)
     shown_count = Column(Integer, default=0, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

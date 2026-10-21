@@ -10,20 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.competitive import service as competitive_service
 from app.domains.competitive.intelligence_engine import CompetitiveIntelligenceEngine
 from app.domains.competitive.schemas import (
     BattlecardCreate,
-    BattlecardUpdate,
     BattlecardOut,
-    BattlecardCompareOut,
+    BattlecardUpdate,
     MonitorCreate,
-    MonitorUpdate,
     MonitorOut,
-    ScrapeResult,
-    IntelligenceDashboard,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/battlecards", tags=["competitive"])
 intelligence_router = APIRouter(prefix="/competitive", tags=["competitive"])
@@ -99,7 +95,6 @@ async def delete_battlecard(
     if not battlecard:
         raise HTTPException(status_code=404, detail="Battlecard no encontrado")
     await competitive_service.delete_battlecard(db, battlecard)
-    return None
 
 
 @router.get("/{battlecard_id}/compare")
@@ -143,7 +138,8 @@ async def list_monitors(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Lista los competidores monitoreados."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.competitive.models import CompetitiveMonitor
 
     result = await db.execute(
@@ -172,7 +168,8 @@ async def get_competitive_alerts(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Alertas recientes generadas por cambios de competidores."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
+
     from app.domains.alerts.models import Alert
 
     result = await db.execute(
@@ -209,6 +206,7 @@ async def delete_monitor(
 ):
     """Elimina un monitor de competidor."""
     from sqlalchemy import select
+
     from app.domains.competitive.models import CompetitiveMonitor
 
     result = await db.execute(
@@ -219,4 +217,3 @@ async def delete_monitor(
         raise HTTPException(status_code=404, detail="Monitor no encontrado")
     await db.delete(monitor)
     await db.commit()
-    return None

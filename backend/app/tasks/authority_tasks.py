@@ -12,10 +12,9 @@ refreshes the action list, and sends nothing to anyone.
 
 from __future__ import annotations
 
-
+from app.core.async_bridge import run_async
 from app.core.logger import get_logger
 from app.tasks.celery_app import celery_app
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 

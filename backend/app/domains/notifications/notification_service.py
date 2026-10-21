@@ -1,19 +1,19 @@
 """Notification & alert service."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
-import json
 
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-from app.domains.notifications.notification_models import (
-    NotificationPreference, NotificationLog, AlertTemplate, NotificationMetrics,
-    AlertType, NotificationChannel, AlertPriority
-)
 from app.domains.alerts.models import AlertRule
+from app.domains.notifications.notification_models import (
+    AlertPriority,
+    NotificationChannel,
+    NotificationLog,
+    NotificationPreference,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class NotificationService:
         name: str,
         alert_type: str,
         condition_json: dict,
-        channels: List[str],
+        channels: list[str],
         priority: str = AlertPriority.MEDIUM.value,
         enabled: bool = True,
         db: Session = None
@@ -157,7 +157,7 @@ class NotificationService:
         business_id: UUID,
         enabled_only: bool = True,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get alert rules."""
         if not db:
             raise ValueError("Database session required")
@@ -188,7 +188,7 @@ class NotificationService:
         alert_title: str,
         alert_message: str,
         priority: str = AlertPriority.MEDIUM.value,
-        target_user_ids: Optional[List[UUID]] = None,
+        target_user_ids: list[UUID] | None = None,
         db: Session = None
     ) -> dict:
         """Trigger alert and send notifications."""
@@ -244,7 +244,7 @@ class NotificationService:
                     notified_count += 1
 
             # Update rule triggered timestamp
-            rule.last_triggered_at = datetime.now(timezone.utc)
+            rule.last_triggered_at = datetime.now(UTC)
             rule.triggered_count_today += 1
 
         db.commit()
@@ -279,12 +279,12 @@ class NotificationService:
         business_id: UUID,
         days: int = 30,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get notification history."""
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         logs = db.query(NotificationLog).filter(
             NotificationLog.user_id == user_id,
@@ -310,7 +310,7 @@ class NotificationService:
     @staticmethod
     def mark_as_read(
         notification_id: UUID,
-        action: Optional[str] = None,
+        action: str | None = None,
         db: Session = None
     ) -> dict:
         """Mark notification as read."""
@@ -321,7 +321,7 @@ class NotificationService:
         if not log:
             raise ValueError("Notification not found")
 
-        log.read_at = datetime.now(timezone.utc)
+        log.read_at = datetime.now(UTC)
         if action:
             log.action_taken = action
 
@@ -338,7 +338,7 @@ class NotificationService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         total = db.query(func.count(NotificationLog.id)).filter(
             NotificationLog.business_id == business_id,

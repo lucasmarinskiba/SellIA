@@ -9,7 +9,7 @@ Técnicas:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +188,7 @@ class PersuasionEngine:
 
     # Persuasion stack: layer multiple principles
     @staticmethod
-    def build_persuasion_stack(buyer: Dict[str, Any], product: Dict[str, Any]) -> Dict[str, Any]:
+    def build_persuasion_stack(buyer: dict[str, Any], product: dict[str, Any]) -> dict[str, Any]:
         """Construye stack persuasión personalizado."""
 
         stack = {
@@ -249,7 +249,7 @@ CTA: {cta}
         return copy
 
     @staticmethod
-    def objection_reframe(objection: str, principle: str) -> Dict[str, str]:
+    def objection_reframe(objection: str, principle: str) -> dict[str, str]:
         """Reframe objeción usando principio persuasión."""
 
         reframes = {

@@ -18,10 +18,10 @@ Status: 600L comprehensive automation
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,12 @@ class AutomationWorkflow:
     """Automation workflow configuration."""
     workflow_id: str
     name: str
-    tasks: List[Dict[str, Any]]
+    tasks: list[dict[str, Any]]
     schedule: str  # "immediate", "daily", "weekly", "monthly"
     status: TaskStatus = TaskStatus.PENDING
     created_at: datetime = None
-    last_run: Optional[datetime] = None
-    next_run: Optional[datetime] = None
+    last_run: datetime | None = None
+    next_run: datetime | None = None
 
     def __post_init__(self):
         if self.created_at is None:
@@ -69,7 +69,7 @@ class HotmartAutomation:
     """Automate Hotmart affiliate setup."""
 
     @staticmethod
-    def create_signup_workflow() -> Dict[str, Any]:
+    def create_signup_workflow() -> dict[str, Any]:
         """Workflow to create Hotmart affiliate account."""
         return {
             "workflow_id": "hotmart_signup_v1",
@@ -137,7 +137,7 @@ class HotmartAutomation:
         }
 
     @staticmethod
-    def create_product_discovery_workflow(category: str = "courses") -> Dict[str, Any]:
+    def create_product_discovery_workflow(category: str = "courses") -> dict[str, Any]:
         """Workflow to discover high-commission Hotmart products."""
         return {
             "workflow_id": f"hotmart_products_{category}",
@@ -203,7 +203,7 @@ rank_products(
         }
 
     @staticmethod
-    def create_affiliate_link_workflow() -> Dict[str, Any]:
+    def create_affiliate_link_workflow() -> dict[str, Any]:
         """Workflow to generate and track affiliate links."""
         return {
             "workflow_id": "generate_affiliate_links",
@@ -272,7 +272,7 @@ class EmailAutomation:
     """Automate email campaign creation and scheduling."""
 
     @staticmethod
-    def create_email_sequence_workflow() -> Dict[str, Any]:
+    def create_email_sequence_workflow() -> dict[str, Any]:
         """Workflow to create and schedule email sequences."""
         return {
             "workflow_id": "email_sequence_drip",
@@ -372,7 +372,7 @@ class SocialMediaAutomation:
     """Automate social media posting."""
 
     @staticmethod
-    def create_social_scheduling_workflow() -> Dict[str, Any]:
+    def create_social_scheduling_workflow() -> dict[str, Any]:
         """Workflow to schedule social media posts."""
         return {
             "workflow_id": "social_media_scheduler",
@@ -466,7 +466,7 @@ class GoogleAdsAutomation:
     """Automate Google Ads setup and optimization."""
 
     @staticmethod
-    def create_google_ads_workflow() -> Dict[str, Any]:
+    def create_google_ads_workflow() -> dict[str, Any]:
         """Workflow to create and optimize Google Ads."""
         return {
             "workflow_id": "google_ads_setup",
@@ -570,7 +570,7 @@ class ReportingAutomation:
     """Automate reporting and performance tracking."""
 
     @staticmethod
-    def create_daily_report_workflow() -> Dict[str, Any]:
+    def create_daily_report_workflow() -> dict[str, Any]:
         """Workflow to generate daily performance reports."""
         return {
             "workflow_id": "daily_report",
@@ -645,14 +645,14 @@ class AffiliateAutomationEngine:
     """Main automation engine orchestrator."""
 
     def __init__(self):
-        self.workflows: Dict[str, AutomationWorkflow] = {}
+        self.workflows: dict[str, AutomationWorkflow] = {}
         self.hotmart = HotmartAutomation()
         self.email = EmailAutomation()
         self.social = SocialMediaAutomation()
         self.google_ads = GoogleAdsAutomation()
         self.reporting = ReportingAutomation()
 
-    def create_affiliate_setup_workflow(self) -> Dict[str, Any]:
+    def create_affiliate_setup_workflow(self) -> dict[str, Any]:
         """Create complete affiliate setup workflow."""
         return {
             "workflow_name": "Complete Affiliate Setup",
@@ -671,7 +671,7 @@ class AffiliateAutomationEngine:
             "expected_outcome": "Complete affiliate system running on auto",
         }
 
-    def get_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+    def get_workflow(self, workflow_id: str) -> dict[str, Any] | None:
         """Get workflow configuration."""
         # This would fetch from the workflows defined above
         all_workflows = {
@@ -683,7 +683,7 @@ class AffiliateAutomationEngine:
         }
         return all_workflows.get(workflow_id)
 
-    def list_workflows(self) -> List[str]:
+    def list_workflows(self) -> list[str]:
         """List all available workflows."""
         return [
             "hotmart_signup",
@@ -706,7 +706,6 @@ def create_automation_engine() -> AffiliateAutomationEngine:
 
 
 if __name__ == "__main__":
-    import json
 
     engine = create_automation_engine()
 

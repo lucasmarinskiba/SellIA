@@ -13,11 +13,11 @@ Database model: BillingRecord
 """
 
 import logging
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
+
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,8 @@ class BillingHistoryManager:
         currency: str = "USD",
         provider: str = "stripe",
         description: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Record a financial transaction.
 
@@ -70,7 +70,9 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.models import Account  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package (no __init__.py). Isolated Base, never bootstrapped in prod either way.
+            from app.core.database.models import (
+                Account,  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package (no __init__.py). Isolated Base, never bootstrapped in prod either way.
+            )
 
             # Verify account exists
             account = db.query(Account).filter(Account.id == account_id).first()
@@ -108,15 +110,15 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error recording transaction: {str(e)}")
+            logger.error(f"Error recording transaction: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def get_account_balance(
         db: Session,
         account_id: str,
-        as_of_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        as_of_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate account balance.
 
@@ -137,7 +139,9 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.payment_models import Payment  # NOTE: same unreachable-package issue as Account above
+            from app.core.database.payment_models import (
+                Payment,  # NOTE: same unreachable-package issue as Account above
+            )
 
             as_of = as_of_date or datetime.utcnow()
 
@@ -172,7 +176,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error calculating balance: {str(e)}")
+            logger.error(f"Error calculating balance: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -181,7 +185,7 @@ class BillingHistoryManager:
         account_id: str,
         start_date: datetime,
         end_date: datetime,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get billing summary for period (e.g., monthly).
 
@@ -214,7 +218,9 @@ class BillingHistoryManager:
             }
         """
         try:
-            from app.core.database.payment_models import Payment, Order  # NOTE: same unreachable-package issue as Account above
+            from app.core.database.payment_models import (  # NOTE: same unreachable-package issue as Account above
+                Payment,
+            )
 
             # Get payments in period
             payments = (
@@ -275,7 +281,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting billing summary: {str(e)}")
+            logger.error(f"Error getting billing summary: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -283,7 +289,7 @@ class BillingHistoryManager:
         db: Session,
         account_id: str,
         months: int = 12,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get last N months of billing summaries.
 
@@ -344,7 +350,7 @@ class BillingHistoryManager:
             }
 
         except Exception as e:
-            logger.error(f"Error getting monthly summaries: {str(e)}")
+            logger.error(f"Error getting monthly summaries: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -396,5 +402,5 @@ class BillingHistoryManager:
             return csv_content
 
         except Exception as e:
-            logger.error(f"Error exporting CSV: {str(e)}")
+            logger.error(f"Error exporting CSV: {e!s}")
             raise

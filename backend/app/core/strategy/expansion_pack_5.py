@@ -1,8 +1,8 @@
 """Expansion Pack 5: 40 Vertical-Specific Strategies - Real Estate, Ecommerce, SaaS, Services."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class VerticalStrategy(str, Enum):
@@ -65,13 +65,13 @@ class VerticalStrategyDetail:
     vertical: str  # real_estate, ecommerce, saas, services
 
     # Real Case Studies
-    case_study_1: Dict[str, Any]
-    case_study_2: Dict[str, Any]
+    case_study_1: dict[str, Any]
+    case_study_2: dict[str, Any]
 
     # Implementation
-    key_steps: List[str]
-    critical_success_factors: List[str]
-    common_mistakes: List[str]
+    key_steps: list[str]
+    critical_success_factors: list[str]
+    common_mistakes: list[str]
 
     # Metrics
     typical_conversion_lift: float  # % improvement vs standard approach
@@ -1289,43 +1289,43 @@ class VerticalExpansionPack5:
     """Vertical-specific strategies expansion pack 5: 40 strategies for 4 verticals."""
 
     @staticmethod
-    def get_all_strategies() -> Dict[VerticalStrategy, VerticalStrategyDetail]:
+    def get_all_strategies() -> dict[VerticalStrategy, VerticalStrategyDetail]:
         """Get all vertical strategies."""
         return VERTICAL_STRATEGIES
 
     @staticmethod
-    def get_by_vertical(vertical: str) -> List[VerticalStrategyDetail]:
+    def get_by_vertical(vertical: str) -> list[VerticalStrategyDetail]:
         """Get strategies for specific vertical."""
         return [s for s in VERTICAL_STRATEGIES.values() if s.vertical == vertical]
 
     @staticmethod
-    def get_real_estate() -> List[VerticalStrategyDetail]:
+    def get_real_estate() -> list[VerticalStrategyDetail]:
         """Get real estate specific strategies."""
         return VerticalExpansionPack5.get_by_vertical("real_estate")
 
     @staticmethod
-    def get_ecommerce() -> List[VerticalStrategyDetail]:
+    def get_ecommerce() -> list[VerticalStrategyDetail]:
         """Get ecommerce specific strategies."""
         return VerticalExpansionPack5.get_by_vertical("ecommerce")
 
     @staticmethod
-    def get_saas() -> List[VerticalStrategyDetail]:
+    def get_saas() -> list[VerticalStrategyDetail]:
         """Get SaaS specific strategies."""
         return VerticalExpansionPack5.get_by_vertical("saas")
 
     @staticmethod
-    def get_services() -> List[VerticalStrategyDetail]:
+    def get_services() -> list[VerticalStrategyDetail]:
         """Get services specific strategies."""
         return VerticalExpansionPack5.get_by_vertical("services")
 
     @staticmethod
-    def get_quick_wins() -> List[VerticalStrategyDetail]:
+    def get_quick_wins() -> list[VerticalStrategyDetail]:
         """Get strategies with low difficulty and high impact."""
         return [s for s in VERTICAL_STRATEGIES.values()
                 if s.difficulty_score <= 5.0 and s.typical_revenue_lift >= 0.25]
 
     @staticmethod
-    def get_high_leverage() -> List[VerticalStrategyDetail]:
+    def get_high_leverage() -> list[VerticalStrategyDetail]:
         """Get strategies with high revenue/margin leverage."""
         return [s for s in VERTICAL_STRATEGIES.values()
                 if s.typical_revenue_lift >= 0.40]

@@ -8,11 +8,11 @@ Se integra con RetryEngine del proyecto para:
 - Circuit breaker: stop retrying si service está down
 """
 
-import logging
 import asyncio
-from typing import Optional, Dict, Any
+import logging
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class RetryHandler:
     def __init__(self, job_queue, state_manager):
         self.job_queue = job_queue
         self.state_manager = state_manager
-        self.retry_queue: Dict[str, Dict[str, Any]] = {}
+        self.retry_queue: dict[str, dict[str, Any]] = {}
         self.lock = asyncio.Lock()
 
     async def schedule_retry(
@@ -86,7 +86,7 @@ class RetryHandler:
 
         return len(retries_ready)
 
-    async def get_pending_retries(self) -> Dict[str, Dict[str, Any]]:
+    async def get_pending_retries(self) -> dict[str, dict[str, Any]]:
         """Obtiene retries pendientes."""
         async with self.lock:
             return dict(self.retry_queue)

@@ -5,10 +5,19 @@ Users earn credits/rewards for bringing new customers.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
 
@@ -31,7 +40,7 @@ class ReferralCode(Base):
     total_credits_earned = Column(Numeric(10, 2), default=0, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class ReferralTracking(Base):
@@ -44,7 +53,7 @@ class ReferralTracking(Base):
     referral_code_id = Column(UUID(as_uuid=True), ForeignKey("referral_codes.id", ondelete="CASCADE"), nullable=False)
 
     # Funnel stages
-    clicked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    clicked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     signed_up_at = Column(DateTime(timezone=True), nullable=True)
     converted_at = Column(DateTime(timezone=True), nullable=True)
     first_purchase_amount = Column(Numeric(10, 2), nullable=True)
@@ -57,4 +66,4 @@ class ReferralTracking(Base):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text(), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

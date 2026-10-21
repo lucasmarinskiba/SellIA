@@ -5,17 +5,16 @@ into unified Order records with revenue attribution.
 """
 
 import uuid
-from typing import Any, Optional
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
 from app.domains.channels.models import ChannelConnection, Conversation
 from app.domains.channels.schemas import WebhookPayload
 from app.domains.orders.models import Order, OrderStatus, PaymentStatus
-from app.domains.catalogs.models import CatalogItem
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -33,12 +32,12 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         payload: WebhookPayload,
-    ) -> Optional[Order]:
+    ) -> Order | None:
         """Process an order-related webhook and create/update an Order."""
         platform = channel.platform.value
         extra = payload.extra_data or {}
 
-        order: Optional[Order] = None
+        order: Order | None = None
         if platform == "shopify":
             order = await self._process_shopify(channel, conversation, extra)
         elif platform == "mercadolibre":
@@ -68,7 +67,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         order_id = str(extra.get("id", ""))
         if not order_id:
             return None
@@ -105,7 +104,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         order_data = extra.get("data", {}).get("order", {})
         order_id = str(order_data.get("id", ""))
         if not order_id:
@@ -139,7 +138,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         payload_data = extra.get("Payload", {})
         order_change = payload_data.get("OrderChangeNotification", {}).get("OrderChange", {})
         order_id = str(order_change.get("OrderId", ""))
@@ -147,7 +146,7 @@ class EcommerceWebhookProcessor:
             return None
 
         order_items = order_change.get("OrderItems", [])
-        total = Decimal("0")
+        total = Decimal(0)
         items = []
         for item in order_items:
             price = Decimal(str(item.get("ItemPrice", {}).get("Amount", "0")))
@@ -182,7 +181,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         event = extra.get("event", "")
         data = extra.get("data", {})
         purchase = data.get("purchase", {})
@@ -221,7 +220,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         if not extra.get("_topic", "").startswith("order"):
             return None
 
@@ -255,7 +254,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         receipt_id = str(extra.get("receipt_id", ""))
         if not receipt_id:
             return None
@@ -289,7 +288,7 @@ class EcommerceWebhookProcessor:
         channel: ChannelConnection,
         conversation: Conversation,
         extra: dict[str, Any],
-    ) -> Optional[Order]:
+    ) -> Order | None:
         try:
             entry = extra.get("entry", [{}])[0]
             change = entry.get("changes", [{}])[0]
@@ -332,11 +331,11 @@ class EcommerceWebhookProcessor:
         currency: str,
         status: OrderStatus,
         payment_status: PaymentStatus,
-        customer_name: Optional[str] = None,
-        customer_email: Optional[str] = None,
-        customer_phone: Optional[str] = None,
-        items: Optional[list] = None,
-        source_channel: Optional[str] = None,
+        customer_name: str | None = None,
+        customer_email: str | None = None,
+        customer_phone: str | None = None,
+        items: list | None = None,
+        source_channel: str | None = None,
     ) -> Order:
         """Upsert an Order by external_id + external_platform."""
         result = await self.db.execute(
@@ -384,7 +383,7 @@ class EcommerceWebhookProcessor:
         return order
 
     @staticmethod
-    def _map_shopify_status(financial: str, fulfillment: Optional[str]) -> OrderStatus:
+    def _map_shopify_status(financial: str, fulfillment: str | None) -> OrderStatus:
         if financial == "paid":
             return OrderStatus.PAID
         if financial == "refunded":

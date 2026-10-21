@@ -10,9 +10,8 @@ Prevents:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ class EthicalFramework:
     }
 
     @staticmethod
-    def detect_dark_patterns(message: str) -> Dict[str, Any]:
+    def detect_dark_patterns(message: str) -> dict[str, Any]:
         """
         Detect dark patterns in message.
 
@@ -137,7 +136,7 @@ class EthicalFramework:
         }
 
     @staticmethod
-    def check_fomo_abuse(message: str, user_context: Dict[str, Any]) -> Dict[str, Any]:
+    def check_fomo_abuse(message: str, user_context: dict[str, Any]) -> dict[str, Any]:
         """
         Check if message exploits FOMO (fear of missing out) abusively.
 
@@ -200,7 +199,7 @@ class EthicalFramework:
         }
 
     @staticmethod
-    def validate_scarcity(claim: str, product_data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_scarcity(claim: str, product_data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate if scarcity claim is real.
 
@@ -248,9 +247,9 @@ class EthicalFramework:
 
     @staticmethod
     def validate_testimonials(
-        testimonials: List[Dict[str, Any]],
-        product_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        testimonials: list[dict[str, Any]],
+        product_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Validate testimonials for authenticity.
 
@@ -341,7 +340,7 @@ class EthicalFramework:
         }
 
     @staticmethod
-    def check_pricing_honesty(pricing: Dict[str, Any]) -> Dict[str, Any]:
+    def check_pricing_honesty(pricing: dict[str, Any]) -> dict[str, Any]:
         """
         Check for hidden fees and pricing dishonesty.
 
@@ -406,9 +405,9 @@ class EthicalFramework:
     @staticmethod
     def ethical_score(
         message: str,
-        product_data: Dict[str, Any],
-        user_context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product_data: dict[str, Any],
+        user_context: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Overall ethical score (0-100).
 

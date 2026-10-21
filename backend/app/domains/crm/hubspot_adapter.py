@@ -1,8 +1,10 @@
 """HubSpot CRM adapter - Production integration."""
 
-from typing import Optional, Dict, Any, List
 import logging
+from typing import Any
+
 import httpx
+
 from app.domains.crm.crm_adapter import CRMAdapter, CRMLead, CRMType
 
 logger = logging.getLogger(__name__)
@@ -27,8 +29,8 @@ class HubSpotAdapter(CRMAdapter):
         self,
         method: str,
         endpoint: str,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Make authenticated API call to HubSpot."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -50,7 +52,7 @@ class HubSpotAdapter(CRMAdapter):
             response.raise_for_status()
             return response.json()
 
-    def _extract_lead_from_hubspot(self, record: Dict[str, Any]) -> CRMLead:
+    def _extract_lead_from_hubspot(self, record: dict[str, Any]) -> CRMLead:
         """Extract CRMLead from HubSpot contact/company record."""
         props = record.get("properties", {})
 
@@ -79,7 +81,7 @@ class HubSpotAdapter(CRMAdapter):
             custom_fields={k: v for k, v in props.items() if k.startswith("custom_")},
         )
 
-    async def fetch_lead(self, lead_id: str) -> Optional[CRMLead]:
+    async def fetch_lead(self, lead_id: str) -> CRMLead | None:
         """Fetch single contact from HubSpot."""
         try:
             endpoint = f"/crm/v3/objects/contacts/{lead_id}"
@@ -91,8 +93,8 @@ class HubSpotAdapter(CRMAdapter):
             return None
 
     async def fetch_leads(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[CRMLead]:
+        self, filters: dict[str, Any] | None = None
+    ) -> list[CRMLead]:
         """Fetch multiple contacts from HubSpot with optional filtering."""
         try:
             # Build filter query
@@ -160,7 +162,7 @@ class HubSpotAdapter(CRMAdapter):
             logger.error(f"HubSpot fetch_leads failed: {e}")
             return []
 
-    async def update_lead(self, lead_id: str, data: Dict[str, Any]) -> bool:
+    async def update_lead(self, lead_id: str, data: dict[str, Any]) -> bool:
         """Update contact in HubSpot."""
         try:
             # Map field names to HubSpot properties

@@ -15,29 +15,44 @@ principle as the clicks/conversions estimation-flag fix in
 platform_analytics_mercadolibre.py.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.domains.seo_config.agent_guard import SEOAgentGuard
 from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.platform_algorithm_knowledge import (
+    GUIDANCE_ONLY,
+    MEASURED,
+    OFFICIAL,
+    WEB_AUDIT,
+    canonical_platform,
+    coverage_for,
+    factor_for_signal,
+    get_profile,
+)
+from app.domains.seo_config.platform_ranking_amazon import AmazonRankingConnector
+from app.domains.seo_config.platform_ranking_base import (
+    PlatformRankingConnector,
+    RankingSignal,
+)
+from app.domains.seo_config.platform_ranking_hotmart import HotmartRankingConnector
+from app.domains.seo_config.platform_ranking_instagram import InstagramRankingConnector
+from app.domains.seo_config.platform_ranking_mercadolibre import (
+    MercadoLibreRankingConnector,
+)
 from app.domains.seo_config.positioning_models import (
-    PublicationLinkPositioningScore,
     PositioningRecommendation,
+    PublicationLinkPositioningScore,
     StorePositioningScore,
 )
-from app.domains.seo_config.platform_ranking_base import PlatformRankingConnector, RankingSignal
-from app.domains.seo_config.platform_ranking_mercadolibre import MercadoLibreRankingConnector
-from app.domains.seo_config.platform_ranking_instagram import InstagramRankingConnector
-from app.domains.seo_config.platform_ranking_amazon import AmazonRankingConnector
-from app.domains.seo_config.platform_ranking_hotmart import HotmartRankingConnector
-from app.domains.seo_config.platform_algorithm_knowledge import (
-    GUIDANCE_ONLY, MEASURED, OFFICIAL, WEB_AUDIT,
-    canonical_platform, coverage_for, factor_for_signal, get_profile,
+from app.domains.seo_config.positioning_scoring_utils import (
+    composite_from_sub_scores,
+    measured_pct,
 )
-from app.domains.seo_config.positioning_scoring_utils import composite_from_sub_scores, measured_pct
-from app.domains.seo_config.agent_guard import SEOAgentGuard
 
 logger = get_logger(__name__)
 
@@ -97,7 +112,9 @@ class PositioningScoreService:
             return None
 
         try:
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(IntegrationConnection.id == connection_id)
@@ -245,7 +262,7 @@ class PositioningScoreService:
         open_recs = {r.signal_key: r for r in result.scalars().all()}
 
         triggered_keys = {r["signal_key"] for r in rules}
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for signal_key, rec in open_recs.items():
             if signal_key not in triggered_keys:
@@ -283,7 +300,7 @@ class PositioningScoreService:
     async def get_score_history(
         self, business_id: UUID, link_id: UUID, days: int = 30
     ) -> list[PublicationLinkPositioningScore]:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         result = await self.db.execute(
             select(PublicationLinkPositioningScore)
             .where(
@@ -366,7 +383,9 @@ class PositioningScoreService:
 
         try:
             from app.domains.businesses.models import Business
-            from app.domains.web_presence.service import seo_report as web_presence_seo_report
+            from app.domains.web_presence.service import (
+                seo_report as web_presence_seo_report,
+            )
 
             business = await self.db.get(Business, business_id)
             if business and getattr(business, "user_id", None):

@@ -1,10 +1,10 @@
 """Market Detector — Auto-detect business type, industry, business model."""
 
-from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Dict, Any
 import logging
 import re
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class MarketDetector:
     }
 
     @staticmethod
-    def detect_market(user_input: str, company_data: Optional[Dict[str, Any]] = None) -> MarketProfile:
+    def detect_market(user_input: str, company_data: dict[str, Any] | None = None) -> MarketProfile:
         input_text = user_input.lower()
         if company_data:
             input_text += f" {company_data.get('business_name', '')} {company_data.get('description', '')}".lower()

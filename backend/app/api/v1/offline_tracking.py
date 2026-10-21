@@ -1,20 +1,24 @@
 """API endpoints for offline conversion tracking and analytics."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.analytics.offline_service import OfflineAnalyticsService
 from app.domains.analytics.offline_schemas import (
-    OfflineConversionCreate, OfflineConversionResponse, ProximityEventCreate,
-    ProximityEventResponse, FootTrafficHeatmapResponse, ConversionFunnelResponse,
-    ProximityEffectivenessResponse
+    ConversionFunnelResponse,
+    FootTrafficHeatmapResponse,
+    OfflineConversionCreate,
+    OfflineConversionResponse,
+    ProximityEffectivenessResponse,
+    ProximityEventCreate,
+    ProximityEventResponse,
 )
-from app.domains.analytics.offline_models import VisitType, DemographicSource
+from app.domains.analytics.offline_service import OfflineAnalyticsService
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter(prefix="", tags=["offline-tracking"])
 
@@ -78,8 +82,9 @@ async def end_offline_visit(
 ) -> OfflineConversionResponse:
     """Mark end of visit or update purchase info."""
 
-    from app.domains.analytics.offline_models import OfflineConversion
     from decimal import Decimal
+
+    from app.domains.analytics.offline_models import OfflineConversion
 
     conversion = db.query(OfflineConversion).filter(OfflineConversion.id == conversion_id).first()
 

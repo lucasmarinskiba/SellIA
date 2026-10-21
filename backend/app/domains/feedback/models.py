@@ -5,11 +5,21 @@ User feedback, voting, comments, and AI-generated system improvements.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, Enum, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -71,8 +81,8 @@ class UserFeedback(Base):
     # Si se resolvió, link a la mejora del sistema
     system_improvement_id = Column(UUID(as_uuid=True), ForeignKey("system_improvements.id", ondelete="SET NULL"), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class FeedbackVote(Base):
@@ -82,7 +92,7 @@ class FeedbackVote(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     feedback_id = Column(UUID(as_uuid=True), ForeignKey("user_feedback.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class FeedbackComment(Base):
@@ -94,7 +104,7 @@ class FeedbackComment(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     content = Column(Text, nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class SystemImprovement(Base):
@@ -128,8 +138,8 @@ class SystemImprovement(Base):
     deployed_at = Column(DateTime(timezone=True), nullable=True)
     reverted_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class FeatureFlag(Base):
@@ -147,8 +157,8 @@ class FeatureFlag(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_by_improvement_id = Column(UUID(as_uuid=True), ForeignKey("system_improvements.id", ondelete="SET NULL"), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class MLTrainingData(Base):
@@ -165,4 +175,4 @@ class MLTrainingData(Base):
     score = Column(Float, nullable=True)  # score numérico
     model_version = Column(String(20), nullable=True)  # versión del modelo que usó estos datos
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

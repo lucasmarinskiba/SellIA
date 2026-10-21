@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Enum, Float, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -47,7 +47,7 @@ class AuthoritySnapshot(Base):
     business_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     captured_at = Column(
         DateTime(timezone=True), nullable=False, index=True,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     total_score = Column(Float, nullable=False, default=0.0)
@@ -57,7 +57,7 @@ class AuthoritySnapshot(Base):
     #: the analyst to explain a move between two snapshots.
     signals = Column(JSONB, nullable=False, default=dict)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class AuthorityAction(Base):
@@ -88,11 +88,11 @@ class AuthorityAction(Base):
     #: projection lands on 4.7 as often as on 5.
     impact_score = Column(Float, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
 

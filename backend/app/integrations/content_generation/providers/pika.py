@@ -4,10 +4,10 @@ Pricing: ~$0.08/second
 Strengths: Anime, effects, style transfer, creative video
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class PikaProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.08 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"pika-video": 0.08}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -47,13 +47,12 @@ class PikaProvider(BaseProvider):
             if config.reference_image_url:
                 payload["image"] = config.reference_image_url
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.pika.art/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.pika.art/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
             if not video_url:

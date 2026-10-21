@@ -1,10 +1,8 @@
 """Prompt Registry — Index, lookup, version, and track all 200 prompts."""
 
-from typing import Dict, List, Optional, Set
+import logging
 from dataclasses import dataclass
 from datetime import datetime
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +13,8 @@ class PromptMetadata:
     prompt_id: str
     name: str
     category: str
-    tags: List[str]
-    industry_variations: Dict[str, str]
+    tags: list[str]
+    industry_variations: dict[str, str]
     times_used: int = 0
     avg_effectiveness_score: float = 0.0
     last_updated: str = ""
@@ -29,22 +27,22 @@ class PromptRegistry:
 
     def __init__(self):
         """Initialize the prompt registry."""
-        self.prompts: Dict[str, any] = {}
-        self.metadata: Dict[str, PromptMetadata] = {}
-        self.tags_index: Dict[str, Set[str]] = {}
-        self.category_index: Dict[str, Set[str]] = {}
+        self.prompts: dict[str, any] = {}
+        self.metadata: dict[str, PromptMetadata] = {}
+        self.tags_index: dict[str, set[str]] = {}
+        self.category_index: dict[str, set[str]] = {}
         self._load_all_prompts()
 
     def _load_all_prompts(self) -> None:
         """Load all prompts from modules."""
-        from .marketing_prompts import MarketingPrompts
-        from .sales_prompts import SalesPrompts
-        from .positioning_prompts import PositioningPrompts
-        from .retention_prompts import RetentionPrompts
+        from .affiliate_prompts import load_affiliate_prompts
         from .comprehensive_sales_prompts import load_comprehensive_prompts
         from .expert_voices_prompts import load_expert_prompts
-        from .affiliate_prompts import load_affiliate_prompts
         from .funnel_specialists import load_funnel_specialist_prompts
+        from .marketing_prompts import MarketingPrompts
+        from .positioning_prompts import PositioningPrompts
+        from .retention_prompts import RetentionPrompts
+        from .sales_prompts import SalesPrompts
 
         # Load marketing prompts (50)
         marketing = MarketingPrompts.get_all_marketing_prompts()
@@ -120,7 +118,7 @@ class PromptRegistry:
                     self.tags_index[tag] = set()
                 self.tags_index[tag].add(prompt_id)
 
-    def get_prompt(self, prompt_id: str) -> Optional[any]:
+    def get_prompt(self, prompt_id: str) -> any | None:
         """Retrieve a prompt by ID."""
         prompt = self.prompts.get(prompt_id)
         if prompt and prompt_id in self.metadata:
@@ -129,15 +127,15 @@ class PromptRegistry:
             logger.info(f"Retrieved prompt: {prompt_id}")
         return prompt
 
-    def search_by_tag(self, tag: str) -> List[str]:
+    def search_by_tag(self, tag: str) -> list[str]:
         """Find all prompts with a specific tag."""
         return list(self.tags_index.get(tag.lower(), []))
 
-    def search_by_category(self, category: str) -> List[str]:
+    def search_by_category(self, category: str) -> list[str]:
         """Find all prompts in a category."""
         return list(self.category_index.get(category, []))
 
-    def search_by_industry(self, industry: str) -> Dict[str, any]:
+    def search_by_industry(self, industry: str) -> dict[str, any]:
         """Find all prompts with variations for a specific industry."""
         results = {}
         for prompt_id, prompt in self.prompts.items():
@@ -149,7 +147,7 @@ class PromptRegistry:
                 }
         return results
 
-    def search(self, query: str, search_type: str = 'tag') -> List[str]:
+    def search(self, query: str, search_type: str = 'tag') -> list[str]:
         """Search for prompts by tag, category, or name."""
         query = query.lower()
 
@@ -163,7 +161,7 @@ class PromptRegistry:
         else:
             return []
 
-    def get_by_industry_and_category(self, industry: str, category: str) -> List[str]:
+    def get_by_industry_and_category(self, industry: str, category: str) -> list[str]:
         """Find prompts matching industry and category."""
         category_prompts = self.search_by_category(category)
         industry_prompts = set()
@@ -176,7 +174,7 @@ class PromptRegistry:
 
         return list(industry_prompts)
 
-    def get_recommended_prompts(self, use_case: str) -> List[Dict[str, any]]:
+    def get_recommended_prompts(self, use_case: str) -> list[dict[str, any]]:
         """Get recommended prompts for a specific use case."""
         use_case_tags = {
             'lead_generation': ['content', 'audience-analysis', 'organic-growth'],
@@ -204,7 +202,7 @@ class PromptRegistry:
         recommended.sort(key=lambda x: x['relevance_score'], reverse=True)
         return recommended[:5]  # Return top 5
 
-    def get_statistics(self) -> Dict[str, any]:
+    def get_statistics(self) -> dict[str, any]:
         """Get registry statistics."""
         total_prompts = len(self.prompts)
         total_usage = sum(m.times_used for m in self.metadata.values())
@@ -234,7 +232,7 @@ class PromptRegistry:
             meta.avg_effectiveness_score = new_avg
             meta.last_updated = datetime.utcnow().isoformat()
 
-    def get_top_prompts_by_effectiveness(self, limit: int = 10) -> List[Dict[str, any]]:
+    def get_top_prompts_by_effectiveness(self, limit: int = 10) -> list[dict[str, any]]:
         """Get top prompts by effectiveness score."""
         sorted_meta = sorted(
             self.metadata.values(),
@@ -251,7 +249,7 @@ class PromptRegistry:
             for m in sorted_meta[:limit]
         ]
 
-    def export_prompts(self, filter_category: Optional[str] = None) -> Dict[str, any]:
+    def export_prompts(self, filter_category: str | None = None) -> dict[str, any]:
         """Export prompts for external use."""
         export_data = {}
 
@@ -278,7 +276,7 @@ class PromptRegistry:
 
         return export_data
 
-    def list_all_prompts(self) -> List[Dict[str, any]]:
+    def list_all_prompts(self) -> list[dict[str, any]]:
         """List all prompts with summary information."""
         return [
             {

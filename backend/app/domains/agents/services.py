@@ -5,19 +5,21 @@ Soporta API keys propias de los usuarios.
 """
 
 import uuid
-from typing import List, Optional, Dict, Any
+from typing import Any
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-
-from app.domains.agents.models import AgentPersonality, AgentConversation, AgentMessage, AgentConfig
-from app.domains.agents.prompts import get_system_prompt, compose_system_prompt
-from app.domains.agents.context_builder import BusinessContextBuilder
-from app.domains.subscriptions.services import check_subscription_limit
-from app.domains.subscriptions.models import UserAPIKey
-from app.domains.users.models import User
 from app.core.encryption import decrypt_value
+from app.domains.agents.context_builder import BusinessContextBuilder
+from app.domains.agents.models import (
+    AgentConversation,
+    AgentMessage,
+    AgentPersonality,
+)
+from app.domains.agents.prompts import compose_system_prompt, get_system_prompt
+from app.domains.subscriptions.models import UserAPIKey
 
 
 class AgentService:
@@ -26,7 +28,7 @@ class AgentService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_personalities(self, active_only: bool = True) -> List[AgentPersonality]:
+    async def get_personalities(self, active_only: bool = True) -> list[AgentPersonality]:
         """Listar todas las personalidades de agentes disponibles."""
         query = select(AgentPersonality).order_by(AgentPersonality.display_order)
         if active_only:
@@ -46,9 +48,8 @@ class AgentService:
             await self.db.flush()
         return personality
 
-    async def seed_personalities(self) -> List[AgentPersonality]:
+    async def seed_personalities(self) -> list[AgentPersonality]:
         """Sembrar todas las personalidades de expertos en la base de datos."""
-        from app.domains.agents.prompts import AGENT_PROMPTS
 
         # Extended list of 40+ agent personalities
         defaults = [
@@ -658,7 +659,7 @@ class AgentService:
         user_id: uuid.UUID,
         business_id: uuid.UUID,
         personality_id: uuid.UUID,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> AgentConversation:
         """Crear una nueva conversación con un agente."""
         conv = AgentConversation(
@@ -672,7 +673,7 @@ class AgentService:
         await self.db.refresh(conv)
         return conv
 
-    async def get_conversation(self, conversation_id: uuid.UUID, user_id: uuid.UUID) -> Optional[AgentConversation]:
+    async def get_conversation(self, conversation_id: uuid.UUID, user_id: uuid.UUID) -> AgentConversation | None:
         """Obtener una conversación por ID, verificando ownership."""
         result = await self.db.execute(
             select(AgentConversation)
@@ -681,7 +682,7 @@ class AgentService:
         )
         return result.scalar_one_or_none()
 
-    async def list_conversations(self, user_id: uuid.UUID, business_id: Optional[uuid.UUID] = None) -> List[AgentConversation]:
+    async def list_conversations(self, user_id: uuid.UUID, business_id: uuid.UUID | None = None) -> list[AgentConversation]:
         """Listar conversaciones del usuario."""
         query = (
             select(AgentConversation)
@@ -694,7 +695,7 @@ class AgentService:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_messages(self, conversation_id: uuid.UUID, limit: int = 50) -> List[AgentMessage]:
+    async def get_messages(self, conversation_id: uuid.UUID, limit: int = 50) -> list[AgentMessage]:
         """Obtener mensajes de una conversación."""
         result = await self.db.execute(
             select(AgentMessage)
@@ -709,10 +710,10 @@ class AgentService:
         conversation_id: uuid.UUID,
         user_id: uuid.UUID,
         content: str,
-        api_key: Optional[str] = None,
-        business_context: Optional[Dict[str, Any]] = None,
-        custom_instructions: Optional[str] = None,
-        voice_slug: Optional[str] = None,
+        api_key: str | None = None,
+        business_context: dict[str, Any] | None = None,
+        custom_instructions: str | None = None,
+        voice_slug: str | None = None,
     ) -> AgentMessage:
         """Enviar un mensaje al agente y obtener respuesta.
 

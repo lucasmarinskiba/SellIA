@@ -14,12 +14,12 @@ Track affiliate sales, revenue, and performance:
 Status: 400L comprehensive tracker
 """
 
-import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
 import json
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class AffiliateProduct:
     link: str
     date_added: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "product_id": self.product_id,
             "name": self.name,
@@ -78,12 +78,12 @@ class AffiliateSale:
     sale_amount: float
     commission_pct: float
     commission_earned: float
-    customer_id: Optional[str] = None
+    customer_id: str | None = None
     status: SaleStatus = SaleStatus.PENDING
     cost: float = 0.0  # advertising cost or affiliate payout if partnership
     notes: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "sale_id": self.sale_id,
             "product_id": self.product_id,
@@ -106,8 +106,8 @@ class CommissionTracker:
     """Track affiliate sales and performance."""
 
     def __init__(self):
-        self.products: Dict[str, AffiliateProduct] = {}
-        self.sales: List[AffiliateSale] = []
+        self.products: dict[str, AffiliateProduct] = {}
+        self.sales: list[AffiliateSale] = []
         self.created_at = datetime.utcnow()
 
     def add_product(self, product: AffiliateProduct) -> None:
@@ -122,27 +122,27 @@ class CommissionTracker:
         self.sales.append(sale)
         logger.info(f"Recorded sale: {sale.sale_id} - ${sale.commission_earned:.2f}")
 
-    def get_sales_by_product(self, product_id: str) -> List[AffiliateSale]:
+    def get_sales_by_product(self, product_id: str) -> list[AffiliateSale]:
         """Get all sales for a product."""
         return [s for s in self.sales if s.product_id == product_id]
 
-    def get_sales_by_method(self, method: str) -> List[AffiliateSale]:
+    def get_sales_by_method(self, method: str) -> list[AffiliateSale]:
         """Get all sales for a method."""
         return [s for s in self.sales if s.method == method]
 
-    def get_sales_by_channel(self, channel: str) -> List[AffiliateSale]:
+    def get_sales_by_channel(self, channel: str) -> list[AffiliateSale]:
         """Get all sales for a channel."""
         return [s for s in self.sales if s.channel == channel]
 
-    def get_sales_by_status(self, status: SaleStatus) -> List[AffiliateSale]:
+    def get_sales_by_status(self, status: SaleStatus) -> list[AffiliateSale]:
         """Get all sales with status."""
         return [s for s in self.sales if s.status == status]
 
-    def get_sales_by_date_range(self, start: datetime, end: datetime) -> List[AffiliateSale]:
+    def get_sales_by_date_range(self, start: datetime, end: datetime) -> list[AffiliateSale]:
         """Get sales in date range."""
         return [s for s in self.sales if start <= s.sale_date <= end]
 
-    def get_product_performance(self, product_id: str) -> Dict[str, Any]:
+    def get_product_performance(self, product_id: str) -> dict[str, Any]:
         """Get detailed performance for a product."""
         product = self.products.get(product_id)
         if not product:
@@ -174,7 +174,7 @@ class CommissionTracker:
             "roi": f"{(net_profit / total_cost * 100):.1f}%" if total_cost > 0 else "0%",
         }
 
-    def get_method_performance(self, method: str) -> Dict[str, Any]:
+    def get_method_performance(self, method: str) -> dict[str, Any]:
         """Get performance for a method."""
         sales = self.get_sales_by_method(method)
         approved_sales = [s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
@@ -203,7 +203,7 @@ class CommissionTracker:
             "channel_breakdown": methods_breakdown,
         }
 
-    def get_channel_performance(self, channel: str) -> Dict[str, Any]:
+    def get_channel_performance(self, channel: str) -> dict[str, Any]:
         """Get performance for a channel (email, blog, youtube, etc.)."""
         sales = self.get_sales_by_channel(channel)
         approved_sales = [s for s in sales if s.status in [SaleStatus.APPROVED, SaleStatus.PAID]]
@@ -237,7 +237,7 @@ class CommissionTracker:
             )[:5],
         }
 
-    def get_conversion_rates(self) -> Dict[str, Any]:
+    def get_conversion_rates(self) -> dict[str, Any]:
         """Get conversion rates by method and channel."""
         approved_sales = self.get_sales_by_status(SaleStatus.APPROVED)
         approved_sales.extend(self.get_sales_by_status(SaleStatus.PAID))
@@ -271,7 +271,7 @@ class CommissionTracker:
             },
         }
 
-    def get_seasonality(self) -> Dict[str, Any]:
+    def get_seasonality(self) -> dict[str, Any]:
         """Analyze seasonality patterns."""
         approved_sales = self.get_sales_by_status(SaleStatus.APPROVED)
         approved_sales.extend(self.get_sales_by_status(SaleStatus.PAID))
@@ -308,7 +308,7 @@ class CommissionTracker:
             },
         }
 
-    def estimate_customer_ltv(self) -> Dict[str, Any]:
+    def estimate_customer_ltv(self) -> dict[str, Any]:
         """Estimate customer lifetime value."""
         # Group sales by customer
         by_customer = {}
@@ -347,7 +347,7 @@ class CommissionTracker:
             "total_ltv": f"${sum(ltv_values):.2f}",
         }
 
-    def get_dashboard(self) -> Dict[str, Any]:
+    def get_dashboard(self) -> dict[str, Any]:
         """Get comprehensive dashboard."""
         approved_sales = self.get_sales_by_status(SaleStatus.APPROVED)
         approved_sales.extend(self.get_sales_by_status(SaleStatus.PAID))
@@ -410,7 +410,7 @@ class CommissionTracker:
             "conversion_rates": self.get_conversion_rates(),
         }
 
-    def get_monthly_report(self, month: int, year: int) -> Dict[str, Any]:
+    def get_monthly_report(self, month: int, year: int) -> dict[str, Any]:
         """Get monthly performance report."""
         start = datetime(year, month, 1)
         if month == 12:

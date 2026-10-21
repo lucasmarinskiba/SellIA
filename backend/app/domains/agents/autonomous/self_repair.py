@@ -6,15 +6,15 @@ antes de que el usuario las note. Opera de forma continua en background.
 
 from __future__ import annotations
 
-import uuid
 import asyncio
-from typing import Any, Optional
-from enum import Enum
-from datetime import datetime, timezone, timedelta
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func, and_
 
 from app.core.logger import get_logger
 
@@ -47,13 +47,13 @@ class FaultReport:
     fault_type: FaultType = FaultType.WORKFLOW_STUCK
     severity: str = "medium"  # low, medium, high, critical
     description: str = ""
-    affected_id: Optional[str] = None
-    business_id: Optional[str] = None
-    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    affected_id: str | None = None
+    business_id: str | None = None
+    detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: RepairStatus = RepairStatus.DETECTED
     repair_attempts: int = 0
     repair_log: list[str] = field(default_factory=list)
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
 
 
 class SelfRepairEngine:
@@ -69,7 +69,7 @@ class SelfRepairEngine:
         self._active_faults: dict[str, FaultReport] = {}
         self._repair_history: list[FaultReport] = []
 
-    async def run_repair_cycle(self, business_id: Optional[uuid.UUID] = None) -> dict[str, Any]:
+    async def run_repair_cycle(self, business_id: uuid.UUID | None = None) -> dict[str, Any]:
         """Ejecuta un ciclo completo de diagnóstico y reparación."""
         logger.info("[SelfRepair] Iniciando ciclo de auto-reparación")
 
@@ -113,7 +113,7 @@ class SelfRepairEngine:
             self._active_faults.pop(fault.fault_id, None)
 
         summary = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "detected": len(detected),
             "repaired": len(repaired),
             "failed": len(failed),
@@ -133,13 +133,16 @@ class SelfRepairEngine:
     # ─────────────────────────────────────────────
 
     async def _detect_stuck_workflows(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[FaultReport]:
         """Detecta workflows que llevan demasiado tiempo en ejecución."""
         faults = []
         try:
-            from app.domains.automations.models import WorkflowExecution, WorkflowExecutionStatus
-            threshold = datetime.now(timezone.utc) - timedelta(
+            from app.domains.automations.models import (
+                WorkflowExecution,
+                WorkflowExecutionStatus,
+            )
+            threshold = datetime.now(UTC) - timedelta(
                 minutes=self.STUCK_WORKFLOW_THRESHOLD_MINUTES
             )
 
@@ -168,13 +171,13 @@ class SelfRepairEngine:
         return faults
 
     async def _detect_orphaned_deals(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[FaultReport]:
         """Detecta deals sin actividad ni asignación por demasiados días."""
         faults = []
         try:
             from app.domains.crm.models import Deal
-            threshold = datetime.now(timezone.utc) - timedelta(
+            threshold = datetime.now(UTC) - timedelta(
                 days=self.ORPHANED_DEAL_THRESHOLD_DAYS
             )
 
@@ -203,13 +206,13 @@ class SelfRepairEngine:
         return faults
 
     async def _detect_stuck_conversations(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[FaultReport]:
         """Detecta conversaciones activas sin mensajes por demasiado tiempo."""
         faults = []
         try:
             from app.domains.channels.models import Conversation
-            threshold = datetime.now(timezone.utc) - timedelta(
+            threshold = datetime.now(UTC) - timedelta(
                 hours=self.STUCK_CONVERSATION_THRESHOLD_HOURS
             )
 
@@ -239,13 +242,13 @@ class SelfRepairEngine:
         return faults
 
     async def _detect_failed_sequences(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[FaultReport]:
         """Detecta secuencias de email/mensajes que fallaron."""
         faults = []
         try:
             from app.domains.automations.models import SequenceEmailLog
-            threshold = datetime.now(timezone.utc) - timedelta(hours=6)
+            threshold = datetime.now(UTC) - timedelta(hours=6)
 
             query = select(SequenceEmailLog).where(
                 and_(
@@ -268,7 +271,7 @@ class SelfRepairEngine:
         return faults
 
     async def _detect_channel_issues(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[FaultReport]:
         """Detecta canales de comunicación con problemas de conexión."""
         faults = []
@@ -322,7 +325,7 @@ class SelfRepairEngine:
             success = await handler(fault)
             if success:
                 fault.status = RepairStatus.REPAIRED
-                fault.resolved_at = datetime.now(timezone.utc)
+                fault.resolved_at = datetime.now(UTC)
                 fault.repair_log.append(f"Reparado exitosamente en intento #{fault.repair_attempts}")
                 logger.info(f"[SelfRepair] Falla {fault.fault_type} reparada: {fault.fault_id}")
                 return RepairStatus.REPAIRED
@@ -342,13 +345,16 @@ class SelfRepairEngine:
     async def _repair_stuck_workflow(self, fault: FaultReport) -> bool:
         """Reinicia o cancela un workflow atascado."""
         try:
-            from app.domains.automations.models import WorkflowExecution, WorkflowExecutionStatus
+            from app.domains.automations.models import (
+                WorkflowExecution,
+                WorkflowExecutionStatus,
+            )
             await self.db.execute(
                 update(WorkflowExecution)
                 .where(WorkflowExecution.id == uuid.UUID(fault.affected_id))
                 .values(
                     status=WorkflowExecutionStatus.FAILED,
-                    completed_at=datetime.now(timezone.utc),
+                    completed_at=datetime.now(UTC),
                     error_message="Auto-terminado por SelfRepair: timeout de ejecución",
                 )
             )
@@ -367,7 +373,7 @@ class SelfRepairEngine:
                 update(Deal)
                 .where(Deal.id == uuid.UUID(fault.affected_id))
                 .values(
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                     notes="[SellIA Auto-Repair] Deal reactivado — sin actividad detectada. Requiere seguimiento.",
                 )
             )
@@ -398,7 +404,7 @@ class SelfRepairEngine:
         """Reinicia los envíos fallidos de secuencias recientes."""
         try:
             from app.domains.automations.models import SequenceEmailLog
-            threshold = datetime.now(timezone.utc) - timedelta(hours=6)
+            threshold = datetime.now(UTC) - timedelta(hours=6)
 
             await self.db.execute(
                 update(SequenceEmailLog)
@@ -429,7 +435,7 @@ class SelfRepairEngine:
                 .where(ChannelConnection.id == uuid.UUID(fault.affected_id))
                 .values(
                     status="reconnecting",
-                    last_reconnect_attempt=datetime.now(timezone.utc),
+                    last_reconnect_attempt=datetime.now(UTC),
                 )
             )
             await self.db.commit()
@@ -444,7 +450,7 @@ class SelfRepairEngine:
     FAULT_ALERT_REPEAT_AFTER = timedelta(hours=6)
 
     async def _notify_owner_of_fault(
-        self, fault: FaultReport, business_id: Optional[uuid.UUID]
+        self, fault: FaultReport, business_id: uuid.UUID | None
     ) -> None:
         """Notifica al dueño del negocio sobre una falla que requiere atención.
 

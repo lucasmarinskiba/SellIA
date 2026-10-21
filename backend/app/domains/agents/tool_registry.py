@@ -6,17 +6,17 @@ plus a central ToolRegistry for lookup and execution.
 
 import inspect
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
+from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, or_
 
+from app.core.knowledge.knowledge_engine import get_knowledge_engine
 from app.core.logger import get_logger
 from app.domains.catalogs.models import CatalogItem
-from app.domains.crm.models import Deal, LeadActivity
 from app.domains.channels.models import Conversation, Message
-from app.core.knowledge.knowledge_engine import get_knowledge_engine
+from app.domains.crm.models import Deal, LeadActivity
 from app.domains.documents.processor import document_processor
 from app.domains.memory.service import MemoryEngine
 
@@ -29,8 +29,8 @@ logger = get_logger(__name__)
 
 class SearchProductsToolInput(BaseModel):
     query: str
-    category: Optional[str] = None
-    max_price: Optional[float] = None
+    category: str | None = None
+    max_price: float | None = None
 
 
 class GetCustomerHistoryToolInput(BaseModel):
@@ -54,8 +54,8 @@ class RetrieveDocumentsToolInput(BaseModel):
 
 class SearchMemoryToolInput(BaseModel):
     query: str
-    conversation_id: Optional[str] = None
-    customer_id: Optional[str] = None
+    conversation_id: str | None = None
+    customer_id: str | None = None
     k: int = Field(default=5, ge=1, le=20)
 
 
@@ -83,9 +83,9 @@ class SearchProductsTool:
         db: AsyncSession,
         business_id: uuid.UUID,
         query: str,
-        category: Optional[str] = None,
-        max_price: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        category: str | None = None,
+        max_price: float | None = None,
+    ) -> dict[str, Any]:
         stmt = select(CatalogItem).where(
             CatalogItem.business_id == business_id,
             CatalogItem.is_active == True,
@@ -144,7 +144,7 @@ class GetCustomerHistoryTool:
         db: AsyncSession,
         business_id: uuid.UUID,
         customer_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         conversation_uuid = None
         try:
             conversation_uuid = uuid.UUID(customer_id)
@@ -299,7 +299,7 @@ class CheckInventoryTool:
         db: AsyncSession,
         business_id: uuid.UUID,
         product_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         try:
             pid = uuid.UUID(product_id)
         except ValueError:
@@ -339,10 +339,10 @@ class RetrieveKnowledgeTool:
     async def execute(
         self,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         topic: str,
         k: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         engine = get_knowledge_engine()
         items = await engine.semantic_query(context=topic, top_k=k)
         return {
@@ -376,7 +376,7 @@ class RetrieveDocumentsTool:
         business_id: uuid.UUID,
         query: str,
         k: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         try:
             results = await document_processor.search_documents(db, business_id, query, k)
         except Exception as exc:
@@ -401,12 +401,12 @@ class SearchMemoryTool:
     async def execute(
         self,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         query: str,
-        conversation_id: Optional[str] = None,
-        customer_id: Optional[str] = None,
+        conversation_id: str | None = None,
+        customer_id: str | None = None,
         k: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         conv_uuid = None
         cust_uuid = None
         try:
@@ -458,11 +458,11 @@ class ScheduleMeetingTool:
     async def execute(
         self,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID],
+        business_id: uuid.UUID | None,
         customer_id: str,
         proposed_time: str,
         duration_minutes: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
             "status": "not_implemented",
             "message": "Meeting scheduling is not implemented yet.",
@@ -480,7 +480,7 @@ class ToolRegistry:
     """Registry of all available tools for the ReAct agent."""
 
     def __init__(self):
-        self._tools: Dict[str, Any] = {
+        self._tools: dict[str, Any] = {
             SearchProductsTool.name: SearchProductsTool(),
             GetCustomerHistoryTool.name: GetCustomerHistoryTool(),
             CheckInventoryTool.name: CheckInventoryTool(),
@@ -490,13 +490,13 @@ class ToolRegistry:
             ScheduleMeetingTool.name: ScheduleMeetingTool(),
         }
 
-    def get_tool(self, name: str) -> Optional[Any]:
+    def get_tool(self, name: str) -> Any | None:
         return self._tools.get(name)
 
     def list_tools(self) -> list:
         return list(self._tools.values())
 
-    def get_tool_descriptions(self, allowed_names: Optional[list] = None) -> str:
+    def get_tool_descriptions(self, allowed_names: list | None = None) -> str:
         lines = []
         for tool in self._tools.values():
             if allowed_names is not None and tool.name not in allowed_names:
@@ -524,15 +524,15 @@ class ToolRegistry:
         self,
         name: str,
         db: AsyncSession,
-        business_id: Optional[uuid.UUID] = None,
+        business_id: uuid.UUID | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         tool = self._tools.get(name)
         if not tool:
             return {"error": f"Tool '{name}' not found"}
 
         sig = inspect.signature(tool.execute)
-        call_kwargs: Dict[str, Any] = {}
+        call_kwargs: dict[str, Any] = {}
 
         if "db" in sig.parameters:
             call_kwargs["db"] = db
@@ -546,4 +546,4 @@ class ToolRegistry:
             return await tool.execute(**call_kwargs)
         except Exception as exc:
             logger.exception(f"Tool {name} execution failed: {exc}")
-            return {"error": f"Tool execution failed: {str(exc)}"}
+            return {"error": f"Tool execution failed: {exc!s}"}

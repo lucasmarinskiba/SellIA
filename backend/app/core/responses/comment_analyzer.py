@@ -10,9 +10,9 @@ Analyzes incoming comments to understand:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ class CommentAnalyzer:
     }
 
     @staticmethod
-    def analyze_sentiment(comment_text: str) -> Dict[str, Any]:
+    def analyze_sentiment(comment_text: str) -> dict[str, Any]:
         """
         Analyze sentiment of comment.
 
@@ -176,7 +176,7 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def analyze_intent(comment_text: str) -> Dict[str, Any]:
+    def analyze_intent(comment_text: str) -> dict[str, Any]:
         """
         Analyze primary intent of comment.
 
@@ -214,7 +214,7 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def analyze_urgency(comment_text: str, user_history: Dict[str, Any] = None) -> Dict[str, Any]:
+    def analyze_urgency(comment_text: str, user_history: dict[str, Any] = None) -> dict[str, Any]:
         """
         Analyze urgency of response needed.
 
@@ -263,9 +263,9 @@ class CommentAnalyzer:
 
     @staticmethod
     def identify_audience_type(
-        author_profile: Dict[str, Any],
+        author_profile: dict[str, Any],
         comment_text: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Identify what type of audience member this is.
 
@@ -326,7 +326,7 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def _get_audience_traits(audience_type: AudienceType) -> Dict[str, str]:
+    def _get_audience_traits(audience_type: AudienceType) -> dict[str, str]:
         """Get characteristics of audience type."""
         traits_map = {
             AudienceType.INFLUENCER: "High reach, can amplify message, value relationship",
@@ -339,7 +339,7 @@ class CommentAnalyzer:
         return traits_map.get(audience_type, "Unknown type")
 
     @staticmethod
-    def _calculate_engagement_value(audience_type: AudienceType, profile: Dict[str, Any]) -> str:
+    def _calculate_engagement_value(audience_type: AudienceType, profile: dict[str, Any]) -> str:
         """Calculate value of engaging with this comment."""
         if audience_type == AudienceType.INFLUENCER:
             return "very_high"  # Potential reach
@@ -357,10 +357,10 @@ class CommentAnalyzer:
     @staticmethod
     def extract_context(
         comment_text: str,
-        author_profile: Dict[str, Any],
-        post_context: Dict[str, Any],
-        previous_comments: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        author_profile: dict[str, Any],
+        post_context: dict[str, Any],
+        previous_comments: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Extract rich context about comment.
 
@@ -430,10 +430,10 @@ class CommentAnalyzer:
     @staticmethod
     def comprehensive_analysis(
         comment_text: str,
-        author_profile: Dict[str, Any] = None,
-        post_context: Dict[str, Any] = None,
-        previous_comments: List[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        author_profile: dict[str, Any] = None,
+        post_context: dict[str, Any] = None,
+        previous_comments: list[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """
         Comprehensive comment analysis combining all checks.
 
@@ -466,7 +466,7 @@ class CommentAnalyzer:
         }
 
     @staticmethod
-    def _calculate_priority(sentiment: Dict, urgency: Dict, audience: Dict) -> str:
+    def _calculate_priority(sentiment: dict, urgency: dict, audience: dict) -> str:
         """Calculate overall response priority."""
         engagement_value = audience.get("engagement_value", "very_low")
         urgency_level = urgency.get("urgency", "low")
@@ -478,9 +478,7 @@ class CommentAnalyzer:
             return "high"
         elif engagement_value in ["high", "medium"] and sentiment_score < -0.5:
             return "high"  # Negative from important person
-        elif urgency_level in ["high", "critical"]:
-            return "medium"
-        elif engagement_value == "medium":
+        elif urgency_level in ["high", "critical"] or engagement_value == "medium":
             return "medium"
         else:
             return "low"

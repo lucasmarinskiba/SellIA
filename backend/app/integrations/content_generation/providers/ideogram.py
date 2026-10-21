@@ -4,11 +4,16 @@ Pricing: ~$0.04/image
 Strengths: Typography, text rendering, logos, posters
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -27,7 +32,7 @@ class IdeogramProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.04 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"ideogram-v2": 0.04}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -48,13 +53,12 @@ class IdeogramProvider(BaseProvider):
                 "model": "V_2",
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.ideogram.ai/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.ideogram.ai/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             images = data.get("data", [])
             if not images:

@@ -4,19 +4,18 @@ Synchronizes catalog items between SellIA and external platforms
 (Shopify, MercadoLibre, Amazon, Meta, TikTok).
 """
 
-import asyncio
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from datetime import datetime, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.catalogs.models import CatalogItem
-from app.domains.channels.models import ChannelConnection, ChannelPlatform
-from app.domains.channels.connectors import get_connector
-from app.domains.platform_commerce import capabilities as platform_capabilities
 from app.domains.catalogs.classifier import classify_catalog_item
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.connectors import get_connector
+from app.domains.channels.models import ChannelConnection, ChannelPlatform
+from app.domains.platform_commerce import capabilities as platform_capabilities
 
 
 class CatalogSyncResult:
@@ -25,7 +24,7 @@ class CatalogSyncResult:
         self.success = success
         self.message = message
         self.items_synced = items_synced
-        self.synced_at = datetime.now(timezone.utc)
+        self.synced_at = datetime.now(UTC)
 
 
 class CatalogSyncService:
@@ -66,7 +65,7 @@ class CatalogSyncService:
         )
         return list(result.scalars().all())
 
-    async def get_connected_channels(self, business_id: UUID, platforms: Optional[set] = None) -> list[ChannelConnection]:
+    async def get_connected_channels(self, business_id: UUID, platforms: set | None = None) -> list[ChannelConnection]:
         """Get active connected channels for a business, optionally filtered by platform."""
         query = select(ChannelConnection).where(
             ChannelConnection.business_id == business_id,
@@ -107,11 +106,11 @@ class CatalogSyncService:
             return CatalogSyncResult(
                 platform.value,
                 True,
-                f"Sincronización completada",
+                "Sincronización completada",
                 items_synced,
             )
         except Exception as e:
-            return CatalogSyncResult(platform.value, False, f"Error: {str(e)}")
+            return CatalogSyncResult(platform.value, False, f"Error: {e!s}")
 
     async def push_all(self, business_id: UUID) -> list[CatalogSyncResult]:
         """Push local catalog to all supported platforms."""
@@ -212,7 +211,7 @@ class CatalogSyncService:
                 detail += ". Amazon no devuelve precio en este endpoint -- completalo a mano."
             return CatalogSyncResult(platform.value, True, detail, created + updated)
         except Exception as e:
-            return CatalogSyncResult(platform.value, False, f"Error: {str(e)}")
+            return CatalogSyncResult(platform.value, False, f"Error: {e!s}")
 
     async def pull_all(self, business_id: UUID) -> list[CatalogSyncResult]:
         """Pull products from all platforms whose connector really supports it."""

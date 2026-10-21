@@ -5,9 +5,8 @@ Fase 1+2+3 convergence: integra knowledge + Computer Use + dashboards.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import asyncio
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 1: INVENTORY SYNC ==========
 
-    async def sync_inventory_realtime(self) -> Dict[str, Any]:
+    async def sync_inventory_realtime(self) -> dict[str, Any]:
         """
         Sincroniza stock DB → todas plataformas.
 
@@ -89,7 +88,7 @@ class MultiPlatformOrchestrator:
 
     async def _update_platform_stock(
         self, platform: str, listing_id: str, quantity: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Computer Use actualiza stock en plataforma.
 
@@ -126,7 +125,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 2: INFLUENCER TRACKING ==========
 
-    async def track_influencer_sales(self) -> Dict[str, Any]:
+    async def track_influencer_sales(self) -> dict[str, Any]:
         """
         Monitorea ventas por influencer + calcula comisiones automáticamente.
         """
@@ -183,7 +182,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 2: ANALYTICS EXTRACTION ==========
 
-    async def extract_platform_analytics(self) -> Dict[str, Any]:
+    async def extract_platform_analytics(self) -> dict[str, Any]:
         """
         Computer Use extrae dashboards analytics reales de cada plataforma.
 
@@ -200,7 +199,7 @@ class MultiPlatformOrchestrator:
                 analytics = await self._extract_platform_metrics(platform)
                 results["platforms"][platform] = analytics
             except Exception as e:
-                logger.error(f"Failed to extract {platform} analytics: {str(e)}")
+                logger.error(f"Failed to extract {platform} analytics: {e!s}")
                 results["platforms"][platform] = {"error": str(e)}
 
         # Guardar en cache (1 hora)
@@ -212,7 +211,7 @@ class MultiPlatformOrchestrator:
 
         return results
 
-    async def _extract_platform_metrics(self, platform: str) -> Dict[str, Any]:
+    async def _extract_platform_metrics(self, platform: str) -> dict[str, Any]:
         """
         Extrae métricas específicas por plataforma.
         """
@@ -252,7 +251,7 @@ class MultiPlatformOrchestrator:
 
     # ========== FASE 2: SENTIMENT ANALYSIS ==========
 
-    async def analyze_reviews_sentiment(self) -> Dict[str, Any]:
+    async def analyze_reviews_sentiment(self) -> dict[str, Any]:
         """
         Extrae reviews → OpenAI sentiment analysis → alertas automáticas.
         """
@@ -323,7 +322,7 @@ class MultiPlatformOrchestrator:
 
     # ========== DASHBOARD REPORTING ==========
 
-    async def get_unified_dashboard(self) -> Dict[str, Any]:
+    async def get_unified_dashboard(self) -> dict[str, Any]:
         """
         Dashboard unificado: inventory, analytics, influencers, sentiment.
         """

@@ -11,7 +11,7 @@ Capacidades:
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +26,10 @@ class SalesIntelligenceEngine:
         competitor_price: float = None,
         inventory_level: int = 100,
         demand_factor: float = 1.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula precio óptimo por plataforma."""
 
-        logger.info(f"Calculating optimal price")
+        logger.info("Calculating optimal price")
 
         # Aplicar comisión
         price = base_price / (1 - platform_commission)
@@ -55,11 +55,11 @@ class SalesIntelligenceEngine:
 
     async def forecast_demand(
         self,
-        historical_sales: List[int],
-    ) -> Dict[str, Any]:
+        historical_sales: list[int],
+    ) -> dict[str, Any]:
         """Proyecta demanda próximos 30 días."""
 
-        logger.info(f"Forecasting demand")
+        logger.info("Forecasting demand")
 
         if not historical_sales:
             return {"status": "error"}
@@ -77,9 +77,9 @@ class SalesIntelligenceEngine:
     async def allocate_inventory(
         self,
         total: int,
-        platforms: List[str],
-        conversion_rates: Dict[str, float],
-    ) -> Dict[str, Any]:
+        platforms: list[str],
+        conversion_rates: dict[str, float],
+    ) -> dict[str, Any]:
         """Distribuye inventario entre plataformas."""
 
         logger.info(f"Allocating {total} units")
@@ -97,7 +97,7 @@ class SalesIntelligenceEngine:
             "allocations": allocations,
         }
 
-    async def get_seasonal_boost(self, month: int) -> Dict[str, Any]:
+    async def get_seasonal_boost(self, month: int) -> dict[str, Any]:
         """Retorna boost estacional."""
 
         seasonal = {

@@ -1,7 +1,9 @@
 """Phase 41: Marketing Intelligence API."""
-from fastapi import APIRouter, Depends, Query
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 
 router = APIRouter(prefix="/api/v1/marketing-intelligence", tags=["marketing-intelligence"])

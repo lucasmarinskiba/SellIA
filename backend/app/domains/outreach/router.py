@@ -1,27 +1,25 @@
 """Outreach Cadence API Router."""
 
-from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.outreach.models import OutreachCadenceRule, ContactFatigueScore, OutreachLog
+from app.domains.outreach.models import ContactFatigueScore, OutreachLog
 from app.domains.outreach.schemas import (
-    OutreachCadenceRuleResponse,
-    OutreachCadenceRuleCreate,
-    OutreachCadenceRuleUpdate,
-    ContactFatigueScoreResponse,
-    OutreachLogResponse,
+    CadenceNextActionResponse,
     CanContactRequest,
     CanContactResponse,
-    CadenceNextActionResponse,
+    ContactFatigueScoreResponse,
+    OutreachCadenceRuleResponse,
+    OutreachCadenceRuleUpdate,
+    OutreachLogResponse,
 )
-from app.domains.outreach.service import FatigueScoringService, CadenceEngine
+from app.domains.outreach.service import CadenceEngine, FatigueScoringService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/outreach", tags=["Outreach Cadence"])
 

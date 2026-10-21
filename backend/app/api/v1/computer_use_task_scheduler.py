@@ -6,23 +6,21 @@ Endpoints para gestionar task queue:
 - GET /tasks/history — historial de tareas
 """
 
-import logging
-from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.computer_use.services.task_scheduler import (
-    get_task_scheduler,
-    TaskType,
     TaskPriority,
+    TaskType,
+    get_task_scheduler,
 )
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -35,10 +33,10 @@ class EnqueueTaskRequest(BaseModel):
     """Request para encolar tarea."""
 
     task_type: str = Field(..., description="respond_message, schedule_appointment, close_sale, launch_ad_campaign, etc")
-    customer_id: Optional[str] = None
+    customer_id: str | None = None
     payload: dict = Field(..., description="Task-specific data")
-    priority: Optional[str] = None  # urgent, high, medium, low, batch
-    due_at: Optional[str] = None  # ISO datetime
+    priority: str | None = None  # urgent, high, medium, low, batch
+    due_at: str | None = None  # ISO datetime
 
 
 class TaskResponse(BaseModel):
@@ -48,7 +46,7 @@ class TaskResponse(BaseModel):
     task_type: str
     priority: str
     status: str
-    due_at: Optional[str]
+    due_at: str | None
     created_at: str
     retry_count: int
 

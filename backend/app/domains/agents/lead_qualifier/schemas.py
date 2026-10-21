@@ -1,8 +1,8 @@
 """Lead Qualifier Auto-Agent Schemas"""
 
 from datetime import datetime
-from typing import Optional, Dict, Any
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -14,20 +14,20 @@ class BANTScore(BaseModel):
 
 
 class BANTResponse(BaseModel):
-    budget_range: Optional[str] = None
-    authority_level: Optional[str] = None
-    need_urgency: Optional[str] = None
-    timeline: Optional[str] = None
+    budget_range: str | None = None
+    authority_level: str | None = None
+    need_urgency: str | None = None
+    timeline: str | None = None
 
 
 class LeadQualificationBase(BaseModel):
-    conversation_id: Optional[UUID] = None
-    customer_id: Optional[UUID] = None
+    conversation_id: UUID | None = None
+    customer_id: UUID | None = None
     bant_score: BANTScore = Field(default_factory=BANTScore)
     qualification_score: float = Field(default=0.0, ge=0.0, le=100.0)
     status: str = "nurture"  # qualified | disqualified | nurture
-    routing_destination: Optional[str] = None
-    summary: Optional[str] = None
+    routing_destination: str | None = None
+    summary: str | None = None
 
 
 class LeadQualificationCreate(LeadQualificationBase):
@@ -47,9 +47,9 @@ class QualifyLeadOut(BaseModel):
     bant_score: BANTScore
     qualification_score: float
     status: str
-    routing_destination: Optional[str] = None
+    routing_destination: str | None = None
     summary: str
-    next_question: Optional[str] = None
+    next_question: str | None = None
 
 
 class QualifyingQuestionOut(BaseModel):

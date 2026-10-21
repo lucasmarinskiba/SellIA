@@ -6,10 +6,10 @@ Periodic health checks that run every 5 minutes.
 
 from celery import shared_task
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.synthetic.service import run_all_checks
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 

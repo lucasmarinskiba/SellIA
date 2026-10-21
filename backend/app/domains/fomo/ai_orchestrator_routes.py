@@ -1,8 +1,8 @@
 """Fase H: Multi-Agent Orchestrator — API routes"""
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_orchestrator_agent import (
@@ -36,7 +36,7 @@ async def route_event(
 
 @router.post("/resolve-conflicts")
 async def resolve_conflicts(
-    proposals: List[Dict[str, Any]] = Body(
+    proposals: list[dict[str, Any]] = Body(
         ..., description='[{"agent": str, "channel": str, "urgency": float}] for ONE customer, ONE day'
     ),
     max_per_day: int = Query(ConflictResolver.DEFAULT_MAX_PER_DAY, ge=1),
@@ -48,7 +48,7 @@ async def resolve_conflicts(
 
 @router.post("/resolve-conflicts-batch")
 async def resolve_conflicts_batch(
-    proposals_by_customer: Dict[str, List[Dict[str, Any]]] = Body(...),
+    proposals_by_customer: dict[str, list[dict[str, Any]]] = Body(...),
     max_per_day: int = Query(ConflictResolver.DEFAULT_MAX_PER_DAY, ge=1),
     current_user=Depends(get_current_user),
 ):
@@ -58,8 +58,8 @@ async def resolve_conflicts_batch(
 
 @router.post("/dashboard")
 async def build_dashboard(
-    agent_decisions: List[Dict[str, Any]] = Body(...),
-    conflict_results: Optional[Dict[str, Any]] = Body(None),
+    agent_decisions: list[dict[str, Any]] = Body(...),
+    conflict_results: dict[str, Any] | None = Body(None),
     current_user=Depends(get_current_user),
 ):
     """Build a unified summary dashboard from already-computed agent decisions"""
@@ -70,7 +70,7 @@ async def build_dashboard(
 async def handle_event_with_conflict_check(
     event_type: str = Query(...),
     customer_id: str = Query(...),
-    existing_proposals_today: Optional[List[Dict[str, Any]]] = Body(None),
+    existing_proposals_today: list[dict[str, Any]] | None = Body(None),
     max_per_day: int = Query(ConflictResolver.DEFAULT_MAX_PER_DAY, ge=1),
     current_user=Depends(get_current_user),
 ):

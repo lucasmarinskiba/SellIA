@@ -10,11 +10,16 @@ Pricing (2026):
 Nuestro proveedor premium de video. Se usa cuando la calidad es prioridad.
 """
 
-from typing import Dict, Any, Optional
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url
+
+from ..base import (
+    BaseProvider,
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+    GenerationResult,
+)
 
 settings = get_settings()
 
@@ -55,7 +60,7 @@ class SeedanceProvider(BaseProvider):
         cost_per_sec = SEEDANCE_COSTS.get(config.quality, SEEDANCE_COSTS[ContentQuality.STANDARD])
         return cost_per_sec * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {
             "seedance-fast": 0.081,
             "seedance-standard": 0.10,

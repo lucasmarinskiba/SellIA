@@ -1,25 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
-from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from uuid import UUID
-from typing import Any
 import hmac
+from typing import Any
 from urllib.parse import urlencode
+from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.config import get_settings
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
-from app.domains.channels.models import ChannelConnection, ChannelPlatform, ChannelStatus
+from app.domains.channels.models import (
+    ChannelConnection,
+    ChannelPlatform,
+    ChannelStatus,
+)
 from app.domains.channels.schemas import (
     ChannelConnectionCreate,
-    ChannelConnectionUpdate,
     ChannelConnectionResponse,
+    ChannelConnectionUpdate,
     WebhookPayload,
 )
 from app.domains.subscriptions.services import check_subscription_limit, track_usage
+from app.domains.users.models import User
 
 router = APIRouter()
 settings = get_settings()
@@ -172,7 +177,6 @@ async def delete_channel(
 
     channel.is_active = False
     await db.commit()
-    return None
 
 
 @router.post("/{business_id}/channels/{channel_id}/test")
@@ -696,8 +700,8 @@ async def receive_webhook(
             signature = request.headers.get("X-Hub-Signature-256", "")
             app_secret = channel.credentials.get("app_secret", channel.settings.get("app_secret", ""))
             if app_secret and signature:
-                import hmac
                 import hashlib
+                import hmac
                 expected = "sha256=" + hmac.new(
                     app_secret.encode(), raw_body, hashlib.sha256
                 ).hexdigest()
@@ -717,8 +721,8 @@ async def receive_webhook(
             for ch in channels:
                 app_secret = ch.credentials.get("app_secret", ch.settings.get("app_secret", ""))
                 if app_secret and signature:
-                    import hmac
                     import hashlib
+                    import hmac
                     expected = "sha256=" + hmac.new(
                         app_secret.encode(), raw_body, hashlib.sha256
                     ).hexdigest()
@@ -818,8 +822,8 @@ async def receive_webhook(
             hmac_header = request.headers.get("X-Shopify-Hmac-SHA256", "")
             webhook_secret = channel.credentials.get("webhook_secret")
             if webhook_secret and hmac_header:
-                import hmac
                 import hashlib
+                import hmac
                 digest = hmac.new(
                     webhook_secret.encode("utf-8"),
                     raw_body,
@@ -939,8 +943,8 @@ async def receive_webhook(
             webhook_secret = channel.credentials.get("webhook_secret")
             if webhook_secret and signature:
                 import base64
-                import hmac
                 import hashlib
+                import hmac
                 digest = hmac.new(
                     webhook_secret.encode("utf-8"),
                     raw_body,

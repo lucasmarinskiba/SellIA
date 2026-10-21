@@ -1,6 +1,7 @@
 """Hotmart Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class HotmartScript(PlatformScript):
     login_url = "https://app.hotmart.com/login"
     dashboard_url = "https://app.hotmart.com/dashboard"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "create_product":
             return self._create_product(params)
         elif task_type == "configure_affiliates":
@@ -19,7 +20,7 @@ class HotmartScript(PlatformScript):
             return self._setup_sales_page(params)
         return super().get_task_steps(task_type, params)
 
-    def _create_product(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_product(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://app.hotmart.com/products/create", description="Navigate to create product"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -31,7 +32,7 @@ class HotmartScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify product created"),
         ]
 
-    def _configure_affiliates(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _configure_affiliates(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://app.hotmart.com/affiliates", description="Navigate to affiliates"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -40,7 +41,7 @@ class HotmartScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check affiliate settings"),
         ]
 
-    def _setup_sales_page(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _setup_sales_page(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://app.hotmart.com/pages", description="Navigate to sales pages"),
             ScriptStep(action="wait", wait_ms=3000),

@@ -4,14 +4,14 @@ Endpoint seguro para subida de archivos con escaneo antivirus.
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi_limiter.depends import RateLimiter
 
-from app.core.file_scanner import file_scanner, ScanResult
 from app.core.deps import get_current_active_user
+from app.core.file_scanner import file_scanner
 from app.domains.users.models import User
 
 router = APIRouter()
@@ -47,8 +47,9 @@ async def upload_file(
 
     if not scan_result.clean:
         # Loguear intento de subida maliciosa
-        from app.middleware.security_logging import security_logger
         import json
+
+        from app.middleware.security_logging import security_logger
         security_logger.warning(json.dumps({
             "event": "MALICIOUS_UPLOAD_BLOCKED",
             "user_id": str(current_user.id),
@@ -56,7 +57,7 @@ async def upload_file(
             "ip": getattr(request.state, "client_ip", "unknown"),
             "reason": scan_result.message,
             "details": scan_result.details,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }, ensure_ascii=False))
 
         raise HTTPException(
@@ -86,8 +87,9 @@ async def upload_file(
         f.write(content)
 
     # Loguear subida exitosa
-    from app.middleware.security_logging import security_logger
     import json
+
+    from app.middleware.security_logging import security_logger
     security_logger.info(json.dumps({
         "event": "FILE_UPLOAD_SUCCESS",
         "user_id": str(current_user.id),
@@ -97,7 +99,7 @@ async def upload_file(
         "size": len(content),
         "ip": getattr(request.state, "client_ip", "unknown"),
         "scan_result": scan_result.message,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }, ensure_ascii=False))
 
     return {

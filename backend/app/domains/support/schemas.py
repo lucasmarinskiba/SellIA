@@ -2,34 +2,37 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional, List
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.domains.support.models import TicketStatus, TicketPriority, TicketCategory, MessageSenderType
-
+from app.domains.support.models import (
+    MessageSenderType,
+    TicketCategory,
+    TicketPriority,
+    TicketStatus,
+)
 
 # ===== FAQ Schemas =====
 
 class FAQCreate(BaseModel):
     question: str = Field(..., max_length=500)
     answer: str
-    tags: Optional[str] = None
+    tags: str | None = None
 
 
 class FAQUpdate(BaseModel):
-    question: Optional[str] = Field(None, max_length=500)
-    answer: Optional[str] = None
-    tags: Optional[str] = None
-    is_active: Optional[bool] = None
+    question: str | None = Field(None, max_length=500)
+    answer: str | None = None
+    tags: str | None = None
+    is_active: bool | None = None
 
 
 class FAQResponse(BaseModel):
     id: uuid.UUID
-    business_id: Optional[uuid.UUID] = None
+    business_id: uuid.UUID | None = None
     question: str
     answer: str
-    tags: Optional[str] = None
+    tags: str | None = None
     usage_count: int
     is_active: bool
     created_at: datetime
@@ -43,25 +46,25 @@ class FAQResponse(BaseModel):
 class KnowledgeBaseArticleCreate(BaseModel):
     title: str = Field(..., max_length=255)
     content: str
-    category: Optional[str] = Field(None, max_length=100)
-    tags: Optional[str] = None
+    category: str | None = Field(None, max_length=100)
+    tags: str | None = None
 
 
 class KnowledgeBaseArticleUpdate(BaseModel):
-    title: Optional[str] = Field(None, max_length=255)
-    content: Optional[str] = None
-    category: Optional[str] = Field(None, max_length=100)
-    tags: Optional[str] = None
-    is_active: Optional[bool] = None
+    title: str | None = Field(None, max_length=255)
+    content: str | None = None
+    category: str | None = Field(None, max_length=100)
+    tags: str | None = None
+    is_active: bool | None = None
 
 
 class KnowledgeBaseArticleResponse(BaseModel):
     id: uuid.UUID
-    business_id: Optional[uuid.UUID] = None
+    business_id: uuid.UUID | None = None
     title: str
     content: str
-    category: Optional[str] = None
-    tags: Optional[str] = None
+    category: str | None = None
+    tags: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -85,7 +88,7 @@ class TicketMessageResponse(BaseModel):
     id: uuid.UUID
     ticket_id: uuid.UUID
     sender_type: MessageSenderType
-    sender_id: Optional[uuid.UUID] = None
+    sender_id: uuid.UUID | None = None
     content: str
     is_internal: bool
     created_at: datetime
@@ -96,50 +99,50 @@ class TicketMessageResponse(BaseModel):
 # ===== Ticket Schemas =====
 
 class SupportTicketCreate(BaseModel):
-    business_id: Optional[uuid.UUID] = None
+    business_id: uuid.UUID | None = None
     category: TicketCategory = TicketCategory.OTHER
     title: str = Field(..., max_length=255)
     description: str
 
 
 class SupportTicketUpdate(BaseModel):
-    category: Optional[TicketCategory] = None
-    priority: Optional[TicketPriority] = None
-    status: Optional[TicketStatus] = None
-    title: Optional[str] = Field(None, max_length=255)
-    description: Optional[str] = None
-    assigned_to: Optional[uuid.UUID] = None
+    category: TicketCategory | None = None
+    priority: TicketPriority | None = None
+    status: TicketStatus | None = None
+    title: str | None = Field(None, max_length=255)
+    description: str | None = None
+    assigned_to: uuid.UUID | None = None
 
 
 class SupportTicketResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
-    business_id: Optional[uuid.UUID] = None
+    business_id: uuid.UUID | None = None
     category: TicketCategory
     priority: TicketPriority
     status: TicketStatus
     title: str
     description: str
-    ai_suggested_answer: Optional[str] = None
-    ai_confidence: Optional[float] = None
-    assigned_to: Optional[uuid.UUID] = None
-    escalated_at: Optional[datetime] = None
-    resolved_at: Optional[datetime] = None
-    csat_rating: Optional[int] = None
-    csat_comment: Optional[str] = None
+    ai_suggested_answer: str | None = None
+    ai_confidence: float | None = None
+    assigned_to: uuid.UUID | None = None
+    escalated_at: datetime | None = None
+    resolved_at: datetime | None = None
+    csat_rating: int | None = None
+    csat_comment: str | None = None
     created_at: datetime
     updated_at: datetime
-    message_count: Optional[int] = None
+    message_count: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class SupportTicketDetailResponse(SupportTicketResponse):
-    messages: List[TicketMessageResponse] = []
+    messages: list[TicketMessageResponse] = []
 
 
 class SupportTicketListResponse(BaseModel):
-    items: List[SupportTicketResponse]
+    items: list[SupportTicketResponse]
     total: int
 
 
@@ -147,7 +150,7 @@ class SupportTicketListResponse(BaseModel):
 
 class CSATSubmit(BaseModel):
     rating: int = Field(..., ge=1, le=5)
-    comment: Optional[str] = None
+    comment: str | None = None
 
 
 # ===== Admin Stats Schema =====
@@ -157,6 +160,6 @@ class SupportStatsResponse(BaseModel):
     open_tickets: int
     in_progress_tickets: int
     resolved_today: int
-    avg_resolution_hours: Optional[float] = None
-    ai_resolution_rate: Optional[float] = None
-    csat_avg: Optional[float] = None
+    avg_resolution_hours: float | None = None
+    ai_resolution_rate: float | None = None
+    csat_avg: float | None = None

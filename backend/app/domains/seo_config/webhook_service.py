@@ -2,15 +2,16 @@
 
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from uuid import UUID, uuid4
-from typing import AsyncGenerator
+
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.seo_config.models import PublicationLink
-from app.domains.seo_config.webhook_models import WebhookEvent, ConversionWebhookPayload
 from app.domains.seo_config.fomo_service import FOMAConversionService
+from app.domains.seo_config.models import PublicationLink
+from app.domains.seo_config.webhook_models import ConversionWebhookPayload, WebhookEvent
 
 
 class WebhookService:
@@ -158,7 +159,7 @@ class WebhookService:
         try:
           event = await asyncio.wait_for(queue.get(), timeout=30.0)
           yield f'data: {event}\n\n'
-        except asyncio.TimeoutError:
+        except TimeoutError:
           yield ': heartbeat\n\n'
     finally:
       type(self)._subscribers[key].remove(queue)

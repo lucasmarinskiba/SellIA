@@ -1,9 +1,10 @@
 """WebSocket Endpoint - Real-time updates for Brain Controller."""
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import logging
 import json
+import logging
 from datetime import datetime
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 

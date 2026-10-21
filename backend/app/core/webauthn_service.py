@@ -4,18 +4,17 @@ WebAuthn / Passkeys Service
 Registro y autenticación con passkeys usando webauthn library.
 """
 
-import uuid
 import base64
-import json
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.security.models import WebAuthnCredential
 from app.core.config import get_settings
 from app.core.logger import get_logger
+from app.domains.security.models import WebAuthnCredential
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -37,7 +36,7 @@ def _base64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data)
 
 
-def generate_registration_options(user_id: uuid.UUID, username: str) -> Dict[str, Any]:
+def generate_registration_options(user_id: uuid.UUID, username: str) -> dict[str, Any]:
     """Genera opciones para registrar un passkey."""
     challenge = _base64url_encode(uuid.uuid4().bytes)
     user_id_b64 = _base64url_encode(user_id.bytes)
@@ -62,7 +61,7 @@ def generate_registration_options(user_id: uuid.UUID, username: str) -> Dict[str
     }
 
 
-def generate_authentication_options() -> Dict[str, Any]:
+def generate_authentication_options() -> dict[str, Any]:
     """Genera opciones para autenticar con passkey."""
     challenge = _base64url_encode(uuid.uuid4().bytes)
     return {
@@ -78,7 +77,7 @@ async def register_credential(
     credential_id: str,
     public_key: str,
     sign_count: int = 0,
-    device_name: Optional[str] = None,
+    device_name: str | None = None,
 ) -> WebAuthnCredential:
     """Registra una credencial WebAuthn."""
     # Check if already exists
@@ -89,7 +88,7 @@ async def register_credential(
     if existing:
         existing.public_key = public_key
         existing.sign_count = sign_count
-        existing.last_used_at = datetime.now(timezone.utc)
+        existing.last_used_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(existing)
         return existing
@@ -141,7 +140,7 @@ async def verify_assertion(
         return False
 
     cred.sign_count = new_sign_count
-    cred.last_used_at = datetime.now(timezone.utc)
+    cred.last_used_at = datetime.now(UTC)
     await db.commit()
     return True
 

@@ -16,9 +16,10 @@ Database models:
 """
 
 import logging
-from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,9 @@ class PaymentReconciler:
         payment_provider: str,
         customer_email: str,
         amount_usd: float,
-        order_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        order_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Reconcile a payment with an order.
 
@@ -76,7 +77,10 @@ class PaymentReconciler:
             }
         """
         try:
-            from app.core.database.payment_models import Order, Payment  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package
+            from app.core.database.payment_models import (  # NOTE: unreachable -- app.core.database resolves to the flat module, not this package
+                Order,
+                Payment,
+            )
 
             logger.info(
                 f"Reconciling payment {payment_id} from {payment_provider} | "
@@ -148,7 +152,7 @@ class PaymentReconciler:
             }
 
         except Exception as e:
-            logger.error(f"Reconciliation error: {str(e)}")
+            logger.error(f"Reconciliation error: {e!s}")
             db.rollback()
             return {
                 "status": "error",
@@ -160,8 +164,8 @@ class PaymentReconciler:
     @staticmethod
     def sync_stripe_payment(
         db: Session,
-        stripe_event: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        stripe_event: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Sync a Stripe payment_intent event with orders.
 
@@ -191,14 +195,14 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"Stripe sync error: {str(e)}")
+            logger.error(f"Stripe sync error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def sync_mercadopago_payment(
         db: Session,
-        mercadopago_event: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        mercadopago_event: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Sync a MercadoPago payment with orders.
 
@@ -236,7 +240,7 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"MercadoPago sync error: {str(e)}")
+            logger.error(f"MercadoPago sync error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -246,7 +250,7 @@ class PaymentReconciler:
         blockchain: str,
         amount_usdt: float,
         invoice_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Sync a crypto payment with order.
 
@@ -279,7 +283,7 @@ class PaymentReconciler:
             )
 
         except Exception as e:
-            logger.error(f"Crypto sync error: {str(e)}")
+            logger.error(f"Crypto sync error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -298,7 +302,9 @@ class PaymentReconciler:
             List of unmatched payment records
         """
         try:
-            from app.core.database.payment_models import Payment  # NOTE: same unreachable-package issue
+            from app.core.database.payment_models import (
+                Payment,  # NOTE: same unreachable-package issue
+            )
 
             cutoff_date = datetime.utcnow() - timedelta(days=days_ago)
 
@@ -323,7 +329,7 @@ class PaymentReconciler:
             ]
 
         except Exception as e:
-            logger.error(f"Error getting unreconciled payments: {str(e)}")
+            logger.error(f"Error getting unreconciled payments: {e!s}")
             return []
 
 
@@ -335,7 +341,7 @@ class FulfillmentOrchestrator:
         db: Session,
         order_id: str,
         fulfillment_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Trigger fulfillment workflow based on order type.
 
@@ -353,7 +359,9 @@ class FulfillmentOrchestrator:
             }
         """
         try:
-            from app.core.database.payment_models import Order  # NOTE: same unreachable-package issue
+            from app.core.database.payment_models import (
+                Order,  # NOTE: same unreachable-package issue
+            )
 
             order = db.query(Order).filter(Order.id == order_id).first()
             if not order:
@@ -373,11 +381,11 @@ class FulfillmentOrchestrator:
                 raise ValueError(f"Unknown fulfillment type: {fulfillment_type}")
 
         except Exception as e:
-            logger.error(f"Fulfillment error: {str(e)}")
+            logger.error(f"Fulfillment error: {e!s}")
             return {"status": "error", "order_id": order_id, "error": str(e)}
 
     @staticmethod
-    def _fulfill_digital(db: Session, order) -> Dict[str, Any]:
+    def _fulfill_digital(db: Session, order) -> dict[str, Any]:
         """Handle digital delivery (email, download link, etc)."""
         try:
             # TODO: Send download link or account activation email
@@ -397,11 +405,11 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Digital fulfillment error: {str(e)}")
+            logger.error(f"Digital fulfillment error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def _fulfill_physical(db: Session, order) -> Dict[str, Any]:
+    def _fulfill_physical(db: Session, order) -> dict[str, Any]:
         """Handle physical shipment."""
         try:
             # TODO: Create shipping label, integrate with Easypost/Shippo
@@ -419,11 +427,11 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Physical fulfillment error: {str(e)}")
+            logger.error(f"Physical fulfillment error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def _fulfill_service(db: Session, order) -> Dict[str, Any]:
+    def _fulfill_service(db: Session, order) -> dict[str, Any]:
         """Handle service activation."""
         try:
             # TODO: Activate service subscription, send access credentials
@@ -441,5 +449,5 @@ class FulfillmentOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Service fulfillment error: {str(e)}")
+            logger.error(f"Service fulfillment error: {e!s}")
             return {"status": "error", "error": str(e)}

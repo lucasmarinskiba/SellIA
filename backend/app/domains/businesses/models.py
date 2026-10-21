@@ -1,20 +1,11 @@
+import enum
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-import enum
-
-if TYPE_CHECKING:
-    from app.domains.users.models import User
-    from app.domains.catalogs.models import CatalogItem
-    from app.domains.channels.models import ChannelConnection
-    from app.domains.websites.models import Website
-    from app.domains.crm.models import Conversation
 
 
 class LocalizationModel(str, enum.Enum):

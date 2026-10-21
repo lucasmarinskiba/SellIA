@@ -22,16 +22,15 @@ Características principales:
 - Adaptación dinámica de estrategia basada en resultados
 """
 
-import logging
 import asyncio
-import re
-from typing import Dict, List, Any, Optional, Tuple, Set
-from datetime import datetime, timedelta
-from enum import Enum
-from dataclasses import dataclass, field, asdict
 import json
-import base64
+import logging
+import re
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -86,18 +85,18 @@ class BrowserSession:
     platform: PlatformType
     browser_type: str = "chromium"
     is_authenticated: bool = False
-    authenticated_at: Optional[datetime] = None
-    last_action_at: Optional[datetime] = None
+    authenticated_at: datetime | None = None
+    last_action_at: datetime | None = None
     consecutive_errors: int = 0
-    rate_limit_until: Optional[datetime] = None
+    rate_limit_until: datetime | None = None
 
 
 @dataclass
 class Action:
     """Acción individual a ejecutar."""
     type: ActionType
-    params: Dict[str, Any]
-    platform: Optional[PlatformType] = None
+    params: dict[str, Any]
+    platform: PlatformType | None = None
     critical: bool = False
     retry_count: int = 0
     max_retries: int = 3
@@ -111,9 +110,9 @@ class ActionResult:
     success: bool
     timestamp: datetime
     duration_seconds: float
-    error: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
-    screenshot_path: Optional[str] = None
+    error: str | None = None
+    data: dict[str, Any] | None = None
+    screenshot_path: str | None = None
     retry_count: int = 0
 
 
@@ -124,13 +123,13 @@ class WorkflowExecution:
     strategy_type: StrategyType
     platform: PlatformType
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     total_actions: int = 0
     completed_actions: int = 0
     failed_actions: int = 0
-    actions: List[ActionResult] = field(default_factory=list)
-    captured_data: Dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    actions: list[ActionResult] = field(default_factory=list)
+    captured_data: dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
 
     @property
     def success_rate(self) -> float:
@@ -140,7 +139,7 @@ class WorkflowExecution:
         return (self.completed_actions / self.total_actions) * 100
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Calcula duración en segundos."""
         if self.completed_at is None:
             return None
@@ -150,16 +149,16 @@ class WorkflowExecution:
 @dataclass
 class LeadData:
     """Datos de lead extraídos."""
-    name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    position: Optional[str] = None
-    interests: List[str] = field(default_factory=list)
-    budget: Optional[float] = None
-    timeline: Optional[str] = None
-    source: Optional[str] = None
-    source_platform: Optional[PlatformType] = None
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    company: str | None = None
+    position: str | None = None
+    interests: list[str] = field(default_factory=list)
+    budget: float | None = None
+    timeline: str | None = None
+    source: str | None = None
+    source_platform: PlatformType | None = None
     extracted_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -168,16 +167,16 @@ class OrderData:
     """Datos de orden extraídos."""
     order_id: str
     platform: PlatformType
-    buyer_name: Optional[str] = None
-    buyer_email: Optional[str] = None
-    buyer_phone: Optional[str] = None
-    product_name: Optional[str] = None
-    product_sku: Optional[str] = None
+    buyer_name: str | None = None
+    buyer_email: str | None = None
+    buyer_phone: str | None = None
+    product_name: str | None = None
+    product_sku: str | None = None
     quantity: int = 1
-    unit_price: Optional[float] = None
-    total_price: Optional[float] = None
+    unit_price: float | None = None
+    total_price: float | None = None
     status: str = "pending"
-    shipping_address: Optional[str] = None
+    shipping_address: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
@@ -192,9 +191,9 @@ class VisionEngine:
     def __init__(self):
         """Inicializa motor de visión."""
         self.last_screenshot = None
-        self.element_cache: Dict[str, Tuple[int, int]] = {}
+        self.element_cache: dict[str, tuple[int, int]] = {}
 
-    async def analyze_screenshot(self, screenshot_path: str) -> Dict[str, Any]:
+    async def analyze_screenshot(self, screenshot_path: str) -> dict[str, Any]:
         """
         Analiza screenshot usando visión.
 
@@ -219,7 +218,7 @@ class VisionEngine:
         self,
         screenshot_path: str,
         description: str,
-    ) -> Optional[Tuple[int, int]]:
+    ) -> tuple[int, int] | None:
         """
         Busca elemento por descripción textual.
 
@@ -252,11 +251,11 @@ class BrowserAutomationUtils:
     def __init__(self):
         """Inicializa utilidades."""
         self.vision_engine = VisionEngine()
-        self.action_history: List[ActionResult] = []
+        self.action_history: list[ActionResult] = []
         self.wait_timeout = 10
         self.screenshot_dir = "/tmp/screenshots"
 
-    async def screenshot_and_analyze(self) -> Dict[str, Any]:
+    async def screenshot_and_analyze(self) -> dict[str, Any]:
         """Captura pantalla y analiza contenido."""
         # En producción, usaría Computer Use MCP para capturar
         return await self.vision_engine.analyze_screenshot("current_screen.png")
@@ -288,7 +287,7 @@ class BrowserAutomationUtils:
             return True
 
         except Exception as e:
-            logger.error(f"Error clicking element: {str(e)}")
+            logger.error(f"Error clicking element: {e!s}")
             return False
 
     async def type_in_field(self, field_name: str, text: str) -> bool:
@@ -307,7 +306,7 @@ class BrowserAutomationUtils:
             return True
 
         except Exception as e:
-            logger.error(f"Error typing in field: {str(e)}")
+            logger.error(f"Error typing in field: {e!s}")
             return False
 
     async def wait_for_element(self, description: str, timeout: int = 10) -> bool:
@@ -358,7 +357,7 @@ class BrowserAutomationUtils:
             return True
 
         except Exception as e:
-            logger.error(f"Error handling popup: {str(e)}")
+            logger.error(f"Error handling popup: {e!s}")
             return False
 
     async def handle_rate_limit(self, backoff_seconds: int = 30) -> None:
@@ -387,7 +386,7 @@ class BrowserAutomationUtils:
                 return await func()
             except Exception as e:
                 if attempt == max_retries - 1:
-                    logger.error(f"Failed after {max_retries} attempts: {str(e)}")
+                    logger.error(f"Failed after {max_retries} attempts: {e!s}")
                     raise
 
                 backoff = base_backoff * (2 ** attempt)
@@ -450,35 +449,30 @@ class PlatformHandler(ABC):
         self.error_handler = ErrorHandler()
 
     @abstractmethod
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """Autentica en plataforma."""
-        pass
 
     @abstractmethod
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """Publica producto."""
-        pass
 
     @abstractmethod
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """Responde inquiries de compradores."""
-        pass
 
     @abstractmethod
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """Maneja compra."""
-        pass
 
     @abstractmethod
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura datos de lead."""
-        pass
 
 
 class MercadoLibreHandler(PlatformHandler):
     """Handler para Mercado Libre — marketplace LATAM."""
 
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """
         Login a Mercado Libre.
 
@@ -500,10 +494,10 @@ class MercadoLibreHandler(PlatformHandler):
 
             return True
         except Exception as e:
-            logger.error(f"Authentication failed: {str(e)}")
+            logger.error(f"Authentication failed: {e!s}")
             return False
 
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """
         Publica producto en Mercado Libre.
 
@@ -551,10 +545,10 @@ class MercadoLibreHandler(PlatformHandler):
             return True
 
         except Exception as e:
-            logger.error(f"Failed to post product: {str(e)}")
+            logger.error(f"Failed to post product: {e!s}")
             return False
 
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """
         Monitorea sección de preguntas y responde.
 
@@ -572,10 +566,10 @@ class MercadoLibreHandler(PlatformHandler):
             return []
 
         except Exception as e:
-            logger.error(f"Error responding to inquiries: {str(e)}")
+            logger.error(f"Error responding to inquiries: {e!s}")
             return []
 
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """
         Maneja compra después del pago.
 
@@ -594,10 +588,10 @@ class MercadoLibreHandler(PlatformHandler):
             return True
 
         except Exception as e:
-            logger.error(f"Error handling purchase: {str(e)}")
+            logger.error(f"Error handling purchase: {e!s}")
             return False
 
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura datos de lead de Mercado Libre."""
         return LeadData(
             name=contact.get("name"),
@@ -610,7 +604,7 @@ class MercadoLibreHandler(PlatformHandler):
 class ShopifyHandler(PlatformHandler):
     """Handler para Shopify — SaaS e-commerce."""
 
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """Login a Shopify."""
         try:
             store_url = credentials.get("store_url")
@@ -622,10 +616,10 @@ class ShopifyHandler(PlatformHandler):
 
             return True
         except Exception as e:
-            logger.error(f"Shopify auth failed: {str(e)}")
+            logger.error(f"Shopify auth failed: {e!s}")
             return False
 
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """Crea producto en Shopify."""
         try:
             logger.info(f"Creating Shopify product: {product.get('name')}")
@@ -634,18 +628,18 @@ class ShopifyHandler(PlatformHandler):
 
             return True
         except Exception as e:
-            logger.error(f"Failed to create product: {str(e)}")
+            logger.error(f"Failed to create product: {e!s}")
             return False
 
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """Responde customer inquiries en Shopify."""
         return []
 
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """Procesa orden en Shopify."""
         return True
 
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura lead de Shopify."""
         return LeadData(source_platform=PlatformType.SHOPIFY)
 
@@ -653,23 +647,23 @@ class ShopifyHandler(PlatformHandler):
 class FacebookHandler(PlatformHandler):
     """Handler para Facebook Marketplace + Messenger."""
 
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """Login a Facebook."""
         return True
 
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """Publica en Facebook Marketplace."""
         return True
 
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """Responde inquiries via Messenger."""
         return []
 
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """Maneja compra en Facebook."""
         return True
 
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura lead de Facebook."""
         return LeadData(source_platform=PlatformType.FACEBOOK)
 
@@ -677,23 +671,23 @@ class FacebookHandler(PlatformHandler):
 class WhatsAppHandler(PlatformHandler):
     """Handler para WhatsApp — mensajería directa."""
 
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """Autentica WhatsApp Web."""
         return True
 
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """No aplica para WhatsApp."""
         return False
 
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """Monitorea y responde mensajes."""
         return []
 
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """Maneja orden via WhatsApp."""
         return True
 
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura lead de WhatsApp."""
         return LeadData(
             phone=contact.get("phone"),
@@ -704,23 +698,23 @@ class WhatsAppHandler(PlatformHandler):
 class EmailHandler(PlatformHandler):
     """Handler para Email — Gmail / Outlook."""
 
-    async def authenticate(self, credentials: Dict[str, str]) -> bool:
+    async def authenticate(self, credentials: dict[str, str]) -> bool:
         """Autentica email."""
         return True
 
-    async def post_product(self, product: Dict[str, Any]) -> bool:
+    async def post_product(self, product: dict[str, Any]) -> bool:
         """No aplica para email."""
         return False
 
-    async def respond_to_inquiries(self, dashboard_url: str) -> List[Dict[str, Any]]:
+    async def respond_to_inquiries(self, dashboard_url: str) -> list[dict[str, Any]]:
         """Lee replies y genera respuestas."""
         return []
 
-    async def handle_purchase(self, order: Dict[str, Any]) -> bool:
+    async def handle_purchase(self, order: dict[str, Any]) -> bool:
         """No maneja órdenes en email."""
         return False
 
-    async def capture_lead_data(self, contact: Dict[str, Any]) -> LeadData:
+    async def capture_lead_data(self, contact: dict[str, Any]) -> LeadData:
         """Captura lead de email."""
         return LeadData(
             email=contact.get("email"),
@@ -738,12 +732,12 @@ class LeadCaptureEngine:
     def __init__(self, browser_utils: BrowserAutomationUtils):
         """Inicializa engine."""
         self.browser_utils = browser_utils
-        self.leads: List[LeadData] = []
+        self.leads: list[LeadData] = []
 
     async def fill_form(
         self,
         url: str,
-        form_data: Dict[str, str],
+        form_data: dict[str, str],
     ) -> bool:
         """
         Navega a formulario, rellena campos, envía.
@@ -773,10 +767,10 @@ class LeadCaptureEngine:
             return True
 
         except Exception as e:
-            logger.error(f"Error filling form: {str(e)}")
+            logger.error(f"Error filling form: {e!s}")
             return False
 
-    async def extract_contact_from_page(self, url: str) -> Optional[LeadData]:
+    async def extract_contact_from_page(self, url: str) -> LeadData | None:
         """
         Analiza página y extrae nombre, email, teléfono (visión).
 
@@ -804,10 +798,10 @@ class LeadCaptureEngine:
             return lead if (lead.email or lead.phone) else None
 
         except Exception as e:
-            logger.error(f"Error extracting contact: {str(e)}")
+            logger.error(f"Error extracting contact: {e!s}")
             return None
 
-    async def scrape_directory(self, url: str, query: str) -> List[LeadData]:
+    async def scrape_directory(self, url: str, query: str) -> list[LeadData]:
         """
         Busca en directorio, recopila contactos coincidentes.
 
@@ -821,7 +815,7 @@ class LeadCaptureEngine:
 
             return leads
         except Exception as e:
-            logger.error(f"Error scraping directory: {str(e)}")
+            logger.error(f"Error scraping directory: {e!s}")
             return leads
 
     async def contact_enrichment(self, partial_data: LeadData) -> LeadData:
@@ -837,7 +831,7 @@ class LeadCaptureEngine:
 
             return partial_data
         except Exception as e:
-            logger.error(f"Error enriching contact: {str(e)}")
+            logger.error(f"Error enriching contact: {e!s}")
             return partial_data
 
 
@@ -866,7 +860,7 @@ class ComputerUseOrchestrator:
         self.lead_capture = LeadCaptureEngine(self.browser_utils)
 
         # Platform handlers
-        self.handlers: Dict[PlatformType, PlatformHandler] = {
+        self.handlers: dict[PlatformType, PlatformHandler] = {
             PlatformType.MERCADO_LIBRE: MercadoLibreHandler(self.browser_utils),
             PlatformType.SHOPIFY: ShopifyHandler(self.browser_utils),
             PlatformType.FACEBOOK: FacebookHandler(self.browser_utils),
@@ -875,15 +869,15 @@ class ComputerUseOrchestrator:
         }
 
         # Session management
-        self.sessions: Dict[str, BrowserSession] = {}
-        self.workflow_history: List[WorkflowExecution] = []
+        self.sessions: dict[str, BrowserSession] = {}
+        self.workflow_history: list[WorkflowExecution] = []
 
         # Credentials storage (en producción, usar vault)
-        self.credentials: Dict[PlatformType, Dict[str, str]] = {}
+        self.credentials: dict[PlatformType, dict[str, str]] = {}
 
         # Task queue
         self.task_queue: asyncio.Queue = asyncio.Queue()
-        self.active_workflows: Set[str] = set()
+        self.active_workflows: set[str] = set()
 
     # ===== STRATEGY EXECUTION =====
 
@@ -891,7 +885,7 @@ class ComputerUseOrchestrator:
         self,
         platform: PlatformType,
         strategy: StrategyType,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> WorkflowExecution:
         """
         Ejecuta estrategia en plataforma.
@@ -947,7 +941,7 @@ class ComputerUseOrchestrator:
             execution.captured_data = result.get("data", {})
 
         except Exception as e:
-            logger.error(f"Strategy execution failed: {str(e)}")
+            logger.error(f"Strategy execution failed: {e!s}")
             execution.error_message = str(e)
             execution.failed_actions = execution.total_actions
 
@@ -960,8 +954,8 @@ class ComputerUseOrchestrator:
     async def _execute_post_product(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia POST_PRODUCT."""
         product = context.get("product", {})
 
@@ -976,8 +970,8 @@ class ComputerUseOrchestrator:
     async def _execute_respond_inquiry(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia RESPOND_INQUIRY."""
         dashboard_url = context.get("dashboard_url", "")
 
@@ -992,8 +986,8 @@ class ComputerUseOrchestrator:
     async def _execute_negotiate_deal(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia NEGOTIATE_DEAL."""
         # TODO: Implementar negociación multi-ronda
 
@@ -1006,8 +1000,8 @@ class ComputerUseOrchestrator:
     async def _execute_close_sale(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia CLOSE_SALE."""
         order = context.get("order", {})
 
@@ -1022,8 +1016,8 @@ class ComputerUseOrchestrator:
     async def _execute_capture_lead(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia CAPTURE_LEAD."""
         contact = context.get("contact", {})
 
@@ -1038,8 +1032,8 @@ class ComputerUseOrchestrator:
     async def _execute_send_campaign(
         self,
         handler: PlatformHandler,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta estrategia SEND_CAMPAIGN."""
         # TODO: Implementar envío de campaña
 
@@ -1051,11 +1045,11 @@ class ComputerUseOrchestrator:
 
     # ===== LEAD MANAGEMENT =====
 
-    async def capture_leads_from_url(self, url: str) -> List[LeadData]:
+    async def capture_leads_from_url(self, url: str) -> list[LeadData]:
         """Captura leads de URL específica."""
         return await self.lead_capture.extract_contact_from_page(url)
 
-    async def enrich_leads(self, leads: List[LeadData]) -> List[LeadData]:
+    async def enrich_leads(self, leads: list[LeadData]) -> list[LeadData]:
         """Enriquece leads con información adicional."""
         enriched = []
         for lead in leads:
@@ -1065,7 +1059,7 @@ class ComputerUseOrchestrator:
 
     # ===== ANALYTICS & REPORTING =====
 
-    def get_orchestrator_report(self) -> Dict[str, Any]:
+    def get_orchestrator_report(self) -> dict[str, Any]:
         """Retorna reporte completo de ejecuciones."""
         total_workflows = len(self.workflow_history)
         total_actions = sum(w.total_actions for w in self.workflow_history)
@@ -1118,10 +1112,10 @@ class ComputerUseOrchestrator:
 
     def get_workflow_history(
         self,
-        strategy: Optional[StrategyType] = None,
-        platform: Optional[PlatformType] = None,
+        strategy: StrategyType | None = None,
+        platform: PlatformType | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Retorna histórico filtrado de workflows."""
         workflows = self.workflow_history
 
@@ -1167,10 +1161,10 @@ async def create_and_initialize_orchestrator() -> ComputerUseOrchestrator:
 
 async def execute_multi_platform_workflow(
     orchestrator: ComputerUseOrchestrator,
-    platforms: List[PlatformType],
+    platforms: list[PlatformType],
     strategy: StrategyType,
-    context: Dict[str, Any],
-) -> Dict[str, WorkflowExecution]:
+    context: dict[str, Any],
+) -> dict[str, WorkflowExecution]:
     """
     Ejecuta workflow en múltiples plataformas en paralelo.
 

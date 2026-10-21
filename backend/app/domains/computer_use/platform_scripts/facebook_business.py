@@ -1,6 +1,7 @@
 """Meta Business Suite / Ads Manager Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class FacebookBusinessScript(PlatformScript):
     login_url = "https://business.facebook.com/login"
     dashboard_url = "https://business.facebook.com/"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "create_ad_campaign":
             return self._create_ad_campaign(params)
         elif task_type == "setup_pixel":
@@ -19,7 +20,7 @@ class FacebookBusinessScript(PlatformScript):
             return self._manage_page(params)
         return super().get_task_steps(task_type, params)
 
-    def _create_ad_campaign(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_ad_campaign(self, params: dict[str, Any]) -> list[ScriptStep]:
         objective = params.get("objective", "AWARENESS")
         budget = params.get("budget", 10)
         return [
@@ -35,7 +36,7 @@ class FacebookBusinessScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify campaign created"),
         ]
 
-    def _setup_pixel(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _setup_pixel(self, params: dict[str, Any]) -> list[ScriptStep]:
         events = params.get("events", ["PageView", "ViewContent", "AddToCart", "Purchase"])
         return [
             ScriptStep(action="navigate", target="https://business.facebook.com/events_manager", description="Navigate to Events Manager"),
@@ -47,7 +48,7 @@ class FacebookBusinessScript(PlatformScript):
             ScriptStep(action="screenshot", description=f"Check pixel setup for events: {', '.join(events)}"),
         ]
 
-    def _manage_page(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _manage_page(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://business.facebook.com/latest/home", description="Navigate to Business Suite home"),
             ScriptStep(action="wait", wait_ms=3000),

@@ -5,17 +5,23 @@ Reuses content in social posts and sales messages.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.growth.models import UgcRequest, UgcRequestStatus, SocialProofItem, SocialProofType, SocialProofStatus
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import (
+    SocialProofItem,
+    SocialProofStatus,
+    SocialProofType,
+    UgcRequest,
+    UgcRequestStatus,
+)
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -100,7 +106,7 @@ class UGCCollector:
             return {"status": "error", "reason": str(e)}
 
         ugc_request.status = UgcRequestStatus.SENT
-        ugc_request.sent_at = datetime.now(timezone.utc)
+        ugc_request.sent_at = datetime.now(UTC)
         await self.db.commit()
 
         logger.info(f"Sent UGC request {request_id} to conversation {ugc_request.conversation_id}")
@@ -152,17 +158,17 @@ Ejemplo para lifestyle photo:
                 user_prompt=user_prompt,
                 max_tokens=500,
                 temperature=0.75,
-            ) or f"¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
+            ) or "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
         except Exception as e:
             logger.error(f"Failed to generate UGC request: {e}")
-            return f"¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
+            return "¡Hola! Me encantaría ver tu experiencia con nuestro producto. ¿Podrías compartir una foto? Te lo agradezco mucho."
 
     # ========== Collection ==========
 
     async def collect_submission(
         self,
         request_id: uuid.UUID,
-        media_urls: List[str],
+        media_urls: list[str],
         response_text: str = "",
     ) -> UgcRequest:
         """Record a UGC submission from a customer."""
@@ -173,7 +179,7 @@ Ejemplo para lifestyle photo:
         ugc_request.status = UgcRequestStatus.RECEIVED
         ugc_request.response_media_urls = media_urls
         ugc_request.response_text = response_text
-        ugc_request.responded_at = datetime.now(timezone.utc)
+        ugc_request.responded_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(ugc_request)
 
@@ -266,7 +272,7 @@ Responde en JSON:
         business_id: uuid.UUID,
         content_type: str = None,
         limit: int = 50,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get approved UGC items for gallery display."""
         query = select(UgcRequest).where(
             UgcRequest.business_id == business_id,
@@ -309,7 +315,7 @@ Responde en JSON:
         await self.db.refresh(ugc_request)
         return ugc_request
 
-    async def get_pending_requests(self, business_id: uuid.UUID) -> List[UgcRequest]:
+    async def get_pending_requests(self, business_id: uuid.UUID) -> list[UgcRequest]:
         """Get pending UGC requests that need to be sent."""
         result = await self.db.execute(
             select(UgcRequest).where(

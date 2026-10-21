@@ -1,33 +1,52 @@
 """Social Seller API Router"""
 
 import uuid
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, resolve_business_id
-from app.domains.users.models import User
-
-from app.domains.social_sellers.models import SocialSeller, SellerCustomerRelationship, SellerPerformance, UnifiedCustomer
-from app.domains.social_sellers.schemas import (
-    SocialSellerCreate, SocialSellerUpdate, SocialSellerResponse,
-    SellerCustomerCreate, SellerCustomerResponse, CustomerInsightResponse,
-    SellerPerformanceResponse, SellerPipelineResponse, TeamReportResponse,
-    RecordSaleRequest, RecordSaleResponse, ExecuteActionRequest, ExecuteActionResponse,
-    WallOfFameCustomer, CustomerBadgeResponse, LoyaltySegmentsResponse,
-    LoyaltyActionRequest, LoyaltyActionResponse,
-    UnifiedCustomerResponse, UnifiedCustomerProfileResponse, MergeRequest, MergeResponse,
-    MergeSuggestionResponse,
-    RadarDataResponse, OpportunityScoreResponse, RadarActRequest, RadarActResponse,
-    IdealCustomerProfile, LookalikeLead, LookalikeReportResponse,
-)
+from app.domains.social_sellers.customer_unification import CustomerIdentityMatcher
 from app.domains.social_sellers.engine import SocialSellerEngine
-from app.domains.social_sellers.loyalty_engine import LoyaltyEngine
 from app.domains.social_sellers.lifetime_engine import CustomerLifetimeEngine
 from app.domains.social_sellers.lookalike import LookalikeEngine
-from app.domains.social_sellers.customer_unification import CustomerIdentityMatcher
+from app.domains.social_sellers.loyalty_engine import LoyaltyEngine
+from app.domains.social_sellers.models import (
+    SocialSeller,
+)
+from app.domains.social_sellers.schemas import (
+    CustomerBadgeResponse,
+    ExecuteActionRequest,
+    ExecuteActionResponse,
+    IdealCustomerProfile,
+    LookalikeLead,
+    LookalikeReportResponse,
+    LoyaltyActionRequest,
+    LoyaltyActionResponse,
+    LoyaltySegmentsResponse,
+    MergeRequest,
+    MergeResponse,
+    MergeSuggestionResponse,
+    OpportunityScoreResponse,
+    RadarActRequest,
+    RadarActResponse,
+    RadarDataResponse,
+    RecordSaleRequest,
+    RecordSaleResponse,
+    SellerCustomerCreate,
+    SellerCustomerResponse,
+    SellerPerformanceResponse,
+    SellerPipelineResponse,
+    SocialSellerCreate,
+    SocialSellerResponse,
+    SocialSellerUpdate,
+    TeamReportResponse,
+    UnifiedCustomerProfileResponse,
+    UnifiedCustomerResponse,
+    WallOfFameCustomer,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/social-sellers", tags=["social-sellers"])
 
@@ -85,10 +104,10 @@ async def create_seller(
     return seller
 
 
-@router.get("", response_model=List[SocialSellerResponse])
+@router.get("", response_model=list[SocialSellerResponse])
 async def list_sellers(
     business_id: uuid.UUID,
-    status: Optional[str] = None,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -144,7 +163,6 @@ async def delete_seller(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Seller no encontrado.',
         )
-    return None
 
 
 # ========== Customers ==========
@@ -169,10 +187,10 @@ async def assign_customer(
     return rel
 
 
-@router.get("/{seller_id}/customers", response_model=List[SellerCustomerResponse])
+@router.get("/{seller_id}/customers", response_model=list[SellerCustomerResponse])
 async def list_customers(
     seller_id: uuid.UUID,
-    stage: Optional[str] = None,
+    stage: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -185,7 +203,7 @@ async def list_customers(
 
 # ========== Unified Customers ==========
 
-@router.get("/customers/unified", response_model=List[UnifiedCustomerResponse])
+@router.get("/customers/unified", response_model=list[UnifiedCustomerResponse])
 async def list_unified_customers(
     business_id: uuid.UUID,
     limit: int = Query(50, ge=1, le=200),
@@ -242,7 +260,7 @@ async def merge_customers(
     }
 
 
-@router.get("/customers/suggest-merge", response_model=List[MergeSuggestionResponse])
+@router.get("/customers/suggest-merge", response_model=list[MergeSuggestionResponse])
 async def suggest_merge(
     business_id: uuid.UUID,
     customer_a_id: uuid.UUID,
@@ -276,7 +294,7 @@ async def get_pipeline(
     return await engine.get_seller_pipeline(seller_id)
 
 
-@router.get("/{seller_id}/performance", response_model=List[SellerPerformanceResponse])
+@router.get("/{seller_id}/performance", response_model=list[SellerPerformanceResponse])
 async def get_performance(
     seller_id: uuid.UUID,
     period: str = Query("week"),
@@ -324,7 +342,7 @@ async def get_lookalike_profile(
     return await engine.build_ideal_customer_profile(business_id)
 
 
-@router.get('/lookalike/leads', response_model=List[LookalikeLead])
+@router.get('/lookalike/leads', response_model=list[LookalikeLead])
 async def get_lookalike_leads(
     business_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -336,7 +354,7 @@ async def get_lookalike_leads(
     return await engine.prioritize_leads(business_id)
 
 
-@router.get('/lookalike/similar-to/{customer_id}', response_model=List[LookalikeLead])
+@router.get('/lookalike/similar-to/{customer_id}', response_model=list[LookalikeLead])
 async def get_similar_to_customer(
     customer_id: uuid.UUID,
     business_id: uuid.UUID,
@@ -427,10 +445,10 @@ async def get_radar(
     return await engine.get_radar_data(business_id)
 
 
-@router.get("/radar/opportunities", response_model=List[dict])
+@router.get("/radar/opportunities", response_model=list[dict])
 async def list_opportunities(
     business_id: uuid.UUID,
-    heat_level: Optional[str] = None,
+    heat_level: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -483,7 +501,7 @@ async def execute_radar_action(
 
 # ========== Wall of Fame & Loyalty ==========
 
-@router.get("/wall-of-fame", response_model=List[WallOfFameCustomer])
+@router.get("/wall-of-fame", response_model=list[WallOfFameCustomer])
 async def get_wall_of_fame(
     business_id: uuid.UUID,
     limit: int = Query(50, ge=1, le=200),
@@ -496,7 +514,7 @@ async def get_wall_of_fame(
     return await engine.get_wall_of_fame(business_id, limit=limit)
 
 
-@router.get("/customers/{customer_id}/badges", response_model=List[CustomerBadgeResponse])
+@router.get("/customers/{customer_id}/badges", response_model=list[CustomerBadgeResponse])
 async def get_customer_badges(
     customer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -507,7 +525,7 @@ async def get_customer_badges(
     return await engine.get_customer_badges(customer_id)
 
 
-@router.post("/customers/{customer_id}/badges/check", response_model=List[dict])
+@router.post("/customers/{customer_id}/badges/check", response_model=list[dict])
 async def check_and_assign_badges(
     customer_id: uuid.UUID,
     business_id: uuid.UUID,

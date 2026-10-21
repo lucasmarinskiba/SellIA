@@ -11,14 +11,13 @@ Features:
 """
 
 import asyncio
-import time
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
 import hashlib
-import json
+import time
 from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 
 class MessagePriority(str, Enum):
@@ -38,7 +37,7 @@ class Message:
     channel: str
     priority: MessagePriority = MessagePriority.NORMAL
     created_at: datetime = field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_cache_key(self) -> str:
         """Generate cache key for response caching"""
@@ -55,19 +54,19 @@ class Response:
     generated_at: datetime
     latency_ms: float
     from_cache: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ResponseCache:
     """Simple in-memory LRU response cache with TTL"""
 
     def __init__(self, max_size: int = 10000, ttl_seconds: int = 300):
-        self.cache: Dict[str, tuple[Response, float]] = {}
+        self.cache: dict[str, tuple[Response, float]] = {}
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
-        self.access_times: Dict[str, float] = defaultdict(float)
+        self.access_times: dict[str, float] = defaultdict(float)
 
-    def get(self, key: str) -> Optional[Response]:
+    def get(self, key: str) -> Response | None:
         """Get cached response if not expired"""
         if key not in self.cache:
             return None
@@ -104,7 +103,7 @@ class ResponseCache:
                 del self.access_times[key]
         return len(expired)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Cache statistics"""
         return {
             "size": len(self.cache),
@@ -118,7 +117,7 @@ class MessageQueue:
     """Priority-based message queue with async processing"""
 
     def __init__(self, max_queue_size: int = 10000):
-        self.queues: Dict[MessagePriority, asyncio.Queue] = {
+        self.queues: dict[MessagePriority, asyncio.Queue] = {
             priority: asyncio.Queue(maxsize=max_queue_size)
             for priority in MessagePriority
         }
@@ -138,7 +137,7 @@ class MessageQueue:
         except asyncio.QueueFull:
             return False
 
-    async def get_batch(self, batch_size: int = 10) -> List[Message]:
+    async def get_batch(self, batch_size: int = 10) -> list[Message]:
         """Get next batch of messages in priority order"""
         batch = []
 
@@ -155,14 +154,14 @@ class MessageQueue:
 
         return batch
 
-    def queue_sizes(self) -> Dict[str, int]:
+    def queue_sizes(self) -> dict[str, int]:
         """Get current queue sizes by priority"""
         return {
             priority.value: queue.qsize()
             for priority, queue in self.queues.items()
         }
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Metrics"""
         latencies = self.metrics["latencies"]
         return {
@@ -181,7 +180,7 @@ class LatencyTracker:
 
     def __init__(self, sla_ms: float = 5000, window_size: int = 1000):
         self.sla_ms = sla_ms
-        self.latencies: List[float] = []
+        self.latencies: list[float] = []
         self.window_size = window_size
         self.violations = 0
 
@@ -196,7 +195,7 @@ class LatencyTracker:
             self.violations += 1
         return is_compliant
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get latency statistics"""
         if not self.latencies:
             return {
@@ -272,7 +271,7 @@ class ResponseEngine:
 
         return response
 
-    async def process_batch(self, batch: List[Message]) -> List[Response]:
+    async def process_batch(self, batch: list[Message]) -> list[Response]:
         """Process multiple messages in parallel"""
         tasks = [self.process_message(msg) for msg in batch]
         responses = await asyncio.gather(*tasks, return_exceptions=True)
@@ -295,7 +294,7 @@ class ResponseEngine:
             return await self.response_generator(message)
         return f"Automated response to: {message.content[:50]}..."
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get comprehensive metrics"""
         return {
             "queue": self.queue.stats(),
@@ -303,7 +302,7 @@ class ResponseEngine:
             "latency": self.latency_tracker.get_stats()
         }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Health status"""
         metrics = self.get_metrics()
         return {
@@ -316,7 +315,7 @@ class ResponseEngine:
 
 
 # Singleton instance
-_engine_instance: Optional[ResponseEngine] = None
+_engine_instance: ResponseEngine | None = None
 
 
 def get_response_engine() -> ResponseEngine:

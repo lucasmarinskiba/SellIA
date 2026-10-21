@@ -4,8 +4,8 @@
 from celery import shared_task
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.forecasting.service import ForecastingService

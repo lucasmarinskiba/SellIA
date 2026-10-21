@@ -1,11 +1,13 @@
 """Phase 18: Autonomous Lead Generation Agent Endpoints."""
 
-from fastapi import APIRouter, Query, Body, HTTPException
-from typing import Dict, Any
 import logging
+from typing import Any
+
+from fastapi import APIRouter, Body, HTTPException, Query
 
 from app.domains.agents.lead_generation_agent import (
-    LeadGenerationAgent, ProductDescriptor, LeadSourceType
+    LeadGenerationAgent,
+    ProductDescriptor,
 )
 
 router = APIRouter(tags=["lead-generation-agent"])
@@ -27,7 +29,7 @@ async def create_lead_campaign(
     delivery_model: str = Query(..., description="online, offline, hybrid, hybrid_on_demand"),
     geographic_scope: str = Query(...),
     leads_target: int = Query(50, ge=10, le=500),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create autonomous lead generation campaign for user's product/service."""
 
     try:
@@ -67,7 +69,7 @@ async def create_lead_campaign(
 async def generate_leads(
     campaign_id: str,
     limit: int = Query(50, ge=10, le=200),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate leads for campaign."""
 
     try:
@@ -102,7 +104,7 @@ async def generate_leads(
 
 
 @router.get("/lead-agent/campaign/{campaign_id}/stats")
-async def get_campaign_stats(campaign_id: str) -> Dict[str, Any]:
+async def get_campaign_stats(campaign_id: str) -> dict[str, Any]:
     """Get campaign statistics."""
 
     try:
@@ -125,7 +127,7 @@ async def get_campaign_stats(campaign_id: str) -> Dict[str, Any]:
 async def get_qualified_leads(
     campaign_id: str,
     min_fit_score: float = Query(0.7, ge=0.0, le=1.0),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get qualified leads from campaign."""
 
     try:
@@ -163,7 +165,7 @@ async def get_qualified_leads(
 async def schedule_continuous_generation(
     campaign_id: str,
     frequency_hours: int = Query(24, ge=1, le=720),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Schedule continuous automatic lead generation."""
 
     try:
@@ -186,7 +188,7 @@ async def schedule_continuous_generation(
 async def export_leads(
     campaign_id: str,
     format: str = Query("json", regex="^(csv|json)$"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Export leads in specified format for outreach."""
 
     try:
@@ -209,7 +211,7 @@ async def quick_start_campaign(
     user_id: str = Query(...),
     product_description: str = Body(..., description="What do you sell/offer?"),
     target_market: str = Body(..., description="Who are your customers?"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Quick-start: Create campaign from minimal info."""
 
     try:

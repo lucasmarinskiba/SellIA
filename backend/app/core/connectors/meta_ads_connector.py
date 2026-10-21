@@ -1,7 +1,10 @@
 """Meta/Facebook Ads connector — Crear campañas, optimizar presupuesto."""
 
-import aiohttp, logging
-from typing import Dict, List, Any
+import logging
+from typing import Any
+
+import aiohttp
+
 from .base_connector import BaseConnector, ConnectorType
 
 logger = logging.getLogger(__name__)
@@ -10,7 +13,7 @@ logger = logging.getLogger(__name__)
 class MetaAdsConnector(BaseConnector):
     """Facebook/Meta Ads integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__("meta_ads", ConnectorType.ADS, config)
         self.base_url = "https://graph.facebook.com/v18.0"
         self.access_token = config.get("access_token")
@@ -26,10 +29,10 @@ class MetaAdsConnector(BaseConnector):
                         return True
                     return False
         except Exception as e:
-            logger.error(f"Meta auth failed: {str(e)}")
+            logger.error(f"Meta auth failed: {e!s}")
             return False
 
-    async def create_campaign(self, campaign: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
         """Crea campaña Ads."""
         try:
             payload = {
@@ -48,19 +51,19 @@ class MetaAdsConnector(BaseConnector):
                         return {"status": "created", "campaign_id": data.get("id")}
                     return {"status": "error"}
         except Exception as e:
-            logger.error(f"Error creating campaign: {str(e)}")
+            logger.error(f"Error creating campaign: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def list_products(self) -> List[Dict[str, Any]]:
+    async def list_products(self) -> list[dict[str, Any]]:
         return []  # Not applicable
 
-    async def get_orders(self) -> List[Dict[str, Any]]:
+    async def get_orders(self) -> list[dict[str, Any]]:
         return []  # Not applicable
 
-    async def send_message(self, recipient: str, message: str) -> Dict[str, Any]:
+    async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
         return {"status": "not_implemented"}
 
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """Obtiene métricas de campaña."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -77,5 +80,5 @@ class MetaAdsConnector(BaseConnector):
                         }
                     return {}
         except Exception as e:
-            logger.error(f"Error fetching metrics: {str(e)}")
+            logger.error(f"Error fetching metrics: {e!s}")
             return {}

@@ -10,15 +10,15 @@ Responsibilities:
 No selectors needed. Pure visual matching.
 """
 
+import difflib
 import logging
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
-import difflib
+from typing import Any
 
 from .visual_analyzer import (
-    VisualAnalyzer, PageAnalysis, ButtonDetection, FormField,
-    TextRegion, LayoutRegion
+    FormField,
+    VisualAnalyzer,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,8 +52,8 @@ class ElementMatch:
     width: int
     height: int
     confidence: float
-    center_x: Optional[int] = None
-    center_y: Optional[int] = None
+    center_x: int | None = None
+    center_y: int | None = None
 
     def __post_init__(self):
         if self.center_x is None:
@@ -84,9 +84,9 @@ class VisionNavigator:
         self,
         screenshot_bytes: bytes,
         description: str,
-        element_type: Optional[ElementType] = None,
+        element_type: ElementType | None = None,
         threshold: float = 0.7
-    ) -> Optional[ElementMatch]:
+    ) -> ElementMatch | None:
         """Encuentra un elemento por descripción natural.
 
         Args:
@@ -181,7 +181,7 @@ class VisionNavigator:
         self,
         screenshot_bytes: bytes,
         max_results: int = 10
-    ) -> List[ElementMatch]:
+    ) -> list[ElementMatch]:
         """Encuentra todas las áreas clickeables (botones, links, form inputs)."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -229,7 +229,7 @@ class VisionNavigator:
         screenshot_bytes: bytes,
         label: str,
         threshold: float = 0.7
-    ) -> Optional[FormField]:
+    ) -> FormField | None:
         """Encuentra un campo de formulario por su label."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -249,7 +249,7 @@ class VisionNavigator:
         self,
         screenshot_bytes: bytes,
         element_type: ElementType
-    ) -> List[ElementMatch]:
+    ) -> list[ElementMatch]:
         """Encuentra todos los elementos de un tipo específico."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -302,7 +302,7 @@ class VisionNavigator:
     async def detect_tables(
         self,
         screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Detecta tablas en la página."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -340,7 +340,7 @@ class VisionNavigator:
     async def detect_lists(
         self,
         screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Detecta listas (bullets, numbered, etc)."""
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)
 
@@ -383,7 +383,7 @@ class VisionNavigator:
     async def detect_cards(
         self,
         screenshot_bytes: bytes
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Detecta cards/containers."""
         # Basado en layout regions y agrupaciones de elementos
         analysis = await self.analyzer.analyze_screenshot(screenshot_bytes)

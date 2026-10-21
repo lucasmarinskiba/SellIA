@@ -15,7 +15,6 @@ from app.core.multi_tenant import (
 )
 from app.core.multi_tenant.example_implementation import router as tenant_router
 
-
 # ============================================================================
 # Application Setup
 # ============================================================================
@@ -123,6 +122,7 @@ def create_app() -> FastAPI:
     # ========================================================================
 
     from fastapi.responses import JSONResponse
+
     from app.core.exceptions import AppException
 
     @app.exception_handler(AppException)
@@ -189,8 +189,9 @@ def add_multi_tenant_endpoints(app: FastAPI):
     """
 
     from fastapi import APIRouter, Depends, HTTPException
-    from app.core.multi_tenant import require_tenant_context, TenantContext
+
     from app.core.database import get_db
+    from app.core.multi_tenant import TenantContext, require_tenant_context
 
     router = APIRouter(prefix="/api/v1", tags=["example"])
 
@@ -343,8 +344,7 @@ async def get_test_app() -> FastAPI:
     Get test FastAPI instance with multi-tenant support.
     Use in pytest fixtures.
     """
-    from fastapi.testclient import TestClient
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     # In-memory SQLite for testing
     engine = create_async_engine(
@@ -354,9 +354,6 @@ async def get_test_app() -> FastAPI:
 
     # Import all models to ensure they're registered
     from app.core.database import Base
-    from app.core.multi_tenant.models import (
-        Tenant, TenantMember, TenantAPIKey, TenantBilling, AuditLog
-    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

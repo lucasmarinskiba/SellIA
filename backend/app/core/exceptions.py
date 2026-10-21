@@ -1,8 +1,7 @@
 """Centralized exception handling utilities."""
 
-import traceback
-from typing import Optional
 from fastapi import HTTPException, status
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +23,7 @@ class AppException(Exception):
         self,
         message: str,
         status_code: int = status.HTTP_400_BAD_REQUEST,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         self.message = message
         self.status_code = status_code

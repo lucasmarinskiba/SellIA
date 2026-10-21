@@ -18,9 +18,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.enterprise.knowledge_base import ConversationPatternAnalyzer
+from app.domains.users.models import User
 
 router = APIRouter(tags=["knowledge"])
 

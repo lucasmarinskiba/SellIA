@@ -13,7 +13,7 @@ reconciliation_rules   Auto-categorisation rules for bank transactions.
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -34,7 +34,7 @@ from app.core.database import Base
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class AccountType(str, enum.Enum):

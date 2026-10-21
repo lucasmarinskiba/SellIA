@@ -1,11 +1,13 @@
 """Checkout & payment processing endpoints."""
 
-from fastapi import APIRouter, HTTPException, Body, Depends
+import os
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
-import os
-import httpx
 
 router = APIRouter(prefix="/checkout", tags=["payments"])
 
@@ -94,7 +96,7 @@ async def create_checkout_session(
                 raise HTTPException(status_code=400, detail="Failed to create checkout")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Checkout error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Checkout error: {e!s}")
 
 
 @router.get("/{preference_id}")
@@ -116,4 +118,4 @@ async def get_checkout_status(preference_id: str):
                 raise HTTPException(status_code=404, detail="Preference not found")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")

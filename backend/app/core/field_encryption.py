@@ -4,12 +4,11 @@ Field Encryption Service
 Cifra datos sensibles en la base de datos usando Fernet (AES-128-CBC).
 """
 
-from cryptography.fernet import Fernet
-import hashlib
 import base64
-from typing import Optional
-
+import hashlib
 import os
+
+from cryptography.fernet import Fernet
 
 from app.core.config import get_settings
 

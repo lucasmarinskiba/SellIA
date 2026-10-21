@@ -1,20 +1,24 @@
 """Retention & Loyalty API Router."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.retention.models import ReferralProgram, NpsCampaign, CustomerSegment
+from app.domains.retention.models import CustomerSegment, ReferralProgram
 from app.domains.retention.schemas import (
-    ReferralProgramCreate, ReferralProgramResponse, ReferralCodeResponse,
-    NpsCampaignCreate, NpsCampaignResponse, NpsScoreResponse,
     CustomerSegmentResponse,
+    NpsCampaignCreate,
+    NpsCampaignResponse,
+    NpsScoreResponse,
+    ReferralProgramCreate,
+    ReferralProgramResponse,
 )
 from app.domains.retention.services import RetentionService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/retention", tags=["Retention & Loyalty"])
 

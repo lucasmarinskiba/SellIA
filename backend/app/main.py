@@ -9,7 +9,7 @@ in one domain must never take down the whole service.
 """
 import logging
 
-from app.sellbot import app  # noqa: F401  (re-exported below)
+from app.sellbot import app
 
 logger = logging.getLogger(__name__)
 

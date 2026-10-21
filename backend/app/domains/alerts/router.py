@@ -1,23 +1,26 @@
 """Alerts API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.businesses.models import Business
-from app.domains.users.models import User
-from app.domains.alerts.service import AlertService
-from app.domains.channels.token_rotation import RotationNotPossible
 from app.domains.alerts.schemas import (
-    AlertRuleCreate, AlertRuleUpdate, AlertRuleResponse,
-    AlertResponse, AlertStatsResponse,
-    RecommendationResponse, RecommendationApplyRequest,
+    AlertResponse,
+    AlertRuleCreate,
+    AlertRuleResponse,
+    AlertRuleUpdate,
+    AlertStatsResponse,
+    RecommendationApplyRequest,
+    RecommendationResponse,
 )
+from app.domains.alerts.service import AlertService
+from app.domains.businesses.models import Business
+from app.domains.channels.token_rotation import RotationNotPossible
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -75,8 +78,8 @@ async def delete_rule(
 @router.get("", response_model=list[AlertResponse])
 async def list_alerts(
     business_id: UUID = Query(...),
-    status: Optional[str] = None,
-    severity: Optional[str] = None,
+    status: str | None = None,
+    severity: str | None = None,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -155,7 +158,7 @@ async def _owned_recommendation(db: AsyncSession, rec_id: UUID, user: User):
 @router.get("/recommendations", response_model=list[RecommendationResponse])
 async def list_recommendations(
     business_id: UUID = Query(...),
-    status: Optional[str] = Query("pending"),
+    status: str | None = Query("pending"),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

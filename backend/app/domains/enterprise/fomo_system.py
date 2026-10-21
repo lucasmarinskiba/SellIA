@@ -15,11 +15,11 @@ Engines:
 - Competitive Intelligence (real market data)
 """
 
-from typing import List, Dict, Optional, Any
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
 from anthropic import Anthropic
 
 client_anthropic = Anthropic()
@@ -51,7 +51,7 @@ class ScarcityEngine:
     def __init__(self, db):
         self.db = db
 
-    def generate_scarcity_triggers(self, deal: Dict[str, Any]) -> List[FOOMTrigger]:
+    def generate_scarcity_triggers(self, deal: dict[str, Any]) -> list[FOOMTrigger]:
         """Generate real-time scarcity triggers."""
         triggers = []
 
@@ -99,7 +99,9 @@ class ScarcityEngine:
     def get_remaining_slots(self, deal_id: str) -> int:
         """Get actual remaining implementation slots."""
         # Query real availability
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if deal:
             return getattr(deal, "remaining_slots", 10)
@@ -112,7 +114,7 @@ class SocialProofEngine:
     def __init__(self, db):
         self.db = db
 
-    def generate_social_proof_triggers(self, deal: Dict[str, Any]) -> List[FOOMTrigger]:
+    def generate_social_proof_triggers(self, deal: dict[str, Any]) -> list[FOOMTrigger]:
         """Generate social proof to create FOOM."""
         triggers = []
 
@@ -164,7 +166,7 @@ class CostOfDelayCalculator:
     def __init__(self, db):
         self.db = db
 
-    def calculate_delay_cost(self, prospect_pain: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_delay_cost(self, prospect_pain: dict[str, Any]) -> dict[str, Any]:
         """Calculate exact cost per day of NOT solving problem."""
         # Extract financial pain
         annual_cost = prospect_pain.get("annual_loss", 0)
@@ -181,7 +183,7 @@ class CostOfDelayCalculator:
             "urgency_message": f"Every day you wait costs ${daily_cost:,.0f}. Every week: ${daily_cost * 7:,.0f}.",
         }
 
-    def generate_cost_of_delay_trigger(self, prospect_pain: Dict[str, Any]) -> FOOMTrigger:
+    def generate_cost_of_delay_trigger(self, prospect_pain: dict[str, Any]) -> FOOMTrigger:
         """Convert delay cost into FOOM trigger."""
         cost = self.calculate_delay_cost(prospect_pain)
 
@@ -202,7 +204,7 @@ class LossAversionEngine:
     def __init__(self, db):
         self.db = db
 
-    def generate_loss_aversion_triggers(self, deal: Dict[str, Any]) -> List[FOOMTrigger]:
+    def generate_loss_aversion_triggers(self, deal: dict[str, Any]) -> list[FOOMTrigger]:
         """Generate triggers based on what they'll LOSE."""
         triggers = []
 
@@ -254,7 +256,7 @@ class AuthoritySignalsEngine:
     def __init__(self, db):
         self.db = db
 
-    def generate_authority_triggers(self, deal: Dict[str, Any]) -> List[FOOMTrigger]:
+    def generate_authority_triggers(self, deal: dict[str, Any]) -> list[FOOMTrigger]:
         """Generate authority-based FOOM."""
         triggers = []
 
@@ -306,7 +308,7 @@ class MicroCommitmentSequence:
     def __init__(self, db):
         self.db = db
 
-    def get_micro_commitment(self, step: int) -> Dict[str, str]:
+    def get_micro_commitment(self, step: int) -> dict[str, str]:
         """Get next micro-commitment in sequence."""
         sequence = {
             1: {
@@ -361,7 +363,7 @@ class FOOMContentGenerator:
     def __init__(self, db):
         self.db = db
 
-    def generate_social_post(self, trigger: FOOMTrigger, user_context: Dict[str, Any]) -> str:
+    def generate_social_post(self, trigger: FOOMTrigger, user_context: dict[str, Any]) -> str:
         """Generate social media post using trigger."""
         prompt = f"""Create a viral-worthy LinkedIn/Twitter post that creates FOOM about: {trigger.trigger}
 
@@ -441,14 +443,16 @@ class CompetitiveIntelligenceTracker:
     def get_competitor_wins(self, industry: str, days: int = 30) -> int:
         """Get competitor win count."""
         # Query real competitor data
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
         recent_deals = self.db.query(Deal).filter(
             Deal.industry == industry,
             Deal.created_at >= datetime.utcnow() - timedelta(days=days),
         ).count()
         return recent_deals
 
-    def get_market_share_trends(self, company: str, industry: str) -> Dict[str, Any]:
+    def get_market_share_trends(self, company: str, industry: str) -> dict[str, Any]:
         """Get market share trends."""
         return {
             "current_share": 15.2,
@@ -460,7 +464,9 @@ class CompetitiveIntelligenceTracker:
     def get_industry_adoption_rate(self, solution_type: str, industry: str) -> int:
         """Get adoption % in industry."""
         # Query adoption data
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
         total_companies = self.db.query(Deal).filter(
             Deal.industry == industry,
         ).count() or 1
@@ -483,9 +489,11 @@ class RealTimeFOMODashboard:
         self.social_proof_engine = SocialProofEngine(db)
         self.loss_aversion_engine = LossAversionEngine(db)
 
-    def get_deal_foom_status(self, deal_id: str) -> Dict[str, Any]:
+    def get_deal_foom_status(self, deal_id: str) -> dict[str, Any]:
         """Get current FOOM level for deal."""
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
         deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
         if not deal:
             return {}
@@ -526,10 +534,14 @@ class RealTimeFOMODashboard:
             ],
         }
 
-    def get_platform_foom_metrics(self) -> Dict[str, Any]:
+    def get_platform_foom_metrics(self) -> dict[str, Any]:
         """Get FOOM metrics for SellIA platform itself."""
-        from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
-        from app.domains.users.models import User  # NOTE: app.models.user is an isolated, never-created shadow model -- redirected to the real User used by auth.py etc
+        from app.domains.crm.models import (
+            Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+        )
+        from app.domains.users.models import (
+            User,  # NOTE: app.models.user is an isolated, never-created shadow model -- redirected to the real User used by auth.py etc
+        )
 
         total_deals = self.db.query(Deal).count()
         closed_deals = self.db.query(Deal).filter(Deal.status == "won").count()

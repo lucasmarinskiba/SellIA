@@ -5,24 +5,27 @@ usando el ContentGenerationRouter que optimiza costos y calidad.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import and_, or_, select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
 from app.core.config import get_settings
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.automations.models import (
-    GeneratedContent, ContentCalendar, WorkflowActionType,
-    WorkflowExecution, Workflow,
+    ContentCalendar,
+    GeneratedContent,
 )
-from app.domains.catalogs.models import CatalogItem
 from app.domains.businesses.models import Business
+from app.domains.catalogs.models import CatalogItem
+from app.integrations.content_generation.base import (
+    ContentQuality,
+    ContentType,
+    GenerationConfig,
+)
 from app.integrations.content_generation.router import ContentGenerationRouter
-from app.integrations.content_generation.base import GenerationConfig, ContentQuality, ContentType
 
 logger = get_logger(__name__)
 from app.integrations.content_generation.cache import ContentCache
@@ -56,7 +59,7 @@ async def _get_business_plan_tier(db, business_id: uuid.UUID) -> str:
 # ============================================================================
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_product_images_task(self, business_id: str, catalog_item_id: str, image_types: Optional[List[str]] = None):
+def generate_product_images_task(self, business_id: str, catalog_item_id: str, image_types: list[str] | None = None):
     """Genera imágenes de producto usando el router inteligente.
 
     El router selecciona automáticamente el proveedor más económico:
@@ -185,7 +188,7 @@ def generate_product_images_task(self, business_id: str, catalog_item_id: str, i
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_video_clips_task(self, business_id: str, catalog_item_id: str, video_types: Optional[List[str]] = None):
+def generate_video_clips_task(self, business_id: str, catalog_item_id: str, video_types: list[str] | None = None):
     """Genera clips de video usando el router inteligente.
 
     El router selecciona:
@@ -295,7 +298,7 @@ def generate_video_clips_task(self, business_id: str, catalog_item_id: str, vide
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def generate_product_copy_task(self, business_id: str, catalog_item_id: str, copy_types: Optional[List[str]] = None):
+def generate_product_copy_task(self, business_id: str, catalog_item_id: str, copy_types: list[str] | None = None):
     """Genera copy usando GPT-4o-mini (muy económico: ~$0.0001-0.0005 por generación)."""
     if copy_types is None:
         copy_types = ["benefit_focused", "story_driven", "social_caption"]
@@ -340,8 +343,9 @@ def generate_product_copy_task(self, business_id: str, catalog_item_id: str, cop
                 await db.flush()
 
                 try:
+                    from langchain_core.messages import HumanMessage, SystemMessage
+
                     from app.domains.agents.llm_provider import generate_with_fallback
-                    from langchain_core.messages import SystemMessage, HumanMessage
 
                     system_msg = SystemMessage(content=(
                         "Eres un copywriter experto en e-commerce latinoamericano. "
@@ -422,8 +426,9 @@ def generate_carousel_task(self, business_id: str, catalog_item_id: str, carouse
             prompt_text = _build_carousel_prompt(item, carousel_type)
 
             try:
+                from langchain_core.messages import HumanMessage, SystemMessage
+
                 from app.domains.agents.llm_provider import generate_with_fallback
-                from langchain_core.messages import SystemMessage, HumanMessage
 
                 system_msg = SystemMessage(content=(
                     "Eres un diseñador de carruseles de Instagram experto. "
@@ -543,7 +548,7 @@ async def _get_active_business_ids() -> list[uuid.UUID]:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=300)
-def auto_generate_catalog_content_task(self, business_id: Optional[str] = None):
+def auto_generate_catalog_content_task(self, business_id: str | None = None):
     """Genera automáticamente contenido para productos sin imágenes.
 
     Optimizado para bajo costo:
@@ -644,11 +649,11 @@ def _due_calendar_posts_stmt(business_id: uuid.UUID, now: datetime):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def schedule_content_posts_task(self, business_id: Optional[str] = None):
+def schedule_content_posts_task(self, business_id: str | None = None):
     """Programa publicaciones automáticas."""
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             result = await db.execute(_due_calendar_posts_stmt(bid, now))
             posts = result.scalars().all()
 
@@ -689,11 +694,11 @@ def schedule_content_posts_task(self, business_id: Optional[str] = None):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def analyze_content_performance_task(self, business_id: Optional[str] = None):
+def analyze_content_performance_task(self, business_id: str | None = None):
     """Analiza rendimiento de contenido."""
     async def _run_single(bid: uuid.UUID):
         async with AsyncSessionLocal() as db:
-            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            week_ago = datetime.now(UTC) - timedelta(days=7)
             result = await db.execute(
                 select(GeneratedContent).where(
                     and_(
@@ -757,7 +762,7 @@ def cleanup_old_generated_content_task(self, business_id: str = None):
     """
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Eliminar contenido failed antiguo
             from sqlalchemy import delete

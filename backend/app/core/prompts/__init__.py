@@ -41,21 +41,25 @@ Usage - Expert Voices:
   result = await manager.get_expert_response(scenario, customer_message)
 """
 
-from .prompt_registry import PromptRegistry
-from .prompt_orchestrator import PromptOrchestrator
 from .marketing_prompts import MarketingPrompts
-from .sales_prompts import SalesPrompts
 from .positioning_prompts import PositioningPrompts
+from .prompt_orchestrator import PromptOrchestrator
+from .prompt_registry import PromptRegistry
 from .retention_prompts import RetentionPrompts
+from .sales_prompts import SalesPrompts
 
 # Import expert voices system
 try:
     from .expert_voices import (
+        EXPERT_COUNT,
+        PROMPT_COUNT,
+        ExpertOrchestrator,
+        ExpertSelector,
+        ExpertType,
         ExpertVoiceManager,
-        ExpertType, SalesContext,
-        ExpertSelector, SalesScenario,
-        ExpertOrchestrator, PromptExecutionMode,
-        EXPERT_COUNT, PROMPT_COUNT
+        PromptExecutionMode,
+        SalesContext,
+        SalesScenario,
     )
 except ImportError:
     # Expert voices module may not be available

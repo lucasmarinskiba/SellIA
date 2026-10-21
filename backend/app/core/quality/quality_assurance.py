@@ -5,7 +5,7 @@ Checklist: producto real, buyer legítimo, oferta legal, términos claros.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,10 @@ class QualityAssuranceFramework:
 
     @staticmethod
     def run_pre_sale_qa(
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
-        offer: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        product: dict[str, Any],
+        buyer: dict[str, Any],
+        offer: dict[str, Any],
+    ) -> dict[str, Any]:
         """Ejecuta QA antes de vender."""
 
         qa_result = {
@@ -97,7 +97,7 @@ class QualityAssuranceFramework:
         return email and "@" in email and "." in email.split("@")[1]
 
     @staticmethod
-    def _is_suspicious(buyer: Dict[str, Any]) -> bool:
+    def _is_suspicious(buyer: dict[str, Any]) -> bool:
         """Detects suspicious patterns."""
 
         # TODO: Integrar con fraud detection service
@@ -113,7 +113,7 @@ class ComplianceLayer:
     """Legal compliance: GDPR, CCPA, refunds, privacy."""
 
     @staticmethod
-    def generate_terms_and_conditions(product: Dict[str, Any]) -> str:
+    def generate_terms_and_conditions(product: dict[str, Any]) -> str:
         """Genera T&C automático."""
 
         return f"""
@@ -160,7 +160,7 @@ privacy@company.com for questions.
         """.strip()
 
     @staticmethod
-    def validate_refund_request(sale: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_refund_request(sale: dict[str, Any]) -> dict[str, Any]:
         """Valida solicitud de reembolso."""
 
         days_since_purchase = sale.get("days_since_purchase", 0)
@@ -199,7 +199,7 @@ class SupportChatbot:
         return "Great question! Conectándote con nuestro equipo en 5 min. Espera..."
 
     @staticmethod
-    def generate_faq_from_history(sales_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    def generate_faq_from_history(sales_history: list[dict[str, Any]]) -> list[dict[str, str]]:
         """Genera FAQ automático desde histórico de preguntas."""
 
         # TODO: Analizar conversaciones, extraer preguntas comunes, generar respuestas

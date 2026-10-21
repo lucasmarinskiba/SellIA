@@ -2,24 +2,22 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
-import json
 from enum import Enum
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import (
-    mean_squared_error,
-    r2_score,
-    accuracy_score,
-    precision_score,
-    recall_score,
     f1_score,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
 )
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +37,16 @@ class ModelMetrics:
     test_score: float
     cv_score: float
     cv_std: float
-    precision: Optional[float] = None
-    recall: Optional[float] = None
-    f1: Optional[float] = None
-    rmse: Optional[float] = None
-    r2: Optional[float] = None
-    confusion_matrix: Optional[List[List[int]]] = None
+    precision: float | None = None
+    recall: float | None = None
+    f1: float | None = None
+    rmse: float | None = None
+    r2: float | None = None
+    confusion_matrix: list[list[int]] | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "model_type": self.model_type.value,
             "train_score": float(self.train_score),
@@ -68,14 +66,14 @@ class ModelMetrics:
 class FeatureEngineer:
     """Extract and transform features from raw data."""
 
-    def __init__(self, feature_names: Optional[List[str]] = None):
+    def __init__(self, feature_names: list[str] | None = None):
         self.feature_names = feature_names or []
         self.scaler = StandardScaler()
-        self.feature_stats: Dict[str, Dict[str, float]] = {}
+        self.feature_stats: dict[str, dict[str, float]] = {}
 
     def extract_features(
-        self, data: List[Dict[str, Any]], target_column: Optional[str] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        self, data: list[dict[str, Any]], target_column: str | None = None
+    ) -> tuple[np.ndarray, np.ndarray | None]:
         """Extract and normalize features from raw data."""
         features = []
         targets = None
@@ -111,7 +109,7 @@ class FeatureEngineer:
         logger.info(f"Extracted {len(self.feature_names)} features from {len(data)} records")
         return X_normalized, y
 
-    def add_interaction_features(self, X: np.ndarray, feature_indices: List[Tuple[int, int]]) -> np.ndarray:
+    def add_interaction_features(self, X: np.ndarray, feature_indices: list[tuple[int, int]]) -> np.ndarray:
         """Add interaction terms between features."""
         interactions = []
         for i, j in feature_indices:
@@ -142,8 +140,8 @@ class SupervisedLearner:
         self.model_type = model_type
         self.random_state = random_state
         self.model = None
-        self.metrics: Optional[ModelMetrics] = None
-        self.feature_names: List[str] = []
+        self.metrics: ModelMetrics | None = None
+        self.feature_names: list[str] = []
         self.X_train = None
         self.X_test = None
         self.y_train = None
@@ -154,8 +152,8 @@ class SupervisedLearner:
         X: np.ndarray,
         y: np.ndarray,
         test_size: float = 0.2,
-        feature_names: Optional[List[str]] = None,
-        hyperparams: Optional[Dict[str, Any]] = None,
+        feature_names: list[str] | None = None,
+        hyperparams: dict[str, Any] | None = None,
     ) -> ModelMetrics:
         """Train supervised model with cross-validation."""
         self.feature_names = feature_names or [f"feature_{i}" for i in range(X.shape[1])]
@@ -234,13 +232,13 @@ class SupervisedLearner:
             raise ValueError("Model not trained. Call train() first.")
         return self.model.predict(X)
 
-    def predict_proba(self, X: np.ndarray) -> Optional[np.ndarray]:
+    def predict_proba(self, X: np.ndarray) -> np.ndarray | None:
         """Get prediction probabilities (classification only)."""
         if self.model_type != ModelType.CLASSIFICATION:
             return None
         return self.model.predict_proba(X)
 
-    def feature_importance(self) -> Dict[str, float]:
+    def feature_importance(self) -> dict[str, float]:
         """Get feature importance scores."""
         if self.model is None:
             raise ValueError("Model not trained.")
@@ -256,12 +254,12 @@ class UnsupervisedLearner:
         self.n_clusters = n_clusters
         self.random_state = random_state
         self.model = None
-        self.labels: Optional[np.ndarray] = None
-        self.centers: Optional[np.ndarray] = None
+        self.labels: np.ndarray | None = None
+        self.centers: np.ndarray | None = None
         self.inertia: float = 0.0
         self.silhouette_score: float = 0.0
 
-    def fit(self, X: np.ndarray) -> Dict[str, Any]:
+    def fit(self, X: np.ndarray) -> dict[str, Any]:
         """Fit clustering model."""
         from sklearn.metrics import silhouette_score
 
@@ -288,7 +286,7 @@ class UnsupervisedLearner:
             raise ValueError("Model not fitted. Call fit() first.")
         return self.model.predict(X)
 
-    def get_cluster_profiles(self, X: np.ndarray, feature_names: List[str]) -> List[Dict[str, Any]]:
+    def get_cluster_profiles(self, X: np.ndarray, feature_names: list[str]) -> list[dict[str, Any]]:
         """Get profiles of each cluster."""
         profiles = []
         for cluster_id in range(self.n_clusters):
@@ -322,16 +320,16 @@ class ReinforcementLearner:
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.epsilon = epsilon
-        self.q_table: Dict[Tuple[Any, ...], Dict[str, float]] = {}
-        self.episode_rewards: List[float] = []
-        self.experience_buffer: List[Tuple[Any, str, float, Any, bool]] = []
+        self.q_table: dict[tuple[Any, ...], dict[str, float]] = {}
+        self.episode_rewards: list[float] = []
+        self.experience_buffer: list[tuple[Any, str, float, Any, bool]] = []
 
-    def initialize_state(self, state: Tuple[Any, ...], actions: List[str]) -> None:
+    def initialize_state(self, state: tuple[Any, ...], actions: list[str]) -> None:
         """Initialize Q-values for a state."""
         if state not in self.q_table:
             self.q_table[state] = {action: 0.0 for action in actions}
 
-    def choose_action(self, state: Tuple[Any, ...], actions: List[str], training: bool = True) -> str:
+    def choose_action(self, state: tuple[Any, ...], actions: list[str], training: bool = True) -> str:
         """Choose action using epsilon-greedy strategy."""
         self.initialize_state(state, actions)
 
@@ -343,7 +341,7 @@ class ReinforcementLearner:
             return np.random.choice([a for a, q in q_values.items() if q == max_q])  # Exploit
 
     def update_q_value(
-        self, state: Tuple[Any, ...], action: str, reward: float, next_state: Tuple[Any, ...], actions: List[str]
+        self, state: tuple[Any, ...], action: str, reward: float, next_state: tuple[Any, ...], actions: list[str]
     ) -> None:
         """Update Q-value using Bellman equation."""
         self.initialize_state(state, actions)
@@ -354,7 +352,7 @@ class ReinforcementLearner:
         new_q = current_q + self.learning_rate * (reward + self.discount_factor * max_next_q - current_q)
         self.q_table[state][action] = new_q
 
-    def learn_from_episode(self, episodes: int, actions: List[str], reward_fn: callable) -> List[float]:
+    def learn_from_episode(self, episodes: int, actions: list[str], reward_fn: callable) -> list[float]:
         """Run training episodes and collect rewards."""
         rewards = []
         for episode in range(episodes):
@@ -378,15 +376,15 @@ class ReinforcementLearner:
 
         return rewards
 
-    def _reset_episode(self) -> Tuple[Any, ...]:
+    def _reset_episode(self) -> tuple[Any, ...]:
         """Reset to initial state (override in subclass)."""
         return ()
 
-    def _get_next_state(self, state: Tuple[Any, ...], action: str) -> Tuple[Any, ...]:
+    def _get_next_state(self, state: tuple[Any, ...], action: str) -> tuple[Any, ...]:
         """Transition to next state (override in subclass)."""
         return state
 
-    def get_best_policy(self) -> Dict[Tuple[Any, ...], str]:
+    def get_best_policy(self) -> dict[tuple[Any, ...], str]:
         """Extract best policy from Q-table."""
         policy = {}
         for state, q_values in self.q_table.items():
@@ -398,11 +396,11 @@ class ReinforcementLearner:
 class ModelEvaluator:
     """Cross-validation, versioning, and model comparison."""
 
-    def __init__(self, model_registry: Optional[Dict[str, Any]] = None):
+    def __init__(self, model_registry: dict[str, Any] | None = None):
         self.model_registry = model_registry or {}
-        self.evaluation_history: List[Dict[str, Any]] = []
+        self.evaluation_history: list[dict[str, Any]] = []
 
-    def compare_models(self, models: List[Any], X: np.ndarray, y: np.ndarray, cv: int = 5) -> Dict[str, Any]:
+    def compare_models(self, models: list[Any], X: np.ndarray, y: np.ndarray, cv: int = 5) -> dict[str, Any]:
         """Compare multiple models using cross-validation."""
         comparison = {}
 
@@ -423,7 +421,7 @@ class ModelEvaluator:
         model: Any,
         version: str,
         metrics: ModelMetrics,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """Save model version with metadata."""
         record = {
@@ -439,11 +437,11 @@ class ModelEvaluator:
         logger.info(f"Saved model version: {model_name}_{version}")
         return f"{model_name}_{version}"
 
-    def get_model_history(self, model_name: str) -> List[Dict[str, Any]]:
+    def get_model_history(self, model_name: str) -> list[dict[str, Any]]:
         """Get evaluation history for a model."""
         return [r for r in self.evaluation_history if r["model_name"] == model_name]
 
-    def get_best_model(self, model_name: str, metric: str = "test_score") -> Optional[Dict[str, Any]]:
+    def get_best_model(self, model_name: str, metric: str = "test_score") -> dict[str, Any] | None:
         """Get best model version by metric."""
         history = self.get_model_history(model_name)
         if not history:

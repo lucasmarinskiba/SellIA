@@ -1,7 +1,7 @@
 """30+ Affiliate Sales Methods — Proven tactics for promoting affiliate products."""
 
-from typing import Dict, List, Optional
 from dataclasses import dataclass
+
 
 @dataclass
 class AffiliateMethod:
@@ -12,9 +12,9 @@ class AffiliateMethod:
     effort_level: int  # 1-10
     time_to_conversion: str  # days/weeks/months
     roi_potential: float  # 1-10
-    best_for: List[str]  # product types/audiences
+    best_for: list[str]  # product types/audiences
     description: str
-    steps: List[str]
+    steps: list[str]
 
 
 AFFILIATE_METHODS = {
@@ -408,14 +408,14 @@ AFFILIATE_METHODS = {
 }
 
 
-def get_methods_by_category(category: str) -> List[AffiliateMethod]:
+def get_methods_by_category(category: str) -> list[AffiliateMethod]:
     """Get all methods in a category."""
     return [m for m in AFFILIATE_METHODS.values() if m.category == category]
 
 
 def get_best_methods_for_product(
-    product_type: str, budget: Optional[str] = None
-) -> List[AffiliateMethod]:
+    product_type: str, budget: str | None = None
+) -> list[AffiliateMethod]:
     """Get recommended methods for product type."""
     all_methods = list(AFFILIATE_METHODS.values())
     recommended = [m for m in all_methods if product_type in m.best_for]
@@ -430,7 +430,7 @@ def get_best_methods_for_product(
     return sorted(recommended, key=lambda x: x.roi_potential, reverse=True)
 
 
-def get_fastest_methods() -> List[AffiliateMethod]:
+def get_fastest_methods() -> list[AffiliateMethod]:
     """Get fastest-to-conversion methods."""
     methods = list(AFFILIATE_METHODS.values())
     time_order = {"days": 1, "weeks": 2, "months": 3}

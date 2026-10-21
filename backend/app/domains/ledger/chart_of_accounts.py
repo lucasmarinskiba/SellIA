@@ -10,7 +10,7 @@ the inter-department orchestrator reasons about (marketing / ads / sales
 by — never match on `name` or `code`, which the user may rename.
 """
 
-from app.domains.ledger.models import AccountType, NORMAL_BALANCE_BY_TYPE
+from app.domains.ledger.models import NORMAL_BALANCE_BY_TYPE, AccountType
 
 # (code, name, type, subtype, is_system)
 DEFAULT_ACCOUNTS: list[tuple[str, str, str, str, bool]] = [

@@ -1,11 +1,11 @@
 """Phase 26: Team Collaboration Hub - Real-time deal collaboration, approvals, handoffs."""
 
-from sqlalchemy import Column, String, Text, DateTime, Boolean, ForeignKey, Enum, Index
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from datetime import datetime
-import uuid
 import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Index, String, Text, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Was `from app.database import Base` -- an isolated Base with no create-
 # table mechanism of its own at all. Switched to the real CoreBase (used by

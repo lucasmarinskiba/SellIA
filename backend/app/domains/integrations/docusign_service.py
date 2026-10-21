@@ -1,10 +1,8 @@
 """Docusign integration for contract automation."""
 
-import httpx
 import logging
-from typing import Optional, Dict, Any, List
 from datetime import datetime
-import base64
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,7 @@ class DocusignService:
         payment_terms: str,
         company_name: str,
         signing_deadline_days: int = 7,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Send contract to recipient for e-signature.
 
@@ -114,7 +112,7 @@ class DocusignService:
             logger.error(f"Docusign send failed: {e}")
             return None
 
-    async def get_signature_status(self, envelope_id: str) -> Optional[Dict[str, Any]]:
+    async def get_signature_status(self, envelope_id: str) -> dict[str, Any] | None:
         """Get signature status of envelope."""
         try:
             # In production, GET from Docusign API
@@ -138,7 +136,7 @@ class DocusignService:
             logger.error(f"Docusign status check failed: {e}")
             return None
 
-    async def download_signed_document(self, envelope_id: str) -> Optional[bytes]:
+    async def download_signed_document(self, envelope_id: str) -> bytes | None:
         """Download signed PDF from Docusign."""
         try:
             # In production, GET document from Docusign API

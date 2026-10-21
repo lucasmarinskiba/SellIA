@@ -11,9 +11,9 @@ Decides WHEN to send each FOMO message, per individual customer:
   detection — timing optimization must respect the same cooldown signal
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Optional
-from statistics import median, mean
+from datetime import UTC, datetime, timedelta
+from statistics import mean, median
+from typing import Any
 
 from app.core.logger import get_logger
 from app.domains.fomo.ai_segmentation_agent import FOMOFatigueDetector
@@ -43,14 +43,14 @@ class EngagementTimeAnalyzer:
     """Build an hour-of-day / day-of-week engagement heatmap from send history"""
 
     @staticmethod
-    def build_heatmap(send_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def build_heatmap(send_history: list[dict[str, Any]]) -> dict[str, Any]:
         """send_history: [{"sent_at": datetime, "opened": bool, "clicked": bool}, ...]
         Returns engagement score (0-1) per hour-of-day and per day-of-week,
         weighted by opens (1x) and clicks (2x)."""
-        hour_scores: Dict[int, float] = {h: 0.0 for h in range(24)}
-        hour_counts: Dict[int, int] = {h: 0 for h in range(24)}
-        dow_scores: Dict[int, float] = {d: 0.0 for d in range(7)}
-        dow_counts: Dict[int, int] = {d: 0 for d in range(7)}
+        hour_scores: dict[int, float] = {h: 0.0 for h in range(24)}
+        hour_counts: dict[int, int] = {h: 0 for h in range(24)}
+        dow_scores: dict[int, float] = {d: 0.0 for d in range(7)}
+        dow_counts: dict[int, int] = {d: 0 for d in range(7)}
 
         for send in send_history:
             sent_at = send.get("sent_at")
@@ -88,7 +88,7 @@ class SendTimePredictor:
     history exists, cold-start industry-default otherwise."""
 
     @staticmethod
-    def predict_best_window(heatmap: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_best_window(heatmap: dict[str, Any]) -> dict[str, Any]:
         if not heatmap["sufficient_data"]:
             best_cold_start = max(COLD_START_WINDOWS, key=lambda w: w["weight"])
             return {
@@ -133,11 +133,11 @@ class SendTimePredictor:
 
     @staticmethod
     def next_send_datetime(
-        prediction: Dict[str, Any],
-        reference_date: Optional[datetime] = None,
+        prediction: dict[str, Any],
+        reference_date: datetime | None = None,
     ) -> datetime:
         """Compute the next concrete datetime matching the predicted window"""
-        reference_date = reference_date or datetime.now(timezone.utc)
+        reference_date = reference_date or datetime.now(UTC)
         target_hour = prediction.get("recommended_hour")
         if target_hour is None:
             target_hour = prediction["recommended_hour_range"][0]
@@ -159,7 +159,7 @@ class DynamicDelayAdjuster:
     latency — replaces the static 5min/2h/24h steps with per-customer timing."""
 
     @staticmethod
-    def compute_response_latency(send_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def compute_response_latency(send_history: list[dict[str, Any]]) -> dict[str, Any]:
         """send_history entries need 'sent_at' and optional 'opened_at' for
         messages that were opened. Returns latency stats in minutes."""
         latencies = []
@@ -184,9 +184,9 @@ class DynamicDelayAdjuster:
     @staticmethod
     def adjust_delay(
         base_delay_minutes: int,
-        latency_stats: Dict[str, Any],
+        latency_stats: dict[str, Any],
         delay_category: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Scale a fixed base delay toward the customer's typical response
         latency, clipped to sane per-category bounds."""
         bounds = DELAY_BOUNDS_MINUTES.get(delay_category, (base_delay_minutes // 2, base_delay_minutes * 3))
@@ -221,9 +221,9 @@ class DynamicDelayAdjuster:
 
     @staticmethod
     def optimize_sequence(
-        base_delays: List[Dict[str, Any]],
-        send_history: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        base_delays: list[dict[str, Any]],
+        send_history: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """base_delays: [{"step": 1, "delay_minutes": 5, "category": "immediate"}, ...]
         Returns the same steps with delay_minutes adjusted per customer."""
         latency_stats = DynamicDelayAdjuster.compute_response_latency(send_history)
@@ -266,15 +266,15 @@ class AITimingOptimizerAgent:
     }
 
     @staticmethod
-    def analyze_engagement_patterns(send_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_engagement_patterns(send_history: list[dict[str, Any]]) -> dict[str, Any]:
         """Build the raw heatmap for a customer"""
         return EngagementTimeAnalyzer.build_heatmap(send_history)
 
     @staticmethod
     def predict_optimal_send_time(
-        send_history: List[Dict[str, Any]],
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        send_history: list[dict[str, Any]],
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Predict when to send this customer's NEXT message"""
         heatmap = EngagementTimeAnalyzer.build_heatmap(send_history)
         prediction = SendTimePredictor.predict_best_window(heatmap)
@@ -288,8 +288,8 @@ class AITimingOptimizerAgent:
     @staticmethod
     def optimize_automation_schedule(
         automation_type: str,
-        send_history: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        send_history: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Adjust a fixed automation sequence's delays for one customer"""
         base_delays = AITimingOptimizerAgent.AUTOMATION_BASE_DELAYS.get(automation_type)
         if base_delays is None:
@@ -308,9 +308,9 @@ class AITimingOptimizerAgent:
     def get_send_recommendation(
         customer_id: str,
         automation_type: str,
-        send_history: List[Dict[str, Any]],
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        send_history: list[dict[str, Any]],
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Full recommendation for one customer: best send window + adjusted
         delays + fatigue check (reusing Fase D's detector — timing must never
         override a cooldown recommendation)."""
@@ -332,10 +332,10 @@ class AITimingOptimizerAgent:
 
     @staticmethod
     def batch_optimize(
-        customers_history: Dict[str, List[Dict[str, Any]]],
+        customers_history: dict[str, list[dict[str, Any]]],
         automation_type: str,
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Run get_send_recommendation for a batch of customers"""
         recommendations = []
         cleared_count = 0

@@ -1,15 +1,14 @@
 """Fase D: AI Customer Segmentation Agent — API routes"""
 
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_segmentation_agent import (
-    AICustomerSegmentationAgent,
-    CustomerSegment,
     SEGMENT_FOMO_STRATEGY,
+    AICustomerSegmentationAgent,
 )
 
 router = APIRouter(prefix="/fomo/ai/segmentation", tags=["fomo-ai-segmentation"])
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/fomo/ai/segmentation", tags=["fomo-ai-segmentation"]
 
 @router.post("/segment")
 async def segment_customers(
-    customers: List[Dict[str, Any]] = Body(
+    customers: list[dict[str, Any]] = Body(
         ..., description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
     ),
     use_clustering: bool = Query(True, description="Use KMeans when data allows, else RFM rules"),
@@ -33,8 +32,8 @@ async def segment_customers(
 
 @router.post("/analyze-and-recommend")
 async def analyze_and_recommend(
-    customers: List[Dict[str, Any]] = Body(...),
-    fatigue_data: Optional[Dict[str, List[Dict[str, Any]]]] = Body(
+    customers: list[dict[str, Any]] = Body(...),
+    fatigue_data: dict[str, list[dict[str, Any]]] | None = Body(
         None,
         description='{"customer_id": [{"sent_at": iso8601, "opened": bool, "clicked": bool}]}',
     ),
@@ -68,7 +67,7 @@ async def get_segment_strategy(segment: str, current_user=Depends(get_current_us
     return AICustomerSegmentationAgent.get_segment_strategy(segment)
 
 
-def _parse_purchase_dates(customers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _parse_purchase_dates(customers: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert ISO date strings in purchase history to datetime objects"""
     parsed = []
     for customer in customers:

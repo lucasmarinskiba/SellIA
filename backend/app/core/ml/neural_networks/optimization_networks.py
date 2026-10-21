@@ -2,13 +2,12 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
-from scipy import optimize
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +22,13 @@ class PricingOptimization:
     expected_revenue_change: float  # % change
     expected_volume_change: float  # % change
     confidence: float
-    price_range: Tuple[float, float]  # min, max safe range
+    price_range: tuple[float, float]  # min, max safe range
     revenue_at_recommended: float
     risk_level: str  # low, medium, high
-    competitors_avg_price: Optional[float] = None
+    competitors_avg_price: float | None = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "recommended_price": float(self.recommended_price),
             "current_price": float(self.current_price),
@@ -50,16 +49,16 @@ class ChannelOptimization:
     """Channel optimization recommendation."""
 
     best_channel: str  # email, phone, sms, social, etc.
-    channel_scores: Dict[str, float]  # channel -> effectiveness score
+    channel_scores: dict[str, float]  # channel -> effectiveness score
     expected_response_rate: float  # 0-1
     expected_conversion_rate: float  # 0-1
-    priority_order: List[str]  # ranked channels
-    timing_by_channel: Dict[str, str]  # channel -> recommended time
-    message_tone_by_channel: Dict[str, str]  # channel -> tone
+    priority_order: list[str]  # ranked channels
+    timing_by_channel: dict[str, str]  # channel -> recommended time
+    message_tone_by_channel: dict[str, str]  # channel -> tone
     confidence: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "best_channel": self.best_channel,
             "channel_scores": self.channel_scores,
@@ -78,16 +77,16 @@ class MessageTimingOptimization:
     """Message timing optimization."""
 
     send_immediately: bool
-    recommended_send_time: Optional[str]  # ISO format
+    recommended_send_time: str | None  # ISO format
     hours_to_wait: int
     expected_engagement_rate: float
     expected_click_rate: float
     expected_conversion_rate: float
     reason_for_timing: str
-    alternative_times: List[str] = field(default_factory=list)  # ISO format
+    alternative_times: list[str] = field(default_factory=list)  # ISO format
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "send_immediately": self.send_immediately,
             "recommended_send_time": self.recommended_send_time,
@@ -106,16 +105,16 @@ class BudgetAllocation:
     """Budget allocation optimization."""
 
     total_budget: float
-    allocation_by_channel: Dict[str, float]  # channel -> budget amount
-    allocation_by_campaign: Dict[str, float]  # campaign -> budget amount
+    allocation_by_channel: dict[str, float]  # channel -> budget amount
+    allocation_by_campaign: dict[str, float]  # campaign -> budget amount
     expected_roi: float  # return per dollar spent
     expected_revenue: float
     confidence: float
     reallocation_reason: str
-    performance_by_allocation: Dict[str, float]  # allocation -> expected performance
+    performance_by_allocation: dict[str, float]  # allocation -> expected performance
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_budget": float(self.total_budget),
             "allocation_by_channel": {k: float(v) for k, v in self.allocation_by_channel.items()},
@@ -133,13 +132,13 @@ class BudgetAllocation:
 class FeatureImportance:
     """Feature importance analysis."""
 
-    top_features: List[Tuple[str, float]]  # (feature_name, importance_score)
-    feature_scores: Dict[str, float]  # feature -> score
-    key_drivers: List[str]  # most important features
-    surprising_findings: List[str]  # unexpected important features
+    top_features: list[tuple[str, float]]  # (feature_name, importance_score)
+    feature_scores: dict[str, float]  # feature -> score
+    key_drivers: list[str]  # most important features
+    surprising_findings: list[str]  # unexpected important features
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "top_features": [(name, float(score)) for name, score in self.top_features],
             "feature_scores": {k: float(v) for k, v in self.feature_scores.items()},
@@ -159,7 +158,7 @@ class PricingOptimizationNetwork:
         self.scaler = StandardScaler()
 
     def fit(
-        self, X: np.ndarray, y_revenue: np.ndarray, y_elasticity: Optional[np.ndarray] = None
+        self, X: np.ndarray, y_revenue: np.ndarray, y_elasticity: np.ndarray | None = None
     ) -> "PricingOptimizationNetwork":
         """Train the network."""
         X_scaled = self.scaler.fit_transform(X)
@@ -170,7 +169,7 @@ class PricingOptimizationNetwork:
         logger.info("Pricing optimization network trained")
         return self
 
-    def predict(self, X: np.ndarray, current_price: float, competitors_price: Optional[float] = None) -> List[PricingOptimization]:
+    def predict(self, X: np.ndarray, current_price: float, competitors_price: float | None = None) -> list[PricingOptimization]:
         """Optimize pricing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -237,7 +236,7 @@ class ChannelOptimizationNetwork:
         logger.info("Channel optimization network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ChannelOptimization]:
+    def predict(self, X: np.ndarray) -> list[ChannelOptimization]:
         """Optimize channel selection."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -302,7 +301,7 @@ class MessageTimingNetwork:
         logger.info("Message timing network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[MessageTimingOptimization]:
+    def predict(self, X: np.ndarray) -> list[MessageTimingOptimization]:
         """Optimize message timing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -352,7 +351,7 @@ class BudgetAllocationNetwork:
         logger.info("Budget allocation network trained")
         return self
 
-    def predict(self, X: np.ndarray, total_budget: float) -> List[BudgetAllocation]:
+    def predict(self, X: np.ndarray, total_budget: float) -> list[BudgetAllocation]:
         """Allocate budget."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -414,9 +413,9 @@ class FeatureImportanceNetwork:
         self.regressor = RandomForestRegressor(n_estimators=100, random_state=42)
         self.is_trained = False
         self.scaler = StandardScaler()
-        self.feature_names: List[str] = []
+        self.feature_names: list[str] = []
 
-    def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> "FeatureImportanceNetwork":
+    def fit(self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None) -> "FeatureImportanceNetwork":
         """Train the network."""
         if feature_names:
             self.feature_names = feature_names
@@ -429,7 +428,7 @@ class FeatureImportanceNetwork:
         logger.info("Feature importance network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[FeatureImportance]:
+    def predict(self, X: np.ndarray) -> list[FeatureImportance]:
         """Get feature importance."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")

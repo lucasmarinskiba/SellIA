@@ -1,6 +1,7 @@
 """Google Ads Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class GoogleAdsScript(PlatformScript):
     login_url = "https://ads.google.com/aw/login"
     dashboard_url = "https://ads.google.com/aw/overview"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "create_search_campaign":
             return self._create_search_campaign(params)
         elif task_type == "setup_conversion_tracking":
@@ -19,7 +20,7 @@ class GoogleAdsScript(PlatformScript):
             return self._research_keywords(params)
         return super().get_task_steps(task_type, params)
 
-    def _create_search_campaign(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_search_campaign(self, params: dict[str, Any]) -> list[ScriptStep]:
         budget = params.get("budget_daily", 20)
         return [
             ScriptStep(action="navigate", target="https://ads.google.com/aw/campaigns/new", description="Navigate to new campaign"),
@@ -33,7 +34,7 @@ class GoogleAdsScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify campaign setup"),
         ]
 
-    def _setup_conversion(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _setup_conversion(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://ads.google.com/aw/conversions", description="Navigate to conversions"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -43,7 +44,7 @@ class GoogleAdsScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check conversion setup"),
         ]
 
-    def _research_keywords(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _research_keywords(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://ads.google.com/aw/keywordplanner", description="Navigate to Keyword Planner"),
             ScriptStep(action="wait", wait_ms=3000),

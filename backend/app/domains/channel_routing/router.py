@@ -1,11 +1,11 @@
 """Phase 3: Channel Routing Endpoints."""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Optional
+
 from app.core.database import get_db
 from app.domains.channel_routing.service import ChannelRoutingService
-
 
 router = APIRouter(prefix="/api/v1/channel-routing", tags=["channel-routing"])
 
@@ -15,7 +15,7 @@ async def route_message(
     business_id: UUID,
     customer_id: UUID,
     message_template_id: UUID,
-    force_channel: Optional[str] = None,
+    force_channel: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Route message to optimal channel based on customer affinity."""
@@ -33,7 +33,7 @@ async def update_affinity(
     was_delivered: bool,
     was_opened: bool = False,
     was_clicked: bool = False,
-    response_time_seconds: Optional[int] = None,
+    response_time_seconds: int | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update channel affinity based on message performance."""

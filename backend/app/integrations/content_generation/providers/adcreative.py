@@ -4,11 +4,16 @@ Pricing: Plan-based, ~$0.10/creative
 Strengths: Meta Ads, Google Ads, TikTok Ads optimized creatives
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -27,7 +32,7 @@ class AdCreativeProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.10 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"adcreative-banner": 0.10}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -48,13 +53,12 @@ class AdCreativeProvider(BaseProvider):
                 "size": config.extra_params.get("size", "1080x1080"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.adcreative.ai/v1/creatives",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.adcreative.ai/v1/creatives",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             image_url = data.get("creative", {}).get("url") if isinstance(data.get("creative"), dict) else data.get("url")
             if not image_url:

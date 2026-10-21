@@ -9,10 +9,9 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from enum import Enum
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +45,10 @@ class PricingModel:
     """Pricing model definition."""
     name: str
     description: str
-    tiers: List[Dict[str, Any]]
-    value_prop_per_tier: Dict[str, str]
+    tiers: list[dict[str, Any]]
+    value_prop_per_tier: dict[str, str]
     positioning: str
-    psychological_factors: List[str]
+    psychological_factors: list[str]
 
 
 class FinancialAgent:
@@ -338,7 +337,7 @@ class FinancialAgent:
         target_market: str,
         competition: str,
         business_model: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend pricing strategy."""
         recommendation = {
             "product_type": product_type,
@@ -364,10 +363,10 @@ class FinancialAgent:
     @staticmethod
     def create_pricing_model(
         product_name: str,
-        target_segments: List[str],
-        value_per_segment: Dict[str, float],
+        target_segments: list[str],
+        value_per_segment: dict[str, float],
         strategy: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create detailed pricing model."""
         return {
             "product": product_name,
@@ -393,8 +392,8 @@ class FinancialAgent:
     def price_sensitivity_analysis(
         current_price: float,
         elasticity: float,
-        unit_economics: Dict[str, float]
-    ) -> Dict[str, Any]:
+        unit_economics: dict[str, float]
+    ) -> dict[str, Any]:
         """Analyze price elasticity and impacts."""
         analysis = {
             "current_price": current_price,
@@ -423,7 +422,7 @@ class FinancialAgent:
         monthly_fixed_costs: float,
         starting_cash: float,
         timeline_months: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build financial projection model."""
         projection = {
             "assumptions": {
@@ -503,7 +502,7 @@ class FinancialAgent:
         annual_retention: float,
         cac: float,
         cogs_percent: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate detailed unit economics."""
         # Customer lifetime (months)
         lifetime_months = 12 / (12 * monthly_churn) if monthly_churn > 0 else 120
@@ -545,10 +544,10 @@ class FinancialAgent:
 
     @staticmethod
     def compare_pricing_scenarios(
-        scenario_a: Dict[str, Any],
-        scenario_b: Dict[str, Any],
-        scenario_c: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        scenario_a: dict[str, Any],
+        scenario_b: dict[str, Any],
+        scenario_c: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Compare different pricing scenarios."""
         return {
             "scenarios": {
@@ -570,7 +569,7 @@ class FinancialAgent:
         current_cogs_percent: float,
         current_price: float,
         target_margin: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Identify ways to improve gross margin."""
         current_margin = 1 - current_cogs_percent
 

@@ -1,17 +1,19 @@
 """Export & BI service — data export, scheduled reports, warehouse sync."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
-from decimal import Decimal
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.export.export_models import (
-    DataExport, ScheduledReport, DataWarehouseSync, BIDashboardConfig, ExportMetrics,
-    ExportFormat, ExportType, ReportFrequency
+    BIDashboardConfig,
+    DataExport,
+    DataWarehouseSync,
+    ExportFormat,
+    ExportMetrics,
+    ReportFrequency,
+    ScheduledReport,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,9 +28,9 @@ class ExportBIService:
         export_name: str,
         export_type: str,
         export_format: str = ExportFormat.CSV,
-        date_start: Optional[str] = None,
-        date_end: Optional[str] = None,
-        filters: Optional[Dict] = None,
+        date_start: str | None = None,
+        date_end: str | None = None,
+        filters: dict | None = None,
         requested_by: str = None,
         db: Session = None
     ) -> dict:
@@ -83,8 +85,8 @@ class ExportBIService:
         export.file_url = file_url
         export.file_size_bytes = file_size_bytes
         export.row_count = row_count
-        export.completed_at = datetime.now(timezone.utc)
-        export.expires_at = datetime.now(timezone.utc) + timedelta(days=7)  # 7-day retention
+        export.completed_at = datetime.now(UTC)
+        export.expires_at = datetime.now(UTC) + timedelta(days=7)  # 7-day retention
 
         db.commit()
 
@@ -105,7 +107,7 @@ class ExportBIService:
         report_type: str,
         frequency: str,
         schedule_time: str = "06:00",
-        recipients: List[str] = None,
+        recipients: list[str] = None,
         db: Session = None
     ) -> dict:
         """Create scheduled report."""
@@ -113,7 +115,7 @@ class ExportBIService:
             raise ValueError("Database session required")
 
         # Calculate next send time
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_send = None
 
         if frequency == ReportFrequency.DAILY:
@@ -158,7 +160,7 @@ class ExportBIService:
         warehouse_type: str,
         warehouse_name: str,
         connection_string: str,
-        tables_to_sync: List[str] = None,
+        tables_to_sync: list[str] = None,
         db: Session = None
     ) -> dict:
         """Configure data warehouse integration."""
@@ -217,8 +219,8 @@ class ExportBIService:
             raise ValueError(f"Sync {sync_id} not found")
 
         sync.connection_status = "connected"
-        sync.last_sync_at = datetime.now(timezone.utc)
-        sync.next_sync_at = datetime.now(timezone.utc) + timedelta(hours=sync.sync_interval_hours)
+        sync.last_sync_at = datetime.now(UTC)
+        sync.next_sync_at = datetime.now(UTC) + timedelta(hours=sync.sync_interval_hours)
         sync.rows_synced_total += rows_synced
 
         db.commit()
@@ -237,7 +239,7 @@ class ExportBIService:
         business_id: UUID,
         dashboard_name: str,
         dashboard_type: str,
-        charts: List[Dict] = None,
+        charts: list[dict] = None,
         db: Session = None
     ) -> dict:
         """Create BI dashboard."""
@@ -301,7 +303,7 @@ class ExportBIService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         date_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         date_end = date_start + timedelta(days=1)

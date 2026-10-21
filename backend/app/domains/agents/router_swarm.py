@@ -1,28 +1,27 @@
 """Swarm API Router — Multi-Agent Collaboration Endpoints."""
 
 from uuid import UUID
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
-from app.domains.agents.swarm import AgentSwarm, SwarmCoordinator
-from app.domains.agents.swarm_memory import SwarmSession, SwarmMessage
 from app.domains.agents.schemas import (
+    SwarmAgentContribution,
     SwarmExecuteRequest,
     SwarmExecuteResponse,
-    SwarmSessionResponse,
     SwarmMessageResponse,
+    SwarmSessionResponse,
+    SwarmSuggestedAgent,
     SwarmSuggestRequest,
     SwarmSuggestResponse,
-    SwarmSuggestedAgent,
-    SwarmAgentContribution,
 )
+from app.domains.agents.swarm import AgentSwarm, SwarmCoordinator
+from app.domains.agents.swarm_memory import SwarmMessage, SwarmSession
+from app.domains.businesses.models import Business
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -30,7 +29,7 @@ router = APIRouter()
 @router.post("/execute", response_model=SwarmExecuteResponse)
 async def execute_swarm(
     data: SwarmExecuteRequest,
-    business_id: Optional[UUID] = None,
+    business_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -62,9 +61,9 @@ async def execute_swarm(
     )
 
 
-@router.get("/sessions", response_model=List[SwarmSessionResponse])
+@router.get("/sessions", response_model=list[SwarmSessionResponse])
 async def list_swarm_sessions(
-    business_id: Optional[UUID] = None,
+    business_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

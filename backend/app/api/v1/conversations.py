@@ -1,22 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.businesses.models import Business
 from app.domains.channels.models import (
-    Conversation, Message, ConversationStatus, MessageDirection, MessageStatus
+    Conversation,
+    ConversationStatus,
+    Message,
+    MessageDirection,
+    MessageStatus,
 )
 from app.domains.channels.schemas import (
-    ConversationCreate, ConversationUpdate, ConversationResponse,
-    ConversationListResponse, MessageCreate, MessageResponse,
+    ConversationListResponse,
+    ConversationResponse,
+    ConversationUpdate,
+    MessageCreate,
+    MessageResponse,
 )
+from app.domains.users.models import User
 
 router = APIRouter()
 
@@ -189,7 +196,7 @@ async def send_message(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversación no encontrada")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Taken before anything can roll back. A rollback expires every loaded
     # instance, so reading current_user.id afterwards lazy-loads inside async
     # code and raises MissingGreenlet — which is what it did, at the line that

@@ -12,11 +12,15 @@ Implements the "vender sin vender" philosophy through automated:
 """
 
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.automations.models import (
-    Workflow, WorkflowTriggerType, WorkflowActionType, WorkflowStatus,
+    Workflow,
+    WorkflowActionType,
+    WorkflowStatus,
+    WorkflowTriggerType,
 )
 
 

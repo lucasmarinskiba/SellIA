@@ -1,16 +1,16 @@
 """FOOM Monetization API - Convert free users to paid + Enable user FOOM selling."""
 
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.domains.enterprise.foom_monetization import (
-    PlatformMonetizationFOOM,
-    UserFOOMEnablement,
     FOMOPerformanceOptimizer,
     NetworkEffectFOOM,
+    PlatformMonetizationFOOM,
+    UserFOOMEnablement,
 )
 
 router = APIRouter(prefix="/api/v1/foom-monetization", tags=["foom-monetization"])
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/v1/foom-monetization", tags=["foom-monetization"
 
 class UpgradeTriggerRequest(BaseModel):
     user_id: str
-    segment: Optional[str] = None
+    segment: str | None = None
 
 
 class UpgradeTriggerResponse(BaseModel):
@@ -44,17 +44,17 @@ class UserFOOMStrategyRequest(BaseModel):
 
 class UserFOOMStrategyResponse(BaseModel):
     product_name: str
-    scarcity: List[dict]
+    scarcity: list[dict]
     social_proof: dict
-    urgency_templates: List[str]
+    urgency_templates: list[str]
     landing_page_foom: dict
-    email_sequence: List[dict]
-    social_posts: List[dict]
+    email_sequence: list[dict]
+    social_posts: list[dict]
 
 
 class ABTestRequest(BaseModel):
     user_id: str
-    variants: List[dict]
+    variants: list[dict]
     monthly_visitors: int
     avg_deal_size: float
 
@@ -62,7 +62,7 @@ class ABTestRequest(BaseModel):
 class OptimizationResponse(BaseModel):
     current_conversion_rate: float
     optimized_conversion_rate: float
-    recommendations: List[str]
+    recommendations: list[str]
     revenue_lift: dict
 
 

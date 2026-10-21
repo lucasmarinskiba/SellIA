@@ -3,8 +3,7 @@ Personality Injector — Brand voice consistency, variation, authenticity.
 """
 
 import logging
-from typing import Dict, List, Any
-from random import choice
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class PersonalityInjector:
         response_text: str,
         personality_type: str,
         variation_index: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Inject personality into generic response."""
 
         profile = PersonalityInjector.BRAND_VOICE_PROFILES.get(personality_type, {})
@@ -54,7 +53,7 @@ class PersonalityInjector:
         }
 
     @staticmethod
-    def generate_variations(base_response: str, count: int = 3) -> List[Dict[str, Any]]:
+    def generate_variations(base_response: str, count: int = 3) -> list[dict[str, Any]]:
         """Generate variations to avoid repetition."""
 
         variations = []
@@ -69,7 +68,7 @@ class PersonalityInjector:
         return variations
 
     @staticmethod
-    def score_authenticity(response_text: str, personality_type: str) -> Dict[str, Any]:
+    def score_authenticity(response_text: str, personality_type: str) -> dict[str, Any]:
         """Score how authentic response is for personality."""
 
         profile = PersonalityInjector.BRAND_VOICE_PROFILES.get(personality_type, {})
@@ -90,7 +89,7 @@ class PersonalityInjector:
     def adapt_tone_to_audience(
         response_text: str,
         audience_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Adapt personality to match audience."""
 
         adaptations = {

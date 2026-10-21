@@ -7,8 +7,11 @@ certificado (razón social real del padrón, CAE de facturación) devuelve un
 estado `requires_certificate` explícito — nunca un dato inventado.
 """
 import os
+
 from app.domains.arca_compliance.reference_data import (
-    INCOTERMS_2020, HS_CHAPTERS, MONOTRIBUTO_CATEGORIAS,
+    HS_CHAPTERS,
+    INCOTERMS_2020,
+    MONOTRIBUTO_CATEGORIAS,
 )
 
 

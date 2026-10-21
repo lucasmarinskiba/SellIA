@@ -4,16 +4,16 @@ Dealmaking, negotiation, leverage, timing, psychology
 Focus: "Art of Deal" tactics, dominance, perception, timing, leverage plays
 """
 
-from typing import Dict, Any, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+
 
 @dataclass
 class TrumpPrompt:
     """Trump-style prompt structure"""
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str

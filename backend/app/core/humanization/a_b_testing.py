@@ -20,12 +20,12 @@ Metrics tracked:
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from random import choice, random
 from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from random import choice
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,10 @@ class Variant:
     name: str
     test_type: ExperimentType
     message_template: str
-    tone: Optional[str] = None
-    cta_type: Optional[str] = None
-    personalization_level: Optional[str] = None
-    emoji_usage: Optional[str] = None  # "none", "light", "heavy"
+    tone: str | None = None
+    cta_type: str | None = None
+    personalization_level: str | None = None
+    emoji_usage: str | None = None  # "none", "light", "heavy"
     status: VariantStatus = VariantStatus.ACTIVE
 
     # Metrics
@@ -74,7 +74,7 @@ class Variant:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
-    def get_metrics(self) -> Dict[str, float]:
+    def get_metrics(self) -> dict[str, float]:
         """Calculate engagement metrics"""
         if self.sent_count == 0:
             return {}
@@ -94,30 +94,30 @@ class ABTest:
     test_id: str
     name: str
     test_type: ExperimentType
-    description: Optional[str] = None
-    hypothesis: Optional[str] = None
+    description: str | None = None
+    hypothesis: str | None = None
 
     # Variants
-    control_variant: Optional[Variant] = None
-    treatment_variants: List[Variant] = field(default_factory=list)
+    control_variant: Variant | None = None
+    treatment_variants: list[Variant] = field(default_factory=list)
 
     # Test config
     sample_size: int = 100  # Minimum samples per variant
     duration_days: int = 7
-    split_percentage: Dict[str, int] = field(default_factory=dict)  # {variant_id: percentage}
+    split_percentage: dict[str, int] = field(default_factory=dict)  # {variant_id: percentage}
     min_conversion_difference: float = 0.05  # 5% minimum to declare winner
 
     # Status
     status: str = "active"
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
-    winner_id: Optional[str] = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    winner_id: str | None = None
 
     def add_variant(self, variant: Variant) -> None:
         """Add variant to test"""
         self.treatment_variants.append(variant)
 
-    def get_variants(self) -> List[Variant]:
+    def get_variants(self) -> list[Variant]:
         """Get all variants"""
         all_variants = []
         if self.control_variant:
@@ -213,8 +213,8 @@ class ABTestingEngine:
 
     def __init__(self):
         """Initialize A/B testing engine"""
-        self.tests: Dict[str, ABTest] = {}
-        self.results: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        self.tests: dict[str, ABTest] = {}
+        self.results: dict[str, dict[str, Any]] = defaultdict(dict)
         logger.info("ABTestingEngine initialized")
 
     def create_test(
@@ -222,7 +222,7 @@ class ABTestingEngine:
         test_name: str,
         test_type: ExperimentType,
         control_message: str,
-        treatment_messages: List[Dict[str, str]],
+        treatment_messages: list[dict[str, str]],
         hypothesis: str,
         duration_days: int = 7,
     ) -> ABTest:
@@ -290,7 +290,7 @@ class ABTestingEngine:
         self,
         test_id: str,
         random_allocation: bool = True,
-    ) -> Optional[Variant]:
+    ) -> Variant | None:
         """
         Select variant for message (simulates A/B distribution).
 
@@ -397,7 +397,7 @@ class ABTestingEngine:
     def analyze_test(
         self,
         test_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze test results and determine if there's a winner.
 
@@ -487,7 +487,7 @@ class ABTestingEngine:
     def get_winning_variant(
         self,
         test_id: str,
-    ) -> Optional[Variant]:
+    ) -> Variant | None:
         """Get winning variant of test"""
         if test_id not in self.tests:
             return None
@@ -506,7 +506,7 @@ class ABTestingEngine:
     def generate_test_summary(
         self,
         test_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate summary report of test"""
         if test_id not in self.tests:
             return {"error": "Test not found"}
@@ -540,7 +540,7 @@ class ABTestingEngine:
         variant_b_conversions: int,
         variant_b_total: int,
         confidence_level: float = 0.95,
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """
         Calculate if difference between variants is statistically significant.
 
@@ -584,7 +584,7 @@ class ABTestingEngine:
         self,
         preset_name: str,
         control_message: str,
-    ) -> Optional[ABTest]:
+    ) -> ABTest | None:
         """
         Create test from preset configuration.
 

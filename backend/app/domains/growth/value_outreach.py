@@ -5,20 +5,21 @@ before any sales ask. Warms up cold leads through education.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.growth.models import (
-    ValueSequence, ValueSequenceEnrollment,
-    InboundLead, NurturingStage,
+    InboundLead,
+    NurturingStage,
+    ValueSequence,
+    ValueSequenceEnrollment,
 )
 from app.domains.outreach.service import FatigueScoringService
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.core.logger import get_logger
-from app.core.events import event_bus
 
 logger = get_logger(__name__)
 
@@ -69,7 +70,7 @@ class ValueFirstOutreach:
         topic: str,
         message_count: int,
         total_duration_days: int,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Generate AI-powered educational messages."""
         avg_delay = (total_duration_days * 24) // message_count
 
@@ -126,7 +127,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
             logger.error(f"Failed to generate sequence messages: {e}")
             return self._fallback_messages(topic, message_count, avg_delay)
 
-    def _fallback_messages(self, topic: str, count: int, delay_hours: int) -> List[dict]:
+    def _fallback_messages(self, topic: str, count: int, delay_hours: int) -> list[dict]:
         """Fallback messages if AI generation fails."""
         messages = [
             {
@@ -207,7 +208,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         next_step = enrollment.current_step + 1
         if next_step > sequence.message_count:
             enrollment.status = "completed"
-            enrollment.completed_at = datetime.now(timezone.utc)
+            enrollment.completed_at = datetime.now(UTC)
             sequence.times_completed += 1
             await self.db.commit()
             return {"status": "completed"}
@@ -239,7 +240,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
         # Update enrollment
         enrollment.current_step = next_step
         enrollment.messages_sent += 1
-        enrollment.last_engagement_at = datetime.now(timezone.utc)
+        enrollment.last_engagement_at = datetime.now(UTC)
         await self.db.commit()
 
         logger.info(f"Sent value message {next_step}/{sequence.message_count} to enrollment {enrollment_id}")
@@ -341,7 +342,7 @@ NO uses frases genéricas como "espero que estés bien". Sé directo y valioso."
 
     # ========== Helpers ==========
 
-    async def _get_sequence(self, sequence_id: uuid.UUID) -> Optional[ValueSequence]:
+    async def _get_sequence(self, sequence_id: uuid.UUID) -> ValueSequence | None:
         result = await self.db.execute(
             select(ValueSequence).where(ValueSequence.id == sequence_id)
         )

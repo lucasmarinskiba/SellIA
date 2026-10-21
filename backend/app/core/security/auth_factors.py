@@ -7,18 +7,26 @@ Implements:
 - Backup codes
 """
 
-import pyotp
-import qrcode
-import io
 import base64
+import io
+import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Tuple
-from sqlalchemy import Column, String, DateTime, Boolean, JSON, Integer, Index, ForeignKey
-from sqlalchemy.orm import Session
+from datetime import UTC, datetime, timedelta
+
+import pyotp
+import qrcode
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Index,
+    Integer,
+    String,
+)
 from sqlalchemy.ext.declarative import declarative_base
-import logging
+from sqlalchemy.orm import Session
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
@@ -55,8 +63,8 @@ class TOTP2FA(Base):
     last_used_at = Column(DateTime, nullable=True)
     failed_attempts = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class APIKey(Base):
@@ -96,7 +104,7 @@ class APIKey(Base):
     last_used_ip = Column(String(50), nullable=True)
 
     # Rotation
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     expires_at = Column(DateTime, nullable=False)  # Default 30 days
     rotation_scheduled_at = Column(DateTime, nullable=True)
     rotated_at = Column(DateTime, nullable=True)
@@ -119,15 +127,14 @@ class Auth2FAService:
         db: Session,
         seller_id: str,
         user_id: str,
-        name: Optional[str] = None,
-    ) -> Tuple[str, str, List[str]]:
+        name: str | None = None,
+    ) -> tuple[str, str, list[str]]:
         """
         Set up TOTP for a user.
 
         Returns:
             (secret, qr_code_url, backup_codes)
         """
-        from app.core.encryption import encrypt_value
 
         # Generate secret
         secret = pyotp.random_base32()
@@ -180,7 +187,7 @@ class Auth2FAService:
         seller_id: str,
         user_id: str,
         code: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Verify TOTP code (6 digits).
 
@@ -217,7 +224,7 @@ class Auth2FAService:
         # Mark as verified and enabled
         totp_2fa.is_verified = True
         totp_2fa.is_enabled = True
-        totp_2fa.verified_at = datetime.now(timezone.utc)
+        totp_2fa.verified_at = datetime.now(UTC)
         totp_2fa.failed_attempts = 0
         db.commit()
 
@@ -229,7 +236,7 @@ class Auth2FAService:
         seller_id: str,
         user_id: str,
         code: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Verify TOTP code during login."""
         totp_2fa = (
             db.query(TOTP2FA)
@@ -257,7 +264,7 @@ class Auth2FAService:
 
         # Clear failed attempts on success
         totp_2fa.failed_attempts = 0
-        totp_2fa.last_used_at = datetime.now(timezone.utc)
+        totp_2fa.last_used_at = datetime.now(UTC)
         db.commit()
 
         return True, None
@@ -268,7 +275,7 @@ class Auth2FAService:
         seller_id: str,
         user_id: str,
         code: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Verify backup code (only usable once)."""
         import hashlib
 
@@ -341,7 +348,7 @@ class APIKeyService:
         seller_id: str,
         user_id: str,
         name: str,
-        scopes: Optional[List[str]] = None,
+        scopes: list[str] | None = None,
         expires_in_days: int = 30,
     ) -> str:
         """
@@ -350,8 +357,9 @@ class APIKeyService:
         Returns:
             Full API key (only shown once to user)
         """
-        from app.core.encryption import encrypt_value
         import hashlib
+
+        from app.core.encryption import encrypt_value
 
         # Generate random key
         random_portion = secrets.token_hex(self.KEY_LENGTH // 2)
@@ -373,7 +381,7 @@ class APIKeyService:
             scopes=scopes or ["*"],
             is_active=True,
             created_by=user_id,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=expires_in_days),
+            expires_at=datetime.now(UTC) + timedelta(days=expires_in_days),
         )
 
         db.add(api_key)
@@ -386,8 +394,8 @@ class APIKeyService:
         db: Session,
         seller_id: str,
         key: str,
-        ip_address: Optional[str] = None,
-    ) -> Tuple[Optional[APIKey], Optional[str]]:
+        ip_address: str | None = None,
+    ) -> tuple[APIKey | None, str | None]:
         """
         Verify API key.
 
@@ -395,7 +403,7 @@ class APIKeyService:
             (api_key_record, error_message)
         """
         import hashlib
-        from app.core.encryption import decrypt_value
+
 
         key_hash = hashlib.sha256(key.encode()).hexdigest()
 
@@ -414,11 +422,11 @@ class APIKeyService:
         if not api_key.is_active:
             return None, "API key is revoked"
 
-        if api_key.expires_at < datetime.now(timezone.utc):
+        if api_key.expires_at < datetime.now(UTC):
             return None, "API key has expired"
 
         # Update last used
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         api_key.last_used_ip = ip_address
         db.commit()
 
@@ -430,7 +438,7 @@ class APIKeyService:
         seller_id: str,
         key_id: str,
         user_id: str,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """
         Rotate an API key (invalidate old, create new).
 
@@ -451,7 +459,7 @@ class APIKeyService:
 
         # Mark old key as rotated
         api_key.is_rotated = True
-        api_key.rotated_at = datetime.now(timezone.utc)
+        api_key.rotated_at = datetime.now(UTC)
         api_key.is_active = False
         db.commit()
 
@@ -475,8 +483,8 @@ class APIKeyService:
         seller_id: str,
         key_id: str,
         user_id: str,
-        reason: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        reason: str | None = None,
+    ) -> tuple[bool, str | None]:
         """Revoke an API key."""
         api_key = (
             db.query(APIKey)
@@ -491,7 +499,7 @@ class APIKeyService:
             return False, "API key not found"
 
         api_key.is_active = False
-        api_key.revoked_at = datetime.now(timezone.utc)
+        api_key.revoked_at = datetime.now(UTC)
         api_key.revoked_by = user_id
         api_key.revoke_reason = reason
         db.commit()
@@ -503,7 +511,7 @@ class APIKeyService:
         db: Session,
         seller_id: str,
         include_inactive: bool = False,
-    ) -> List[APIKey]:
+    ) -> list[APIKey]:
         """List API keys for seller."""
         query = db.query(APIKey).filter(APIKey.seller_id == seller_id)
 
@@ -512,15 +520,15 @@ class APIKeyService:
 
         return query.order_by(APIKey.created_at.desc()).all()
 
-    async def schedule_expiration_check(self, db: Session, days_before: int = 7) -> List[str]:
+    async def schedule_expiration_check(self, db: Session, days_before: int = 7) -> list[str]:
         """Find API keys expiring soon."""
-        soon = datetime.now(timezone.utc) + timedelta(days=days_before)
+        soon = datetime.now(UTC) + timedelta(days=days_before)
         expiring = (
             db.query(APIKey)
             .filter(
                 APIKey.is_active == True,
                 APIKey.expires_at <= soon,
-                APIKey.expires_at > datetime.now(timezone.utc),
+                APIKey.expires_at > datetime.now(UTC),
             )
             .all()
         )
@@ -531,8 +539,8 @@ class APIKeyService:
 
 
 # Global services
-_auth_2fa_service: Optional[Auth2FAService] = None
-_api_key_service: Optional[APIKeyService] = None
+_auth_2fa_service: Auth2FAService | None = None
+_api_key_service: APIKeyService | None = None
 
 
 def get_auth_2fa_service() -> Auth2FAService:

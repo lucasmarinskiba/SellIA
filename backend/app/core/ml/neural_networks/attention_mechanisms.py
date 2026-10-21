@@ -2,8 +2,8 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 from scipy.special import softmax
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 class AttentionWeights:
     """Attention weight distribution."""
 
-    weights: Dict[str, float]  # feature/position -> weight
-    top_k: List[Tuple[str, float]]  # top k most important
+    weights: dict[str, float]  # feature/position -> weight
+    top_k: list[tuple[str, float]]  # top k most important
     entropy: float  # attention entropy (0 = concentrated, 1 = dispersed)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "weights": {k: float(v) for k, v in self.weights.items()},
             "top_k": [(name, float(w)) for name, w in self.top_k],
@@ -34,10 +34,10 @@ class FeatureAttention:
 
     def __init__(self, n_heads: int = 8):
         self.n_heads = n_heads
-        self.attention_scores: Optional[np.ndarray] = None
-        self.feature_names: List[str] = []
+        self.attention_scores: np.ndarray | None = None
+        self.feature_names: list[str] = []
 
-    def compute_attention(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> AttentionWeights:
+    def compute_attention(self, X: np.ndarray, y: np.ndarray, feature_names: list[str] | None = None) -> AttentionWeights:
         """Compute feature importance using attention."""
         if feature_names:
             self.feature_names = feature_names
@@ -68,7 +68,7 @@ class FeatureAttention:
 
         return result
 
-    def apply_attention(self, X: np.ndarray, attention_weights: Dict[str, float]) -> np.ndarray:
+    def apply_attention(self, X: np.ndarray, attention_weights: dict[str, float]) -> np.ndarray:
         """Apply attention weights to features."""
         X_attended = X.copy()
 
@@ -84,7 +84,7 @@ class TemporalAttention:
 
     def __init__(self, decay_factor: float = 0.95):
         self.decay_factor = decay_factor
-        self.attention_weights: Optional[np.ndarray] = None
+        self.attention_weights: np.ndarray | None = None
 
     def compute_temporal_attention(self, X: np.ndarray) -> AttentionWeights:
         """Compute temporal attention weights."""
@@ -130,7 +130,7 @@ class SpatialAttention:
 
     def __init__(self, n_regions: int = 5):
         self.n_regions = n_regions
-        self.region_importance: Optional[np.ndarray] = None
+        self.region_importance: np.ndarray | None = None
 
     def compute_spatial_attention(self, X: np.ndarray, locality_bias: float = 1.2) -> AttentionWeights:
         """Compute spatial attention weights."""
@@ -189,9 +189,9 @@ class CrossModalAttention:
     """Combine attention across different modalities (text, images, numbers)."""
 
     def __init__(self):
-        self.modal_importance: Dict[str, float] = {}
+        self.modal_importance: dict[str, float] = {}
 
-    def compute_cross_modal_attention(self, modalities: Dict[str, np.ndarray], target: Optional[np.ndarray] = None) -> AttentionWeights:
+    def compute_cross_modal_attention(self, modalities: dict[str, np.ndarray], target: np.ndarray | None = None) -> AttentionWeights:
         """Compute attention across modalities."""
         modal_scores = {}
 
@@ -235,7 +235,7 @@ class CrossModalAttention:
 
         return result
 
-    def apply_cross_modal_attention(self, modalities: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def apply_cross_modal_attention(self, modalities: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         """Apply attention weights to each modality."""
         attended_modalities = {}
 
@@ -245,7 +245,7 @@ class CrossModalAttention:
 
         return attended_modalities
 
-    def fuse_modalities(self, modalities: Dict[str, np.ndarray], method: str = "concatenate") -> np.ndarray:
+    def fuse_modalities(self, modalities: dict[str, np.ndarray], method: str = "concatenate") -> np.ndarray:
         """Fuse multiple modalities into single representation."""
         # Apply attention first
         attended = self.apply_cross_modal_attention(modalities)

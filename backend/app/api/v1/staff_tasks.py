@@ -1,16 +1,20 @@
 """Staff task management API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.domains.staff.task_service import (
+    ShiftReadinessService,
+    StaffTaskService,
+    TaskNotificationService,
+)
 from app.domains.users.models import User
-from app.domains.staff.task_service import StaffTaskService, TaskNotificationService, ShiftReadinessService
 
 router = APIRouter(prefix="/api/v1", tags=["staff-tasks"])
 
@@ -21,17 +25,17 @@ class CreateTaskRequest(BaseModel):
     task_type: str  # demo_setup, visitor_tour, product_demo, follow_up_call, etc
     title: str
     due_date: str  # ISO8601
-    description: Optional[str] = None
+    description: str | None = None
     priority: str = "medium"
     estimated_duration_minutes: int = 15
-    related_checkin_id: Optional[UUID] = None
-    related_product_id: Optional[str] = None
+    related_checkin_id: UUID | None = None
+    related_product_id: str | None = None
 
 
 class TaskActionRequest(BaseModel):
     task_id: UUID
-    completion_notes: Optional[str] = None
-    completion_evidence: Optional[dict] = None
+    completion_notes: str | None = None
+    completion_evidence: dict | None = None
 
 
 @router.post("/tasks/assign")
@@ -75,8 +79,8 @@ async def assign_task(
 @router.get("/staff/{staff_id}/tasks")
 async def get_staff_tasks(
     staff_id: UUID,
-    location_id: Optional[UUID] = Query(None),
-    status: Optional[str] = Query(None),
+    location_id: UUID | None = Query(None),
+    status: str | None = Query(None),
     db: Session = Depends(get_db),
 ) -> dict:
     """Get tasks assigned to staff."""
@@ -162,7 +166,7 @@ async def complete_task(
 @router.post("/tasks/{task_id}/cancel")
 async def cancel_task(
     task_id: UUID,
-    reason: Optional[str] = Query(None),
+    reason: str | None = Query(None),
     db: Session = Depends(get_db),
 ) -> dict:
     """Cancel task."""
@@ -267,7 +271,7 @@ async def get_shift_readiness_report(
     staff_id: UUID,
     location_id: UUID,
     shift_start: str,  # ISO8601
-    shift_end: Optional[str] = Query(None),
+    shift_end: str | None = Query(None),
     db: Session = Depends(get_db),
 ) -> dict:
     """Generate shift readiness report."""

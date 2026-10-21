@@ -5,19 +5,20 @@ The system becomes their HOME — something they love, nurture, and grow.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List
+from datetime import UTC, datetime
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.gamification.models import (
-    UserGamificationProfile, Achievement, UserAchievement,
-    CelebrationEvent, AchievementCategory, AchievementTier,
-)
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
-from app.core.events import event_bus
+from app.domains.gamification.models import (
+    Achievement,
+    AchievementCategory,
+    AchievementTier,
+    CelebrationEvent,
+    UserAchievement,
+    UserGamificationProfile,
+)
 
 logger = get_logger(__name__)
 
@@ -142,7 +143,7 @@ class GamificationEngine:
         await self.db.refresh(profile)
         return profile
 
-    async def check_achievements(self, user_id: uuid.UUID, business_id: uuid.UUID) -> List[Achievement]:
+    async def check_achievements(self, user_id: uuid.UUID, business_id: uuid.UUID) -> list[Achievement]:
         """Check and unlock any newly earned achievements."""
         profile = await self.get_or_create_profile(user_id, business_id)
 
@@ -223,7 +224,7 @@ class GamificationEngine:
                 return profile.total_sales_closed >= req_val  # Simplified
             elif achievement.category == AchievementCategory.MILESTONE:
                 # Days since created
-                days = (datetime.now(timezone.utc) - profile.created_at).days
+                days = (datetime.now(UTC) - profile.created_at).days
                 months = days // 30
                 return months >= req_val
             elif achievement.category == AchievementCategory.MISSIONS:
@@ -297,7 +298,7 @@ class GamificationEngine:
         """Record user login and update streaks."""
         profile = await self.get_or_create_profile(user_id, business_id)
 
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
         if profile.last_login_date:
             last_date = profile.last_login_date.date() if hasattr(profile.last_login_date, 'date') else profile.last_login_date
             if isinstance(last_date, datetime):
@@ -313,7 +314,7 @@ class GamificationEngine:
         else:
             profile.current_login_streak = 1
 
-        profile.last_login_date = datetime.now(timezone.utc)
+        profile.last_login_date = datetime.now(UTC)
         await self.db.commit()
 
         # XP for login
@@ -329,7 +330,7 @@ class GamificationEngine:
             "new_achievements": [{"id": str(a.id), "name": a.name} for a in new_achievements],
         }
 
-    async def record_mission_completed(self, user_id: uuid.UUID, business_id: uuid.UUID, mission_platforms: List[str] = None, used_computer_use: bool = False) -> dict:
+    async def record_mission_completed(self, user_id: uuid.UUID, business_id: uuid.UUID, mission_platforms: list[str] = None, used_computer_use: bool = False) -> dict:
         """Record a completed mission and trigger celebrations/achievements."""
         profile = await self.get_or_create_profile(user_id, business_id)
         profile.total_missions_completed += 1
@@ -369,7 +370,7 @@ class GamificationEngine:
         profile.total_missions_started += 1
         await self.db.commit()
 
-    async def get_pending_celebrations(self, user_id: uuid.UUID) -> List[CelebrationEvent]:
+    async def get_pending_celebrations(self, user_id: uuid.UUID) -> list[CelebrationEvent]:
         """Get unshown celebration events for the user."""
         result = await self.db.execute(
             select(CelebrationEvent).where(
@@ -384,7 +385,7 @@ class GamificationEngine:
         event = await self.db.get(CelebrationEvent, celebration_id)
         if event:
             event.was_shown = True
-            event.shown_at = datetime.now(timezone.utc)
+            event.shown_at = datetime.now(UTC)
             await self.db.commit()
 
     async def update_garden(self, user_id: uuid.UUID, business_id: uuid.UUID, action: str) -> dict:
@@ -482,7 +483,7 @@ class GamificationEngine:
         if was_autopilot:
             messages = [
                 f"¡Chin chin! 🥂 ${amount:,.0f} mientras descansabas. El piloto automático no duerme.",
-                f"¿Sabés qué estabas haciendo cuando cerraste esta venta? ¡Lo que quisieras! Porque el sistema lo hizo solo. ☕",
+                "¿Sabés qué estabas haciendo cuando cerraste esta venta? ¡Lo que quisieras! Porque el sistema lo hizo solo. ☕",
                 f"¡Ding ding! 💰 ${amount:,.0f} en la cuenta. Y ni siquiera tuviste que levantar un dedo.",
             ]
         else:

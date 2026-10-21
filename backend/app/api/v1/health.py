@@ -5,10 +5,11 @@ Cada componente reporta status (OK/DEGRADED/DOWN).
 Sistema globalmente DEGRADED si <2 críticos, DOWN si >2 críticos falla.
 """
 
+import logging
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from datetime import datetime
-import logging
 
 router = APIRouter(prefix="/api/v1/health", tags=["health"])
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ async def health_check():
         )
 
     except Exception as e:
-        logger.error(f"Health check error: {str(e)}")
+        logger.error(f"Health check error: {e!s}")
         raise HTTPException(status_code=500, detail="Health check failed")
 
 

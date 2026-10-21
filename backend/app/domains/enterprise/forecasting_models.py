@@ -9,9 +9,20 @@ actually won/lost" outcome IS a historical event that should be recorded
 once and kept, for win-rate/accuracy reporting over time.
 """
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, DateTime, Numeric, Integer, ForeignKey, Index
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
 
 
@@ -28,7 +39,7 @@ class DealOutcome(Base):
     forecasted_probability = Column(Numeric(5, 4), nullable=False)  # 0.0-1.0, what we predicted before the outcome
     forecast_accuracy = Column(Numeric(5, 4), nullable=False)  # 1 - |forecasted - actual|
     win_loss_reason = Column(Text, nullable=True)
-    recorded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    recorded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_deal_outcomes_business", "business_id", "recorded_at"),

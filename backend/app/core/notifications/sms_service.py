@@ -11,10 +11,10 @@ Soporta:
 
 import logging
 import os
-from typing import Dict, Optional, Any
-from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,8 @@ class SMSMessage:
     """Estructura de mensaje SMS."""
     phone_number: str  # E164 format: +5491234567890
     content: str
-    template_id: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    template_id: str | None = None
+    metadata: dict[str, str] | None = None
 
 
 class SMSTemplateEngine:
@@ -51,7 +51,7 @@ class SMSTemplateEngine:
         self.max_length = 160  # SMS standard
         self.templates = self._load_templates()
 
-    def _load_templates(self) -> Dict[SMSTemplate, str]:
+    def _load_templates(self) -> dict[SMSTemplate, str]:
         """Carga templates predefinidas."""
         return {
             SMSTemplate.ORDER_CONFIRMATION: "🎉 Pedido confirmado #{order_id}. Recibirás actualización cuando se despache. Gracias por tu compra.",
@@ -62,7 +62,7 @@ class SMSTemplateEngine:
             SMSTemplate.TRACKING_UPDATE: "📍 Seguimiento #{tracking_number}: {status_text}. ETA: {estimated_delivery}",
         }
 
-    def render(self, template: SMSTemplate, variables: Dict[str, Any]) -> str:
+    def render(self, template: SMSTemplate, variables: dict[str, Any]) -> str:
         """Renderiza template con variables."""
         content = self.templates.get(template)
         if not content:
@@ -135,7 +135,7 @@ class SMSService:
         self,
         phone_number: str,
         order_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía confirmación de orden por SMS."""
 
         variables = {
@@ -158,7 +158,7 @@ class SMSService:
         order_id: str,
         tracking_number: str,
         tracking_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía notificación de envío por SMS."""
 
         tracking_url_short = self._shorten_url(tracking_url or f"https://track.sellia.ai/{tracking_number}")
@@ -184,7 +184,7 @@ class SMSService:
         phone_number: str,
         order_id: str,
         review_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía confirmación de entrega por SMS."""
 
         review_url_short = self._shorten_url(review_url or f"https://review.sellia.ai/{order_id}")
@@ -209,7 +209,7 @@ class SMSService:
         phone_number: str,
         order_id: str,
         retry_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía alerta de pago rechazado por SMS."""
 
         retry_url_short = self._shorten_url(retry_url or f"https://checkout.sellia.ai/{order_id}")
@@ -233,7 +233,7 @@ class SMSService:
         phone_number: str,
         order_id: str,
         refund_amount: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía notificación de reembolso por SMS."""
 
         variables = {
@@ -257,7 +257,7 @@ class SMSService:
         tracking_number: str,
         status_text: str,
         estimated_delivery: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía actualización de seguimiento."""
 
         variables = {
@@ -276,7 +276,7 @@ class SMSService:
 
         return await self.send(message)
 
-    async def send(self, message: SMSMessage) -> Dict[str, Any]:
+    async def send(self, message: SMSMessage) -> dict[str, Any]:
         """Envía SMS genérico."""
 
         # Validar longitud
@@ -292,10 +292,10 @@ class SMSService:
                 return await self._send_sns(message)
 
         except Exception as e:
-            logger.error(f"Failed to send SMS: {str(e)}")
+            logger.error(f"Failed to send SMS: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _send_twilio(self, message: SMSMessage) -> Dict[str, Any]:
+    async def _send_twilio(self, message: SMSMessage) -> dict[str, Any]:
         """Envía via Twilio."""
         if not self.twilio_client:
             return {"status": "error", "error": "Twilio not configured"}
@@ -314,10 +314,10 @@ class SMSService:
             }
 
         except Exception as e:
-            logger.error(f"Twilio error: {str(e)}")
+            logger.error(f"Twilio error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _send_sns(self, message: SMSMessage) -> Dict[str, Any]:
+    async def _send_sns(self, message: SMSMessage) -> dict[str, Any]:
         """Envía via AWS SNS."""
         if not self.sns_client:
             return {"status": "error", "error": "AWS SNS not configured"}
@@ -345,7 +345,7 @@ class SMSService:
             }
 
         except Exception as e:
-            logger.error(f"AWS SNS error: {str(e)}")
+            logger.error(f"AWS SNS error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     def _shorten_url(self, url: str) -> str:

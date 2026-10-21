@@ -4,7 +4,8 @@ Procesa pagos, crea checkout sessions, maneja webhooks.
 """
 
 import logging
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
+
 import stripe
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,8 @@ class StripeConnector:
         amount_cents: int,
         success_url: str,
         cancel_url: str,
-        customer_name: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        customer_name: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea sesión de checkout.
 
@@ -74,8 +75,8 @@ class StripeConnector:
         amount_cents: int,
         currency: str = "usd",
         description: str = "",
-        customer_email: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        customer_email: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea payment intent (más flexible que checkout).
 
@@ -102,7 +103,7 @@ class StripeConnector:
             logger.error(f"Error creating intent: {e}")
             return False, None
 
-    async def get_payment_status(self, session_id: str) -> Dict[str, Any]:
+    async def get_payment_status(self, session_id: str) -> dict[str, Any]:
         """Obtiene status de sesión."""
         try:
             session = stripe.checkout.Session.retrieve(session_id)
@@ -123,7 +124,7 @@ class StripeConnector:
         self,
         payment_intent_id: str,
         reason: str = "requested_by_customer",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Crea refund."""
         try:
             refund = stripe.Refund.create(

@@ -16,15 +16,15 @@ Env vars:
 - MERCADOPAGO_NOTIFICATION_URL: Webhook notification URL
 """
 
-import os
-import logging
-import requests
-import json
-import hmac
 import hashlib
-from typing import Dict, Any, Optional
+import hmac
+import logging
+import os
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -81,11 +81,11 @@ class MercadoPagoProcessor:
         customer_name: str,
         items: list,
         currency_code: str = "USD",
-        notification_url: Optional[str] = None,
+        notification_url: str | None = None,
         installments: int = 1,
         auto_return: str = "approved",
-        back_urls: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        back_urls: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create MercadoPago Checkout Pro preference.
 
@@ -181,14 +181,14 @@ class MercadoPagoProcessor:
             }
 
         except requests.RequestException as e:
-            logger.error(f"MercadoPago API error: {str(e)}")
+            logger.error(f"MercadoPago API error: {e!s}")
             return {"status": "error", "error": str(e)}
         except Exception as e:
-            logger.error(f"Error creating preference: {str(e)}")
+            logger.error(f"Error creating preference: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def get_payment_info(payment_id: str) -> Dict[str, Any]:
+    def get_payment_info(payment_id: str) -> dict[str, Any]:
         """
         Get payment information.
 
@@ -239,14 +239,14 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error retrieving payment: {str(e)}")
+            logger.error(f"Error retrieving payment: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def refund_payment(
         payment_id: str,
-        amount: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        amount: float | None = None,
+    ) -> dict[str, Any]:
         """
         Refund a payment (full or partial).
 
@@ -299,7 +299,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error refunding payment: {str(e)}")
+            logger.error(f"Error refunding payment: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -310,7 +310,7 @@ class MercadoPagoProcessor:
         amount: float,
         currency: str = "USD",
         expiration_days: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a payment link (alternative to Checkout Pro).
 
@@ -368,7 +368,7 @@ class MercadoPagoProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payment link: {str(e)}")
+            logger.error(f"Error creating payment link: {e!s}")
             return {"status": "error", "error": str(e)}
 
 
@@ -402,11 +402,11 @@ class MercadoPagoWebhookHandler:
             return signature == calculated_signature
 
         except Exception as e:
-            logger.error(f"Signature verification error: {str(e)}")
+            logger.error(f"Signature verification error: {e!s}")
             return False
 
     @staticmethod
-    def handle_webhook(event_data: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_webhook(event_data: dict[str, Any]) -> dict[str, Any]:
         """
         Handle MercadoPago webhook event.
 
@@ -438,11 +438,11 @@ class MercadoPagoWebhookHandler:
                 return {"status": "acknowledged", "type": event_type}
 
         except Exception as e:
-            logger.error(f"Error handling webhook: {str(e)}")
+            logger.error(f"Error handling webhook: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def _handle_payment_event(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_event(data: dict[str, Any]) -> dict[str, Any]:
         """Handle payment event from webhook."""
         payment_id = data.get("id")
         status = data.get("status")
@@ -473,7 +473,7 @@ class MercadoPagoWebhookHandler:
         }
 
     @staticmethod
-    def _handle_merchant_order(data: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_merchant_order(data: dict[str, Any]) -> dict[str, Any]:
         """Handle merchant order event from webhook."""
         order_id = data.get("id")
         reference = data.get("external_reference")

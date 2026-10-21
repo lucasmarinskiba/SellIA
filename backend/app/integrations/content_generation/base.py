@@ -1,9 +1,9 @@
 """Base provider interface for content generation."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class ContentQuality(str, Enum):
@@ -24,17 +24,17 @@ class ContentType(str, Enum):
 class GenerationResult:
     """Resultado de una generación de contenido."""
     success: bool
-    url: Optional[str] = None
-    text_content: Optional[str] = None
-    local_path: Optional[str] = None
+    url: str | None = None
+    text_content: str | None = None
+    local_path: str | None = None
     cost_usd: float = 0.0
     model_used: str = ""
     quality_tier: ContentQuality = ContentQuality.STANDARD
-    duration_seconds: Optional[float] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    metadata: Dict[str, Any] = None
-    error_message: Optional[str] = None
+    duration_seconds: float | None = None
+    width: int | None = None
+    height: int | None = None
+    metadata: dict[str, Any] = None
+    error_message: str | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -47,18 +47,18 @@ class GenerationConfig:
     prompt: str
     content_type: ContentType
     quality: ContentQuality = ContentQuality.STANDARD
-    negative_prompt: Optional[str] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
-    aspect_ratio: Optional[str] = None  # 16:9, 9:16, 1:1, etc.
-    duration_seconds: Optional[int] = None
-    num_frames: Optional[int] = None
-    seed: Optional[int] = None
+    negative_prompt: str | None = None
+    width: int | None = None
+    height: int | None = None
+    aspect_ratio: str | None = None  # 16:9, 9:16, 1:1, etc.
+    duration_seconds: int | None = None
+    num_frames: int | None = None
+    seed: int | None = None
     num_variations: int = 1
-    style: Optional[str] = None
-    reference_image_url: Optional[str] = None
-    reference_audio_url: Optional[str] = None
-    extra_params: Dict[str, Any] = None
+    style: str | None = None
+    reference_image_url: str | None = None
+    reference_audio_url: str | None = None
+    extra_params: dict[str, Any] = None
 
     def __post_init__(self):
         if self.extra_params is None:
@@ -70,28 +70,24 @@ class BaseProvider(ABC):
 
     name: str = ""
     slug: str = ""
-    supports: List[ContentType] = []
+    supports: list[ContentType] = []
 
     @property
     @abstractmethod
     def is_available(self) -> bool:
         """Retorna True si el proveedor está configurado y disponible."""
-        pass
 
     @abstractmethod
     async def generate(self, config: GenerationConfig) -> GenerationResult:
         """Genera contenido según la configuración."""
-        pass
 
     @abstractmethod
     def estimate_cost(self, config: GenerationConfig) -> float:
         """Estima el costo en USD de la generación."""
-        pass
 
     @abstractmethod
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         """Retorna tabla de precios por unidad."""
-        pass
 
     def supports_quality(self, quality: ContentQuality) -> bool:
         """Verifica si soporta un tier de calidad."""

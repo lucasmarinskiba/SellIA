@@ -1,14 +1,15 @@
 """Phase 4: Competitive Intelligence Service - Market Analysis & Price Optimization."""
-from typing import List, Dict, Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+
 from app.domains.competitive_intelligence.models import (
-    CompetitorProfile,
-    PriceOptimization,
-    MarketAnalysis,
     CompetitiveIntelligenceFeed,
+    CompetitorProfile,
+    MarketAnalysis,
+    PriceOptimization,
 )
 
 
@@ -21,9 +22,9 @@ class CompetitiveIntelligenceService:
         industry: str,
         market_segment: str = None,
         price_point: float = None,
-        strength_areas: List[str] = None,
-        weakness_areas: List[str] = None,
-        feature_set: List[str] = None,
+        strength_areas: list[str] = None,
+        weakness_areas: list[str] = None,
+        feature_set: list[str] = None,
     ) -> dict:
         """Register/update competitor profile."""
         result = await db.execute(
@@ -47,7 +48,7 @@ class CompetitiveIntelligenceService:
         competitor.strength_areas = strength_areas or []
         competitor.weakness_areas = weakness_areas or []
         competitor.feature_set = feature_set or []
-        competitor.last_analyzed_at = datetime.now(timezone.utc)
+        competitor.last_analyzed_at = datetime.now(UTC)
 
         # Simple threat scoring: pricing aggression + feature count
         threat_score = 50
@@ -74,7 +75,7 @@ class CompetitiveIntelligenceService:
         business_id: UUID,
         product_id: UUID,
         current_price: float,
-        competitor_prices: List[float] = None,
+        competitor_prices: list[float] = None,
         target_margin: float = 0.4,
         market_position: str = "competitive",
     ) -> dict:

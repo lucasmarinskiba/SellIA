@@ -11,12 +11,13 @@ Soporta:
 """
 
 import logging
-import httpx
-from typing import Dict, List, Any, Optional
+import os
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass
-import os
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class ShippingAddress:
     state: str
     postal_code: str
     country: str = "AR"
-    apartment: Optional[str] = None
+    apartment: str | None = None
 
 
 @dataclass
@@ -77,10 +78,10 @@ class DHLIntegration:
         self,
         order_id: str,
         recipient: ShippingAddress,
-        sender: Dict[str, Any],
+        sender: dict[str, Any],
         weight_kg: float,
         service: ShippingService,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Crea shipment en DHL."""
 
         try:
@@ -155,10 +156,10 @@ class DHLIntegration:
             }
 
         except Exception as e:
-            logger.error(f"DHL shipment creation failed: {str(e)}")
+            logger.error(f"DHL shipment creation failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         """Obtiene info de tracking."""
 
         try:
@@ -183,7 +184,7 @@ class DHLIntegration:
             }
 
         except Exception as e:
-            logger.error(f"DHL tracking failed: {str(e)}")
+            logger.error(f"DHL tracking failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
 
@@ -201,10 +202,10 @@ class FedExIntegration:
         self,
         order_id: str,
         recipient: ShippingAddress,
-        sender: Dict[str, Any],
+        sender: dict[str, Any],
         weight_kg: float,
         service: ShippingService,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Crea shipment en FedEx."""
 
         try:
@@ -286,10 +287,10 @@ class FedExIntegration:
             }
 
         except Exception as e:
-            logger.error(f"FedEx shipment creation failed: {str(e)}")
+            logger.error(f"FedEx shipment creation failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def get_tracking(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         """Obtiene tracking de FedEx."""
 
         try:
@@ -316,7 +317,7 @@ class FedExIntegration:
             }
 
         except Exception as e:
-            logger.error(f"FedEx tracking failed: {str(e)}")
+            logger.error(f"FedEx tracking failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
 
@@ -325,9 +326,9 @@ class ShippingAutomationComplete:
 
     def __init__(
         self,
-        dhl_api_key: Optional[str] = None,
-        fedex_api_key: Optional[str] = None,
-        fedex_account: Optional[str] = None,
+        dhl_api_key: str | None = None,
+        fedex_api_key: str | None = None,
+        fedex_account: str | None = None,
         email_service=None,
         sms_service=None,
     ):
@@ -343,7 +344,7 @@ class ShippingAutomationComplete:
         weight_kg: float = 1.0,
         carrier: Carrier = Carrier.DHL,
         service: ShippingService = ShippingService.STANDARD,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Crea etiqueta de envío automáticamente.
 
@@ -390,7 +391,7 @@ class ShippingAutomationComplete:
             return result
 
         except Exception as e:
-            logger.error(f"Failed to create shipping label: {str(e)}")
+            logger.error(f"Failed to create shipping label: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _create_local_shipment(
@@ -400,7 +401,7 @@ class ShippingAutomationComplete:
         carrier: Carrier,
         weight_kg: float,
         service: ShippingService,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Crea shipment con carriers locales."""
 
         logger.info(f"Creating local shipment with {carrier.value}")
@@ -421,7 +422,7 @@ class ShippingAutomationComplete:
             "estimated_delivery": estimated_delivery,
         }
 
-    def _get_sender_info(self) -> Dict[str, Any]:
+    def _get_sender_info(self) -> dict[str, Any]:
         """Obtiene información del remitente (empresa)."""
 
         # TODO: Obtener de configuración o DB
@@ -436,7 +437,7 @@ class ShippingAutomationComplete:
             "postal_code": os.getenv("COMPANY_POSTAL_CODE", "1000"),
         }
 
-    async def get_tracking_info(self, tracking_number: str) -> Dict[str, Any]:
+    async def get_tracking_info(self, tracking_number: str) -> dict[str, Any]:
         """Obtiene info de tracking."""
 
         logger.info(f"Getting tracking info for {tracking_number}")
@@ -465,14 +466,14 @@ class ShippingAutomationComplete:
             }
 
         except Exception as e:
-            logger.error(f"Failed to get tracking: {str(e)}")
+            logger.error(f"Failed to get tracking: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def update_tracking_status(
         self,
         tracking_number: str,
         new_status: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Actualiza status de tracking (webhook from carrier)."""
 
         logger.info(f"Updating tracking status: {tracking_number} → {new_status}")
@@ -486,7 +487,7 @@ class ShippingAutomationComplete:
         self,
         order_id: str,
         recipient: ShippingAddress,
-        shipment_info: Dict[str, Any],
+        shipment_info: dict[str, Any],
     ) -> None:
         """Notifica customer que shipment fue creado."""
 
@@ -507,7 +508,7 @@ class ShippingAutomationComplete:
                     tracking_url=tracking_url,
                 )
             except Exception as e:
-                logger.error(f"Failed to send shipment email: {str(e)}")
+                logger.error(f"Failed to send shipment email: {e!s}")
 
         # SMS
         if self.sms:
@@ -519,12 +520,12 @@ class ShippingAutomationComplete:
                     tracking_url=tracking_url,
                 )
             except Exception as e:
-                logger.error(f"Failed to send shipment SMS: {str(e)}")
+                logger.error(f"Failed to send shipment SMS: {e!s}")
 
     async def bulk_create_labels(
         self,
-        orders: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        orders: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Crea múltiples etiquetas en batch (daily job).
 
@@ -561,7 +562,7 @@ class ShippingAutomationComplete:
                     results["errors"].append({"order_id": order.get("id"), "error": result.get("error")})
 
             except Exception as e:
-                logger.error(f"Failed to create label for order {order.get('id')}: {str(e)}")
+                logger.error(f"Failed to create label for order {order.get('id')}: {e!s}")
                 results["failed"] += 1
                 results["errors"].append({"order_id": order.get("id"), "error": str(e)})
 

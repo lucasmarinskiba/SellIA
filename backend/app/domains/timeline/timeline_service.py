@@ -1,16 +1,18 @@
 """Customer timeline service."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List, Dict
 
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
 
 from app.domains.timeline.timeline_models import (
-    CustomerEvent, EventTimeline, TimelineMetadata, EventFilter, TimelineMetrics,
-    EventType, EventChannel, EventOutcome
+    CustomerEvent,
+    EventFilter,
+    EventOutcome,
+    EventTimeline,
+    EventType,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,11 +29,11 @@ class TimelineService:
         channel: str,
         title: str,
         event_data: dict,
-        description: Optional[str] = None,
+        description: str | None = None,
         outcome: str = EventOutcome.SUCCESS.value,
-        revenue_impact: Optional[str] = None,
-        estimated_value: Optional[int] = None,
-        created_by: Optional[UUID] = None,
+        revenue_impact: str | None = None,
+        estimated_value: int | None = None,
+        created_by: UUID | None = None,
         db: Session = None
     ) -> dict:
         """Log customer event."""
@@ -75,10 +77,10 @@ class TimelineService:
         business_id: UUID,
         limit: int = 50,
         offset: int = 0,
-        event_types: Optional[List[str]] = None,
-        channels: Optional[List[str]] = None,
+        event_types: list[str] | None = None,
+        channels: list[str] | None = None,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get customer timeline."""
         if not db:
             raise ValueError("Database session required")
@@ -152,7 +154,7 @@ class TimelineService:
         business_id: UUID,
         limit: int = 50,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get live event stream across all customers."""
         if not db:
             raise ValueError("Database session required")
@@ -180,7 +182,7 @@ class TimelineService:
         query_text: str,
         limit: int = 50,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Search events by title/description."""
         if not db:
             raise ValueError("Database session required")
@@ -227,9 +229,9 @@ class TimelineService:
         business_id: UUID,
         user_id: UUID,
         name: str,
-        event_types: Optional[List[str]] = None,
-        channels: Optional[List[str]] = None,
-        outcomes: Optional[List[str]] = None,
+        event_types: list[str] | None = None,
+        channels: list[str] | None = None,
+        outcomes: list[str] | None = None,
         db: Session = None
     ) -> dict:
         """Save timeline filter."""
@@ -256,7 +258,7 @@ class TimelineService:
         business_id: UUID,
         user_id: UUID,
         db: Session = None
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get saved filters."""
         if not db:
             raise ValueError("Database session required")
@@ -287,7 +289,7 @@ class TimelineService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         total_events = db.query(func.count(CustomerEvent.id)).filter(
             CustomerEvent.business_id == business_id,

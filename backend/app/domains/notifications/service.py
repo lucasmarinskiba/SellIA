@@ -4,16 +4,19 @@ Sends real notifications to business owners via WhatsApp, Email, Push, In-App.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.notifications.models import NotificationDelivery, NotificationChannel, NotificationPriority, NotificationStatus
-from app.domains.users.models import User
-from app.domains.businesses.models import Business
 from app.core.logger import get_logger
+from app.domains.businesses.models import Business
+from app.domains.notifications.models import (
+    NotificationDelivery,
+    NotificationPriority,
+    NotificationStatus,
+)
 
 logger = get_logger(__name__)
 
@@ -63,7 +66,7 @@ class NotificationService:
             try:
                 await self._send_via_channel(delivery)
                 delivery.status = NotificationStatus.SENT
-                delivery.sent_at = datetime.now(timezone.utc)
+                delivery.sent_at = datetime.now(UTC)
             except Exception as e:
                 delivery.status = NotificationStatus.FAILED
                 delivery.error_message = str(e)
@@ -121,10 +124,10 @@ class BriefingDeliveryService:
         self.db = db
         self.notification = NotificationService(db)
 
-    async def deliver_daily_briefing(self, business_id: uuid.UUID) -> Optional[dict[str, Any]]:
+    async def deliver_daily_briefing(self, business_id: uuid.UUID) -> dict[str, Any] | None:
         """Generate and deliver daily briefing."""
-        from app.domains.orchestration.director import SellIADirector
         from app.domains.autopilot.service import AutopilotReportService
+        from app.domains.orchestration.director import SellIADirector
 
         # Get business owner
         biz_result = await self.db.execute(

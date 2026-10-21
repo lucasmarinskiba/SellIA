@@ -1,21 +1,20 @@
 """Business Document RAG API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.documents.service import DocumentService
 from app.domains.documents.schemas import (
-    BusinessDocumentResponse,
     BusinessDocumentDetailResponse,
+    BusinessDocumentResponse,
     DocumentSearchRequest,
     DocumentSearchResponse,
 )
+from app.domains.documents.service import DocumentService
+from app.domains.users.models import User
 
 router = APIRouter(tags=["documents"])
 
@@ -30,7 +29,7 @@ router = APIRouter(tags=["documents"])
 async def upload_document(
     business_id: UUID,
     file: UploadFile = File(...),
-    title: Optional[str] = Form(None),
+    title: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

@@ -1,10 +1,21 @@
 """Customer journey orchestration models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -38,8 +49,8 @@ class CustomerJourney(Base):
     is_active = Column(Boolean, default=True)
     version = Column(Integer, default=1)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class JourneyVariant(Base):
@@ -55,7 +66,7 @@ class JourneyVariant(Base):
     traffic_allocation = Column(Float, default=50.0)  # % of audience
     is_control = Column(Boolean, default=False)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class JourneyExecution(Base):
@@ -73,8 +84,8 @@ class JourneyExecution(Base):
     
     execution_path = Column(JSONB, default=list)  # [node1, node2, ...]
     
-    started_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)
     
     __table_args__ = (
         Index("idx_journey_customer", "journey_id", "customer_id"),
@@ -95,7 +106,7 @@ class JourneyMetrics(Base):
     avg_journey_duration_hours = Column(Float, default=0)
     completion_rate = Column(Float, default=0)
     
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class ABTestResult(Base):
@@ -116,7 +127,7 @@ class ABTestResult(Base):
     is_significant = Column(Boolean, default=False)
     winner = Column(String(10), nullable=True)  # A or B
     
-    test_start_date = Column(DateTime(timezone.utc), nullable=False)
-    test_end_date = Column(DateTime(timezone.utc), nullable=True)
+    test_start_date = Column(DateTime(UTC), nullable=False)
+    test_end_date = Column(DateTime(UTC), nullable=True)
     
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

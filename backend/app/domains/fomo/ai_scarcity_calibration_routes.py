@@ -1,8 +1,8 @@
 """Fase C: AI Scarcity Calibration Agent — API routes"""
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_scarcity_calibration_agent import AIScarcityCalibrationAgent
@@ -33,7 +33,7 @@ async def audit_scarcity_message(
 
 @router.post("/calibrate-discount")
 async def calibrate_discount(
-    historical_data: List[Dict[str, float]] = Body(
+    historical_data: list[dict[str, float]] = Body(
         ..., description='[{"discount_percent": float, "conversion_rate": float}]'
     ),
     min_discount: int = Query(10),
@@ -46,7 +46,7 @@ async def calibrate_discount(
 
 @router.post("/check-urgency-fatigue")
 async def check_urgency_fatigue(
-    campaign_history: List[Dict[str, Any]] = Body(
+    campaign_history: list[dict[str, Any]] = Body(
         ..., description='[{"sent_at": iso8601, "urgency_intensity": str, "conversion_rate": float}]'
     ),
     current_user=Depends(get_current_user),
@@ -57,8 +57,8 @@ async def check_urgency_fatigue(
 
 @router.post("/ab-test-analysis")
 async def run_ab_test_analysis(
-    variant_low: Dict[str, int] = Body(..., description='{"conversions": int, "visitors": int}'),
-    variant_high: Dict[str, int] = Body(..., description='{"conversions": int, "visitors": int}'),
+    variant_low: dict[str, int] = Body(..., description='{"conversions": int, "visitors": int}'),
+    variant_high: dict[str, int] = Body(..., description='{"conversions": int, "visitors": int}'),
     min_sample_size: int = Query(100),
     current_user=Depends(get_current_user),
 ):
@@ -69,9 +69,9 @@ async def run_ab_test_analysis(
 @router.post("/full-calibration")
 async def full_calibration(
     real_stock: int = Query(...),
-    discount_historical_data: List[Dict[str, float]] = Body(...),
-    campaign_history: List[Dict[str, Any]] = Body(...),
-    ab_test_variants: Optional[Dict[str, Dict[str, int]]] = Body(None),
+    discount_historical_data: list[dict[str, float]] = Body(...),
+    campaign_history: list[dict[str, Any]] = Body(...),
+    ab_test_variants: dict[str, dict[str, int]] | None = Body(None),
     current_user=Depends(get_current_user),
 ):
     """Run all four calibrations together and resolve a single final intensity recommendation"""

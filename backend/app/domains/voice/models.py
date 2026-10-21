@@ -1,10 +1,21 @@
 """Voice Agent Models"""
 
 import uuid
-from datetime import datetime, timezone, time
+from datetime import UTC, datetime, time
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Integer, Numeric, Boolean, Time, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    Time,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -47,7 +58,7 @@ class VoiceCall(Base):
     ended_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
 
@@ -76,10 +87,10 @@ class VoiceConfig(Base):
     allowed_hours_end = Column(Time, default=time(18, 0), nullable=False)
     created_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = Column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )

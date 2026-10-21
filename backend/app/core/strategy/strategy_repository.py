@@ -1,9 +1,8 @@
 """Strategy Repository — 50+ strategies with application rules."""
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Dict, Any, Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -85,19 +84,19 @@ class StrategyDefinition:
     name: str
     category: StrategyCategory
     description: str
-    best_for_stages: List[str]  # startup, growth, scale, mature
-    best_for_industries: List[str]  # commerce, real_estate, services, etc.
-    best_for_business_models: List[str]  # B2B, B2C, D2C, SaaS, Services, etc.
-    key_principles: List[str]
-    implementation_steps: List[str]
-    success_metrics: List[str]
+    best_for_stages: list[str]  # startup, growth, scale, mature
+    best_for_industries: list[str]  # commerce, real_estate, services, etc.
+    best_for_business_models: list[str]  # B2B, B2C, D2C, SaaS, Services, etc.
+    key_principles: list[str]
+    implementation_steps: list[str]
+    success_metrics: list[str]
     typical_timeline_weeks: int
-    resource_requirements: Dict[str, str]
-    constraints: List[str]
-    risks: List[str]
-    expected_roi: Dict[str, float]  # Key metrics → expected improvement %
-    incompatible_with: List[Strategy]
-    examples: List[str]
+    resource_requirements: dict[str, str]
+    constraints: list[str]
+    risks: list[str]
+    expected_roi: dict[str, float]  # Key metrics → expected improvement %
+    incompatible_with: list[Strategy]
+    examples: list[str]
 
 
 class StrategyRepository:
@@ -107,7 +106,7 @@ class StrategyRepository:
         """Initialize strategy repository."""
         self.strategies = self._initialize_strategies()
 
-    def _initialize_strategies(self) -> Dict[Strategy, StrategyDefinition]:
+    def _initialize_strategies(self) -> dict[Strategy, StrategyDefinition]:
         """Initialize all 50+ strategies."""
         return {
             # Blue Ocean Strategies
@@ -548,27 +547,27 @@ class StrategyRepository:
             ),
         }
 
-    def get_strategy(self, strategy_id: Strategy) -> Optional[StrategyDefinition]:
+    def get_strategy(self, strategy_id: Strategy) -> StrategyDefinition | None:
         """Get strategy by ID."""
         return self.strategies.get(strategy_id)
 
-    def get_strategies_for_stage(self, stage: str) -> List[StrategyDefinition]:
+    def get_strategies_for_stage(self, stage: str) -> list[StrategyDefinition]:
         """Get all strategies applicable to a business stage."""
         return [s for s in self.strategies.values() if stage in s.best_for_stages]
 
-    def get_strategies_for_industry(self, industry: str) -> List[StrategyDefinition]:
+    def get_strategies_for_industry(self, industry: str) -> list[StrategyDefinition]:
         """Get all strategies applicable to an industry."""
         return [s for s in self.strategies.values() if industry in s.best_for_industries]
 
-    def get_strategies_for_business_model(self, model: str) -> List[StrategyDefinition]:
+    def get_strategies_for_business_model(self, model: str) -> list[StrategyDefinition]:
         """Get all strategies applicable to a business model."""
         return [s for s in self.strategies.values() if model in s.best_for_business_models]
 
-    def get_strategies_by_category(self, category: StrategyCategory) -> List[StrategyDefinition]:
+    def get_strategies_by_category(self, category: StrategyCategory) -> list[StrategyDefinition]:
         """Get all strategies in a category."""
         return [s for s in self.strategies.values() if s.category == category]
 
-    def find_compatible_strategies(self, strategy_id: Strategy) -> List[StrategyDefinition]:
+    def find_compatible_strategies(self, strategy_id: Strategy) -> list[StrategyDefinition]:
         """Find strategies that work well together."""
         strategy = self.get_strategy(strategy_id)
         if not strategy:

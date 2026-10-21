@@ -16,7 +16,7 @@ This module makes them agree:
 """
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -90,7 +90,7 @@ async def set_brain_capability(
     if toggle is not None and toggle.is_enabled == enabled:
         return  # already in sync: no row churn, no noise in the audit log
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if toggle is None:
         toggle = AutomationToggle(
             business_id=business_id, toggle_key=toggle_key,

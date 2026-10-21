@@ -11,13 +11,12 @@ Complete equity market mastery covering:
 - Market microstructure (order types, liquidity, spreads, short selling)
 """
 
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any
-from enum import Enum
-from datetime import datetime, timedelta
-import statistics
 import math
-
+import statistics
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 # ============================================================================
 # 1. EQUITY FUNDAMENTALS (1,200+ lines)
@@ -54,7 +53,7 @@ class EarningsMetric:
     forecast_eps_next_year: float
     earnings_revisions_trend: str  # up, down, stable
 
-    def valuation_assessment(self) -> Dict[str, Any]:
+    def valuation_assessment(self) -> dict[str, Any]:
         """Assess if valuation is attractive based on earnings metrics."""
         assessment = {
             "pe_status": "expensive" if self.pe_ratio > 20 else "fair" if self.pe_ratio > 12 else "cheap",
@@ -87,11 +86,11 @@ class DividendAnalysis:
     dividend_growth_rate: float
     years_of_increases: int
     dividend_cut_risk: float  # 0-1 probability
-    special_dividends: List[float]
-    ex_dividend_dates: List[datetime]
+    special_dividends: list[float]
+    ex_dividend_dates: list[datetime]
     sustainability_score: float  # 0-1
 
-    def dividend_assessment(self) -> Dict[str, Any]:
+    def dividend_assessment(self) -> dict[str, Any]:
         """Assess dividend sustainability and growth potential."""
         return {
             "yield": f"{self.dividend_yield*100:.2f}%",
@@ -129,7 +128,7 @@ class FreeCashFlowAnalysis:
     cash_position: float
     fcf_per_share: float
 
-    def cash_flow_assessment(self) -> Dict[str, Any]:
+    def cash_flow_assessment(self) -> dict[str, Any]:
         """Assess quality of cash generation and allocation."""
         return {
             "fcf_quality": "excellent" if self.fcf_conversion_ratio > 0.8 else "good" if self.fcf_conversion_ratio > 0.6 else "fair",
@@ -157,7 +156,7 @@ class FreeCashFlowAnalysis:
         else:
             return "BALANCED_GROWTH"
 
-    def _fcf_valuation(self) -> Dict[str, float]:
+    def _fcf_valuation(self) -> dict[str, float]:
         """Estimate intrinsic value proxy using FCF."""
         wacc = 0.08  # Weighted average cost of capital estimate
         terminal_growth = 0.025
@@ -180,12 +179,12 @@ class ValuationMetrics:
     price_to_fcf_ratio: float
     dividend_discount_model_value: float
     dcf_intrinsic_value: float
-    sum_of_parts_value: Optional[float]
+    sum_of_parts_value: float | None
     book_value_per_share: float
     tangible_book_value_per_share: float
     current_stock_price: float
 
-    def valuation_summary(self) -> Dict[str, Any]:
+    def valuation_summary(self) -> dict[str, Any]:
         """Comprehensive valuation analysis."""
         intrinsic_values = [self.dcf_intrinsic_value, self.dividend_discount_model_value]
         avg_intrinsic = statistics.mean([v for v in intrinsic_values if v > 0]) if intrinsic_values else 0
@@ -263,7 +262,7 @@ class EquityFundamentals:
         return free_cash_flow / shares_outstanding if shares_outstanding > 0 else 0
 
     @staticmethod
-    def analyze_debt_metrics(total_debt: float, equity: float, ebitda: float) -> Dict[str, float]:
+    def analyze_debt_metrics(total_debt: float, equity: float, ebitda: float) -> dict[str, float]:
         """Analyze debt ratios and leverage."""
         debt_to_equity = total_debt / equity if equity > 0 else 0
         debt_to_ebitda = total_debt / ebitda if ebitda > 0 else 0
@@ -315,7 +314,7 @@ class TechnicalIndicators:
     williamsr: float  # Williams %R
     roc: float  # Rate of Change
 
-    def signal_analysis(self) -> Dict[str, Any]:
+    def signal_analysis(self) -> dict[str, Any]:
         """Analyze technical signals from multiple indicators."""
         return {
             "momentum": self._momentum_signal(),
@@ -363,7 +362,7 @@ class TechnicalIndicators:
             reversal_signals += 1
         return min(reversal_signals / 3, 1.0)
 
-    def _support_resistance(self) -> Dict[str, float]:
+    def _support_resistance(self) -> dict[str, float]:
         return {
             "support_level": self.bollinger_lower,
             "resistance_level": self.bollinger_upper,
@@ -419,7 +418,7 @@ class SupportResistance:
     """Support and resistance level analysis."""
 
     @staticmethod
-    def find_support_levels(prices: List[float], window: int = 20) -> List[float]:
+    def find_support_levels(prices: list[float], window: int = 20) -> list[float]:
         """Identify support levels from historical prices."""
         support_levels = []
         for i in range(window, len(prices) - window):
@@ -428,7 +427,7 @@ class SupportResistance:
         return sorted(set(support_levels))
 
     @staticmethod
-    def find_resistance_levels(prices: List[float], window: int = 20) -> List[float]:
+    def find_resistance_levels(prices: list[float], window: int = 20) -> list[float]:
         """Identify resistance levels from historical prices."""
         resistance_levels = []
         for i in range(window, len(prices) - window):
@@ -437,7 +436,7 @@ class SupportResistance:
         return sorted(set(resistance_levels), reverse=True)
 
     @staticmethod
-    def calculate_pivot_points(high: float, low: float, close: float) -> Dict[str, float]:
+    def calculate_pivot_points(high: float, low: float, close: float) -> dict[str, float]:
         """Calculate Pivot, Support, Resistance levels."""
         pivot = (high + low + close) / 3
         r1 = 2 * pivot - low
@@ -458,12 +457,12 @@ class MovingAverageAnalysis:
     """Moving average strategies and analysis."""
 
     @staticmethod
-    def calculate_sma(prices: List[float], period: int) -> List[float]:
+    def calculate_sma(prices: list[float], period: int) -> list[float]:
         """Calculate simple moving average."""
         return [statistics.mean(prices[max(0, i-period+1):i+1]) for i in range(len(prices))]
 
     @staticmethod
-    def calculate_ema(prices: List[float], period: int) -> List[float]:
+    def calculate_ema(prices: list[float], period: int) -> list[float]:
         """Calculate exponential moving average."""
         ema = []
         multiplier = 2 / (period + 1)
@@ -475,7 +474,7 @@ class MovingAverageAnalysis:
         return ema
 
     @staticmethod
-    def ma_crossover_signals(prices: List[float], short_period: int = 20, long_period: int = 50) -> List[str]:
+    def ma_crossover_signals(prices: list[float], short_period: int = 20, long_period: int = 50) -> list[str]:
         """Generate buy/sell signals from moving average crossovers."""
         short_ma = MovingAverageAnalysis.calculate_sma(prices, short_period)
         long_ma = MovingAverageAnalysis.calculate_sma(prices, long_period)
@@ -509,7 +508,7 @@ class RSIAnalysis:
     """Relative Strength Index analysis."""
 
     @staticmethod
-    def calculate_rsi(prices: List[float], period: int = 14) -> List[float]:
+    def calculate_rsi(prices: list[float], period: int = 14) -> list[float]:
         """Calculate RSI indicator."""
         rsi_values = []
         deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
@@ -531,7 +530,7 @@ class RSIAnalysis:
         return rsi_values
 
     @staticmethod
-    def rsi_divergence_signals(prices: List[float], rsi_values: List[float]) -> List[str]:
+    def rsi_divergence_signals(prices: list[float], rsi_values: list[float]) -> list[str]:
         """Detect bullish and bearish divergences."""
         signals = []
         for i in range(1, len(prices) - 1):
@@ -548,7 +547,7 @@ class MACDAnalysis:
     """MACD indicator analysis."""
 
     @staticmethod
-    def calculate_macd(prices: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[List[float], List[float], List[float]]:
+    def calculate_macd(prices: list[float], fast: int = 12, slow: int = 26, signal: int = 9) -> tuple[list[float], list[float], list[float]]:
         """Calculate MACD, Signal line, and Histogram."""
         fast_ema = MovingAverageAnalysis.calculate_ema(prices, fast)
         slow_ema = MovingAverageAnalysis.calculate_ema(prices, slow)
@@ -560,7 +559,7 @@ class MACDAnalysis:
         return macd_line, signal_line, histogram
 
     @staticmethod
-    def macd_signals(macd_line: List[float], signal_line: List[float]) -> List[str]:
+    def macd_signals(macd_line: list[float], signal_line: list[float]) -> list[str]:
         """Generate buy/sell signals from MACD."""
         signals = []
         for i in range(1, len(macd_line)):
@@ -577,7 +576,7 @@ class BollingerBandAnalysis:
     """Bollinger Band analysis."""
 
     @staticmethod
-    def calculate_bollinger_bands(prices: List[float], period: int = 20, std_dev: float = 2) -> Tuple[List[float], List[float], List[float]]:
+    def calculate_bollinger_bands(prices: list[float], period: int = 20, std_dev: float = 2) -> tuple[list[float], list[float], list[float]]:
         """Calculate Bollinger Bands."""
         sma = MovingAverageAnalysis.calculate_sma(prices, period)
         upper_band = []
@@ -596,7 +595,7 @@ class BollingerBandAnalysis:
         return upper_band, sma, lower_band
 
     @staticmethod
-    def bb_squeeze_detection(upper_band: List[float], lower_band: List[float], period: int = 20) -> List[bool]:
+    def bb_squeeze_detection(upper_band: list[float], lower_band: list[float], period: int = 20) -> list[bool]:
         """Detect Bollinger Band squeeze periods."""
         squeeze_detected = []
         for i in range(len(upper_band)):
@@ -618,7 +617,7 @@ class TechnicalAnalysis:
         self.indicators = None
         self.chart_patterns = []
 
-    def comprehensive_technical_analysis(self, prices: List[float], volumes: List[float]) -> Dict[str, Any]:
+    def comprehensive_technical_analysis(self, prices: list[float], volumes: list[float]) -> dict[str, Any]:
         """Perform comprehensive technical analysis."""
         if len(prices) < 50:
             return {"error": "Insufficient price history for analysis"}
@@ -634,7 +633,7 @@ class TechnicalAnalysis:
             "overall_signal": self._generate_overall_signal(prices),
         }
 
-    def _analyze_moving_averages(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_moving_averages(self, prices: list[float]) -> dict[str, Any]:
         sma_20 = MovingAverageAnalysis.calculate_sma(prices, 20)[-1]
         sma_50 = MovingAverageAnalysis.calculate_sma(prices, 50)[-1]
         sma_200 = MovingAverageAnalysis.calculate_sma(prices, 200)[-1]
@@ -648,7 +647,7 @@ class TechnicalAnalysis:
             "crossover_signal": MovingAverageAnalysis.ma_crossover_signals(prices)[-1] if len(prices) > 50 else "INSUFFICIENT_DATA",
         }
 
-    def _analyze_rsi(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_rsi(self, prices: list[float]) -> dict[str, Any]:
         rsi_values = RSIAnalysis.calculate_rsi(prices)
         current_rsi = rsi_values[-1]
 
@@ -658,7 +657,7 @@ class TechnicalAnalysis:
             "divergence": RSIAnalysis.rsi_divergence_signals(prices, rsi_values)[-1] if len(prices) > 2 else "NEUTRAL",
         }
 
-    def _analyze_macd(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_macd(self, prices: list[float]) -> dict[str, Any]:
         macd_line, signal_line, histogram = MACDAnalysis.calculate_macd(prices)
         signals = MACDAnalysis.macd_signals(macd_line, signal_line)
 
@@ -670,7 +669,7 @@ class TechnicalAnalysis:
             "momentum": "BULLISH" if histogram[-1] > 0 else "BEARISH",
         }
 
-    def _analyze_bollinger_bands(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_bollinger_bands(self, prices: list[float]) -> dict[str, Any]:
         upper, middle, lower = BollingerBandAnalysis.calculate_bollinger_bands(prices)
         squeeze = BollingerBandAnalysis.bb_squeeze_detection(upper, lower)
 
@@ -686,7 +685,7 @@ class TechnicalAnalysis:
             "squeeze_detected": squeeze[-1] if squeeze else False,
         }
 
-    def _analyze_support_resistance(self, prices: List[float]) -> Dict[str, Any]:
+    def _analyze_support_resistance(self, prices: list[float]) -> dict[str, Any]:
         pivot = SupportResistance.calculate_pivot_points(max(prices[-20:]), min(prices[-20:]), prices[-1])
 
         return {
@@ -697,7 +696,7 @@ class TechnicalAnalysis:
             "support_2": round(pivot["support2"], 2),
         }
 
-    def _analyze_volume(self, volumes: List[float]) -> Dict[str, Any]:
+    def _analyze_volume(self, volumes: list[float]) -> dict[str, Any]:
         avg_volume = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else statistics.mean(volumes)
         current_volume = volumes[-1]
         volume_trend = "above_average" if current_volume > avg_volume * 1.2 else "below_average" if current_volume < avg_volume * 0.8 else "normal"
@@ -708,7 +707,7 @@ class TechnicalAnalysis:
             "trend": volume_trend,
         }
 
-    def _detect_patterns(self, prices: List[float]) -> List[str]:
+    def _detect_patterns(self, prices: list[float]) -> list[str]:
         """Detect common chart patterns."""
         patterns = []
         if len(prices) < 20:
@@ -723,21 +722,21 @@ class TechnicalAnalysis:
 
         return patterns
 
-    def _is_double_bottom(self, prices: List[float]) -> bool:
+    def _is_double_bottom(self, prices: list[float]) -> bool:
         if len(prices) < 10:
             return False
         low1_idx = prices[:len(prices)//2].index(min(prices[:len(prices)//2]))
         low2_idx = len(prices)//2 + prices[len(prices)//2:].index(min(prices[len(prices)//2:]))
         return abs(prices[low1_idx] - prices[low2_idx]) < prices[-1] * 0.02  # Within 2% of each other
 
-    def _is_double_top(self, prices: List[float]) -> bool:
+    def _is_double_top(self, prices: list[float]) -> bool:
         if len(prices) < 10:
             return False
         high1_idx = prices[:len(prices)//2].index(max(prices[:len(prices)//2]))
         high2_idx = len(prices)//2 + prices[len(prices)//2:].index(max(prices[len(prices)//2:]))
         return abs(prices[high1_idx] - prices[high2_idx]) < prices[-1] * 0.02
 
-    def _generate_overall_signal(self, prices: List[float]) -> str:
+    def _generate_overall_signal(self, prices: list[float]) -> str:
         """Generate overall technical signal."""
         # Simplified overall signal
         rsi = RSIAnalysis.calculate_rsi(prices)[-1]
@@ -776,7 +775,7 @@ class FinancialStatements:
     current_liabilities: float
     shareholder_equity: float
 
-    def profitability_ratios(self) -> Dict[str, float]:
+    def profitability_ratios(self) -> dict[str, float]:
         """Calculate profitability metrics."""
         gross_margin = (self.gross_profit / self.revenue * 100) if self.revenue > 0 else 0
         operating_margin = (self.operating_income / self.revenue * 100) if self.revenue > 0 else 0
@@ -788,7 +787,7 @@ class FinancialStatements:
             "net_margin_percent": round(net_margin, 2),
         }
 
-    def liquidity_ratios(self) -> Dict[str, float]:
+    def liquidity_ratios(self) -> dict[str, float]:
         """Calculate liquidity metrics."""
         current_ratio = self.current_assets / self.current_liabilities if self.current_liabilities > 0 else 0
         quick_ratio = (self.current_assets - 50000000) / self.current_liabilities if self.current_liabilities > 0 else 0  # Simplified
@@ -799,7 +798,7 @@ class FinancialStatements:
             "liquidity_status": "strong" if current_ratio > 1.5 else "adequate" if current_ratio > 1.0 else "weak",
         }
 
-    def efficiency_ratios(self) -> Dict[str, float]:
+    def efficiency_ratios(self) -> dict[str, float]:
         """Calculate efficiency metrics."""
         asset_turnover = self.revenue / self.total_assets if self.total_assets > 0 else 0
         fcf = self.operating_cash_flow - self.capex
@@ -815,7 +814,7 @@ class FundamentalAnalysis:
     """Complete fundamental analysis."""
 
     @staticmethod
-    def analyze_growth_trajectory(revenues: List[float], earnings: List[float]) -> Dict[str, Any]:
+    def analyze_growth_trajectory(revenues: list[float], earnings: list[float]) -> dict[str, Any]:
         """Analyze company growth trajectory."""
         revenue_growth = [(revenues[i] - revenues[i-1]) / revenues[i-1] * 100 for i in range(1, len(revenues))]
         earnings_growth = [(earnings[i] - earnings[i-1]) / earnings[i-1] * 100 if earnings[i-1] > 0 else 0 for i in range(1, len(earnings))]
@@ -831,7 +830,7 @@ class FundamentalAnalysis:
         }
 
     @staticmethod
-    def competitive_analysis(company_metrics: Dict, industry_metrics: Dict) -> Dict[str, Any]:
+    def competitive_analysis(company_metrics: dict, industry_metrics: dict) -> dict[str, Any]:
         """Compare company against industry."""
         return {
             "profitability_rank": "above_average" if company_metrics.get("net_margin", 0) > industry_metrics.get("net_margin", 0) else "below_average",
@@ -840,7 +839,7 @@ class FundamentalAnalysis:
         }
 
     @staticmethod
-    def sector_tailwinds_analysis(sector: str, macro_indicators: Dict) -> Dict[str, Any]:
+    def sector_tailwinds_analysis(sector: str, macro_indicators: dict) -> dict[str, Any]:
         """Assess sector tailwinds and headwinds."""
         tailwinds = []
         headwinds = []
@@ -880,11 +879,11 @@ class PortfolioAllocation:
     target_return: float
     expected_volatility: float
 
-    def rebalancing_analysis(self, current_allocation: Dict[str, float]) -> Dict[str, Any]:
+    def rebalancing_analysis(self, current_allocation: dict[str, float]) -> dict[str, Any]:
         """Analyze need for rebalancing."""
         drift = {
             k: abs(current_allocation.get(k, 0) - getattr(self, f"{k.lower()}_percent", 0))
-            for k in current_allocation.keys()
+            for k in current_allocation
         }
 
         max_drift = max(drift.values()) if drift else 0
@@ -895,7 +894,7 @@ class PortfolioAllocation:
             "suggested_actions": self._rebalancing_actions(drift, current_allocation),
         }
 
-    def _rebalancing_actions(self, drift: Dict[str, float], current: Dict[str, float]) -> List[str]:
+    def _rebalancing_actions(self, drift: dict[str, float], current: dict[str, float]) -> list[str]:
         actions = []
         target_equities = self.equities_percent
         if current.get("equities", 0) > target_equities + 5:
@@ -941,7 +940,7 @@ class PortfolioStrategy:
             )
 
     @staticmethod
-    def sector_rotation_strategy(business_cycle_phase: str) -> Dict[str, float]:
+    def sector_rotation_strategy(business_cycle_phase: str) -> dict[str, float]:
         """Recommend sector allocation based on business cycle."""
         allocations = {
             "early_cycle": {"financials": 15, "industrials": 15, "energy": 10, "healthcare": 15, "technology": 20, "consumer_staples": 10, "utilities": 5, "reits": 10},
@@ -953,7 +952,7 @@ class PortfolioStrategy:
         return allocations.get(business_cycle_phase, allocations["mid_cycle"])
 
     @staticmethod
-    def diversification_analysis(holdings: Dict[str, float]) -> Dict[str, Any]:
+    def diversification_analysis(holdings: dict[str, float]) -> dict[str, Any]:
         """Analyze portfolio diversification."""
         total = sum(holdings.values())
         concentration = max(holdings.values()) / total if total > 0 else 0
@@ -966,7 +965,7 @@ class PortfolioStrategy:
         }
 
     @staticmethod
-    def rebalancing_schedule(volatility: float, costs: Dict[str, float]) -> str:
+    def rebalancing_schedule(volatility: float, costs: dict[str, float]) -> str:
         """Determine optimal rebalancing frequency."""
         if volatility > 0.20:
             return "QUARTERLY"
@@ -990,7 +989,7 @@ class VaRMetrics:
     daily_volatility: float
     time_horizon_days: int
 
-    def risk_summary(self) -> Dict[str, Any]:
+    def risk_summary(self) -> dict[str, Any]:
         """Summarize VaR-based risk metrics."""
         annual_vol = self.daily_volatility * math.sqrt(252)
 
@@ -1007,7 +1006,7 @@ class RiskManagement:
     """Comprehensive risk management."""
 
     @staticmethod
-    def calculate_var(returns: List[float], confidence_level: float = 0.95, time_horizon: int = 1) -> float:
+    def calculate_var(returns: list[float], confidence_level: float = 0.95, time_horizon: int = 1) -> float:
         """Calculate Value at Risk."""
         sorted_returns = sorted(returns)
         var_index = int((1 - confidence_level) * len(returns))
@@ -1024,7 +1023,7 @@ class RiskManagement:
         return min(position_size, portfolio_value * 0.1)  # Cap at 10% of portfolio
 
     @staticmethod
-    def correlation_analysis(asset_returns: Dict[str, List[float]]) -> Dict[str, float]:
+    def correlation_analysis(asset_returns: dict[str, list[float]]) -> dict[str, float]:
         """Analyze correlation between assets."""
         correlations = {}
         assets = list(asset_returns.keys())
@@ -1049,7 +1048,7 @@ class RiskManagement:
         return correlations
 
     @staticmethod
-    def stress_test_scenarios() -> Dict[str, Dict[str, float]]:
+    def stress_test_scenarios() -> dict[str, dict[str, float]]:
         """Define stress test scenarios."""
         return {
             "market_crash": {"equity_return": -0.25, "bond_return": 0.05, "volatility_spike": 2.0},
@@ -1059,7 +1058,7 @@ class RiskManagement:
         }
 
     @staticmethod
-    def portfolio_stress_test(portfolio: Dict[str, float], scenarios: Dict[str, Dict[str, float]]) -> Dict[str, Dict[str, float]]:
+    def portfolio_stress_test(portfolio: dict[str, float], scenarios: dict[str, dict[str, float]]) -> dict[str, dict[str, float]]:
         """Run portfolio through stress scenarios."""
         results = {}
 
@@ -1085,10 +1084,10 @@ class TradeJournal:
     """Trading journal for performance tracking."""
 
     def __init__(self):
-        self.trades: List[Dict[str, Any]] = []
+        self.trades: list[dict[str, Any]] = []
 
     def log_trade(self, entry_date: datetime, entry_price: float, exit_price: float,
-                  quantity: int, symbol: str, reason: str, emotions: List[str]):
+                  quantity: int, symbol: str, reason: str, emotions: list[str]):
         """Log a completed trade."""
         profit_loss = (exit_price - entry_price) * quantity
         profit_loss_percent = ((exit_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
@@ -1105,7 +1104,7 @@ class TradeJournal:
             "emotions": emotions,
         })
 
-    def analyze_journal(self) -> Dict[str, Any]:
+    def analyze_journal(self) -> dict[str, Any]:
         """Analyze trading performance and psychology patterns."""
         if not self.trades:
             return {"error": "No trades logged yet"}
@@ -1146,7 +1145,7 @@ class TradeJournal:
             "psychological_insights": self._generate_insights(emotion_analysis, win_rate),
         }
 
-    def _generate_insights(self, emotion_analysis: Dict, win_rate: float) -> List[str]:
+    def _generate_insights(self, emotion_analysis: dict, win_rate: float) -> list[str]:
         """Generate psychological insights from trading data."""
         insights = []
 
@@ -1175,7 +1174,7 @@ class TradingBiases:
     }
 
     @staticmethod
-    def bias_mitigation_strategies() -> Dict[str, List[str]]:
+    def bias_mitigation_strategies() -> dict[str, list[str]]:
         """Strategies to combat common biases."""
         return {
             "confirmation_bias": [
@@ -1218,7 +1217,7 @@ class TradingPsychology:
         self.journal = TradeJournal()
         self.biases = TradingBiases()
 
-    def discipline_framework(self) -> Dict[str, Any]:
+    def discipline_framework(self) -> dict[str, Any]:
         """Framework for trading discipline."""
         return {
             "pre_trade_checklist": [
@@ -1243,7 +1242,7 @@ class TradingPsychology:
             ],
         }
 
-    def patience_metrics(self, trades: List[Dict]) -> Dict[str, Any]:
+    def patience_metrics(self, trades: list[dict]) -> dict[str, Any]:
         """Analyze patience in trading decisions."""
         if not trades:
             return {"error": "No trades to analyze"}
@@ -1288,7 +1287,7 @@ class OrderFlowAnalysis:
     market_impact: float
     slippage: float
 
-    def liquidity_assessment(self) -> Dict[str, Any]:
+    def liquidity_assessment(self) -> dict[str, Any]:
         """Assess market liquidity."""
         return {
             "liquidity_score": self._liquidity_score(),
@@ -1327,7 +1326,7 @@ class MarketMaker:
         return base_spread + volatility_adjustment + liquidity_adjustment
 
     @staticmethod
-    def inventory_risk_analysis(market_maker_holdings: Dict[str, float]) -> Dict[str, Any]:
+    def inventory_risk_analysis(market_maker_holdings: dict[str, float]) -> dict[str, Any]:
         """Analyze market maker inventory risk."""
         total_inventory = sum(abs(v) for v in market_maker_holdings.values())
         long_positions = sum(max(v, 0) for v in market_maker_holdings.values())
@@ -1346,7 +1345,7 @@ class ShortSelling:
     """Short selling mechanics and analysis."""
 
     @staticmethod
-    def short_interest_analysis(short_shares: float, float_shares: float, avg_daily_volume: float) -> Dict[str, Any]:
+    def short_interest_analysis(short_shares: float, float_shares: float, avg_daily_volume: float) -> dict[str, Any]:
         """Analyze short interest metrics."""
         short_percent = (short_shares / float_shares * 100) if float_shares > 0 else 0
         days_to_cover = (short_shares / avg_daily_volume) if avg_daily_volume > 0 else 0
@@ -1367,7 +1366,7 @@ class OptionsMarketMicrostructure:
     """Options-specific market microstructure."""
 
     @staticmethod
-    def options_volume_analysis(call_volume: float, put_volume: float, open_interest: float) -> Dict[str, Any]:
+    def options_volume_analysis(call_volume: float, put_volume: float, open_interest: float) -> dict[str, Any]:
         """Analyze options market activity."""
         put_call_ratio = (put_volume / call_volume) if call_volume > 0 else 0
 
@@ -1378,7 +1377,7 @@ class OptionsMarketMicrostructure:
         }
 
     @staticmethod
-    def implied_volatility_skew(atm_iv: float, otm_call_iv: float, otm_put_iv: float) -> Dict[str, float]:
+    def implied_volatility_skew(atm_iv: float, otm_call_iv: float, otm_put_iv: float) -> dict[str, float]:
         """Analyze volatility skew in options."""
         call_skew = (otm_call_iv - atm_iv) / atm_iv if atm_iv > 0 else 0
         put_skew = (otm_put_iv - atm_iv) / atm_iv if atm_iv > 0 else 0
@@ -1394,7 +1393,7 @@ class MarketMicrostructure:
     """Complete market microstructure framework."""
 
     @staticmethod
-    def optimal_execution_strategy(order_size: float, avg_daily_volume: float, target_participation_rate: float = 0.1) -> Dict[str, Any]:
+    def optimal_execution_strategy(order_size: float, avg_daily_volume: float, target_participation_rate: float = 0.1) -> dict[str, Any]:
         """Recommend execution strategy to minimize market impact."""
         order_as_percent_of_volume = (order_size / avg_daily_volume * 100) if avg_daily_volume > 0 else 0
 
@@ -1419,7 +1418,7 @@ class MarketMicrostructure:
         }
 
     @staticmethod
-    def volatility_smile_analysis(strikes: List[float], implied_vols: List[float], atm_strike: float) -> Dict[str, Any]:
+    def volatility_smile_analysis(strikes: list[float], implied_vols: list[float], atm_strike: float) -> dict[str, Any]:
         """Analyze and classify volatility smile."""
         atm_iv = next((iv for s, iv in zip(strikes, implied_vols) if s == atm_strike), 0)
         otm_calls = [(s, iv) for s, iv in zip(strikes, implied_vols) if s > atm_strike]

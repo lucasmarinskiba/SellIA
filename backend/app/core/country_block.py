@@ -4,15 +4,14 @@ En producción con Cloudflare, usa CF-IPCountry.
 """
 
 import os
-from typing import Optional, Set
+
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.domains.security.models import SecurityConfig
 
 
-async def get_blocked_countries() -> Set[str]:
+async def get_blocked_countries() -> set[str]:
     """Obtiene la lista de países bloqueados desde la configuración de seguridad."""
     # Prioridad 1: variable de entorno
     env_blocked = os.getenv("BLOCKED_COUNTRIES", "")
@@ -32,7 +31,7 @@ async def get_blocked_countries() -> Set[str]:
     return set()
 
 
-def is_country_blocked(country_code: Optional[str], blocked: Set[str]) -> bool:
+def is_country_blocked(country_code: str | None, blocked: set[str]) -> bool:
     """Verifica si un código de país está bloqueado."""
     if not country_code or not blocked:
         return False

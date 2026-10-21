@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,9 +49,9 @@ class OrchestratorService:
             runway = cf.runway_days
             revenue_30d = sum(p.revenue_forecast for p in cf.points)
         except Exception:  # noqa: BLE001
-            cash = Decimal("0")
+            cash = Decimal(0)
             runway = None
-            revenue_30d = Decimal("0")
+            revenue_30d = Decimal(0)
 
         # Forecast confidence from forecasting domain
         from app.domains.forecasting.service import ForecastingService
@@ -67,7 +66,7 @@ class OrchestratorService:
             q50_sum = sum(p.get("yhat", 0) for p in points)
             if q50_sum > 0:
                 confidence = Decimal(str((q90_sum - q10_sum) / (2 * q50_sum)))
-                confidence = Decimal("1") - confidence.min(Decimal("1"))
+                confidence = Decimal(1) - confidence.min(Decimal(1))
 
         # OpEx and margins from ledger
         from app.domains.ledger.service import LedgerService
@@ -75,10 +74,10 @@ class OrchestratorService:
         ledger_svc = LedgerService(self.db)
         try:
             pnl = await ledger_svc.profit_and_loss(business_id, period_months=1)
-            monthly_opex = pnl.get("total_opex", Decimal("0"))
+            monthly_opex = pnl.get("total_opex", Decimal(0))
             gross_margin = pnl.get("gross_margin_pct", Decimal("0.3"))
         except Exception:  # noqa: BLE001
-            monthly_opex = Decimal("0")
+            monthly_opex = Decimal(0)
             gross_margin = Decimal("0.3")
 
         # Ad budget metrics from ad_budget domain
@@ -87,13 +86,13 @@ class OrchestratorService:
         ab_svc = AdBudgetService(self.db)
         try:
             channels = await ab_svc.list_channels(business_id)
-            high_roas = max(channels, key=lambda c: c.last_roas or Decimal("0")).name if channels else "unknown"
-            low_roas = min(channels, key=lambda c: c.last_roas or Decimal("99")).name if channels else "unknown"
-            daily_spend = sum(c.daily_budget or Decimal("0") for c in channels)
+            high_roas = max(channels, key=lambda c: c.last_roas or Decimal(0)).name if channels else "unknown"
+            low_roas = min(channels, key=lambda c: c.last_roas or Decimal(99)).name if channels else "unknown"
+            daily_spend = sum(c.daily_budget or Decimal(0) for c in channels)
         except Exception:  # noqa: BLE001
             high_roas = "unknown"
             low_roas = "unknown"
-            daily_spend = Decimal("0")
+            daily_spend = Decimal(0)
 
         return BusinessMetrics(
             cash_balance=cash,

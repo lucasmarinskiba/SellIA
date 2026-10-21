@@ -5,15 +5,14 @@ and getting AI-suggested prompt improvements.
 """
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.prompt_optimizer import PromptOptimizer
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/outcomes", tags=["outcomes"])
 
@@ -23,9 +22,9 @@ async def record_outcome(
     conversation_id: UUID,
     agent_type: str,
     outcome: str,
-    revenue: Optional[float] = None,
+    revenue: float | None = None,
     confidence: float = 0.0,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -43,8 +42,8 @@ async def record_outcome(
     # Trigger self-reflection and causal analysis for closed/lost conversations
     if outcome in ("lost", "stalled", "objection_unresolved", "no_progress"):
         try:
-            from app.domains.agents.reflection import SelfReflection
             from app.domains.agents.causal_engine import CausalAnalyzer
+            from app.domains.agents.reflection import SelfReflection
 
             reflection_result = await SelfReflection.reflect_on_conversation(db, conversation_id)
             if reflection_result:
@@ -58,8 +57,9 @@ async def record_outcome(
             analyzer = CausalAnalyzer(db)
             causal_result = await analyzer.analyze_failed_deal(conversation_id)
             if causal_result:
-                from app.domains.channels.models import Conversation
                 from sqlalchemy import select
+
+                from app.domains.channels.models import Conversation
 
                 conv_result = await db.execute(
                     select(Conversation.business_id).where(Conversation.id == conversation_id)

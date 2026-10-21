@@ -4,11 +4,16 @@ Pricing: ~$0.05/image (via API proxy como imagineapi.dev o midjourney-api.com)
 Strengths: Aesthetic quality, artistic style, community trends
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
-from ..utils import download_url, compress_image, smart_quality_for_size, get_image_size_kb
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
+from ..utils import (
+    compress_image,
+    download_url,
+    get_image_size_kb,
+    smart_quality_for_size,
+)
 
 settings = get_settings()
 
@@ -27,7 +32,7 @@ class MidjourneyProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.05 * config.num_variations
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"midjourney-standard": 0.05, "midjourney-hd": 0.08}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -48,13 +53,12 @@ class MidjourneyProvider(BaseProvider):
             if config.aspect_ratio:
                 payload["aspect_ratio"] = config.aspect_ratio
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.imagineapi.dev/items/images",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.imagineapi.dev/items/images",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             image_id = data.get("data", {}).get("id")
             if not image_id:

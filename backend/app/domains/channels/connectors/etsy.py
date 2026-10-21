@@ -16,8 +16,8 @@ Docs: https://developer.etsy.com/documentation/reference
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 _RECEIPT_STATUS_LABELS = {
     "paid": "pagado",

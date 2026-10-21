@@ -6,15 +6,14 @@ Requiere: auth + producto + buyer
 Retorna: cycle_id + status
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header
-from pydantic import BaseModel
-from typing import Optional
 import logging
 import uuid
 
-from app.core.orchestration.loop_engineering import LoopEngineering
-from app.core.orchestration.brain_computer_use import BrainComputerUseCoordinator
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel
+
 from app.core.database import get_db
+from app.core.orchestration.loop_engineering import LoopEngineering
 
 router = APIRouter(prefix="/api/v1/sales-cycle", tags=["sales"])
 logger = logging.getLogger(__name__)
@@ -32,8 +31,8 @@ class ProductInput(BaseModel):
 class BuyerInput(BaseModel):
     email: str
     name: str
-    phone: Optional[str] = None
-    company: Optional[str] = None
+    phone: str | None = None
+    company: str | None = None
 
 
 class StartSalesCycleRequest(BaseModel):
@@ -97,7 +96,7 @@ async def start_sales_cycle(
         }
 
     except Exception as e:
-        logger.error(f"Error starting sales cycle {cycle_id}: {str(e)}")
+        logger.error(f"Error starting sales cycle {cycle_id}: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -4,13 +4,12 @@ MercadoPago checkout and webhook handling.
 """
 
 import os
-from typing import Any, Optional
-from datetime import datetime, timezone, timedelta
+from typing import Any
 
 import httpx
 
-from app.core.config import get_settings
 from app.core.circuit_breaker import mercadopago_breaker
+from app.core.config import get_settings
 
 settings = get_settings()
 
@@ -31,7 +30,7 @@ async def create_checkout_preference(
     price_ars: float,
     user_id: str,
     subscription_id: str,
-    back_urls: Optional[dict] = None,
+    back_urls: dict | None = None,
 ) -> dict[str, Any]:
     """Create a MercadoPago checkout preference for a subscription plan."""
     headers = _get_headers()
@@ -82,8 +81,8 @@ async def get_payment_info(payment_id: str) -> dict[str, Any]:
 
 async def process_mercadopago_webhook(
     topic: str,
-    payment_id: Optional[str] = None,
-    data_id: Optional[str] = None,
+    payment_id: str | None = None,
+    data_id: str | None = None,
 ) -> dict[str, Any]:
     """Process MercadoPago IPN/webhook notification.
 

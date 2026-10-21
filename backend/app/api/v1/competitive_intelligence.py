@@ -1,10 +1,9 @@
 """Competitive intelligence API — competitor tracking + market analysis."""
 
-from uuid import UUID
-from typing import Optional, List
 from decimal import Decimal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -17,32 +16,32 @@ router = APIRouter(prefix="/api/v1", tags=["competitive-intelligence"])
 class AddCompetitorRequest(BaseModel):
     name: str
     competitor_type: str
-    website: Optional[str] = None
-    primary_address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    threat_level: Optional[str] = "medium"
+    website: str | None = None
+    primary_address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    threat_level: str | None = "medium"
 
 
 class LogPricingRequest(BaseModel):
     competitor_id: UUID
     product_name: str
     base_price: Decimal
-    discounted_price: Optional[Decimal] = None
+    discounted_price: Decimal | None = None
     in_stock: bool = True
     source: str = "website"
-    date: Optional[str] = None
+    date: str | None = None
 
 
 class AddOfferingRequest(BaseModel):
     competitor_id: UUID
     offering_type: str
     offering_name: str
-    category: Optional[str] = None
-    description: Optional[str] = None
-    features: Optional[List[str]] = None
+    category: str | None = None
+    description: str | None = None
+    features: list[str] | None = None
     our_has_equivalent: bool = False
-    competitive_advantage: Optional[str] = None
+    competitive_advantage: str | None = None
 
 
 @router.post("/businesses/{business_id}/competitors")
@@ -109,7 +108,7 @@ def add_competitor_offering(
 @router.get("/businesses/{business_id}/competitive-position")
 def get_competitive_position(
     business_id: UUID,
-    date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    date: str | None = Query(None, description="YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
     """Get competitive position summary."""
@@ -151,7 +150,7 @@ def get_offering_gaps(
 @router.get("/businesses/{business_id}/competitors")
 def get_competitors(
     business_id: UUID,
-    threat_level: Optional[str] = Query(None, description="low, medium, high, critical"),
+    threat_level: str | None = Query(None, description="low, medium, high, critical"),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):

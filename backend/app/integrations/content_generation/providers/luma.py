@@ -4,10 +4,10 @@ Pricing: ~$0.05/second (via fal.ai)
 Strengths: 3D video, NeRF, product visualization
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class LumaProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.05 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"luma-dream-machine": 0.05}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:

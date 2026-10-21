@@ -1,16 +1,18 @@
 """Staff task service — assignment, dispatch, completion tracking."""
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional, List
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.staff.task_models import (
-    StaffTask, TaskNotification, TaskTemplate, ShiftReadinessReport,
-    TaskStatus, TaskPriority, TaskType
+    ShiftReadinessReport,
+    StaffTask,
+    TaskNotification,
+    TaskPriority,
+    TaskStatus,
+    TaskType,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,7 +90,7 @@ class StaffTaskService:
             query = query.filter(StaffTask.status == TaskStatus[status_filter.upper()])
 
         # Check for overdue
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         tasks = query.order_by(StaffTask.due_date.asc()).all()
 
         for task in tasks:
@@ -111,7 +113,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.ACKNOWLEDGED
-        task.acknowledged_at = datetime.now(timezone.utc)
+        task.acknowledged_at = datetime.now(UTC)
 
         db.commit()
         db.refresh(task)
@@ -133,7 +135,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.IN_PROGRESS
-        task.started_at = datetime.now(timezone.utc)
+        task.started_at = datetime.now(UTC)
 
         db.commit()
         db.refresh(task)
@@ -163,7 +165,7 @@ class StaffTaskService:
             raise ValueError(f"Task {task_id} not found")
 
         task.status = TaskStatus.COMPLETED
-        task.completed_at = datetime.now(timezone.utc)
+        task.completed_at = datetime.now(UTC)
         task.completion_notes = completion_notes
         if completion_evidence:
             task.completion_evidence = completion_evidence
@@ -213,7 +215,7 @@ class StaffTaskService:
             raise ValueError("Database session required")
 
         pending_statuses = [TaskStatus.ASSIGNED, TaskStatus.ACKNOWLEDGED, TaskStatus.IN_PROGRESS]
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         tasks = db.query(StaffTask).filter(
             StaffTask.location_id == location_id,
@@ -338,7 +340,7 @@ class TaskNotificationService:
         if not notification:
             raise ValueError(f"Notification {notification_id} not found")
 
-        notification.read_at = datetime.now(timezone.utc)
+        notification.read_at = datetime.now(UTC)
         db.commit()
 
         return {"notification_id": str(notification.id), "read_at": notification.read_at.isoformat()}
@@ -361,7 +363,7 @@ class ShiftReadinessService:
             raise ValueError("Database session required")
 
         if not shift_end:
-            shift_end = datetime.now(timezone.utc)
+            shift_end = datetime.now(UTC)
 
         # Get all tasks for this shift
         tasks = db.query(StaffTask).filter(
@@ -432,7 +434,7 @@ class ShiftReadinessService:
         if not db:
             raise ValueError("Database session required")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         tasks = db.query(StaffTask).filter(
             StaffTask.assigned_to_staff_id == staff_id,

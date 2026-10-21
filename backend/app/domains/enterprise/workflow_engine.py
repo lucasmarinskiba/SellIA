@@ -1,7 +1,7 @@
-from dataclasses import dataclass, asdict
-from typing import Optional, Any, Callable
-from enum import Enum
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
 
 
 class ActionType(str, Enum):
@@ -29,9 +29,9 @@ class WorkflowStep:
     id: str
     action_type: ActionType
     config: dict
-    description: Optional[str] = None
-    next_step_id: Optional[str] = None
-    error_step_id: Optional[str] = None
+    description: str | None = None
+    next_step_id: str | None = None
+    error_step_id: str | None = None
 
 
 @dataclass
@@ -45,7 +45,7 @@ class Workflow:
     id: str
     user_id: str
     name: str
-    description: Optional[str]
+    description: str | None
     trigger: WorkflowTrigger
     steps: list[WorkflowStep]
     is_active: bool
@@ -75,7 +75,7 @@ class WorkflowEngine:
         name: str,
         trigger: WorkflowTrigger,
         steps: list[WorkflowStep],
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Workflow:
         """Create automation workflow."""
         workflow_id = str(uuid.uuid4())
@@ -232,7 +232,7 @@ class WorkflowEngine:
         except Exception as e:
             return {'success': False, 'status': 'failed', 'error': str(e)}
 
-    def _find_step(self, workflow: Workflow, step_id: Optional[str]) -> Optional[WorkflowStep]:
+    def _find_step(self, workflow: Workflow, step_id: str | None) -> WorkflowStep | None:
         """Find step by ID."""
         if not step_id:
             return None
@@ -241,7 +241,7 @@ class WorkflowEngine:
                 return step
         return None
 
-    def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
+    def get_workflow(self, workflow_id: str) -> Workflow | None:
         """Get workflow details."""
         return self.workflows.get(workflow_id)
 

@@ -6,20 +6,20 @@ Orquesta la ejecución secuencial de pasos de una misión, integrando:
 - WebSocket notifications (para progreso en tiempo real)
 """
 
-import uuid
 import asyncio
-from typing import Optional, Dict, Any
+import uuid
 from datetime import datetime
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from typing import Any
 
-from app.domains.missions.models import Mission, MissionStep
-from app.domains.missions.services import MissionService
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import get_settings
 from app.domains.computer_use.models import ComputerUseSession
 from app.domains.computer_use.session_manager_v2 import ComputerUseSessionManagerV2
+from app.domains.missions.models import Mission, MissionStep
+from app.domains.missions.services import MissionService
 from app.domains.missions.websocket_manager import mission_ws_manager
-from app.core.events import event_bus
-from app.core.config import get_settings
 
 settings = get_settings()
 
@@ -69,7 +69,7 @@ class MissionOrchestrator:
         # Verificar si todos los pasos completaron
         await self._check_mission_completion(mission_id, user_id_str)
 
-    async def _execute_step(self, step: MissionStep, user_id: uuid.UUID) -> Dict[str, Any]:
+    async def _execute_step(self, step: MissionStep, user_id: uuid.UUID) -> dict[str, Any]:
         """Ejecutar un paso individual según su plataforma."""
         if step.platform == "computer_use":
             return await self._execute_computer_use_step(step, user_id)
@@ -78,7 +78,7 @@ class MissionOrchestrator:
         else:
             return await self._execute_channel_step(step, user_id)
 
-    async def _execute_computer_use_step(self, step: MissionStep, user_id: uuid.UUID) -> Dict[str, Any]:
+    async def _execute_computer_use_step(self, step: MissionStep, user_id: uuid.UUID) -> dict[str, Any]:
         """Crear una sesión de Computer Use y ejecutar la tarea."""
         url = step.action_params.get("url_template", "")
         task = step.title
@@ -100,8 +100,8 @@ class MissionOrchestrator:
         api_key = None
         provider = "openai"
 
-        from app.domains.subscriptions.models import UserAPIKey
         from app.core.encryption import decrypt_value
+        from app.domains.subscriptions.models import UserAPIKey
 
         for prov in ["openai", "anthropic"]:
             result = await self.db.execute(
@@ -154,7 +154,7 @@ class MissionOrchestrator:
             "ws_url": f"/ws/computer-use/{session.id}",
         }
 
-    async def _execute_api_step(self, step: MissionStep, user_id: uuid.UUID) -> Dict[str, Any]:
+    async def _execute_api_step(self, step: MissionStep, user_id: uuid.UUID) -> dict[str, Any]:
         """Ejecutar una acción directa por API de canales."""
         action_type = step.action_type
         params = step.action_params
@@ -185,7 +185,7 @@ class MissionOrchestrator:
 
         return {"status": "acknowledged", "action": action_type, "note": "Acción programada para ejecución manual"}
 
-    async def _execute_channel_step(self, step: MissionStep, user_id: uuid.UUID) -> Dict[str, Any]:
+    async def _execute_channel_step(self, step: MissionStep, user_id: uuid.UUID) -> dict[str, Any]:
         """Ejecutar acción usando un connector de canal específico."""
         return {"status": "pending", "note": f"Acción en {step.platform} requiere integración específica"}
 
@@ -223,53 +223,53 @@ class MissionOrchestrator:
 
     # ─── Handlers de acciones API ──────────────────────────────────────────────
 
-    async def _handle_create_discount(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_create_discount(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "created", "code": f"{params.get('code_prefix', 'DESC')}{uuid.uuid4().hex[:6].upper()}", "discount": params}
 
-    async def _handle_send_cart_recovery(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_send_cart_recovery(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "queued", "channel": params.get("channel"), "delay_minutes": params.get("delay_minutes")}
 
-    async def _handle_send_email(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_send_email(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "queued", "template": params.get("template"), "delay_hours": params.get("delay_hours")}
 
-    async def _handle_create_content(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_create_content(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "generated", "posts": params.get("posts", 0), "platform": params.get("platform")}
 
-    async def _handle_generate_scripts(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_generate_scripts(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "generated", "scripts_count": params.get("count", 0), "style": params.get("style")}
 
-    async def _handle_generate_brand_kit(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_generate_brand_kit(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "generated", "components": params.get("include", [])}
 
-    async def _handle_request_reviews(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_request_reviews(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "queued", "via": params.get("via"), "max_per_day": params.get("max_per_day")}
 
-    async def _handle_translate_catalog(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_translate_catalog(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "queued", "target_language": params.get("target_language"), "platform": params.get("platform")}
 
-    async def _handle_setup_pixel(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_setup_pixel(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "events": params.get("events", [])}
 
-    async def _handle_send_outreach(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_send_outreach(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "queued", "template": params.get("template"), "max_per_day": params.get("max_per_day")}
 
-    async def _handle_email_sequence(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_email_sequence(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "created", "emails": params.get("emails", 0), "objective": params.get("objective")}
 
-    async def _handle_shipping_zones(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_shipping_zones(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "zones": params.get("zones", [])}
 
-    async def _handle_chatbot_rules(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_chatbot_rules(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "channels": params.get("channels", [])}
 
-    async def _handle_followup_sequences(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_followup_sequences(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "triggers": params.get("triggers", [])}
 
-    async def _handle_daily_reports(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_daily_reports(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "channels": params.get("channels", []), "time": params.get("time")}
 
-    async def _handle_stock_alerts(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_stock_alerts(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "threshold": params.get("threshold")}
 
-    async def _handle_inventory_sync(self, user_id: uuid.UUID, params: Dict) -> Dict:
+    async def _handle_inventory_sync(self, user_id: uuid.UUID, params: dict) -> dict:
         return {"status": "configured", "sync_mode": params.get("sync_mode")}

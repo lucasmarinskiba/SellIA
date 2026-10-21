@@ -1,9 +1,8 @@
 """Tenant management API — isolation, audit, compliance."""
 
 from uuid import UUID
-from typing import Optional, List, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -23,13 +22,13 @@ class SetupIsolationPolicyRequest(BaseModel):
 class AddTenantUserRequest(BaseModel):
     email: str
     role: str = "member"  # owner, admin, analyst, member
-    permissions: Optional[List[str]] = None
+    permissions: list[str] | None = None
 
 
 class LogDataAccessRequest(BaseModel):
     access_type: str  # export, download, api_access, report_view
     data_type: str  # customers, orders, segments, etc
-    rows_accessed: Optional[int] = None
+    rows_accessed: int | None = None
     pii_included: bool = False
 
 
@@ -71,7 +70,7 @@ def log_data_access(
     business_id: UUID,
     user_email: str = Query(...),
     request: LogDataAccessRequest = None,
-    user_ip: Optional[str] = Query(None),
+    user_ip: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     """Log data access event."""
@@ -91,8 +90,8 @@ def log_data_access(
 def get_audit_trail(
     business_id: UUID,
     days: int = Query(30, ge=1, le=365),
-    action_filter: Optional[str] = Query(None),
-    user_filter: Optional[str] = Query(None),
+    action_filter: str | None = Query(None),
+    user_filter: str | None = Query(None),
     db: Session = Depends(get_db)
 ):
     """Get audit trail for tenant."""

@@ -3,13 +3,15 @@
 Configura Celery con Redis como broker y backend.
 """
 
-import os
 import importlib
-import traceback
 import sys as _sys
+import traceback
+
 from celery import Celery
 from celery.schedules import crontab
+
 from app.core.config import get_settings
+
 
 # Import all models so SQLAlchemy mappers are configured in Celery workers.
 #

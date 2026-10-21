@@ -6,13 +6,11 @@ based on business type, location count, and configuration.
 
 import logging
 from enum import Enum
-from typing import Dict, List, Optional
-from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.domains.businesses.models import Business, BusinessType, LocalizationModel
 from app.domains.businesses.location_models import Location, LocationType
+from app.domains.businesses.models import Business, BusinessType, LocalizationModel
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +40,7 @@ class BusinessLocalizationService:
     @staticmethod
     def detect_model(
         business: Business,
-        locations: List[Location] | None = None,
+        locations: list[Location] | None = None,
         db: Session | None = None
     ) -> LocalizationModel:
         """
@@ -150,7 +148,7 @@ class BusinessLocalizationService:
     @staticmethod
     def automation_triggers_for_strategy(
         strategy: LocalizationStrategy
-    ) -> List[str]:
+    ) -> list[str]:
         """Get list of automation trigger names that should be enabled per strategy."""
 
         triggers_map = {
@@ -190,7 +188,7 @@ class BusinessLocalizationService:
     def create_location_config_template(
         location_type: LocationType,
         business_type: BusinessType
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """Create default configuration template for new location based on type + business."""
 
         base_config = {
@@ -252,7 +250,7 @@ class BusinessLocalizationService:
         return localization_model != LocalizationModel.ONLINE_ONLY
 
     @staticmethod
-    def get_success_metrics(localization_model: LocalizationModel) -> Dict[str, str]:
+    def get_success_metrics(localization_model: LocalizationModel) -> dict[str, str]:
         """Get KPIs to track for this localization model."""
 
         metrics = {

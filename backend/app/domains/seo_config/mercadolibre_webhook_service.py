@@ -33,7 +33,7 @@ insert; that is accepted rather than adding a schema change.
 import hmac
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -227,7 +227,7 @@ async def _find_link(db: AsyncSession, business_id: UUID, item_id: str) -> Publi
 
 
 async def _already_recorded(db: AsyncSession, business_id: UUID, link_id: UUID, order_id: str, item_id: str) -> bool:
-    cutoff = datetime.now(timezone.utc) - DEDUPE_WINDOW
+    cutoff = datetime.now(UTC) - DEDUPE_WINDOW
     result = await db.execute(
         select(ConversionEvent.raw_event_data).where(
             ConversionEvent.business_id == business_id,

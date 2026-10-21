@@ -5,14 +5,23 @@ the system becomes their HOME. Points, achievements, streaks, levels,
 visual business growth, celebrations, and personalized companion.
 """
 
-import uuid
 import enum
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -87,8 +96,8 @@ class UserGamificationProfile(Base):
     mood_history = Column(JSONB, default=list, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class Achievement(Base):
@@ -127,7 +136,7 @@ class UserAchievement(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     achievement_id = Column(UUID(as_uuid=True), ForeignKey("achievements.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    unlocked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    unlocked_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     was_celebrated = Column(Boolean, default=False, nullable=False)
     shared_to_social = Column(Boolean, default=False, nullable=False)
 
@@ -159,7 +168,7 @@ class CelebrationEvent(Base):
     companion_message = Column(Text, nullable=True)
     companion_emotion = Column(String(20), default="happy", nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_celebration_events_user_unshown', 'user_id', 'was_shown'),
@@ -178,7 +187,7 @@ class DailyMoodLog(Base):
     notes = Column(Text, nullable=True)
     ai_response = Column(Text, nullable=True)  # Companion's personalized response
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_mood_logs_user_date', 'user_id', 'created_at'),

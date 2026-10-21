@@ -1,18 +1,18 @@
 """Mobile geofence API — auto check-in + nearby locations."""
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional
 
 from app.core.business_access import get_owned_business
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.locations.geofence_service import GeofenceTriggerService
 from app.domains.businesses.location_models import Location
+from app.domains.locations.geofence_service import GeofenceTriggerService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 
@@ -24,14 +24,14 @@ router = APIRouter(prefix="/api/v1/mobile", tags=["mobile-geofence"])
 class GeolocationPayload(BaseModel):
     latitude: float
     longitude: float
-    accuracy_meters: Optional[float] = None
+    accuracy_meters: float | None = None
 
 
 class GeofenceCheckRequest(BaseModel):
     latitude: float
     longitude: float
     business_id: UUID
-    accuracy_meters: Optional[float] = None
+    accuracy_meters: float | None = None
 
 
 @router.post("/geofence/check")

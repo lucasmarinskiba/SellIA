@@ -1,13 +1,12 @@
 """User Memory API - Minimal implementation"""
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.domains.users.models import User
-from app.domains.user_memory.service import UserMemoryService
 from app.domains.user_memory.schemas import UserMemoryResponse
+from app.domains.user_memory.service import UserMemoryService
 
 router = APIRouter()
 
@@ -64,7 +63,7 @@ async def get_my_memory(
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")
 
 
 @router.patch("/me")
@@ -109,4 +108,4 @@ async def update_my_memory(
             last_activity_at=memory.last_activity_at,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {e!s}")

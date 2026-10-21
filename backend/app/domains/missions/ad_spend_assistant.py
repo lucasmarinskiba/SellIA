@@ -4,8 +4,7 @@ Módulo de lógica pura para recomendaciones de inversión publicitaria,
 asignación de presupuesto, pasos de configuración de campañas y benchmarks CPA.
 """
 
-from typing import List, Dict, Any, Optional
-
+from typing import Any
 
 # ─── Benchmarks CPA por país y plataforma (ARS, aproximados) ───────────────────
 
@@ -250,7 +249,7 @@ CREATIVE_RECOMMENDATIONS = {
 class AdSpendAssistant:
     """Asistente de recomendaciones de inversión publicitaria."""
 
-    def get_platform_recommendations(self, context: Dict[str, Any], budget: float) -> List[Dict[str, Any]]:
+    def get_platform_recommendations(self, context: dict[str, Any], budget: float) -> list[dict[str, Any]]:
         """Recomendar plataformas según tipo de negocio y presupuesto.
 
         Args:
@@ -304,7 +303,7 @@ class AdSpendAssistant:
         monthly_budget: float,
         business_type: str,
         goal: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generar asignación de presupuesto por plataforma y etapa de funnel.
 
         Args:
@@ -357,7 +356,7 @@ class AdSpendAssistant:
             "platform_allocation": platform_allocation,
         }
 
-    def get_campaign_setup_steps(self, platform: str, objective: str) -> Dict[str, Any]:
+    def get_campaign_setup_steps(self, platform: str, objective: str) -> dict[str, Any]:
         """Devolver paso a paso para crear una campaña.
 
         Args:
@@ -389,7 +388,7 @@ class AdSpendAssistant:
             "total_estimated_minutes": total_minutes,
         }
 
-    def estimate_cpa(self, business_type: str, platform: str, country: str) -> Dict[str, Any]:
+    def estimate_cpa(self, business_type: str, platform: str, country: str) -> dict[str, Any]:
         """Estimar costo por adquisición según benchmarks.
 
         Args:
@@ -431,7 +430,7 @@ class AdSpendAssistant:
             "note": "Estimaciones basadas en benchmarks de mercado. CPA real depende de creativos, targeting y temporada.",
         }
 
-    def get_ad_creatives_recommendations(self, platform: str, business_type: str) -> Dict[str, Any]:
+    def get_ad_creatives_recommendations(self, platform: str, business_type: str) -> dict[str, Any]:
         """Recomendar tipos de creativos según plataforma y negocio.
 
         Args:

@@ -6,18 +6,18 @@ of the user (regenerate API keys, pause subscription, etc.)
 without requiring full admin access.
 """
 
-import uuid
-from typing import Annotated, Any
+from datetime import UTC
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
 from app.core.security import get_password_hash
+from app.domains.subscriptions.models import Subscription
 from app.domains.users.models import User
 from app.domains.users.schemas import UserResponse
-from app.domains.subscriptions.models import Subscription
 
 router = APIRouter(prefix="/selfservice", tags=["selfservice"])
 
@@ -73,11 +73,17 @@ async def usage_summary(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Return a summary of current usage for the chatbot."""
-    from sqlalchemy import select, func
-    from datetime import datetime, timezone, timedelta
-    from app.domains.subscriptions.models import UsageTracking, Subscription, SubscriptionPlan
+    from datetime import datetime, timedelta
 
-    since = datetime.now(timezone.utc) - timedelta(days=30)
+    from sqlalchemy import func, select
+
+    from app.domains.subscriptions.models import (
+        Subscription,
+        SubscriptionPlan,
+        UsageTracking,
+    )
+
+    since = datetime.now(UTC) - timedelta(days=30)
     usage_result = await db.execute(
         select(func.sum(UsageTracking.ai_messages_used)).where(
             UsageTracking.user_id == current_user.id,

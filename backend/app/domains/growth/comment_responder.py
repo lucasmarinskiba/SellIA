@@ -6,18 +6,17 @@ This is one of the highest-ROI organic growth strategies.
 """
 
 import uuid
-import re
-from typing import Optional, Any, List, Dict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.growth.models import InboundLead, InboundLeadSource
-from app.core.logger import get_logger
 from app.core.events import event_bus
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.growth.models import InboundLead, InboundLeadSource
+from app.domains.outreach.service import FatigueScoringService
 
 logger = get_logger(__name__)
 
@@ -241,7 +240,7 @@ Reglas:
         username: str,
         post_id: str,
         source_detail: str,
-    ) -> Optional[InboundLead]:
+    ) -> InboundLead | None:
         """Capture a lead from social comment."""
         lead = InboundLead(
             business_id=business_id,
@@ -267,7 +266,7 @@ Reglas:
         days: int = 7,
     ) -> dict[str, Any]:
         """Get analytics on comment engagement."""
-        since = datetime.now(timezone.utc) - __import__('datetime').timedelta(days=days)
+        since = datetime.now(UTC) - __import__('datetime').timedelta(days=days)
 
         result = await self.db.execute(
             select(func.count(InboundLead.id)).where(

@@ -3,16 +3,18 @@ Service Broker — Lógica de negocio para provisionamiento asíncrono de recurs
 Emula el patrón SQS + DynamoDB de Atlassian usando Celery + PostgreSQL.
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
-from app.domains.provisioning.models import ResourceRequest, ResourceJob, ResourceEvent
-from app.domains.provisioning.schemas import ResourceRequestCreate, ResourceRequestUpdate
 from app.core.logger import get_logger
+from app.domains.provisioning.models import ResourceEvent, ResourceJob, ResourceRequest
+from app.domains.provisioning.schemas import (
+    ResourceRequestCreate,
+    ResourceRequestUpdate,
+)
 
 logger = get_logger(__name__)
 
@@ -101,7 +103,7 @@ async def update_request(
     if data.status:
         request.status = data.status
         if data.status in ("completed", "failed", "cancelled"):
-            request.completed_at = datetime.now(timezone.utc)
+            request.completed_at = datetime.now(UTC)
     if data.error_message is not None:
         request.error_message = data.error_message
     if data.provider_reference is not None:
@@ -156,9 +158,9 @@ async def update_job(
 ) -> ResourceJob:
     job.status = status
     if status == "running" and not job.started_at:
-        job.started_at = datetime.now(timezone.utc)
+        job.started_at = datetime.now(UTC)
     if status in ("completed", "failed"):
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = datetime.now(UTC)
     if error_message is not None:
         job.error_message = error_message
     if result is not None:

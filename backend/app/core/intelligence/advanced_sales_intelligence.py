@@ -5,8 +5,7 @@ Predicts: conversion, churn, LTV, optimal pricing, best channel, timing.
 """
 
 import logging
-from typing import Dict, List, Any
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class PredictiveLeadScoring:
     }
 
     @staticmethod
-    def score_lead(lead: Dict[str, Any]) -> Dict[str, Any]:
+    def score_lead(lead: dict[str, Any]) -> dict[str, Any]:
         """
         Calcula lead score 0-100 (predicts conversion).
 
@@ -100,7 +99,7 @@ class ChurnPredictionModel:
     """Predice churn 30-60 días en avance."""
 
     @staticmethod
-    def predict_churn(customer: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_churn(customer: dict[str, Any]) -> dict[str, Any]:
         """
         Predice probabilidad churn (0-1).
 
@@ -179,10 +178,10 @@ class OptimalChannelSelector:
 
     @staticmethod
     def select_best_channel(
-        buyer: Dict[str, Any],
+        buyer: dict[str, Any],
         budget: float,
         target_conversions: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Selecciona canal optimal por ROI.
 
@@ -226,10 +225,10 @@ class AdaptiveSalesStrategy:
 
     @staticmethod
     def recommend_approach(
-        buyer: Dict[str, Any],
-        product: Dict[str, Any],
-        historical_data: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer: dict[str, Any],
+        product: dict[str, Any],
+        historical_data: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Recomienda approach (price, guarantee, channel, offer) basado en aprendizaje.
 

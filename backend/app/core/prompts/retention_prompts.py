@@ -1,8 +1,8 @@
 """50 Retention Prompts — Customer experience, engagement, churn prevention, loyalty, upsell, NPS."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class RetentionStrategy(str, Enum):
@@ -27,13 +27,13 @@ class RetentionPromptTemplate:
     strategy: str
     business_context: str
     prompt_text: str
-    variables: List[str]
-    example_input: Dict[str, Any]
+    variables: list[str]
+    example_input: dict[str, Any]
     example_output: str
-    success_metrics: List[str]
-    industry_variations: Dict[str, str]
-    best_practices: List[str]
-    tags: List[str]
+    success_metrics: list[str]
+    industry_variations: dict[str, str]
+    best_practices: list[str]
+    tags: list[str]
 
 
 class RetentionPrompts:
@@ -1088,7 +1088,7 @@ That's $300k+ in retained revenue. Here's the investment needed: [X]"
         )
 
     @staticmethod
-    def get_all_retention_prompts() -> Dict[str, RetentionPromptTemplate]:
+    def get_all_retention_prompts() -> dict[str, RetentionPromptTemplate]:
         """Return all 50 retention prompts indexed by ID."""
         return {
             "retention_001": RetentionPrompts.onboarding_optimization_framework(),

@@ -3,15 +3,16 @@
 Autopilot financiero: facturación, cobranza, conciliación y reporting.
 """
 
-from celery import shared_task
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from app.core.database import AsyncSessionLocal
+from celery import shared_task
+from sqlalchemy import select
+
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.businesses.models import Business
 from app.domains.finance.autopilot import FinanceAutopilotEngine
-from sqlalchemy import select
 
 logger = get_logger(__name__)
 
@@ -122,7 +123,7 @@ def ledger_month_close():
         from app.domains.ledger.reports import LedgerReports
         from app.domains.ledger.service import LedgerService
 
-        first_of_this_month = datetime.now(timezone.utc).replace(
+        first_of_this_month = datetime.now(UTC).replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         )
         prior = first_of_this_month - timedelta(days=1)

@@ -4,15 +4,16 @@ Sales closing, objection handling, persuasion, energy
 Focus: "Straight Line" method, urgency, emotional connection, closing pressure
 """
 
-from typing import Dict, Any, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
+
 
 @dataclass
 class BelfortPrompt:
     """Belfort-style prompt structure"""
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str

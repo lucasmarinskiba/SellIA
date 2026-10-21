@@ -4,18 +4,20 @@ CRUD and execution layer for outreach opportunities and rules.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.proactive.models import OutreachOpportunity, OutreachRule
-from app.domains.proactive.engine import ProactiveEngine
-from app.domains.memory.models import ConversationMemoryChunk
-from app.domains.channels.models import Conversation, Message, MessageDirection, MessageStatus
+from app.domains.channels.models import (
+    Conversation,
+)
 from app.domains.channels.services import send_outbound_message
+from app.domains.memory.models import ConversationMemoryChunk
+from app.domains.proactive.engine import ProactiveEngine
+from app.domains.proactive.models import OutreachOpportunity, OutreachRule
 
 logger = get_logger(__name__)
 
@@ -34,7 +36,7 @@ class ProactiveService:
     async def create_rule(
         self,
         business_id: uuid.UUID,
-        rule_data: Dict[str, Any],
+        rule_data: dict[str, Any],
     ) -> OutreachRule:
         """Create a new outreach rule for a business."""
         rule = OutreachRule(
@@ -55,7 +57,7 @@ class ProactiveService:
         self,
         business_id: uuid.UUID,
         active_only: bool = True,
-    ) -> List[OutreachRule]:
+    ) -> list[OutreachRule]:
         """List outreach rules for a business."""
         stmt = select(OutreachRule).where(OutreachRule.business_id == business_id)
         if active_only:
@@ -64,7 +66,7 @@ class ProactiveService:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
-    async def get_rule(self, rule_id: uuid.UUID) -> Optional[OutreachRule]:
+    async def get_rule(self, rule_id: uuid.UUID) -> OutreachRule | None:
         """Get a single rule by ID."""
         result = await self.db.execute(
             select(OutreachRule).where(OutreachRule.id == rule_id)
@@ -74,8 +76,8 @@ class ProactiveService:
     async def update_rule(
         self,
         rule_id: uuid.UUID,
-        update_data: Dict[str, Any],
-    ) -> Optional[OutreachRule]:
+        update_data: dict[str, Any],
+    ) -> OutreachRule | None:
         """Update an outreach rule."""
         rule = await self.get_rule(rule_id)
         if not rule:
@@ -96,11 +98,11 @@ class ProactiveService:
     async def list_opportunities(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
-        priority: Optional[str] = None,
+        status: str | None = None,
+        priority: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[OutreachOpportunity]:
+    ) -> list[OutreachOpportunity]:
         """List outreach opportunities with optional filters."""
         stmt = select(OutreachOpportunity).where(
             OutreachOpportunity.business_id == business_id
@@ -116,7 +118,7 @@ class ProactiveService:
     async def get_opportunity(
         self,
         opportunity_id: uuid.UUID,
-    ) -> Optional[OutreachOpportunity]:
+    ) -> OutreachOpportunity | None:
         """Get a single opportunity by ID."""
         result = await self.db.execute(
             select(OutreachOpportunity).where(OutreachOpportunity.id == opportunity_id)
@@ -126,7 +128,7 @@ class ProactiveService:
     async def execute_outreach(
         self,
         opportunity_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute outreach for an opportunity: generate message and send via channel."""
         opp = await self.get_opportunity(opportunity_id)
         if not opp:
@@ -166,7 +168,7 @@ class ProactiveService:
             return {"status": "error", "detail": str(e)}
 
         opp.status = "sent"
-        opp.sent_at = datetime.now(timezone.utc)
+        opp.sent_at = datetime.now(UTC)
         await self.db.commit()
 
         return {
@@ -179,14 +181,14 @@ class ProactiveService:
     async def dismiss_opportunity(
         self,
         opportunity_id: uuid.UUID,
-    ) -> Optional[OutreachOpportunity]:
+    ) -> OutreachOpportunity | None:
         """Dismiss an opportunity so it won't be acted upon."""
         opp = await self.get_opportunity(opportunity_id)
         if not opp:
             return None
 
         opp.status = "dismissed"
-        opp.updated_at = datetime.now(timezone.utc)
+        opp.updated_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(opp)
         return opp
@@ -199,7 +201,7 @@ class ProactiveService:
         self,
         business_id: uuid.UUID,
         customer_id: uuid.UUID,
-    ) -> Optional[uuid.UUID]:
+    ) -> uuid.UUID | None:
         """Find the most recent active conversation for a customer."""
         # Try via conversation memory chunks
         result = await self.db.execute(

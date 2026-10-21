@@ -1,11 +1,21 @@
 """Real-time feedback alerts — NPS monitoring + escalation."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Integer, Numeric, Enum as SQLEnum, Index, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -62,7 +72,7 @@ class NPSAlert(Base):
     resurvey_completed = Column(Boolean, default=False)
     resurvey_nps_score = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), index=True)
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -99,7 +109,7 @@ class NPSTrendMetric(Base):
     # Top topics (if negative)
     top_issues = Column(JSONB, default=list)  # [{"topic": "wait_time", "count": 3}, ...]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     location = relationship("Location", foreign_keys=[location_id])
 
@@ -128,7 +138,7 @@ class SentimentTrend(Base):
     direction = Column(String(20), default="stable")  # improving, stable, declining
     day_over_day_change = Column(Numeric(5, 2), nullable=True)  # % change from previous day
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_location_trend_date", "location_id", "date"),
@@ -169,7 +179,7 @@ class FeedbackFollowUp(Base):
     resolved = Column(Boolean, default=False)
     resolution_details = Column(String(1000), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_alert_follow_up", "nps_alert_id"),

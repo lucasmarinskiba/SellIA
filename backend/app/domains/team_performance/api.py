@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/team-performance", tags=["team-performance"])
 
 @router.get("")
 async def team_board(
-    business_id: Optional[uuid.UUID] = Query(None),
+    business_id: uuid.UUID | None = Query(None),
     days: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

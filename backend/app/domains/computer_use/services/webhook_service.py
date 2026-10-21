@@ -5,12 +5,12 @@ completado, fallido, detenido, CAPTCHA detectado, etc.
 Incluye firma HMAC para verificación de integridad.
 """
 
-import hmac
-import hashlib
-import json
 import asyncio
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+import hashlib
+import hmac
+import json
+from datetime import UTC, datetime
+from typing import Any
 
 import aiohttp
 
@@ -37,14 +37,14 @@ class WebhookService:
         self,
         url: str,
         event: str,
-        payload: Dict[str, Any],
-        secret: Optional[str] = None,
+        payload: dict[str, Any],
+        secret: str | None = None,
         retry_count: int = 3,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+    ) -> tuple[bool, int | None, str | None]:
         """Envía un webhook con retry."""
         payload_data = {
             "event": event,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": payload,
         }
         body = json.dumps(payload_data, ensure_ascii=False, default=str)
@@ -52,7 +52,7 @@ class WebhookService:
         headers = {
             "Content-Type": "application/json",
             "X-Computer-Use-Event": event,
-            "X-Computer-Use-Timestamp": datetime.now(timezone.utc).isoformat(),
+            "X-Computer-Use-Timestamp": datetime.now(UTC).isoformat(),
             "User-Agent": "SellIA-Computer-Use/1.0",
         }
 
@@ -93,9 +93,9 @@ class WebhookService:
     async def notify_session_completed(
         self,
         webhook_url: str,
-        session_data: Dict[str, Any],
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        session_data: dict[str, Any],
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica que una sesión se completó."""
         return await self.send_webhook(
             url=webhook_url,
@@ -115,10 +115,10 @@ class WebhookService:
     async def notify_session_failed(
         self,
         webhook_url: str,
-        session_data: Dict[str, Any],
+        session_data: dict[str, Any],
         error_message: str,
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica que una sesión falló."""
         return await self.send_webhook(
             url=webhook_url,
@@ -139,8 +139,8 @@ class WebhookService:
         session_id: str,
         confidence: float,
         reason: str,
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica detección de CAPTCHA."""
         return await self.send_webhook(
             url=webhook_url,
@@ -158,9 +158,9 @@ class WebhookService:
         self,
         webhook_url: str,
         batch_id: str,
-        results: Dict[str, Any],
-        secret: Optional[str] = None,
-    ) -> tuple[bool, Optional[int], Optional[str]]:
+        results: dict[str, Any],
+        secret: str | None = None,
+    ) -> tuple[bool, int | None, str | None]:
         """Notifica completado de batch job."""
         return await self.send_webhook(
             url=webhook_url,

@@ -1,6 +1,7 @@
 """Shopify Admin Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class ShopifyScript(PlatformScript):
     login_url = "https://accounts.shopify.com/store-login"
     dashboard_url = "https://admin.shopify.com/"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         store = params.get("store_domain", "")
         base = f"https://admin.shopify.com/store/{store.replace('.myshopify.com', '')}" if store else self.dashboard_url
         if task_type == "add_product":
@@ -23,7 +24,7 @@ class ShopifyScript(PlatformScript):
             return self._edit_theme(params, base)
         return super().get_task_steps(task_type, params)
 
-    def _add_product(self, params: Dict[str, Any], base: str) -> List[ScriptStep]:
+    def _add_product(self, params: dict[str, Any], base: str) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target=f"{base}/products/new", description="Navigate to new product page"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -35,7 +36,7 @@ class ShopifyScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify product saved"),
         ]
 
-    def _configure_shipping(self, params: Dict[str, Any], base: str) -> List[ScriptStep]:
+    def _configure_shipping(self, params: dict[str, Any], base: str) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target=f"{base}/settings/shipping", description="Navigate to shipping settings"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -44,7 +45,7 @@ class ShopifyScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check shipping zones"),
         ]
 
-    def _setup_payments(self, params: Dict[str, Any], base: str) -> List[ScriptStep]:
+    def _setup_payments(self, params: dict[str, Any], base: str) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target=f"{base}/settings/payments", description="Navigate to payments settings"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -53,7 +54,7 @@ class ShopifyScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check payment setup"),
         ]
 
-    def _edit_theme(self, params: Dict[str, Any], base: str) -> List[ScriptStep]:
+    def _edit_theme(self, params: dict[str, Any], base: str) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target=f"{base}/themes", description="Navigate to themes"),
             ScriptStep(action="wait", wait_ms=3000),

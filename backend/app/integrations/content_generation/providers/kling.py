@@ -4,10 +4,10 @@ Pricing: ~$0.06/second (via fal.ai)
 Strengths: Real-world physics, human motion, realistic scenes
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class KlingProvider(BaseProvider):
         duration = config.duration_seconds or 5
         return 0.06 * duration
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"kling-video": 0.06}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:

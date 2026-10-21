@@ -4,20 +4,19 @@ Generates a narrative report of everything the virtual team accomplished
 while the business owner was sleeping.
 """
 
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, desc, func, and_
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.orders.models import Order
 from app.domains.autopilot.models import AutopilotActionLog, AutopilotActionStatus
-from app.domains.social_sellers.models import SocialSeller, SellerPerformance
 from app.domains.channels.models import Conversation, Message, MessageDirection
-from app.domains.growth.models import GrowthCampaign, InboundLead
 from app.domains.crm.models import Deal
+from app.domains.growth.models import GrowthCampaign, InboundLead
+from app.domains.orders.models import Order
+from app.domains.social_sellers.models import SocialSeller
 
 
 class OvernightStoryEngine:
@@ -28,7 +27,7 @@ class OvernightStoryEngine:
         self, business_id: UUID | str, user_name: str = ""
     ) -> dict[str, Any]:
         business_id = UUID(str(business_id)) if not isinstance(business_id, UUID) else business_id
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Determine night period: 23:00 → 07:00 (most recently completed)
         today_7am = now.replace(hour=7, minute=0, second=0, microsecond=0)

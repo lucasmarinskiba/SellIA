@@ -5,11 +5,14 @@ from __future__ import annotations
 import copy
 
 import numpy as np
-import pandas as pd
 
 from app.domains.forecasting import metrics as M
 from app.domains.forecasting.models.base import DEFAULT_QUANTILES, Forecaster
-from app.domains.forecasting.types import BacktestReport, FoldMetrics, SeriesSpec, TimeSeries
+from app.domains.forecasting.types import (
+    BacktestReport,
+    FoldMetrics,
+    TimeSeries,
+)
 
 
 class RollingOriginBacktester:

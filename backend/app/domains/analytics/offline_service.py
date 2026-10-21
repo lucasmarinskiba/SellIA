@@ -1,20 +1,21 @@
 """Service layer for offline conversion tracking and analytics."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Optional, List
 from uuid import UUID
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
 
 from app.domains.analytics.offline_models import (
-    OfflineConversion, GeoProximityEvent, LocationVisitMetric,
-    VisitType, DemographicSource
+    DemographicSource,
+    GeoProximityEvent,
+    LocationVisitMetric,
+    OfflineConversion,
+    VisitType,
 )
 from app.domains.businesses.location_models import Location
-from app.domains.proximity.proximity_engine import ProximityEngine
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +28,19 @@ class OfflineAnalyticsService:
         business_id: UUID,
         location_id: UUID,
         visit_type: VisitType,
-        visitor_phone: Optional[str] = None,
-        visitor_email: Optional[str] = None,
-        visitor_name: Optional[str] = None,
-        visitor_latitude: Optional[float] = None,
-        visitor_longitude: Optional[float] = None,
-        visitor_ip: Optional[str] = None,
-        demographic_source: Optional[DemographicSource] = None,
+        visitor_phone: str | None = None,
+        visitor_email: str | None = None,
+        visitor_name: str | None = None,
+        visitor_latitude: float | None = None,
+        visitor_longitude: float | None = None,
+        visitor_ip: str | None = None,
+        demographic_source: DemographicSource | None = None,
         confidence_score: float = 0.5,
-        conversation_id: Optional[UUID] = None,
+        conversation_id: UUID | None = None,
         purchased: bool = False,
-        purchase_amount: Optional[Decimal] = None,
-        staff_notes: Optional[str] = None,
-        db: Optional[Session] = None
+        purchase_amount: Decimal | None = None,
+        staff_notes: str | None = None,
+        db: Session | None = None
     ) -> OfflineConversion:
         """
         Log a visitor to a physical location.
@@ -98,10 +99,10 @@ class OfflineAnalyticsService:
         user_longitude: float,
         distance_km: float,
         trigger_name: str,
-        visitor_phone: Optional[str] = None,
-        visitor_email: Optional[str] = None,
-        automation_id: Optional[UUID] = None,
-        db: Optional[Session] = None
+        visitor_phone: str | None = None,
+        visitor_email: str | None = None,
+        automation_id: UUID | None = None,
+        db: Session | None = None
     ) -> GeoProximityEvent:
         """
         Log proximity trigger event for user near location.
@@ -150,7 +151,7 @@ class OfflineAnalyticsService:
     @staticmethod
     def mark_proximity_executed(
         proximity_event_id: UUID,
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> GeoProximityEvent:
         """Mark proximity event as having triggered automation."""
         if not db:
@@ -162,7 +163,7 @@ class OfflineAnalyticsService:
 
         if event:
             event.automation_triggered = True
-            event.automation_executed_at = datetime.now(timezone.utc)
+            event.automation_executed_at = datetime.now(UTC)
             db.commit()
             db.refresh(event)
 
@@ -172,8 +173,8 @@ class OfflineAnalyticsService:
     def end_visit(
         conversion_id: UUID,
         purchased: bool = False,
-        purchase_amount: Optional[Decimal] = None,
-        db: Optional[Session] = None
+        purchase_amount: Decimal | None = None,
+        db: Session | None = None
     ) -> OfflineConversion:
         """Mark end of visit and calculate dwell time."""
         if not db:
@@ -186,7 +187,7 @@ class OfflineAnalyticsService:
         if not conversion:
             raise ValueError(f"Conversion {conversion_id} not found")
 
-        conversion.exit_time = datetime.now(timezone.utc)
+        conversion.exit_time = datetime.now(UTC)
 
         # Calculate dwell time
         if conversion.entry_time and conversion.exit_time:
@@ -209,8 +210,8 @@ class OfflineAnalyticsService:
     def get_daily_metrics(
         location_id: UUID,
         date: str,  # YYYY-MM-DD
-        db: Optional[Session] = None
-    ) -> Optional[LocationVisitMetric]:
+        db: Session | None = None
+    ) -> LocationVisitMetric | None:
         """Get or create daily metrics for location."""
         if not db:
             raise ValueError("Database session required")
@@ -239,7 +240,7 @@ class OfflineAnalyticsService:
         return metric
 
     @staticmethod
-    def update_daily_metrics(location_id: UUID, date: str, db: Optional[Session] = None) -> None:
+    def update_daily_metrics(location_id: UUID, date: str, db: Session | None = None) -> None:
         """Recalculate daily metrics from offline_conversions for given date."""
         if not db:
             raise ValueError("Database session required")
@@ -249,7 +250,7 @@ class OfflineAnalyticsService:
             return
 
         # Query visits for the day
-        day_start = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        day_start = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=UTC)
         day_end = day_start + timedelta(days=1)
 
         visits = db.query(OfflineConversion).filter(
@@ -298,13 +299,13 @@ class OfflineAnalyticsService:
     def get_foot_traffic_heatmap(
         location_id: UUID,
         days: int = 30,
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> dict:
         """Get hourly foot traffic heatmap for last N days."""
         if not db:
             raise ValueError("Database session required")
 
-        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        start_date = datetime.now(UTC) - timedelta(days=days)
 
         metrics = db.query(LocationVisitMetric).filter(
             and_(
@@ -329,13 +330,13 @@ class OfflineAnalyticsService:
     def get_conversion_funnel(
         business_id: UUID,
         days: int = 30,
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> dict:
         """Get online→offline→purchase conversion funnel for business."""
         if not db:
             raise ValueError("Database session required")
 
-        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        start_date = datetime.now(UTC) - timedelta(days=days)
 
         # All offline conversions in period
         all_conversions = db.query(OfflineConversion).filter(
@@ -366,13 +367,13 @@ class OfflineAnalyticsService:
         business_id: UUID,
         trigger_name: str,
         days: int = 30,
-        db: Optional[Session] = None
+        db: Session | None = None
     ) -> dict:
         """Measure effectiveness of proximity trigger (how many lead to actual visit)."""
         if not db:
             raise ValueError("Database session required")
 
-        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        start_date = datetime.now(UTC) - timedelta(days=days)
 
         # Proximity events triggered
         events = db.query(GeoProximityEvent).filter(

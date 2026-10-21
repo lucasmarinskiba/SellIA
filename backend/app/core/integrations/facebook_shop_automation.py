@@ -19,15 +19,13 @@ Rate Limiting:
   - Implement exponential backoff + queue
 """
 
-import logging
 import hashlib
 import hmac
-import httpx
-import uuid
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+import logging
 from enum import Enum
-import json
+from typing import Any
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +102,7 @@ class FacebookShopAutomation:
             logger.error(f"Webhook signature verification error: {e}")
             return False
 
-    async def handle_webhook(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle_webhook(self, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Process incoming Facebook webhook.
 
@@ -155,7 +153,7 @@ class FacebookShopAutomation:
             logger.error(f"Webhook processing error: {e}")
             return {"status": "error", "message": str(e)}
 
-    async def _handle_order_event(self, order_data: Dict[str, Any]) -> None:
+    async def _handle_order_event(self, order_data: dict[str, Any]) -> None:
         """Handle order create/update event."""
         order_id = order_data.get("id")
         status = order_data.get("order_status")
@@ -172,14 +170,14 @@ class FacebookShopAutomation:
         if status == FacebookOrderStatus.CREATED.value:
             await self.confirm_order(order_id, order_details)
 
-    async def _handle_product_sync(self, product_data: Dict[str, Any]) -> None:
+    async def _handle_product_sync(self, product_data: dict[str, Any]) -> None:
         """Handle product inventory sync event."""
         product_id = product_data.get("id")
         logger.info(f"Product sync event: {product_id}")
         # Update local inventory from Facebook
         await self.sync_product_inventory(product_id)
 
-    async def _handle_inventory_update(self, inventory_data: Dict[str, Any]) -> None:
+    async def _handle_inventory_update(self, inventory_data: dict[str, Any]) -> None:
         """Handle inventory level changes."""
         product_id = inventory_data.get("product_id")
         new_stock = inventory_data.get("quantity")
@@ -187,7 +185,7 @@ class FacebookShopAutomation:
 
     # ========== ORDER MANAGEMENT ==========
 
-    async def get_order_details(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def get_order_details(self, order_id: str) -> dict[str, Any] | None:
         """
         Fetch complete order details from Facebook.
 
@@ -212,7 +210,7 @@ class FacebookShopAutomation:
     async def confirm_order(
         self,
         order_id: str,
-        order_details: Dict[str, Any],
+        order_details: dict[str, Any],
     ) -> bool:
         """
         Auto-confirm order in Facebook Shop.
@@ -251,7 +249,7 @@ class FacebookShopAutomation:
         self,
         order_id: str,
         status: FacebookOrderStatus,
-        tracking_info: Optional[Dict[str, str]] = None,
+        tracking_info: dict[str, str] | None = None,
     ) -> bool:
         """
         Update order status (e.g., mark as shipped).
@@ -286,7 +284,7 @@ class FacebookShopAutomation:
 
     # ========== PRODUCT CATALOG MANAGEMENT ==========
 
-    async def sync_products_from_facebook(self, limit: int = 100) -> List[Dict[str, Any]]:
+    async def sync_products_from_facebook(self, limit: int = 100) -> list[dict[str, Any]]:
         """
         Sync products from Facebook Shop to local DB.
 
@@ -337,8 +335,8 @@ class FacebookShopAutomation:
 
     async def sync_products_to_facebook(
         self,
-        products: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        products: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Sync local products to Facebook Catalog.
 
@@ -385,7 +383,7 @@ class FacebookShopAutomation:
             logger.error(f"Error syncing products to Facebook: {e}")
             return {"status": "error", "message": str(e)}
 
-    async def _find_product_by_sku(self, sku: str) -> Optional[Dict[str, Any]]:
+    async def _find_product_by_sku(self, sku: str) -> dict[str, Any] | None:
         """Find product in Facebook catalog by SKU."""
         try:
             url = f"{self.FB_GRAPH_API}/{self.catalog_id}/products"
@@ -409,7 +407,7 @@ class FacebookShopAutomation:
             logger.error(f"Error finding product by SKU {sku}: {e}")
             return None
 
-    async def _create_facebook_product(self, product: Dict[str, Any]) -> bool:
+    async def _create_facebook_product(self, product: dict[str, Any]) -> bool:
         """Create product in Facebook Catalog."""
         try:
             url = f"{self.FB_GRAPH_API}/{self.catalog_id}/products"
@@ -437,7 +435,7 @@ class FacebookShopAutomation:
     async def _update_facebook_product(
         self,
         product_id: str,
-        product: Dict[str, Any],
+        product: dict[str, Any],
     ) -> bool:
         """Update product in Facebook Catalog."""
         try:
@@ -528,7 +526,7 @@ class FacebookShopAutomation:
     async def get_shipping_estimate(
         self,
         order_id: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Fetch shipping estimate for order."""
         try:
             order_details = await self.get_order_details(order_id)
@@ -579,7 +577,7 @@ class FacebookShopAutomation:
 
     # ========== ERROR HANDLING & RETRY LOGIC ==========
 
-    async def retry_failed_operations(self, max_retries: int = 3) -> Dict[str, Any]:
+    async def retry_failed_operations(self, max_retries: int = 3) -> dict[str, Any]:
         """
         Retry failed operations (orders stuck in PROCESSING, etc).
 

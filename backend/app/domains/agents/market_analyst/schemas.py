@@ -1,7 +1,7 @@
 """Market Analyst Schemas"""
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -9,13 +9,13 @@ from pydantic import BaseModel, ConfigDict
 
 class CompetitorSnapshotBase(BaseModel):
     name: str
-    url: Optional[str] = None
-    price_range: Optional[str] = None
-    key_features: List[str] = []
-    strengths: List[str] = []
-    weaknesses: List[str] = []
-    sentiment_score: Optional[float] = None
-    raw_data: Dict[str, Any] = {}
+    url: str | None = None
+    price_range: str | None = None
+    key_features: list[str] = []
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    sentiment_score: float | None = None
+    raw_data: dict[str, Any] = {}
 
 
 class CompetitorSnapshotOut(CompetitorSnapshotBase):
@@ -31,7 +31,7 @@ class MarketAnalysisJobBase(BaseModel):
 
 
 class MarketAnalysisJobCreate(MarketAnalysisJobBase):
-    competitors_list: List[Dict[str, Any]] = []  # [{"name": "X", "url": "Y"}, ...]
+    competitors_list: list[dict[str, Any]] = []  # [{"name": "X", "url": "Y"}, ...]
 
 
 class MarketAnalysisJobOut(BaseModel):
@@ -43,22 +43,22 @@ class MarketAnalysisJobOut(BaseModel):
     target_market: str
     competitors_analyzed: int
     trends_found: int
-    report_url: Optional[str] = None
-    report_data: Dict[str, Any] = {}
+    report_url: str | None = None
+    report_data: dict[str, Any] = {}
     created_at: datetime
     updated_at: datetime
 
 
 class MarketAnalysisJobDetailOut(MarketAnalysisJobOut):
-    snapshots: List[CompetitorSnapshotOut] = []
+    snapshots: list[CompetitorSnapshotOut] = []
 
 
 class MarketReportOut(BaseModel):
     job_id: UUID
     target_market: str
-    competitors: List[CompetitorSnapshotOut] = []
-    trends: List[Dict[str, Any]] = []
-    gaps: List[Dict[str, Any]] = []
-    opportunities: List[Dict[str, Any]] = []
-    charts_data: Dict[str, Any] = {}
+    competitors: list[CompetitorSnapshotOut] = []
+    trends: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+    opportunities: list[dict[str, Any]] = []
+    charts_data: dict[str, Any] = {}
     generated_at: datetime

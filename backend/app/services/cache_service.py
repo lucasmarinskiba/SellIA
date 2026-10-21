@@ -1,7 +1,8 @@
-import redis
 import json
 import os
-from typing import Any, Optional
+from typing import Any
+
+import redis
 
 
 class CacheService:
@@ -10,7 +11,7 @@ class CacheService:
         self.redis = redis.from_url(self.redis_url, decode_responses=True)
         self.default_ttl = 3600  # 1 hour
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         try:
             value = self.redis.get(key)
@@ -21,7 +22,7 @@ class CacheService:
             print(f"Cache get error: {e}")
             return None
 
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache."""
         try:
             ttl = ttl or self.default_ttl
@@ -51,7 +52,7 @@ class CacheService:
             print(f"Cache clear pattern error: {e}")
             return 0
 
-    def get_or_set(self, key: str, fetch_fn, ttl: Optional[int] = None) -> Any:
+    def get_or_set(self, key: str, fetch_fn, ttl: int | None = None) -> Any:
         """Get from cache or fetch and cache."""
         cached = self.get(key)
         if cached is not None:
@@ -74,7 +75,7 @@ class CacheService:
             print(f"Cache mget error: {e}")
             return {}
 
-    def mset(self, data: dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def mset(self, data: dict[str, Any], ttl: int | None = None) -> bool:
         """Set multiple keys."""
         try:
             pipe = self.redis.pipeline()

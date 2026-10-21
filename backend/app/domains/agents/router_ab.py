@@ -4,16 +4,15 @@ Endpoints for creating, running, and analyzing prompt experiments.
 """
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.ab_service import ABTestEngine
 from app.domains.agents.schemas_ab import PromptExperimentCreate
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/ab", tags=["ab-testing"])
 
@@ -65,7 +64,7 @@ async def create_experiment(
 
 @router.get("/experiments")
 async def list_experiments(
-    status: Optional[str] = Query(None),
+    status: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -189,7 +188,7 @@ async def promote_experiment(
 @router.get("/experiments/{experiment_id}/results")
 async def get_experiment_results(
     experiment_id: UUID,
-    variant: Optional[str] = Query(None),
+    variant: str | None = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),

@@ -11,10 +11,9 @@ Segments customers automatically (RFM + behavior) to personalize FOMO campaigns:
   across repeated sends, so they get excluded/cooled-down instead of spammed
 """
 
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Tuple
+from datetime import UTC, datetime
 from enum import Enum
-from statistics import mean
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -36,7 +35,7 @@ class CustomerSegment(str, Enum):
 # data already established for Layer 5 templates (customer_fomo_service.py):
 # flash_sale +65%, cart_abandonment +42%, countdown +35%, scarcity +28%,
 # purchases +22%, live_visitor +15%.
-SEGMENT_FOMO_STRATEGY: Dict[CustomerSegment, Dict[str, Any]] = {
+SEGMENT_FOMO_STRATEGY: dict[CustomerSegment, dict[str, Any]] = {
     CustomerSegment.CHAMPIONS: {
         "campaign_type": "exclusivity_tier",
         "tone": "luxury",
@@ -101,11 +100,11 @@ class RFMCalculator:
 
     @staticmethod
     def compute_raw_rfm(
-        purchases: List[Dict[str, Any]],
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, float]:
+        purchases: list[dict[str, Any]],
+        reference_date: datetime | None = None,
+    ) -> dict[str, float]:
         """purchases: [{"date": datetime, "amount": float}, ...] for ONE customer"""
-        reference_date = reference_date or datetime.now(timezone.utc)
+        reference_date = reference_date or datetime.now(UTC)
 
         if not purchases:
             return {"recency_days": 9999, "frequency": 0, "monetary": 0.0}
@@ -123,7 +122,7 @@ class RFMCalculator:
         }
 
     @staticmethod
-    def score_quantile(value: float, sorted_values: List[float], reverse: bool = False) -> int:
+    def score_quantile(value: float, sorted_values: list[float], reverse: bool = False) -> int:
         """Score 1-5 by quantile position within the customer base.
         reverse=True means LOWER raw value = HIGHER score (used for recency)."""
         if not sorted_values or len(sorted_values) == 1:
@@ -148,12 +147,12 @@ class RFMCalculator:
 
     @staticmethod
     def compute_rfm_scores(
-        customers: List[Dict[str, Any]],
-        reference_date: Optional[datetime] = None,
-    ) -> List[Dict[str, Any]]:
+        customers: list[dict[str, Any]],
+        reference_date: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """customers: [{"customer_id": str, "purchases": [...]}]
         Returns each customer with raw RFM + 1-5 scores."""
-        reference_date = reference_date or datetime.now(timezone.utc)
+        reference_date = reference_date or datetime.now(UTC)
 
         raw = []
         for customer in customers:
@@ -221,7 +220,7 @@ class RFMSegmentClassifier:
         return CustomerSegment.LOST
 
     @staticmethod
-    def classify_batch(rfm_scores: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def classify_batch(rfm_scores: list[dict[str, Any]]) -> list[dict[str, Any]]:
         results = []
         for c in rfm_scores:
             segment = RFMSegmentClassifier.classify(c["r_score"], c["f_score"], c["m_score"])
@@ -239,9 +238,9 @@ class ClusteringEngine:
 
     @staticmethod
     def cluster_customers(
-        rfm_scores: List[Dict[str, Any]],
-        n_clusters: Optional[int] = None,
-    ) -> Tuple[List[Dict[str, Any]], bool]:
+        rfm_scores: list[dict[str, Any]],
+        n_clusters: int | None = None,
+    ) -> tuple[list[dict[str, Any]], bool]:
         """Returns (results_with_cluster_id, used_clustering).
         used_clustering=False means it fell back to plain RFM rules."""
         if len(rfm_scores) < ClusteringEngine.MIN_CUSTOMERS_FOR_CLUSTERING:
@@ -291,7 +290,7 @@ class FOMOFatigueDetector:
     MIN_SENDS_TO_EVALUATE = 3
 
     @staticmethod
-    def detect_fatigue(send_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def detect_fatigue(send_history: list[dict[str, Any]]) -> dict[str, Any]:
         """send_history: [{"sent_at": datetime, "opened": bool, "clicked": bool}, ...]
         ordered oldest to newest, for ONE customer."""
         if len(send_history) < FOMOFatigueDetector.MIN_SENDS_TO_EVALUATE:
@@ -307,7 +306,7 @@ class FOMOFatigueDetector:
         if not earlier:
             earlier = send_history[:1]
 
-        def engagement_rate(sends: List[Dict[str, Any]]) -> float:
+        def engagement_rate(sends: list[dict[str, Any]]) -> float:
             if not sends:
                 return 0.0
             opens = sum(1 for s in sends if s.get("opened"))
@@ -344,7 +343,7 @@ class FOMOFatigueDetector:
         }
 
     @staticmethod
-    def recommend_cooldown(fatigue_result: Dict[str, Any]) -> Dict[str, Any]:
+    def recommend_cooldown(fatigue_result: dict[str, Any]) -> dict[str, Any]:
         """Given a fatigue detection result, recommend cooldown action"""
         if not fatigue_result["fatigued"]:
             return {"action": "continue_normal_cadence", "cooldown_days": 0}
@@ -369,10 +368,10 @@ class AICustomerSegmentationAgent:
 
     @staticmethod
     def segment_customers(
-        customers: List[Dict[str, Any]],
+        customers: list[dict[str, Any]],
         use_clustering: bool = True,
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Full segmentation pipeline: RFM -> (cluster or rules) -> named segments"""
         if not customers:
             return {"customers": [], "segment_distribution": {}, "used_clustering": False}
@@ -384,7 +383,7 @@ class AICustomerSegmentationAgent:
         else:
             classified, used_clustering = RFMSegmentClassifier.classify_batch(rfm_scores), False
 
-        distribution: Dict[str, int] = {}
+        distribution: dict[str, int] = {}
         for c in classified:
             distribution[c["segment"]] = distribution.get(c["segment"], 0) + 1
 
@@ -396,7 +395,7 @@ class AICustomerSegmentationAgent:
         }
 
     @staticmethod
-    def get_segment_strategy(segment: str) -> Dict[str, Any]:
+    def get_segment_strategy(segment: str) -> dict[str, Any]:
         """Get recommended FOMO campaign_type/tone for a named segment"""
         try:
             segment_enum = CustomerSegment(segment)
@@ -406,11 +405,11 @@ class AICustomerSegmentationAgent:
 
     @staticmethod
     def analyze_and_recommend(
-        customers: List[Dict[str, Any]],
-        fatigue_data: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        customers: list[dict[str, Any]],
+        fatigue_data: dict[str, list[dict[str, Any]]] | None = None,
         use_clustering: bool = True,
-        reference_date: Optional[datetime] = None,
-    ) -> Dict[str, Any]:
+        reference_date: datetime | None = None,
+    ) -> dict[str, Any]:
         """Complete pipeline: segment customers, assign FOMO strategy per segment,
         detect fatigue per customer, and exclude/cool-down fatigued ones."""
         segmentation = AICustomerSegmentationAgent.segment_customers(

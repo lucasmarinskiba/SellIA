@@ -6,10 +6,11 @@ Loop = Objetivo + Acción + Evaluación + Corrección + Condición salida + Lím
 Aplicado a: lead capture → negotiation → closing → payment → delivery → retention.
 """
 
-import logging
-from typing import Dict, List, Any, Callable, Optional
-from enum import Enum
 import asyncio
+import logging
+from collections.abc import Callable
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,8 @@ class LoopEngineering:
     """Ejecuta loops iterativos con control completo."""
 
     def __init__(self):
-        self.loops_history: List[Dict[str, Any]] = []
-        self.active_loops: Dict[str, Any] = {}
+        self.loops_history: list[dict[str, Any]] = []
+        self.active_loops: dict[str, Any] = {}
 
     async def run_loop(
         self,
@@ -48,8 +49,8 @@ class LoopEngineering:
         correct_fn: Callable,
         max_iterations: int = 5,
         max_time_seconds: int = 300,
-        exit_condition_fn: Optional[Callable] = None,
-    ) -> Dict[str, Any]:
+        exit_condition_fn: Callable | None = None,
+    ) -> dict[str, Any]:
         """
         Ejecuta loop controlado.
 
@@ -119,7 +120,7 @@ class LoopEngineering:
                 logger.info(f"Applied correction: {correction.get('adjustment')}")
 
             except Exception as e:
-                logger.error(f"Loop {objective} error on iteration {iteration}: {str(e)}")
+                logger.error(f"Loop {objective} error on iteration {iteration}: {e!s}")
                 loop_log["corrections"].append({"error": str(e)})
 
         # Final status
@@ -137,7 +138,7 @@ class LoopEngineering:
 
         return loop_log
 
-    async def run_sales_cycle_with_loops(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_sales_cycle_with_loops(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """
         Ciclo venta completo con Loop Engineering.
 
@@ -237,92 +238,92 @@ class LoopEngineering:
         return cycle_result
 
     # ========== FASE 1: CAPTURE ==========
-    async def _action_capture(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_capture(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Captura lead vía múltiples canales."""
         return {"status": "capturing", "channels": ["whatsapp", "email", "instagram"]}
 
-    async def _eval_capture(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_capture(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: contact verificado?"""
         return {"success": True, "contact_verified": True}
 
-    async def _correct_capture(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_capture(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: retry otro canal si falla."""
         return {"adjustment": "try_next_channel"}
 
     # ========== FASE 2: QUALIFY ==========
-    async def _action_qualify(self, buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_qualify(self, buyer: dict[str, Any]) -> dict[str, Any]:
         """Califica lead (budget, timeline, authority)."""
         return {"score": 85, "authority": True, "budget": 50000}
 
-    async def _eval_qualify(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_qualify(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: score > 70?"""
         return {"success": result.get("score", 0) > 70, "qualified": True}
 
-    async def _correct_qualify(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_qualify(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: send more info si score bajo."""
         return {"adjustment": "nurture_sequence"}
 
     # ========== FASE 3: NEGOTIATE ==========
-    async def _action_negotiate(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_negotiate(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Negocia deal (price, terms, payment plan)."""
         return {"price_offered": product.get("price"), "terms": "Net 30"}
 
-    async def _eval_negotiate(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_negotiate(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: buyer aceptó deal?"""
         return {"success": True, "deal_agreed": True, "price": result.get("price_offered")}
 
-    async def _correct_negotiate(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_negotiate(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: offer payment plan si rechaza price."""
         return {"adjustment": "offer_installments"}
 
     # ========== FASE 4: CLOSING ==========
-    async def _action_close(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_close(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Cierra: firma contrato."""
         return {"contract_sent": True, "signature_requested": True}
 
-    async def _eval_close(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_close(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: firmó?"""
         return {"success": True, "signed": True}
 
-    async def _correct_close(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_close(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: reminder si no firmó."""
         return {"adjustment": "send_reminder"}
 
     # ========== FASE 5: PAYMENT ==========
-    async def _action_payment(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_payment(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Procesa pago vía Stripe."""
         return {"payment_initiated": True, "intent_id": "pi_12345"}
 
-    async def _eval_payment(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_payment(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: pago confirmado?"""
         return {"success": True, "payment_confirmed": True}
 
-    async def _correct_payment(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_payment(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: retry payment si falla."""
         return {"adjustment": "retry_payment"}
 
     # ========== FASE 6: DELIVERY ==========
-    async def _action_delivery(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_delivery(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Entrega producto/acceso."""
         return {"access_granted": True, "onboarding_started": True}
 
-    async def _eval_delivery(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_delivery(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: cliente accedió?"""
         return {"success": True, "delivered": True}
 
-    async def _correct_delivery(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_delivery(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: send access email si no accede."""
         return {"adjustment": "resend_access"}
 
     # ========== FASE 7: RETENTION ==========
-    async def _action_retention(self, product: Dict[str, Any], buyer: Dict[str, Any]) -> Dict[str, Any]:
+    async def _action_retention(self, product: dict[str, Any], buyer: dict[str, Any]) -> dict[str, Any]:
         """Retiene: engagement, upsell, referral."""
         return {"engagement_email_sent": True, "nps_survey_sent": True}
 
-    async def _eval_retention(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _eval_retention(self, result: dict[str, Any]) -> dict[str, Any]:
         """Evaluá: NPS score alto?"""
         return {"success": True, "nps_score": 65}
 
-    async def _correct_retention(self, eval_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def _correct_retention(self, eval_result: dict[str, Any]) -> dict[str, Any]:
         """Corrige: support call si NPS bajo."""
         return {"adjustment": "schedule_support_call"}

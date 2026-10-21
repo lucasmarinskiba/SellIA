@@ -1,11 +1,11 @@
 """Phase 5B: Proximity Detection Endpoints."""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import List, Optional
+
 from app.core.database import get_db
 from app.domains.proximity.engine import ProximityEngine
-
 
 router = APIRouter(prefix="/api/v1/proximity", tags=["proximity"])
 
@@ -15,7 +15,7 @@ async def check_nearby_locations(
     business_id: UUID,
     user_lat: float,
     user_lon: float,
-    user_id: Optional[UUID] = None,
+    user_id: UUID | None = None,
     db: Session = Depends(get_db),
 ) -> dict:
     nearby = await ProximityEngine.check_proximity_to_locations(db, business_id, user_lat, user_lon)

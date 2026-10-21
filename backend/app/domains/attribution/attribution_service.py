@@ -1,14 +1,18 @@
 """Attribution service."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
-from typing import List
-from sqlalchemy import select, desc
+
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.attribution.attribution_models import (
-    Touchpoint, CustomerJourney, AttributionCredit, ChannelPerformance, AttributionMetrics
+    AttributionCredit,
+    AttributionMetrics,
+    ChannelPerformance,
+    CustomerJourney,
+    Touchpoint,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +43,7 @@ class AttributionService:
             channel=channel,
             source=source,
             interaction_type=interaction_type,
-            touched_at=datetime.now(timezone.utc)
+            touched_at=datetime.now(UTC)
         )
         db.add(touchpoint)
         await db.commit()
@@ -110,7 +114,7 @@ class AttributionService:
         return {"order_id": str(order_id), "credits_created": len(credits), "model": attribution_model}
 
     @staticmethod
-    async def get_channel_performance(business_id: UUID, days: int = 30, db: AsyncSession = None) -> List[dict]:
+    async def get_channel_performance(business_id: UUID, days: int = 30, db: AsyncSession = None) -> list[dict]:
         if not db:
             raise ValueError("Database session required")
 

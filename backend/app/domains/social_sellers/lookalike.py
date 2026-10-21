@@ -1,24 +1,22 @@
 """Lookalike Audience Engine — encuentra clientes como tu mejor cliente."""
 
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from sqlalchemy import select, func, desc, and_
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.social_sellers.models import (
-    SocialSeller,
-    SellerCustomerRelationship,
-    UnifiedCustomer,
-)
+from app.core.logger import get_logger
 from app.domains.channels.models import Conversation, Message, MessageDirection
 from app.domains.orders.models import Order
-from app.core.logger import get_logger
 from app.domains.social_sellers.lookalike_scorer import (
     calculate_similarity_score,
     extract_behavioral_features,
-    match_platform_preference,
+)
+from app.domains.social_sellers.models import (
+    SellerCustomerRelationship,
+    SocialSeller,
+    UnifiedCustomer,
 )
 
 logger = get_logger(__name__)
@@ -39,7 +37,7 @@ class LookalikeEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def build_ideal_customer_profile(self, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def build_ideal_customer_profile(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Analiza el top 20% de clientes por LTV y construye un perfil ideal."""
         result = await self.db.execute(
             select(
@@ -83,7 +81,7 @@ class LookalikeEngine:
         avg_deal_value = total_ltv / max(1, total_deals)
 
         # Plataformas preferidas
-        platform_counts: Dict[str, int] = {}
+        platform_counts: dict[str, int] = {}
         for cid in customer_ids:
             conv = conversations.get(cid)
             platform = (conv.lead_source or 'unknown').lower() if conv else 'unknown'
@@ -185,7 +183,7 @@ class LookalikeEngine:
     async def score_lead_similarity(
         self,
         lead: Conversation,
-        ideal_profile: Dict[str, Any],
+        ideal_profile: dict[str, Any],
     ) -> int:
         """Puntaje 0-100 de qué tan similar es un lead al cliente ideal."""
         msg_result = await self.db.execute(
@@ -249,7 +247,7 @@ class LookalikeEngine:
         business_id: uuid.UUID,
         customer_id: uuid.UUID,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Encuentra leads más similares a un cliente top dado."""
         ideal_profile = await self.build_ideal_customer_profile(business_id)
 
@@ -289,7 +287,7 @@ class LookalikeEngine:
         scored_leads.sort(key=lambda x: x['similarity_score'], reverse=True)
         return scored_leads[:limit]
 
-    async def prioritize_leads(self, business_id: uuid.UUID) -> List[Dict[str, Any]]:
+    async def prioritize_leads(self, business_id: uuid.UUID) -> list[dict[str, Any]]:
         """Obtiene todos los inbound leads y los puntúa contra el perfil ideal."""
         ideal_profile = await self.build_ideal_customer_profile(business_id)
 
@@ -318,7 +316,7 @@ class LookalikeEngine:
         scored_leads.sort(key=lambda x: x['similarity_score'], reverse=True)
         return scored_leads
 
-    async def get_lookalike_report(self, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_lookalike_report(self, business_id: uuid.UUID) -> dict[str, Any]:
         """Genera un resumen: 'Tus mejores clientes compran por IG cada 30 días...'."""
         profile = await self.build_ideal_customer_profile(business_id)
         all_leads = await self.prioritize_leads(business_id)
@@ -347,8 +345,8 @@ class LookalikeEngine:
         self,
         score: int,
         lead: Conversation,
-        ideal_profile: Dict[str, Any],
-    ) -> List[str]:
+        ideal_profile: dict[str, Any],
+    ) -> list[str]:
         """Genera razones legibles de por qué el lead es similar."""
         reasons = []
         platform = (lead.lead_source or '').lower()

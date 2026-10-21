@@ -6,10 +6,10 @@ Manipula cualquier plataforma (MercadoLibre, Shopify, Meta, etc) vía UI.
 No necesita APIs. Escalable infinito.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
 import asyncio
+import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class PlatformAction(str, Enum):
 class BrowserAgent:
     """Computer Use agent — Controla navegador."""
 
-    def __init__(self, user_browser_path: Optional[str] = None):
+    def __init__(self, user_browser_path: str | None = None):
         """
         user_browser_path: ruta ejecutable navegador (chrome, firefox, safari, edge)
         Si None: detectar automáticamente del usuario
@@ -35,7 +35,7 @@ class BrowserAgent:
         self.browser_path = user_browser_path
         self.browser = None
         self.page = None
-        self.action_history: List[Dict[str, Any]] = []
+        self.action_history: list[dict[str, Any]] = []
 
     async def start_browser(self):
         """Inicia navegador del usuario."""
@@ -64,10 +64,10 @@ class BrowserAgent:
             logger.info("Browser started successfully")
 
         except Exception as e:
-            logger.error(f"Error starting browser: {str(e)}")
+            logger.error(f"Error starting browser: {e!s}")
             raise
 
-    async def execute_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_action(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Ejecuta acción en navegador.
 
@@ -99,10 +99,10 @@ class BrowserAgent:
             return result
 
         except Exception as e:
-            logger.error(f"Error executing action: {str(e)}")
+            logger.error(f"Error executing action: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _navigate(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _navigate(self, params: dict[str, Any]) -> dict[str, Any]:
         """Navega a URL."""
         url = params.get("url")
         try:
@@ -110,10 +110,10 @@ class BrowserAgent:
             logger.info(f"Navigated to {url}")
             return {"status": "success", "url": url}
         except Exception as e:
-            logger.error(f"Navigation failed: {str(e)}")
+            logger.error(f"Navigation failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _fill_form(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _fill_form(self, params: dict[str, Any]) -> dict[str, Any]:
         """Llena formulario."""
         fields = params.get("fields", {})  # {"selector": "value", ...}
         try:
@@ -124,7 +124,7 @@ class BrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def _click(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _click(self, params: dict[str, Any]) -> dict[str, Any]:
         """Click en elemento."""
         selector = params.get("selector")
         try:
@@ -135,7 +135,7 @@ class BrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def _extract_data(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _extract_data(self, params: dict[str, Any]) -> dict[str, Any]:
         """Extrae datos vía CSS selector."""
         selector = params.get("selector")
         attribute = params.get("attribute", "innerText")  # innerText, href, src, etc
@@ -154,7 +154,7 @@ class BrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def _wait(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _wait(self, params: dict[str, Any]) -> dict[str, Any]:
         """Espera a que elemento esté disponible."""
         selector = params.get("selector")
         timeout = params.get("timeout", 10000)  # ms
@@ -165,7 +165,7 @@ class BrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def _screenshot(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _screenshot(self, params: dict[str, Any]) -> dict[str, Any]:
         """Captura pantalla."""
         filename = params.get("filename", "screenshot.png")
         try:
@@ -176,7 +176,7 @@ class BrowserAgent:
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    async def run_automation_script(self, script: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def run_automation_script(self, script: list[dict[str, Any]]) -> dict[str, Any]:
         """Ejecuta secuencia de acciones (guión automático)."""
         logger.info(f"Running automation script with {len(script)} actions")
 
@@ -205,4 +205,4 @@ class BrowserAgent:
                 await self.browser.close()
                 logger.info("Browser closed")
         except Exception as e:
-            logger.error(f"Error closing browser: {str(e)}")
+            logger.error(f"Error closing browser: {e!s}")

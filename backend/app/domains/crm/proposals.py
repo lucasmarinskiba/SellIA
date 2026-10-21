@@ -5,23 +5,23 @@ proposal document using expert sales voices (Belfort, Hormozi, etc.).
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation, Message
-from app.domains.catalogs.models import CatalogItem
 from app.domains.agents.ai_reply import generate_ai_response
+from app.domains.catalogs.models import CatalogItem
+from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal
 
 
 async def generate_deal_proposal(
     db: AsyncSession,
     deal: Deal,
     business_id: uuid.UUID,
-    voice_slug: Optional[str] = None,
-) -> Optional[Dict[str, Any]]:
+    voice_slug: str | None = None,
+) -> dict[str, Any] | None:
     """Generate a professional sales proposal for a deal.
 
     Analyzes conversation history, catalog items, and deal context to generate

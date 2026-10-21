@@ -10,13 +10,13 @@ Soporta:
 6. Custom templates con personalización
 """
 
+import html
 import logging
 import os
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
-from enum import Enum
 from datetime import datetime
-import html
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,25 +43,25 @@ class EmailTemplate(Enum):
 class EmailRecipient:
     """Destinatario de email."""
     email: str
-    name: Optional[str] = None
-    variables: Dict[str, Any] = None
+    name: str | None = None
+    variables: dict[str, Any] = None
 
 
 @dataclass
 class EmailMessage:
     """Estructura de email."""
-    to: List[EmailRecipient]
+    to: list[EmailRecipient]
     subject: str
     html_content: str
-    text_content: Optional[str] = None
+    text_content: str | None = None
     from_email: str = "noreply@sellia.ai"
     from_name: str = "SellIA"
-    reply_to: Optional[str] = None
-    cc: Optional[List[str]] = None
-    bcc: Optional[List[str]] = None
-    attachments: Optional[List[Dict[str, str]]] = None
-    template_id: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    reply_to: str | None = None
+    cc: list[str] | None = None
+    bcc: list[str] | None = None
+    attachments: list[dict[str, str]] | None = None
+    template_id: str | None = None
+    metadata: dict[str, str] | None = None
 
 
 class EmailTemplateEngine:
@@ -70,7 +70,7 @@ class EmailTemplateEngine:
     def __init__(self):
         self.templates = self._load_templates()
 
-    def _load_templates(self) -> Dict[EmailTemplate, str]:
+    def _load_templates(self) -> dict[EmailTemplate, str]:
         """Carga templates predefinidas."""
         return {
             EmailTemplate.ORDER_CONFIRMATION: self._template_order_confirmation(),
@@ -272,7 +272,7 @@ class EmailTemplateEngine:
         </html>
         """
 
-    def render(self, template: EmailTemplate, variables: Dict[str, Any]) -> str:
+    def render(self, template: EmailTemplate, variables: dict[str, Any]) -> str:
         """Renderiza template con variables."""
         html_content = self.templates.get(template)
         if not html_content:
@@ -345,11 +345,11 @@ class EmailService:
         customer_email: str,
         customer_name: str,
         order_id: str,
-        products: List[Dict[str, Any]],
+        products: list[dict[str, Any]],
         total_amount: float,
         currency: str = "USD",
-        shipping_address: Dict[str, str] = None,
-    ) -> Dict[str, Any]:
+        shipping_address: dict[str, str] = None,
+    ) -> dict[str, Any]:
         """Envía confirmación de orden."""
 
         products_html = self._render_products_html(products)
@@ -387,9 +387,9 @@ class EmailService:
         tracking_number: str,
         carrier_name: str,
         estimated_delivery: str,
-        products: List[Dict[str, Any]],
+        products: list[dict[str, Any]],
         tracking_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía notificación de envío."""
 
         products_html = self._render_products_html(products)
@@ -425,7 +425,7 @@ class EmailService:
         currency: str,
         failure_reason: str,
         retry_url: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía alerta de pago rechazado."""
 
         retry_url = retry_url or f"https://checkout.sellia.ai/{order_id}"
@@ -459,7 +459,7 @@ class EmailService:
         currency: str,
         refund_reason: str,
         refund_eta: str = "3-5 días hábiles",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Envía notificación de reembolso."""
 
         variables = {
@@ -482,7 +482,7 @@ class EmailService:
 
         return await self.send(message)
 
-    async def send(self, message: EmailMessage) -> Dict[str, Any]:
+    async def send(self, message: EmailMessage) -> dict[str, Any]:
         """Envía email genérico."""
 
         logger.info(f"Sending email to {[r.email for r in message.to]}: {message.subject}")
@@ -495,16 +495,16 @@ class EmailService:
             elif self.provider == EmailProvider.SMTP:
                 return await self._send_smtp(message)
         except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
+            logger.error(f"Failed to send email: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _send_sendgrid(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_sendgrid(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via SendGrid."""
         if not self.sendgrid_client:
             return {"status": "error", "error": "SendGrid not configured"}
 
         try:
-            from sendgrid.helpers.mail import Mail, Email, To, Content
+            from sendgrid.helpers.mail import Content, Email, Mail, To
 
             mail = Mail(
                 from_email=Email(message.from_email, message.from_name),
@@ -530,10 +530,10 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"SendGrid error: {str(e)}")
+            logger.error(f"SendGrid error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _send_ses(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_ses(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via AWS SES."""
         if not self.ses_client:
             return {"status": "error", "error": "AWS SES not configured"}
@@ -561,15 +561,16 @@ class EmailService:
             }
 
         except Exception as e:
-            logger.error(f"AWS SES error: {str(e)}")
+            logger.error(f"AWS SES error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def _send_smtp(self, message: EmailMessage) -> Dict[str, Any]:
+    async def _send_smtp(self, message: EmailMessage) -> dict[str, Any]:
         """Envía via SMTP."""
         try:
-            import aiosmtplib
-            from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+
+            import aiosmtplib
 
             msg = MIMEMultipart("alternative")
             msg["Subject"] = message.subject
@@ -592,10 +593,10 @@ class EmailService:
             return {"status": "success", "message": "Email sent via SMTP"}
 
         except Exception as e:
-            logger.error(f"SMTP error: {str(e)}")
+            logger.error(f"SMTP error: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    def _render_products_html(self, products: List[Dict[str, Any]]) -> str:
+    def _render_products_html(self, products: list[dict[str, Any]]) -> str:
         """Renderiza lista de productos en HTML."""
         html = "<ul>"
         for product in products:

@@ -1,7 +1,8 @@
 """QR code generation endpoints."""
 
-from fastapi import APIRouter, HTTPException
 from uuid import UUID
+
+from fastapi import APIRouter, HTTPException
 
 from app.domains.locations.qr_generator import LocationQRGenerator
 

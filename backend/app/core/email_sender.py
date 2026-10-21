@@ -5,12 +5,12 @@ Email Sender Service
 - Retry logic + scheduling
 - Bounce/unsubscribe handling
 """
-import os
 import logging
-from typing import Optional
-import httpx
+import os
 from datetime import datetime
 from enum import Enum
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,8 @@ class EmailSender:
         body: str,
         from_email: str = "noreply@sellia.io",
         from_name: str = "SellIA",
-        reply_to: Optional[str] = None,
-        tracking_id: Optional[str] = None
+        reply_to: str | None = None,
+        tracking_id: str | None = None
     ) -> dict:
         """Send email via configured provider."""
 
@@ -112,8 +112,8 @@ class EmailSender:
         body: str,
         from_email: str,
         from_name: str,
-        reply_to: Optional[str],
-        tracking_id: Optional[str]
+        reply_to: str | None,
+        tracking_id: str | None
     ) -> dict:
         """Send via SendGrid API."""
         try:
@@ -194,8 +194,8 @@ class EmailSender:
         body: str,
         from_email: str,
         from_name: str,
-        reply_to: Optional[str],
-        tracking_id: Optional[str]
+        reply_to: str | None,
+        tracking_id: str | None
     ) -> dict:
         """Send via Resend API (https://resend.com/docs/api-reference/emails/send-email)."""
         try:
@@ -282,7 +282,7 @@ class EmailSender:
         to: str,
         subject: str,
         from_email: str,
-        tracking_id: Optional[str]
+        tracking_id: str | None
     ) -> dict:
         """Mock send for testing."""
         logger.info(f"[MOCK EMAIL] To: {to}, Subject: {subject}, ID: {tracking_id}")
@@ -358,7 +358,7 @@ class EmailScheduler:
         lead_email: str,
         subject: str,
         body: str,
-        send_at: Optional[datetime] = None
+        send_at: datetime | None = None
     ) -> dict:
         """Schedule workflow email for delivery."""
 
@@ -420,7 +420,7 @@ class EmailScheduler:
 # ============================================================
 # FACTORY
 # ============================================================
-def get_email_sender(provider: Optional[str] = None) -> EmailSender:
+def get_email_sender(provider: str | None = None) -> EmailSender:
     """Factory to get configured email sender.
 
     Sin provider explícito, resuelve por env vars disponibles en este orden:
@@ -445,7 +445,7 @@ def get_email_sender(provider: Optional[str] = None) -> EmailSender:
     else:
         return EmailSender(EmailProvider.MOCK)
 
-def get_email_scheduler(provider: Optional[str] = None) -> EmailScheduler:
+def get_email_scheduler(provider: str | None = None) -> EmailScheduler:
     """Factory to get configured email scheduler."""
     sender = get_email_sender(provider)
     return EmailScheduler(sender)

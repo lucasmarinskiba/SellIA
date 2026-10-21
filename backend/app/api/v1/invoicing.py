@@ -2,17 +2,18 @@
 Invoicing — Generación de facturas PDF, historial, email automático.
 """
 
+import logging
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
-import logging
 
 router = APIRouter(prefix="/api/v1/invoicing", tags=["invoicing"])
 logger = logging.getLogger(__name__)
 
 # Mock invoice DB
-_INVOICES_DB: Dict[str, Any] = {}
+_INVOICES_DB: dict[str, Any] = {}
 
 
 class InvoiceLineItem(BaseModel):
@@ -32,7 +33,7 @@ class Invoice(BaseModel):
     business_tax_id: str
     customer_name: str
     customer_email: str
-    items: List[InvoiceLineItem]
+    items: list[InvoiceLineItem]
     subtotal: float
     tax_pct: float
     tax_amount: float
@@ -47,7 +48,7 @@ async def create_invoice(
     order_id: str,
     customer_name: str,
     customer_email: str,
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     subtotal: float,
     tax_pct: float = 0.0,
 ):
@@ -114,7 +115,7 @@ async def create_invoice(
         }
 
     except Exception as e:
-        logger.error(f"Error creando factura: {str(e)}")
+        logger.error(f"Error creando factura: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

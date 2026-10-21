@@ -6,14 +6,14 @@ para maximizar conversiones, velocidad de respuesta y calidad de atención.
 
 from __future__ import annotations
 
-import uuid
 import asyncio
-from typing import Any, Optional
-from datetime import datetime, timezone, timedelta
+import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, desc
 
 from app.core.logger import get_logger
 
@@ -31,7 +31,7 @@ class OptimizationInsight:
     recommendation: str
     action_taken: str = ""
     priority: int = 5  # 1=crítico, 10=bajo
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class SelfOptimizationEngine:
@@ -55,7 +55,7 @@ class SelfOptimizationEngine:
         self._ab_test_results: dict[str, Any] = {}
 
     async def run_optimization_cycle(
-        self, business_id: Optional[uuid.UUID] = None
+        self, business_id: uuid.UUID | None = None
     ) -> dict[str, Any]:
         """Ejecuta un ciclo completo de análisis y optimización."""
         logger.info("[SelfOptimization] Iniciando ciclo de optimización")
@@ -82,7 +82,7 @@ class SelfOptimizationEngine:
         actions_taken = [i for i in all_insights if i.action_taken]
 
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "insights_generated": len(all_insights),
             "actions_taken": len(actions_taken),
             "top_insights": [
@@ -98,13 +98,13 @@ class SelfOptimizationEngine:
         }
 
     async def _optimize_response_times(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[OptimizationInsight]:
         """Optimiza tiempos de respuesta de agentes a nuevos leads."""
         insights = []
         try:
             from app.domains.channels.models import Conversation, Message
-            threshold = datetime.now(timezone.utc) - timedelta(days=7)
+            threshold = datetime.now(UTC) - timedelta(days=7)
 
             query = select(func.avg(
                 func.extract("epoch", Message.created_at - Conversation.created_at)
@@ -141,7 +141,7 @@ class SelfOptimizationEngine:
             logger.warning(f"[SelfOptimization] Error en response time: {e}")
         return insights
 
-    async def _apply_response_optimization(self, business_id: Optional[uuid.UUID]) -> str:
+    async def _apply_response_optimization(self, business_id: uuid.UUID | None) -> str:
         """Habilita respuesta automática inmediata para reducir tiempo."""
         try:
             from app.domains.agents.models import AgentConfig
@@ -162,13 +162,13 @@ class SelfOptimizationEngine:
         return "Sin cambio aplicado"
 
     async def _optimize_pipeline_conversion(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[OptimizationInsight]:
         """Detecta cuellos de botella en el pipeline y activa recovery."""
         insights = []
         try:
             from app.domains.crm.models import Deal
-            threshold = datetime.now(timezone.utc) - timedelta(days=30)
+            threshold = datetime.now(UTC) - timedelta(days=30)
 
             stage_counts_q = select(
                 Deal.pipeline_stage,
@@ -210,13 +210,13 @@ class SelfOptimizationEngine:
         return insights
 
     async def _optimize_message_performance(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[OptimizationInsight]:
         """Analiza y optimiza el rendimiento de mensajes y secuencias."""
         insights = []
         try:
             from app.domains.automations.models import SequenceEmailLog
-            threshold = datetime.now(timezone.utc) - timedelta(days=14)
+            threshold = datetime.now(UTC) - timedelta(days=14)
 
             query = select(
                 func.count(SequenceEmailLog.id).label("total"),
@@ -248,15 +248,14 @@ class SelfOptimizationEngine:
         return insights
 
     async def _optimize_agent_assignment(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[OptimizationInsight]:
         """Analiza qué agentes/personalidades tienen mejores tasas de conversión."""
         insights = []
         try:
             from app.domains.agents.models import AgentConversation, AgentPersonality
-            from app.domains.crm.models import Deal
 
-            threshold = datetime.now(timezone.utc) - timedelta(days=30)
+            threshold = datetime.now(UTC) - timedelta(days=30)
 
             agent_conv_query = select(
                 AgentConversation.personality_id,
@@ -298,13 +297,13 @@ class SelfOptimizationEngine:
         return insights
 
     async def _optimize_send_times(
-        self, business_id: Optional[uuid.UUID]
+        self, business_id: uuid.UUID | None
     ) -> list[OptimizationInsight]:
         """Determina los mejores horarios de envío de mensajes por análisis de respuestas."""
         insights = []
         try:
             from app.domains.channels.models import Message
-            threshold = datetime.now(timezone.utc) - timedelta(days=30)
+            threshold = datetime.now(UTC) - timedelta(days=30)
 
             query = select(
                 func.extract("hour", Message.created_at).label("hour"),

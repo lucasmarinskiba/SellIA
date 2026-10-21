@@ -11,8 +11,8 @@ Flujo:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,10 @@ class SellIAFeedIAWorkflow:
 
     async def create_and_publish_product_content(
         self,
-        product: Dict[str, Any],
+        product: dict[str, Any],
         account_id: str,
-        platforms: List[str],  # ["instagram", "tiktok"]
-    ) -> Dict[str, Any]:
+        platforms: list[str],  # ["instagram", "tiktok"]
+    ) -> dict[str, Any]:
         """
         Workflow completo: SellIA → FeedIA → crea contenido → publica.
 
@@ -84,14 +84,14 @@ class SellIAFeedIAWorkflow:
             return workflow_result
 
         except Exception as e:
-            logger.error(f"Workflow failed: {str(e)}")
+            logger.error(f"Workflow failed: {e!s}")
             workflow_result["status"] = "error"
             workflow_result["error"] = str(e)
             return workflow_result
 
     # ========== STEP IMPLEMENTATIONS ==========
 
-    async def _open_feedia(self) -> Dict[str, Any]:
+    async def _open_feedia(self) -> dict[str, Any]:
         """Abre FeedIA en navegador."""
 
         actions = [
@@ -103,7 +103,7 @@ class SellIAFeedIAWorkflow:
         result = await self.browser.browser.execute_workflow("open_feedia", actions)
         return {"status": "success" if result.get("completed", 0) > 0 else "error"}
 
-    async def _navigate_content_creation(self) -> Dict[str, Any]:
+    async def _navigate_content_creation(self) -> dict[str, Any]:
         """Navega a sección de creación de contenido en FeedIA."""
 
         # Captura screenshot
@@ -141,7 +141,7 @@ class SellIAFeedIAWorkflow:
 
         return {"status": "success" if result.get("completed", 0) > 0 else "error"}
 
-    async def _create_carousel_on_feedia(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_carousel_on_feedia(self, product: dict[str, Any]) -> dict[str, Any]:
         """Crea carrusel en FeedIA via Computer Vision + CV dirección."""
 
         logger.info("Creating carousel on FeedIA")
@@ -211,7 +211,7 @@ class SellIAFeedIAWorkflow:
             "verification": verification,
         }
 
-    async def _create_tiktok_on_feedia(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_tiktok_on_feedia(self, product: dict[str, Any]) -> dict[str, Any]:
         """Crea video TikTok en FeedIA via Computer Vision."""
 
         logger.info("Creating TikTok video on FeedIA")
@@ -270,7 +270,7 @@ class SellIAFeedIAWorkflow:
             "verification": verification,
         }
 
-    async def _publish_content_feedia(self, platforms: List[str]) -> Dict[str, Any]:
+    async def _publish_content_feedia(self, platforms: list[str]) -> dict[str, Any]:
         """Publica contenido a redes sociales desde FeedIA."""
 
         logger.info(f"Publishing to platforms: {platforms}")

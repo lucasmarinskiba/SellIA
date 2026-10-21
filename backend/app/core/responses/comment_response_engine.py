@@ -10,13 +10,13 @@ Pipeline:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any
 
 from .comment_analyzer import CommentAnalyzer
-from .humor_generator import HumorGenerator
 from .educational_responder import EducationalResponder
 from .engagement_optimizer import EngagementOptimizer
+from .humor_generator import HumorGenerator
 from .personality_injector import PersonalityInjector
 
 logger = logging.getLogger(__name__)
@@ -38,10 +38,10 @@ class CommentResponseEngine:
     def generate_response(
         self,
         comment_text: str,
-        author_profile: Dict[str, Any],
-        post_context: Dict[str, Any],
-        previous_comments: List[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        author_profile: dict[str, Any],
+        post_context: dict[str, Any],
+        previous_comments: list[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """
         Generate optimal response for comment.
 
@@ -158,11 +158,11 @@ class CommentResponseEngine:
 
     def _score_response_approaches(
         self,
-        sentiment: Dict,
-        intent: Dict,
-        audience: Dict,
+        sentiment: dict,
+        intent: dict,
+        audience: dict,
         comment_text: str,
-    ) -> Dict[str, Dict[str, float]]:
+    ) -> dict[str, dict[str, float]]:
         """Score different response approaches."""
 
         scores = {
@@ -195,12 +195,12 @@ class CommentResponseEngine:
 
     def _generate_humor_response(
         self,
-        sentiment: Dict,
-        intent: Dict,
+        sentiment: dict,
+        intent: dict,
         comment_text: str,
-        audience: Dict,
-        approach_score: Dict,
-    ) -> Dict[str, Any]:
+        audience: dict,
+        approach_score: dict,
+    ) -> dict[str, Any]:
         """Generate humor-based response."""
 
         result = HumorGenerator.generate_humor_response(
@@ -219,8 +219,8 @@ class CommentResponseEngine:
     def _generate_educational_response(
         self,
         comment_text: str,
-        approach_score: Dict,
-    ) -> Dict[str, Any]:
+        approach_score: dict,
+    ) -> dict[str, Any]:
         """Generate educational response."""
 
         result = EducationalResponder.create_educational_response(comment_text)
@@ -233,10 +233,10 @@ class CommentResponseEngine:
 
     def _generate_engagement_response(
         self,
-        intent: Dict,
-        audience: Dict,
-        approach_score: Dict,
-    ) -> Dict[str, Any]:
+        intent: dict,
+        audience: dict,
+        approach_score: dict,
+    ) -> dict[str, Any]:
         """Generate engagement-focused response."""
 
         hook = EngagementOptimizer.craft_hook("", intent.get("intent", "question"))
@@ -249,10 +249,10 @@ class CommentResponseEngine:
 
     def _generate_standard_response(
         self,
-        sentiment: Dict,
+        sentiment: dict,
         comment_text: str,
-        approach_score: Dict,
-    ) -> Dict[str, Any]:
+        approach_score: dict,
+    ) -> dict[str, Any]:
         """Generate standard professional response."""
 
         if sentiment["sentiment"] in ["positive", "very_positive"]:
@@ -270,7 +270,7 @@ class CommentResponseEngine:
     def _calculate_engagement_score(
         self,
         response_text: str,
-        audience: Dict,
+        audience: dict,
         response_type: str,
     ) -> int:
         """Calculate predicted engagement score."""
@@ -298,7 +298,7 @@ class CommentResponseEngine:
 
         return min(100, score)
 
-    def get_analytics(self) -> Dict[str, Any]:
+    def get_analytics(self) -> dict[str, Any]:
         """Get analytics on responses generated."""
 
         if not self.response_history:

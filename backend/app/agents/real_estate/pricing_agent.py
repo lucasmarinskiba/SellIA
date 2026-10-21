@@ -2,8 +2,8 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,20 +17,20 @@ class PricingRecommendation:
     recommended_price: float
     confidence: float
     strategy: str  # aggressive, balanced, conservative
-    market_conditions: Dict[str, Any]
-    factors: Dict[str, float]  # Individual factor impacts
-    reasoning: List[str]
+    market_conditions: dict[str, Any]
+    factors: dict[str, float]  # Individual factor impacts
+    reasoning: list[str]
 
 
 class PricingAgent:
     """Dynamic pricing using ML predictions + market analysis."""
 
-    def __init__(self, ml_engine: Optional[Any] = None):
+    def __init__(self, ml_engine: Any | None = None):
         self.ml_engine = ml_engine
-        self.recommendations: Dict[str, PricingRecommendation] = {}
+        self.recommendations: dict[str, PricingRecommendation] = {}
 
     def calculate_pricing_recommendation(
-        self, property_data: Dict[str, Any], market_data: Dict[str, Any], strategy: str = "balanced"
+        self, property_data: dict[str, Any], market_data: dict[str, Any], strategy: str = "balanced"
     ) -> PricingRecommendation:
         """Calculate optimal price for property."""
         property_id = property_data.get("property_id", "unknown")
@@ -70,7 +70,7 @@ class PricingAgent:
 
         return recommendation
 
-    def _calculate_base_valuation(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def _calculate_base_valuation(self, property_data: dict[str, Any], market_data: dict[str, Any]) -> float:
         """Calculate base property valuation."""
         # Start with comparable sales data
         comparable_prices = market_data.get("comparable_prices", [])
@@ -88,7 +88,7 @@ class PricingAgent:
 
         return base_price
 
-    def _calculate_price_factors(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, float]:
+    def _calculate_price_factors(self, property_data: dict[str, Any], market_data: dict[str, Any]) -> dict[str, float]:
         """Calculate impact of individual factors on price."""
         factors = {}
 
@@ -160,7 +160,7 @@ class PricingAgent:
         }
         return multipliers.get(strategy, 1.0)
 
-    def _calculate_price_confidence(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> float:
+    def _calculate_price_confidence(self, property_data: dict[str, Any], market_data: dict[str, Any]) -> float:
         """Calculate confidence level of pricing recommendation."""
         confidence = 0.5
 
@@ -185,7 +185,7 @@ class PricingAgent:
 
         return min(confidence, 1.0)
 
-    def _summarize_market_conditions(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _summarize_market_conditions(self, market_data: dict[str, Any]) -> dict[str, Any]:
         """Summarize key market conditions."""
         return {
             "trend": market_data.get("market_trend", "unknown"),
@@ -196,8 +196,8 @@ class PricingAgent:
         }
 
     def _generate_pricing_reasoning(
-        self, property_data: Dict[str, Any], market_data: Dict[str, Any], strategy: str, factors: Dict[str, float]
-    ) -> List[str]:
+        self, property_data: dict[str, Any], market_data: dict[str, Any], strategy: str, factors: dict[str, float]
+    ) -> list[str]:
         """Generate reasoning for pricing recommendation."""
         reasoning = []
 
@@ -238,7 +238,7 @@ class PricingAgent:
 
         return reasoning
 
-    def suggest_negotiation_targets(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def suggest_negotiation_targets(self, property_id: str) -> dict[str, Any] | None:
         """Suggest negotiation targets based on pricing."""
         if property_id not in self.recommendations:
             return None
@@ -263,7 +263,7 @@ class PricingAgent:
             },
         }
 
-    def compare_pricing_strategies(self, property_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def compare_pricing_strategies(self, property_data: dict[str, Any], market_data: dict[str, Any]) -> dict[str, Any]:
         """Compare all three pricing strategies."""
         strategies = {}
 
@@ -278,7 +278,7 @@ class PricingAgent:
 
         return strategies
 
-    def _estimate_time_to_sale(self, price: float, market_data: Dict[str, Any]) -> float:
+    def _estimate_time_to_sale(self, price: float, market_data: dict[str, Any]) -> float:
         """Estimate time to sale based on price."""
         avg_time = market_data.get("avg_time_to_sale_days", 30)
         market_price = market_data.get("average_listing_price", 300000)

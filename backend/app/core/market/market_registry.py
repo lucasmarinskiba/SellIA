@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +37,11 @@ class MarketRegistryEntry:
     industry: str
     supported: bool
     enabled: bool
-    loaded_agents: List[str]
-    available_rules: List[str]
+    loaded_agents: list[str]
+    available_rules: list[str]
     health_status: HealthStatus
     last_updated: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -50,11 +50,11 @@ class AgentRegistryEntry:
     agent_name: str
     agent_role: str
     version: str
-    market_applicable: List[str]  # Mercados donde aplica
-    capabilities: List[str]
+    market_applicable: list[str]  # Mercados donde aplica
+    capabilities: list[str]
     status: str  # "loaded", "unloaded", "error"
-    last_loaded: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_loaded: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -63,10 +63,10 @@ class RuleSetRegistryEntry:
     rule_set_name: str
     industry: str
     version: str
-    market_applicable: List[str]
+    market_applicable: list[str]
     status: str  # "loaded", "unloaded", "error"
-    last_updated: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    last_updated: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -79,10 +79,10 @@ class MarketRegistry:
 
     def __init__(self):
         """Inicializa registry."""
-        self.markets: Dict[str, MarketRegistryEntry] = {}
-        self.agents: Dict[str, AgentRegistryEntry] = {}
-        self.rule_sets: Dict[str, RuleSetRegistryEntry] = {}
-        self.last_sync: Optional[str] = None
+        self.markets: dict[str, MarketRegistryEntry] = {}
+        self.agents: dict[str, AgentRegistryEntry] = {}
+        self.rule_sets: dict[str, RuleSetRegistryEntry] = {}
+        self.last_sync: str | None = None
 
     def register_market(
         self,
@@ -90,7 +90,7 @@ class MarketRegistry:
         industry: str,
         supported: bool = True,
         enabled: bool = True,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra tipo de mercado.
 
@@ -120,9 +120,9 @@ class MarketRegistry:
         agent_name: str,
         agent_role: str,
         version: str,
-        market_applicable: List[str],
-        capabilities: List[str],
-        metadata: Optional[Dict[str, Any]] = None,
+        market_applicable: list[str],
+        capabilities: list[str],
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra agente.
 
@@ -159,8 +159,8 @@ class MarketRegistry:
         rule_set_name: str,
         industry: str,
         version: str,
-        market_applicable: List[str],
-        metadata: Optional[Dict[str, Any]] = None,
+        market_applicable: list[str],
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Registra rule set.
 
@@ -190,19 +190,19 @@ class MarketRegistry:
 
         logger.info(f"Registered rule set: {rule_set_name} (v{version})")
 
-    def get_market(self, market_name: str) -> Optional[MarketRegistryEntry]:
+    def get_market(self, market_name: str) -> MarketRegistryEntry | None:
         """Obtiene entrada de mercado."""
         return self.markets.get(market_name)
 
-    def get_agent(self, agent_name: str) -> Optional[AgentRegistryEntry]:
+    def get_agent(self, agent_name: str) -> AgentRegistryEntry | None:
         """Obtiene entrada de agente."""
         return self.agents.get(agent_name)
 
-    def get_rule_set(self, rule_set_name: str) -> Optional[RuleSetRegistryEntry]:
+    def get_rule_set(self, rule_set_name: str) -> RuleSetRegistryEntry | None:
         """Obtiene entrada de rule set."""
         return self.rule_sets.get(rule_set_name)
 
-    def get_agents_for_market(self, market_name: str) -> List[AgentRegistryEntry]:
+    def get_agents_for_market(self, market_name: str) -> list[AgentRegistryEntry]:
         """Obtiene agentes disponibles para mercado.
 
         Args:
@@ -221,7 +221,7 @@ class MarketRegistry:
             if agent_name in self.agents
         ]
 
-    def get_rule_sets_for_market(self, market_name: str) -> List[RuleSetRegistryEntry]:
+    def get_rule_sets_for_market(self, market_name: str) -> list[RuleSetRegistryEntry]:
         """Obtiene rule sets disponibles para mercado.
 
         Args:
@@ -240,7 +240,7 @@ class MarketRegistry:
             if rule_name in self.rule_sets
         ]
 
-    def get_agents_by_capability(self, capability: str) -> List[AgentRegistryEntry]:
+    def get_agents_by_capability(self, capability: str) -> list[AgentRegistryEntry]:
         """Obtiene agentes con capacidad específica.
 
         Args:
@@ -254,7 +254,7 @@ class MarketRegistry:
             if capability in agent.capabilities
         ]
 
-    def mark_agent_loaded(self, agent_name: str, last_loaded: Optional[str] = None) -> None:
+    def mark_agent_loaded(self, agent_name: str, last_loaded: str | None = None) -> None:
         """Marca agente como cargado.
 
         Args:
@@ -326,19 +326,19 @@ class MarketRegistry:
             status = self.check_market_health(market_name)
             self.markets[market_name].health_status = status
 
-    def get_all_markets(self) -> List[MarketRegistryEntry]:
+    def get_all_markets(self) -> list[MarketRegistryEntry]:
         """Obtiene todos los mercados."""
         return list(self.markets.values())
 
-    def get_all_agents(self) -> List[AgentRegistryEntry]:
+    def get_all_agents(self) -> list[AgentRegistryEntry]:
         """Obtiene todos los agentes."""
         return list(self.agents.values())
 
-    def get_all_rule_sets(self) -> List[RuleSetRegistryEntry]:
+    def get_all_rule_sets(self) -> list[RuleSetRegistryEntry]:
         """Obtiene todos los rule sets."""
         return list(self.rule_sets.values())
 
-    def get_registry_summary(self) -> Dict[str, Any]:
+    def get_registry_summary(self) -> dict[str, Any]:
         """Obtiene resumen del registry.
 
         Returns:
@@ -375,7 +375,7 @@ class MarketRegistry:
             "last_sync": self.last_sync,
         }
 
-    def export_registry(self) -> Dict[str, Any]:
+    def export_registry(self) -> dict[str, Any]:
         """Exporta registry completo.
 
         Returns:

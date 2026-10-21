@@ -4,30 +4,37 @@ Secure Data Deletion Service
 Borrado GDPR completo con sobrescritura de datos sensibles.
 """
 
-import uuid
-import json
 import random
 import string
-from datetime import datetime, timezone
-from typing import Dict, Any
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.users.models import User
-from app.domains.security.models import (
-    UserLoginLog, UserSession, PushSubscription, TwoFABackupCode,
-    BreachCheckLog, EmailOTP, WebAuthnCredential, SecurityKey,
-    TrustedDevice, IPAllowlist, LoginAnomaly,
-    SubscriptionAccessLog, ChargebackAlert,
-)
-from app.core.field_encryption import encrypt_field
 from app.core.logger import get_logger
+from app.domains.security.models import (
+    BreachCheckLog,
+    ChargebackAlert,
+    EmailOTP,
+    IPAllowlist,
+    LoginAnomaly,
+    PushSubscription,
+    SecurityKey,
+    SubscriptionAccessLog,
+    TrustedDevice,
+    TwoFABackupCode,
+    UserLoginLog,
+    UserSession,
+    WebAuthnCredential,
+)
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 
 
-async def export_user_data(db: AsyncSession, user_id: uuid.UUID) -> Dict[str, Any]:
+async def export_user_data(db: AsyncSession, user_id: uuid.UUID) -> dict[str, Any]:
     """Exporta todos los datos personales del usuario en formato JSON."""
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -40,7 +47,7 @@ async def export_user_data(db: AsyncSession, user_id: uuid.UUID) -> Dict[str, An
         "full_name": user.full_name,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
-        "export_generated_at": datetime.now(timezone.utc).isoformat(),
+        "export_generated_at": datetime.now(UTC).isoformat(),
     }
 
     # TODO: Agregar más datos (conversaciones, negocios, etc.)

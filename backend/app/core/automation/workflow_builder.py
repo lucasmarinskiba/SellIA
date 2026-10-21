@@ -31,11 +31,12 @@ Example workflows:
 """
 
 import logging
-from typing import Dict, List, Any, Callable, Optional
-from dataclasses import dataclass, field
-from enum import Enum
-from datetime import datetime
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +62,10 @@ class WorkflowStep:
     id: str
     name: str
     action: str  # Job type (post_product, send_email, etc)
-    payload: Dict[str, Any]
-    conditions: List[Dict[str, Any]] = field(default_factory=list)
-    on_success: Optional[str] = None  # Siguiente step ID
-    on_failure: Optional[str] = None  # Step a ejecutar si falla
+    payload: dict[str, Any]
+    conditions: list[dict[str, Any]] = field(default_factory=list)
+    on_success: str | None = None  # Siguiente step ID
+    on_failure: str | None = None  # Step a ejecutar si falla
     timeout_seconds: int = 300
     max_retries: int = 3
 
@@ -85,11 +86,11 @@ class Workflow:
     name: str
     description: str
     trigger: WorkflowTrigger
-    schedule: Optional[str] = None  # Cron if SCHEDULE trigger
-    steps: List[WorkflowStep] = field(default_factory=list)
+    schedule: str | None = None  # Cron if SCHEDULE trigger
+    steps: list[WorkflowStep] = field(default_factory=list)
     enabled: bool = True
     created_at: datetime = field(default_factory=datetime.utcnow)
-    last_run: Optional[datetime] = None
+    last_run: datetime | None = None
     execution_count: int = 0
     failure_count: int = 0
 
@@ -98,15 +99,15 @@ class WorkflowBuilder:
     """Construye workflows complejos."""
 
     def __init__(self):
-        self.workflows: Dict[str, Workflow] = {}
-        self.step_handlers: Dict[str, Callable] = {}
+        self.workflows: dict[str, Workflow] = {}
+        self.step_handlers: dict[str, Callable] = {}
 
     def create_workflow(
         self,
         name: str,
         description: str,
         trigger: WorkflowTrigger,
-        schedule: Optional[str] = None,
+        schedule: str | None = None,
     ) -> Workflow:
         """Crea nuevo workflow."""
         workflow = Workflow(
@@ -125,7 +126,7 @@ class WorkflowBuilder:
         workflow_id: str,
         name: str,
         action: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         timeout_seconds: int = 300,
         max_retries: int = 3,
     ) -> str:
@@ -190,11 +191,11 @@ class WorkflowBuilder:
         last_step.on_failure = "escalate"
         logger.debug(f"Escalation added: {escalation_message}")
 
-    def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
+    def get_workflow(self, workflow_id: str) -> Workflow | None:
         """Obtiene workflow."""
         return self.workflows.get(workflow_id)
 
-    def list_workflows(self) -> List[Workflow]:
+    def list_workflows(self) -> list[Workflow]:
         """Lista todos workflows."""
         return list(self.workflows.values())
 
@@ -222,13 +223,13 @@ class WorkflowExecutor:
 
     def __init__(self, automation_engine):
         self.automation_engine = automation_engine
-        self.execution_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.execution_history: dict[str, list[dict[str, Any]]] = {}
 
     async def execute_workflow(
         self,
         workflow: Workflow,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Ejecuta workflow desde el primer step.
 
@@ -273,7 +274,7 @@ class WorkflowExecutor:
                 raise ValueError("Workflow has no steps")
 
         except Exception as e:
-            logger.error(f"Workflow execution failed: {str(e)}")
+            logger.error(f"Workflow execution failed: {e!s}")
             execution_result["status"] = "failed"
             execution_result["error"] = str(e)
             workflow.failure_count += 1
@@ -287,8 +288,8 @@ class WorkflowExecutor:
         self,
         workflow: Workflow,
         step: WorkflowStep,
-        context: Dict[str, Any],
-        execution_result: Dict[str, Any],
+        context: dict[str, Any],
+        execution_result: dict[str, Any],
     ) -> Any:
         """Ejecuta un step del workflow."""
         logger.debug(f"Executing step: {step.name}")
@@ -297,7 +298,7 @@ class WorkflowExecutor:
         payload = {**context, **step.payload}
 
         # Create job
-        from automation_engine import Job, Priority, JobStatus
+        from automation_engine import Job, Priority
 
         job = Job(
             id=str(uuid.uuid4()),
@@ -353,7 +354,7 @@ class WorkflowExecutor:
     @staticmethod
     def _evaluate_condition(
         condition: WorkflowCondition,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> bool:
         """Evalúa condición."""
         value = context.get(condition.field)
@@ -374,7 +375,7 @@ class WorkflowExecutor:
         return False
 
     @staticmethod
-    def _find_step_by_id(workflow: Workflow, step_id: str) -> Optional[WorkflowStep]:
+    def _find_step_by_id(workflow: Workflow, step_id: str) -> WorkflowStep | None:
         """Busca step por ID."""
         for step in workflow.steps:
             if step.id == step_id:

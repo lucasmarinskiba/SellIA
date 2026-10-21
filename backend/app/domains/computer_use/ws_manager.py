@@ -10,8 +10,6 @@ otro worker) pueda enviar mensajes al cliente, usamos Redis Pub/Sub.
 
 import asyncio
 import json
-from typing import Dict, Optional
-from uuid import UUID
 
 import redis.asyncio as redis
 from fastapi import WebSocket
@@ -27,10 +25,10 @@ class ComputerUseWebSocketManager:
     """Gestiona conexiones WebSocket con Redis Pub/Sub para multi-worker."""
 
     def __init__(self):
-        self._connections: Dict[str, WebSocket] = {}
-        self._redis: Optional[redis.Redis] = None
-        self._pubsub: Optional[redis.client.PubSub] = None
-        self._listener_task: Optional[asyncio.Task] = None
+        self._connections: dict[str, WebSocket] = {}
+        self._redis: redis.Redis | None = None
+        self._pubsub: redis.client.PubSub | None = None
+        self._listener_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
 
     async def _get_redis(self) -> redis.Redis:

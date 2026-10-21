@@ -1,24 +1,32 @@
 """Support system API router."""
 
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.support.service import SupportService
+from app.domains.support.models import MessageSenderType, TicketStatus
 from app.domains.support.schemas import (
-    SupportTicketCreate, SupportTicketUpdate, SupportTicketResponse,
-    SupportTicketDetailResponse, SupportTicketListResponse,
-    TicketMessageCreate, TicketMessageResponse,
-    FAQCreate, FAQUpdate, FAQResponse,
-    KnowledgeBaseArticleCreate, KnowledgeBaseArticleUpdate, KnowledgeBaseArticleResponse,
-    KBSearchResult, CSATSubmit, SupportStatsResponse,
+    CSATSubmit,
+    FAQCreate,
+    FAQResponse,
+    FAQUpdate,
+    KnowledgeBaseArticleCreate,
+    KnowledgeBaseArticleResponse,
+    KnowledgeBaseArticleUpdate,
+    SupportStatsResponse,
+    SupportTicketCreate,
+    SupportTicketDetailResponse,
+    SupportTicketListResponse,
+    SupportTicketResponse,
+    SupportTicketUpdate,
+    TicketMessageCreate,
+    TicketMessageResponse,
 )
-from app.domains.support.models import TicketStatus, MessageSenderType
+from app.domains.support.service import SupportService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/support", tags=["support"])
 
@@ -42,7 +50,7 @@ async def create_ticket(
 
 @router.get("/tickets", response_model=SupportTicketListResponse)
 async def list_my_tickets(
-    status: Optional[TicketStatus] = None,
+    status: TicketStatus | None = None,
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_active_user),
@@ -124,8 +132,8 @@ async def submit_csat(
 
 @router.get("/faq", response_model=list[FAQResponse])
 async def list_faqs(
-    business_id: Optional[uuid.UUID] = None,
-    search: Optional[str] = None,
+    business_id: uuid.UUID | None = None,
+    search: str | None = None,
     svc: SupportService = Depends(_svc),
 ):
     """Listar FAQs públicas."""
@@ -136,8 +144,8 @@ async def list_faqs(
 
 @router.get("/kb", response_model=list[KnowledgeBaseArticleResponse])
 async def list_kb_articles(
-    business_id: Optional[uuid.UUID] = None,
-    search: Optional[str] = None,
+    business_id: uuid.UUID | None = None,
+    search: str | None = None,
     svc: SupportService = Depends(_svc),
 ):
     """Listar artículos de knowledge base."""
@@ -148,9 +156,9 @@ async def list_kb_articles(
 
 @router.get("/admin/tickets", response_model=SupportTicketListResponse)
 async def admin_list_tickets(
-    status: Optional[TicketStatus] = None,
-    priority: Optional[str] = None,
-    assigned_to: Optional[uuid.UUID] = None,
+    status: TicketStatus | None = None,
+    priority: str | None = None,
+    assigned_to: uuid.UUID | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_active_user),
@@ -222,7 +230,7 @@ async def admin_add_message(
 
 @router.get("/admin/stats", response_model=SupportStatsResponse)
 async def admin_get_stats(
-    business_id: Optional[uuid.UUID] = None,
+    business_id: uuid.UUID | None = None,
     current_user: User = Depends(get_current_active_user),
     svc: SupportService = Depends(_svc),
 ):
@@ -238,7 +246,7 @@ async def admin_get_stats(
 @router.post("/admin/faqs", response_model=FAQResponse, status_code=status.HTTP_201_CREATED)
 async def admin_create_faq(
     data: FAQCreate,
-    business_id: Optional[uuid.UUID] = None,
+    business_id: uuid.UUID | None = None,
     current_user: User = Depends(get_current_active_user),
     svc: SupportService = Depends(_svc),
 ):
@@ -280,7 +288,7 @@ async def admin_delete_faq(
 @router.post("/admin/kb", response_model=KnowledgeBaseArticleResponse, status_code=status.HTTP_201_CREATED)
 async def admin_create_kb_article(
     data: KnowledgeBaseArticleCreate,
-    business_id: Optional[uuid.UUID] = None,
+    business_id: uuid.UUID | None = None,
     current_user: User = Depends(get_current_active_user),
     svc: SupportService = Depends(_svc),
 ):

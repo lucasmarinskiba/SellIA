@@ -1,11 +1,12 @@
 """Revenue Intelligence - ML models for forecasting, churn, expansion."""
 
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import logging
 from enum import Enum
+from typing import Any
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +43,8 @@ class CloseForecast:
     risk_level: CloseRiskLevel
     expected_close_date: str  # ISO date
     confidence: float  # Model confidence 0-1
-    key_drivers: List[str]  # ["intent_high", "budget_confirmed", ...]
-    risk_factors: List[str]  # ["stalled_3_days", "price_objection", ...]
+    key_drivers: list[str]  # ["intent_high", "budget_confirmed", ...]
+    risk_factors: list[str]  # ["stalled_3_days", "price_objection", ...]
 
 
 @dataclass
@@ -54,7 +55,7 @@ class ChurnForecast:
     risk_level: ChurnRiskLevel
     days_until_churn: int  # Predicted days
     confidence: float
-    churn_indicators: List[str]  # ["low_engagement", "support_tickets_up", ...]
+    churn_indicators: list[str]  # ["low_engagement", "support_tickets_up", ...]
     retention_score: float  # Actions to retain (0-100)
 
 
@@ -65,7 +66,7 @@ class ExpansionScore:
     expansion_probability: float  # 0-1
     expansion_potential: ExpansionPotential
     estimated_expansion_value: float  # USD
-    recommended_products: List[Dict[str, Any]]
+    recommended_products: list[dict[str, Any]]
     time_to_expand_months: int
 
 
@@ -78,7 +79,7 @@ class RevenueForecaster:
     """
 
     def __init__(self):
-        self.historical_data: List[Dict[str, Any]] = []
+        self.historical_data: list[dict[str, Any]] = []
 
     async def forecast_deal_close(
         self,
@@ -87,7 +88,7 @@ class RevenueForecaster:
         current_stage: str,  # "qualification", "proposal", "negotiation", "closing"
         days_in_stage: int,
         intent_score: float,
-        engagement_signals: Dict[str, int],  # {"email_opens": 5, "calls": 2, ...}
+        engagement_signals: dict[str, int],  # {"email_opens": 5, "calls": 2, ...}
     ) -> CloseForecast:
         """
         Predict close probability for a deal using:
@@ -192,8 +193,8 @@ class RevenueForecaster:
         )
 
     async def forecast_revenue_by_stage(
-        self, deals: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, deals: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Aggregate revenue forecast by pipeline stage.
         Returns: Total, by stage, by probability bucket.
@@ -249,9 +250,9 @@ class ChurnPredictor:
         self,
         customer_id: str,
         subscription_months: int,
-        engagement_signals: Dict[str, Any],
-        usage_metrics: Dict[str, Any],
-        nps_score: Optional[float] = None,
+        engagement_signals: dict[str, Any],
+        usage_metrics: dict[str, Any],
+        nps_score: float | None = None,
     ) -> ChurnForecast:
         """
         Predict churn probability from:

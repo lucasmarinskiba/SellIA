@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -244,7 +244,7 @@ async def run_all_integrity_checks(db: AsyncSession) -> dict[str, Any]:
             failed += 1
 
     summary = {
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
         "total": len(ALL_CHECKS),
         "passed": passed,
         "failed": failed,

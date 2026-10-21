@@ -5,8 +5,8 @@ Implementa políticas de fallback (si se excede el presupuesto,
 se cambia a tier más barato o a modo prompt-only).
 """
 
-from typing import Optional, Dict
 from dataclasses import dataclass
+
 from .base import ContentQuality, ContentType
 from .cache import ContentCache
 
@@ -116,7 +116,7 @@ class BudgetController:
         content_type: ContentType,
         estimated_cost: float,
         plan_tier: str = "starter",
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Verifica si hay presupuesto disponible.
 
@@ -195,7 +195,7 @@ class BudgetController:
             return True
         return False
 
-    async def get_usage_report(self, business_id: str) -> Dict:
+    async def get_usage_report(self, business_id: str) -> dict:
         """Genera reporte de uso del día."""
         cache = self.cache
         return {

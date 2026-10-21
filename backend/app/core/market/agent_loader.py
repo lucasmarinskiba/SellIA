@@ -1,10 +1,7 @@
 """Agent Loader — Load agents dynamically per market."""
 
-import importlib
-import sys
-from typing import Any, Dict, List
 import logging
-from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,11 +9,11 @@ logger = logging.getLogger(__name__)
 class AgentLoader:
     """Load and cache agents per market."""
 
-    _agent_cache: Dict[str, Any] = {}
+    _agent_cache: dict[str, Any] = {}
     _loaded_modules: set[str] = set()
 
     @staticmethod
-    def load_agents_for_market(market_profile: "MarketProfile") -> List[Any]:
+    def load_agents_for_market(market_profile: "MarketProfile") -> list[Any]:
         """Load agents matching market profile."""
         agents = []
 
@@ -54,7 +51,7 @@ class AgentLoader:
         return None
 
     @staticmethod
-    def _load_sellIA_base() -> Dict[str, Any]:
+    def _load_sellIA_base() -> dict[str, Any]:
         """Load SellIA base agent."""
         return {
             "id": "sellIA_base",
@@ -65,7 +62,7 @@ class AgentLoader:
         }
 
     @staticmethod
-    def _load_real_estate_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_real_estate_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Real Estate agent from external Agente Inmobiliario system."""
         agents = {
             "realEstate_leadScorer": {
@@ -96,7 +93,7 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_commerce_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_commerce_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Commerce agent from Asesor Comercial system."""
         agents = {
             "commerce_prospector": {
@@ -127,7 +124,7 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_services_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_services_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Services agent."""
         agents = {
             "services_qualifier": {
@@ -148,7 +145,7 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_finance_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_finance_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Finance agent."""
         agents = {
             "finance_advisor": {
@@ -169,7 +166,7 @@ class AgentLoader:
         return agents.get(agent_id)
 
     @staticmethod
-    def _load_digital_agent(agent_id: str, profile: "MarketProfile") -> Dict[str, Any]:
+    def _load_digital_agent(agent_id: str, profile: "MarketProfile") -> dict[str, Any]:
         """Load Digital Products agent."""
         agents = {
             "digital_converter": {
@@ -197,6 +194,6 @@ class AgentLoader:
         logger.info("Agent cache cleared. Next load will refresh from sources.")
 
     @staticmethod
-    def get_loaded_agents() -> List[str]:
+    def get_loaded_agents() -> list[str]:
         """List all loaded agent IDs."""
         return list(AgentLoader._agent_cache.keys())

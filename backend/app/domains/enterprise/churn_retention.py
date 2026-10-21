@@ -7,11 +7,11 @@
 4. RetentionPlaybookGenerator - Personalized win-back messages
 """
 
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-import json
+from typing import Any
+
 from anthropic import Anthropic
 
 client_anthropic = Anthropic()
@@ -38,7 +38,7 @@ class ChurnPrediction:
     customer_id: str
     churn_probability: float
     risk_level: ChurnRiskLevel
-    churn_reasons: List[Dict[str, Any]]
+    churn_reasons: list[dict[str, Any]]
     predicted_churn_date: str
     retention_offer: str
 
@@ -61,7 +61,7 @@ class ChurnPredictionModel:
     def __init__(self, db):
         self.db = db
 
-    def predict_churn(self, customer_id: str, features: Dict[str, Any]) -> ChurnPrediction:
+    def predict_churn(self, customer_id: str, features: dict[str, Any]) -> ChurnPrediction:
         """Predict churn probability for customer."""
         # In production: load trained XGBoost model
         # For now: simple heuristic model
@@ -85,7 +85,7 @@ class ChurnPredictionModel:
             retention_offer=self._suggest_retention_offer(risk_level, reasons),
         )
 
-    def _calculate_churn_score(self, features: Dict[str, Any]) -> float:
+    def _calculate_churn_score(self, features: dict[str, Any]) -> float:
         """Calculate churn score from features."""
         score = 0.0
 
@@ -118,7 +118,7 @@ class ChurnPredictionModel:
 
         return min(1.0, score)
 
-    def _identify_churn_reasons(self, features: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _identify_churn_reasons(self, features: dict[str, Any]) -> list[dict[str, Any]]:
         """Identify top churn reasons from features."""
         reasons = []
 
@@ -148,7 +148,7 @@ class ChurnPredictionModel:
 
         return sorted(reasons, key=lambda r: r["impact"], reverse=True)[:3]
 
-    def _suggest_retention_offer(self, risk_level: ChurnRiskLevel, reasons: List[Dict]) -> str:
+    def _suggest_retention_offer(self, risk_level: ChurnRiskLevel, reasons: list[dict]) -> str:
         """Suggest retention offer based on risk and reasons."""
         if risk_level == ChurnRiskLevel.HIGH:
             return "6-month extension at 40% discount + dedicated support"
@@ -164,7 +164,7 @@ class ExpansionOpportunityDetector:
     def __init__(self, db):
         self.db = db
 
-    def detect_opportunities(self, customer_id: str, usage_data: Dict[str, Any]) -> List[ExpansionOpportunity]:
+    def detect_opportunities(self, customer_id: str, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
         """Detect expansion opportunities for customer."""
         opportunities = []
 
@@ -189,7 +189,7 @@ class ExpansionOpportunityDetector:
 
         return opportunities
 
-    def _find_feature_adoption_gaps(self, usage_data: Dict[str, Any]) -> List[ExpansionOpportunity]:
+    def _find_feature_adoption_gaps(self, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
         """Find features they should adopt."""
         opportunities = []
 
@@ -213,7 +213,7 @@ class ExpansionOpportunityDetector:
 
         return opportunities
 
-    def _find_seat_expansion_opportunity(self, usage_data: Dict[str, Any]) -> Optional[ExpansionOpportunity]:
+    def _find_seat_expansion_opportunity(self, usage_data: dict[str, Any]) -> ExpansionOpportunity | None:
         """Detect team growth -> seat expansion."""
         team_size_current = usage_data.get("team_size_current", 0)
         team_size_historical = usage_data.get("team_size_historical", 0)
@@ -234,7 +234,7 @@ class ExpansionOpportunityDetector:
             )
         return None
 
-    def _find_cross_sell_opportunities(self, usage_data: Dict[str, Any]) -> List[ExpansionOpportunity]:
+    def _find_cross_sell_opportunities(self, usage_data: dict[str, Any]) -> list[ExpansionOpportunity]:
         """Find cross-sell (different product) opportunities."""
         opportunities = []
 
@@ -267,7 +267,7 @@ class ABMIntentScorer:
     def __init__(self, db):
         self.db = db
 
-    def score_intent(self, account_id: str, engagement_data: Dict[str, Any]) -> Dict[str, Any]:
+    def score_intent(self, account_id: str, engagement_data: dict[str, Any]) -> dict[str, Any]:
         """Calculate ABM intent score from engagement signals."""
         score = 0
         top_signals = []
@@ -324,7 +324,7 @@ class ABMIntentScorer:
         else:
             return "NOT_INTERESTED"
 
-    def _calculate_trend(self, engagement_data: Dict[str, Any]) -> str:
+    def _calculate_trend(self, engagement_data: dict[str, Any]) -> str:
         """Calculate if intent is trending up/down/flat."""
         current = engagement_data.get("engagement_score_current", 0)
         previous = engagement_data.get("engagement_score_previous", 0)
@@ -343,7 +343,7 @@ class RetentionPlaybookGenerator:
     def __init__(self, db):
         self.db = db
 
-    def generate_playbook(self, customer: Dict[str, Any], churn_reason: str) -> Dict[str, str]:
+    def generate_playbook(self, customer: dict[str, Any], churn_reason: str) -> dict[str, str]:
         """Generate retention playbook for customer."""
         prompt = f"""Generate a personalized retention playbook for:
 
@@ -377,7 +377,7 @@ CTA: [call to action]"""
         playbook_text = response.content[0].text
         return self._parse_playbook(playbook_text)
 
-    def _parse_playbook(self, text: str) -> Dict[str, str]:
+    def _parse_playbook(self, text: str) -> dict[str, str]:
         """Parse generated playbook into sections."""
         sections = {}
         current_section = None
@@ -427,7 +427,7 @@ class CustomerHealthScore:
         self.expansion_detector = expansion_detector
         self.abm_scorer = abm_scorer
 
-    def calculate_health(self, customer_id: str, features: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_health(self, customer_id: str, features: dict[str, Any]) -> dict[str, Any]:
         """Calculate comprehensive customer health score."""
         churn_pred = self.churn_model.predict_churn(customer_id, features)
         expansions = self.expansion_detector.detect_opportunities(customer_id, features)

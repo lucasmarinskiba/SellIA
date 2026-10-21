@@ -1,7 +1,7 @@
 """Business Context API"""
 
 import uuid
-from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from .service import BusinessContextService
-from .schemas import BusinessContextCreate, BusinessContextUpdate, BusinessContextRead
-from .models import BusinessContext
+
 from .angles_service import generate_communication_angles
+from .models import BusinessContext
+from .schemas import BusinessContextRead, BusinessContextUpdate
+from .service import BusinessContextService
 
 router = APIRouter(prefix="/business-context", tags=["Business Context"])
 
@@ -23,7 +24,7 @@ def get_service(db: AsyncSession = Depends(get_db)) -> BusinessContextService:
 
 @router.get("", response_model=BusinessContextRead)
 async def get_context(
-    business_id: Optional[uuid.UUID] = Query(None),
+    business_id: uuid.UUID | None = Query(None),
     user: User = Depends(get_current_user),
     service: BusinessContextService = Depends(get_service),
 ):
@@ -34,7 +35,7 @@ async def get_context(
 @router.post("", response_model=BusinessContextRead)
 async def create_or_update_context(
     data: BusinessContextUpdate,
-    business_id: Optional[uuid.UUID] = Query(None),
+    business_id: uuid.UUID | None = Query(None),
     user: User = Depends(get_current_user),
     service: BusinessContextService = Depends(get_service),
 ):

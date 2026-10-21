@@ -1,6 +1,8 @@
 """Phase X11: Loyalty & Retention Agent - Personalized Retention Sequences."""
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, JSON, Text
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
+
 from app.db.models import Base
 
 
@@ -47,8 +49,8 @@ class LoyaltyProgram(Base):
     vip_access_features = Column(JSON, default=list)
     personal_success_plan = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class RetentionSequence(Base):
@@ -74,8 +76,8 @@ class RetentionSequence(Base):
     conversions = Column(Integer, default=0)
 
     # Status
-    started_at = Column(DateTime(timezone.utc), nullable=False)
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), nullable=False)
+    completed_at = Column(DateTime(UTC), nullable=True)
     outcome = Column(String(50))  # success, paused, churned
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

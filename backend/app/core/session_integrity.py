@@ -5,17 +5,14 @@ Anti-tamper para sesiones con nonce rotativo.
 Cada request incluye X-Session-Nonce que se rota.
 """
 
-import uuid
 import secrets
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.security.models import SessionNonce
 from app.core.logger import get_logger
+from app.domains.security.models import SessionNonce
 
 logger = get_logger(__name__)
 
@@ -36,10 +33,10 @@ async def get_or_create_nonce(db: AsyncSession, session_hash: str) -> str:
 
     if sn:
         # Check if rotation needed
-        age = (datetime.now(timezone.utc) - sn.rotated_at).total_seconds()
+        age = (datetime.now(UTC) - sn.rotated_at).total_seconds()
         if age > NONCE_ROTATION_INTERVAL_SECONDS:
             sn.nonce = generate_nonce()
-            sn.rotated_at = datetime.now(timezone.utc)
+            sn.rotated_at = datetime.now(UTC)
             await db.commit()
     else:
         sn = SessionNonce(

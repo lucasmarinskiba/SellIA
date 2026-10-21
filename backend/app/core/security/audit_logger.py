@@ -9,14 +9,14 @@ Tracks:
 - Admin actions
 """
 
-from typing import Optional, Any, Dict, List
-from datetime import datetime, timedelta, timezone
-from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Boolean, Text, Index
-from sqlalchemy.orm import Session
-from sqlalchemy.ext.declarative import declarative_base
-import json
 import logging
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Index, Integer, String, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 
 Base = declarative_base()
 logger = logging.getLogger(__name__)
@@ -118,10 +118,10 @@ class AuditLog(Base):
     risk_reason = Column(String(255), nullable=True)
 
     # Retention
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
     expires_at = Column(DateTime, nullable=True)  # For automatic cleanup
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "id": self.id,
@@ -152,23 +152,23 @@ class AuditLogger:
         seller_id: str,
         event_type: AuditEventType,
         action: str,
-        user_id: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        request_id: Optional[str] = None,
-        message: Optional[str] = None,
+        user_id: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        request_id: str | None = None,
+        message: str | None = None,
         status: str = "success",
-        status_code: Optional[int] = None,
-        details: Optional[Dict[str, Any]] = None,
-        data_accessed: Optional[List[str]] = None,
-        data_modified: Optional[Dict[str, Any]] = None,
-        rows_affected: Optional[int] = None,
+        status_code: int | None = None,
+        details: dict[str, Any] | None = None,
+        data_accessed: list[str] | None = None,
+        data_modified: dict[str, Any] | None = None,
+        rows_affected: int | None = None,
         is_risk: bool = False,
-        risk_score: Optional[int] = None,
-        risk_reason: Optional[str] = None,
-        error_details: Optional[Dict[str, Any]] = None,
+        risk_score: int | None = None,
+        risk_reason: str | None = None,
+        error_details: dict[str, Any] | None = None,
     ) -> AuditLog:
         """
         Log an audit event.
@@ -224,7 +224,7 @@ class AuditLogger:
             risk_reason=risk_reason,
             error_details=error_details,
             # Auto-expire logs after 90 days
-            expires_at=datetime.now(timezone.utc) + timedelta(days=90),
+            expires_at=datetime.now(UTC) + timedelta(days=90),
         )
 
         try:
@@ -263,14 +263,14 @@ class AuditLogger:
         self,
         db: Session,
         seller_id: str,
-        event_type: Optional[str] = None,
-        user_id: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        event_type: str | None = None,
+        user_id: str | None = None,
+        resource_type: str | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> tuple[List[AuditLog], int]:
+    ) -> tuple[list[AuditLog], int]:
         """Get audit events with filtering."""
         query = db.query(AuditLog).filter(AuditLog.seller_id == seller_id)
 
@@ -294,7 +294,7 @@ class AuditLogger:
         """Clean up logs older than retention period. Call periodically."""
         from sqlalchemy import delete
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+        cutoff = datetime.now(UTC) - timedelta(days=90)
         deleted = db.execute(
             delete(AuditLog).where(AuditLog.expires_at <= cutoff)
         ).rowcount
@@ -305,7 +305,7 @@ class AuditLogger:
 
 
 # Global audit logger instance
-_audit_logger: Optional[AuditLogger] = None
+_audit_logger: AuditLogger | None = None
 
 
 def get_audit_logger() -> AuditLogger:

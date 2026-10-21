@@ -1,8 +1,9 @@
 """Onboarding Mágico — Scraper con Playwright"""
 
 import re
-from typing import Optional
+
 from playwright.async_api import async_playwright
+
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)

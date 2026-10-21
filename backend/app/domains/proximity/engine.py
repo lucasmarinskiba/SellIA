@@ -1,10 +1,10 @@
 """Phase 5B: Proximity Engine & Geofence Detection."""
-from typing import List, Optional, Tuple
+from math import asin, cos, radians, sin, sqrt
 from uuid import UUID
-from datetime import datetime, timezone
-from math import radians, cos, sin, asin, sqrt
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.locations.models import LocationProfile, ProximityEvent
 from app.domains.locations.service import LocationService
 
@@ -29,7 +29,7 @@ class ProximityEngine:
         business_id: UUID,
         user_lat: float,
         user_lon: float,
-    ) -> List[Tuple[LocationProfile, float]]:
+    ) -> list[tuple[LocationProfile, float]]:
         result = await db.execute(
             select(LocationProfile).where(
                 and_(
@@ -53,7 +53,7 @@ class ProximityEngine:
         user_id: UUID,
         location: LocationProfile,
         distance_km: float,
-    ) -> Optional[ProximityEvent]:
+    ) -> ProximityEvent | None:
         event = await LocationService.log_proximity_event(db, business_id, user_id, location.id, distance_km)
         return event
 
@@ -63,7 +63,7 @@ class ProximityEngine:
         business_id: UUID,
         location_id: UUID,
         max_distance_km: float = 5,
-    ) -> List[dict]:
+    ) -> list[dict]:
         from sqlalchemy import select
         result = await db.execute(
             select(ProximityEvent).where(
@@ -82,7 +82,7 @@ class ProximityEngine:
         db,
         business_id: UUID,
         user_id: UUID,
-    ) -> List[dict]:
+    ) -> list[dict]:
         from sqlalchemy import select
         result = await db.execute(
             select(ProximityEvent).where(

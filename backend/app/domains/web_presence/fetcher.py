@@ -16,7 +16,6 @@ import ipaddress
 import socket
 import time
 from dataclasses import dataclass
-from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 import httpx
@@ -90,12 +89,12 @@ def assert_public_host(url: str) -> None:
 class FetchResult:
     url: str                      # what we were asked for (normalized)
     final_url: str                # after redirects
-    status: Optional[int]
+    status: int | None
     elapsed_ms: int
     content: str                  # decoded body ('' on failure)
     content_bytes: int
     content_type: str
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def ok(self) -> bool:

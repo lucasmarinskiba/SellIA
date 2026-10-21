@@ -4,19 +4,22 @@ CRUD operations and business logic for alerts, rules, and recommendations.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.alerts.models import (
-    AlertRule, Alert, Recommendation,
-    AlertStatus, RecommendationStatus,
+    Alert,
+    AlertRule,
+    AlertStatus,
+    Recommendation,
+    RecommendationStatus,
 )
 from app.domains.alerts.schemas import (
-    AlertRuleCreate, AlertRuleUpdate,
-    RecommendationApplyRequest,
+    AlertRuleCreate,
+    AlertRuleUpdate,
 )
 
 
@@ -33,7 +36,7 @@ class AlertService:
         await self.db.refresh(rule)
         return rule
 
-    async def list_rules(self, business_id: uuid.UUID) -> List[AlertRule]:
+    async def list_rules(self, business_id: uuid.UUID) -> list[AlertRule]:
         result = await self.db.execute(
             select(AlertRule).where(
                 AlertRule.business_id == business_id,
@@ -42,11 +45,11 @@ class AlertService:
         )
         return result.scalars().all()
 
-    async def get_rule(self, rule_id: uuid.UUID) -> Optional[AlertRule]:
+    async def get_rule(self, rule_id: uuid.UUID) -> AlertRule | None:
         result = await self.db.execute(select(AlertRule).where(AlertRule.id == rule_id))
         return result.scalar_one_or_none()
 
-    async def update_rule(self, rule_id: uuid.UUID, data: AlertRuleUpdate) -> Optional[AlertRule]:
+    async def update_rule(self, rule_id: uuid.UUID, data: AlertRuleUpdate) -> AlertRule | None:
         rule = await self.get_rule(rule_id)
         if not rule:
             return None
@@ -69,11 +72,11 @@ class AlertService:
     async def list_alerts(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = None,
-        severity: Optional[str] = None,
+        status: str | None = None,
+        severity: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         query = select(Alert).where(Alert.business_id == business_id)
         if status:
             query = query.where(Alert.status == status)
@@ -83,26 +86,26 @@ class AlertService:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_alert(self, alert_id: uuid.UUID) -> Optional[Alert]:
+    async def get_alert(self, alert_id: uuid.UUID) -> Alert | None:
         result = await self.db.execute(select(Alert).where(Alert.id == alert_id))
         return result.scalar_one_or_none()
 
-    async def mark_read(self, alert_id: uuid.UUID) -> Optional[Alert]:
+    async def mark_read(self, alert_id: uuid.UUID) -> Alert | None:
         alert = await self.get_alert(alert_id)
         if not alert:
             return None
         alert.status = AlertStatus.READ
-        alert.read_at = datetime.now(timezone.utc)
+        alert.read_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(alert)
         return alert
 
-    async def dismiss_alert(self, alert_id: uuid.UUID) -> Optional[Alert]:
+    async def dismiss_alert(self, alert_id: uuid.UUID) -> Alert | None:
         alert = await self.get_alert(alert_id)
         if not alert:
             return None
         alert.status = AlertStatus.DISMISSED
-        alert.dismissed_at = datetime.now(timezone.utc)
+        alert.dismissed_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(alert)
         return alert
@@ -115,7 +118,7 @@ class AlertService:
         await self.db.commit()
         return True
 
-    async def get_stats(self, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_stats(self, business_id: uuid.UUID) -> dict[str, Any]:
         unread = await self.db.execute(
             select(func.count(Alert.id)).where(
                 Alert.business_id == business_id, Alert.status == AlertStatus.UNREAD
@@ -154,9 +157,9 @@ class AlertService:
     async def list_recommendations(
         self,
         business_id: uuid.UUID,
-        status: Optional[str] = "pending",
+        status: str | None = "pending",
         limit: int = 100,
-    ) -> List[Recommendation]:
+    ) -> list[Recommendation]:
         query = select(Recommendation).where(Recommendation.business_id == business_id)
         if status:
             query = query.where(Recommendation.status == status)
@@ -164,33 +167,36 @@ class AlertService:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def get_recommendation(self, rec_id: uuid.UUID) -> Optional[Recommendation]:
+    async def get_recommendation(self, rec_id: uuid.UUID) -> Recommendation | None:
         result = await self.db.execute(select(Recommendation).where(Recommendation.id == rec_id))
         return result.scalar_one_or_none()
 
     async def apply_recommendation(
         self,
         rec_id: uuid.UUID,
-        user_id: Optional[uuid.UUID] = None,
-    ) -> Optional[Recommendation]:
+        user_id: uuid.UUID | None = None,
+    ) -> Recommendation | None:
         rec = await self.get_recommendation(rec_id)
         if not rec:
             return None
         if rec.status != RecommendationStatus.PENDING:
             return rec  # already answered: applying twice must not act twice
-        from app.domains.channels.token_rotation import apply_rotation, is_rotation_proposal
+        from app.domains.channels.token_rotation import (
+            apply_rotation,
+            is_rotation_proposal,
+        )
 
         if is_rotation_proposal(rec):
             await apply_rotation(self.db, rec, user_id)  # raises RotationNotPossible
         else:
             rec.status = RecommendationStatus.APPLIED
-            rec.applied_at = datetime.now(timezone.utc)
+            rec.applied_at = datetime.now(UTC)
             rec.applied_by_user_id = user_id
         await self.db.commit()
         await self.db.refresh(rec)
         return rec
 
-    async def dismiss_recommendation(self, rec_id: uuid.UUID) -> Optional[Recommendation]:
+    async def dismiss_recommendation(self, rec_id: uuid.UUID) -> Recommendation | None:
         rec = await self.get_recommendation(rec_id)
         if not rec:
             return None

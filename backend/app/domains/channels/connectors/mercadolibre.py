@@ -4,12 +4,13 @@ Handles buyer messages via MercadoLibre Messaging API and order notifications.
 Docs: https://developers.mercadolibre.com.ar/
 """
 
-import httpx
 from typing import Any
 
+import httpx
+
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class MercadoLibreConnector(BaseChannelConnector):

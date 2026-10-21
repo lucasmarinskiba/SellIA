@@ -8,13 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.brand_visual.schemas import (
     BrandKitGenerateRequest,
     BrandKitJobResponse,
-    BrandAssetResponse,
 )
 from app.domains.agents.brand_visual.service import BrandVisualService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/agents/brand-visual", tags=["brand-visual"])
 

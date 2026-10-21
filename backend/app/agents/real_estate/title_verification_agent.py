@@ -2,8 +2,8 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +14,8 @@ class TitleIssue:
 
     issue_type: str
     description: str
-    amount: Optional[float] = None
-    holder: Optional[str] = None
+    amount: float | None = None
+    holder: str | None = None
     priority_order: int = 0  # For liens
     resolvable: bool = True
 
@@ -26,13 +26,13 @@ class TitleReport:
 
     property_id: str
     title_clear: bool
-    liens: List[TitleIssue] = field(default_factory=list)
-    encumbrances: List[TitleIssue] = field(default_factory=list)
-    easements: List[TitleIssue] = field(default_factory=list)
-    other_issues: List[TitleIssue] = field(default_factory=list)
+    liens: list[TitleIssue] = field(default_factory=list)
+    encumbrances: list[TitleIssue] = field(default_factory=list)
+    easements: list[TitleIssue] = field(default_factory=list)
+    other_issues: list[TitleIssue] = field(default_factory=list)
     title_insurance_available: bool = True
     title_insurance_cost: float = 0.0
-    estimated_clear_date: Optional[datetime] = None
+    estimated_clear_date: datetime | None = None
     attorney_recommendation: str = ""
 
 
@@ -40,9 +40,9 @@ class TitleVerificationAgent:
     """Verify property title and identify issues."""
 
     def __init__(self):
-        self.title_reports: Dict[str, TitleReport] = {}
+        self.title_reports: dict[str, TitleReport] = {}
 
-    def perform_title_search(self, property_data: Dict[str, Any]) -> TitleReport:
+    def perform_title_search(self, property_data: dict[str, Any]) -> TitleReport:
         """Perform comprehensive title search and verification."""
         property_id = property_data.get("property_id", "unknown")
 
@@ -167,7 +167,7 @@ class TitleVerificationAgent:
 
         return report
 
-    def _generate_attorney_recommendation(self, liens: List[TitleIssue], encumbrances: List[TitleIssue], other_issues: List[TitleIssue],
+    def _generate_attorney_recommendation(self, liens: list[TitleIssue], encumbrances: list[TitleIssue], other_issues: list[TitleIssue],
                                         title_clear: bool) -> str:
         """Generate attorney recommendation."""
         if title_clear:
@@ -185,7 +185,7 @@ class TitleVerificationAgent:
 
         return "Consult title attorney for detailed review."
 
-    def resolve_title_issue(self, property_id: str, issue_type: str, resolution_action: str) -> Dict[str, Any]:
+    def resolve_title_issue(self, property_id: str, issue_type: str, resolution_action: str) -> dict[str, Any]:
         """Record title issue resolution."""
         if property_id not in self.title_reports:
             return {"error": "Title report not found"}
@@ -209,7 +209,7 @@ class TitleVerificationAgent:
             "title_now_clear": report.title_clear,
         }
 
-    def generate_title_commitment(self, property_id: str) -> Optional[Dict[str, Any]]:
+    def generate_title_commitment(self, property_id: str) -> dict[str, Any] | None:
         """Generate title commitment document."""
         if property_id not in self.title_reports:
             return None
@@ -231,7 +231,7 @@ class TitleVerificationAgent:
             ],
         }
 
-    def verify_title_insurance_options(self, property_id: str) -> Dict[str, Any]:
+    def verify_title_insurance_options(self, property_id: str) -> dict[str, Any]:
         """Provide title insurance options and recommendations."""
         if property_id not in self.title_reports:
             return {}

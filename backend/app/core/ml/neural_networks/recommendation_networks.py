@@ -2,13 +2,12 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
+from typing import Any
 
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.metrics.pairwise import cosine_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +18,11 @@ class Recommendation:
 
     recommendation: str
     confidence: float
-    reasoning: List[str] = field(default_factory=list)
-    alternatives: List[str] = field(default_factory=list)
+    reasoning: list[str] = field(default_factory=list)
+    alternatives: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "recommendation": self.recommendation,
             "confidence": float(self.confidence),
@@ -41,10 +40,10 @@ class StrategyRecommendation(Recommendation):
     expected_roi: float = 0.0
     implementation_cost: float = 0.0
     timeline_days: int = 0
-    success_factors: List[str] = field(default_factory=list)
-    risks: List[str] = field(default_factory=list)
+    success_factors: list[str] = field(default_factory=list)
+    risks: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             **super().to_dict(),
             "strategy_name": self.strategy_name,
@@ -64,10 +63,10 @@ class SalesMethodRecommendation(Recommendation):
     success_rate: float = 0.0
     average_deal_size: float = 0.0
     sales_cycle_days: int = 0
-    required_skills: List[str] = field(default_factory=list)
-    resource_requirements: Dict[str, Any] = field(default_factory=dict)
+    required_skills: list[str] = field(default_factory=list)
+    resource_requirements: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             **super().to_dict(),
             "method_name": self.method_name,
@@ -102,7 +101,7 @@ class StrategyRecommender:
         logger.info("Strategy recommender trained")
         return self
 
-    def recommend(self, X: np.ndarray) -> List[StrategyRecommendation]:
+    def recommend(self, X: np.ndarray) -> list[StrategyRecommendation]:
         """Recommend strategies."""
         if not self.is_trained:
             raise ValueError("Recommender must be trained first")
@@ -167,7 +166,7 @@ class SalesMethodRecommender:
         logger.info("Sales method recommender trained")
         return self
 
-    def recommend(self, X: np.ndarray) -> List[SalesMethodRecommendation]:
+    def recommend(self, X: np.ndarray) -> list[SalesMethodRecommendation]:
         """Recommend sales methods."""
         if not self.is_trained:
             raise ValueError("Recommender must be trained first")
@@ -234,7 +233,7 @@ class PricingRecommender:
         logger.info("Pricing recommender trained")
         return self
 
-    def recommend(self, X: np.ndarray, base_price: float) -> List[Recommendation]:
+    def recommend(self, X: np.ndarray, base_price: float) -> list[Recommendation]:
         """Recommend pricing strategy."""
         if not self.is_trained:
             raise ValueError("Recommender must be trained first")
@@ -293,7 +292,7 @@ class ChannelRecommender:
         logger.info("Channel recommender trained")
         return self
 
-    def recommend(self, X: np.ndarray) -> List[Recommendation]:
+    def recommend(self, X: np.ndarray) -> list[Recommendation]:
         """Recommend channels."""
         if not self.is_trained:
             raise ValueError("Recommender must be trained first")
@@ -337,7 +336,7 @@ class MessageToneRecommender:
         logger.info("Message tone recommender trained")
         return self
 
-    def recommend(self, X: np.ndarray) -> List[Recommendation]:
+    def recommend(self, X: np.ndarray) -> list[Recommendation]:
         """Recommend message tone."""
         if not self.is_trained:
             raise ValueError("Recommender must be trained first")

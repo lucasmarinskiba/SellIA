@@ -3,15 +3,15 @@ AuditLogger: Immutable audit trail for compliance (SOC2, GDPR, HIPAA).
 300 lines: Logs all tenant actions with context, IP, user-agent.
 """
 
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
-from sqlalchemy import select, desc, and_
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.core.exceptions import AppException
+
 from .models import AuditLog
 
 logger = get_logger(__name__)
@@ -69,16 +69,16 @@ class AuditService:
         action: str,
         resource_type: str,
         change_type: str,  # create, update, delete, read, export
-        user_id: Optional[str] = None,
-        user_email: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        user_id: str | None = None,
+        user_email: str | None = None,
+        resource_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         status: str = AuditStatus.SUCCESS,
-        reason: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-        old_values: Optional[Dict[str, Any]] = None,
-        new_values: Optional[Dict[str, Any]] = None,
+        reason: str | None = None,
+        details: dict[str, Any] | None = None,
+        old_values: dict[str, Any] | None = None,
+        new_values: dict[str, Any] | None = None,
     ) -> AuditLog:
         """
         Create immutable audit log entry.
@@ -142,7 +142,7 @@ class AuditService:
 
         return audit_log
 
-    async def get_audit_log(self, log_id: str) -> Optional[AuditLog]:
+    async def get_audit_log(self, log_id: str) -> AuditLog | None:
         """Get audit log by ID."""
         result = await self.db.execute(
             select(AuditLog).where(AuditLog.id == log_id)
@@ -152,13 +152,13 @@ class AuditService:
     async def list_tenant_audit_logs(
         self,
         tenant_id: str,
-        action_filter: Optional[str] = None,
-        user_id_filter: Optional[str] = None,
-        resource_type_filter: Optional[str] = None,
+        action_filter: str | None = None,
+        user_id_filter: str | None = None,
+        resource_type_filter: str | None = None,
         days_back: int = 90,
         limit: int = 1000,
         offset: int = 0,
-    ) -> tuple[List[AuditLog], int]:
+    ) -> tuple[list[AuditLog], int]:
         """
         Query audit logs with filters.
         Retention: 90 days by default (configurable).
@@ -169,8 +169,8 @@ class AuditService:
         query = select(AuditLog).where(AuditLog.tenant_id == tenant_id)
 
         # Date filter
-        cutoff_date = datetime.now(timezone.utc).replace(
-            day=datetime.now(timezone.utc).day - days_back
+        cutoff_date = datetime.now(UTC).replace(
+            day=datetime.now(UTC).day - days_back
         )
         query = query.where(AuditLog.created_at >= cutoff_date)
 
@@ -209,7 +209,7 @@ class AuditService:
         tenant_id: str,
         user_id: str,
         limit: int = 100,
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Get all audit logs for specific user in tenant."""
         result = await self.db.execute(
             select(AuditLog)
@@ -298,8 +298,8 @@ class AuditService:
         Run as scheduled task for storage management.
         CAUTION: Usually kept for compliance (1-7 years).
         """
-        cutoff_date = datetime.now(timezone.utc).replace(
-            day=datetime.now(timezone.utc).day - days_before
+        cutoff_date = datetime.now(UTC).replace(
+            day=datetime.now(UTC).day - days_before
         )
 
         # Get count first
@@ -341,7 +341,7 @@ class AuditLogger:
         )
 
 
-_audit_logger: Optional[AuditLogger] = None
+_audit_logger: AuditLogger | None = None
 
 
 def get_audit_logger() -> AuditLogger:

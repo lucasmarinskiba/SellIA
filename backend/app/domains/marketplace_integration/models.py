@@ -1,10 +1,22 @@
 """Phase 44: Multi-Platform Marketplace Integration."""
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class PlatformType(str, Enum):
     AMAZON = "amazon"
@@ -29,9 +41,9 @@ class MarketplaceConnection(Base):
     seller_id = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     sync_enabled = Column(Boolean, default=True)
-    last_sync_at = Column(DateTime(timezone.utc), nullable=True)
+    last_sync_at = Column(DateTime(UTC), nullable=True)
     sync_config = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ProductSync(Base):
     __tablename__ = "product_syncs"
@@ -47,7 +59,7 @@ class ProductSync(Base):
     sync_status = Column(String(50), default="synced")  # synced, pending, error
     last_error = Column(Text, nullable=True)
     auto_sync = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class DynamicPricing(Base):
     __tablename__ = "dynamic_pricing"
@@ -61,7 +73,7 @@ class DynamicPricing(Base):
     inventory_factor = Column(Float, default=1.0)
     margin_target = Column(Float, default=0.3)
     price_history = Column(JSONB, nullable=True)
-    last_updated = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class MarketplaceMetrics(Base):
     __tablename__ = "marketplace_metrics"
@@ -74,4 +86,4 @@ class MarketplaceMetrics(Base):
     active_listings = Column(Integer, default=0)
     average_sell_through_rate = Column(Float, default=0)
     platform_revenue_breakdown = Column(JSONB, nullable=True)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))

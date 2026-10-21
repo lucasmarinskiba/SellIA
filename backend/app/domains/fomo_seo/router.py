@@ -5,10 +5,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
-from app.domains.fomo_seo.service import FOMOSEOCopyService, A_B_TestService
+from app.domains.fomo_seo.service import A_B_TestService, FOMOSEOCopyService
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/fomo-seo", tags=["FOMO+SEO"])

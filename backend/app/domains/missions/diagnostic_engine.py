@@ -4,11 +4,9 @@ Analiza datos del negocio y detecta problemas que impiden ventas.
 Genera diagnósticos con severidad y misiones recomendadas.
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-from .schemas import BusinessDiagnosticCreate
-from .playbook_library import PLAYBOOKS
+from typing import Any
 
+from .schemas import BusinessDiagnosticCreate
 
 # ─── Benchmarks de referencia ──────────────────────────────────────────────────
 
@@ -29,12 +27,12 @@ BENCHMARKS = {
 class DiagnosticEngine:
     """Genera diagnósticos de negocio basados en métricas y contexto."""
 
-    def __init__(self, business_metrics: Dict[str, Any], business_context: Optional[Dict[str, Any]] = None):
+    def __init__(self, business_metrics: dict[str, Any], business_context: dict[str, Any] | None = None):
         self.metrics = business_metrics
         self.context = business_context or {}
-        self.diagnostics: List[BusinessDiagnosticCreate] = []
+        self.diagnostics: list[BusinessDiagnosticCreate] = []
 
-    def run_full_diagnostic(self) -> List[BusinessDiagnosticCreate]:
+    def run_full_diagnostic(self) -> list[BusinessDiagnosticCreate]:
         """Ejecutar diagnóstico completo en todas las categorías."""
         self._diagnose_sales()
         self._diagnose_traffic()
@@ -140,7 +138,7 @@ class DiagnosticEngine:
                 recommended_slug="google_local_seo",
             )
 
-    def _add(self, category: str, severity: str, finding: str, metric_key: Optional[str] = None, recommended_slug: Optional[str] = None, context: Optional[Dict] = None):
+    def _add(self, category: str, severity: str, finding: str, metric_key: str | None = None, recommended_slug: str | None = None, context: dict | None = None):
         metric_value = None
         benchmark_value = None
         if metric_key and metric_key in self.metrics:
@@ -270,7 +268,7 @@ class DiagnosticEngine:
             self._add("retention", "warning", f"Tiempo de respuesta promedio: {response_time} min. Clientes se van a la competencia.", metric_key="response_time_minutes", recommended_slug="full_automation_setup")
 
 
-def run_diagnostic(business_metrics: Dict[str, Any], business_context: Optional[Dict[str, Any]] = None) -> List[BusinessDiagnosticCreate]:
+def run_diagnostic(business_metrics: dict[str, Any], business_context: dict[str, Any] | None = None) -> list[BusinessDiagnosticCreate]:
     """Función de conveniencia para ejecutar un diagnóstico completo."""
     engine = DiagnosticEngine(business_metrics, business_context)
     return engine.run_full_diagnostic()

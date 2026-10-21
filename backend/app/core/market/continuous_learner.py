@@ -1,12 +1,12 @@
 """Continuous Learner — Watch external agent systems for updates."""
 
+import json
+import logging
 import os
 import subprocess
-import json
 from datetime import datetime
-from typing import Dict, List, Any
-import logging
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class ContinuousLearner:
         self.version_file = "backend/app/core/market/.versions.json"
         self.versions = self._load_versions()
 
-    def monitor_external_systems(self) -> Dict[str, Any]:
+    def monitor_external_systems(self) -> dict[str, Any]:
         """Check for updates in external systems."""
         updates = {
             "realEstate": self._check_realEstate_updates(),
@@ -29,7 +29,7 @@ class ContinuousLearner:
         }
         return updates
 
-    def _check_realEstate_updates(self) -> Dict[str, Any]:
+    def _check_realEstate_updates(self) -> dict[str, Any]:
         """Check Real Estate Agent system for new agents/rules."""
         if not os.path.exists(self.realEstate_repo):
             return {"status": "repo_not_found", "version": "0.0.0"}
@@ -81,7 +81,7 @@ class ContinuousLearner:
             logger.error(f"Error checking Real Estate updates: {e}")
             return {"status": "error", "error": str(e)}
 
-    def _check_comercial_updates(self) -> Dict[str, Any]:
+    def _check_comercial_updates(self) -> dict[str, Any]:
         """Check Commercial Advisor system for new agents/rules."""
         if not os.path.exists(self.comercial_repo):
             return {"status": "repo_not_found", "version": "0.0.0"}
@@ -125,7 +125,7 @@ class ContinuousLearner:
             logger.error(f"Error checking Commercial Advisor updates: {e}")
             return {"status": "error", "error": str(e)}
 
-    def sync_from_external_systems(self) -> Dict[str, Any]:
+    def sync_from_external_systems(self) -> dict[str, Any]:
         """Sync new agents/tools from external systems."""
         updates = self.monitor_external_systems()
 
@@ -158,7 +158,7 @@ class ContinuousLearner:
 
         return sync_result
 
-    def _load_versions(self) -> Dict[str, Any]:
+    def _load_versions(self) -> dict[str, Any]:
         """Load version tracking file."""
         if os.path.exists(self.version_file):
             try:
@@ -192,7 +192,7 @@ class ContinuousLearner:
             logger.error(f"Rollback failed: {e}")
             return False
 
-    def get_learning_status(self) -> Dict[str, Any]:
+    def get_learning_status(self) -> dict[str, Any]:
         """Get current learning/sync status."""
         return {
             "versions": self.versions,

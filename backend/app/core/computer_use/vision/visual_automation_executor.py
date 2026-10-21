@@ -10,15 +10,16 @@ Responsibilities:
 Completely selector-free automation.
 """
 
-import logging
 import asyncio
-from typing import Optional, List, Dict, Any, Callable
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
+from .vision_navigator import ElementMatch, ElementType, VisionNavigator
 from .visual_analyzer import VisualAnalyzer
-from .vision_navigator import VisionNavigator, ElementType, ElementMatch
-from .visual_confirmation import VisualConfirmation, Confirmation, ActionResult
+from .visual_confirmation import ActionResult, VisualConfirmation
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,11 @@ class ExecutionPlan:
     """Plan de ejecución visual."""
     action_type: ActionType
     description: str
-    target_element: Optional[ElementMatch] = None
-    value: Optional[str] = None
-    wait_time: Optional[float] = None
-    wait_condition: Optional[Callable] = None
-    expected_result: Optional[str] = None
+    target_element: ElementMatch | None = None
+    value: str | None = None
+    wait_time: float | None = None
+    wait_condition: Callable | None = None
+    expected_result: str | None = None
 
 
 class VisualAutomationExecutor:
@@ -67,9 +68,9 @@ class VisualAutomationExecutor:
         self,
         screenshot_bytes: bytes,
         action_description: str,
-        expected_result: Optional[str] = None,
+        expected_result: str | None = None,
         verify_success: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ejecuta una acción basada en descripción natural.
 
         Args:
@@ -149,9 +150,9 @@ class VisualAutomationExecutor:
     async def execute_action_sequence(
         self,
         screenshot_getter: Callable,
-        actions: List[str],
+        actions: list[str],
         verify_each: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Ejecuta una secuencia de acciones.
 
         Args:
@@ -189,9 +190,9 @@ class VisualAutomationExecutor:
     async def fill_form(
         self,
         screenshot_bytes: bytes,
-        form_data: Dict[str, str],
+        form_data: dict[str, str],
         verify_success: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Rellena un formulario usando etiquetas visuales.
 
         Args:
@@ -263,7 +264,7 @@ class VisualAutomationExecutor:
         screenshot_bytes: bytes,
         description: str,
         verify_success: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Clickea un elemento por descripción.
 
         Args:
@@ -312,7 +313,7 @@ class VisualAutomationExecutor:
         self,
         screenshot_bytes: bytes,
         landmark_description: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Navega a un landmark visual (ej: "footer link to contact").
 
         Args:
@@ -403,9 +404,9 @@ class VisualAutomationExecutor:
     async def _execute_action_internal(
         self,
         action_type: ActionType,
-        element: Optional[ElementMatch] = None,
-        value: Optional[str] = None
-    ) -> Dict[str, Any]:
+        element: ElementMatch | None = None,
+        value: str | None = None
+    ) -> dict[str, Any]:
         """Ejecuta acción interna."""
         if not self.browser:
             return {
@@ -526,7 +527,7 @@ class VisualAutomationExecutor:
         action_description: str,
         max_retries: int = 3,
         confirmation_timeout: float = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ejecuta acción con reintentos si falla.
 
         Args:

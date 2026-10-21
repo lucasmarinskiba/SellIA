@@ -1,8 +1,18 @@
 """Phase 5D: Offline Analytics & Re-engagement."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
 
 
@@ -14,14 +24,14 @@ class OfflineToOnlineAttribution(Base):
     # contact), so it stays a plain indexed UUID instead of a constraint that can never be created.
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     first_online_channel = Column(String(50), nullable=True)
-    first_online_date = Column(DateTime(timezone.utc), nullable=True)
+    first_online_date = Column(DateTime(UTC), nullable=True)
     location_visited_id = Column(UUID(as_uuid=True), ForeignKey("location_profiles.id", ondelete="CASCADE"), nullable=True)
-    location_visit_date = Column(DateTime(timezone.utc), nullable=True)
-    post_visit_order_date = Column(DateTime(timezone.utc), nullable=True)
+    location_visit_date = Column(DateTime(UTC), nullable=True)
+    post_visit_order_date = Column(DateTime(UTC), nullable=True)
     post_visit_order_value = Column(Float, default=0)
     time_to_conversion_days = Column(Integer, default=0)
     conversion_type = Column(String(50), nullable=False)  # online_to_offline, offline_to_online, full_loop
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class OfflineAnalyticsMetrics(Base):
@@ -39,7 +49,7 @@ class OfflineAnalyticsMetrics(Base):
     full_loop_conversions = Column(Integer, default=0)
     peak_traffic_hour = Column(Integer, default=0)
     repeat_visitor_rate = Column(Float, default=0)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class LocationFootTrafficHourly(Base):
@@ -54,7 +64,7 @@ class LocationFootTrafficHourly(Base):
     total_visits_recorded = Column(Integer, default=0)
     avg_dwell_minutes = Column(Float, default=0)
     recorded_month = Column(String(50), nullable=False)
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PostVisitSequence(Base):
@@ -68,7 +78,7 @@ class PostVisitSequence(Base):
     email_count = Column(Integer, default=0)
     sms_count = Column(Integer, default=0)
     whatsapp_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class PostVisitSequenceExecution(Base):
@@ -87,5 +97,5 @@ class PostVisitSequenceExecution(Base):
     engagement_count = Column(Integer, default=0)
     conversion_happened = Column(Boolean, default=False)
     conversion_value = Column(Float, default=0)
-    started_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
+    started_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)

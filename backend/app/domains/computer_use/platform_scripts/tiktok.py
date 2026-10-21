@@ -1,6 +1,7 @@
 """TikTok Business / Ads / Shop Platform Script"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class TikTokScript(PlatformScript):
     login_url = "https://www.tiktok.com/login"
     dashboard_url = "https://www.tiktok.com/business"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "setup_business_account":
             return self._setup_business(params)
         elif task_type == "create_tiktok_campaign":
@@ -21,7 +22,7 @@ class TikTokScript(PlatformScript):
             return self._schedule_videos(params)
         return super().get_task_steps(task_type, params)
 
-    def _setup_business(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _setup_business(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://www.tiktok.com/business", description="Navigate to TikTok for Business"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -30,7 +31,7 @@ class TikTokScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check business account setup state"),
         ]
 
-    def _create_campaign(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _create_campaign(self, params: dict[str, Any]) -> list[ScriptStep]:
         objective = params.get("objective", "CONVERSIONS")
         budget = params.get("budget", 30)
         return [
@@ -46,7 +47,7 @@ class TikTokScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify campaign created"),
         ]
 
-    def _connect_shop(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _connect_shop(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://seller.tiktok.com/", description="Navigate to TikTok Seller Center"),
             ScriptStep(action="wait", wait_ms=3000),
@@ -55,7 +56,7 @@ class TikTokScript(PlatformScript):
             ScriptStep(action="screenshot", description="Check TikTok Shop setup"),
         ]
 
-    def _schedule_videos(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _schedule_videos(self, params: dict[str, Any]) -> list[ScriptStep]:
         return [
             ScriptStep(action="navigate", target="https://www.tiktok.com/creator-center/content", description="Navigate to Creator Center"),
             ScriptStep(action="wait", wait_ms=3000),

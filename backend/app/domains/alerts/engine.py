@@ -5,19 +5,24 @@ generating alerts and recommendations.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.alerts.models import (
-    AlertRule, AlertRuleType, AlertSeverity, AlertStatus,
-    Alert, Recommendation, RecommendationType, RecommendationActionType, RecommendationStatus,
+    Alert,
+    AlertRule,
+    AlertRuleType,
+    AlertSeverity,
+    Recommendation,
+    RecommendationActionType,
+    RecommendationType,
 )
+from app.domains.channels.models import Conversation
 from app.domains.crm.models import Deal, LeadScore
 from app.domains.orders.models import Order, OrderStatus
-from app.domains.channels.models import Conversation
 
 
 class AlertEngine:
@@ -33,7 +38,7 @@ class AlertEngine:
         event_type: str,
         business_id: uuid.UUID,
         **context: Any,
-    ) -> List[Alert]:
+    ) -> list[Alert]:
         """Evaluate all active alert rules for a business on a given event."""
         result = await self.db.execute(
             select(AlertRule).where(
@@ -43,7 +48,7 @@ class AlertEngine:
             )
         )
         rules = result.scalars().all()
-        generated: List[Alert] = []
+        generated: list[Alert] = []
 
         for rule in rules:
             if await self._should_throttle(rule, business_id):
@@ -65,8 +70,8 @@ class AlertEngine:
         self,
         rule: AlertRule,
         business_id: uuid.UUID,
-        context: Dict[str, Any],
-    ) -> Optional[Alert]:
+        context: dict[str, Any],
+    ) -> Alert | None:
         cfg = rule.config or {}
         rule_type = rule.rule_type
 
@@ -112,7 +117,7 @@ class AlertEngine:
                     business_id=business_id,
                     rule_id=rule.id,
                     title="Workflow falló",
-                    description=f"La ejecución del workflow falló.",
+                    description="La ejecución del workflow falló.",
                     severity=AlertSeverity.CRITICAL,
                     alert_metadata={"workflow_id": str(context.get("workflow_id")), "execution_id": str(context.get("execution_id"))},
                 )
@@ -141,10 +146,10 @@ class AlertEngine:
 
     # ========== Scheduled checks ==========
 
-    async def check_deal_stalled(self, business_id: Optional[uuid.UUID] = None) -> List[Alert]:
+    async def check_deal_stalled(self, business_id: uuid.UUID | None = None) -> list[Alert]:
         """Find deals with no activity for N days."""
         days = 3
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(UTC) - timedelta(days=days)
 
         query = select(Deal).where(
             Deal.is_active == True,
@@ -156,7 +161,7 @@ class AlertEngine:
 
         result = await self.db.execute(query)
         deals = result.scalars().all()
-        generated: List[Alert] = []
+        generated: list[Alert] = []
 
         for deal in deals:
             # Check if there's an active rule
@@ -194,7 +199,7 @@ class AlertEngine:
             await self.db.commit()
         return generated
 
-    async def check_hot_leads_no_deal(self, business_id: Optional[uuid.UUID] = None) -> List[Alert]:
+    async def check_hot_leads_no_deal(self, business_id: uuid.UUID | None = None) -> list[Alert]:
         """Find hot leads without an active deal."""
         query = select(LeadScore).where(
             LeadScore.classification == "hot",
@@ -204,7 +209,7 @@ class AlertEngine:
 
         result = await self.db.execute(query)
         lead_scores = result.scalars().all()
-        generated: List[Alert] = []
+        generated: list[Alert] = []
 
         for ls in lead_scores:
             # Check if already has active deal
@@ -251,10 +256,10 @@ class AlertEngine:
             await self.db.commit()
         return generated
 
-    async def check_abandoned_carts(self, business_id: Optional[uuid.UUID] = None) -> List[Alert]:
+    async def check_abandoned_carts(self, business_id: uuid.UUID | None = None) -> list[Alert]:
         """Find pending orders older than N days."""
         days = 2
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(UTC) - timedelta(days=days)
 
         query = select(Order).where(
             Order.is_active == True,
@@ -266,7 +271,7 @@ class AlertEngine:
 
         result = await self.db.execute(query)
         orders = result.scalars().all()
-        generated: List[Alert] = []
+        generated: list[Alert] = []
 
         for order in orders:
             rule_result = await self.db.execute(
@@ -303,10 +308,10 @@ class AlertEngine:
             await self.db.commit()
         return generated
 
-    async def check_no_reply(self, business_id: Optional[uuid.UUID] = None) -> List[Alert]:
+    async def check_no_reply(self, business_id: uuid.UUID | None = None) -> list[Alert]:
         """Find conversations with no reply for N hours."""
         hours = 24
-        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        since = datetime.now(UTC) - timedelta(hours=hours)
 
         query = select(Conversation).where(
             Conversation.status == "active",
@@ -317,7 +322,7 @@ class AlertEngine:
 
         result = await self.db.execute(query)
         conversations = result.scalars().all()
-        generated: List[Alert] = []
+        generated: list[Alert] = []
 
         for conv in conversations:
             rule_result = await self.db.execute(
@@ -356,7 +361,7 @@ class AlertEngine:
 
     # ========== Recommendation generation ==========
 
-    async def _generate_recommendation(self, alert: Alert, rule: AlertRule) -> Optional[Recommendation]:
+    async def _generate_recommendation(self, alert: Alert, rule: AlertRule) -> Recommendation | None:
         """Generate a deterministic recommendation based on alert type."""
         rule_type = rule.rule_type
 
@@ -439,7 +444,7 @@ class AlertEngine:
     async def _should_throttle(self, rule: AlertRule, business_id: uuid.UUID) -> bool:
         """Check cooldown and max alerts per day."""
         # Cooldown
-        cooldown_since = datetime.now(timezone.utc) - timedelta(minutes=rule.cooldown_minutes)
+        cooldown_since = datetime.now(UTC) - timedelta(minutes=rule.cooldown_minutes)
         from app.domains.alerts.models import Alert
         result = await self.db.execute(
             select(func.count(Alert.id)).where(
@@ -451,7 +456,7 @@ class AlertEngine:
             return True
 
         # Max per day
-        day_since = datetime.now(timezone.utc) - timedelta(hours=24)
+        day_since = datetime.now(UTC) - timedelta(hours=24)
         result = await self.db.execute(
             select(func.count(Alert.id)).where(
                 Alert.rule_id == rule.id,
@@ -466,7 +471,7 @@ class AlertEngine:
     # ========== Helpers ==========
 
     @staticmethod
-    def _event_to_rule_type(event_type: str) -> Optional[AlertRuleType]:
+    def _event_to_rule_type(event_type: str) -> AlertRuleType | None:
         mapping = {
             "lead.score_changed": AlertRuleType.LEAD_SCORE_THRESHOLD,
             "deal.created": AlertRuleType.DEAL_STALLED,

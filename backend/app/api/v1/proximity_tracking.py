@@ -1,13 +1,12 @@
 """Phase 5B: Proximity tracking & offline conversion logging."""
 
 import logging
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Body, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -23,7 +22,7 @@ class OfflineConversionLog(BaseModel):
     latitude: float
     longitude: float
     visit_type: str = "visit"  # visit, demo, pickup, service
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ProximityCheckRequest(BaseModel):
@@ -58,7 +57,7 @@ async def log_offline_conversion(
         "status": "logged",
         "location_id": str(conversion.location_id),
         "visit_type": conversion.visit_type,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 

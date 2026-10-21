@@ -3,14 +3,19 @@ Ambassador & Certification Router
 """
 
 from typing import Annotated
-from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
+from app.domains.gamification.ambassador_service import (
+    get_or_create_expert_profile,
+    get_user_certifications,
+    list_certifications,
+    publish_profile,
+)
 from app.domains.users.models import User
-from app.domains.gamification.ambassador_service import list_certifications, get_user_certifications, get_or_create_expert_profile, publish_profile
 
 router = APIRouter(prefix="/ambassador", tags=["ambassador"])
 

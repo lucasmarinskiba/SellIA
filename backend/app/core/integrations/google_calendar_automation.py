@@ -13,8 +13,9 @@ Sistema:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -38,8 +39,8 @@ class GoogleCalendarAutomation:
         description: str,
         start_time: datetime,
         duration_minutes: int = 30,
-        attendees: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        attendees: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Crea evento en Google Calendar.
 
@@ -118,7 +119,7 @@ class GoogleCalendarAutomation:
                 return {"status": "error"}
 
         except Exception as e:
-            logger.error(f"Create event failed: {str(e)}")
+            logger.error(f"Create event failed: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # ========== CONFLICT DETECTION ==========
@@ -127,7 +128,7 @@ class GoogleCalendarAutomation:
         self,
         start_time: datetime,
         duration_minutes: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detecta conflictos en el calendario."""
 
         logger.info(f"Checking conflicts for {start_time}")
@@ -169,14 +170,14 @@ class GoogleCalendarAutomation:
                 return {"has_conflict": False, "warning": "Could not verify conflicts"}
 
         except Exception as e:
-            logger.error(f"Conflict check failed: {str(e)}")
+            logger.error(f"Conflict check failed: {e!s}")
             return {"has_conflict": False, "warning": str(e)}
 
     async def _find_available_slot(
         self,
         preferred_time: datetime,
         duration_minutes: int,
-    ) -> Optional[datetime]:
+    ) -> datetime | None:
         """Busca primer slot disponible después de preferred_time."""
 
         logger.info("Finding available slot")
@@ -202,7 +203,7 @@ class GoogleCalendarAutomation:
         delivery_date: datetime,
         duration_hours: int,
         reason: str = "Entrega",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Bloquea horario de entrega en calendario (no agendar llamadas)."""
 
         logger.info(f"Blocking delivery slot: {delivery_date}")
@@ -221,7 +222,7 @@ class GoogleCalendarAutomation:
         start_date: datetime,
         end_date: datetime,
         notes: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Bloquea período completo (usuario de viaje)."""
 
         logger.info(f"Setting travel mode: {start_date} to {end_date}")
@@ -241,7 +242,7 @@ class GoogleCalendarAutomation:
         start_date: datetime,
         end_date: datetime,
         duration_minutes: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Retorna slots disponibles para agendar (próximos N días)."""
 
         logger.info(f"Getting available slots between {start_date} and {end_date}")

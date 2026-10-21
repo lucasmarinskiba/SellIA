@@ -1,16 +1,16 @@
 """Unified analytics dashboard service — aggregate all location metrics."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.analytics.unified_dashboard_models import (
-    UnifiedLocationMetric, BusinessDashboardSummary, LocationComparison, FunnelStageMetric
+    BusinessDashboardSummary,
+    LocationComparison,
+    UnifiedLocationMetric,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,10 +30,12 @@ class UnifiedDashboardService:
         if not db:
             raise ValueError("Database session required")
 
-        from app.domains.locations.checkin_models import LocationCheckin, LocationFeedback
-        from app.domains.staff.task_models import StaffTask, TaskStatus
-        from app.domains.inventory.inventory_models import LocationInventory
+        from app.domains.locations.checkin_models import (
+            LocationCheckin,
+            LocationFeedback,
+        )
         from app.domains.pricing.pricing_models import PricingTransaction
+        from app.domains.staff.task_models import StaffTask, TaskStatus
 
         date_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         date_end = date_start + timedelta(days=1)
@@ -161,7 +163,7 @@ class UnifiedDashboardService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         from app.domains.businesses.location_models import Location
 
@@ -169,7 +171,7 @@ class UnifiedDashboardService:
         active_locations = len([l for l in locations if l.is_active])
 
         # Get metrics for past 30 days
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
         cutoff_str = cutoff.strftime("%Y-%m-%d")
 
         metrics = db.query(UnifiedLocationMetric).filter(

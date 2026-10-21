@@ -1,7 +1,9 @@
 """Phase X10: FOMO Generation Agent Service."""
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.domains.fomo_generation.models import FOMOCampaign, CountdownTrigger
+
+from app.domains.fomo_generation.models import CountdownTrigger, FOMOCampaign
 
 
 class FOMOGenerationAgent:
@@ -40,8 +42,8 @@ class FOMOGenerationAgent:
             body_message=body,
             cta_text=cta,
             urgency_level=9,
-            triggered_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
+            triggered_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(hours=48),
             time_until_deadline_hours=48,
             personality_type=personality_type,
             motivation_type="exclusivity",
@@ -80,7 +82,7 @@ class FOMOGenerationAgent:
             body_message=body,
             cta_text=cta,
             urgency_level=6,
-            triggered_at=datetime.now(timezone.utc),
+            triggered_at=datetime.now(UTC),
             personality_type=personality_type,
             motivation_type="belonging",
             social_proof_stat=f"{total_customers} companies",
@@ -119,8 +121,8 @@ Lock in the lower price now before it expires."""
             body_message=body,
             cta_text=cta,
             urgency_level=10,
-            triggered_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=days_until_increase),
+            triggered_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(days=days_until_increase),
             time_until_deadline_hours=days_until_increase * 24,
             motivation_type="cost_reduction",
             scarcity_metric=f"${current_price}/mo expires in {days_until_increase} days",
@@ -138,7 +140,7 @@ Lock in the lower price now before it expires."""
     ) -> CountdownTrigger:
         """Create multi-touch countdown sequence (24h, 6h, 1h reminders)."""
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         countdown = CountdownTrigger(
             user_id=user_id,
             trigger_type="pricing_expires",

@@ -4,25 +4,30 @@ Funnel analysis, cohorts, churn prediction, LTV estimation, and insight alerts.
 """
 
 import uuid
-from typing import Any, Optional
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import select, func, desc, and_
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.analytics.models import (
-    FunnelMetric, CohortMetric, ChurnPrediction, LtvPrediction, InsightAlert,
-    FunnelStage, ChurnRiskLevel,
-)
-from app.domains.channels.models import Conversation, Message
-from app.domains.orders.models import Order
-from app.domains.crm.models import Deal
-from app.domains.business_context.models import BusinessContext
-from app.domains.analytics.adapters import (
-    FunnelAdapter, ChurnAdapter, LtvAdapter, AlertAdapter,
-)
 from app.core.logger import get_logger
+from app.domains.analytics.adapters import (
+    AlertAdapter,
+    ChurnAdapter,
+    FunnelAdapter,
+    LtvAdapter,
+)
+from app.domains.analytics.models import (
+    ChurnPrediction,
+    ChurnRiskLevel,
+    FunnelMetric,
+    InsightAlert,
+    LtvPrediction,
+)
+from app.domains.business_context.models import BusinessContext
+from app.domains.channels.models import Conversation, Message
+from app.domains.crm.models import Deal
+from app.domains.orders.models import Order
 
 logger = get_logger(__name__)
 
@@ -31,7 +36,7 @@ class BusinessIntelligenceService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _get_business_context(self, business_id: uuid.UUID) -> Optional[BusinessContext]:
+    async def _get_business_context(self, business_id: uuid.UUID) -> BusinessContext | None:
         result = await self.db.execute(
             select(BusinessContext).where(BusinessContext.business_id == business_id)
         )
@@ -43,11 +48,11 @@ class BusinessIntelligenceService:
         """Calculate funnel metrics for a period (e.g., '2024-01')."""
         # Parse period
         if period_type == "monthly":
-            start = datetime.strptime(period, "%Y-%m").replace(tzinfo=timezone.utc)
+            start = datetime.strptime(period, "%Y-%m").replace(tzinfo=UTC)
             end = (start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(seconds=1)
         else:
-            start = datetime.now(timezone.utc) - timedelta(days=30)
-            end = datetime.now(timezone.utc)
+            start = datetime.now(UTC) - timedelta(days=30)
+            end = datetime.now(UTC)
 
         # Leads
         leads_result = await self.db.execute(
@@ -131,7 +136,7 @@ class BusinessIntelligenceService:
 
     # ========== Churn Prediction (AI-based) ==========
 
-    async def predict_churn(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> Optional[ChurnPrediction]:
+    async def predict_churn(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> ChurnPrediction | None:
         """Generate a churn prediction for a customer using heuristics + AI."""
         result = await self.db.execute(select(Conversation).where(Conversation.id == conversation_id))
         conv = result.scalar_one_or_none()
@@ -142,7 +147,7 @@ class BusinessIntelligenceService:
         thresholds = ChurnAdapter.get_thresholds(bc.business_type if bc else None)
         recommended_action = ChurnAdapter.get_recommended_action(bc.business_type if bc else None)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         factors = []
 
         # Inactivity
@@ -209,7 +214,7 @@ class BusinessIntelligenceService:
         await self.db.refresh(prediction)
         return prediction
 
-    async def predict_ltv(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> Optional[LtvPrediction]:
+    async def predict_ltv(self, business_id: uuid.UUID, conversation_id: uuid.UUID) -> LtvPrediction | None:
         """Estimate LTV based on historical behavior."""
         orders_result = await self.db.execute(
             select(Order).where(
@@ -241,7 +246,7 @@ class BusinessIntelligenceService:
 
         factors = []
         if len(orders) >= 3: factors.append("repeat_buyer_pattern")
-        if avg_order > Decimal("50000"): factors.append("high_aov")
+        if avg_order > Decimal(50000): factors.append("high_aov")
         if avg_days_between < 30: factors.append("frequent_buyer")
 
         prediction = LtvPrediction(
@@ -259,7 +264,7 @@ class BusinessIntelligenceService:
 
     # ========== Insight Alerts ==========
 
-    async def generate_insight_alert(self, business_id: uuid.UUID, insight_type: str, title: str, description: str, severity: str = "info", metric_name: Optional[str] = None, metric_change: Optional[Decimal] = None, recommended_action: Optional[str] = None) -> InsightAlert:
+    async def generate_insight_alert(self, business_id: uuid.UUID, insight_type: str, title: str, description: str, severity: str = "info", metric_name: str | None = None, metric_change: Decimal | None = None, recommended_action: str | None = None) -> InsightAlert:
         alert = InsightAlert(
             business_id=business_id,
             insight_type=insight_type,
@@ -282,7 +287,7 @@ class BusinessIntelligenceService:
         recommendations = AlertAdapter.get_recommendations(bc.business_type if bc else None)
 
         # Compare this month vs last month
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month_start = (this_month_start - timedelta(days=1)).replace(day=1)
 

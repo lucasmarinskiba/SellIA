@@ -1,14 +1,14 @@
 """Phase 26: Team Collaboration endpoints - Real-time deal collaboration."""
 
-from fastapi import APIRouter, HTTPException, Query, Depends, Body
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.enterprise.collaboration import (
+    ApprovalChain,
     CollaborationManager,
     DealComment,
-    ApprovalChain,
     Handoff,
     TeamNotification,
 )

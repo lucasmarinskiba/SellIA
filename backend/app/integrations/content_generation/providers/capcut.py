@@ -4,10 +4,10 @@ Pricing: Free tier available
 Strengths: Auto-captions, effects, viral templates, mobile-first
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -26,7 +26,7 @@ class CapCutProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.0
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"capcut-edit": 0.0}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -46,13 +46,12 @@ class CapCutProvider(BaseProvider):
                 "media_urls": config.extra_params.get("media_urls", []),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.capcut.com/v1/edits",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.capcut.com/v1/edits",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             video_url = data.get("video", {}).get("url") if isinstance(data.get("video"), dict) else data.get("url")
             if not video_url:

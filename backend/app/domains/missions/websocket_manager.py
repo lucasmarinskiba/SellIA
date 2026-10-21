@@ -1,8 +1,8 @@
 """Mission WebSocket Manager — real-time progress broadcasting."""
 
-import json
-from typing import Dict, List, Any
-from fastapi import WebSocket, WebSocketDisconnect
+from typing import Any
+
+from fastapi import WebSocket
 
 
 class MissionWebSocketManager:
@@ -10,7 +10,7 @@ class MissionWebSocketManager:
 
     def __init__(self):
         # user_id -> list of active websockets
-        self.active_connections: Dict[str, List[WebSocket]] = {}
+        self.active_connections: dict[str, list[WebSocket]] = {}
 
     async def connect(self, user_id: str, websocket: WebSocket):
         await websocket.accept()
@@ -44,7 +44,7 @@ class MissionWebSocketManager:
         mission_id: str,
         step_id: str,
         status: str,
-        data: Dict[str, Any] = None,
+        data: dict[str, Any] = None,
     ):
         """Convenience method to broadcast mission step progress."""
         await self.broadcast(user_id, {

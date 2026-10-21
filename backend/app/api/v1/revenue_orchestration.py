@@ -1,8 +1,6 @@
 """Phase 27: Revenue Orchestration - Deal optimization, proposal engine, contract terms."""
 
-from fastapi import APIRouter, Query, Body, Depends
-from app.core.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Body, Query
 
 router = APIRouter(prefix="/revenue-orchestration", tags=["revenue-orchestration"])
 

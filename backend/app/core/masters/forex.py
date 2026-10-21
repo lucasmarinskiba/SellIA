@@ -11,13 +11,11 @@ Complete foreign exchange expertise covering:
 - FX operations (settlement, reconciliation, funding, counterparty management)
 """
 
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Any
-from enum import Enum
-from datetime import datetime, timedelta
 import statistics
-import math
-
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 # ============================================================================
 # 1. FX FUNDAMENTALS (1,000+ lines)
@@ -46,11 +44,11 @@ class CurrencyQuote:
     bid_volume: float  # Volume at bid
     ask_volume: float  # Volume at ask
     timestamp: datetime
-    central_bank_rate: Optional[float] = None
-    inflation_rate: Optional[float] = None
-    gdp_growth: Optional[float] = None
+    central_bank_rate: float | None = None
+    inflation_rate: float | None = None
+    gdp_growth: float | None = None
 
-    def spread_analysis(self) -> Dict[str, Any]:
+    def spread_analysis(self) -> dict[str, Any]:
         """Analyze bid-ask spread."""
         spread_pips = (self.ask_price - self.bid_price) * 10000  # For most pairs
         spread_percent = ((self.ask_price - self.bid_price) / self.bid_price * 100)
@@ -75,7 +73,7 @@ class PipCalculation:
     contract_size: int  # Standard lot (100,000 units for most pairs)
     pip_in_decimals: float  # Pip position in decimal places
 
-    def profit_loss_calculation(self, entry_price: float, exit_price: float, position_size: int) -> Dict[str, float]:
+    def profit_loss_calculation(self, entry_price: float, exit_price: float, position_size: int) -> dict[str, float]:
         """Calculate P&L in pips and currency."""
         pips_moved = (exit_price - entry_price) / self.pip_in_decimals
         profit_loss = pips_moved * self.pip_value * position_size
@@ -96,7 +94,7 @@ class MarginRequirements:
     account_balance: float
     open_position_value: float
 
-    def margin_analysis(self) -> Dict[str, Any]:
+    def margin_analysis(self) -> dict[str, Any]:
         """Analyze margin usage and limits."""
         initial_margin_required = self.open_position_value * self.initial_margin_percent
         usable_margin = self.account_balance - initial_margin_required
@@ -112,7 +110,7 @@ class MarginRequirements:
             "leverage_multiple": self.leverage_ratio,
         }
 
-    def position_risk_assessment(self) -> Dict[str, Any]:
+    def position_risk_assessment(self) -> dict[str, Any]:
         """Assess risk from leveraged position."""
         margin_buffer = 1 - (self.initial_margin_percent / (self.initial_margin_percent + (1 - self.initial_margin_percent) * 0.5))
 
@@ -142,7 +140,7 @@ class LotSizing:
         else:  # nano
             return self.nano_lot * quote_price
 
-    def lot_recommendation(self, account_balance: float, risk_percent: float, stop_loss_pips: float) -> Dict[str, Any]:
+    def lot_recommendation(self, account_balance: float, risk_percent: float, stop_loss_pips: float) -> dict[str, Any]:
         """Recommend lot size based on account and risk."""
         max_risk_amount = account_balance * risk_percent
         # Simplified: assume 1 pip = $10 per standard lot
@@ -159,7 +157,7 @@ class VolatilityMetrics:
     """FX volatility analysis."""
 
     @staticmethod
-    def calculate_atr(high_prices: List[float], low_prices: List[float], close_prices: List[float], period: int = 14) -> List[float]:
+    def calculate_atr(high_prices: list[float], low_prices: list[float], close_prices: list[float], period: int = 14) -> list[float]:
         """Calculate Average True Range for FX."""
         true_ranges = []
         for i in range(len(close_prices)):
@@ -183,7 +181,7 @@ class VolatilityMetrics:
         return atr_values
 
     @staticmethod
-    def volatility_periods(historical_volatility: List[float], threshold: float = 1.0) -> List[str]:
+    def volatility_periods(historical_volatility: list[float], threshold: float = 1.0) -> list[str]:
         """Identify high and low volatility periods."""
         avg_vol = statistics.mean(historical_volatility)
         periods = []
@@ -199,7 +197,7 @@ class VolatilityMetrics:
         return periods
 
     @staticmethod
-    def volatility_by_session(prices: Dict[str, List[float]]) -> Dict[str, float]:
+    def volatility_by_session(prices: dict[str, list[float]]) -> dict[str, float]:
         """Calculate volatility by trading session."""
         volatility_by_session = {}
 
@@ -225,7 +223,7 @@ class SessionAnalysis:
     }
 
     @staticmethod
-    def optimal_trading_session(pair: str) -> Dict[str, str]:
+    def optimal_trading_session(pair: str) -> dict[str, str]:
         """Recommend optimal trading session for specific pairs."""
         recommendations = {
             "EUR/USD": {"optimal": "London", "reason": "Highest volume and volatility"},
@@ -237,7 +235,7 @@ class SessionAnalysis:
         return recommendations.get(pair, {"optimal": "London", "reason": "Default: London has highest overall volume"})
 
     @staticmethod
-    def session_volatility_patterns() -> Dict[str, Dict[str, Any]]:
+    def session_volatility_patterns() -> dict[str, dict[str, Any]]:
         """Typical volatility patterns by session."""
         return {
             "Tokyo": {
@@ -262,7 +260,7 @@ class FXFundamentals:
     """Complete FX fundamentals framework."""
 
     @staticmethod
-    def interest_rate_parity_check(usd_rate: float, other_rate: float, spot_rate: float, forward_rate: float) -> Dict[str, Any]:
+    def interest_rate_parity_check(usd_rate: float, other_rate: float, spot_rate: float, forward_rate: float) -> dict[str, Any]:
         """Check if interest rate parity holds."""
         theoretical_forward = spot_rate * (1 + usd_rate) / (1 + other_rate)
         deviation = ((forward_rate - theoretical_forward) / theoretical_forward * 100) if theoretical_forward > 0 else 0
@@ -276,7 +274,7 @@ class FXFundamentals:
         }
 
     @staticmethod
-    def purchasing_power_parity_analysis(home_inflation: float, foreign_inflation: float, current_rate: float) -> Dict[str, Any]:
+    def purchasing_power_parity_analysis(home_inflation: float, foreign_inflation: float, current_rate: float) -> dict[str, Any]:
         """Analyze PPP implications for FX rates."""
         inflation_differential = home_inflation - foreign_inflation
         implied_rate_change = inflation_differential
@@ -288,7 +286,7 @@ class FXFundamentals:
         }
 
     @staticmethod
-    def currency_valuation_index(rates: Dict[str, float], weights: Dict[str, float]) -> float:
+    def currency_valuation_index(rates: dict[str, float], weights: dict[str, float]) -> float:
         """Calculate weighted currency index."""
         index = sum(rates[curr] * weights.get(curr, 0) for curr in rates)
         return round(index, 2)
@@ -302,7 +300,7 @@ class TrendTrading:
     """Trend-based FX trading strategies."""
 
     @staticmethod
-    def identify_trend(prices: List[float], period: int = 20) -> str:
+    def identify_trend(prices: list[float], period: int = 20) -> str:
         """Identify uptrend, downtrend, or range."""
         recent_prices = prices[-period:]
         higher_highs = sum(1 for i in range(1, len(recent_prices)) if recent_prices[i] > recent_prices[i-1])
@@ -316,7 +314,7 @@ class TrendTrading:
             return "RANGE_BOUND"
 
     @staticmethod
-    def breakout_strategy(support_level: float, resistance_level: float, current_price: float) -> Dict[str, Any]:
+    def breakout_strategy(support_level: float, resistance_level: float, current_price: float) -> dict[str, Any]:
         """Generate breakout trading signals."""
         breakout_up = current_price > resistance_level
         breakout_down = current_price < support_level
@@ -335,7 +333,7 @@ class TrendTrading:
         }
 
     @staticmethod
-    def moving_average_strategy(price: float, sma_20: float, sma_50: float, sma_200: float) -> Dict[str, Any]:
+    def moving_average_strategy(price: float, sma_20: float, sma_50: float, sma_200: float) -> dict[str, Any]:
         """MA-based FX trading strategy."""
         return {
             "signal": "BUY" if price > sma_20 > sma_50 > sma_200 else "SELL" if price < sma_20 < sma_50 < sma_200 else "HOLD",
@@ -355,7 +353,7 @@ class CarryTrade:
         return annual_return
 
     @staticmethod
-    def carry_trade_analysis(pairs: Dict[str, Dict[str, float]]) -> List[Dict[str, Any]]:
+    def carry_trade_analysis(pairs: dict[str, dict[str, float]]) -> list[dict[str, Any]]:
         """Analyze carry trade opportunities across pairs."""
         opportunities = []
 
@@ -375,7 +373,7 @@ class CarryTrade:
         return sorted(opportunities, key=lambda x: x["annual_carry_percent"], reverse=True)
 
     @staticmethod
-    def carry_trade_risk_assessment(positions: Dict[str, float], volatility: Dict[str, float]) -> Dict[str, Any]:
+    def carry_trade_risk_assessment(positions: dict[str, float], volatility: dict[str, float]) -> dict[str, Any]:
         """Assess risks in carry trade portfolio."""
         correlation_risk = "high"  # Simplified: correlation during crisis
         mean_reversion_risk = "moderate"  # Rates tend to revert
@@ -401,7 +399,7 @@ class NewsTrading:
     }
 
     @staticmethod
-    def event_impact_analysis(event_type: str, forecast: float, actual: float) -> Dict[str, Any]:
+    def event_impact_analysis(event_type: str, forecast: float, actual: float) -> dict[str, Any]:
         """Analyze impact of economic data."""
         surprise = actual - forecast
         surprise_percent = (surprise / forecast * 100) if forecast != 0 else 0
@@ -414,7 +412,7 @@ class NewsTrading:
         }
 
     @staticmethod
-    def economic_calendar_analysis(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def economic_calendar_analysis(events: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze FX calendar and trading implications."""
         high_impact_events = [e for e in events if e.get("impact", "low") == "high"]
         medium_impact_events = [e for e in events if e.get("impact", "low") == "medium"]
@@ -432,7 +430,7 @@ class RiskRewardRatios:
     """Risk-reward analysis for FX trades."""
 
     @staticmethod
-    def calculate_risk_reward(entry: float, stop_loss: float, take_profit: float) -> Dict[str, Any]:
+    def calculate_risk_reward(entry: float, stop_loss: float, take_profit: float) -> dict[str, Any]:
         """Calculate risk-reward ratio."""
         risk = abs(entry - stop_loss)
         reward = abs(take_profit - entry)
@@ -446,7 +444,7 @@ class RiskRewardRatios:
         }
 
     @staticmethod
-    def position_sizing_for_risk(account_balance: float, risk_percent: float, risk_pips: int) -> Dict[str, Any]:
+    def position_sizing_for_risk(account_balance: float, risk_percent: float, risk_pips: int) -> dict[str, Any]:
         """Calculate position size for target risk."""
         max_loss = account_balance * risk_percent
         # Simplified: 1 pip = $10 per standard lot
@@ -467,7 +465,7 @@ class FXTrading:
         self.carry_trade = CarryTrade()
         self.news_trading = NewsTrading()
 
-    def comprehensive_trading_analysis(self, pair: str, technical_data: Dict, fundamental_data: Dict) -> Dict[str, Any]:
+    def comprehensive_trading_analysis(self, pair: str, technical_data: dict, fundamental_data: dict) -> dict[str, Any]:
         """Comprehensive trading analysis combining multiple approaches."""
         return {
             "technical_signal": technical_data.get("signal", "HOLD"),
@@ -480,7 +478,7 @@ class FXTrading:
             "confidence_level": self._calculate_confidence(technical_data, fundamental_data),
         }
 
-    def _synthesize_signals(self, technical: Dict, fundamental: Dict) -> str:
+    def _synthesize_signals(self, technical: dict, fundamental: dict) -> str:
         """Combine technical and fundamental signals."""
         technical_signal = technical.get("signal", "HOLD")
         fundamental_bias = fundamental.get("bias", "neutral")
@@ -494,12 +492,10 @@ class FXTrading:
         else:
             return "HOLD"
 
-    def _calculate_confidence(self, technical: Dict, fundamental: Dict) -> str:
+    def _calculate_confidence(self, technical: dict, fundamental: dict) -> str:
         """Calculate confidence level of trading signal."""
         alignment = 0
-        if technical.get("signal") == "BUY" and fundamental.get("bias") == "bullish":
-            alignment = 1.0
-        elif technical.get("signal") == "SELL" and fundamental.get("bias") == "bearish":
+        if technical.get("signal") == "BUY" and fundamental.get("bias") == "bullish" or technical.get("signal") == "SELL" and fundamental.get("bias") == "bearish":
             alignment = 1.0
         elif (technical.get("signal") == "BUY") != (fundamental.get("bias") == "bullish"):
             alignment = 0.5
@@ -528,7 +524,7 @@ class ForwardContract:
         """Calculate forward contract value."""
         return self.notional_amount * self.forward_rate
 
-    def forward_premium_analysis(self) -> Dict[str, Any]:
+    def forward_premium_analysis(self) -> dict[str, Any]:
         """Analyze forward premium or discount."""
         premium_pips = (self.forward_rate - self.spot_rate) * 10000
         premium_percent = ((self.forward_rate - self.spot_rate) / self.spot_rate * 100)
@@ -548,7 +544,7 @@ class OptionsHedging:
     """Options-based hedging strategies."""
 
     @staticmethod
-    def protective_put_strategy(spot_rate: float, strike_price: float, premium: float, notional: float) -> Dict[str, Any]:
+    def protective_put_strategy(spot_rate: float, strike_price: float, premium: float, notional: float) -> dict[str, Any]:
         """Protective put hedge for downside."""
         max_loss = (strike_price - spot_rate + premium) * notional
         cost_of_protection = premium * notional
@@ -562,7 +558,7 @@ class OptionsHedging:
         }
 
     @staticmethod
-    def collar_strategy(spot_rate: float, put_strike: float, call_strike: float, put_premium: float, call_premium: float, notional: float) -> Dict[str, Any]:
+    def collar_strategy(spot_rate: float, put_strike: float, call_strike: float, put_premium: float, call_premium: float, notional: float) -> dict[str, Any]:
         """Zero-cost collar strategy."""
         net_cost = (put_premium - call_premium) * notional
 
@@ -578,11 +574,11 @@ class OptionsHedging:
         }
 
     @staticmethod
-    def seagull_strategy(spot_rate: float, buy_put_strike: float, sell_call_strike: float, sell_put_strike: float, notional: float) -> Dict[str, Any]:
+    def seagull_strategy(spot_rate: float, buy_put_strike: float, sell_call_strike: float, sell_put_strike: float, notional: float) -> dict[str, Any]:
         """Seagull strategy (collar variant with call sold below spot)."""
         return {
             "protection": f"Protected below {buy_put_strike}",
-            "income_generation": f"From selling call and put",
+            "income_generation": "From selling call and put",
             "breakeven_range": f"{sell_put_strike} to {sell_call_strike}",
             "maximum_loss": round((spot_rate - buy_put_strike) * notional, 2),
             "strategy_type": "zero_cost_with_return_sacrifice",
@@ -593,7 +589,7 @@ class CrossHedging:
     """Cross-hedging with correlated currencies."""
 
     @staticmethod
-    def cross_hedge_effectiveness(base_pair_correlation: float, hedge_pair_correlation: float, base_pair_volatility: float, hedge_pair_volatility: float) -> Dict[str, Any]:
+    def cross_hedge_effectiveness(base_pair_correlation: float, hedge_pair_correlation: float, base_pair_volatility: float, hedge_pair_volatility: float) -> dict[str, Any]:
         """Calculate cross-hedge effectiveness."""
         hedge_ratio = (base_pair_volatility * base_pair_correlation) / hedge_pair_volatility if hedge_pair_volatility > 0 else 0
         effectiveness = (1 - (1 - base_pair_correlation**2)) * 100 if base_pair_correlation > 0 else 0
@@ -606,7 +602,7 @@ class CrossHedging:
         }
 
     @staticmethod
-    def optimal_cross_hedge_pair(exposure_pair: str, available_pairs: List[str], correlations: Dict[str, float]) -> Dict[str, Any]:
+    def optimal_cross_hedge_pair(exposure_pair: str, available_pairs: list[str], correlations: dict[str, float]) -> dict[str, Any]:
         """Find optimal hedge pair."""
         best_hedge = max(
             [(pair, abs(correlations.get(f"{exposure_pair}_vs_{pair}", 0))) for pair in available_pairs],
@@ -625,7 +621,7 @@ class CorporateHedging:
     """Corporate FX hedging strategies."""
 
     @staticmethod
-    def revenue_hedge_strategy(base_currency: str, revenue_currency: str, monthly_revenue: float, months_forward: int) -> Dict[str, Any]:
+    def revenue_hedge_strategy(base_currency: str, revenue_currency: str, monthly_revenue: float, months_forward: int) -> dict[str, Any]:
         """Hedge foreign revenue exposure."""
         total_exposure = monthly_revenue * months_forward
 
@@ -645,7 +641,7 @@ class CorporateHedging:
         }
 
     @staticmethod
-    def balance_sheet_hedge_analysis(asset_value: float, asset_currency: str, liability_value: float, liability_currency: str) -> Dict[str, Any]:
+    def balance_sheet_hedge_analysis(asset_value: float, asset_currency: str, liability_value: float, liability_currency: str) -> dict[str, Any]:
         """Analyze balance sheet exposure to FX risk."""
         return {
             "asset_exposure": round(asset_value, 2),
@@ -660,7 +656,7 @@ class FXHedging:
     """Complete FX hedging framework."""
 
     @staticmethod
-    def hedging_instrument_comparison(exposure: float, horizon_days: int) -> Dict[str, Dict[str, Any]]:
+    def hedging_instrument_comparison(exposure: float, horizon_days: int) -> dict[str, dict[str, Any]]:
         """Compare hedging instruments."""
         return {
             "forwards": {
@@ -690,7 +686,7 @@ class FXHedging:
         }
 
     @staticmethod
-    def hedge_accounting_implications(hedge_type: str, designation: str) -> Dict[str, Any]:
+    def hedge_accounting_implications(hedge_type: str, designation: str) -> dict[str, Any]:
         """Hedge accounting treatment under IFRS 9."""
         return {
             "hedge_type": hedge_type,  # Cash flow, fair value, net investment
@@ -719,7 +715,7 @@ class MacroIndicators:
     }
 
     @staticmethod
-    def build_macro_scorecard(country: str, indicators: Dict[str, float], benchmarks: Dict[str, float]) -> Dict[str, Any]:
+    def build_macro_scorecard(country: str, indicators: dict[str, float], benchmarks: dict[str, float]) -> dict[str, Any]:
         """Build macro scorecard for FX forecasting."""
         scores = {}
 
@@ -749,7 +745,7 @@ class InterestRateForecasting:
     """Interest rate and policy forecasting."""
 
     @staticmethod
-    def central_bank_rate_path_forecast(current_rate: float, inflation_target: float, current_inflation: float, next_meetings: List[datetime]) -> Dict[str, Any]:
+    def central_bank_rate_path_forecast(current_rate: float, inflation_target: float, current_inflation: float, next_meetings: list[datetime]) -> dict[str, Any]:
         """Forecast central bank rate path."""
         rate_differential = current_inflation - inflation_target
         expected_moves = []
@@ -771,7 +767,7 @@ class InterestRateForecasting:
         }
 
     @staticmethod
-    def yield_curve_implications(yield_curve_shape: str, spread_bps: int) -> Dict[str, Any]:
+    def yield_curve_implications(yield_curve_shape: str, spread_bps: int) -> dict[str, Any]:
         """Analyze yield curve implications for FX."""
         return {
             "curve_shape": yield_curve_shape,
@@ -785,7 +781,7 @@ class SentimentAnalysis:
     """FX sentiment and positioning analysis."""
 
     @staticmethod
-    def cftc_positioning_analysis(net_long_positioning: float, open_interest: float) -> Dict[str, Any]:
+    def cftc_positioning_analysis(net_long_positioning: float, open_interest: float) -> dict[str, Any]:
         """Analyze CFTC positioning data."""
         positioning_ratio = (net_long_positioning / open_interest * 100) if open_interest > 0 else 0
 
@@ -797,7 +793,7 @@ class SentimentAnalysis:
         }
 
     @staticmethod
-    def retail_sentiment_analysis(retail_long_percent: float, retail_short_percent: float) -> Dict[str, Any]:
+    def retail_sentiment_analysis(retail_long_percent: float, retail_short_percent: float) -> dict[str, Any]:
         """Analyze retail trader positioning."""
         net_position = retail_long_percent - retail_short_percent
 
@@ -809,7 +805,7 @@ class SentimentAnalysis:
         }
 
     @staticmethod
-    def vix_implications_for_fx(vix_level: float, previous_vix: float) -> Dict[str, Any]:
+    def vix_implications_for_fx(vix_level: float, previous_vix: float) -> dict[str, Any]:
         """Analyze VIX implications for FX."""
         return {
             "current_vix": round(vix_level, 1),
@@ -824,7 +820,7 @@ class FXForecasting:
     """Complete FX forecasting framework."""
 
     @staticmethod
-    def multi_method_forecast(pair: str, technical_forecast: str, fundamental_forecast: str, sentiment_forecast: str, consensus_forecast: float) -> Dict[str, Any]:
+    def multi_method_forecast(pair: str, technical_forecast: str, fundamental_forecast: str, sentiment_forecast: str, consensus_forecast: float) -> dict[str, Any]:
         """Combine multiple forecasting methods."""
         bullish_signals = sum([
             1 for signal in [technical_forecast, fundamental_forecast, sentiment_forecast] if "bullish" in signal.lower()
@@ -844,11 +840,11 @@ class FXForecasting:
         }
 
     @staticmethod
-    def forecast_accuracy_measurement(forecast_date: datetime, forecast_level: float, actual_level: float, time_horizon_days: int) -> Dict[str, Any]:
+    def forecast_accuracy_measurement(forecast_date: datetime, forecast_level: float, actual_level: float, time_horizon_days: int) -> dict[str, Any]:
         """Measure forecast accuracy."""
         forecast_error_pips = (actual_level - forecast_level) * 10000
         forecast_error_percent = ((actual_level - forecast_level) / forecast_level * 100) if forecast_level > 0 else 0
-        directional_accuracy = "correct" if (actual_level > forecast_level and forecast_level > forecast_level) or (actual_level < forecast_level and forecast_level < forecast_level) else "incorrect"
+        directional_accuracy = "correct" if (actual_level > forecast_level > forecast_level) or (actual_level < forecast_level < forecast_level) else "incorrect"
 
         return {
             "forecast_error_pips": round(forecast_error_pips, 1),
@@ -875,7 +871,7 @@ class RegulatoryRequirements:
     }
 
     @staticmethod
-    def leverage_limits_by_jurisdiction(jurisdiction: str) -> Dict[str, int]:
+    def leverage_limits_by_jurisdiction(jurisdiction: str) -> dict[str, int]:
         """Get leverage limits by regulatory jurisdiction."""
         limits = {
             "US": {"majors": 50, "minors": 20, "exotics": 10},
@@ -887,7 +883,7 @@ class RegulatoryRequirements:
         return limits.get(jurisdiction, {"default": 50})
 
     @staticmethod
-    def capital_requirements(account_size: float, leverage_ratio: int) -> Dict[str, float]:
+    def capital_requirements(account_size: float, leverage_ratio: int) -> dict[str, float]:
         """Calculate minimum capital requirements."""
         initial_capital = account_size / leverage_ratio
         maintenance_capital = account_size / (leverage_ratio * 1.5)
@@ -899,7 +895,7 @@ class RegulatoryRequirements:
         }
 
     @staticmethod
-    def aml_kyc_compliance_checklist() -> List[str]:
+    def aml_kyc_compliance_checklist() -> list[str]:
         """Anti-money laundering and know-your-customer requirements."""
         return [
             "Collect and verify identity documentation",
@@ -913,7 +909,7 @@ class RegulatoryRequirements:
         ]
 
     @staticmethod
-    def position_limit_compliance(current_position: float, regulatory_limit: float, account_size: float) -> Dict[str, Any]:
+    def position_limit_compliance(current_position: float, regulatory_limit: float, account_size: float) -> dict[str, Any]:
         """Check position limit compliance."""
         position_as_percent_of_account = (current_position / account_size * 100) if account_size > 0 else 0
         limit_as_percent_of_account = (regulatory_limit / account_size * 100) if account_size > 0 else 0
@@ -931,7 +927,7 @@ class FXRegulations:
     """Complete FX regulatory framework."""
 
     @staticmethod
-    def regulatory_framework_analysis(broker_jurisdiction: str, client_domicile: str) -> Dict[str, Any]:
+    def regulatory_framework_analysis(broker_jurisdiction: str, client_domicile: str) -> dict[str, Any]:
         """Analyze regulatory framework applicability."""
         return {
             "broker_regulator": RegulatoryRequirements.MAJOR_REGULATORS.get(broker_jurisdiction, "Unknown"),
@@ -963,7 +959,7 @@ class SettlementDetails:
     fees_bps: float
     confirmation_status: str
 
-    def settlement_timeline(self) -> Dict[str, datetime]:
+    def settlement_timeline(self) -> dict[str, datetime]:
         """Calculate settlement timeline."""
         return {
             "trade_date": self.trade_date,
@@ -978,7 +974,7 @@ class CounterpartyRisk:
     """Counterparty credit risk management."""
 
     @staticmethod
-    def counterparty_credit_exposure(notional_amount: float, current_mark_to_market: float, add_on: float) -> Dict[str, float]:
+    def counterparty_credit_exposure(notional_amount: float, current_mark_to_market: float, add_on: float) -> dict[str, float]:
         """Calculate potential future exposure."""
         replacement_cost = max(current_mark_to_market, 0)
         potential_future_exposure = add_on * notional_amount
@@ -992,7 +988,7 @@ class CounterpartyRisk:
         }
 
     @staticmethod
-    def collateral_requirements(exposure: float, haircut_percent: float) -> Dict[str, float]:
+    def collateral_requirements(exposure: float, haircut_percent: float) -> dict[str, float]:
         """Calculate collateral posting requirements."""
         collateral_required = exposure * (1 + haircut_percent)
 
@@ -1008,7 +1004,7 @@ class FXOperations:
     """Complete FX operations framework."""
 
     @staticmethod
-    def operations_checklist() -> Dict[str, List[str]]:
+    def operations_checklist() -> dict[str, list[str]]:
         """Complete FX operations checklist."""
         return {
             "pre_trade": [
@@ -1033,7 +1029,7 @@ class FXOperations:
         }
 
     @staticmethod
-    def liquidity_management(cash_position: float, upcoming_settlements: List[float], funding_rate: float) -> Dict[str, Any]:
+    def liquidity_management(cash_position: float, upcoming_settlements: list[float], funding_rate: float) -> dict[str, Any]:
         """Manage FX liquidity."""
         total_outflows = sum(upcoming_settlements)
         net_position = cash_position - total_outflows

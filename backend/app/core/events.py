@@ -4,28 +4,30 @@ Permite que agentes, automatizaciones, canales y CRM se comuniquen
 mediante eventos sin acoplamiento directo.
 """
 
-import json
 import asyncio
-from typing import Any, Callable, Dict, List, Optional, Coroutine
-from datetime import datetime, timezone
+import json
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime
+from typing import Any, Optional
 
 import redis.asyncio as redis
+
 from app.core.config import get_settings
 
 settings = get_settings()
 
 # Tipos
-EventHandler = Callable[[Dict[str, Any]], Coroutine[Any, Any, None]]
+EventHandler = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 
 
 class EventBus:
     """Bus de eventos async basado en Redis Pub/Sub."""
 
     _instance: Optional["EventBus"] = None
-    _redis_pool: Optional[redis.Redis] = None
-    _handlers: Dict[str, List[EventHandler]] = {}
-    _pubsub: Optional[redis.client.PubSub] = None
-    _listener_task: Optional[asyncio.Task] = None
+    _redis_pool: redis.Redis | None = None
+    _handlers: dict[str, list[EventHandler]] = {}
+    _pubsub: redis.client.PubSub | None = None
+    _listener_task: asyncio.Task | None = None
 
     def __new__(cls) -> "EventBus":
         if cls._instance is None:
@@ -49,13 +51,13 @@ class EventBus:
             await self._redis_pool.close()
             self._redis_pool = None
 
-    async def publish(self, event_type: str, payload: Dict[str, Any]) -> None:
+    async def publish(self, event_type: str, payload: dict[str, Any]) -> None:
         """Publicar un evento en Redis."""
         await self.connect()
         message = {
             "event_type": event_type,
             "payload": payload,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         await self._redis_pool.publish(f"events:{event_type}", json.dumps(message))
         # También publicar en canal general para listeners wildcard
@@ -115,7 +117,7 @@ class EventBus:
                     from app.core.logger import get_logger
                     get_logger(__name__).error(f"Message parse error: {e}")
 
-    async def emit(self, event_type: str, payload: Dict[str, Any]) -> None:
+    async def emit(self, event_type: str, payload: dict[str, Any]) -> None:
         """Emitir evento: publica en Redis Y ejecuta handlers in-memory inmediatamente."""
         await self.publish(event_type, payload)
         # Ejecutar handlers locales inmediatamente (para no depender del round-trip Redis)
@@ -132,7 +134,7 @@ class EventBus:
 event_bus = EventBus()
 
 
-async def emit_event(event_type: str, payload: Dict[str, Any]) -> None:
+async def emit_event(event_type: str, payload: dict[str, Any]) -> None:
     """Helper para emitir eventos usando el event bus global."""
     await event_bus.emit(event_type, payload)
 
@@ -144,7 +146,7 @@ async def emit_message_received(
     conversation_id: str,
     platform: str,
     content: str,
-    sender_name: Optional[str] = None,
+    sender_name: str | None = None,
     is_new_conversation: bool = False,
 ):
     await event_bus.emit("message.received", {
@@ -192,8 +194,8 @@ async def emit_lead_score_changed(
 async def emit_deal_created(
     business_id: str,
     deal_id: str,
-    conversation_id: Optional[str] = None,
-    value: Optional[float] = None,
+    conversation_id: str | None = None,
+    value: float | None = None,
     stage: str = "new_lead",
 ):
     await event_bus.emit("deal.created", {
@@ -210,7 +212,7 @@ async def emit_workflow_completed(
     workflow_id: str,
     execution_id: str,
     status: str,
-    conversation_id: Optional[str] = None,
+    conversation_id: str | None = None,
 ):
     await event_bus.emit("workflow.completed", {
         "business_id": business_id,
@@ -226,7 +228,7 @@ async def emit_human_handoff_required(
     conversation_id: str,
     platform: str,
     reason: str,
-    lead_name: Optional[str] = None,
+    lead_name: str | None = None,
 ):
     await event_bus.emit("human.handoff_required", {
         "business_id": business_id,
@@ -234,7 +236,7 @@ async def emit_human_handoff_required(
         "platform": platform,
         "reason": reason,
         "lead_name": lead_name,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
@@ -243,7 +245,7 @@ async def emit_order_created(
     order_id: str,
     total_amount: float,
     status: str,
-    conversation_id: Optional[str] = None,
+    conversation_id: str | None = None,
 ):
     await event_bus.emit("order.created", {
         "business_id": business_id,
@@ -251,7 +253,7 @@ async def emit_order_created(
         "total_amount": total_amount,
         "status": status,
         "conversation_id": conversation_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
@@ -266,5 +268,5 @@ async def emit_revenue_event(
         "revenue_event_id": revenue_event_id,
         "amount": amount,
         "event_type": event_type,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })

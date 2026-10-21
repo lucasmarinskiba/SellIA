@@ -8,20 +8,18 @@ Endpoints para que Computer Use consulte SellIA Brain:
 """
 
 import logging
-from typing import Optional
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
 from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
     ActionContext,
-    SalesStage,
     Platform,
+    SalesStage,
+    get_brain_service,
 )
+from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,9 +33,9 @@ class StrategyRequest(BaseModel):
 
     platform: str = Field(..., description="Plataforma: whatsapp, email, instagram, etc")
     stage: str = Field(..., description="Etapa de venta: awareness, consideration, decision, closure, etc")
-    customer_profile: Optional[dict] = Field(default=None, description="Perfil del cliente")
-    product_info: Optional[dict] = Field(default=None, description="Información del producto")
-    objections: Optional[list] = Field(default=[], description="Objeciones del cliente")
+    customer_profile: dict | None = Field(default=None, description="Perfil del cliente")
+    product_info: dict | None = Field(default=None, description="Información del producto")
+    objections: list | None = Field(default=[], description="Objeciones del cliente")
 
 
 class StrategyResponse(BaseModel):
@@ -59,9 +57,9 @@ class ResponsePromptRequest(BaseModel):
     instruction: str = Field(..., description="Qué debe lograr la respuesta")
     platform: str = Field(..., description="Plataforma")
     stage: str = Field(..., description="Etapa de venta")
-    customer_profile: Optional[dict] = Field(default=None)
-    message_history: Optional[list] = Field(default=None)
-    objections: Optional[list] = Field(default=[])
+    customer_profile: dict | None = Field(default=None)
+    message_history: list | None = Field(default=None)
+    objections: list | None = Field(default=[])
 
 
 class ResponsePromptResponse(BaseModel):
@@ -100,7 +98,7 @@ class SalesSignalResponse(BaseModel):
     """Resultado de detección de señales."""
 
     signal_found: bool
-    signal_type: Optional[str]
+    signal_type: str | None
     recommended_action: str
     confidence: float
 

@@ -5,10 +5,13 @@ fulfillment reales vía TikTok Seller API, no simulado.
 """
 from typing import Any
 
+from app.core.integrations.tiktok_shop_automation import (
+    TikTokFulfillmentType,
+    TikTokShopAutomation,
+)
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
-from app.core.integrations.tiktok_shop_automation import TikTokShopAutomation, TikTokFulfillmentType
+from app.domains.channels.schemas import WebhookPayload
 
 
 class TikTokShopConnector(BaseChannelConnector):

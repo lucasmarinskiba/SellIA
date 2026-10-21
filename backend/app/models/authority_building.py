@@ -1,9 +1,10 @@
 """Phase 3 Database Models - Authority Building (E-E-A-T Signals)."""
 
-from sqlalchemy import Column, String, Float, Integer, DateTime, Text, Boolean, Index, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
 from app.core.database import Base
 

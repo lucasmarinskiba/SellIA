@@ -21,7 +21,7 @@ import time
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
-from app.core.email_sender import EmailSender, EmailProvider
+from app.core.email_sender import EmailProvider, EmailSender
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks/resend", tags=["resend-webhooks"])

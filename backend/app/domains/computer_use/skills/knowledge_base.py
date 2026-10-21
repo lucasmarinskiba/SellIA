@@ -12,7 +12,6 @@ tokens limitado). Es aditivo: no rompe ningún provider existente.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 
@@ -22,9 +21,9 @@ class SkillDomain:
 
     key: str
     title: str
-    keywords: List[str]            # disparadores en la tarea/URL
-    principles: List[str]          # reglas accionables, una línea cada una
-    platforms: List[str] = field(default_factory=list)
+    keywords: list[str]            # disparadores en la tarea/URL
+    principles: list[str]          # reglas accionables, una línea cada una
+    platforms: list[str] = field(default_factory=list)
 
 
 # ── Estrategias de venta ────────────────────────────────────────────────
@@ -486,7 +485,7 @@ BUSINESS_MODELS = SkillDomain(
 )
 
 
-SKILL_DOMAINS: Dict[str, SkillDomain] = {
+SKILL_DOMAINS: dict[str, SkillDomain] = {
     d.key: d
     for d in (
         SALES_STRATEGY,
@@ -515,7 +514,7 @@ SKILL_DOMAINS: Dict[str, SkillDomain] = {
 }
 
 # Rol de equipo de ventas que cada skill reemplaza (introspección/marketing).
-SALES_TEAM_ROLES: Dict[str, str] = {
+SALES_TEAM_ROLES: dict[str, str] = {
     "prospecting": "SDR / Generador de leads",
     "outreach": "Representante de desarrollo (cold outreach)",
     "sales_strategy": "Ejecutivo de cuenta",
@@ -541,7 +540,7 @@ SALES_TEAM_ROLES: Dict[str, str] = {
 }
 
 # Mapa dominio-URL → skill de plataforma (para activar por la URL actual).
-_DOMAIN_HINTS: Dict[str, str] = {
+_DOMAIN_HINTS: dict[str, str] = {
     "instagram.com": "social_media",
     "facebook.com": "social_media",
     "tiktok.com": "social_media",
@@ -576,7 +575,7 @@ _DOMAIN_HINTS: Dict[str, str] = {
 }
 
 
-def _domain_of(url: Optional[str]) -> str:
+def _domain_of(url: str | None) -> str:
     if not url:
         return ""
     try:
@@ -585,14 +584,14 @@ def _domain_of(url: Optional[str]) -> str:
         return ""
 
 
-def detect_skill_domains(task: str, url: Optional[str] = None) -> List[SkillDomain]:
+def detect_skill_domains(task: str, url: str | None = None) -> list[SkillDomain]:
     """Selecciona los dominios de skill relevantes para la tarea + URL.
 
     Siempre incluye Estrategia de Ventas (es un agente vendedor) y los
     dominios cuyos keywords aparecen en la tarea o que coinciden con la URL.
     """
     text = (task or "").lower()
-    selected: List[str] = ["sales_strategy"]
+    selected: list[str] = ["sales_strategy"]
 
     for key, domain in SKILL_DOMAINS.items():
         if key in selected:
@@ -615,7 +614,7 @@ def detect_skill_domains(task: str, url: Optional[str] = None) -> List[SkillDoma
 
 def build_skill_brief(
     task: str,
-    url: Optional[str] = None,
+    url: str | None = None,
     max_domains: int = 5,
     principles_per_domain: int = 4,
 ) -> str:
@@ -628,7 +627,7 @@ def build_skill_brief(
         return ""
 
     domains = domains[:max_domains]
-    lines: List[str] = ["Expert sales-agent knowledge (apply where relevant):"]
+    lines: list[str] = ["Expert sales-agent knowledge (apply where relevant):"]
     for d in domains:
         lines.append(f"[{d.title}]")
         for p in d.principles[:principles_per_domain]:
@@ -636,7 +635,7 @@ def build_skill_brief(
     return "\n".join(lines)
 
 
-def list_platform_skills() -> Dict[str, List[str]]:
+def list_platform_skills() -> dict[str, list[str]]:
     """Lista las plataformas cubiertas por cada dominio de skill (introspección)."""
     return {
         key: list(domain.platforms)
@@ -645,7 +644,7 @@ def list_platform_skills() -> Dict[str, List[str]]:
     }
 
 
-def list_sales_team_roles() -> List[Dict[str, object]]:
+def list_sales_team_roles() -> list[dict[str, object]]:
     """Lista las skills como roles de un equipo de ventas (introspección/UI).
 
     Devuelve, por cada dominio, el rol humano equivalente y cuántos

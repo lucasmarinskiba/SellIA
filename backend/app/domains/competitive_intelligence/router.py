@@ -1,11 +1,11 @@
 """Phase 4: Competitive Intelligence Endpoints."""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Optional, List
+
 from app.core.database import get_db
 from app.domains.competitive_intelligence.service import CompetitiveIntelligenceService
-
 
 router = APIRouter(prefix="/api/v1/competitive-intelligence", tags=["competitive-intelligence"])
 
@@ -15,11 +15,11 @@ async def track_competitor(
     business_id: UUID,
     competitor_name: str,
     industry: str,
-    market_segment: Optional[str] = None,
-    price_point: Optional[float] = None,
-    strength_areas: Optional[List[str]] = None,
-    weakness_areas: Optional[List[str]] = None,
-    feature_set: Optional[List[str]] = None,
+    market_segment: str | None = None,
+    price_point: float | None = None,
+    strength_areas: list[str] | None = None,
+    weakness_areas: list[str] | None = None,
+    feature_set: list[str] | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Register or update competitor profile."""
@@ -34,7 +34,7 @@ async def analyze_price(
     business_id: UUID,
     product_id: UUID,
     current_price: float,
-    competitor_prices: Optional[List[float]] = None,
+    competitor_prices: list[float] | None = None,
     target_margin: float = 0.4,
     market_position: str = "competitive",
     db: AsyncSession = Depends(get_db),
@@ -49,7 +49,7 @@ async def analyze_price(
 @router.get("/landscape")
 async def get_landscape(
     business_id: UUID,
-    market_segment: Optional[str] = None,
+    market_segment: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Analyze competitive landscape."""
@@ -75,9 +75,9 @@ async def add_feed(
     feed_type: str,
     competitor_name: str,
     event_title: str,
-    event_description: Optional[str] = None,
+    event_description: str | None = None,
     threat_level: str = "medium",
-    source_url: Optional[str] = None,
+    source_url: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Log competitive intelligence event."""

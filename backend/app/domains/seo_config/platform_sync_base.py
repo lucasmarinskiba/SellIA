@@ -28,7 +28,6 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Response dict with status, optional error_message
         """
-        pass
 
     @abstractmethod
     async def update_listing_description(self, external_id: str, description: str) -> dict[str, Any]:
@@ -41,12 +40,10 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Response dict with status, optional error_message
         """
-        pass
 
     @abstractmethod
     async def validate_credentials(self) -> bool:
         """Verify credentials are valid."""
-        pass
 
     @abstractmethod
     async def extract_listing_id(self, url: str) -> str | None:
@@ -58,4 +55,3 @@ class PlatformListingSyncConnector(ABC):
         Returns:
             Listing ID or None if can't extract
         """
-        pass

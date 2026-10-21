@@ -1,13 +1,12 @@
 """Customer FOMO Routes - User-facing API endpoints"""
 
-from fastapi import APIRouter, Depends, Query, Body
-from typing import List, Optional, Dict, Any
-from decimal import Decimal
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.customer_fomo_service import (
     CustomerFOMOCampaignService,
-    CustomerFOMOTemplates,
 )
 
 router = APIRouter(prefix="/fomo/customer", tags=["customer-fomo"])
@@ -76,7 +75,7 @@ async def list_campaign_templates(current_user = Depends(get_current_user)):
 async def create_campaign_from_template(
     template_type: str = Query(..., description="Template ID"),
     business_id: str = Query(...),
-    custom_config: Optional[Dict[str, Any]] = Body(None),
+    custom_config: dict[str, Any] | None = Body(None),
     current_user = Depends(get_current_user),
 ):
     """Create FOMO campaign from template"""
@@ -149,8 +148,8 @@ async def get_widget_embedding_guide(
 async def create_automation_sequence(
     campaign_id: str = Query(...),
     automation_type: str = Query(...),
-    channels: List[str] = Query(...),
-    messages: Dict[str, str] = Body(...),
+    channels: list[str] = Query(...),
+    messages: dict[str, str] = Body(...),
     current_user = Depends(get_current_user),
 ):
     """Create multi-step automation sequence"""

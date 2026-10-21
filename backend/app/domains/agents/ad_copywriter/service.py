@@ -1,20 +1,19 @@
-import uuid
 import json
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 from app.domains.agents.ad_copywriter.models import AdCampaign, AdVariant
-from app.domains.catalogs.models import CatalogItem
-from app.domains.businesses.models import Business
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.businesses.models import Business
+from app.domains.catalogs.models import CatalogItem
 
 logger = get_logger(__name__)
 
@@ -29,7 +28,7 @@ class AdCopywriterService:
         product_id: uuid.UUID,
         platform: str,
         budget: float,
-        campaign_name: Optional[str] = None,
+        campaign_name: str | None = None,
     ) -> AdCampaign:
         product = await self.db.get(CatalogItem, product_id)
         if not product or product.business_id != business_id:
@@ -62,7 +61,7 @@ class AdCopywriterService:
         logger.info(f"Ad campaign {campaign.id} created with {len(variants)} variants")
         return campaign
 
-    async def _analyze_audience(self, business: Business, product: CatalogItem) -> Dict[str, Any]:
+    async def _analyze_audience(self, business: Business, product: CatalogItem) -> dict[str, Any]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -111,7 +110,7 @@ class AdCopywriterService:
         product: CatalogItem,
         campaign: AdCampaign,
         platform: str,
-    ) -> List[AdVariant]:
+    ) -> list[AdVariant]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -193,7 +192,7 @@ class AdCopywriterService:
         business_id: uuid.UUID,
         limit: int = 50,
         offset: int = 0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         total_result = await self.db.execute(
             select(AdCampaign).where(AdCampaign.business_id == business_id)
         )
@@ -201,13 +200,13 @@ class AdCopywriterService:
         total = len(campaigns)
         return {"total": total, "campaigns": campaigns[offset:offset + limit]}
 
-    async def get_campaign(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> Optional[AdCampaign]:
+    async def get_campaign(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> AdCampaign | None:
         campaign = await self.db.get(AdCampaign, campaign_id)
         if not campaign or campaign.business_id != business_id:
             return None
         return campaign
 
-    async def get_campaign_with_variants(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+    async def get_campaign_with_variants(self, campaign_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any] | None:
         campaign = await self.get_campaign(campaign_id, business_id)
         if not campaign:
             return None
@@ -220,7 +219,7 @@ class AdCopywriterService:
             "variants": variants,
         }
 
-    async def export_campaign(self, campaign_id: uuid.UUID, platform: str, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def export_campaign(self, campaign_id: uuid.UUID, platform: str, business_id: uuid.UUID) -> dict[str, Any]:
         data = await self.get_campaign_with_variants(campaign_id, business_id)
         if not data:
             raise ValueError("Campaign not found")

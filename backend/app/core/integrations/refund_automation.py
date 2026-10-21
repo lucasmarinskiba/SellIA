@@ -11,9 +11,8 @@ Flujo:
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +49,8 @@ class RefundAutomation:
         self,
         order_id: str,
         buyer_message: str,
-        photos: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        photos: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Analiza reclamo. Detecta categoría + confianza + estrategia recomendada.
         """
@@ -95,7 +94,7 @@ class RefundAutomation:
 
         return DisputeReason.FRAUD  # Default fallback (rare)
 
-    def _estimate_confidence(self, message: str, photos: Optional[List[str]]) -> float:
+    def _estimate_confidence(self, message: str, photos: list[str] | None) -> float:
         """Estima confianza en reclamo (0-1)."""
 
         confidence = 0.5
@@ -159,7 +158,7 @@ class RefundAutomation:
         payment_method: str,  # stripe, mercadolibre, etc
         amount: float,
         reason: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Procesa refund automáticamente."""
 
         logger.info(f"Processing refund for order {order_id}: ${amount}")
@@ -181,7 +180,7 @@ class RefundAutomation:
                 return result
 
         except Exception as e:
-            logger.error(f"Refund error: {str(e)}")
+            logger.error(f"Refund error: {e!s}")
             return {"status": "error", "error": str(e)}
 
     async def _notify_buyer_refund(self, order_id: str, amount: float, reason: str) -> None:
@@ -199,7 +198,7 @@ class RefundAutomation:
         order_id: str,
         chargeback_amount: float,
         reason_code: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Maneja chargeback automático."""
 
         logger.warning(f"Chargeback received for {order_id}: ${chargeback_amount} ({reason_code})")
@@ -219,7 +218,7 @@ class RefundAutomation:
             logger.warning(f"No evidence for {order_id}. Chargeback accepted.")
             return {"status": "chargeback_accepted"}
 
-    async def _gather_evidence(self, order_id: str) -> Optional[Dict[str, Any]]:
+    async def _gather_evidence(self, order_id: str) -> dict[str, Any] | None:
         """Reúne evidencia de transacción válida."""
 
         # TODO: Obtener del DB: confirmación de pago, shipping evidence, tracking, etc
@@ -237,8 +236,8 @@ class RefundAutomation:
         self,
         order_id: str,
         amount: float,
-        buyer_info: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        buyer_info: dict[str, Any],
+    ) -> dict[str, Any]:
         """Detecta posible fraude en reclamo."""
 
         logger.info(f"Checking for fraud signals in {order_id}")

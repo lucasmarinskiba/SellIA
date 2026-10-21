@@ -1,10 +1,10 @@
 """Commission Tracker — Track affiliates sales, payouts, performance."""
 
-from typing import Dict, List, Optional, Any
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ class AffiliateCommission:
     platform: str  # hotmart|meli|amazon|etc
     sale_date: str
     status: CommissionStatus = CommissionStatus.PENDING
-    approval_date: Optional[str] = None
-    payout_date: Optional[str] = None
+    approval_date: str | None = None
+    payout_date: str | None = None
     notes: str = ""
 
 
@@ -44,19 +44,19 @@ class AffiliatePerformance:
     total_commissions: float = 0.0
     conversion_rate: float = 0.0
     average_order_value: float = 0.0
-    active_products: List[str] = field(default_factory=list)
-    top_performing_product: Optional[str] = None
-    top_performing_method: Optional[str] = None
-    last_sale_date: Optional[str] = None
+    active_products: list[str] = field(default_factory=list)
+    top_performing_product: str | None = None
+    top_performing_method: str | None = None
+    last_sale_date: str | None = None
 
 
 class CommissionTracker:
     """Track affiliate commissions and performance."""
 
     def __init__(self):
-        self.commissions: Dict[str, AffiliateCommission] = {}
-        self.affiliate_performance: Dict[str, AffiliatePerformance] = {}
-        self.payout_history: List[Dict[str, Any]] = []
+        self.commissions: dict[str, AffiliateCommission] = {}
+        self.affiliate_performance: dict[str, AffiliatePerformance] = {}
+        self.payout_history: list[dict[str, Any]] = []
 
     def record_commission(
         self,
@@ -103,7 +103,7 @@ class CommissionTracker:
 
     def process_payout(
         self, affiliate_id: str, method: str = "bank_transfer"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process payout for affiliate."""
         affiliate_comms = [
             c
@@ -180,7 +180,7 @@ class CommissionTracker:
             )
             perf.top_performing_product = top_product
 
-    def get_affiliate_earnings(self, affiliate_id: str) -> Dict[str, Any]:
+    def get_affiliate_earnings(self, affiliate_id: str) -> dict[str, Any]:
         """Get total earnings for affiliate."""
         affiliate_comms = [
             c
@@ -210,7 +210,7 @@ class CommissionTracker:
             "approved_not_paid": earned - paid - pending,
         }
 
-    def get_leaderboard(self, period_days: int = 30, top_n: int = 10) -> List[Dict]:
+    def get_leaderboard(self, period_days: int = 30, top_n: int = 10) -> list[dict]:
         """Get top affiliates by earnings in period."""
         cutoff_date = datetime.utcnow() - timedelta(days=period_days)
         cutoff_iso = cutoff_date.isoformat()
@@ -242,7 +242,7 @@ class CommissionTracker:
 
         return leaderboard
 
-    def get_performance_report(self, affiliate_id: str) -> Dict[str, Any]:
+    def get_performance_report(self, affiliate_id: str) -> dict[str, Any]:
         """Get detailed performance report for affiliate."""
         perf = self.affiliate_performance.get(affiliate_id)
         earnings = self.get_affiliate_earnings(affiliate_id)
@@ -263,7 +263,7 @@ class CommissionTracker:
             "last_sale": perf.last_sale_date,
         }
 
-    def get_product_performance(self, product_id: str) -> Dict[str, Any]:
+    def get_product_performance(self, product_id: str) -> dict[str, Any]:
         """Get performance metrics for product across all affiliates."""
         product_comms = [
             c for c in self.commissions.values() if c.product_id == product_id

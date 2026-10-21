@@ -14,15 +14,22 @@ from __future__ import annotations
 
 import uuid
 from collections import Counter
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
-from .stats import MIN_FOR_TREND, MIN_TO_READ, Proportion, describe_change, median, quartiles
+from .stats import (
+    MIN_FOR_TREND,
+    MIN_TO_READ,
+    Proportion,
+    describe_change,
+    median,
+    quartiles,
+)
 
 logger = get_logger(__name__)
 
@@ -37,10 +44,13 @@ async def _business_ids(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]
 async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]:
     """The account's real numbers, each with its reading and its caveat."""
     from app.domains.channels.models import (
-        ChannelConnection, Conversation, Message, MessageDirection,
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
     business_ids = await _business_ids(db, user.id)
 
@@ -254,7 +264,7 @@ async def get_insights(db: AsyncSession, user, days: int = 30) -> dict[str, Any]
 
 def _headline(
     response: Proportion,
-    median_minutes: Optional[float],
+    median_minutes: float | None,
     this_week: int,
     last_week: int,
     asked: int,

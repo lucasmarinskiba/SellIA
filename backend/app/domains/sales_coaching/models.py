@@ -1,9 +1,12 @@
 """Phase 38: Sales Coaching."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import Column, DateTime, Float, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class CallCoaching(Base):
     __tablename__ = "call_coaching"
@@ -13,7 +16,7 @@ class CallCoaching(Base):
     call_id = Column(UUID(as_uuid=True), nullable=False)
     sentiment_score = Column(Float, default=0)
     coaching_tips = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ConversationAnalytics(Base):
     __tablename__ = "conversation_analytics"
@@ -23,7 +26,7 @@ class ConversationAnalytics(Base):
     talk_listen_ratio = Column(Float, default=0)
     objection_handling_score = Column(Float, default=0)
     recommendations = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class PerformanceCoaching(Base):
     __tablename__ = "performance_coaching"
@@ -32,4 +35,4 @@ class PerformanceCoaching(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     performance_score = Column(Float, default=0)
     coaching_plan = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

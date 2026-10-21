@@ -6,9 +6,10 @@ Maneja fallos transitorios de navegador, red, y APIs de LLM.
 
 import asyncio
 import random
-from typing import Callable, TypeVar, Optional, List
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import TypeVar
 
 from app.core.logger import get_logger
 
@@ -31,7 +32,7 @@ class RetryConfig:
     exponential_base: float = 2.0
     jitter: bool = True
     retryable_exceptions: tuple = (Exception,)
-    on_retry: Optional[Callable] = None
+    on_retry: Callable | None = None
 
 
 @dataclass
@@ -44,7 +45,7 @@ class CircuitBreakerConfig:
 class RetryHandler:
     """Handler de reintentos con circuit breaker."""
 
-    def __init__(self, config: Optional[RetryConfig] = None):
+    def __init__(self, config: RetryConfig | None = None):
         self.config = config or RetryConfig()
 
     async def execute(
@@ -90,13 +91,13 @@ class RetryHandler:
 class CircuitBreaker:
     """Circuit breaker para proteger contra fallos en cascada."""
 
-    def __init__(self, name: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[float] = None
+        self.last_failure_time: float | None = None
         self._lock = asyncio.Lock()
 
     async def call(self, func: Callable[..., T], *args, **kwargs) -> T:
@@ -117,7 +118,7 @@ class CircuitBreaker:
                 result = func(*args, **kwargs)
             await self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             await self._on_failure()
             raise
 
@@ -162,7 +163,6 @@ class CircuitBreaker:
 
 class CircuitBreakerOpen(Exception):
     """Excepción cuando el circuit breaker está abierto."""
-    pass
 
 
 # Circuit breakers por servicio

@@ -1,8 +1,9 @@
 """Mercado Libre listing sync connector."""
 
-from typing import Any
-import httpx
 import re
+from typing import Any
+
+import httpx
 
 from app.core.logger import get_logger
 from app.domains.seo_config.platform_sync_base import PlatformListingSyncConnector

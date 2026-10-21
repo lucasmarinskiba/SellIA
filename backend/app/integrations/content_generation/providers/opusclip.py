@@ -4,10 +4,10 @@ Pricing: ~$0.05/minute
 Strengths: Converts long videos into viral shorts, auto-captions, AI hooks
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class OpusClipProvider(BaseProvider):
         duration = config.duration_seconds or 60
         return 0.05 * (duration / 60)
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"opusclip-repurpose": 0.05}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -47,13 +47,12 @@ class OpusClipProvider(BaseProvider):
                 "prompt": config.prompt,
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.opus.pro/v1/clip",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.opus.pro/v1/clip",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             clips = data.get("clips", [])
             if not clips:

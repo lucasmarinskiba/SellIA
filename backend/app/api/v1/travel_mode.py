@@ -19,9 +19,11 @@ Sistema entonces:
 """
 
 import logging
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
+
 from app.core.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ async def set_travel_mode(
     notes: str = "",
     calendar_service=None,  # DI
     whatsapp_service=None,  # DI
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Usuario avisa que se va de viaje.
 
@@ -120,16 +122,16 @@ async def set_travel_mode(
             raise HTTPException(status_code=400, detail="Status debe ser 'on' o 'off'")
 
     except ValueError as e:
-        logger.error(f"Date parsing error: {str(e)}")
+        logger.error(f"Date parsing error: {e!s}")
         raise HTTPException(status_code=400, detail="Fechas inválidas. Usar YYYY-MM-DD")
 
     except Exception as e:
-        logger.error(f"Travel mode setup failed: {str(e)}")
+        logger.error(f"Travel mode setup failed: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/travel-mode/status")
-async def get_travel_mode_status(seller_id: str) -> Dict[str, Any]:
+async def get_travel_mode_status(seller_id: str) -> dict[str, Any]:
     """
     Obtiene status actual de travel mode.
 
@@ -169,12 +171,12 @@ async def get_travel_mode_status(seller_id: str) -> Dict[str, Any]:
             }
 
     except Exception as e:
-        logger.error(f"Get status failed: {str(e)}")
+        logger.error(f"Get status failed: {e!s}")
         return {"status": "error"}
 
 
 @router.get("/travel-mode/pending-items")
-async def get_pending_items_for_return(seller_id: str) -> Dict[str, Any]:
+async def get_pending_items_for_return(seller_id: str) -> dict[str, Any]:
     """
     Obtiene items pendientes mientras estaba de viaje (para cuando vuelve).
 
@@ -221,7 +223,7 @@ async def get_pending_items_for_return(seller_id: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Get pending failed: {str(e)}")
+        logger.error(f"Get pending failed: {e!s}")
         return {"status": "error"}
 
 
@@ -241,7 +243,7 @@ async def is_travel_mode_active(seller_id: str) -> bool:
     return False
 
 
-async def validate_travel_mode_for_scheduling(seller_id: str) -> Dict[str, Any]:
+async def validate_travel_mode_for_scheduling(seller_id: str) -> dict[str, Any]:
     """
     P1: Valida si se puede agendar una call.
     Si travel_mode está activo, retorna error.
@@ -261,7 +263,7 @@ async def _setup_travel_autoresponse(
     start_dt,
     end_dt,
     notes: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Configura auto-respuestas WhatsApp durante viaje."""
 
     # Auto-respuesta predefinida
@@ -289,13 +291,15 @@ async def _save_travel_mode_db(
     start_date=None,
     end_date=None,
     notes: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Guarda travel mode en DB real."""
 
     try:
-        from app.core.database.payment_models import TravelMode
-        from sqlalchemy import select
         import uuid
+
+        from sqlalchemy import select
+
+        from app.core.database.payment_models import TravelMode
 
         async with AsyncSessionLocal() as db:
             # Buscar registro existente
@@ -335,16 +339,17 @@ async def _save_travel_mode_db(
                 "is_active": travel_mode.is_active,
             }
     except Exception as e:
-        logger.error(f"Error saving travel mode: {str(e)}")
+        logger.error(f"Error saving travel mode: {e!s}")
         return {"status": "error", "error": str(e)}
 
 
-async def _get_travel_mode_db(seller_id: str) -> Dict[str, Any]:
+async def _get_travel_mode_db(seller_id: str) -> dict[str, Any]:
     """Obtiene travel mode del DB."""
 
     try:
-        from app.core.database.payment_models import TravelMode
         from sqlalchemy import select
+
+        from app.core.database.payment_models import TravelMode
 
         async with AsyncSessionLocal() as db:
             stmt = select(TravelMode).where(
@@ -364,5 +369,5 @@ async def _get_travel_mode_db(seller_id: str) -> Dict[str, Any]:
                 }
             return None
     except Exception as e:
-        logger.error(f"Error getting travel mode: {str(e)}")
+        logger.error(f"Error getting travel mode: {e!s}")
         return None

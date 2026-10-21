@@ -4,11 +4,12 @@ Quick-start onboarding: 5 min → operacional.
 Usuario responde 5 preguntas → Sistema deduce contexto → Auto-activa stack óptimo → VENDE.
 """
 
+import logging
+from datetime import datetime
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, List, Any
-from datetime import datetime
-import logging
 
 router = APIRouter(prefix="/api/v1/quickstart", tags=["onboarding"])
 logger = logging.getLogger(__name__)
@@ -27,10 +28,10 @@ class QuickstartResponse(BaseModel):
     """Respuesta: perfil + stack activado + status."""
     account_id: str
     industry_detected: str
-    agents_activated: List[str]
+    agents_activated: list[str]
     status: str  # "ready"
-    first_steps: List[str]
-    metrics_target_month_1: Dict[str, Any]
+    first_steps: list[str]
+    metrics_target_month_1: dict[str, Any]
 
 
 @router.post("/onboarding", response_model=QuickstartResponse)
@@ -108,7 +109,7 @@ async def quickstart_onboarding(input_data: QuickstartInput):
         )
 
     except Exception as e:
-        logger.error(f"Error en quickstart: {str(e)}")
+        logger.error(f"Error en quickstart: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

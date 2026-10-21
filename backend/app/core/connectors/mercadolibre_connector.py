@@ -1,8 +1,10 @@
 """MercadoLibre connector — Listar, vender, tracking automático."""
 
-import aiohttp
 import logging
-from typing import Dict, List, Any
+from typing import Any
+
+import aiohttp
+
 from .base_connector import BaseConnector, ConnectorType
 
 logger = logging.getLogger(__name__)
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 class MercadoLibreConnector(BaseConnector):
     """MercadoLibre marketplace integration."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         super().__init__("mercadolibre", ConnectorType.MARKETPLACE, config)
         self.base_url = "https://api.mercadolibre.com"
         self.access_token = config.get("access_token")
@@ -30,10 +32,10 @@ class MercadoLibreConnector(BaseConnector):
                         return True
                     return False
         except Exception as e:
-            logger.error(f"MercadoLibre auth failed: {str(e)}")
+            logger.error(f"MercadoLibre auth failed: {e!s}")
             return False
 
-    async def list_products(self) -> List[Dict[str, Any]]:
+    async def list_products(self) -> list[dict[str, Any]]:
         """Lista productos del vendedor."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -45,10 +47,10 @@ class MercadoLibreConnector(BaseConnector):
                         return data.get("results", [])
                     return []
         except Exception as e:
-            logger.error(f"Error listing products: {str(e)}")
+            logger.error(f"Error listing products: {e!s}")
             return []
 
-    async def create_listing(self, product: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_listing(self, product: dict[str, Any]) -> dict[str, Any]:
         """Crea listing en MercadoLibre."""
         try:
             payload = {
@@ -77,10 +79,10 @@ class MercadoLibreConnector(BaseConnector):
                         return {"status": "created", "listing_id": data.get("id")}
                     return {"status": "error", "message": "Failed to create listing"}
         except Exception as e:
-            logger.error(f"Error creating listing: {str(e)}")
+            logger.error(f"Error creating listing: {e!s}")
             return {"status": "error", "error": str(e)}
 
-    async def get_orders(self) -> List[Dict[str, Any]]:
+    async def get_orders(self) -> list[dict[str, Any]]:
         """Obtiene órdenes."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -92,19 +94,19 @@ class MercadoLibreConnector(BaseConnector):
                         return data.get("results", [])
                     return []
         except Exception as e:
-            logger.error(f"Error fetching orders: {str(e)}")
+            logger.error(f"Error fetching orders: {e!s}")
             return []
 
-    async def send_message(self, recipient: str, message: str) -> Dict[str, Any]:
+    async def send_message(self, recipient: str, message: str) -> dict[str, Any]:
         """Envía mensaje a comprador (vía MercadoLibre)."""
         # TODO: usar /messages API de MercadoLibre
         return {"status": "not_implemented"}
 
-    async def create_campaign(self, campaign: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_campaign(self, campaign: dict[str, Any]) -> dict[str, Any]:
         """MercadoLibre no tiene ads API expuesta fácilmente."""
         return {"status": "not_supported"}
 
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """Obtiene métricas de listings."""
         try:
             orders = await self.get_orders()
@@ -119,5 +121,5 @@ class MercadoLibreConnector(BaseConnector):
                 "platform": "mercadolibre",
             }
         except Exception as e:
-            logger.error(f"Error fetching metrics: {str(e)}")
+            logger.error(f"Error fetching metrics: {e!s}")
             return {}

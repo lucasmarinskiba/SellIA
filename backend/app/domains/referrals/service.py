@@ -2,12 +2,12 @@
 Referral Service
 """
 
-import uuid
 import secrets
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.domains.referrals.models import ReferralCode, ReferralTracking
 
@@ -28,7 +28,7 @@ async def get_or_create_referral_code(db: AsyncSession, user_id: uuid.UUID) -> R
     return code
 
 
-async def track_click(db: AsyncSession, code_str: str, ip: Optional[str], ua: Optional[str]) -> Optional[ReferralTracking]:
+async def track_click(db: AsyncSession, code_str: str, ip: str | None, ua: str | None) -> ReferralTracking | None:
     result = await db.execute(select(ReferralCode).where(ReferralCode.code == code_str))
     code = result.scalar_one_or_none()
     if not code:
@@ -54,7 +54,7 @@ async def track_signup(db: AsyncSession, tracking_id: uuid.UUID, new_user_id: uu
         return
 
     track.referred_user_id = new_user_id
-    track.signed_up_at = datetime.now(timezone.utc)
+    track.signed_up_at = datetime.now(UTC)
 
     # Update referrer stats
     code_result = await db.execute(select(ReferralCode).where(ReferralCode.id == track.referral_code_id))
@@ -77,7 +77,7 @@ async def track_conversion(db: AsyncSession, referred_user_id: uuid.UUID, amount
     if not track:
         return
 
-    track.converted_at = datetime.now(timezone.utc)
+    track.converted_at = datetime.now(UTC)
     track.first_purchase_amount = amount
     track.reward_amount = min(amount * 0.20, 50)  # 20% up to $50
     track.reward_status = "pending"

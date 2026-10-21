@@ -2,18 +2,19 @@
 Reviews & Testimonials — Sistema de reseñas, moderation, spam detection.
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/reviews", tags=["reviews"])
 logger = logging.getLogger(__name__)
 
 # Mock reviews DB
-_REVIEWS_DB: Dict[str, Any] = {}
+_REVIEWS_DB: dict[str, Any] = {}
 _REVIEW_COUNTER = 0
 
 
@@ -98,7 +99,7 @@ async def create_review(
         }
 
     except Exception as e:
-        logger.error(f"Error creando reseña: {str(e)}")
+        logger.error(f"Error creando reseña: {e!s}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

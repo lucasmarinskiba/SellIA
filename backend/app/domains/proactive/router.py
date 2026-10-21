@@ -1,21 +1,20 @@
 """Proactive Outreach Engine API Router"""
 
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
-from app.domains.proactive.service import ProactiveService
 from app.domains.proactive.schemas import (
     OutreachOpportunityResponse,
     OutreachRuleCreate,
-    OutreachRuleUpdate,
     OutreachRuleResponse,
+    OutreachRuleUpdate,
 )
+from app.domains.proactive.service import ProactiveService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/proactive", tags=["proactive"])
 
@@ -27,8 +26,8 @@ router = APIRouter(prefix="/proactive", tags=["proactive"])
 @router.get("/opportunities", response_model=list[OutreachOpportunityResponse])
 async def list_opportunities(
     business_id: UUID,
-    status: Optional[str] = Query(None, description="Filter by status"),
-    priority: Optional[str] = Query(None, description="Filter by priority"),
+    status: str | None = Query(None, description="Filter by status"),
+    priority: str | None = Query(None, description="Filter by priority"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),

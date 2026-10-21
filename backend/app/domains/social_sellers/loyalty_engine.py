@@ -5,23 +5,22 @@ y acciones de fidelización para clientes.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Any, List, Dict
-from decimal import Decimal
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func, desc, and_, or_
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.social_sellers.models import (
-    SocialSeller,
-    SellerCustomerRelationship,
-    CustomerLoyaltyBadge,
-    CustomerBadgeAssignment,
-)
+from app.core.logger import get_logger
 from app.domains.channels.models import Conversation
 from app.domains.orders.models import Order
-from app.domains.retention.models import CustomerSegment, CustomerSegmentType
-from app.core.logger import get_logger
+from app.domains.retention.models import CustomerSegment
+from app.domains.social_sellers.models import (
+    CustomerBadgeAssignment,
+    CustomerLoyaltyBadge,
+    SellerCustomerRelationship,
+    SocialSeller,
+)
 
 logger = get_logger(__name__)
 
@@ -94,7 +93,7 @@ class LoyaltyEngine:
         self,
         business_id: uuid.UUID,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Devuelve los mejores clientes ordenados por LTV, con badges."""
         await self._ensure_default_badges(business_id)
 
@@ -150,7 +149,7 @@ class LoyaltyEngine:
             )
         )
         badge_rows = badge_result.all()
-        customer_badges: Dict[uuid.UUID, List[Dict[str, str]]] = {}
+        customer_badges: dict[uuid.UUID, list[dict[str, str]]] = {}
         for br in badge_rows:
             customer_badges.setdefault(br.customer_id, []).append({
                 'badge_type': br.badge_type,
@@ -180,7 +179,7 @@ class LoyaltyEngine:
         self,
         business_id: uuid.UUID,
         customer_id: uuid.UUID,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Evalúa criterios y asigna badges ganados a un cliente."""
         await self._ensure_default_badges(business_id)
 
@@ -253,13 +252,7 @@ class LoyaltyEngine:
             criteria = badge.criteria or {}
             earned = False
 
-            if badge.badge_type == 'champion' and total_purchases >= criteria.get('min_purchases', 5):
-                earned = True
-            elif badge.badge_type == 'big_spender' and max_single_order >= criteria.get('min_single_purchase', 500):
-                earned = True
-            elif badge.badge_type == 'regular' and distinct_months >= criteria.get('min_months', 6):
-                earned = True
-            elif badge.badge_type == 'comeback_kid' and comeback:
+            if badge.badge_type == 'champion' and total_purchases >= criteria.get('min_purchases', 5) or badge.badge_type == 'big_spender' and max_single_order >= criteria.get('min_single_purchase', 500) or badge.badge_type == 'regular' and distinct_months >= criteria.get('min_months', 6) or badge.badge_type == 'comeback_kid' and comeback:
                 earned = True
             elif badge.badge_type == 'fan_1':
                 # Fan #1 se asigna solo si es el top LTV del negocio (evaluado por separado)
@@ -327,7 +320,7 @@ class LoyaltyEngine:
     async def get_customer_badges(
         self,
         customer_id: uuid.UUID,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Devuelve todos los badges de un cliente."""
         result = await self.db.execute(
             select(
@@ -357,7 +350,7 @@ class LoyaltyEngine:
     async def get_loyalty_segments(
         self,
         business_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Devuelve segmentación RFM: Champions, Loyal, Potential, New, At Risk, Lost."""
         result = await self.db.execute(
             select(
@@ -391,7 +384,7 @@ class LoyaltyEngine:
         business_id: uuid.UUID,
         customer_id: uuid.UUID,
         action_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Registra una acción de fidelización."""
         valid_actions = {'send_gift', 'offer_vip', 'request_testimonial', 'invite_referral'}
         if action_type not in valid_actions:
@@ -410,5 +403,5 @@ class LoyaltyEngine:
             'business_id': str(business_id),
             'customer_id': str(customer_id),
             'message': action_messages.get(action_type, 'Acción registrada.'),
-            'created_at': datetime.now(timezone.utc).isoformat(),
+            'created_at': datetime.now(UTC).isoformat(),
         }

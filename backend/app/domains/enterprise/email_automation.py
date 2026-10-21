@@ -1,22 +1,20 @@
 """Email + Proposal Automation Services (Phase 28)."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 import numpy as np
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.email_automation import (
-    SendTimePrediction,
     EmailOpenTracking,
     ProposalDraft,
     ProposalView,
-    CompetitorMention,
-    CompetitorResponse,
+    SendTimePrediction,
 )
 from celery_app import celery_app
-import logging
 
 try:
     from anthropic import Anthropic
@@ -33,7 +31,7 @@ class SendTimeRecommendation:
     person_id: str
     recommended_time: datetime
     predicted_open_probability: float  # 0-100
-    alternatives: List[datetime]
+    alternatives: list[datetime]
     confidence: float
 
 
@@ -52,8 +50,8 @@ class ProposalDraftResult:
 class CompetitorDetectionResult:
     """Competitor mention detection."""
 
-    competitors: List[str]
-    mentions: List[Dict[str, Any]]
+    competitors: list[str]
+    mentions: list[dict[str, Any]]
     has_threats: bool
 
 
@@ -116,7 +114,7 @@ class SendTimeOptimizer:
         return recommendation
 
     def _score_candidates(
-        self, person_id: str, subject: str, body: str, candidates: List[datetime]
+        self, person_id: str, subject: str, body: str, candidates: list[datetime]
     ) -> np.ndarray:
         """Score candidate send times using ML model."""
 
@@ -130,7 +128,7 @@ class SendTimeOptimizer:
         # Placeholder: return random scores
         return np.random.uniform(0.4, 0.9, len(candidates))
 
-    def _get_default_send_times(self, candidates: List[datetime]) -> tuple:
+    def _get_default_send_times(self, candidates: list[datetime]) -> tuple:
         """Get default send times (business hours)."""
 
         default_times = [
@@ -179,11 +177,11 @@ class SendTimeOptimizer:
 class ProposalGenerator:
     """AI-powered proposal generation using Claude."""
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 
-    def generate_proposal(self, deal_id: str, options: Optional[Dict[str, Any]] = None) -> ProposalDraftResult:
+    def generate_proposal(self, deal_id: str, options: dict[str, Any] | None = None) -> ProposalDraftResult:
         """Generate AI proposal for deal."""
 
         if not self.claude:
@@ -191,7 +189,9 @@ class ProposalGenerator:
             return self._generate_template_proposal(deal_id)
 
         try:
-            from app.domains.crm.models import Deal  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            from app.domains.crm.models import (
+                Deal,  # NOTE: app.models.deal never existed -- redirected to the real Deal model used elsewhere in the app (same app.core.database.Base)
+            )
 
             # Gather context
             deal = self.db.query(Deal).filter(Deal.id == deal_id).first()
@@ -242,7 +242,7 @@ class ProposalGenerator:
             logger.error(f"Error generating proposal: {e}")
             return self._generate_template_proposal(deal_id)
 
-    def _build_proposal_prompt(self, deal: Any, options: Dict[str, Any]) -> str:
+    def _build_proposal_prompt(self, deal: Any, options: dict[str, Any]) -> str:
         """Build Claude prompt for proposal generation."""
 
         tone = options.get("tone", "professional")
@@ -329,7 +329,7 @@ class CompetitorDetector:
         "microsoft teams", "slack", "zoom",
     ]
 
-    def __init__(self, db: Session, claude_api_key: Optional[str] = None):
+    def __init__(self, db: Session, claude_api_key: str | None = None):
         self.db = db
         self.claude = Anthropic(api_key=claude_api_key) if Anthropic and claude_api_key else None
 

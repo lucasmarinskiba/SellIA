@@ -1,8 +1,7 @@
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Optional
 import random
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 
 
 class MetricType(str, Enum):
@@ -30,7 +29,7 @@ class MetricValue:
     timestamp: datetime
     value: float
     unit: str
-    trend: Optional[float] = None  # change %
+    trend: float | None = None  # change %
 
 
 @dataclass
@@ -39,7 +38,7 @@ class KPICard:
     metric_type: MetricType
     current_value: float
     unit: str
-    target: Optional[float] = None
+    target: float | None = None
     trend: float = 0.0  # percentage
     trend_direction: str = "neutral"  # up, down, neutral
     last_updated: datetime = field(default_factory=datetime.now)

@@ -4,20 +4,18 @@ Growth FOOM Routes: Acquisition channels endpoint
 
 import re
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Query
 
 from app.core.database import AsyncSessionLocal
-from app.core.deps import get_current_user
 from app.domains.fomo.growth_foom import (
-    SeoFOOMService,
-    ViralLoopsService,
+    BrandBuildingService,
     CaseStudyFOOMService,
+    PartnershipFOOMService,
     PressAndPRService,
     ProductLedGrowthService,
-    PartnershipFOOMService,
+    SeoFOOMService,
+    ViralLoopsService,
     ViralMechanicsService,
-    BrandBuildingService,
 )
 
 router = APIRouter(prefix="/fomo/growth", tags=["growth-foom"])
@@ -50,7 +48,7 @@ async def get_seo_content_calendar(
     return {
         "plan": plan,
         "total_pieces": len(plan),
-        "estimated_traffic": f"+30-50% organic traffic",
+        "estimated_traffic": "+30-50% organic traffic",
         "timeline": f"{days} days",
     }
 

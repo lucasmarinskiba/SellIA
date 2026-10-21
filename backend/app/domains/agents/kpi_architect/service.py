@@ -1,19 +1,18 @@
-import uuid
 import json
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
+import uuid
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.kpi_architect.models import KPIDashboard, KPIWidget
-from app.domains.businesses.models import Business
 from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.agents.kpi_architect.models import KPIDashboard, KPIWidget
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
+from app.domains.businesses.models import Business
 
 logger = get_logger(__name__)
 
@@ -71,7 +70,7 @@ class KPIArchitectService:
         logger.info(f"KPI dashboard {dashboard.id} generated with {len(widgets)} widgets")
         return dashboard
 
-    async def _suggest_kpis(self, business: Business) -> List[Dict[str, Any]]:
+    async def _suggest_kpis(self, business: Business) -> list[dict[str, Any]]:
         ctx = await get_agent_prompt_context(self.db, business.id)
         context_block = format_business_context_for_prompt(ctx)
 
@@ -151,7 +150,7 @@ class KPIArchitectService:
         ]
         return defaults
 
-    async def get_dashboard_data(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Dict[str, Any]:
+    async def get_dashboard_data(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any]:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             raise ValueError("Dashboard not found")
@@ -193,7 +192,7 @@ class KPIArchitectService:
         else:
             return {"value": 0}
 
-    async def check_alerts(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> List[Dict[str, Any]]:
+    async def check_alerts(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> list[dict[str, Any]]:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             raise ValueError("Dashboard not found")
@@ -211,11 +210,7 @@ class KPIArchitectService:
                 triggered = False
                 condition = alert.get("condition")
                 threshold = alert.get("value")
-                if condition == "gt" and value > threshold:
-                    triggered = True
-                elif condition == "lt" and value < threshold:
-                    triggered = True
-                elif condition == "eq" and value == threshold:
+                if condition == "gt" and value > threshold or condition == "lt" and value < threshold or condition == "eq" and value == threshold:
                     triggered = True
                 if triggered:
                     alerts.append({
@@ -228,20 +223,20 @@ class KPIArchitectService:
                     })
         return alerts
 
-    async def list_dashboards(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    async def list_dashboards(self, business_id: uuid.UUID, limit: int = 50, offset: int = 0) -> dict[str, Any]:
         result = await self.db.execute(
             select(KPIDashboard).where(KPIDashboard.business_id == business_id)
         )
         dashboards = result.scalars().all()
         return {"total": len(dashboards), "dashboards": dashboards[offset:offset + limit]}
 
-    async def get_dashboard(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Optional[KPIDashboard]:
+    async def get_dashboard(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> KPIDashboard | None:
         dashboard = await self.db.get(KPIDashboard, dashboard_id)
         if not dashboard or dashboard.business_id != business_id:
             return None
         return dashboard
 
-    async def get_dashboard_config(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+    async def get_dashboard_config(self, dashboard_id: uuid.UUID, business_id: uuid.UUID) -> dict[str, Any] | None:
         dashboard = await self.get_dashboard(dashboard_id, business_id)
         if not dashboard:
             return None

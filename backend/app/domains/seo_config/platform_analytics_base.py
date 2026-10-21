@@ -1,8 +1,8 @@
 """Base interface for platform analytics connectors."""
 
 from abc import ABC, abstractmethod
-from typing import Any
 from datetime import date
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -31,9 +31,7 @@ class PlatformAnalyticsConnector(ABC):
         Returns:
             Dict with keys: impressions, clicks, conversions, revenue (optional)
         """
-        pass
 
     @abstractmethod
     async def validate_credentials(self) -> bool:
         """Verify API credentials are valid."""
-        pass

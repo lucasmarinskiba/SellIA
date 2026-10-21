@@ -1,18 +1,21 @@
 """Location inventory API endpoints."""
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from uuid import UUID
-from pydantic import BaseModel
-from typing import Optional, List
 
-from app.core.database import get_db
 from app.core.business_access import get_owned_business, get_owned_location
+from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.inventory.inventory_models import LowStockAlert
+from app.domains.inventory.inventory_service import (
+    FulfillmentRoutingService,
+    LocationInventoryService,
+)
 from app.domains.users.models import User
-from app.domains.inventory.inventory_service import LocationInventoryService, FulfillmentRoutingService
-from app.domains.inventory.inventory_models import LocationInventory, LowStockAlert
 
 router = APIRouter(prefix="", tags=["inventory"])
 
@@ -32,8 +35,8 @@ class StockUpdateRequest(BaseModel):
     product_id: str
     quantity_change: int
     movement_type: str  # stock_in, stock_out, demo_checked, reorder, adjustment
-    reason: Optional[str] = None
-    staff_id: Optional[UUID] = None
+    reason: str | None = None
+    staff_id: UUID | None = None
 
 
 class DemoCheckRequest(BaseModel):
@@ -185,7 +188,7 @@ async def check_demo_stock(
 @router.get("/locations/{location_id}/stock-movements")
 async def get_stock_history(
     location_id: UUID,
-    product_id: Optional[str] = Query(None),
+    product_id: str | None = Query(None),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -230,7 +233,7 @@ async def get_stock_history(
 @router.get("/locations/{location_id}/low-stock-alerts")
 async def get_low_stock_alerts(
     location_id: UUID,
-    acknowledged: Optional[bool] = Query(None),
+    acknowledged: bool | None = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:

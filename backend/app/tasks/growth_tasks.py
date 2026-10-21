@@ -11,15 +11,14 @@ These tasks work while the user sleeps to:
 - Optimize campaigns based on performance
 """
 
-import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from celery import shared_task
-from sqlalchemy import select, func, desc
+from sqlalchemy import select
 
+from app.core.async_bridge import run_async
 from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
-from app.core.async_bridge import run_async
 
 logger = get_logger(__name__)
 
@@ -32,9 +31,12 @@ def inbound_content_generator():
 
 async def _inbound_content_generator():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus, GrowthCampaignType
+        from app.domains.growth.models import (
+            GrowthCampaign,
+            GrowthCampaignStatus,
+            GrowthCampaignType,
+        )
         from app.domains.growth.seo_pipeline import SEOPipeline
-        from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
 
         # Find active SEO campaigns
         result = await db.execute(
@@ -60,7 +62,7 @@ async def _inbound_content_generator():
                         campaign_id=campaign.id,
                     )
                     # Schedule for next week
-                    publish_at = datetime.now(timezone.utc) + timedelta(days=7)
+                    publish_at = datetime.now(UTC) + timedelta(days=7)
                     await pipeline.schedule_publication(content.id, publish_at, "blog")
                     campaign.content_published += 1
 
@@ -78,8 +80,8 @@ def lead_magnet_distributor():
 
 async def _lead_magnet_distributor():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import InboundLead, NurturingStage, LeadMagnet
         from app.domains.growth.lead_magnet_funnel import LeadMagnetEngine
+        from app.domains.growth.models import InboundLead, NurturingStage
 
         # Find new leads with lead magnet source that haven't received it yet
         result = await db.execute(
@@ -121,7 +123,6 @@ def cold_lead_nurturer():
 async def _cold_lead_nurturer():
     async with AsyncSessionLocal() as db:
         from app.domains.growth.models import InboundLead, NurturingStage
-        from app.domains.growth.value_outreach import ValueFirstOutreach
         from app.domains.outreach.service import FatigueScoringService
 
         # Find cold leads
@@ -177,11 +178,11 @@ def social_proof_collector():
 
 async def _social_proof_collector():
     async with AsyncSessionLocal() as db:
-        from app.domains.orders.models import Order, OrderStatus
         from app.domains.growth.social_proof import SocialProofEngine
+        from app.domains.orders.models import Order, OrderStatus
 
-        three_days_ago = datetime.now(timezone.utc) - timedelta(days=3)
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        three_days_ago = datetime.now(UTC) - timedelta(days=3)
+        seven_days_ago = datetime.now(UTC) - timedelta(days=7)
 
         result = await db.execute(
             select(Order).where(
@@ -228,8 +229,8 @@ def ugc_request_sender():
 
 async def _ugc_request_sender():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.ugc_collector import UGCCollector
         from app.domains.growth.models import UgcRequest, UgcRequestStatus
+        from app.domains.growth.ugc_collector import UGCCollector
 
         # Send pending UGC requests
         result = await db.execute(
@@ -261,8 +262,8 @@ def referral_loop_evaluator():
 
 async def _referral_loop_evaluator():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.viral_referral import ViralReferralEngine
         from app.domains.businesses.models import Business
+        from app.domains.growth.viral_referral import ViralReferralEngine
 
         result = await db.execute(select(Business.id))
         business_ids = [r[0] for r in result.all()]
@@ -293,8 +294,8 @@ def community_engagement_scanner():
 async def _community_engagement_scanner():
     """Process pending comments from social platforms."""
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.comment_responder import CommentResponder
         from app.domains.businesses.models import Business
+        from app.domains.growth.comment_responder import CommentResponder
 
         result = await db.execute(select(Business.id))
         business_ids = [r[0] for r in result.all()]
@@ -321,8 +322,8 @@ def growth_campaign_optimizer():
 
 async def _growth_campaign_optimizer():
     async with AsyncSessionLocal() as db:
-        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus
         from app.domains.growth.inbound_engine import InboundGrowthEngine
+        from app.domains.growth.models import GrowthCampaign, GrowthCampaignStatus
 
         result = await db.execute(
             select(GrowthCampaign).where(

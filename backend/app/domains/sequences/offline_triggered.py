@@ -2,7 +2,6 @@
 
 import logging
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -60,7 +59,7 @@ class OfflineSequenceService:
     def get_sequence_for_offline_event(
         offline_conversion: OfflineConversion,
         purchased: bool = False
-    ) -> Optional[OfflineSequenceTemplate]:
+    ) -> OfflineSequenceTemplate | None:
         """Determine sequence based on visit outcome."""
         visit_type = offline_conversion.visit_type
 
@@ -85,8 +84,8 @@ class OfflineSequenceService:
         business_id: UUID,
         offline_conversion_id: UUID,
         sequence_template: OfflineSequenceTemplate,
-        delay_hours: Optional[int] = None,
-        db: Optional[Session] = None
+        delay_hours: int | None = None,
+        db: Session | None = None
     ) -> dict:
         """Create automation execution for offline-triggered sequence."""
         if not db:

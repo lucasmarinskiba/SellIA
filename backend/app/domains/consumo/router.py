@@ -4,26 +4,25 @@ Consumo Router
 User-facing endpoints for Consumo dashboard inside Configuración.
 """
 
-from typing import Annotated, Optional
-from uuid import UUID
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.consumo import service as consumo_service
 from app.domains.consumo.schemas import (
     CostAttributionSummary,
-    QualityGateConfigOut,
-    QualityGateConfigUpdate,
-    PlanRecommendationOut,
-    OnboardingProgressOut,
     OnboardingHelpRequest,
     OnboardingHelpResponse,
+    OnboardingProgressOut,
+    PlanRecommendationOut,
+    QualityGateConfigOut,
+    QualityGateConfigUpdate,
     UserMarginOut,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/consumo", tags=["consumo"])
 

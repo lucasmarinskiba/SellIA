@@ -1,12 +1,13 @@
 """SEO Config service."""
 
 from uuid import UUID
-from sqlalchemy import select, and_
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.seo_config.brain_toggles import SEO_POSITIONING, set_brain_capability
-from app.domains.seo_config.models import SEOConfig, PlatformSEOStatus, PublicationLink
 from app.domains.integrations.integration_models import IntegrationConnection
+from app.domains.seo_config.brain_toggles import SEO_POSITIONING, set_brain_capability
+from app.domains.seo_config.models import PlatformSEOStatus, PublicationLink, SEOConfig
 
 
 class SEOConfigService:

@@ -11,10 +11,22 @@ Regla de integridad: toda aplicación de estrategia debe declarar
 (el dato real capturado en ese momento). Sin eso, no se registra:
 FOMO fabricado destruye confianza y viola la estrategia de Transparencia.
 """
-import uuid
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
 from app.db.models import Base
 
 
@@ -48,7 +60,7 @@ class FOMOStrategyApplication(Base):
     # Mensaje generado a partir del dato real
     generated_message = Column(Text, nullable=True)
 
-    applied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    applied_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class FOMOStrategyOutcome(Base):
@@ -66,7 +78,7 @@ class FOMOStrategyOutcome(Base):
     # Señal de confianza: si el usuario reporta la FOMO como genuina o forzada
     perceived_as_genuine = Column(Boolean, nullable=True)
 
-    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    measured_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 class FOMOStrategyIntelligence(Base):
@@ -85,4 +97,4 @@ class FOMOStrategyIntelligence(Base):
     confidence_level = Column(String(20), default="low")  # low, medium, high (según sample_size)
 
     recommendation = Column(Text, nullable=True)
-    last_updated = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    last_updated = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

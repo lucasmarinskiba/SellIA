@@ -1,11 +1,14 @@
 """Phases 23-24: Entrepreneurship Coach & Adaptive Architecture."""
 
-from fastapi import APIRouter, Query, Body
-from typing import Dict, Any
 import logging
+from typing import Any
 
-from app.domains.coaching.entrepreneur_coach import EntrepreneurCoachAgent, EntrepreneurStage
-from app.domains.personalization.adaptive_engine import AdaptiveEngine, UserSegment
+from fastapi import APIRouter, Body, Query
+
+from app.domains.coaching.entrepreneur_coach import (
+    EntrepreneurCoachAgent,
+)
+from app.domains.personalization.adaptive_engine import AdaptiveEngine
 
 router = APIRouter(tags=["coaching-adaptive"])
 logger = logging.getLogger(__name__)
@@ -26,7 +29,7 @@ async def assess_entrepreneur(
     leads_generated: int = Query(0),
     deals_closed: int = Query(0),
     revenue: float = Query(0.0),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Assess entrepreneur stage and create coaching profile."""
 
     business_data = {
@@ -54,7 +57,7 @@ async def assess_entrepreneur(
 
 
 @router.get("/coach/daily-coaching/{user_id}")
-async def get_daily_coaching(user_id: str) -> Dict[str, Any]:
+async def get_daily_coaching(user_id: str) -> dict[str, Any]:
     """Get personalized daily coaching message."""
 
     message = coach_agent.get_daily_coaching(user_id)
@@ -74,7 +77,7 @@ async def get_daily_coaching(user_id: str) -> Dict[str, Any]:
 
 
 @router.get("/coach/milestones/{user_id}")
-async def get_milestones(user_id: str) -> Dict[str, Any]:
+async def get_milestones(user_id: str) -> dict[str, Any]:
     """Track entrepreneur milestones."""
 
     milestones = coach_agent.get_milestone_tracking(user_id)
@@ -90,7 +93,7 @@ async def get_milestones(user_id: str) -> Dict[str, Any]:
 async def emergency_support(
     user_id: str,
     issue: str = Query(...)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Emergency support for struggling entrepreneurs."""
 
     # Emergency scenarios
@@ -130,7 +133,7 @@ async def analyze_user_needs(
     leads_generated: int = Query(0),
     deals_closed: int = Query(0),
     hours_since_last_activity: int = Query(999)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Analyze user and determine personalization strategy."""
 
     business_metrics = {
@@ -156,7 +159,7 @@ async def analyze_user_needs(
 
 
 @router.get("/adaptive/personalization/{user_id}")
-async def get_personalization_summary(user_id: str) -> Dict[str, Any]:
+async def get_personalization_summary(user_id: str) -> dict[str, Any]:
     """Get full personalization summary for user."""
 
     summary = adaptive_engine.get_personalization_summary(user_id)
@@ -177,8 +180,8 @@ async def get_personalization_summary(user_id: str) -> Dict[str, Any]:
 async def personalize_response(
     user_id: str = Query(...),
     endpoint_name: str = Query(...),
-    base_response: Dict[str, Any] = Body(...)
-) -> Dict[str, Any]:
+    base_response: dict[str, Any] = Body(...)
+) -> dict[str, Any]:
     """Personalize any endpoint response based on user context."""
 
     adapted = adaptive_engine.adapt_endpoint_response(user_id, endpoint_name, base_response)
@@ -198,7 +201,7 @@ async def personalize_response(
 
 
 @router.get("/adaptive/segment-features/{user_id}")
-async def get_segment_features(user_id: str) -> Dict[str, Any]:
+async def get_segment_features(user_id: str) -> dict[str, Any]:
     """Get features and settings for user's segment."""
 
     if user_id not in adaptive_engine.user_profiles:

@@ -1,26 +1,25 @@
 """Intelligence Router — Emotion & Negotiation APIs"""
 
 from uuid import UUID
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.emotion_engine import EmotionDetector, EmotionTimeline
 from app.domains.agents.negotiation_engine import NegotiationEngine
 from app.domains.agents.schemas_intelligence import (
     EmotionDetectRequest,
     EmotionDetectResponse,
-    EmotionTimelineResponse,
     EmotionTimelineItem,
-    NegotiationStartRequest,
+    EmotionTimelineResponse,
     NegotiationOfferRequest,
     NegotiationResponse,
+    NegotiationStartRequest,
     NegotiationStateResponse,
 )
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/intelligence", tags=["intelligence"])
 
@@ -30,7 +29,7 @@ router = APIRouter(prefix="/intelligence", tags=["intelligence"])
 @router.post("/emotion/detect", response_model=EmotionDetectResponse)
 async def detect_emotion(
     data: EmotionDetectRequest,
-    business_id: Optional[UUID] = None,
+    business_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

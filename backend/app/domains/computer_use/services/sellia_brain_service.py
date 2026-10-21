@@ -9,9 +9,9 @@ Conecta: BrainIntegrationLayer → Computer Use Sessions
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,10 @@ class ActionContext:
         self,
         platform: Platform,
         stage: SalesStage,
-        customer_profile: Optional[Dict[str, Any]] = None,
-        product_info: Optional[Dict[str, Any]] = None,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-        objections: Optional[List[str]] = None,
+        customer_profile: dict[str, Any] | None = None,
+        product_info: dict[str, Any] | None = None,
+        conversation_history: list[dict[str, str]] | None = None,
+        objections: list[str] | None = None,
     ):
         self.platform = platform
         self.stage = stage
@@ -59,7 +59,7 @@ class ActionContext:
         self.objections = objections or []
         self.timestamp = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "platform": self.platform.value,
             "stage": self.stage.value,
@@ -79,10 +79,10 @@ class StrategyRecommendation:
         strategy_name: str,
         stage: SalesStage,
         confidence: float,
-        tactics: List[str],
+        tactics: list[str],
         prompt_template: str,
         reasoning: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.strategy_id = strategy_id
         self.strategy_name = strategy_name
@@ -94,7 +94,7 @@ class StrategyRecommendation:
         self.metadata = metadata or {}
         self.generated_at = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "strategy_id": self.strategy_id,
             "strategy_name": self.strategy_name,
@@ -150,13 +150,13 @@ class SellIABrainService:
     }
 
     def __init__(self):
-        self.cache: Dict[str, Any] = {}
+        self.cache: dict[str, Any] = {}
         self.logger = logger
 
     async def get_strategy(
         self,
         context: ActionContext,
-    ) -> Optional[StrategyRecommendation]:
+    ) -> StrategyRecommendation | None:
         """
         Consulta Brain para obtener estrategia óptima.
 
@@ -244,9 +244,9 @@ Template:
 
     async def score_lead(
         self,
-        conversation: List[Dict[str, str]],
-        customer_profile: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        conversation: list[dict[str, str]],
+        customer_profile: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Scoring automático de lead (hot/warm/cold).
 
@@ -288,7 +288,7 @@ Template:
         self,
         message: str,
         context: ActionContext,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detecta señales de compra en mensaje.
 
@@ -326,9 +326,9 @@ Template:
 
     def _rank_strategies(
         self,
-        candidates: List[str],
+        candidates: list[str],
         context: ActionContext,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Elige mejor estrategia de candidatos."""
         if not candidates:
             return None
@@ -378,7 +378,7 @@ Listen before selling. Ask permission before pitching.
 
 
 # Singleton instance
-_brain_service: Optional[SellIABrainService] = None
+_brain_service: SellIABrainService | None = None
 
 
 def get_brain_service() -> SellIABrainService:

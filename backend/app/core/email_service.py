@@ -8,7 +8,6 @@ las comunicaciones (verify-email, reset-password, etc.).
 """
 
 import os
-from typing import Optional
 
 from app.core.logger import get_logger
 
@@ -21,9 +20,9 @@ async def send_email(
     to_email: str,
     subject: str,
     body_html: str,
-    body_text: Optional[str] = None,
-    from_email: Optional[str] = None,
-    from_name: Optional[str] = None,
+    body_text: str | None = None,
+    from_email: str | None = None,
+    from_name: str | None = None,
 ) -> bool:
     """Envía un email transaccional genérico.
 

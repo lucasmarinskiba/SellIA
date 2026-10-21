@@ -4,17 +4,21 @@ Lógica de negocio para entregas de servicios y agenda.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, and_
 
-from app.domains.services.models import ServiceDelivery, Appointment, ServiceDeliveryStatus, AppointmentStatus
-from app.domains.orders.models import Order, OrderStatus
-from app.domains.channels.services import send_outbound_message
 from app.core.events import emit_event
-
+from app.domains.channels.services import send_outbound_message
+from app.domains.orders.models import Order, OrderStatus
+from app.domains.services.models import (
+    Appointment,
+    AppointmentStatus,
+    ServiceDelivery,
+    ServiceDeliveryStatus,
+)
 
 # ============================================================
 # SERVICE DELIVERIES
@@ -23,11 +27,11 @@ from app.core.events import emit_event
 async def list_service_deliveries(
     db: AsyncSession,
     business_id: uuid.UUID,
-    status: Optional[str] = None,
-    order_id: Optional[uuid.UUID] = None,
+    status: str | None = None,
+    order_id: uuid.UUID | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> tuple[List[ServiceDelivery], int]:
+) -> tuple[list[ServiceDelivery], int]:
     query = select(ServiceDelivery).where(
         ServiceDelivery.business_id == business_id,
         ServiceDelivery.is_active == True,
@@ -45,11 +49,11 @@ async def list_service_deliveries(
     return result.scalars().all(), total
 
 
-async def get_service_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> Optional[ServiceDelivery]:
+async def get_service_delivery(db: AsyncSession, delivery_id: uuid.UUID) -> ServiceDelivery | None:
     return await db.get(ServiceDelivery, delivery_id)
 
 
-async def create_service_delivery(db: AsyncSession, business_id: uuid.UUID, data: Dict[str, Any]) -> ServiceDelivery:
+async def create_service_delivery(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> ServiceDelivery:
     delivery = ServiceDelivery(
         business_id=business_id,
         order_id=data["order_id"],
@@ -74,7 +78,7 @@ async def create_service_delivery(db: AsyncSession, business_id: uuid.UUID, data
     return delivery
 
 
-async def update_service_delivery(db: AsyncSession, delivery: ServiceDelivery, data: Dict[str, Any]) -> ServiceDelivery:
+async def update_service_delivery(db: AsyncSession, delivery: ServiceDelivery, data: dict[str, Any]) -> ServiceDelivery:
     for field, value in data.items():
         if value is not None and hasattr(delivery, field):
             setattr(delivery, field, value)
@@ -86,13 +90,13 @@ async def update_service_delivery(db: AsyncSession, delivery: ServiceDelivery, d
 
 async def complete_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -> ServiceDelivery:
     delivery.status = ServiceDeliveryStatus.COMPLETED
-    delivery.completed_at = datetime.now(timezone.utc)
+    delivery.completed_at = datetime.now(UTC)
 
     # Update order if applicable
     order = await db.get(Order, delivery.order_id)
     if order and order.status == OrderStatus.SHIPPED:
         order.status = OrderStatus.DELIVERED
-        order.delivered_at = datetime.now(timezone.utc)
+        order.delivered_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(delivery)
@@ -106,7 +110,7 @@ async def complete_service_delivery(db: AsyncSession, delivery: ServiceDelivery)
 
 async def cancel_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -> ServiceDelivery:
     delivery.status = ServiceDeliveryStatus.CANCELLED
-    delivery.cancelled_at = datetime.now(timezone.utc)
+    delivery.cancelled_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(delivery)
     return delivery
@@ -119,12 +123,12 @@ async def cancel_service_delivery(db: AsyncSession, delivery: ServiceDelivery) -
 async def list_appointments(
     db: AsyncSession,
     business_id: uuid.UUID,
-    status: Optional[str] = None,
-    from_date: Optional[datetime] = None,
-    to_date: Optional[datetime] = None,
+    status: str | None = None,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> tuple[List[Appointment], int]:
+) -> tuple[list[Appointment], int]:
     query = select(Appointment).where(
         Appointment.business_id == business_id,
         Appointment.is_active == True,
@@ -144,11 +148,11 @@ async def list_appointments(
     return result.scalars().all(), total
 
 
-async def get_appointment(db: AsyncSession, appointment_id: uuid.UUID) -> Optional[Appointment]:
+async def get_appointment(db: AsyncSession, appointment_id: uuid.UUID) -> Appointment | None:
     return await db.get(Appointment, appointment_id)
 
 
-async def create_appointment(db: AsyncSession, business_id: uuid.UUID, data: Dict[str, Any]) -> Appointment:
+async def create_appointment(db: AsyncSession, business_id: uuid.UUID, data: dict[str, Any]) -> Appointment:
     appt = Appointment(
         business_id=business_id,
         service_delivery_id=data.get("service_delivery_id"),
@@ -187,7 +191,7 @@ async def create_appointment(db: AsyncSession, business_id: uuid.UUID, data: Dic
     return appt
 
 
-async def update_appointment(db: AsyncSession, appt: Appointment, data: Dict[str, Any]) -> Appointment:
+async def update_appointment(db: AsyncSession, appt: Appointment, data: dict[str, Any]) -> Appointment:
     for field, value in data.items():
         if value is not None and hasattr(appt, field):
             setattr(appt, field, value)
@@ -199,7 +203,7 @@ async def update_appointment(db: AsyncSession, appt: Appointment, data: Dict[str
 
 async def confirm_appointment(db: AsyncSession, appt: Appointment) -> Appointment:
     appt.status = AppointmentStatus.CONFIRMED
-    appt.confirmation_received_at = datetime.now(timezone.utc)
+    appt.confirmation_received_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(appt)
 
@@ -258,7 +262,7 @@ async def mark_no_show(db: AsyncSession, appt: Appointment) -> Appointment:
     return appt
 
 
-async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> Dict[str, Any]:
+async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
     """Send reminder to client about upcoming appointment."""
     message = (
         f"¡Hola {appt.client_name or ''}! 👋\n\n"
@@ -299,15 +303,15 @@ async def send_appointment_reminder(db: AsyncSession, appt: Appointment, channel
                     content=message,
                 )
 
-        appt.reminder_sent_at = datetime.now(timezone.utc)
+        appt.reminder_sent_at = datetime.now(UTC)
         await db.commit()
 
         return {"success": True, "channel": channel, "message": "Recordatorio enviado"}
     except Exception as e:
-        return {"success": False, "channel": channel, "message": f"Error: {str(e)}"}
+        return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
-async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> Dict[str, Any]:
+async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
     message = (
         f"¡Hola {appt.client_name or ''}! 👋\n\n"
         f"Necesitamos que confirmes tu asistencia a la cita del {appt.start_time.strftime('%d/%m/%Y')} a las {appt.start_time.strftime('%H:%M')}.\n\n"
@@ -334,14 +338,14 @@ async def request_confirmation(db: AsyncSession, appt: Appointment, channel: str
                     content=message,
                 )
 
-        appt.confirmation_sent_at = datetime.now(timezone.utc)
+        appt.confirmation_sent_at = datetime.now(UTC)
         await db.commit()
         return {"success": True, "channel": channel, "message": "Solicitud de confirmación enviada"}
     except Exception as e:
-        return {"success": False, "channel": channel, "message": f"Error: {str(e)}"}
+        return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
-async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> Dict[str, Any]:
+async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "whatsapp") -> dict[str, Any]:
     message = (
         f"¡Hola {appt.client_name or ''}! 🙏\n\n"
         f"Gracias por confiar en nosotros para *{appt.service_name or 'nuestro servicio'}*.\n\n"
@@ -368,20 +372,20 @@ async def request_feedback(db: AsyncSession, appt: Appointment, channel: str = "
                     content=message,
                 )
 
-        appt.feedback_sent_at = datetime.now(timezone.utc)
+        appt.feedback_sent_at = datetime.now(UTC)
         await db.commit()
         return {"success": True, "channel": channel, "message": "Solicitud de feedback enviada"}
     except Exception as e:
-        return {"success": False, "channel": channel, "message": f"Error: {str(e)}"}
+        return {"success": False, "channel": channel, "message": f"Error: {e!s}"}
 
 
 # ============================================================
 # AUTOMATED CHECKS
 # ============================================================
 
-async def check_upcoming_appointments(db: AsyncSession) -> Dict[str, Any]:
+async def check_upcoming_appointments(db: AsyncSession) -> dict[str, Any]:
     """Find appointments in next 24h and 1h that haven't been reminded."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     in_24h = now + timedelta(hours=24)
     in_1h = now + timedelta(hours=1)
 
@@ -424,7 +428,7 @@ async def check_upcoming_appointments(db: AsyncSession) -> Dict[str, Any]:
 
 async def process_no_shows(db: AsyncSession) -> int:
     """Mark appointments that passed without completion as no-show."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = await db.execute(
         select(Appointment).where(
             Appointment.end_time < now,
@@ -442,7 +446,7 @@ async def process_no_shows(db: AsyncSession) -> int:
 
 async def request_pending_confirmations(db: AsyncSession) -> int:
     """Send confirmation requests for appointments scheduled within 48h that are still pending."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     in_48h = now + timedelta(hours=48)
 
     result = await db.execute(

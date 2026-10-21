@@ -6,23 +6,24 @@ Data retention, secret rotation, and cleanup.
 import hashlib
 import re
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from celery import shared_task
 from sqlalchemy import String, cast, func, select, text
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.core.logger import get_logger
 from app.domains.channels.models import ChannelConnection
 from app.domains.security.models import (
-    UserLoginLog,
-    DataAccessLog,
-    DataRetentionPolicy,
-    DataRetentionLog,
-    SecretRotationLog,
-    UserSession,
-    SecurityWebhook,
     BlockedIP,
+    DataAccessLog,
+    DataRetentionLog,
+    DataRetentionPolicy,
+    SecretRotationLog,
+    SecurityWebhook,
+    UserLoginLog,
+    UserSession,
 )
 
 logger = get_logger(__name__)
@@ -61,7 +62,7 @@ def data_retention_cleanup():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             total_deleted = {}
 
             # 1. Load active retention policies
@@ -236,7 +237,7 @@ def data_retention_cleanup():
                     log_entry.status = "error"
                     log_entry.error_message = str(e)[:500]
 
-                log_entry.completed_at = datetime.now(timezone.utc)
+                log_entry.completed_at = datetime.now(UTC)
 
             await db.commit()
             logger.info(f"Data retention cleanup completed: {total_deleted}")
@@ -291,7 +292,7 @@ def rotate_webhook_tokens():
         from app.domains.channels.token_rotation import propose_rotation
 
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             channels = await _channels_due_for_rotation(db, now)
             proposed = 0
             for ch in channels:
@@ -314,7 +315,7 @@ def rotate_expired_secrets():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             total = {"webhook_secrets": 0, "sessions_cleaned": 0, "errors": 0}
 
             # 1. Rotate SecurityWebhook secrets older than 180 days
@@ -380,7 +381,7 @@ def security_audit_report():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             week_ago = now - timedelta(days=7)
 
             # Login stats
@@ -483,7 +484,7 @@ def cleanup_expired_ip_blocks():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             result = await db.execute(
                 BlockedIP.__table__.delete().where(
                     BlockedIP.blocked_until.isnot(None),
@@ -507,7 +508,7 @@ def auto_block_high_risk_ips():
 
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             hour_ago = now - timedelta(hours=1)
 
             # IPs con 5+ logins fallidos en la última hora

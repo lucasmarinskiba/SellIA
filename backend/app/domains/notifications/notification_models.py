@@ -1,12 +1,20 @@
 """Notifications & alerts models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -69,8 +77,8 @@ class NotificationPreference(Base):
     quiet_hours_end = Column(String(5), nullable=True)    # "08:00"
     quiet_weekends = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_user_business", "user_id", "business_id"),
@@ -97,14 +105,14 @@ class NotificationLog(Base):
     recipient = Column(String(255), nullable=False)  # email/phone/user_id
     delivery_status = Column(String(20), default="pending")  # pending, sent, failed, read
     delivery_attempts = Column(Integer, default=0)
-    last_attempt_at = Column(DateTime(timezone.utc), nullable=True)
+    last_attempt_at = Column(DateTime(UTC), nullable=True)
     error_message = Column(Text, nullable=True)
 
     # Engagement
-    read_at = Column(DateTime(timezone.utc), nullable=True)
+    read_at = Column(DateTime(UTC), nullable=True)
     action_taken = Column(String(100), nullable=True)  # e.g., "viewed_deal", "contacted_customer"
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_user_status", "user_id", "delivery_status"),
@@ -139,8 +147,8 @@ class AlertTemplate(Base):
     # System / user-defined
     is_system = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_type", "business_id", "alert_type"),
@@ -176,8 +184,8 @@ class NotificationMetrics(Base):
     # Alert type breakdown
     alert_type_breakdown = Column(JSONB, nullable=True)  # {"deal_closing": 45, "churn_risk": 12, ...}
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_date", "business_id", "created_at"),

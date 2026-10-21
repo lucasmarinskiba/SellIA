@@ -3,26 +3,30 @@
 Tareas en background que requieren acceso a la base de datos.
 """
 
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from celery import shared_task
 from sqlalchemy import select
 
-from app.core.database import AsyncSessionLocal
 from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
 from app.domains.automations.models import (
-    Workflow, WorkflowExecution, WorkflowStatus, EmailSequence, SequenceStep, EmailTemplate,
-    SequenceSubscription, SequenceEmailLog,
+    EmailSequence,
+    EmailTemplate,
+    SequenceEmailLog,
+    SequenceStep,
+    SequenceSubscription,
+    Workflow,
+    WorkflowExecution,
 )
-from app.domains.channels.models import Conversation, ChannelConnection, ChannelPlatform
-from app.domains.crm.models import Deal, LeadScore
 from app.domains.businesses.models import Business
+from app.domains.channels.models import ChannelConnection, ChannelPlatform, Conversation
 
 
 # Helper para correr código async desde sync Celery
 @shared_task(bind=True, max_retries=3)
-def execute_workflow_task(self, execution_id: str, business_id: str, selected_actions: Optional[List[Dict[str, Any]]] = None):
+def execute_workflow_task(self, execution_id: str, business_id: str, selected_actions: list[dict[str, Any]] | None = None):
     """Execute a workflow via Celery task."""
     async def _run():
         async with AsyncSessionLocal() as db:
@@ -106,7 +110,6 @@ def send_sequence_email_task(
     """Send a specific step of an email sequence. Supports AI-generated content and tracking."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from uuid import UUID
             import secrets
 
             # Get subscription
@@ -254,7 +257,7 @@ Write ONLY the email body text. Be concise and compelling."""
                     subject=subject,
                 )
                 log.status = "sent"
-                log.sent_at = datetime.now(timezone.utc)
+                log.sent_at = datetime.now(UTC)
 
                 # Update sequence counters
                 result = await db.execute(
@@ -265,7 +268,7 @@ Write ONLY the email body text. Be concise and compelling."""
                     seq.sent_count = (seq.sent_count or 0) + 1
 
                 # Update subscription
-                subscription.last_sent_at = datetime.now(timezone.utc)
+                subscription.last_sent_at = datetime.now(UTC)
                 subscription.current_step_index += 1
                 await db.commit()
 
@@ -301,7 +304,7 @@ def check_pending_workflows():
             )
             executions = result.scalars().all()
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             for execution in executions:
                 actions = execution.actions_executed or []
                 if not actions:
@@ -314,7 +317,6 @@ def check_pending_workflows():
                         resume_at = datetime.fromisoformat(resume_at_str.replace("Z", "+00:00"))
                         if now >= resume_at:
                             # Resume via Celery task
-                            from uuid import UUID
                             wf_result = await db.execute(
                                 select(Workflow).where(Workflow.id == execution.workflow_id)
                             )
@@ -333,7 +335,7 @@ def check_email_sequences():
     """Check for email sequence steps that need to be sent."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Get all active subscriptions
             result = await db.execute(
@@ -423,6 +425,7 @@ def check_email_sequences():
 def check_human_handoffs():
     """Process human handoff queue from Redis."""
     import redis
+
     from app.core.config import get_settings
 
     settings = get_settings()
@@ -445,6 +448,7 @@ def calculate_lead_score_task(conversation_id: str, business_id: str):
     """Recalculate lead score for a conversation."""
     async def _run():
         from uuid import UUID
+
         from app.domains.crm.scoring import LeadScoringEngine
         async with AsyncSessionLocal() as db:
             engine = LeadScoringEngine(db)

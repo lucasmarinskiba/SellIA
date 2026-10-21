@@ -1,12 +1,17 @@
 """Phase X8: Auto-Marketing & Growth Agent Service."""
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Optional
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.auto_marketing.models import (
-    AutoMarketingContent, CustomerSuccessStory, GrowthHackingExperiment,
-    InfluencerCollaboration, GrowthMetrics, MarketingChannel, ContentType, ContentPillar
+    AutoMarketingContent,
+    ContentPillar,
+    ContentType,
+    CustomerSuccessStory,
+    GrowthHackingExperiment,
+    GrowthMetrics,
+    MarketingChannel,
 )
 
 
@@ -17,7 +22,7 @@ class AutoMarketingAgent:
     async def generate_content_calendar(
         db: AsyncSession,
         days_ahead: int = 30,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Generate 30-day content calendar across channels."""
 
         content_calendar = []
@@ -42,7 +47,7 @@ class AutoMarketingAgent:
         }
 
         for day in range(days_ahead):
-            day_date = datetime.now(timezone.utc) + timedelta(days=day)
+            day_date = datetime.now(UTC) + timedelta(days=day)
             pillar = pillar_sequence[day % len(pillar_sequence)]
 
             for channel, schedule_days in channels_schedule.items():
@@ -84,7 +89,7 @@ class AutoMarketingAgent:
         result_metric: str,  # "150% sales increase"
         time_frame: str,  # "3 months"
         customer_type: str,  # "SaaS startups"
-        hook: Optional[str] = None,
+        hook: str | None = None,
     ) -> AutoMarketingContent:
         """Create high-impact results post (proven engagement driver)."""
 
@@ -121,7 +126,7 @@ class AutoMarketingAgent:
     async def create_testimonial_content(
         db: AsyncSession,
         story: CustomerSuccessStory,
-    ) -> List[AutoMarketingContent]:
+    ) -> list[AutoMarketingContent]:
         """Convert customer success story into multi-channel content."""
 
         contents = []
@@ -186,7 +191,7 @@ class AutoMarketingAgent:
             channel=channel,
             variant_a=variant_a_content,
             variant_b=variant_b_content,
-            start_date=datetime.now(timezone.utc),
+            start_date=datetime.now(UTC),
             status="running",
         )
         db.add(experiment)
@@ -200,7 +205,7 @@ class AutoMarketingAgent:
         niche: str = "SaaS",
         min_followers: int = 10000,
         max_followers: int = 100000,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Find micro-influencers for partnerships (high engagement)."""
 
         # Curated list of micro-influencers by niche
@@ -228,12 +233,12 @@ class AutoMarketingAgent:
     async def measure_channel_performance(
         db: AsyncSession,
         channel: MarketingChannel,
-        date: Optional[datetime] = None,
-    ) -> Dict:
+        date: datetime | None = None,
+    ) -> dict:
         """Measure daily performance by channel."""
 
         if not date:
-            date = datetime.now(timezone.utc)
+            date = datetime.now(UTC)
 
         # Fetch metrics
         result = await db.execute(
@@ -258,7 +263,7 @@ class AutoMarketingAgent:
         }
 
     @staticmethod
-    def get_viral_content_formula() -> Dict:
+    def get_viral_content_formula() -> dict:
         """Return proven formula for viral content."""
 
         return {

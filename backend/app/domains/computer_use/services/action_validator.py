@@ -6,11 +6,11 @@ de la viewport, inputs excesivos, etc.
 """
 
 import re
-from typing import Optional, Dict, Any, List
+from typing import Any
 from urllib.parse import urlparse
 
-from app.core.logger import get_logger
 from app.core.config import get_settings
+from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -63,9 +63,9 @@ class ActionValidator:
     def validate_action(
         self,
         action_type: str,
-        params: Dict[str, Any],
-        current_url: Optional[str] = None,
-    ) -> tuple[bool, Optional[str]]:
+        params: dict[str, Any],
+        current_url: str | None = None,
+    ) -> tuple[bool, str | None]:
         """Valida una acción. Retorna (is_valid, error_message)."""
 
         validators = {
@@ -93,7 +93,7 @@ class ActionValidator:
 
         return validator(params, current_url)
 
-    def _validate_navigate(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_navigate(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         url = params.get("url", "")
         if not url:
             return False, "URL vacía para navegación"
@@ -117,7 +117,7 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_click(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_click(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         x = params.get("x")
         y = params.get("y")
 
@@ -132,7 +132,7 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_type(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_type(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         text = params.get("text", "")
 
         if not text:
@@ -144,12 +144,12 @@ class ActionValidator:
         # Check for sensitive data
         for pattern in self.SENSITIVE_PATTERNS:
             if re.search(pattern, text, re.IGNORECASE):
-                logger.warning(f"Sensitive data detected in type action (pattern matched)")
+                logger.warning("Sensitive data detected in type action (pattern matched)")
                 # Don't block, just warn - could be legitimate
 
         return True, None
 
-    def _validate_scroll(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_scroll(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         direction = params.get("direction", "")
         amount = params.get("amount", 0)
 
@@ -164,7 +164,7 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_wait(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_wait(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         seconds = params.get("seconds", 0)
 
         if not isinstance(seconds, (int, float)) or seconds < 0:
@@ -175,16 +175,16 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_screenshot(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_screenshot(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         return True, None
 
-    def _validate_done(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_done(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         return True, None
 
-    def _validate_error(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_error(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         return True, None
 
-    def _validate_click_selector(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_click_selector(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         selector = params.get("selector", "")
         if not selector or not isinstance(selector, str) or not selector.strip():
             return False, "Selector vacío para click_selector"
@@ -192,7 +192,7 @@ class ActionValidator:
             return False, f"Selector demasiado largo: {len(selector)} > {self.MAX_SELECTOR_LENGTH}"
         return True, None
 
-    def _validate_click_text(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_click_text(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         text = params.get("text", "")
         if not text or not isinstance(text, str) or not text.strip():
             return False, "Texto vacío para click_text"
@@ -200,7 +200,7 @@ class ActionValidator:
             return False, f"Texto demasiado largo: {len(text)} > {self.MAX_TEXT_LENGTH}"
         return True, None
 
-    def _validate_fill(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_fill(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         selector = params.get("selector", "")
         if not selector or not isinstance(selector, str) or not selector.strip():
             return False, "Selector vacío para fill"
@@ -219,7 +219,7 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_wait_for_selector(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_wait_for_selector(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         selector = params.get("selector", "")
         if not selector or not isinstance(selector, str) or not selector.strip():
             return False, "Selector vacío para wait_for_selector"
@@ -235,7 +235,7 @@ class ActionValidator:
 
         return True, None
 
-    def _validate_press_key(self, params: Dict[str, Any], current_url: Optional[str]) -> tuple[bool, Optional[str]]:
+    def _validate_press_key(self, params: dict[str, Any], current_url: str | None) -> tuple[bool, str | None]:
         key = params.get("key", "")
         if not key or not isinstance(key, str):
             return False, "Tecla vacía para press_key"
@@ -248,6 +248,6 @@ class ActionValidator:
             return True, None
         return False, f"Tecla no permitida: {key}"
 
-    def validate_batch(self, actions: List[Dict[str, Any]], current_url: Optional[str] = None) -> List[tuple[bool, Optional[str]]]:
+    def validate_batch(self, actions: list[dict[str, Any]], current_url: str | None = None) -> list[tuple[bool, str | None]]:
         """Valida un lote de acciones."""
         return [self.validate_action(a.get("action_type", ""), a.get("params", {}), current_url) for a in actions]

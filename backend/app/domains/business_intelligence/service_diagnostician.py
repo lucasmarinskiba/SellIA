@@ -1,9 +1,9 @@
 """Phase 12: Product/service diagnostics and competitive analysis."""
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +43,13 @@ class Diagnosis:
     visibility_score: float  # 0-1
     positioning_score: float  # 0-1
 
-    strengths: List[str] = field(default_factory=list)
-    weaknesses: List[str] = field(default_factory=list)
-    opportunities: List[str] = field(default_factory=list)
-    threats: List[str] = field(default_factory=list)
+    strengths: list[str] = field(default_factory=list)
+    weaknesses: list[str] = field(default_factory=list)
+    opportunities: list[str] = field(default_factory=list)
+    threats: list[str] = field(default_factory=list)
 
-    improvements: List[Improvement] = field(default_factory=list)
-    recommended_actions: List[str] = field(default_factory=list)
+    improvements: list[Improvement] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
 
     estimated_revenue_impact_30days: str = "moderate"
     estimated_revenue_impact_90days: str = "significant"
@@ -170,7 +170,7 @@ class ServiceDiagnostician:
 class CompetitiveAnalyzer:
     """Analyze competitive landscape"""
 
-    def analyze(self, business_name: str, industry: str = "") -> Dict[str, Any]:
+    def analyze(self, business_name: str, industry: str = "") -> dict[str, Any]:
         """Analyze competitors"""
 
         # Mock competitive analysis

@@ -9,11 +9,7 @@ Growth FOOM: Acquisition channels to attract users to SellIA
 - Waitlist FOMO
 """
 
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
-from typing import Dict, List, Optional
 from uuid import UUID
-import asyncio
 
 
 class SeoFOOMService:
@@ -22,7 +18,7 @@ class SeoFOOMService:
     @staticmethod
     async def generate_seo_content_calendar(
         days: int = 90,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Generate 90-day SEO content calendar targeting high-intent keywords
         Focus: Problem-solution-result narrative
@@ -125,7 +121,7 @@ class SeoFOOMService:
     @staticmethod
     async def optimize_for_serp_features(
         content_type: str,
-    ) -> Dict:
+    ) -> dict:
         """
         Optimize content to rank in Google SERP features:
         - Featured snippets (FAQ schema)
@@ -164,7 +160,7 @@ class ViralLoopsService:
     """Viral mechanics: referrals, word-of-mouth, community"""
 
     @staticmethod
-    async def create_referral_program() -> Dict:
+    async def create_referral_program() -> dict:
         """
         2-sided referral program:
         Referrer gets $50 credit + Pro month free
@@ -194,7 +190,7 @@ class ViralLoopsService:
         }
 
     @staticmethod
-    async def create_community_program() -> Dict:
+    async def create_community_program() -> dict:
         """
         Discord/Slack community for users to share wins
         Gamification: leaderboards, badges, exclusive perks
@@ -227,7 +223,7 @@ class ViralLoopsService:
         }
 
     @staticmethod
-    async def create_waitlist_fomo() -> Dict:
+    async def create_waitlist_fomo() -> dict:
         """
         Pre-launch/new feature waitlist with scarcity messaging
         Limited early access, pricing locks, exclusive bonuses
@@ -263,11 +259,11 @@ class CaseStudyFOOMService:
     @staticmethod
     async def generate_case_study_from_user(
         user_id: UUID,
-        before_metrics: Dict,
-        after_metrics: Dict,
+        before_metrics: dict,
+        after_metrics: dict,
         industry: str,
         business_size: str,
-    ) -> Dict:
+    ) -> dict:
         """
         Transform user success into case study
         Calculate % improvement for FOMO narrative
@@ -329,8 +325,8 @@ class PressAndPRService:
     @staticmethod
     async def generate_press_release(
         news_type: str,  # "milestone", "award", "feature", "funding", "partnership"
-        details: Dict,
-    ) -> Dict:
+        details: dict,
+    ) -> dict:
         """
         Auto-generate press releases to distribute to media
         """
@@ -386,7 +382,7 @@ class PressAndPRService:
         return press_release
 
     @staticmethod
-    async def create_influencer_seeding() -> Dict:
+    async def create_influencer_seeding() -> dict:
         """
         Seed SellIA with micro-influencers in ecommerce/entrepreneurship space
         Free Pro access + commission structure
@@ -429,7 +425,7 @@ class ProductLedGrowthService:
     """Product-led growth: free trial → paid conversion"""
 
     @staticmethod
-    async def optimize_free_trial_foom() -> Dict:
+    async def optimize_free_trial_foom() -> dict:
         """
         14-day free trial with scarcity mechanics
         Limit features, show "upgrade" CTAs, create urgency
@@ -473,7 +469,7 @@ class ProductLedGrowthService:
         }
 
     @staticmethod
-    async def create_feature_gates_for_fomo() -> Dict:
+    async def create_feature_gates_for_fomo() -> dict:
         """
         Gate premium features behind paywall
         Show "unlock" CTA with benefit messaging
@@ -530,7 +526,7 @@ class PartnershipFOOMService:
     """Partnerships for distribution + co-marketing"""
 
     @staticmethod
-    async def create_partnerships() -> List[Dict]:
+    async def create_partnerships() -> list[dict]:
         """
         Partnership channels to amplify SellIA reach
         """
@@ -585,7 +581,7 @@ class ViralMechanicsService:
     """Growth hacks + viral loops"""
 
     @staticmethod
-    async def create_viral_mechanics() -> Dict:
+    async def create_viral_mechanics() -> dict:
         """
         Built-in viral mechanics in SellIA product
         """
@@ -632,7 +628,7 @@ class BrandBuildingService:
     """Long-term brand building for acquisition"""
 
     @staticmethod
-    async def create_thought_leadership() -> Dict:
+    async def create_thought_leadership() -> dict:
         """
         Position SellIA founder/team as experts
         """

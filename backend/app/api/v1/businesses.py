@@ -1,16 +1,19 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from uuid import UUID
-from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.domains.businesses.models import DEFAULT_CONFIGS, Business
+from app.domains.businesses.schemas import (
+    BusinessCreate,
+    BusinessResponse,
+    BusinessUpdate,
+)
 from app.domains.users.models import User
-from app.domains.businesses.models import Business, DEFAULT_CONFIGS
-from app.domains.businesses.schemas import BusinessCreate, BusinessUpdate, BusinessResponse
-from app.domains.subscriptions.services import track_usage
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,8 +57,9 @@ async def debug_conversation_state(
     """Temporary: raw dump of conversations/messages/qualifications for a business."""
     _require_superuser(current_user)
     from sqlalchemy import select as sa_select
-    from app.domains.channels.models import Conversation, Message
+
     from app.domains.agents.lead_qualifier.models import LeadQualification
+    from app.domains.channels.models import Conversation, Message
 
     out = {}
     try:
@@ -87,11 +91,10 @@ async def debug_llm_test(current_user: User = Depends(get_current_user)):
         steps.append("start")
         import asyncio
         steps.append("import asyncio ok")
-        from app.domains.agents.ai_reply import generate_raw_ai_response
         steps.append("import generate_raw_ai_response ok")
         from app.domains.agents.llm_provider import generate_with_fallback
         steps.append("import generate_with_fallback ok")
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from langchain_core.messages import HumanMessage, SystemMessage
         steps.append("import langchain_core ok")
         from app.core.database import AsyncSessionLocal
         steps.append("import AsyncSessionLocal ok")
@@ -109,7 +112,7 @@ async def debug_llm_test(current_user: User = Depends(get_current_user)):
             )
             steps.append(f"llm call returned: {result.content if result else None}")
         return {"status": "ok", "steps": steps}
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"status": "timeout", "steps": steps}
     except BaseException as e:
         return {"status": "error", "type": type(e).__name__, "error": str(e)[:500], "steps": steps}
@@ -185,7 +188,8 @@ async def debug_add_config_column(db: AsyncSession = Depends(get_db), current_us
 async def debug_create_table(table_name: str, current_user: User = Depends(get_current_user)):
     """Temporary: attempt to create one CoreBase table and return the raw error."""
     _require_superuser(current_user)
-    from app.core.database import Base as CoreBase, engine
+    from app.core.database import Base as CoreBase
+    from app.core.database import engine
     table = CoreBase.metadata.tables.get(table_name)
     if table is None:
         return {"error": f"No table named {table_name} in CoreBase.metadata", "available": list(CoreBase.metadata.tables.keys())[:20]}
@@ -309,4 +313,3 @@ async def delete_business(
 
     business.is_active = False
     await db.commit()
-    return None

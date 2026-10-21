@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.channels.models import ChannelConnection, ChannelPlatform
+
 from .models import PLATFORM_KINDS, BusinessLink
 
 

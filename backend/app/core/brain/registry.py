@@ -15,7 +15,7 @@ introspect available capabilities before planning.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
@@ -318,7 +318,8 @@ def _computer_use_skill_caps() -> list[Capability]:
     """
     try:
         from app.domains.computer_use.skills.knowledge_base import (
-            SKILL_DOMAINS, SALES_TEAM_ROLES,
+            SALES_TEAM_ROLES,
+            SKILL_DOMAINS,
         )
     except Exception as exc:  # pragma: no cover - defensivo
         logger.warning("Computer Use skills no disponibles: %s", exc)
@@ -407,7 +408,7 @@ _AUTO_CAT_GROUP: dict[str, str] = {
 _TOOL_GROUP: dict[str, str] = {slug: group for slug, _n, _d, group, _h in _TOOL_SKILLS}
 
 
-def _group_of(cap: "Capability") -> str:
+def _group_of(cap: Capability) -> str:
     """Categoría transversal de una capability para clusterizar el mapa."""
     cid = cap.id
     if cid.startswith("platform."):

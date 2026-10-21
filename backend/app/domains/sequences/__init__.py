@@ -1,5 +1,9 @@
 """Sequences domain — automations and workflow sequences."""
 
-from .offline_triggered import OfflineSequenceService, OfflineTriggerType, OfflineSequenceTemplate
+from .offline_triggered import (
+    OfflineSequenceService,
+    OfflineSequenceTemplate,
+    OfflineTriggerType,
+)
 
-__all__ = ["OfflineSequenceService", "OfflineTriggerType", "OfflineSequenceTemplate"]
+__all__ = ["OfflineSequenceService", "OfflineSequenceTemplate", "OfflineTriggerType"]

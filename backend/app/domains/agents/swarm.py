@@ -6,16 +6,15 @@ structured rounds of discussion, critique, and consensus building.
 
 import json
 import uuid
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
+from typing import Any
 
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.agents.prompts import AGENT_PROMPTS, get_system_prompt
 from app.domains.agents.llm_provider import generate_with_fallback
-from app.domains.agents.swarm_memory import SwarmSession, SwarmMessage
+from app.domains.agents.prompts import AGENT_PROMPTS
+from app.domains.agents.swarm_memory import SwarmMessage, SwarmSession
 
 logger = get_logger(__name__)
 
@@ -55,7 +54,7 @@ Respond with a single valid JSON object and NOTHING else:
 """
 
 
-ROLE_TO_PERSONA_MAP: Dict[str, List[str]] = {
+ROLE_TO_PERSONA_MAP: dict[str, list[str]] = {
     "researcher": ["alex-hormozi", "market-researcher", "data-analyst", "neil-rackham"],
     "copywriter": ["ad-copywriter", "copywriter-pro", "russell-brunson", "ryan-holiday"],
     "closer": ["jordan-belfort", "b2b-closer", "grant-cardone", "ryan-serhant"],
@@ -68,9 +67,9 @@ def _build_agent_prompt(
     agent_slug: str,
     role: str,
     task: str,
-    shared_context: Dict[str, Any],
-    history: List[Dict[str, Any]],
-    previous_messages: List[Dict[str, Any]],
+    shared_context: dict[str, Any],
+    history: list[dict[str, Any]],
+    previous_messages: list[dict[str, Any]],
 ) -> str:
     """Build the swarm prompt for a single agent."""
     persona = AGENT_PROMPTS.get(agent_slug, AGENT_PROMPTS.get("alex-hormozi", ""))
@@ -97,7 +96,7 @@ def _build_agent_prompt(
     )
 
 
-def _parse_swarm_response(text: str) -> Dict[str, Any]:
+def _parse_swarm_response(text: str) -> dict[str, Any]:
     """Parse JSON response from swarm agent."""
     text = text.strip()
     try:
@@ -139,7 +138,7 @@ def _parse_swarm_response(text: str) -> Dict[str, Any]:
     }
 
 
-def _check_consensus(messages: List[Dict[str, Any]]) -> bool:
+def _check_consensus(messages: list[dict[str, Any]]) -> bool:
     """Check if all agents have reached agreement.
 
     Consensus requires:
@@ -167,7 +166,7 @@ def _check_consensus(messages: List[Dict[str, Any]]) -> bool:
 class SwarmCoordinator:
     """Assigns roles and selects agent personas for swarm tasks."""
 
-    ROLE_DESCRIPTIONS: Dict[str, str] = {
+    ROLE_DESCRIPTIONS: dict[str, str] = {
         "researcher": "Gathers information, analyzes data, and provides evidence-based insights.",
         "copywriter": "Crafts compelling messaging, hooks, and persuasive copy.",
         "closer": "Focuses on closing deals, overcoming final resistance, and sealing agreements.",
@@ -175,13 +174,13 @@ class SwarmCoordinator:
         "strategist": "Plans the overall approach, sequences tactics, and aligns the team.",
     }
 
-    def assign_roles(self, task: str) -> List[Dict[str, str]]:
+    def assign_roles(self, task: str) -> list[dict[str, str]]:
         """Suggest which agents to involve for a given task.
 
         Returns a list of dicts with keys: role, agent_slug, description.
         """
         task_lower = task.lower()
-        selected_roles: List[str] = []
+        selected_roles: list[str] = []
 
         # Heuristic role selection based on task keywords
         if any(kw in task_lower for kw in ["precio", "price", "cerrar", "close", "deal", "contrato", "contract"]):
@@ -226,7 +225,7 @@ class SwarmCoordinator:
 class AgentSwarm:
     """Executes multi-agent collaborative tasks with shared memory and consensus."""
 
-    def __init__(self, db: AsyncSession, business_id: Optional[uuid.UUID] = None):
+    def __init__(self, db: AsyncSession, business_id: uuid.UUID | None = None):
         self.db = db
         self.business_id = business_id
         self.coordinator = SwarmCoordinator()
@@ -234,11 +233,11 @@ class AgentSwarm:
     async def execute_swarm(
         self,
         task: str,
-        agents: List[str],
-        context: Dict[str, Any],
+        agents: list[str],
+        context: dict[str, Any],
         consensus_required: bool = True,
         max_rounds: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a swarm task with the given agents.
 
         Args:
@@ -268,13 +267,13 @@ class AgentSwarm:
         role_assignments = self._assign_roles_to_agents(agents)
 
         shared_memory = dict(context)
-        history: List[Dict[str, Any]] = []
-        final_response: Optional[str] = None
+        history: list[dict[str, Any]] = []
+        final_response: str | None = None
         consensus_reached = False
 
         for round_num in range(1, max_rounds + 1):
             session.round_count = round_num
-            round_messages: List[Dict[str, Any]] = []
+            round_messages: list[dict[str, Any]] = []
 
             for agent_slug in agents:
                 role = role_assignments.get(agent_slug, "contributor")
@@ -364,9 +363,9 @@ class AgentSwarm:
             "shared_memory": shared_memory,
         }
 
-    def _assign_roles_to_agents(self, agents: List[str]) -> Dict[str, str]:
+    def _assign_roles_to_agents(self, agents: list[str]) -> dict[str, str]:
         """Map agent slugs to functional roles."""
-        assignments: Dict[str, str] = {}
+        assignments: dict[str, str] = {}
         used_roles: set = set()
 
         for slug in agents:
@@ -399,13 +398,13 @@ class AgentSwarm:
 
         return assignments
 
-    def _synthesize_final_response(self, history: List[Dict[str, Any]], task: str) -> str:
+    def _synthesize_final_response(self, history: list[dict[str, Any]], task: str) -> str:
         """Synthesize a final consensus response from agent contributions."""
         # Gather action proposals and key ideas from last round
         last_round = max((m["round"] for m in history), default=1)
         last_messages = [m for m in history if m["round"] == last_round]
 
-        parts: List[str] = []
+        parts: list[str] = []
         parts.append(f"## Swarm Consensus: {task}\n")
 
         for msg in last_messages:
@@ -422,9 +421,9 @@ class AgentSwarm:
 
         return "\n".join(parts)
 
-    def _build_reasoning(self, history: List[Dict[str, Any]]) -> str:
+    def _build_reasoning(self, history: list[dict[str, Any]]) -> str:
         """Build a reasoning trace from the swarm discussion."""
-        lines: List[str] = []
+        lines: list[str] = []
         rounds = sorted(set(m["round"] for m in history))
         for r in rounds:
             lines.append(f"Round {r}:")

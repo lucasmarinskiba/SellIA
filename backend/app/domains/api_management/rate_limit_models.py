@@ -1,10 +1,10 @@
 """API rate limiting & caching models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -49,9 +49,9 @@ class ApiKey(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    last_used_at = Column(DateTime(timezone.utc), nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
-    expires_at = Column(DateTime(timezone.utc), nullable=True)  # Optional expiration
+    last_used_at = Column(DateTime(UTC), nullable=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
+    expires_at = Column(DateTime(UTC), nullable=True)  # Optional expiration
 
     notes = Column(String(255), nullable=True)
 
@@ -86,7 +86,7 @@ class RateLimitLog(Base):
     response_status = Column(Integer, default=200)
     response_time_ms = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     api_key = relationship("ApiKey", foreign_keys=[api_key_id])
 
@@ -120,8 +120,8 @@ class CachePolicy(Base):
     cache_hits = Column(Integer, default=0)
     cache_misses = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -164,7 +164,7 @@ class ApiMetrics(Base):
     unique_endpoints_called = Column(Integer, default=0)
     most_used_endpoint = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 

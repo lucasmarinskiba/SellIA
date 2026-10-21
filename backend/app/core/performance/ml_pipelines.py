@@ -1,7 +1,7 @@
 """ML Pipelines — Real-time features, inference, online learning."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,8 @@ class MLPipelines:
     @staticmethod
     def real_time_feature_generation(
         user_id: str,
-        user_events: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        user_events: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Generate features for model inference in real-time."""
 
         features = {
@@ -33,7 +33,7 @@ class MLPipelines:
     @staticmethod
     def model_inference_config(
         model_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Configure model for <100ms inference."""
 
         return {
@@ -46,8 +46,8 @@ class MLPipelines:
 
     @staticmethod
     def online_learning_strategy(
-        feedback_data: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        feedback_data: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Strategy for online model updates."""
 
         return {
@@ -59,7 +59,7 @@ class MLPipelines:
         }
 
     @staticmethod
-    def ab_testing_framework() -> Dict[str, Any]:
+    def ab_testing_framework() -> dict[str, Any]:
         """Built-in A/B testing for model variants."""
 
         return {

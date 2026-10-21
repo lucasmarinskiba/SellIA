@@ -1,14 +1,13 @@
 """Phase 5C: Channel Integration Endpoints."""
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import List, Optional
-from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.channel_integration.service import ChannelIntegrationService
-from app.domains.channel_integration.models import LocationReview
-
 
 router = APIRouter(prefix="/api/v1/channel-integration", tags=["channel-integration"])
 
@@ -21,20 +20,20 @@ class LocationMessageCreateRequest(BaseModel):
 
 class LocationMessageExecuteRequest(BaseModel):
     message_id: UUID
-    user_id: Optional[UUID] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    content: Optional[str] = None
+    user_id: UUID | None = None
+    phone: str | None = None
+    email: str | None = None
+    content: str | None = None
 
 
 class LocationReviewResponse(BaseModel):
     id: UUID
     reviewer_name: str
     rating: float
-    review_text: Optional[str]
+    review_text: str | None
     platform: str
-    review_date: Optional[datetime]
-    response_text: Optional[str]
+    review_date: datetime | None
+    response_text: str | None
 
     class Config:
         from_attributes = True
@@ -143,8 +142,8 @@ async def sync_google_maps(
     place_id: str,
     rating: float = 0,
     review_count: int = 0,
-    phone: Optional[str] = None,
-    website: Optional[str] = None,
+    phone: str | None = None,
+    website: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Sync Google Maps location data."""
@@ -173,7 +172,7 @@ async def add_review(
     location_id: UUID,
     reviewer_name: str,
     rating: float,
-    review_text: Optional[str] = None,
+    review_text: str | None = None,
     platform: str = "google",
     db: AsyncSession = Depends(get_db),
 ) -> dict:

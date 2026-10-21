@@ -8,52 +8,58 @@ import asyncio
 import base64
 import os
 import time
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.computer_use.browser_service import BrowserService
-from app.domains.computer_use.vision_agent import VisionAgent
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
-from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.ws_manager import ws_manager
-from app.domains.computer_use.services.browser_pool import get_browser_pool, BrowserPoolManager
-from app.domains.computer_use.services.action_validator import ActionValidator
-from app.domains.computer_use.services.retry_handler import RetryHandler, get_circuit_breaker
-from app.domains.computer_use.services.captcha_detector import CaptchaDetector
-from app.domains.computer_use.services.screenshot_compare import ScreenshotComparator
-from app.domains.computer_use.services.webhook_service import WebhookService
-from app.domains.computer_use.services.credential_manager import CredentialManager
-from app.domains.computer_use.services.sellia_brain_service import (
-    get_brain_service,
-    ActionContext,
-    SalesStage,
-    Platform,
-)
-from app.domains.computer_use.skills import (
-    AutopilotPolicy,
-    AutopilotMode,
-    build_skill_brief,
-)
 from app.core.metrics import (
-    COMPUTER_USE_SESSIONS_CREATED,
+    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_SESSION_DURATION,
     COMPUTER_USE_SESSIONS_COMPLETED,
+    COMPUTER_USE_SESSIONS_CREATED,
     COMPUTER_USE_SESSIONS_FAILED,
     COMPUTER_USE_SESSIONS_STOPPED,
-    COMPUTER_USE_STEPS_TOTAL,
     COMPUTER_USE_STEP_DURATION,
-    COMPUTER_USE_SESSION_DURATION,
-    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_STEPS_TOTAL,
 )
+from app.domains.computer_use.browser_service import BrowserService
+from app.domains.computer_use.models import (
+    ComputerUseMessage,
+    ComputerUseSession,
+    ComputerUseStep,
+)
+from app.domains.computer_use.schemas import ComputerUseAction
+from app.domains.computer_use.services.action_validator import ActionValidator
+from app.domains.computer_use.services.captcha_detector import CaptchaDetector
+from app.domains.computer_use.services.credential_manager import CredentialManager
+from app.domains.computer_use.services.retry_handler import (
+    RetryHandler,
+    get_circuit_breaker,
+)
+from app.domains.computer_use.services.screenshot_compare import ScreenshotComparator
+from app.domains.computer_use.services.sellia_brain_service import (
+    ActionContext,
+    Platform,
+    SalesStage,
+    get_brain_service,
+)
+from app.domains.computer_use.services.webhook_service import WebhookService
+from app.domains.computer_use.skills import (
+    AutopilotMode,
+    AutopilotPolicy,
+    build_skill_brief,
+)
+from app.domains.computer_use.vision_agent import VisionAgent
+from app.domains.computer_use.ws_manager import ws_manager
 
 logger = get_logger(__name__)
 settings = get_settings()
 
-_active_sessions: Dict[str, "ComputerUseSessionManagerV2"] = {}
+_active_sessions: dict[str, "ComputerUseSessionManagerV2"] = {}
 
 
 def get_session_manager(session_id: str) -> Optional["ComputerUseSessionManagerV2"]:
@@ -72,14 +78,14 @@ class ComputerUseSessionManagerV2:
         session_id: UUID,
         db: AsyncSession,
         task: str,
-        start_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        start_url: str | None = None,
+        api_key: str | None = None,
         provider: str = "openai",
         browser_type: str = "chromium",
-        profile: Optional[dict] = None,
-        proxy: Optional[dict] = None,
-        webhooks: Optional[list] = None,
-        user_id: Optional[UUID] = None,
+        profile: dict | None = None,
+        proxy: dict | None = None,
+        webhooks: list | None = None,
+        user_id: UUID | None = None,
         mode: str = "supervised",
     ):
         self.session_id = str(session_id)
@@ -98,7 +104,7 @@ class ComputerUseSessionManagerV2:
         except ValueError:
             self.mode = AutopilotMode.SUPERVISED
         self.policy = AutopilotPolicy(self.mode)
-        self._skill_brief: Optional[str] = None  # cacheado en el primer paso
+        self._skill_brief: str | None = None  # cacheado en el primer paso
 
         # Services
         self.browser = BrowserService()
@@ -114,9 +120,9 @@ class ComputerUseSessionManagerV2:
         self.status = "pending"
         self.current_step = 0
         self.max_steps = settings.COMPUTER_USE_MAX_STEPS
-        self.history: List[Dict[str, Any]] = []
-        self.user_chat_queue: List[str] = []
-        self._previous_screenshot: Optional[bytes] = None
+        self.history: list[dict[str, Any]] = []
+        self.user_chat_queue: list[str] = []
+        self._previous_screenshot: bytes | None = None
 
         self._pause_event = asyncio.Event()
         self._pause_event.set()
@@ -450,9 +456,7 @@ class ComputerUseSessionManagerV2:
                 result = await self.browser.fill(params["selector"], params["value"])
             elif action.action_type == "wait_for_selector":
                 result = await self.browser.wait_for_selector(params["selector"], params.get("timeout_ms"))
-            elif action.action_type == "screenshot":
-                result = {"success": True}
-            elif action.action_type in ("done", "error"):
+            elif action.action_type == "screenshot" or action.action_type in ("done", "error"):
                 result = {"success": True}
             else:
                 result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
@@ -544,7 +548,7 @@ class ComputerUseSessionManagerV2:
         await self._save_message("user", message)
 
     # DB helpers
-    async def _update_session_status(self, status: str, result_data: Optional[Dict] = None, error_message: Optional[str] = None) -> None:
+    async def _update_session_status(self, status: str, result_data: dict | None = None, error_message: str | None = None) -> None:
         try:
             from sqlalchemy import select
             result = await self.db.execute(
@@ -559,14 +563,14 @@ class ComputerUseSessionManagerV2:
                 if error_message:
                     session.error_message = error_message
                 if status in ("completed", "failed", "stopped"):
-                    session.completed_at = datetime.now(timezone.utc)
+                    session.completed_at = datetime.now(UTC)
                 if status == "running" and not session.started_at:
-                    session.started_at = datetime.now(timezone.utc)
+                    session.started_at = datetime.now(UTC)
                 await self.db.commit()
         except Exception as e:
             logger.error(f"DB update error: {e}")
 
-    async def _update_session_progress(self, current_url: Optional[str]) -> None:
+    async def _update_session_progress(self, current_url: str | None) -> None:
         try:
             from sqlalchemy import select
             result = await self.db.execute(
@@ -581,7 +585,7 @@ class ComputerUseSessionManagerV2:
         except Exception as e:
             logger.error(f"DB progress update error: {e}")
 
-    async def _save_step(self, step_number: int, screenshot_path: str, action: ComputerUseAction, page_url: Optional[str]) -> None:
+    async def _save_step(self, step_number: int, screenshot_path: str, action: ComputerUseAction, page_url: str | None) -> None:
         try:
             step = ComputerUseStep(
                 session_id=UUID(self.session_id),
@@ -591,7 +595,7 @@ class ComputerUseSessionManagerV2:
                 llm_response=action.reason,
                 action_type=action.action_type,
                 action_params=action.params,
-                executed_at=datetime.now(timezone.utc),
+                executed_at=datetime.now(UTC),
             )
             self.db.add(step)
             await self.db.commit()
@@ -632,8 +636,8 @@ class ComputerUseSessionManagerV2:
     async def _enrich_vision_prompt_with_brain_strategy(
         self,
         base_prompt: str,
-        customer_profile: Optional[dict] = None,
-        conversation_history: Optional[list] = None,
+        customer_profile: dict | None = None,
+        conversation_history: list | None = None,
     ) -> str:
         """
         Enriquece el prompt del vision agent con estrategia del Brain.
@@ -713,7 +717,7 @@ Template guidance:
 
         return Platform.WEBSITE
 
-    def _detect_sales_stage(self, conversation_history: List[Dict[str, Any]]) -> SalesStage:
+    def _detect_sales_stage(self, conversation_history: list[dict[str, Any]]) -> SalesStage:
         """Detecta etapa de venta basada en conversación."""
         if len(conversation_history) == 0:
             return SalesStage.AWARENESS

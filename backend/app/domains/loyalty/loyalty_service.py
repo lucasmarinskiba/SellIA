@@ -2,17 +2,21 @@
 
 import logging
 import secrets
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional
+from datetime import UTC, datetime
 from decimal import Decimal
+from uuid import UUID
 
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.domains.loyalty.loyalty_models import (
-    LoyaltyProgram, LoyaltyMember, LoyaltyReward, LoyaltyTransaction,
-    LoyaltyMetrics, MembershipTier, RewardType
+    LoyaltyMember,
+    LoyaltyMetrics,
+    LoyaltyProgram,
+    LoyaltyReward,
+    LoyaltyTransaction,
+    MembershipTier,
+    RewardType,
 )
 
 logger = logging.getLogger(__name__)
@@ -240,7 +244,7 @@ class LoyaltyProgramService:
 
         if new_tier != old_tier:
             member.current_tier = new_tier
-            member.tier_since = datetime.now(timezone.utc)
+            member.tier_since = datetime.now(UTC)
             db.commit()
 
             logger.info(f"Tier updated: {member_id} {old_tier.value} -> {new_tier.value}")
@@ -354,7 +358,7 @@ class LoyaltyProgramService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         # Member counts
         total_members = db.query(LoyaltyMember).filter(

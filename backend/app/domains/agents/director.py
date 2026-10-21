@@ -6,22 +6,19 @@ Runs every 6 hours via Celery beat.
 """
 
 import uuid
-from typing import Any, Optional, List
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.objectives.models import BusinessObjective, KPI, ObjectiveStatus
-from app.domains.objectives.services import ObjectiveService
+from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.analytics.models import InsightAlert
 from app.domains.analytics.services import BusinessIntelligenceService
 from app.domains.channels.models import Conversation
-from app.domains.channels.services import send_outbound_message
-from app.domains.agents.ai_reply import generate_raw_ai_response
-from app.domains.agents.models import AgentPersonality
-from app.core.logger import get_logger
+from app.domains.objectives.models import BusinessObjective, ObjectiveStatus
+from app.domains.objectives.services import ObjectiveService
 
 logger = get_logger(__name__)
 
@@ -69,14 +66,14 @@ class SellIADirector:
         logger.info(f"[Director] Cycle completed for business {business_id}")
         return {"objectives_evaluated": len(objectives), "at_risk": len(at_risk_objectives), "actions_generated": len(action_plan)}
 
-    async def _generate_action_plan(self, objective: BusinessObjective) -> List[dict[str, Any]]:
+    async def _generate_action_plan(self, objective: BusinessObjective) -> list[dict[str, Any]]:
         """Generate specific actions to recover an at-risk objective."""
         actions = []
         progress = float(objective.current_value / objective.target_value) if objective.target_value else 0
         gap = float(objective.target_value - objective.current_value) if objective.target_value else 0
 
         # Days remaining
-        days_remaining = (objective.end_date - datetime.now(timezone.utc)).days if objective.end_date else 30
+        days_remaining = (objective.end_date - datetime.now(UTC)).days if objective.end_date else 30
         if days_remaining <= 0:
             days_remaining = 1
 
@@ -115,7 +112,10 @@ class SellIADirector:
         try:
             if action["type"] == "launch_recovery_campaign":
                 # Find or create a recovery workflow
-                from app.domains.automations.models import Workflow, WorkflowTriggerType, WorkflowStatus
+                from app.domains.automations.models import (
+                    Workflow,
+                    WorkflowStatus,
+                )
                 result = await self.db.execute(
                     select(Workflow).where(
                         Workflow.business_id == business_id,
@@ -147,7 +147,7 @@ class SellIADirector:
         except Exception as e:
             logger.error(f"[Director] Action execution error: {e}")
 
-    async def _generate_daily_briefing(self, business_id: uuid.UUID, objectives: List[BusinessObjective], at_risk: List[BusinessObjective], action_plan: List[dict]) -> str:
+    async def _generate_daily_briefing(self, business_id: uuid.UUID, objectives: list[BusinessObjective], at_risk: list[BusinessObjective], action_plan: list[dict]) -> str:
         """Generate an AI-powered daily briefing for the business owner."""
         # Gather context
         total_objectives = len(objectives)
@@ -158,7 +158,7 @@ class SellIADirector:
         insights_result = await self.db.execute(
             select(InsightAlert).where(
                 InsightAlert.business_id == business_id,
-                InsightAlert.created_at >= datetime.now(timezone.utc) - timedelta(hours=24),
+                InsightAlert.created_at >= datetime.now(UTC) - timedelta(hours=24),
             ).order_by(desc(InsightAlert.created_at)).limit(5)
         )
         insights = insights_result.scalars().all()

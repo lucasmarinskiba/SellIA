@@ -1,6 +1,7 @@
 """WhatsApp Web Platform Script — Browser automation for WhatsApp Web"""
 
-from typing import List, Dict, Any
+from typing import Any
+
 from .base import PlatformScript, ScriptStep
 
 
@@ -10,7 +11,7 @@ class WhatsAppWebScript(PlatformScript):
     login_url = "https://web.whatsapp.com/"
     dashboard_url = "https://web.whatsapp.com/"
 
-    def get_task_steps(self, task_type: str, params: Dict[str, Any]) -> List[ScriptStep]:
+    def get_task_steps(self, task_type: str, params: dict[str, Any]) -> list[ScriptStep]:
         if task_type == "respond_message":
             return self._respond_message(params)
         elif task_type == "send_message":
@@ -19,7 +20,7 @@ class WhatsAppWebScript(PlatformScript):
             return self._check_unread(params)
         return super().get_task_steps(task_type, params)
 
-    def _respond_message(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _respond_message(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Respond to specific WhatsApp message."""
         customer_name = params.get("customer_name", "")
         response_text = params.get("response_text", "")
@@ -49,7 +50,7 @@ class WhatsAppWebScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify message sent"),
         ]
 
-    def _send_message(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _send_message(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Send message to specific contact."""
         phone_number = params.get("phone_number", "")
         message_text = params.get("message_text", "")
@@ -70,7 +71,7 @@ class WhatsAppWebScript(PlatformScript):
             ScriptStep(action="screenshot", description="Verify message sent"),
         ]
 
-    def _check_unread(self, params: Dict[str, Any]) -> List[ScriptStep]:
+    def _check_unread(self, params: dict[str, Any]) -> list[ScriptStep]:
         """Check unread messages."""
         return [
             ScriptStep(action="navigate", target="https://web.whatsapp.com/", description="Navigate to WhatsApp Web"),

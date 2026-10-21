@@ -10,15 +10,14 @@ real, closing-effectiveness la lee de verdad (404 si no existe, no inventa
 datos), y win-deal actualiza esa misma fila en vez de solo devolver un cálculo.
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domains.conversion_engine.models import ConversionSequence, AttractionMagnet
-
+from app.domains.conversion_engine.models import AttractionMagnet, ConversionSequence
 
 router = APIRouter(prefix="/api/v1/conversion-engine", tags=["conversion-engine"])
 
@@ -185,7 +184,7 @@ async def record_deal_won(
     record.closed_value = deal_value
     record.which_touch_converted = which_touch_converted
     record.conversion_attributed_to_tactic = attribution
-    record.closed_at = datetime.now(timezone.utc)
+    record.closed_at = datetime.now(UTC)
     await db.commit()
 
     return {

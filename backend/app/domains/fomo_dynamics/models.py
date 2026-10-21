@@ -1,9 +1,21 @@
 """Phase X6: FOMO Dynamics - Ultra-Potent FOMO Engine."""
-import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, Enum
-from app.db.models import Base
 import enum
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Integer,
+    String,
+    Text,
+)
+
+from app.db.models import Base
 
 
 class FOMOStrategy(str, enum.Enum):
@@ -60,8 +72,8 @@ class DynamicOffer(Base):
 
     # Tracking
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class PriceElasticity(Base):
@@ -78,7 +90,7 @@ class PriceElasticity(Base):
     optimal_price = Column(Float, nullable=True)
 
     # Tracking
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class FOMOBadge(Base):
@@ -119,7 +131,7 @@ class SocialProofReal(Base):
     sales_velocity = Column(Integer, default=0)  # Units/hour
     is_bestseller = Column(Boolean, default=False)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 
 class PersonalizedFOMO(Base):
@@ -144,4 +156,4 @@ class PersonalizedFOMO(Base):
     conversion_probability = Column(Float, default=0)  # 0-1 estimated chance they'll buy
     recommended_offer = Column(String(500), nullable=True)  # Best offer for this user
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Optional
 
-from sqlalchemy import desc, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -58,7 +57,7 @@ class RecruitmentService:
         cand = (await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))).scalar_one()
         cand.stage = CandidateStage.OFFER_SENT.value
         cand.offer_salary_aed = salary_aed
-        cand.offer_sent_at = datetime.now(timezone.utc)
+        cand.offer_sent_at = datetime.now(UTC)
         await self.db.commit()
         return cand
 
@@ -66,8 +65,8 @@ class RecruitmentService:
         """Accept offer → hire → create employee."""
         cand = (await self.db.execute(select(Candidate).where(Candidate.id == candidate_id))).scalar_one()
         cand.stage = CandidateStage.HIRED.value
-        cand.offer_accepted_at = datetime.now(timezone.utc)
-        cand.hired_at = datetime.now(timezone.utc)
+        cand.offer_accepted_at = datetime.now(UTC)
+        cand.hired_at = datetime.now(UTC)
 
         # Second-precision timestamp alone collides whenever two employees are
         # hired within the same wall-clock second — append a short random
@@ -83,7 +82,7 @@ class RecruitmentService:
             position=cand.position,
             department="unassigned",
             hire_date=date.today(),
-            salary_aed_monthly=cand.offer_salary_aed or Decimal("0"),
+            salary_aed_monthly=cand.offer_salary_aed or Decimal(0),
             contract_type="full_time",
         )
         self.db.add(emp)
@@ -123,10 +122,10 @@ class OnboardingService:
         await self.db.commit()
         return created
 
-    async def complete_item(self, item_id: uuid.UUID, notes: Optional[str] = None) -> OnboardingChecklistItem:
+    async def complete_item(self, item_id: uuid.UUID, notes: str | None = None) -> OnboardingChecklistItem:
         """Mark onboarding task complete."""
         item = (await self.db.execute(select(OnboardingChecklistItem).where(OnboardingChecklistItem.id == item_id))).scalar_one()
-        item.completed_at = datetime.now(timezone.utc)
+        item.completed_at = datetime.now(UTC)
         if notes:
             item.notes = notes
         await self.db.commit()
@@ -160,13 +159,13 @@ class PayrollService:
         self.db = db
 
     async def calculate_payroll(
-        self, employee_id: uuid.UUID, payroll_date: date, allowances_aed: Decimal = Decimal("0")
+        self, employee_id: uuid.UUID, payroll_date: date, allowances_aed: Decimal = Decimal(0)
     ) -> Payroll:
         """Calculate monthly payroll: salary + allowances - deductions - tax."""
         emp = (await self.db.execute(select(Employee).where(Employee.id == employee_id))).scalar_one()
 
         salary = emp.salary_aed_monthly
-        deductions = Decimal("0")  # placeholder for loans, etc.
+        deductions = Decimal(0)  # placeholder for loans, etc.
         tax = (salary + allowances_aed - deductions) * Decimal("0.05")  # simplified 5% tax
 
         net = salary + allowances_aed - deductions - tax

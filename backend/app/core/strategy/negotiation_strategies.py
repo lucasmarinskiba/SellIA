@@ -1,9 +1,9 @@
 """Negotiation Strategies — Proveedores, clientes, empleados."""
 
+import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, Any, List
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ class NegotiationContext:
     """Context for negotiation."""
     negotiation_type: NegotiationType
     counterparty: str  # Name of supplier/customer/employee
-    current_terms: Dict[str, Any]  # Current agreement terms
-    target_outcomes: Dict[str, Any]  # What we want to achieve
-    constraints: List[str]  # What we can't do
+    current_terms: dict[str, Any]  # Current agreement terms
+    target_outcomes: dict[str, Any]  # What we want to achieve
+    constraints: list[str]  # What we can't do
 
 
 @dataclass
@@ -33,19 +33,19 @@ class OptimalTerms:
     volume_commitment: str
     exclusivity: bool
     contract_duration_months: int
-    additional_benefits: List[str]
+    additional_benefits: list[str]
     reasoning: str
 
 
 @dataclass
 class OptimalDeal:
     """Recommended customer deal structure."""
-    product_bundle: List[str]
+    product_bundle: list[str]
     price: float
     payment_plan: str  # One-time, monthly, custom
     risk_reversal: str  # Money-back guarantee, trial, etc.
-    scarcity_element: Optional[str]  # Limited spots, expiring offer
-    upsell_opportunity: Optional[str]
+    scarcity_element: str | None  # Limited spots, expiring offer
+    upsell_opportunity: str | None
     expected_close_rate: float
     reasoning: str
 
@@ -60,7 +60,7 @@ class OptimalPackage:
     remote_flexibility: bool
     pto_days: int
     growth_path: str
-    benefits: List[str]
+    benefits: list[str]
     total_comp_value: float
 
 
@@ -69,12 +69,11 @@ class NegotiationStrategist:
 
     def __init__(self):
         """Initialize negotiation strategist."""
-        pass
 
     def supplier_negotiation(
         self,
         supplier_name: str,
-        current_terms: Dict[str, Any],
+        current_terms: dict[str, Any],
         business_profile: "BusinessProfile",
     ) -> OptimalTerms:
         """
@@ -148,7 +147,7 @@ class NegotiationStrategist:
     def customer_negotiation(
         self,
         customer_name: str,
-        customer_data: Dict[str, Any],
+        customer_data: dict[str, Any],
         business_profile: "BusinessProfile",
     ) -> OptimalDeal:
         """
@@ -232,7 +231,7 @@ class NegotiationStrategist:
     def employee_negotiation(
         self,
         employee_name: str,
-        employee_data: Dict[str, Any],
+        employee_data: dict[str, Any],
         business_profile: "BusinessProfile",
     ) -> OptimalPackage:
         """
@@ -351,7 +350,7 @@ class NegotiationStrategist:
         self,
         supplier_name: str,
         business_profile: "BusinessProfile",
-        current_terms: Dict[str, Any],
+        current_terms: dict[str, Any],
     ) -> bool:
         """Evaluate whether exclusivity makes sense."""
         # Only commit to exclusivity if:
@@ -360,7 +359,7 @@ class NegotiationStrategist:
         # - We get significant price concession
         return current_terms.get("strategic", False)
 
-    def _build_customer_bundle(self, needs: List[str], budget: float) -> List[str]:
+    def _build_customer_bundle(self, needs: list[str], budget: float) -> list[str]:
         """Build product bundle based on customer needs."""
         bundle = []
 
@@ -377,7 +376,7 @@ class NegotiationStrategist:
 
     def _calculate_bundle_price(
         self,
-        bundle: List[str],
+        bundle: list[str],
         base_price: float,
         business_profile: "BusinessProfile",
     ) -> float:
@@ -399,7 +398,7 @@ class NegotiationStrategist:
         else:
             return f"One-time payment of ${total_price:.0f}"
 
-    def _select_risk_reversal(self, risk_level: str, bundle: List[str]) -> str:
+    def _select_risk_reversal(self, risk_level: str, bundle: list[str]) -> str:
         """Select risk reversal strategy."""
         if risk_level == "high":
             return "30-day money-back guarantee, no questions asked"
@@ -408,7 +407,7 @@ class NegotiationStrategist:
         else:
             return "Satisfaction guarantee"
 
-    def _create_scarcity_element(self, decision_speed: str) -> Optional[str]:
+    def _create_scarcity_element(self, decision_speed: str) -> str | None:
         """Create appropriate scarcity element."""
         if decision_speed == "fast":
             return None  # Already decided
@@ -419,9 +418,9 @@ class NegotiationStrategist:
 
     def _identify_upsell_opportunity(
         self,
-        needs: List[str],
-        bundle: List[str],
-    ) -> Optional[str]:
+        needs: list[str],
+        bundle: list[str],
+    ) -> str | None:
         """Identify natural upsell opportunity."""
         if "training" not in bundle:
             return "Advanced Training Program (+$999)"
@@ -433,7 +432,7 @@ class NegotiationStrategist:
     def _estimate_close_rate(
         self,
         risk_reversal: str,
-        scarcity: Optional[str],
+        scarcity: str | None,
         payment_plan: str,
     ) -> float:
         """Estimate close rate based on deal structure."""
@@ -487,7 +486,7 @@ class NegotiationStrategist:
         """Create growth path description."""
         return f"6-month check-in → potential promotion to {role} lead within 12-18 months"
 
-    def _select_benefits(self, stage: str) -> List[str]:
+    def _select_benefits(self, stage: str) -> list[str]:
         """Select benefits package."""
         benefits = ["Health insurance", "401k matching (3%)"]
 

@@ -3,19 +3,24 @@
 24/7 autonomous sales execution.
 """
 
-from celery import shared_task
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
-from app.core.database import AsyncSessionLocal
-from app.core.async_bridge import run_async
-from app.core.logger import get_logger
-from app.domains.autopilot.service import AutopilotEngine, AutopilotReportService, AutopilotExecutor
-from app.domains.outreach.service import FatigueScoringService
-from app.domains.crm.auto_close import AutoCloseEvaluator
-from app.domains.retention.health import HealthScoringService, ChurnPreventionEngine
-from app.domains.alerts.models import Recommendation, RecommendationStatus
-from app.domains.businesses.models import Business
+from celery import shared_task
 from sqlalchemy import select
+
+from app.core.async_bridge import run_async
+from app.core.database import AsyncSessionLocal
+from app.core.logger import get_logger
+from app.domains.alerts.models import Recommendation, RecommendationStatus
+from app.domains.autopilot.service import (
+    AutopilotEngine,
+    AutopilotExecutor,
+    AutopilotReportService,
+)
+from app.domains.businesses.models import Business
+from app.domains.crm.auto_close import AutoCloseEvaluator
+from app.domains.outreach.service import FatigueScoringService
+from app.domains.retention.health import ChurnPreventionEngine, HealthScoringService
 
 logger = get_logger(__name__)
 
@@ -176,15 +181,15 @@ def cadence_engine_scheduler():
     """Every 30 min: schedule next contacts based on fatigue + context."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.outreach.service import CadenceEngine
             from app.domains.channels.models import Conversation
+            from app.domains.outreach.service import CadenceEngine
 
             engine = CadenceEngine(db)
 
             # Get active conversations that need follow-up
             # Conversations with no response in 24-48h and not in cooldown
-            since = datetime.now(timezone.utc) - timedelta(hours=48)
-            until = datetime.now(timezone.utc) - timedelta(hours=24)
+            since = datetime.now(UTC) - timedelta(hours=48)
+            until = datetime.now(UTC) - timedelta(hours=24)
 
             result = await db.execute(
                 select(Conversation).where(
@@ -217,8 +222,8 @@ def director_executive_loop():
     """Every 6h: SellIA Director evaluates AND executes action plans."""
     async def _run():
         async with AsyncSessionLocal() as db:
-            from app.domains.orchestration.director import SellIADirector
             from app.domains.autopilot.models import AutopilotConfig
+            from app.domains.orchestration.director import SellIADirector
 
             director = SellIADirector(db)
 

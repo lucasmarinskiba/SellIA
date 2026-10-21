@@ -11,16 +11,15 @@ data. They used to read across all records regardless of who asked, which
 both showed a logged-in user other people's numbers as if they were their own
 and would have exposed real accounts' leads and AI reasoning on a public page.
 """
-from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.db.database import AsyncSessionLocal as LeadsSessionLocal
 from app.db.models import Lead as LeadModel
-from app.core.database import get_db
 
 router = APIRouter(tags=["brain-live"])
 
@@ -89,7 +88,7 @@ SQUAD_LABELS = {
 }
 
 
-def _squad_for(source: Optional[str]) -> str:
+def _squad_for(source: str | None) -> str:
     return SQUAD_MAP.get((source or "").lower(), "ads")
 
 
@@ -118,8 +117,13 @@ async def _real_user_notifications(user, limit: int) -> list[dict]:
     """
     from app.core.database import AsyncSessionLocal
     from app.domains.ai_activity.models import AIActionLog
-    from app.domains.channels.models import Conversation, Message, MessageDirection, ChannelConnection
     from app.domains.businesses.models import Business
+    from app.domains.channels.models import (
+        ChannelConnection,
+        Conversation,
+        Message,
+        MessageDirection,
+    )
     from app.domains.crm.models import Deal, LeadStage
 
     notifications: list[dict] = []
@@ -478,14 +482,16 @@ async def get_pending_approvals(request: Request, db: AsyncSession = Depends(get
 
 
 class ApprovalDecision(BaseModel):
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 @router.post("/audit-log/{log_id}/approve")
 async def approve_action(log_id: str):
     try:
         from app.core.database import AsyncSessionLocal as AuditSessionLocal
-        from app.domains.computer_use.services.audit_log_service import get_audit_log_service
+        from app.domains.computer_use.services.audit_log_service import (
+            get_audit_log_service,
+        )
 
         async with AuditSessionLocal() as db:
             service = get_audit_log_service(db)
@@ -504,7 +510,9 @@ async def approve_action(log_id: str):
 async def reject_action(log_id: str, decision: ApprovalDecision):
     try:
         from app.core.database import AsyncSessionLocal as AuditSessionLocal
-        from app.domains.computer_use.services.audit_log_service import get_audit_log_service
+        from app.domains.computer_use.services.audit_log_service import (
+            get_audit_log_service,
+        )
 
         async with AuditSessionLocal() as db:
             service = get_audit_log_service(db)

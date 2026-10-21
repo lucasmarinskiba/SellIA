@@ -6,15 +6,15 @@ APIKeyManager: Generate, rotate, revoke, rate-limit API keys.
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, and_, desc
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
-from .models import TenantAPIKey, AuditLog, Tenant
+from app.core.logger import get_logger
+
+from .models import Tenant, TenantAPIKey
 
 logger = get_logger(__name__)
 
@@ -51,10 +51,10 @@ class APIKeyService:
         tenant_id: str,
         name: str,
         created_by: str,
-        scopes: Optional[List[str]] = None,
-        ip_whitelist: Optional[List[str]] = None,
+        scopes: list[str] | None = None,
+        ip_whitelist: list[str] | None = None,
         rate_limit_per_minute: int = 100,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> tuple[TenantAPIKey, str]:
         """
         Create API key for tenant.
@@ -124,7 +124,7 @@ class APIKeyService:
         await self.db.commit()
 
         logger.info(
-            f"API key created",
+            "API key created",
             extra={
                 "tenant_id": str(tenant_id),
                 "key_id": str(api_key.id),
@@ -138,8 +138,8 @@ class APIKeyService:
     async def validate_api_key(
         self,
         key: str,
-        ip_address: Optional[str] = None,
-    ) -> Optional[TenantAPIKey]:
+        ip_address: str | None = None,
+    ) -> TenantAPIKey | None:
         """
         Validate API key: hash it, check DB, check revocation/expiry.
 
@@ -169,9 +169,9 @@ class APIKeyService:
             return None
 
         # Check if key must be rotated
-        if api_key.must_rotate_by and datetime.now(timezone.utc) > api_key.must_rotate_by:
+        if api_key.must_rotate_by and datetime.now(UTC) > api_key.must_rotate_by:
             logger.warning(
-                f"API key rotation required",
+                "API key rotation required",
                 extra={"key_id": str(api_key.id)},
             )
             return None
@@ -180,7 +180,7 @@ class APIKeyService:
         if api_key.ip_whitelist and ip_address:
             if not self._check_ip_whitelist(ip_address, api_key.ip_whitelist):
                 logger.warning(
-                    f"API key access denied by IP whitelist",
+                    "API key access denied by IP whitelist",
                     extra={
                         "key_id": str(api_key.id),
                         "ip": ip_address,
@@ -189,7 +189,7 @@ class APIKeyService:
                 return None
 
         # Update last_used_at
-        api_key.last_used_at = datetime.now(timezone.utc)
+        api_key.last_used_at = datetime.now(UTC)
         api_key.total_requests += 1
 
         await self.db.commit()
@@ -213,7 +213,7 @@ class APIKeyService:
 
         # Revoke old key
         old_key.is_revoked = True
-        old_key.revoked_at = datetime.now(timezone.utc)
+        old_key.revoked_at = datetime.now(UTC)
         old_key.revoked_reason = "Key rotated"
 
         # Create new key with same properties
@@ -228,12 +228,12 @@ class APIKeyService:
         )
 
         # Schedule old key deletion after grace period
-        old_key.rotation_scheduled_at = datetime.now(timezone.utc) + timedelta(days=7)
+        old_key.rotation_scheduled_at = datetime.now(UTC) + timedelta(days=7)
 
         await self.db.commit()
 
         logger.info(
-            f"API key rotated",
+            "API key rotated",
             extra={
                 "old_key_id": str(key_id),
                 "new_key_id": str(new_key.id),
@@ -253,20 +253,20 @@ class APIKeyService:
             raise AppException("API key not found", status_code=404)
 
         api_key.is_revoked = True
-        api_key.revoked_at = datetime.now(timezone.utc)
+        api_key.revoked_at = datetime.now(UTC)
         api_key.revoked_reason = reason
 
         await self.db.commit()
 
         logger.warning(
-            f"API key revoked",
+            "API key revoked",
             extra={
                 "key_id": str(key_id),
                 "reason": reason,
             },
         )
 
-    async def get_api_key(self, key_id: str) -> Optional[TenantAPIKey]:
+    async def get_api_key(self, key_id: str) -> TenantAPIKey | None:
         """Get API key by ID (never returns plaintext)."""
         result = await self.db.execute(
             select(TenantAPIKey).where(TenantAPIKey.id == key_id)
@@ -278,7 +278,7 @@ class APIKeyService:
         tenant_id: str,
         include_revoked: bool = False,
         limit: int = 50,
-    ) -> List[TenantAPIKey]:
+    ) -> list[TenantAPIKey]:
         """List API keys for tenant."""
         query = select(TenantAPIKey).where(TenantAPIKey.tenant_id == tenant_id)
 
@@ -299,7 +299,7 @@ class APIKeyService:
             select(TenantAPIKey).where(
                 and_(
                     TenantAPIKey.must_rotate_by.isnot(None),
-                    TenantAPIKey.must_rotate_by < datetime.now(timezone.utc),
+                    TenantAPIKey.must_rotate_by < datetime.now(UTC),
                     TenantAPIKey.is_revoked == False,
                 )
             )
@@ -309,11 +309,11 @@ class APIKeyService:
 
         for key in keys_to_rotate:
             key.is_revoked = True
-            key.revoked_at = datetime.now(timezone.utc)
+            key.revoked_at = datetime.now(UTC)
             key.revoked_reason = "Mandatory rotation deadline passed"
 
             logger.warning(
-                f"API key auto-revoked for mandatory rotation",
+                "API key auto-revoked for mandatory rotation",
                 extra={"key_id": str(key.id)},
             )
 
@@ -321,7 +321,7 @@ class APIKeyService:
             await self.db.commit()
 
     @staticmethod
-    def _check_ip_whitelist(client_ip: str, whitelist: List[str]) -> bool:
+    def _check_ip_whitelist(client_ip: str, whitelist: list[str]) -> bool:
         """
         Check if client IP is in whitelist (CIDR support).
         """
@@ -347,13 +347,13 @@ class APIKeyManager:
         self,
         db: AsyncSession,
         key: str,
-        ip_address: Optional[str] = None,
-    ) -> Optional[TenantAPIKey]:
+        ip_address: str | None = None,
+    ) -> TenantAPIKey | None:
         service = self.get_service(db)
         return await service.validate_api_key(key, ip_address)
 
 
-_api_key_manager: Optional[APIKeyManager] = None
+_api_key_manager: APIKeyManager | None = None
 
 
 def get_api_key_manager() -> APIKeyManager:

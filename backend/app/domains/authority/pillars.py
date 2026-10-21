@@ -22,7 +22,7 @@ that nothing keeps honest.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 #: pillar key -> (label, weight). Weights sum to 1.0.
 PILLARS: dict[str, tuple[str, float]] = {
@@ -196,7 +196,7 @@ def prueba_social(trust: dict[str, Any] | None) -> dict[str, Any]:
 
 # ── respuesta ───────────────────────────────────────────────────────────────
 def respuesta_from(
-    *, inbound: int, answered: int, median_minutes: Optional[float]
+    *, inbound: int, answered: int, median_minutes: float | None
 ) -> dict[str, Any]:
     if inbound == 0:
         return _pillar(0.0, {"inbound": 0, "answered": 0, "median_minutes": None},

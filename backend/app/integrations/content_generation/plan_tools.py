@@ -4,8 +4,7 @@ Mapea cada herramienta al plan mínimo requerido, su categoría,
 costo estimado, y metadatos para el router y la UI.
 """
 
-from typing import Dict, List, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -27,7 +26,7 @@ class ToolInfo:
 # REGISTRO DE HERRAMIENTAS (26 herramientas)
 # ============================================================================
 
-TOOL_REGISTRY: Dict[str, ToolInfo] = {
+TOOL_REGISTRY: dict[str, ToolInfo] = {
     # === FREE TIER (9 herramientas) ===
     "chatgpt": ToolInfo(
         slug="chatgpt",
@@ -372,7 +371,7 @@ TOOL_REGISTRY: Dict[str, ToolInfo] = {
 # MAPEO POR PLAN
 # ============================================================================
 
-PLAN_CONTENT_TOOLS: Dict[str, List[str]] = {
+PLAN_CONTENT_TOOLS: dict[str, list[str]] = {
     "free": [
         "chatgpt", "canva", "capcut", "ideogram",
         "replicate_flux_schnell", "fal_flux_pro", "gpt_image_mini",
@@ -418,7 +417,7 @@ PLAN_CONTENT_TOOLS: Dict[str, List[str]] = {
 # FUNCIONES DE UTILIDAD
 # ============================================================================
 
-def get_tools_for_plan(plan_tier: str) -> List[str]:
+def get_tools_for_plan(plan_tier: str) -> list[str]:
     """Retorna lista de slugs de herramientas disponibles para un plan."""
     return PLAN_CONTENT_TOOLS.get(plan_tier, PLAN_CONTENT_TOOLS["free"])
 
@@ -434,7 +433,7 @@ def is_tool_allowed(tool_slug: str, plan_tier: str) -> bool:
     return tool_slug in allowed
 
 
-def get_tools_by_category(plan_tier: str, category: str) -> List[ToolInfo]:
+def get_tools_by_category(plan_tier: str, category: str) -> list[ToolInfo]:
     """Filtra herramientas por categoría para un plan."""
     allowed_slugs = set(get_tools_for_plan(plan_tier))
     return [
@@ -482,7 +481,7 @@ def get_plan_upgrade_message(tool_slug: str, current_plan: str) -> str:
     )
 
 
-def get_tools_pricing_table() -> Dict[str, Dict]:
+def get_tools_pricing_table() -> dict[str, dict]:
     """Genera tabla de precios para la UI."""
     table = {}
     for slug, tool in TOOL_REGISTRY.items():
@@ -496,7 +495,7 @@ def get_tools_pricing_table() -> Dict[str, Dict]:
     return table
 
 
-def get_plan_comparison() -> Dict[str, Dict]:
+def get_plan_comparison() -> dict[str, dict]:
     """Genera comparación de planes para la UI."""
     comparison = {}
     for plan in ["free", "starter", "pro", "enterprise"]:

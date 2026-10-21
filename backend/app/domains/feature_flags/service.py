@@ -6,10 +6,9 @@ plan-gating, and instant kill-switches.
 """
 
 import hashlib
-from typing import Optional, List
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
 
@@ -28,8 +27,8 @@ class FeatureFlagService:
     async def is_enabled(
         db: AsyncSession,
         flag_name: str,
-        user_id: Optional[str] = None,
-        plan_id: Optional[str] = None,
+        user_id: str | None = None,
+        plan_id: str | None = None,
         default: bool = False,
     ) -> bool:
         """
@@ -74,7 +73,7 @@ class FeatureFlagService:
         return flag.rollout_percentage >= 50  # Default for anonymous
 
     @staticmethod
-    async def get_all_flags(db: AsyncSession) -> List[dict]:
+    async def get_all_flags(db: AsyncSession) -> list[dict]:
         """Return all feature flags (for admin UI)."""
         from app.domains.feature_flags.models import FeatureFlag
         result = await db.execute(select(FeatureFlag))
@@ -95,8 +94,8 @@ class FeatureFlagService:
 async def flag_enabled(
     db: AsyncSession,
     flag_name: str,
-    user_id: Optional[str] = None,
-    plan_id: Optional[str] = None,
+    user_id: str | None = None,
+    plan_id: str | None = None,
     default: bool = False,
 ) -> bool:
     return await FeatureFlagService.is_enabled(db, flag_name, user_id, plan_id, default)

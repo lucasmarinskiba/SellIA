@@ -14,8 +14,8 @@ Ollama-availability HTTP check already in this codebase.
 """
 
 import re
-from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -40,7 +40,7 @@ class CompetitorPriceExtractor:
         return float(raw.replace(",", ""))
 
     @staticmethod
-    def extract(raw_text: str) -> Dict[str, Any]:
+    def extract(raw_text: str) -> dict[str, Any]:
         """Parse a page's raw text/HTML for pricing and discount signals"""
         if not raw_text:
             return {
@@ -100,9 +100,9 @@ class PriceChangeDetector:
 
     @staticmethod
     def detect_change(
-        current: Dict[str, Any],
-        previous: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        current: dict[str, Any],
+        previous: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         if previous is None:
             return {
                 "change_type": "first_observation",
@@ -155,7 +155,7 @@ class CompetitiveMessagingGenerator:
         competitor_price: float,
         our_product_name: str,
         competitor_name: str = "la competencia",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if our_price <= 0:
             return {"error": "invalid_our_price"}
 
@@ -190,7 +190,7 @@ class CompetitiveMessagingGenerator:
         competitor_discount_percent: float,
         our_recommended_discount_percent: float,
         competitor_name: str = "la competencia",
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         return {
             "headline": f"{competitor_name} bajó precios — nosotros también",
             "body": (
@@ -207,13 +207,13 @@ class CompetitorAlertManager:
     @staticmethod
     def build_alert(
         competitor_name: str,
-        change_result: Dict[str, Any],
-        detected_at: Optional[datetime] = None,
-    ) -> Optional[Dict[str, Any]]:
+        change_result: dict[str, Any],
+        detected_at: datetime | None = None,
+    ) -> dict[str, Any] | None:
         if not change_result["significant"]:
             return None
 
-        detected_at = detected_at or datetime.now(timezone.utc)
+        detected_at = detected_at or datetime.now(UTC)
         current = change_result["current"]
 
         return {
@@ -229,14 +229,14 @@ class AICompetitorMonitorAgent:
     """Fase F: Main agent — extract, detect change, generate messaging, alert"""
 
     @staticmethod
-    def extract_competitor_offer(raw_text: str) -> Dict[str, Any]:
+    def extract_competitor_offer(raw_text: str) -> dict[str, Any]:
         return CompetitorPriceExtractor.extract(raw_text)
 
     @staticmethod
     def detect_price_change(
-        current: Dict[str, Any],
-        previous: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        current: dict[str, Any],
+        previous: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return PriceChangeDetector.detect_change(current, previous)
 
     @staticmethod
@@ -245,7 +245,7 @@ class AICompetitorMonitorAgent:
         competitor_price: float,
         our_product_name: str,
         competitor_name: str = "la competencia",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return CompetitiveMessagingGenerator.generate_comparison(
             our_price, competitor_price, our_product_name, competitor_name
         )
@@ -253,19 +253,19 @@ class AICompetitorMonitorAgent:
     @staticmethod
     def build_alert(
         competitor_name: str,
-        change_result: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+        change_result: dict[str, Any],
+    ) -> dict[str, Any] | None:
         return CompetitorAlertManager.build_alert(competitor_name, change_result)
 
     @staticmethod
     def full_monitor_cycle(
         raw_text: str,
         competitor_name: str,
-        previous_snapshot: Optional[Dict[str, Any]] = None,
-        our_price: Optional[float] = None,
-        our_product_name: Optional[str] = None,
-        our_recommended_discount_percent: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        previous_snapshot: dict[str, Any] | None = None,
+        our_price: float | None = None,
+        our_product_name: str | None = None,
+        our_recommended_discount_percent: float | None = None,
+    ) -> dict[str, Any]:
         """Full pipeline: extract -> detect change -> alert (if significant)
         -> competitive messaging (if our pricing context is supplied)"""
         current = CompetitorPriceExtractor.extract(raw_text)
@@ -297,7 +297,7 @@ class AICompetitorMonitorAgent:
         }
 
 
-async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> Optional[str]:
+async def fetch_competitor_page(url: str, timeout_seconds: int = 10) -> str | None:
     """Thin async fetcher for a single user-configured URL — mirrors the
     existing Ollama-availability check pattern in llm_provider.py. Returns
     raw page text, or None on any failure (never raises into the caller)."""

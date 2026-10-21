@@ -1,18 +1,18 @@
 """Customer segmentation service — RFM + behavioral + churn prediction."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from typing import Optional, Dict, Tuple
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from statistics import stdev, mean
+from statistics import stdev
+from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.domains.segmentation.segmentation_models import (
-    CustomerSegment, SegmentationMetrics, SegmentationStrategy,
-    RFMSegment, BehavioralSegment, ChurnRiskLevel
+    ChurnRiskLevel,
+    CustomerSegment,
+    RFMSegment,
+    SegmentationMetrics,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,9 +32,10 @@ class SegmentationService:
             raise ValueError("Database session required")
 
         from app.domains.customers.models import Customer
+
         from app.domains.orders.models import Order
 
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_window)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days_window)
 
         customers = db.query(Customer).filter(
             Customer.business_id == business_id
@@ -56,7 +57,7 @@ class SegmentationService:
 
             # Recency: days since last order
             last_order_date = max(o.created_at for o in orders)
-            recency_days = (datetime.now(timezone.utc) - last_order_date).days
+            recency_days = (datetime.now(UTC) - last_order_date).days
 
             # Frequency: order count
             frequency = len(orders)
@@ -131,7 +132,7 @@ class SegmentationService:
                 seg.monetary_score = m_score
                 seg.rfm_composite = composite
                 seg.rfm_segment = segment
-                seg.segment_updated_at = datetime.now(timezone.utc)
+                seg.segment_updated_at = datetime.now(UTC)
             else:
                 seg = CustomerSegment(
                     business_id=business_id,
@@ -177,6 +178,7 @@ class SegmentationService:
             raise ValueError("Database session required")
 
         from app.domains.customers.models import Customer
+
         from app.domains.orders.models import Order
 
         segments = db.query(CustomerSegment).filter(
@@ -198,7 +200,7 @@ class SegmentationService:
             ).order_by(Order.created_at).all()
 
             if not orders:
-                seg.churn_probability = Decimal("90")  # No purchase history = high risk
+                seg.churn_probability = Decimal(90)  # No purchase history = high risk
                 seg.churn_risk_level = ChurnRiskLevel.CRITICAL
                 db.commit()
                 updated_count += 1
@@ -206,7 +208,7 @@ class SegmentationService:
 
             # Days since last purchase
             last_purchase = max(o.created_at for o in orders)
-            days_since = (datetime.now(timezone.utc) - last_purchase).days
+            days_since = (datetime.now(UTC) - last_purchase).days
             seg.days_since_purchase = days_since
 
             # Purchase interval consistency (std dev)
@@ -218,7 +220,7 @@ class SegmentationService:
                 consistency = stdev(intervals) if len(intervals) > 1 else 0
                 seg.purchase_consistency_score = Decimal(str(min(10, consistency / 10)))
             else:
-                seg.purchase_consistency_score = Decimal("5")
+                seg.purchase_consistency_score = Decimal(5)
 
             # Churn probability (simple model)
             base_churn = 0
@@ -274,7 +276,6 @@ class SegmentationService:
         if not db:
             raise ValueError("Database session required")
 
-        from app.domains.customers.models import Customer
 
         segments = db.query(CustomerSegment).filter(
             CustomerSegment.business_id == business_id
@@ -323,7 +324,7 @@ class SegmentationService:
             raise ValueError("Database session required")
 
         if not date:
-            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date = datetime.now(UTC).strftime("%Y-%m-%d")
 
         segments = db.query(CustomerSegment).filter(
             CustomerSegment.business_id == business_id

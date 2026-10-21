@@ -1,14 +1,13 @@
 """Structured logging with correlation IDs for traceability."""
 
 import logging
-import json
 import sys
-from pythonjsonlogger import jsonlogger
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request
+from typing import Any
 
+from fastapi import Request
+from pythonjsonlogger import jsonlogger
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Context variable for correlation ID (thread-safe)
 correlation_id_context: ContextVar[str] = ContextVar(
@@ -50,9 +49,9 @@ class JSONFormatter(jsonlogger.JsonFormatter):
 
     def add_fields(
         self,
-        log_record: Dict[str, Any],
+        log_record: dict[str, Any],
         record: logging.LogRecord,
-        message_dict: Dict[str, Any],
+        message_dict: dict[str, Any],
     ) -> None:
         super().add_fields(log_record, record, message_dict)
 

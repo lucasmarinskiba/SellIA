@@ -1,10 +1,9 @@
 """Phase X9: AI User Intelligence Agent API."""
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
 from app.domains.user_intelligence.service import UserIntelligenceAgent
-from app.domains.user_intelligence.models import UserRiskProfile
-
 
 router = APIRouter(prefix="/api/v1/user-intelligence", tags=["user-intelligence"])
 

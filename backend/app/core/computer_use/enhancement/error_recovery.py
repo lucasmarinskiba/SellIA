@@ -22,14 +22,14 @@ Características:
 Líneas: 600+ código
 """
 
-import logging
 import asyncio
+import logging
 import time
-from typing import Dict, Any, Optional, Callable, List, Tuple
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from dataclasses import dataclass, field
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +75,13 @@ class ErrorEvent:
     timestamp: datetime
     category: ErrorCategory
     message: str
-    platform: Optional[str] = None
-    url: Optional[str] = None
-    stack_trace: Optional[str] = None
-    http_status: Optional[int] = None
+    platform: str | None = None
+    url: str | None = None
+    stack_trace: str | None = None
+    http_status: int | None = None
     retry_count: int = 0
-    user_action: Optional[str] = None
-    screen_state: Optional[str] = None
+    user_action: str | None = None
+    screen_state: str | None = None
 
 
 @dataclass
@@ -93,8 +93,8 @@ class RecoveryAttempt:
     attempt_number: int
     wait_time_ms: int = 0
     success: bool = False
-    result: Optional[Any] = None
-    next_attempt_at: Optional[datetime] = None
+    result: Any | None = None
+    next_attempt_at: datetime | None = None
 
 
 @dataclass
@@ -103,8 +103,8 @@ class CircuitBreakerState:
     platform: str
     is_open: bool = False
     failure_count: int = 0
-    last_failure_time: Optional[datetime] = None
-    reset_at: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    reset_at: datetime | None = None
     failure_threshold: int = 5
     reset_timeout_ms: int = 60000
 
@@ -119,7 +119,7 @@ class ErrorDetector:
     def __init__(self):
         self.error_patterns = self._build_error_patterns()
 
-    def _build_error_patterns(self) -> Dict[ErrorCategory, List[str]]:
+    def _build_error_patterns(self) -> dict[ErrorCategory, list[str]]:
         """Patrones de error para detectar."""
         return {
             ErrorCategory.NETWORK_TIMEOUT: [
@@ -163,9 +163,9 @@ class ErrorDetector:
     async def detect(
         self,
         error_message: str,
-        http_status: Optional[int] = None,
-        console_output: Optional[str] = None
-    ) -> Tuple[ErrorCategory, str]:
+        http_status: int | None = None,
+        console_output: str | None = None
+    ) -> tuple[ErrorCategory, str]:
         """
         Detectar categoría de error.
 
@@ -216,8 +216,8 @@ class ErrorRecoveryManager:
     def __init__(self, computer_use_engine):
         self.computer_use = computer_use_engine
         self.error_detector = ErrorDetector()
-        self.recovery_history: List[RecoveryAttempt] = []
-        self.circuit_breakers: Dict[str, CircuitBreakerState] = {}
+        self.recovery_history: list[RecoveryAttempt] = []
+        self.circuit_breakers: dict[str, CircuitBreakerState] = {}
         self.max_retries = 5
         self.base_backoff_ms = 1000
 
@@ -225,9 +225,9 @@ class ErrorRecoveryManager:
         self,
         error: Exception,
         action: str,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Manejar error y recuperar.
 
@@ -273,18 +273,18 @@ class ErrorRecoveryManager:
             return result
 
         except Exception as recovery_error:
-            logger.error(f"Recovery itself failed: {str(recovery_error)}", exc_info=True)
+            logger.error(f"Recovery itself failed: {recovery_error!s}", exc_info=True)
             return {
                 "success": False,
                 "action": "escalate_human",
                 "error_category": "recovery_failed",
-                "message": f"Recovery failed: {str(recovery_error)}"
+                "message": f"Recovery failed: {recovery_error!s}"
             }
 
     def _select_recovery_strategy(
         self,
         category: ErrorCategory,
-        context: Dict[str, Any]
+        context: dict[str, Any]
     ) -> RecoveryStrategy:
         """Seleccionar estrategia de recuperación."""
         strategies = {
@@ -308,9 +308,9 @@ class ErrorRecoveryManager:
         error_event: ErrorEvent,
         strategy: RecoveryStrategy,
         action: str,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ejecutar estrategia de recuperación."""
         retry_count = 0
 
@@ -367,7 +367,7 @@ class ErrorRecoveryManager:
                 retry_count += 1
 
             except Exception as e:
-                logger.warning(f"Recovery attempt {retry_count+1} failed: {str(e)}")
+                logger.warning(f"Recovery attempt {retry_count+1} failed: {e!s}")
                 retry_count += 1
 
         # Abrir circuit breaker si es necesario
@@ -381,7 +381,7 @@ class ErrorRecoveryManager:
             "message": f"Failed after {self.max_retries} recovery attempts"
         }
 
-    async def _retry_action(self, **kwargs) -> Dict[str, Any]:
+    async def _retry_action(self, **kwargs) -> dict[str, Any]:
         """Reintentar acción."""
         action_callable = kwargs.get("action_callable")
         if action_callable:
@@ -392,25 +392,25 @@ class ErrorRecoveryManager:
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": "No action callable provided"}
 
-    async def _refresh_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _refresh_and_retry(self, **kwargs) -> dict[str, Any]:
         """Refrescar página y reintentar."""
         try:
             await self.computer_use.refresh_page()
             await asyncio.sleep(2)
             return await self._retry_action(**kwargs)
         except Exception as e:
-            return {"success": False, "error": f"Refresh failed: {str(e)}"}
+            return {"success": False, "error": f"Refresh failed: {e!s}"}
 
-    async def _navigate_home_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _navigate_home_and_retry(self, **kwargs) -> dict[str, Any]:
         """Navegar a inicio y reintentar."""
         try:
             await self.computer_use.navigate("/")
             await asyncio.sleep(3)
             return await self._retry_action(**kwargs)
         except Exception as e:
-            return {"success": False, "error": f"Navigation failed: {str(e)}"}
+            return {"success": False, "error": f"Navigation failed: {e!s}"}
 
-    async def _relogin_and_retry(self, **kwargs) -> Dict[str, Any]:
+    async def _relogin_and_retry(self, **kwargs) -> dict[str, Any]:
         """Re-login y reintentar."""
         try:
             # Obtener credenciales de contexto
@@ -434,13 +434,13 @@ class ErrorRecoveryManager:
             return await self._retry_action(**kwargs)
 
         except Exception as e:
-            return {"success": False, "error": f"Re-login failed: {str(e)}"}
+            return {"success": False, "error": f"Re-login failed: {e!s}"}
 
     async def _wait_and_retry(
         self,
         attempt_number: int,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Esperar con backoff y reintentar."""
         wait_time_ms = int(self.base_backoff_ms * (2 ** attempt_number))
         # Agregar jitter
@@ -517,7 +517,7 @@ class ResilientAction:
         self.attempt_count = 0
         self.start_time = None
 
-    async def execute(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
         """Ejecutar con recuperación automática."""
         self.start_time = time.time()
 
@@ -533,7 +533,7 @@ class ResilientAction:
                 "attempt": self.attempt_count + 1
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Action timeout")
             return await self.recovery_manager.handle_error(
                 TimeoutError("Action timeout"),
@@ -543,7 +543,7 @@ class ResilientAction:
             )
 
         except Exception as e:
-            logger.warning(f"Action failed: {str(e)}")
+            logger.warning(f"Action failed: {e!s}")
             return await self.recovery_manager.handle_error(
                 e,
                 action=self.action_callable.__name__,
@@ -553,12 +553,12 @@ class ResilientAction:
 
 
 __all__ = [
-    "ErrorDetector",
-    "ErrorRecoveryManager",
-    "ResilientAction",
-    "ErrorCategory",
-    "RecoveryStrategy",
-    "ErrorEvent",
-    "RecoveryAttempt",
     "CircuitBreakerState",
+    "ErrorCategory",
+    "ErrorDetector",
+    "ErrorEvent",
+    "ErrorRecoveryManager",
+    "RecoveryAttempt",
+    "RecoveryStrategy",
+    "ResilientAction",
 ]

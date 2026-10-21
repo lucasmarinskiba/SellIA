@@ -11,26 +11,26 @@ Soporta:
 """
 
 import json
-from typing import Dict, List, Optional, Any, AsyncGenerator
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from collections.abc import AsyncGenerator
+from typing import Any
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.agents.models import AgentPersonality, AgentConversation, AgentMessage
-from app.domains.agents.services import AgentService
-from app.domains.agents.prompts import AGENT_PROMPTS
-from app.domains.agents.actions import SellIAActionExecutor
-from app.domains.agents.tool_registry import RetrieveKnowledgeTool
-from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context, format_business_context_for_prompt,
-)
-from app.api.v1.computer_use import create_computer_use_from_orchestrator
-from app.domains.subscriptions.models import UserAPIKey
-from app.core.encryption import decrypt_value
-from app.core.config import get_settings
 from app.core.brain.toggle_mapping import toggle_key_to_brain_id
-
+from app.core.config import get_settings
+from app.core.encryption import decrypt_value
+from app.domains.agents.actions import SellIAActionExecutor
+from app.domains.agents.models import AgentPersonality
+from app.domains.agents.prompts.business_context_adapter import (
+    format_business_context_for_prompt,
+    get_agent_prompt_context,
+)
+from app.domains.agents.services import AgentService
+from app.domains.agents.tool_registry import RetrieveKnowledgeTool
+from app.domains.subscriptions.models import UserAPIKey
 
 SELLIA_SYSTEM_PROMPT = """You are "SellIA", the intelligent assistant for an AI agent platform called SellIA.
 
@@ -264,7 +264,7 @@ class SellIAOrchestrator:
         self.db = db
         self.agent_service = AgentService(db)
 
-    def _build_agents_summary(self, personalities: List[AgentPersonality]) -> str:
+    def _build_agents_summary(self, personalities: list[AgentPersonality]) -> str:
         """Build a compact summary of all available agents."""
         lines = []
         for p in personalities:
@@ -272,7 +272,7 @@ class SellIAOrchestrator:
             lines.append(f"- {p.slug}: {p.name} ({expertise})")
         return "\n".join(lines)
 
-    async def _build_capability_context(self, business_id: Optional[str]) -> str:
+    async def _build_capability_context(self, business_id: str | None) -> str:
         """Real ON/OFF state for this business, from the same AutomationToggle
         rows the Brain Interaction Map's buttons write to (see
         app/api/v1/brain.py's /brain/toggles and app/core/brain/toggle_mapping.py).
@@ -280,13 +280,13 @@ class SellIAOrchestrator:
         if not business_id:
             return "No hay negocio asociado a esta conversación (demo/anónimo) -- no se puede reportar estado real de capacidades."
         try:
-            from app.domains.automations.models import AutomationToggle
             from app.core.brain.registry import get_brain_registry
+            from app.domains.automations.models import AutomationToggle
 
             result = await self.db.execute(
                 select(AutomationToggle.toggle_key).where(
                     AutomationToggle.business_id == business_id,
-                    AutomationToggle.is_enabled == False,  # noqa: E712
+                    AutomationToggle.is_enabled == False,
                 )
             )
             disabled_keys = result.scalars().all()
@@ -306,7 +306,7 @@ class SellIAOrchestrator:
         except Exception:
             return "Estado de capacidades no disponible en este momento."
 
-    async def _build_business_context(self, business_id: Optional[str]) -> str:
+    async def _build_business_context(self, business_id: str | None) -> str:
         """Real business profile (industry, niche, target audience, value
         proposition, sales model, goals, active channels, catalog preview)
         via the same formatter 11 specialized agent services already use
@@ -333,7 +333,7 @@ class SellIAOrchestrator:
         "amazon": "probablemente Estados Unidos, y posiblemente también México/Canadá si vende en Amazon.com.mx o Amazon.ca",
     }
 
-    async def _build_market_reach_context(self, business_id: Optional[str]) -> str:
+    async def _build_market_reach_context(self, business_id: str | None) -> str:
         """Where this business should actually be looking for customers --
         the user's own confirmed geographic_reach/target_countries when
         they've set them (real signal, always wins), else a suggestion
@@ -350,7 +350,7 @@ class SellIAOrchestrator:
             ctx_result = await self.db.execute(
                 select(BusinessContext).where(
                     BusinessContext.business_id == business_id,
-                    BusinessContext.is_active == True,  # noqa: E712
+                    BusinessContext.is_active == True,
                 )
             )
             ctx = ctx_result.scalar_one_or_none()
@@ -382,7 +382,7 @@ class SellIAOrchestrator:
         except Exception:
             return ""
 
-    async def _build_knowledge_context(self, business_id: Optional[str], user_input: str) -> str:
+    async def _build_knowledge_context(self, business_id: str | None, user_input: str) -> str:
         """Best-effort grounding in the real sales/negotiation/persuasion
         library (backend/app/core/knowledge/) via the existing
         RetrieveKnowledgeTool, instead of the LLM inventing tactics from
@@ -400,7 +400,7 @@ class SellIAOrchestrator:
         except Exception:
             return "(sin resultados relevantes en la biblioteca para este mensaje)"
 
-    async def _resolve_api_key(self, user_id: Any) -> Optional[str]:
+    async def _resolve_api_key(self, user_id: Any) -> str | None:
         """Resolve OpenAI API key for the user."""
         result = await self.db.execute(
             select(UserAPIKey).where(
@@ -418,12 +418,12 @@ class SellIAOrchestrator:
         self,
         user_input: str,
         agents_summary: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        conversation_history: list[dict[str, str]] | None = None,
         capability_status: str = "",
         knowledge_context: str = "",
         business_context: str = "",
         market_reach: str = "",
-    ) -> List:
+    ) -> list:
         """Build LangChain messages for LLM invocation."""
         system_prompt = SELLIA_SYSTEM_PROMPT.format(
             agents_summary=agents_summary,
@@ -448,9 +448,9 @@ class SellIAOrchestrator:
         self,
         user_input: str,
         user_id: Any,
-        business_id: Optional[str] = None,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        business_id: str | None = None,
+        conversation_history: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         """Process a user intent and return an action (sync)."""
 
         personalities = await self.agent_service.get_personalities(active_only=True)
@@ -501,8 +501,8 @@ class SellIAOrchestrator:
         self,
         user_input: str,
         user_id: Any,
-        business_id: Optional[str] = None,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        business_id: str | None = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> AsyncGenerator[str, None]:
         """Process a user intent and yield streaming tokens (SSE format).
 
@@ -538,6 +538,7 @@ class SellIAOrchestrator:
                 )
             else:
                 from langchain_ollama import ChatOllama
+
                 from app.core.config import get_settings
                 settings = get_settings()
                 llm = ChatOllama(
@@ -569,10 +570,10 @@ class SellIAOrchestrator:
 
     async def _execute_action_if_needed(
         self,
-        action: Dict[str, Any],
+        action: dict[str, Any],
         user_id: Any,
-        business_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        business_id: str | None = None,
+    ) -> dict[str, Any]:
         """Execute complex system actions if detected."""
         executable_actions = {
             "CREATE_SEQUENCE",
@@ -615,7 +616,7 @@ class SellIAOrchestrator:
         return action
 
     @staticmethod
-    def _resolve_action_brain_id(action_type: str, action: Dict[str, Any]) -> Optional[str]:
+    def _resolve_action_brain_id(action_type: str, action: dict[str, Any]) -> str | None:
         """Best-effort mapping from an about-to-execute action to a Brain
         Interaction Map node id, so the capability gate below has something
         to check. Only covers the cases we can name with confidence today
@@ -634,7 +635,7 @@ class SellIAOrchestrator:
 
         return None
 
-    async def _is_capability_disabled(self, business_id: Optional[str], brain_id: str) -> bool:
+    async def _is_capability_disabled(self, business_id: str | None, brain_id: str) -> bool:
         """Checks the same AutomationToggle rows the Brain Interaction Map's
         ON/OFF buttons write to (see app/api/v1/brain.py's /brain/toggles and
         app/core/brain/toggle_mapping.py). No business (anonymous/demo
@@ -673,12 +674,12 @@ class SellIAOrchestrator:
 
     async def _run_react_if_needed(
         self,
-        action: Dict[str, Any],
+        action: dict[str, Any],
         user_input: str,
         user_id: Any,
-        business_id: Optional[str] = None,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        business_id: str | None = None,
+        conversation_history: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         """Delegate complex actions to the ReAct orchestrator when enabled."""
         action_type = action.get("action", "")
         if not self._should_use_react(action_type):
@@ -711,7 +712,7 @@ class SellIAOrchestrator:
             merged["react_metadata"]["error"] = react_result["error"]
         return merged
 
-    def _parse_action(self, text: str) -> Dict[str, Any]:
+    def _parse_action(self, text: str) -> dict[str, Any]:
         """Parse JSON action from LLM response."""
         text = text.strip()
 

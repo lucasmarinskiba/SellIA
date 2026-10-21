@@ -1,21 +1,26 @@
 """Feedback Hub API router."""
 
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.feedback.service import FeedbackService
-from app.domains.feedback.schemas import (
-    FeedbackCreate, FeedbackUpdate, FeedbackResponse, FeedbackListResponse,
-    CommentCreate, CommentResponse, RoadmapResponse, ChangelogEntry,
-)
 from app.domains.feedback.ai_analyzer import analyze_feedback
-from app.domains.feedback.models import FeedbackType, FeedbackStatus
+from app.domains.feedback.models import FeedbackStatus, FeedbackType
+from app.domains.feedback.schemas import (
+    ChangelogEntry,
+    CommentCreate,
+    CommentResponse,
+    FeedbackCreate,
+    FeedbackListResponse,
+    FeedbackResponse,
+    FeedbackUpdate,
+    RoadmapResponse,
+)
+from app.domains.feedback.service import FeedbackService
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
@@ -64,9 +69,9 @@ async def create_feedback(
 
 @router.get("", response_model=FeedbackListResponse)
 async def list_public_feedback(
-    status: Optional[FeedbackStatus] = None,
-    type: Optional[FeedbackType] = None,
-    search: Optional[str] = None,
+    status: FeedbackStatus | None = None,
+    type: FeedbackType | None = None,
+    search: str | None = None,
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     svc: FeedbackService = Depends(_svc),
@@ -89,7 +94,7 @@ async def list_my_feedback(
 @router.get("/{feedback_id}", response_model=FeedbackResponse)
 async def get_feedback(
     feedback_id: uuid.UUID,
-    current_user: Optional[User] = Depends(get_current_active_user),
+    current_user: User | None = Depends(get_current_active_user),
     svc: FeedbackService = Depends(_svc),
 ):
     """Ver detalle de un feedback."""
@@ -160,8 +165,8 @@ async def get_public_changelog(
 
 @router.get("/admin/all", response_model=FeedbackListResponse)
 async def admin_list_all(
-    status: Optional[FeedbackStatus] = None,
-    type: Optional[FeedbackType] = None,
+    status: FeedbackStatus | None = None,
+    type: FeedbackType | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_active_user),

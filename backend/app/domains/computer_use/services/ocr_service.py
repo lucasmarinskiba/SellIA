@@ -6,8 +6,8 @@ complementando el DOM.
 """
 
 import io
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 from PIL import Image
 
@@ -87,7 +87,7 @@ class OCRService:
 
         return ""
 
-    async def extract_regions(self, screenshot_bytes: bytes) -> List[OCRRegion]:
+    async def extract_regions(self, screenshot_bytes: bytes) -> list[OCRRegion]:
         """Extrae texto con coordenadas de cada región."""
         self._init_engine()
         if self._engine is None:
@@ -129,7 +129,7 @@ class OCRService:
 
         return regions
 
-    async def find_text(self, screenshot_bytes: bytes, target: str) -> Optional[OCRRegion]:
+    async def find_text(self, screenshot_bytes: bytes, target: str) -> OCRRegion | None:
         """Busca texto específico en un screenshot y retorna su ubicación."""
         regions = await self.extract_regions(screenshot_bytes)
         target_lower = target.lower()
@@ -138,7 +138,7 @@ class OCRService:
                 return region
         return None
 
-    async def extract_form_fields(self, screenshot_bytes: bytes) -> List[Dict[str, Any]]:
+    async def extract_form_fields(self, screenshot_bytes: bytes) -> list[dict[str, Any]]:
         """Intenta identificar campos de formulario visuales."""
         text = await self.extract_text(screenshot_bytes)
         fields = []

@@ -9,10 +9,9 @@ Specialties:
 """
 
 import logging
-from typing import Dict, List, Any, Tuple, Optional
-from enum import Enum
-from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +57,9 @@ class SalesPlaybook:
     description: str
     use_case: str
     target_stage: str
-    success_criteria: List[str]
+    success_criteria: list[str]
     template: str
-    tips: List[str]
+    tips: list[str]
 
 
 class SalesAgent:
@@ -466,7 +465,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
     }
 
     @staticmethod
-    def get_methodology(methodology: SalesMethodology) -> Dict[str, Any]:
+    def get_methodology(methodology: SalesMethodology) -> dict[str, Any]:
         """Get detailed information about a sales methodology."""
         return SalesAgent.METHODOLOGIES.get(methodology, {})
 
@@ -475,7 +474,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
         deal_size: float,
         cycle_length_months: int,
         complexity: str,  # simple, medium, complex
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Recommend best methodology based on deal characteristics."""
         recommendation = {
             "primary": None,
@@ -491,9 +490,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
 
             # Deal size matching
             size_range = methodology.get("deal_size", "")
-            if deal_size < 10000 and "$" in size_range and "K" in size_range:
-                score += 20
-            elif deal_size > 50000 and "50K" in size_range:
+            if deal_size < 10000 and "$" in size_range and "K" in size_range or deal_size > 50000 and "50K" in size_range:
                 score += 20
 
             # Complexity matching
@@ -530,7 +527,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
         return recommendation
 
     @staticmethod
-    def get_stage_guidance(stage: SalesStage) -> Dict[str, Any]:
+    def get_stage_guidance(stage: SalesStage) -> dict[str, Any]:
         """Get guidance for a specific sales stage."""
         stage_guidance = {
             SalesStage.PROSPECTING: {
@@ -639,8 +636,8 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
     @staticmethod
     def handle_objection(
         objection_type: ObjectionType,
-        specific_context: Optional[str] = None
-    ) -> Dict[str, Any]:
+        specific_context: str | None = None
+    ) -> dict[str, Any]:
         """Get structured response to objection."""
         objection_response = SalesAgent.OBJECTION_RESPONSES.get(objection_type, {})
 
@@ -653,16 +650,16 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
         }
 
     @staticmethod
-    def get_playbook(playbook_key: str) -> Optional[SalesPlaybook]:
+    def get_playbook(playbook_key: str) -> SalesPlaybook | None:
         """Get sales playbook."""
         return SalesAgent.PLAYBOOKS.get(playbook_key)
 
     @staticmethod
     def create_sales_script(
         scenario: str,
-        prospect_context: Dict[str, Any],
-        methodology: Optional[SalesMethodology] = None
-    ) -> Dict[str, Any]:
+        prospect_context: dict[str, Any],
+        methodology: SalesMethodology | None = None
+    ) -> dict[str, Any]:
         """Create customized sales script."""
         script_structure = {
             "scenario": scenario,
@@ -701,7 +698,7 @@ Would it make sense to chat for 15 minutes to see if there's a fit?
         return script_structure
 
     @staticmethod
-    def create_training_material(topic: str) -> Dict[str, Any]:
+    def create_training_material(topic: str) -> dict[str, Any]:
         """Create sales training material."""
         return {
             "topic": topic,

@@ -1,12 +1,21 @@
 """Payment domain models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text, Numeric, ARRAY
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -90,9 +99,9 @@ class Transaction(Base):
     webhook_notification_date = Column(DateTime(timezone=True), nullable=True)
 
     # Timing
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     approved_at = Column(DateTime(timezone=True), nullable=True)
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_status", "business_id", "status"),
@@ -123,8 +132,8 @@ class Refund(Base):
     approved_by = Column(UUID(as_uuid=True), nullable=True)  # Admin who approved
     processed_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_transaction_id", "transaction_id"),
@@ -162,8 +171,8 @@ class Settlement(Base):
     transaction_count = Column(Integer, default=0)  # Number of transactions
     settlement_metadata = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_settlement", "business_id", "status"),
@@ -196,7 +205,7 @@ class PaymentReconciliation(Base):
     match_reason = Column(String(255), nullable=True)  # How matched (exact, fuzzy, manual)
     notes = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     reconciled_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
@@ -235,7 +244,7 @@ class PaymentMetrics(Base):
     transactions_7d = Column(Integer, default=0)
     revenue_7d = Column(Numeric(15, 2), default=0)
 
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_metrics", "business_id"),

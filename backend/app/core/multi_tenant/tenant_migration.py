@@ -3,18 +3,17 @@ TenantMigration: Migrate existing single-tenant users to multi-tenant.
 250 lines: Safe data migration with rollback capability.
 """
 
-import uuid
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from typing import Any
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.logger import get_logger
 from app.core.exceptions import AppException
+from app.core.logger import get_logger
 from app.domains.users.models import User
-from .models import Tenant, TenantMember, TenantBilling
-from .tenant_manager import TenantService, TIER_LIMITS
+
+from .models import Tenant, TenantBilling, TenantMember
+from .tenant_manager import TenantService
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,7 @@ class MigrationService:
     async def migrate_user_to_tenant(
         self,
         user_id: str,
-        tenant_name: Optional[str] = None,
+        tenant_name: str | None = None,
         tier: str = "starter",
     ) -> Tenant:
         """
@@ -76,11 +75,11 @@ class MigrationService:
             name=tenant_name,
             owner_id=user_id,
             tier=tier,
-            description=f"Migrated from single-tenant account",
+            description="Migrated from single-tenant account",
         )
 
         logger.info(
-            f"User migrated to tenant",
+            "User migrated to tenant",
             extra={
                 "user_id": str(user_id),
                 "tenant_id": str(tenant.id),
@@ -92,9 +91,9 @@ class MigrationService:
 
     async def migrate_bulk_users(
         self,
-        user_ids: List[str],
+        user_ids: list[str],
         tenant_tier: str = "starter",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Bulk migrate multiple users.
         Skip users already migrated.
@@ -135,7 +134,7 @@ class MigrationService:
                 })
 
         logger.info(
-            f"Bulk user migration completed",
+            "Bulk user migration completed",
             extra=results,
         )
 
@@ -145,8 +144,8 @@ class MigrationService:
         self,
         tenant_id: str,
         user_id: str,
-        data_models: Optional[List[str]] = None,
-    ) -> Dict[str, int]:
+        data_models: list[str] | None = None,
+    ) -> dict[str, int]:
         """
         Migrate existing user data (businesses, conversations, etc.) to tenant.
         Associates all user data with tenant_id.
@@ -186,7 +185,7 @@ class MigrationService:
         await self.db.commit()
 
         logger.info(
-            f"User data migrated to tenant",
+            "User data migrated to tenant",
             extra={
                 "tenant_id": str(tenant_id),
                 "user_id": str(user_id),
@@ -200,7 +199,7 @@ class MigrationService:
         self,
         tenant_id: str,
         user_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate migration success: check tenant, member, billing records exist.
 
@@ -268,7 +267,7 @@ class MigrationService:
         await self.db.commit()
 
         logger.warning(
-            f"Migration rolled back",
+            "Migration rolled back",
             extra={"tenant_id": str(tenant_id)},
         )
 
@@ -289,7 +288,7 @@ class TenantMigrator:
         return await service.migrate_user_to_tenant(user_id, **kwargs)
 
 
-_tenant_migrator: Optional[TenantMigrator] = None
+_tenant_migrator: TenantMigrator | None = None
 
 
 def get_tenant_migrator() -> TenantMigrator:

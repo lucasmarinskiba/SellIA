@@ -17,8 +17,7 @@ Calibrates scarcity/urgency messaging so it stays truthful AND effective:
 
 import math
 import re
-from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 
 from app.core.logger import get_logger
 
@@ -39,7 +38,7 @@ class StockDisplayCalibrator:
         real_stock: int,
         low_threshold: int = DEFAULT_LOW_THRESHOLD,
         critical_threshold: int = DEFAULT_CRITICAL_THRESHOLD,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Decide what tier of scarcity messaging is truthfully justified"""
         if real_stock <= 0:
             return {
@@ -71,7 +70,7 @@ class StockDisplayCalibrator:
         }
 
     @staticmethod
-    def validate_scarcity_claim(displayed_message: str, real_stock: int) -> Dict[str, Any]:
+    def validate_scarcity_claim(displayed_message: str, real_stock: int) -> dict[str, Any]:
         """Check a displayed message's numeric claim against real stock.
         Flags BOTH directions of deception: claiming a lower number than
         reality (fake urgency) and using urgency language while stock is
@@ -112,8 +111,8 @@ class DiscountElasticityCalibrator:
 
     @staticmethod
     def fit_elasticity_curve(
-        historical_data: List[Dict[str, float]],
-    ) -> Optional[Tuple[float, float]]:
+        historical_data: list[dict[str, float]],
+    ) -> tuple[float, float] | None:
         """historical_data: [{"discount_percent": float, "conversion_rate": float}, ...]
         Returns (slope, intercept) of a simple least-squares linear fit, or
         None if there isn't enough distinct data to fit a line."""
@@ -143,11 +142,11 @@ class DiscountElasticityCalibrator:
 
     @staticmethod
     def recommend_optimal_discount(
-        historical_data: List[Dict[str, float]],
+        historical_data: list[dict[str, float]],
         min_discount: int = 10,
         max_discount: int = 50,
         step: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Sweep candidate discounts within bounds, predicting conversion rate
         via the fitted curve, and pick the one maximizing a margin-adjusted
         revenue proxy: conversion_rate * (1 - discount/100)."""
@@ -193,8 +192,8 @@ class UrgencyFatigueDetector:
 
     @staticmethod
     def detect_intensity_fatigue(
-        campaign_history: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        campaign_history: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """campaign_history: [{"sent_at": datetime, "urgency_intensity": str,
         "conversion_rate": float}, ...] ordered oldest to newest, all using
         the SAME intensity level."""
@@ -235,7 +234,7 @@ class UrgencyFatigueDetector:
         }
 
     @staticmethod
-    def recommend_intensity_adjustment(fatigue_result: Dict[str, Any]) -> Dict[str, Any]:
+    def recommend_intensity_adjustment(fatigue_result: dict[str, Any]) -> dict[str, Any]:
         if not fatigue_result["fatigued"]:
             return {"action": "maintain_current_intensity"}
         return {
@@ -255,7 +254,7 @@ class IntensityABTestManager:
         visitors_a: int,
         conversions_b: int,
         visitors_b: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if visitors_a == 0 or visitors_b == 0:
             return {"error": "insufficient_sample", "significant": False}
 
@@ -289,10 +288,10 @@ class IntensityABTestManager:
 
     @staticmethod
     def analyze_intensity_test(
-        variant_low: Dict[str, int],
-        variant_high: Dict[str, int],
+        variant_low: dict[str, int],
+        variant_high: dict[str, int],
         min_sample_size: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """variant_low/high: {"conversions": int, "visitors": int}"""
         result = IntensityABTestManager.z_test_two_proportions(
             variant_low["conversions"], variant_low["visitors"],
@@ -333,44 +332,44 @@ class AIScarcityCalibrationAgent:
         real_stock: int,
         low_threshold: int = StockDisplayCalibrator.DEFAULT_LOW_THRESHOLD,
         critical_threshold: int = StockDisplayCalibrator.DEFAULT_CRITICAL_THRESHOLD,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return StockDisplayCalibrator.compute_display_tier(real_stock, low_threshold, critical_threshold)
 
     @staticmethod
-    def audit_scarcity_message(displayed_message: str, real_stock: int) -> Dict[str, Any]:
+    def audit_scarcity_message(displayed_message: str, real_stock: int) -> dict[str, Any]:
         return StockDisplayCalibrator.validate_scarcity_claim(displayed_message, real_stock)
 
     @staticmethod
     def calibrate_discount(
-        historical_data: List[Dict[str, float]],
+        historical_data: list[dict[str, float]],
         min_discount: int = 10,
         max_discount: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return DiscountElasticityCalibrator.recommend_optimal_discount(
             historical_data, min_discount, max_discount
         )
 
     @staticmethod
-    def check_urgency_fatigue(campaign_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def check_urgency_fatigue(campaign_history: list[dict[str, Any]]) -> dict[str, Any]:
         fatigue = UrgencyFatigueDetector.detect_intensity_fatigue(campaign_history)
         adjustment = UrgencyFatigueDetector.recommend_intensity_adjustment(fatigue)
         return {**fatigue, "recommendation": adjustment}
 
     @staticmethod
     def run_ab_test_analysis(
-        variant_low: Dict[str, int],
-        variant_high: Dict[str, int],
+        variant_low: dict[str, int],
+        variant_high: dict[str, int],
         min_sample_size: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return IntensityABTestManager.analyze_intensity_test(variant_low, variant_high, min_sample_size)
 
     @staticmethod
     def full_calibration(
         real_stock: int,
-        discount_historical_data: List[Dict[str, float]],
-        campaign_history: List[Dict[str, Any]],
-        ab_test_variants: Optional[Dict[str, Dict[str, int]]] = None,
-    ) -> Dict[str, Any]:
+        discount_historical_data: list[dict[str, float]],
+        campaign_history: list[dict[str, Any]],
+        ab_test_variants: dict[str, dict[str, int]] | None = None,
+    ) -> dict[str, Any]:
         """Run all four calibrations together for one campaign decision"""
         stock_display = AIScarcityCalibrationAgent.calibrate_stock_display(real_stock)
         discount = AIScarcityCalibrationAgent.calibrate_discount(discount_historical_data)

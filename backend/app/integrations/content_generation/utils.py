@@ -1,10 +1,8 @@
 """Utilities for content generation: compression, hashing, download."""
 
-import io
-import hashlib
 import base64
-from typing import Optional
-from pathlib import Path
+import hashlib
+import io
 
 import aiohttp
 from PIL import Image
@@ -66,7 +64,7 @@ def get_image_size_kb(image_bytes: bytes) -> float:
     return len(image_bytes) / 1024
 
 
-async def download_url(url: str, timeout: int = 60) -> Optional[bytes]:
+async def download_url(url: str, timeout: int = 60) -> bytes | None:
     """Descarga contenido de una URL."""
     try:
         async with aiohttp.ClientSession() as session:

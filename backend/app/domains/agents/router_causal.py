@@ -4,25 +4,24 @@ Endpoints for objection patterns, causal analysis, and pitch recommendations.
 """
 
 from uuid import UUID
-from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.agents.causal_engine import CausalAnalyzer
-from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
 from app.domains.agents.models_causal import CausalAnalysis as CausalAnalysisModel
+from app.domains.agents.models_causal import ObjectionPattern as ObjectionPatternModel
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/causal", tags=["causal"])
 
 
 @router.get("/patterns", status_code=status.HTTP_200_OK)
 async def list_objection_patterns(
-    business_id: Optional[UUID] = Query(None),
+    business_id: UUID | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -125,7 +124,7 @@ async def trigger_causal_analysis(
 
 @router.get("/recommendations", status_code=status.HTTP_200_OK)
 async def get_pitch_recommendations(
-    business_id: Optional[UUID] = Query(None),
+    business_id: UUID | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

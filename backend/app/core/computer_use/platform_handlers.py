@@ -11,13 +11,10 @@ Cada handler encapsula la lógica específica de plataforma para:
 Usa Computer Use + visión para no depender de APIs (escalabilidad infinita).
 """
 
-import logging
 import asyncio
-import re
-from typing import Dict, List, Any, Optional, Tuple
+import logging
 from datetime import datetime
-from abc import ABC, abstractmethod
-from dataclasses import asdict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +79,7 @@ class MercadoLibreComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Mercado Libre auth failed: {str(e)}")
+            logger.error(f"Mercado Libre auth failed: {e!s}")
             return False
 
     async def post_product(
@@ -92,9 +89,9 @@ class MercadoLibreComputerUseHandler:
         price: float,
         quantity: int,
         category: str,
-        photos: List[str] = None,
+        photos: list[str] = None,
         shipping_method: str = "standard",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Publica producto en Mercado Libre.
 
@@ -174,7 +171,7 @@ class MercadoLibreComputerUseHandler:
 
         except Exception as e:
             duration = (datetime.utcnow() - start_time).total_seconds()
-            logger.error(f"Failed to post product: {str(e)}")
+            logger.error(f"Failed to post product: {e!s}")
             return {
                 "success": False,
                 "product_name": name,
@@ -182,7 +179,7 @@ class MercadoLibreComputerUseHandler:
                 "duration_seconds": duration,
             }
 
-    async def respond_to_questions(self) -> List[Dict[str, Any]]:
+    async def respond_to_questions(self) -> list[dict[str, Any]]:
         """
         Monitorea sección de preguntas y responde automáticamente.
 
@@ -237,13 +234,13 @@ class MercadoLibreComputerUseHandler:
                     logger.info(f"Responded to question {i+1}")
 
                 except Exception as e:
-                    logger.error(f"Error responding to question: {str(e)}")
+                    logger.error(f"Error responding to question: {e!s}")
 
             logger.info(f"Responded to {len(questions)} questions")
             return questions
 
         except Exception as e:
-            logger.error(f"Error checking questions: {str(e)}")
+            logger.error(f"Error checking questions: {e!s}")
             return []
 
     async def handle_purchase_and_shipping(self, order_id: str) -> bool:
@@ -284,7 +281,7 @@ class MercadoLibreComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error handling purchase: {str(e)}")
+            logger.error(f"Error handling purchase: {e!s}")
             return False
 
 
@@ -353,7 +350,7 @@ class ShopifyComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Shopify auth failed: {str(e)}")
+            logger.error(f"Shopify auth failed: {e!s}")
             return False
 
     async def create_product(
@@ -363,8 +360,8 @@ class ShopifyComputerUseHandler:
         price: float,
         sku: str,
         quantity: int,
-        photos: List[str] = None,
-    ) -> Dict[str, Any]:
+        photos: list[str] = None,
+    ) -> dict[str, Any]:
         """
         Crea producto en Shopify.
 
@@ -424,7 +421,7 @@ class ShopifyComputerUseHandler:
             return {"success": True, "product_name": name}
 
         except Exception as e:
-            logger.error(f"Failed to create Shopify product: {str(e)}")
+            logger.error(f"Failed to create Shopify product: {e!s}")
             return {"success": False, "error": str(e)}
 
     async def update_inventory(self, sku: str, new_quantity: int) -> bool:
@@ -460,7 +457,7 @@ class ShopifyComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error updating inventory: {str(e)}")
+            logger.error(f"Error updating inventory: {e!s}")
             return False
 
     async def process_order(self, order_number: str) -> bool:
@@ -496,7 +493,7 @@ class ShopifyComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error processing order: {str(e)}")
+            logger.error(f"Error processing order: {e!s}")
             return False
 
 
@@ -540,7 +537,7 @@ class FacebookComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Facebook auth failed: {str(e)}")
+            logger.error(f"Facebook auth failed: {e!s}")
             return False
 
     async def post_to_marketplace(
@@ -549,9 +546,9 @@ class FacebookComputerUseHandler:
         description: str,
         price: float,
         category: str,
-        photos: List[str] = None,
+        photos: list[str] = None,
         location: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Publica en Facebook Marketplace.
 
@@ -603,10 +600,10 @@ class FacebookComputerUseHandler:
             return {"success": True, "title": title}
 
         except Exception as e:
-            logger.error(f"Error posting to Facebook: {str(e)}")
+            logger.error(f"Error posting to Facebook: {e!s}")
             return {"success": False, "error": str(e)}
 
-    async def monitor_and_respond_inquiries(self) -> List[Dict[str, Any]]:
+    async def monitor_and_respond_inquiries(self) -> list[dict[str, Any]]:
         """
         Monitorea Messenger inquiries y responde.
 
@@ -648,7 +645,7 @@ class FacebookComputerUseHandler:
             return messages
 
         except Exception as e:
-            logger.error(f"Error checking messages: {str(e)}")
+            logger.error(f"Error checking messages: {e!s}")
             return []
 
 
@@ -702,7 +699,7 @@ class WhatsAppComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"WhatsApp auth failed: {str(e)}")
+            logger.error(f"WhatsApp auth failed: {e!s}")
             return False
 
     async def send_message(self, phone_number: str, message: str) -> bool:
@@ -740,13 +737,13 @@ class WhatsAppComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {str(e)}")
+            logger.error(f"Error sending WhatsApp message: {e!s}")
             return False
 
     async def send_product_catalog(
         self,
         phone_number: str,
-        products: List[Dict[str, Any]],
+        products: list[dict[str, Any]],
     ) -> bool:
         """
         Envía catálogo de productos formateado.
@@ -779,7 +776,7 @@ class WhatsAppComputerUseHandler:
             return await self.send_message(phone_number, catalog)
 
         except Exception as e:
-            logger.error(f"Error sending catalog: {str(e)}")
+            logger.error(f"Error sending catalog: {e!s}")
             return False
 
     async def lead_qualification_sequence(self, phone_number: str) -> bool:
@@ -814,7 +811,7 @@ class WhatsAppComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error in qualification sequence: {str(e)}")
+            logger.error(f"Error in qualification sequence: {e!s}")
             return False
 
 
@@ -865,7 +862,7 @@ class EmailComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Email auth failed: {str(e)}")
+            logger.error(f"Email auth failed: {e!s}")
             return False
 
     async def send_campaign_email(
@@ -873,7 +870,7 @@ class EmailComputerUseHandler:
         recipient: str,
         subject: str,
         body: str,
-        attachments: List[str] = None,
+        attachments: list[str] = None,
     ) -> bool:
         """
         Envía email individual.
@@ -919,14 +916,14 @@ class EmailComputerUseHandler:
             return True
 
         except Exception as e:
-            logger.error(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email: {e!s}")
             return False
 
     async def send_nurture_sequence(
         self,
         recipient: str,
         sequence_name: str,
-        emails: List[Dict[str, str]],
+        emails: list[dict[str, str]],
     ) -> int:
         """
         Envía secuencia de nutrición (3-5 emails espaciados en el tiempo).
@@ -965,7 +962,7 @@ class EmailComputerUseHandler:
             return sent_count
 
         except Exception as e:
-            logger.error(f"Error in nurture sequence: {str(e)}")
+            logger.error(f"Error in nurture sequence: {e!s}")
             return 0
 
 

@@ -4,14 +4,14 @@ Captures leads from Google Ads Lead Form Extensions and manages campaign data.
 Docs: https://developers.google.com/google-ads/api/docs/start
 """
 
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
 from typing import Any
 
 from app.domains.channels.connectors.base import BaseChannelConnector
-from app.domains.channels.schemas import WebhookPayload
 from app.domains.channels.models import ChannelPlatform
+from app.domains.channels.schemas import WebhookPayload
 
 
 class GoogleAdsConnector(BaseChannelConnector):
@@ -127,7 +127,7 @@ class GoogleAdsConnector(BaseChannelConnector):
             return False
         try:
             import httpx
-            url = "https://googleads.googleapis.com/v14/customers/{}/campaigns".format(self.customer_id)
+            url = f"https://googleads.googleapis.com/v14/customers/{self.customer_id}/campaigns"
             headers = {
                 "Authorization": f"Bearer {self.access_token}",
                 "developer-token": self.developer_token,
@@ -150,8 +150,6 @@ class GoogleAdsConnector(BaseChannelConnector):
         Raises:
             Exception if API call fails
         """
-        import httpx
-        from google.protobuf.json_format import MessageToDict
         from google.ads.googleads.client import GoogleAdsClient
 
         client = GoogleAdsClient.load_from_storage(

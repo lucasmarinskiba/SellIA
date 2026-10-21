@@ -2,15 +2,15 @@
 Social Growth Toolkit Router
 """
 
-from typing import Annotated, Optional
-from uuid import UUID
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.deps import get_current_user
-from app.domains.users.models import User
 from app.domains.social_growth import service as social_service
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/social-growth", tags=["social-growth"])
 

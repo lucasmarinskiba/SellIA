@@ -1,10 +1,21 @@
 """Phase 33 Database Models - Multi-Platform Seller Automation."""
 
-from sqlalchemy import Column, String, Float, Integer, DateTime, Text, Boolean, Enum, Index, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from datetime import datetime
-import uuid
 import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
 from app.core.database import Base
 

@@ -1,27 +1,27 @@
 """Voice Agent API Router"""
 
+from datetime import UTC
 from uuid import UUID
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
 from app.domains.voice.models import VoiceCall, VoiceConfig
 from app.domains.voice.schemas import (
+    CallSegmentResponse,
+    SpeechRequest,
+    TranscriptionResponse,
     VoiceCallCreate,
     VoiceCallResponse,
     VoiceCallUpdate,
-    VoiceConfigResponse,
     VoiceConfigCreate,
+    VoiceConfigResponse,
     VoiceConfigUpdate,
-    SpeechRequest,
-    TranscriptionResponse,
-    CallSegmentResponse,
 )
 from app.domains.voice.service import VoiceService
 
@@ -49,7 +49,7 @@ async def create_call(
 @router.get("/calls", response_model=list[VoiceCallResponse])
 async def list_calls(
     business_id: UUID = Query(...),
-    status: Optional[str] = Query(None),
+    status: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -151,7 +151,7 @@ async def update_call(
 @router.post("/calls/{call_id}/end", response_model=VoiceCallResponse)
 async def end_call(
     call_id: UUID,
-    outcome: Optional[str] = Query(None),
+    outcome: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -203,8 +203,8 @@ async def update_voice_config(
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(config, field, value)
-    from datetime import datetime, timezone
-    config.updated_at = datetime.now(timezone.utc)
+    from datetime import datetime
+    config.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(config)
     return config

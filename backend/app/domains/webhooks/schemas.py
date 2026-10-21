@@ -4,14 +4,13 @@ Webhook Pydantic Schemas (v2)
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
 
 class WebhookSubscriptionBase(BaseModel):
     url: str
-    events: List[str]
+    events: list[str]
     secret: str
     active: bool = True
 
@@ -21,10 +20,10 @@ class WebhookSubscriptionCreate(WebhookSubscriptionBase):
 
 
 class WebhookSubscriptionUpdate(BaseModel):
-    url: Optional[str] = None
-    events: Optional[List[str]] = None
-    secret: Optional[str] = None
-    active: Optional[bool] = None
+    url: str | None = None
+    events: list[str] | None = None
+    secret: str | None = None
+    active: bool | None = None
 
 
 class WebhookSubscriptionResponse(WebhookSubscriptionBase):
@@ -39,8 +38,8 @@ class WebhookSubscriptionResponse(WebhookSubscriptionBase):
 class WebhookDeliveryBase(BaseModel):
     event_type: str
     payload: dict
-    response_status: Optional[int] = None
-    response_body: Optional[str] = None
+    response_status: int | None = None
+    response_body: str | None = None
     delivered_at: datetime
     retry_count: int
     success: bool

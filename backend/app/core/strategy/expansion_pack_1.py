@@ -1,8 +1,8 @@
 """Expansion Pack 1: 30 Blue Ocean Strategies - Real case studies (Zoom, Stripe, Figma)."""
 
 from dataclasses import dataclass
-from typing import Dict, Any, List
 from enum import Enum
+from typing import Any
 
 
 class BlueOceanStrategy(str, Enum):
@@ -54,32 +54,32 @@ class BlueOceanStrategyDetail:
     description: str
 
     # Real Case Studies
-    case_study_1: Dict[str, Any]  # Company, metric, result
-    case_study_2: Dict[str, Any]
-    case_study_3: Dict[str, Any]
+    case_study_1: dict[str, Any]  # Company, metric, result
+    case_study_2: dict[str, Any]
+    case_study_3: dict[str, Any]
 
     # Implementation Framework
-    analysis_steps: List[str]
-    implementation_steps: List[str]
+    analysis_steps: list[str]
+    implementation_steps: list[str]
 
     # Success Metrics & Timeline
-    success_metrics: List[str]
+    success_metrics: list[str]
     typical_timeline_weeks: int
 
     # Resource Requirements
-    resource_requirements: Dict[str, str]
+    resource_requirements: dict[str, str]
 
     # Risk Assessment
-    risks: List[str]
-    mitigation_strategies: List[str]
+    risks: list[str]
+    mitigation_strategies: list[str]
 
     # Financial Projections
-    expected_roi: Dict[str, float]  # metric -> improvement %
-    investment_required: Dict[str, str]  # category -> amount/effort
+    expected_roi: dict[str, float]  # metric -> improvement %
+    investment_required: dict[str, str]  # category -> amount/effort
 
     # Market Context
-    best_for_industries: List[str]
-    best_for_business_models: List[str]
+    best_for_industries: list[str]
+    best_for_business_models: list[str]
     market_maturity_required: str  # emerging, growth, established
 
     # Replicability & Difficulty
@@ -1152,12 +1152,12 @@ class BlueOceanExpansionPack1:
         return BLUE_OCEAN_STRATEGIES.get(strategy_id)
 
     @staticmethod
-    def get_all_strategies() -> Dict[BlueOceanStrategy, BlueOceanStrategyDetail]:
+    def get_all_strategies() -> dict[BlueOceanStrategy, BlueOceanStrategyDetail]:
         """Get all Blue Ocean strategies."""
         return BLUE_OCEAN_STRATEGIES
 
     @staticmethod
-    def get_by_category(category: str) -> List[BlueOceanStrategyDetail]:
+    def get_by_category(category: str) -> list[BlueOceanStrategyDetail]:
         """Get strategies by category (elimination, reduction, raising, creating)."""
         category_strategies = []
         for strategy_id, detail in BLUE_OCEAN_STRATEGIES.items():
@@ -1166,23 +1166,23 @@ class BlueOceanExpansionPack1:
         return category_strategies
 
     @staticmethod
-    def get_by_difficulty(max_difficulty: float) -> List[BlueOceanStrategyDetail]:
+    def get_by_difficulty(max_difficulty: float) -> list[BlueOceanStrategyDetail]:
         """Get strategies with difficulty <= max_difficulty."""
         return [s for s in BLUE_OCEAN_STRATEGIES.values() if s.difficulty_score <= max_difficulty]
 
     @staticmethod
-    def get_by_replicability(min_replicability: float) -> List[BlueOceanStrategyDetail]:
+    def get_by_replicability(min_replicability: float) -> list[BlueOceanStrategyDetail]:
         """Get strategies with replicability >= min_replicability."""
         return [s for s in BLUE_OCEAN_STRATEGIES.values() if s.replicability_score >= min_replicability]
 
     @staticmethod
-    def get_quick_wins() -> List[BlueOceanStrategyDetail]:
+    def get_quick_wins() -> list[BlueOceanStrategyDetail]:
         """Get high-replicability, low-difficulty strategies."""
         return [s for s in BLUE_OCEAN_STRATEGIES.values()
                 if s.difficulty_score <= 5.0 and s.replicability_score >= 6.0]
 
     @staticmethod
-    def get_high_impact() -> List[BlueOceanStrategyDetail]:
+    def get_high_impact() -> list[BlueOceanStrategyDetail]:
         """Get high-impact strategies (high ROI potential, competitive advantage duration)."""
         return [s for s in BLUE_OCEAN_STRATEGIES.values()
                 if max(s.expected_roi.values()) >= 0.40 and '3' in s.competitive_advantage_duration]

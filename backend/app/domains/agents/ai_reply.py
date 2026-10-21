@@ -5,18 +5,17 @@ that needs to generate AI responses with expert voice composition.
 """
 
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any
 
-from sqlalchemy import select, func
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-
+from app.core.logger import get_logger
 from app.domains.agents.models import AgentPersonality
 from app.domains.agents.prompts import compose_system_prompt, get_system_prompt
-from app.domains.channels.models import Conversation, Message
 from app.domains.businesses.models import Business
-from app.core.logger import get_logger
+from app.domains.channels.models import Conversation, Message
 
 
 def _is_persistent(instance: Any) -> bool:
@@ -56,10 +55,10 @@ async def generate_ai_response(
     personality_slug: str,
     business_id: uuid.UUID,
     custom_prompt: str = "",
-    voice_slug: Optional[str] = None,
+    voice_slug: str | None = None,
     max_tokens: int = 1500,
-    force_stage: Optional[str] = None,
-) -> Optional[str]:
+    force_stage: str | None = None,
+) -> str | None:
     """
     Generate an AI response for a conversation using a personality + optional expert voice.
 
@@ -119,8 +118,8 @@ async def generate_ai_response(
     detected_stage = None
     business_type = None
     try:
-        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
         from app.domains.agents.funnel_ab_bridge import get_stage_voice_slug
+        from app.domains.agents.funnel_stage_detector import detect_funnel_stage
 
         business_result = await db.execute(
             select(Business.type).where(Business.id == business_id)
@@ -214,8 +213,8 @@ async def generate_ai_response(
     # Inject CustomerMemory profile into the prompt
     customer_profile = ""
     try:
-        from app.domains.memory.service import MemoryEngine
         from app.domains.memory.models import ConversationMemoryChunk
+        from app.domains.memory.service import MemoryEngine
 
         engine = MemoryEngine(db)
         cust_result = await db.execute(
@@ -436,7 +435,7 @@ async def generate_raw_ai_response(
     user_prompt: str,
     max_tokens: int = 1500,
     temperature: float = 0.7,
-) -> Optional[str]:
+) -> str | None:
     """Generate a raw AI response without requiring a conversation.
 
     Useful for background tasks, notifications, and analytics where

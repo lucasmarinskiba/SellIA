@@ -3,20 +3,23 @@
 Detects buying signals and closes deals automatically when conditions are met.
 """
 
-import uuid
 import re
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
-from typing import Optional, Any
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.crm.models import Deal, LeadStage
-from app.domains.channels.models import Conversation, Message
-from app.domains.orders.models import Order
-from app.domains.autopilot.service import AutopilotEngine, AutopilotActionLog, AutopilotActionType, AutopilotActionStatus
 from app.core.logger import get_logger
+from app.domains.autopilot.service import (
+    AutopilotActionStatus,
+    AutopilotActionType,
+    AutopilotEngine,
+)
+from app.domains.channels.models import Message
+from app.domains.crm.models import Deal
+from app.domains.orders.models import Order
 
 logger = get_logger(__name__)
 
@@ -52,7 +55,6 @@ class AutoCloseEvaluator:
 
     async def evaluate_all_open_deals(self) -> list[dict[str, Any]]:
         """Evaluate all open deals for auto-close. Returns list of actions taken."""
-        from app.domains.autopilot.models import AutopilotConfig
 
         result = await self.db.execute(
             select(Deal).where(
@@ -73,7 +75,7 @@ class AutoCloseEvaluator:
 
         return actions
 
-    async def evaluate_deal(self, deal: Deal) -> Optional[dict[str, Any]]:
+    async def evaluate_deal(self, deal: Deal) -> dict[str, Any] | None:
         """Evaluate a single deal for auto-close."""
         from app.domains.autopilot.models import AutopilotConfig
 
@@ -156,10 +158,10 @@ class AutoCloseEvaluator:
         # Move to closed_won
         old_stage = deal.stage
         deal.stage = "closed_won"
-        deal.actual_close_date = datetime.now(timezone.utc)
+        deal.actual_close_date = datetime.now(UTC)
         deal.probability = 100
-        deal.close_reason = reason or f"Auto-closed: buying signal detected in conversation"
-        deal.updated_at = datetime.now(timezone.utc)
+        deal.close_reason = reason or "Auto-closed: buying signal detected in conversation"
+        deal.updated_at = datetime.now(UTC)
 
         await self.db.commit()
 

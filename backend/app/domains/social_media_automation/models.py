@@ -1,9 +1,21 @@
 """Phase 46: Social Media Automation (Instagram, TikTok, Facebook)."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Boolean, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
+
 
 class SocialMediaAccount(Base):
     __tablename__ = "social_media_accounts"
@@ -16,7 +28,7 @@ class SocialMediaAccount(Base):
     engagement_rate = Column(Float, default=0)
     access_token = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class SocialPost(Base):
     __tablename__ = "social_posts"
@@ -28,8 +40,8 @@ class SocialPost(Base):
     media_urls = Column(JSONB, nullable=True)
     hashtags = Column(JSONB, nullable=True)
     mentions = Column(JSONB, nullable=True)
-    scheduled_at = Column(DateTime(timezone.utc), nullable=True)
-    published_at = Column(DateTime(timezone.utc), nullable=True)
+    scheduled_at = Column(DateTime(UTC), nullable=True)
+    published_at = Column(DateTime(UTC), nullable=True)
     status = Column(String(50), default="draft")  # draft, scheduled, published
     post_id = Column(String(255), nullable=True)
     likes = Column(Integer, default=0)
@@ -37,7 +49,7 @@ class SocialPost(Base):
     shares = Column(Integer, default=0)
     reach = Column(Integer, default=0)
     engagement_rate = Column(Float, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class FollowerGrowth(Base):
     __tablename__ = "follower_growth"
@@ -50,7 +62,7 @@ class FollowerGrowth(Base):
     monthly_growth = Column(Integer, default=0)
     growth_rate = Column(Float, default=0)
     engagement_score = Column(Float, default=0)
-    recorded_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    recorded_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class ContentCalendar(Base):
     __tablename__ = "content_calendar"
@@ -64,7 +76,7 @@ class ContentCalendar(Base):
     engagement_actual = Column(Float, default=0)
     reach_target = Column(Integer, default=0)
     reach_actual = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
 class InfluencerCollaboration(Base):
     __tablename__ = "influencer_collaborations"
@@ -81,4 +93,4 @@ class InfluencerCollaboration(Base):
     expected_reach = Column(Integer, default=0)
     status = Column(String(50), default="outreach")
     results = Column(JSONB, nullable=True)
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))

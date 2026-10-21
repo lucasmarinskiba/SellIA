@@ -1,11 +1,20 @@
 """Webhook & event streaming models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -43,20 +52,20 @@ class WebhookEndpoint(Base):
     # Status
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    last_verified_at = Column(DateTime(timezone.utc), nullable=True)
+    last_verified_at = Column(DateTime(UTC), nullable=True)
 
     # Performance
     success_count = Column(Integer, default=0)
     failure_count = Column(Integer, default=0)
     avg_response_time_ms = Column(Integer, default=0)
-    last_fired_at = Column(DateTime(timezone.utc), nullable=True)
+    last_fired_at = Column(DateTime(UTC), nullable=True)
 
     # Retry config
     max_retries = Column(Integer, default=3)
     retry_delay_seconds = Column(Integer, default=60)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_active", "business_id", "is_active"),
@@ -78,14 +87,14 @@ class WebhookEvent(Base):
     # Delivery
     delivery_status = Column(String(20), default="pending")  # pending, sent, failed, delivered
     delivery_attempts = Column(Integer, default=0)
-    last_attempt_at = Column(DateTime(timezone.utc), nullable=True)
+    last_attempt_at = Column(DateTime(UTC), nullable=True)
     response_status_code = Column(Integer, nullable=True)
     response_body = Column(Text, nullable=True)
 
     # Signature
     signature_hmac = Column(String(255), nullable=False)  # HMAC-SHA256 signature
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     endpoint = relationship("WebhookEndpoint", foreign_keys=[endpoint_id])
 
@@ -113,7 +122,7 @@ class WebhookDeliveryLog(Base):
     user_agent = Column(String(255), nullable=True)
     ip_address = Column(String(45), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_event_date", "webhook_event_id", "created_at"),
@@ -134,10 +143,10 @@ class EventQueue(Base):
 
     # Processing
     is_processed = Column(Boolean, default=False)
-    processed_at = Column(DateTime(timezone.utc), nullable=True)
+    processed_at = Column(DateTime(UTC), nullable=True)
     processing_error = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     __table_args__ = (
         Index("idx_business_processed", "business_id", "is_processed"),

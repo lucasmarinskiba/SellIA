@@ -1,11 +1,20 @@
 """Multi-touch attribution models."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -38,10 +47,10 @@ class Touchpoint(Base):
     interaction_data = Column(JSONB, nullable=True)  # {utm_params, referrer, device}
 
     # Timing
-    touched_at = Column(DateTime(timezone.utc), nullable=False)
+    touched_at = Column(DateTime(UTC), nullable=False)
     order_id = Column(UUID(as_uuid=True), nullable=True)  # If converts to order
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_customer_touchpoint", "customer_id", "touched_at"),
@@ -58,9 +67,9 @@ class CustomerJourney(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Journey timeline
-    first_touch_at = Column(DateTime(timezone.utc), nullable=False)
-    last_touch_at = Column(DateTime(timezone.utc), nullable=False)
-    converted_at = Column(DateTime(timezone.utc), nullable=True)
+    first_touch_at = Column(DateTime(UTC), nullable=False)
+    last_touch_at = Column(DateTime(UTC), nullable=False)
+    converted_at = Column(DateTime(UTC), nullable=True)
 
     # Conversion
     order_id = Column(UUID(as_uuid=True), nullable=True)
@@ -72,7 +81,7 @@ class CustomerJourney(Base):
     channels_involved = Column(JSONB, nullable=True)  # [email, web, social]
     journey_duration_days = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_journey_customer", "customer_id", "converted_at"),
@@ -102,7 +111,7 @@ class AttributionCredit(Base):
     source = Column(String(100), nullable=True)
     position_in_journey = Column(Integer, nullable=True)  # 1, 2, 3...
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_order_touchpoint", "order_id", "touchpoint_id"),
@@ -118,8 +127,8 @@ class ChannelPerformance(Base):
     business_id = Column(UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Period
-    period_start = Column(DateTime(timezone.utc), nullable=False)
-    period_end = Column(DateTime(timezone.utc), nullable=False)
+    period_start = Column(DateTime(UTC), nullable=False)
+    period_end = Column(DateTime(UTC), nullable=False)
 
     # Channel
     channel = Column(String(50), nullable=False)
@@ -136,7 +145,7 @@ class ChannelPerformance(Base):
     spend = Column(Float, nullable=True)  # Cost spent on channel
     roi = Column(Float, nullable=True)  # (revenue - spend) / spend
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_channel_period", "business_id", "channel", "period_start"),
@@ -166,7 +175,7 @@ class AttributionMetrics(Base):
     top_linear_channel = Column(String(50), nullable=True)
 
     # Timeline
-    last_calculated_at = Column(DateTime(timezone.utc), nullable=True)
+    last_calculated_at = Column(DateTime(UTC), nullable=True)
 
     __table_args__ = (
         Index("idx_business_metrics", "business_id"),

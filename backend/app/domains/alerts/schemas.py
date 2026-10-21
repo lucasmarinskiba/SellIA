@@ -1,19 +1,20 @@
 """Alerts & Recommendations Schemas"""
 
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AlertRuleBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
     rule_type: str
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
     severity: str = "info"
-    channels: List[str] = Field(default_factory=list)
+    channels: list[str] = Field(default_factory=list)
     cooldown_minutes: int = 60
     max_alerts_per_day: int = 10
 
@@ -23,14 +24,14 @@ class AlertRuleCreate(AlertRuleBase):
 
 
 class AlertRuleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    is_active: Optional[bool] = None
-    config: Optional[Dict[str, Any]] = None
-    severity: Optional[str] = None
-    channels: Optional[List[str]] = None
-    cooldown_minutes: Optional[int] = None
-    max_alerts_per_day: Optional[int] = None
+    name: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+    config: dict[str, Any] | None = None
+    severity: str | None = None
+    channels: list[str] | None = None
+    cooldown_minutes: int | None = None
+    max_alerts_per_day: int | None = None
 
 
 class AlertRuleResponse(AlertRuleBase):
@@ -44,33 +45,33 @@ class AlertRuleResponse(AlertRuleBase):
 
 class AlertBase(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     severity: str
     status: str = "unread"
-    entity_type: Optional[str] = None
-    entity_id: Optional[UUID] = None
-    recommended_action: Optional[str] = None
-    alert_metadata: Dict[str, Any] = Field(default_factory=dict)
+    entity_type: str | None = None
+    entity_id: UUID | None = None
+    recommended_action: str | None = None
+    alert_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class AlertCreate(AlertBase):
     business_id: UUID
-    rule_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    deal_id: Optional[UUID] = None
-    order_id: Optional[UUID] = None
+    rule_id: UUID | None = None
+    conversation_id: UUID | None = None
+    deal_id: UUID | None = None
+    order_id: UUID | None = None
 
 
 class AlertResponse(AlertBase):
     id: UUID
     business_id: UUID
-    rule_id: Optional[UUID] = None
-    conversation_id: Optional[UUID] = None
-    deal_id: Optional[UUID] = None
-    order_id: Optional[UUID] = None
+    rule_id: UUID | None = None
+    conversation_id: UUID | None = None
+    deal_id: UUID | None = None
+    order_id: UUID | None = None
     created_at: datetime
-    read_at: Optional[datetime] = None
-    dismissed_at: Optional[datetime] = None
+    read_at: datetime | None = None
+    dismissed_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -79,17 +80,17 @@ class AlertStatsResponse(BaseModel):
     total_unread: int
     total_read: int
     total_dismissed: int
-    by_severity: Dict[str, int]
+    by_severity: dict[str, int]
 
 
 class RecommendationBase(BaseModel):
     type: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: int = 1
-    context_data: Dict[str, Any] = Field(default_factory=dict)
+    context_data: dict[str, Any] = Field(default_factory=dict)
     action_type: str
-    action_payload: Dict[str, Any] = Field(default_factory=dict)
+    action_payload: dict[str, Any] = Field(default_factory=dict)
     status: str = "pending"
 
 
@@ -100,12 +101,12 @@ class RecommendationCreate(RecommendationBase):
 class RecommendationResponse(RecommendationBase):
     id: UUID
     business_id: UUID
-    applied_at: Optional[datetime] = None
-    applied_by_user_id: Optional[UUID] = None
+    applied_at: datetime | None = None
+    applied_by_user_id: UUID | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class RecommendationApplyRequest(BaseModel):
-    user_id: Optional[UUID] = None
+    user_id: UUID | None = None

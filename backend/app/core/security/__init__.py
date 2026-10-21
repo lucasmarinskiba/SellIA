@@ -8,10 +8,12 @@ Modules:
 """
 
 import re
-import bcrypt
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
-from jose import jwt, JWTError
+
+import bcrypt
+from jose import JWTError, jwt
+
 from app.core.config import get_settings as _get_settings
 
 _settings = _get_settings()
@@ -40,7 +42,7 @@ def validate_password_strength(password: str) -> None:
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=_settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=_settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, _settings.SECRET_KEY, algorithm=_settings.ALGORITHM)
 
@@ -52,29 +54,29 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
         return None
 
 
-from app.core.security.rate_limiter import (
-    RateLimiter,
-    get_rate_limiter,
-)
 from app.core.security.audit_logger import (
-    AuditLog,
     AuditEventType,
+    AuditLog,
     AuditLogger,
     get_audit_logger,
 )
 from app.core.security.auth_factors import (
     TOTP2FA,
     APIKey,
-    Auth2FAService,
     APIKeyService,
-    get_auth_2fa_service,
+    Auth2FAService,
     get_api_key_service,
+    get_auth_2fa_service,
 )
 from app.core.security.data_isolation import (
-    DataIsolationService,
     DataIsolationError,
+    DataIsolationService,
     SellerContext,
     get_seller_context,
+)
+from app.core.security.rate_limiter import (
+    RateLimiter,
+    get_rate_limiter,
 )
 
 __all__ = [

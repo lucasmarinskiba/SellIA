@@ -6,22 +6,20 @@ Endpoints para lanzar campaigns:
 - POST /ads/campaigns/{id}/optimize — optimizar basado en performance
 """
 
-import logging
-from typing import List, Optional, Dict, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
 from app.core.logger import get_logger
-from app.domains.users.models import User
 from app.domains.computer_use.services.ad_orchestrator import (
-    get_ad_orchestrator,
     AdPlatform,
-    CopyTone,
+    get_ad_orchestrator,
 )
+from app.domains.users.models import User
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -36,13 +34,13 @@ class CreateCampaignRequest(BaseModel):
     campaign_name: str = Field(..., min_length=1, max_length=100)
     product_name: str
     main_benefit: str
-    discount_pct: Optional[int] = None
+    discount_pct: int | None = None
     customer_count: int = Field(default=1000)
     urgency_days: int = Field(default=7)
-    platforms: List[str] = Field(..., description="facebook, instagram, google_search, tiktok")
+    platforms: list[str] = Field(..., description="facebook, instagram, google_search, tiktok")
     daily_budget: float = Field(..., gt=0)
     duration_days: int = Field(default=7, ge=1, le=90)
-    target_audience: Optional[Dict[str, Any]] = None
+    target_audience: dict[str, Any] | None = None
 
 
 class CampaignResponse(BaseModel):
@@ -76,7 +74,7 @@ class CampaignPerformanceResponse(BaseModel):
 # ========== Endpoints ==========
 
 
-@router.post("/ads/campaigns", response_model=List[CampaignResponse])
+@router.post("/ads/campaigns", response_model=list[CampaignResponse])
 async def create_ad_campaign(
     request: CreateCampaignRequest,
     db: AsyncSession = Depends(get_db),
@@ -167,7 +165,7 @@ async def get_campaign_performance(
 
 @router.post("/ads/campaigns/optimize")
 async def optimize_campaigns(
-    campaign_ids: List[str],
+    campaign_ids: list[str],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

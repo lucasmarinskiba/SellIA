@@ -3,12 +3,11 @@ Research Brain ↔ Computer Use Orchestrator Bridge
 Real-time research insights feed decision-making in Computer Use operations
 """
 
-import asyncio
 import logging
-from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Callable
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger("research_cu_bridge")
 
@@ -30,8 +29,8 @@ class ResearchInsightPacket:
     """Packet of research insights for Computer Use"""
     context_type: DecisionContext
     target_entity: str  # lead_id, deal_id, campaign_id
-    insights: Dict[str, Any]
-    research_agents_involved: List[str]
+    insights: dict[str, Any]
+    research_agents_involved: list[str]
     confidence_score: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
     urgency: str = "medium"  # critical, high, medium, low
@@ -44,10 +43,10 @@ class ResearchBackedAction:
     action_type: str  # "email", "call", "meeting", "content", "automation"
     action_name: str
     description: str
-    target_audience: Dict[str, Any]
-    content_guidance: Dict[str, Any]
-    success_metrics: List[str]
-    research_backing: List[str]
+    target_audience: dict[str, Any]
+    content_guidance: dict[str, Any]
+    success_metrics: list[str]
+    research_backing: list[str]
     priority: str = "high"
 
 
@@ -58,7 +57,7 @@ class ResearchBackedAction:
 class ResearchToActionTranslator:
     """Translate research insights into Computer Use actions"""
 
-    async def translate_lead_research(self, research_signals: Dict[str, Any]) -> List[ResearchBackedAction]:
+    async def translate_lead_research(self, research_signals: dict[str, Any]) -> list[ResearchBackedAction]:
         """Translate lead research into actions"""
         actions = []
 
@@ -85,7 +84,7 @@ class ResearchToActionTranslator:
 
         return actions
 
-    async def translate_engagement_research(self, research_signals: Dict[str, Any]) -> List[ResearchBackedAction]:
+    async def translate_engagement_research(self, research_signals: dict[str, Any]) -> list[ResearchBackedAction]:
         """Translate engagement research into actions"""
         actions = []
 
@@ -113,7 +112,7 @@ class ResearchToActionTranslator:
 
         return actions
 
-    async def translate_objection_research(self, research_signals: Dict[str, Any]) -> List[ResearchBackedAction]:
+    async def translate_objection_research(self, research_signals: dict[str, Any]) -> list[ResearchBackedAction]:
         """Translate objection research into actions"""
         actions = []
 
@@ -143,7 +142,7 @@ class ResearchToActionTranslator:
 
         return actions
 
-    async def translate_campaign_research(self, research_signals: Dict[str, Any]) -> List[ResearchBackedAction]:
+    async def translate_campaign_research(self, research_signals: dict[str, Any]) -> list[ResearchBackedAction]:
         """Translate campaign research into actions"""
         actions = []
 
@@ -176,7 +175,7 @@ class ResearchToActionTranslator:
 
         return actions
 
-    async def translate_pricing_research(self, research_signals: Dict[str, Any]) -> List[ResearchBackedAction]:
+    async def translate_pricing_research(self, research_signals: dict[str, Any]) -> list[ResearchBackedAction]:
         """Translate pricing research into actions"""
         actions = []
 
@@ -211,7 +210,7 @@ class ResearchToActionTranslator:
 class DecisionContextBuilder:
     """Build enriched decision context from research insights"""
 
-    async def build_lead_qualification_context(self, lead_data: Dict[str, Any], research_signals: Dict[str, Any]) -> Dict[str, Any]:
+    async def build_lead_qualification_context(self, lead_data: dict[str, Any], research_signals: dict[str, Any]) -> dict[str, Any]:
         """Build context for lead qualification"""
         return {
             "context_type": DecisionContext.LEAD_QUALIFICATION,
@@ -229,7 +228,7 @@ class DecisionContextBuilder:
             "priority_score": 0.85,
         }
 
-    async def build_engagement_context(self, prospect_data: Dict[str, Any], research_signals: Dict[str, Any]) -> Dict[str, Any]:
+    async def build_engagement_context(self, prospect_data: dict[str, Any], research_signals: dict[str, Any]) -> dict[str, Any]:
         """Build context for engagement strategies"""
         return {
             "context_type": DecisionContext.PROSPECT_ENGAGEMENT,
@@ -245,7 +244,7 @@ class DecisionContextBuilder:
             "priority_score": 0.78,
         }
 
-    async def build_objection_context(self, deal_data: Dict[str, Any], research_signals: Dict[str, Any]) -> Dict[str, Any]:
+    async def build_objection_context(self, deal_data: dict[str, Any], research_signals: dict[str, Any]) -> dict[str, Any]:
         """Build context for objection handling"""
         return {
             "context_type": DecisionContext.OBJECTION_HANDLING,
@@ -261,7 +260,7 @@ class DecisionContextBuilder:
             "confidence_score": 0.88,
         }
 
-    async def build_retention_context(self, customer_data: Dict[str, Any], research_signals: Dict[str, Any]) -> Dict[str, Any]:
+    async def build_retention_context(self, customer_data: dict[str, Any], research_signals: dict[str, Any]) -> dict[str, Any]:
         """Build context for retention strategies"""
         return {
             "context_type": DecisionContext.CUSTOMER_RETENTION,
@@ -292,7 +291,7 @@ class ResearchInsightsCoordinator:
         self.context_builder = DecisionContextBuilder()
         self.active_packets = {}
 
-    async def coordinate_lead_qualification(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_lead_qualification(self, lead_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate lead qualification with research backing"""
         # Get research signals
         research_signals = await self.research_brain.research(
@@ -323,7 +322,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def coordinate_engagement_strategy(self, prospect_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_engagement_strategy(self, prospect_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate engagement strategy with research backing"""
         research_signals = await self.research_brain.research(
             f"engage_prospect_{prospect_data['id']}",
@@ -350,7 +349,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def coordinate_objection_handling(self, deal_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_objection_handling(self, deal_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate objection handling with research backing"""
         research_signals = await self.research_brain.research(
             f"handle_objection_{deal_data['id']}",
@@ -378,7 +377,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def coordinate_campaign_execution(self, campaign_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_campaign_execution(self, campaign_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate campaign execution with research backing"""
         research_signals = await self.research_brain.research(
             f"execute_campaign_{campaign_data['id']}",
@@ -401,7 +400,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def coordinate_pricing_decision(self, deal_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_pricing_decision(self, deal_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate pricing decision with research backing"""
         research_signals = await self.research_brain.research(
             f"price_deal_{deal_data['id']}",
@@ -425,7 +424,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def coordinate_customer_retention(self, customer_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def coordinate_customer_retention(self, customer_data: dict[str, Any]) -> dict[str, Any]:
         """Coordinate retention strategy with research backing"""
         research_signals = await self.research_brain.research(
             f"retain_customer_{customer_data['id']}",
@@ -450,7 +449,7 @@ class ResearchInsightsCoordinator:
             ),
         }
 
-    async def get_real_time_market_context(self) -> Dict[str, Any]:
+    async def get_real_time_market_context(self) -> dict[str, Any]:
         """Get real-time market context for all Computer Use decisions"""
         market_insights = await self.research_brain.generate_market_insights({})
         competitor_alerts = await self.research_brain.generate_competitor_alerts({})
@@ -491,7 +490,7 @@ class ResearchCUMetrics:
         else:
             self.research_accuracy = (self.research_accuracy + 0.7) / 2
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get current metrics"""
         return {
             "decisions_made": self.decisions_made,
@@ -507,11 +506,11 @@ class ResearchCUMetrics:
 # ============================================================================
 
 __all__ = [
-    "ResearchInsightPacket",
-    "ResearchBackedAction",
     "DecisionContext",
-    "ResearchToActionTranslator",
     "DecisionContextBuilder",
-    "ResearchInsightsCoordinator",
+    "ResearchBackedAction",
     "ResearchCUMetrics",
+    "ResearchInsightPacket",
+    "ResearchInsightsCoordinator",
+    "ResearchToActionTranslator",
 ]

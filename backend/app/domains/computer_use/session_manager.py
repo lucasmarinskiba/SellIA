@@ -11,35 +11,39 @@ import asyncio
 import base64
 import os
 import time
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from datetime import UTC, datetime
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.computer_use.browser_service import BrowserService
-from app.domains.computer_use.vision_agent import VisionAgent
-from app.domains.computer_use.models import ComputerUseSession, ComputerUseStep, ComputerUseMessage
-from app.domains.computer_use.schemas import ComputerUseAction
-from app.domains.computer_use.ws_manager import ws_manager
 from app.core.metrics import (
-    COMPUTER_USE_SESSIONS_CREATED,
+    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_SESSION_DURATION,
     COMPUTER_USE_SESSIONS_COMPLETED,
+    COMPUTER_USE_SESSIONS_CREATED,
     COMPUTER_USE_SESSIONS_FAILED,
     COMPUTER_USE_SESSIONS_STOPPED,
-    COMPUTER_USE_STEPS_TOTAL,
     COMPUTER_USE_STEP_DURATION,
-    COMPUTER_USE_SESSION_DURATION,
-    COMPUTER_USE_ACTIVE_SESSIONS,
+    COMPUTER_USE_STEPS_TOTAL,
 )
+from app.domains.computer_use.browser_service import BrowserService
+from app.domains.computer_use.models import (
+    ComputerUseMessage,
+    ComputerUseSession,
+    ComputerUseStep,
+)
+from app.domains.computer_use.schemas import ComputerUseAction
+from app.domains.computer_use.vision_agent import VisionAgent
+from app.domains.computer_use.ws_manager import ws_manager
 
 logger = get_logger(__name__)
 settings = get_settings()
 
 # In-memory registry of active sessions
-_active_sessions: Dict[str, "ComputerUseSessionManager"] = {}
+_active_sessions: dict[str, "ComputerUseSessionManager"] = {}
 
 
 def get_session_manager(session_id: str) -> Optional["ComputerUseSessionManager"]:
@@ -58,8 +62,8 @@ class ComputerUseSessionManager:
         session_id: UUID,
         db: AsyncSession,
         task: str,
-        start_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        start_url: str | None = None,
+        api_key: str | None = None,
         provider: str = "openai",
     ):
         self.session_id = str(session_id)
@@ -75,8 +79,8 @@ class ComputerUseSessionManager:
         self.status = "pending"
         self.current_step = 0
         self.max_steps = settings.COMPUTER_USE_MAX_STEPS
-        self.history: List[Dict[str, Any]] = []
-        self.user_chat_queue: List[str] = []
+        self.history: list[dict[str, Any]] = []
+        self.user_chat_queue: list[str] = []
 
         # Events for pause/resume synchronization
         self._pause_event = asyncio.Event()
@@ -299,9 +303,7 @@ class ComputerUseSessionManager:
                 result = await self.browser.navigate(params["url"])
             elif action.action_type == "wait":
                 result = await self.browser.wait(params.get("seconds", 2))
-            elif action.action_type == "screenshot":
-                result = {"success": True}
-            elif action.action_type in ("done", "error"):
+            elif action.action_type == "screenshot" or action.action_type in ("done", "error"):
                 result = {"success": True}
             else:
                 result = {"success": False, "error": f"Acción no soportada: {action.action_type}"}
@@ -402,7 +404,7 @@ class ComputerUseSessionManager:
 
     # Database helpers
 
-    async def _update_session_status(self, status: str, result_data: Optional[Dict] = None, error_message: Optional[str] = None) -> None:
+    async def _update_session_status(self, status: str, result_data: dict | None = None, error_message: str | None = None) -> None:
         try:
             from sqlalchemy import select
             result = await self.db.execute(
@@ -417,14 +419,14 @@ class ComputerUseSessionManager:
                 if error_message:
                     session.error_message = error_message
                 if status in ("completed", "failed", "stopped"):
-                    session.completed_at = datetime.now(timezone.utc)
+                    session.completed_at = datetime.now(UTC)
                 if status == "running" and not session.started_at:
-                    session.started_at = datetime.now(timezone.utc)
+                    session.started_at = datetime.now(UTC)
                 await self.db.commit()
         except Exception as e:
             logger.error(f"DB update error: {e}")
 
-    async def _update_session_progress(self, current_url: Optional[str]) -> None:
+    async def _update_session_progress(self, current_url: str | None) -> None:
         try:
             from sqlalchemy import select
             result = await self.db.execute(
@@ -444,7 +446,7 @@ class ComputerUseSessionManager:
         step_number: int,
         screenshot_path: str,
         action: ComputerUseAction,
-        page_url: Optional[str],
+        page_url: str | None,
     ) -> None:
         try:
             step = ComputerUseStep(
@@ -455,7 +457,7 @@ class ComputerUseSessionManager:
                 llm_response=action.reason,
                 action_type=action.action_type,
                 action_params=action.params,
-                executed_at=datetime.now(timezone.utc),
+                executed_at=datetime.now(UTC),
             )
             self.db.add(step)
             await self.db.commit()

@@ -5,18 +5,17 @@ stores it in AgentConversation.context_summary, and extracts key facts
 into CustomerMemory records.
 """
 
-import uuid
 import json
-from typing import Optional, List
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
-from app.domains.channels.models import Conversation
-from app.domains.agents.models import AgentConversation
-from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.core.logger import get_logger
+from app.domains.agents.ai_reply import generate_raw_ai_response
+from app.domains.agents.models import AgentConversation
+from app.domains.channels.models import Conversation
+from app.domains.memory.models import ConversationMemoryChunk
 
 logger = get_logger(__name__)
 
@@ -39,7 +38,7 @@ _FACT_EXTRACTION_PROMPT = (
 async def summarize_conversation(
     db: AsyncSession,
     conversation_id: uuid.UUID,
-) -> Optional[str]:
+) -> str | None:
     """
     1. Fetch all messages from conversation_memory_chunks for the conversation.
     2. Build prompt and call LLM (cheapest model via existing router).
@@ -114,7 +113,7 @@ async def summarize_conversation(
 async def _extract_and_store_facts(
     db: AsyncSession,
     conversation_id: uuid.UUID,
-    chunks: List[ConversationMemoryChunk],
+    chunks: list[ConversationMemoryChunk],
     business_id: uuid.UUID,
 ) -> None:
     """Helper to extract facts from conversation chunks and persist them."""

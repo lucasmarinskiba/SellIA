@@ -1,11 +1,10 @@
 """Stripe payment processing and webhooks."""
 
-import logging
-from typing import Optional, Dict, Any
-from enum import Enum
-import hmac
 import hashlib
-import json
+import hmac
+import logging
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +75,8 @@ class StripeService:
             return False
 
     async def handle_payment_succeeded(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle payment_intent.succeeded event."""
         try:
             payment_intent = event_data.get("object", {})
@@ -103,8 +102,8 @@ class StripeService:
             return None
 
     async def handle_payment_failed(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle payment failure."""
         try:
             payment_intent = event_data.get("object", {})
@@ -126,8 +125,8 @@ class StripeService:
             return None
 
     async def handle_invoice_paid(
-        self, event_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, event_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Handle invoice.paid event."""
         try:
             invoice = event_data.get("object", {})
@@ -153,7 +152,7 @@ class StripeService:
 
     async def create_customer(
         self, email: str, name: str, company: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Create Stripe customer."""
         try:
             # In production, call Stripe API
@@ -169,7 +168,7 @@ class StripeService:
         customer_id: str,
         price_id: str,
         annual_price: float,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Create subscription."""
         try:
             # In production, call Stripe API

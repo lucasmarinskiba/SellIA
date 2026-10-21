@@ -1,10 +1,8 @@
 """AI/ML intelligence layer — deal prediction + lead scoring."""
 
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime, timedelta
 from enum import Enum
-import json
 
 
 class DealOutcome(str, Enum):
@@ -74,8 +72,8 @@ class AIIntelligenceManager:
         deal_value: float,
         engagement_velocity: float,  # activities/day
         has_proposal: bool,
-        contact_seniority: Optional[str] = None,
-        industry: Optional[str] = None,
+        contact_seniority: str | None = None,
+        industry: str | None = None,
     ) -> DealPrediction:
         """
         Predict deal outcome using ML model.
@@ -164,10 +162,10 @@ class AIIntelligenceManager:
     def score_lead(
         self,
         contact_id: str,
-        company_size: Optional[int] = None,
-        industry: Optional[str] = None,
-        email_engagement: Optional[dict] = None,  # {opens, clicks, replies}
-        seniority: Optional[str] = None,
+        company_size: int | None = None,
+        industry: str | None = None,
+        email_engagement: dict | None = None,  # {opens, clicks, replies}
+        seniority: str | None = None,
         has_budget: bool = False,
         has_authority: bool = False,
         is_ideal_customer_profile: bool = False,
@@ -260,7 +258,7 @@ class AIIntelligenceManager:
         total_revenue: float,
         mrr_change: float,  # Month-over-month MRR change
         days_since_last_activity: int,
-        nps_score: Optional[float] = None,
+        nps_score: float | None = None,
         support_tickets_open: int = 0,
         feature_adoption: float = 0.5,  # 0-1
     ) -> CustomerHealth:

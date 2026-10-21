@@ -1,10 +1,14 @@
 """FOMO Intelligence service: registra usos reales + aprende qué convierte."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import select, func
+from datetime import UTC, datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.fomo_intelligence.models import (
-    FOMOStrategyApplication, FOMOStrategyOutcome, FOMOStrategyIntelligence,
+    FOMOStrategyApplication,
+    FOMOStrategyIntelligence,
+    FOMOStrategyOutcome,
     FOMOStrategyType,
 )
 
@@ -176,7 +180,7 @@ class FOMOIntelligenceService:
 
         await db.commit()
         return {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "total_applications": len(applications),
             "total_outcomes_measured": len(outcomes),
             "strategy_breakdown": sorted(report, key=lambda r: r["conversion_rate"], reverse=True),

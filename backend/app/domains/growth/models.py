@@ -4,17 +4,25 @@ Inbound marketing, lead magnets, SEO content pipeline, value-first outreach,
 social proof collection, UGC, and organic growth campaign tracking.
 """
 
-import uuid
 import enum
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Numeric, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
-
 
 # ========== Enums ==========
 
@@ -133,8 +141,8 @@ class GrowthCampaign(Base):
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_growth_campaigns_business_type', 'business_id', 'campaign_type'),
@@ -175,8 +183,8 @@ class LeadMagnet(Base):
     delivery_trigger = Column(String(50), default="new_lead", nullable=False)  # new_lead, keyword, tag_added
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_lead_magnets_business_format', 'business_id', 'format'),
@@ -211,8 +219,8 @@ class InboundLead(Base):
     sales_touches_received = Column(Integer, default=0, nullable=False)  # right-hook count
 
     # Conversion tracking
-    first_touch_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_touch_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    first_touch_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    last_touch_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     converted_at = Column(DateTime(timezone=True), nullable=True)
     converted_to_deal_id = Column(UUID(as_uuid=True), ForeignKey("deals.id", ondelete="SET NULL"), nullable=True)
 
@@ -262,8 +270,8 @@ class SocialProofItem(Base):
     rejection_reason = Column(Text, nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_social_proofs_business_type', 'business_id', 'item_type'),
@@ -297,7 +305,7 @@ class UgcRequest(Base):
     social_proof_id = Column(UUID(as_uuid=True), ForeignKey("social_proofs.id", ondelete="SET NULL"), nullable=True)
 
     sent_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_ugc_requests_business_status', 'business_id', 'status'),
@@ -334,8 +342,8 @@ class ValueSequence(Base):
     avg_engagement_score = Column(Numeric(5, 2), default=0, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index('ix_value_sequences_business_active', 'business_id', 'is_active'),
@@ -366,7 +374,7 @@ class ValueSequenceEnrollment(Base):
     converted_at = Column(DateTime(timezone=True), nullable=True)
     converted_to_deal_id = Column(UUID(as_uuid=True), ForeignKey("deals.id", ondelete="SET NULL"), nullable=True)
 
-    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (

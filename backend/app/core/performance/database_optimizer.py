@@ -2,12 +2,12 @@
 
 import logging
 import re
-import time
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from sqlalchemy import text, inspect
+from typing import Any
+
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -42,11 +42,11 @@ class SlowQuery:
     rows_returned: int
     database: str
     timestamp: datetime
-    user_id: Optional[str] = None
-    endpoint: Optional[str] = None
-    error: Optional[str] = None
+    user_id: str | None = None
+    endpoint: str | None = None
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "query_hash": self.query_hash,
             "query": self.query[:500],  # Truncate for storage
@@ -65,7 +65,7 @@ class SlowQuery:
 class IndexRecommendation:
     """Index recommendation for a table."""
     table: str
-    columns: List[str]
+    columns: list[str]
     index_type: IndexType
     selectivity: float  # 0.0-1.0, higher is better
     estimated_improvement_percent: int
@@ -86,14 +86,14 @@ class DatabaseOptimizer:
     }
 
     # Slow query log storage (in-memory, could be persisted to Redis)
-    _slow_query_log: List[SlowQuery] = []
+    _slow_query_log: list[SlowQuery] = []
     _max_log_size = 10000
 
     def __init__(self):
         """Initialize database optimizer."""
-        self.slow_queries: Dict[str, Dict[str, Any]] = {}
-        self.index_stats: Dict[str, Dict[str, Any]] = {}
-        self.query_cache_stats: Dict[str, Dict[str, Any]] = {}
+        self.slow_queries: dict[str, dict[str, Any]] = {}
+        self.index_stats: dict[str, dict[str, Any]] = {}
+        self.query_cache_stats: dict[str, dict[str, Any]] = {}
 
     async def log_slow_query(
         self,
@@ -101,9 +101,9 @@ class DatabaseOptimizer:
         execution_time_ms: float,
         rows_scanned: int,
         rows_returned: int,
-        user_id: Optional[str] = None,
-        endpoint: Optional[str] = None,
-        error: Optional[str] = None,
+        user_id: str | None = None,
+        endpoint: str | None = None,
+        error: str | None = None,
     ) -> None:
         """Log a slow query execution."""
         import hashlib
@@ -160,7 +160,7 @@ class DatabaseOptimizer:
                 f"scanned {rows_scanned} rows, returned {rows_returned}"
             )
 
-    def get_slow_query_report(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_slow_query_report(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get top slow queries by execution time."""
         sorted_queries = sorted(
             self.slow_queries.items(),
@@ -184,7 +184,7 @@ class DatabaseOptimizer:
             for qh, stats in sorted_queries[:limit]
         ]
 
-    def get_recent_slow_queries(self, minutes: int = 5, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_recent_slow_queries(self, minutes: int = 5, limit: int = 100) -> list[dict[str, Any]]:
         """Get slow queries from the last N minutes."""
         cutoff_time = datetime.utcnow() - timedelta(minutes=minutes)
 
@@ -204,7 +204,7 @@ class DatabaseOptimizer:
         execution_time_ms: float,
         rows_scanned: int,
         rows_returned: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze a single query's performance."""
 
         # Calculate efficiency ratio
@@ -252,12 +252,12 @@ class DatabaseOptimizer:
     def recommend_indexes(
         self,
         table: str,
-        frequent_filters: List[str],
+        frequent_filters: list[str],
         estimated_row_count: int = 100000,
-    ) -> List[IndexRecommendation]:
+    ) -> list[IndexRecommendation]:
         """Recommend indexes for frequently filtered columns."""
 
-        recommendations: List[IndexRecommendation] = []
+        recommendations: list[IndexRecommendation] = []
 
         # Single column indexes
         for column in frequent_filters[:5]:  # Limit to top 5
@@ -294,7 +294,7 @@ class DatabaseOptimizer:
 
         return recommendations
 
-    def estimate_query_plan(self, query: str) -> Dict[str, Any]:
+    def estimate_query_plan(self, query: str) -> dict[str, Any]:
         """Estimate query plan and cost."""
 
         # This is a simplified version; real implementation would use EXPLAIN ANALYZE
@@ -328,7 +328,7 @@ class DatabaseOptimizer:
         self,
         query: str,
         expected_query_frequency: int = 100,  # Per minute
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Suggest creating a materialized view for expensive queries."""
 
         # If query is complex and frequent, suggest materialized view
@@ -354,7 +354,7 @@ class DatabaseOptimizer:
         self,
         session: AsyncSession,
         table_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze table statistics."""
         # table_name becomes a raw SQL identifier below (PostgreSQL doesn't
         # support bind params for identifiers) — currently unreferenced
@@ -391,7 +391,7 @@ class DatabaseOptimizer:
                 "error": str(e),
             }
 
-    def get_index_stats(self) -> Dict[str, Dict[str, Any]]:
+    def get_index_stats(self) -> dict[str, dict[str, Any]]:
         """Get statistics for all tracked indexes."""
         return self.index_stats
 

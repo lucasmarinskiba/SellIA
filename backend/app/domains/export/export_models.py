@@ -1,11 +1,20 @@
 """Export & BI models — data export, reports, warehouse sync."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Index, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -68,9 +77,9 @@ class DataExport(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
     requested_by = Column(String(255), nullable=True)  # Email of user
-    requested_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    completed_at = Column(DateTime(timezone.utc), nullable=True)
-    expires_at = Column(DateTime(timezone.utc), nullable=True)  # When file is purged
+    requested_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(UTC), nullable=True)
+    expires_at = Column(DateTime(UTC), nullable=True)  # When file is purged
 
     __table_args__ = (
         Index("idx_business_status", "business_id", "status"),
@@ -108,11 +117,11 @@ class ScheduledReport(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    last_sent_at = Column(DateTime(timezone.utc), nullable=True)
-    next_send_at = Column(DateTime(timezone.utc), nullable=True)
+    last_sent_at = Column(DateTime(UTC), nullable=True)
+    next_send_at = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_active", "business_id", "is_active"),
@@ -142,13 +151,13 @@ class DataWarehouseSync(Base):
     api_key_encrypted = Column(String(500), nullable=True)  # Encrypted API key
 
     # Sync tracking
-    last_sync_at = Column(DateTime(timezone.utc), nullable=True)
-    next_sync_at = Column(DateTime(timezone.utc), nullable=True)
+    last_sync_at = Column(DateTime(UTC), nullable=True)
+    next_sync_at = Column(DateTime(UTC), nullable=True)
     rows_synced_total = Column(Integer, default=0)
     sync_errors = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_status", "business_id", "connection_status"),
@@ -178,10 +187,10 @@ class BIDashboardConfig(Base):
 
     # Usage
     view_count = Column(Integer, default=0)
-    last_viewed_at = Column(DateTime(timezone.utc), nullable=True)
+    last_viewed_at = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("idx_business_type", "business_id", "dashboard_type"),
@@ -222,7 +231,7 @@ class ExportMetrics(Base):
     dashboard_views = Column(Integer, default=0)
     avg_dashboard_load_time_ms = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 

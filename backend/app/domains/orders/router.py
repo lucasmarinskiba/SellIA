@@ -2,28 +2,37 @@
 
 import csv
 import io
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
-from typing import Optional
-from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_active_user
-from app.domains.users.models import User
-from app.domains.orders.models import Order, OrderStatus, PaymentStatus, RevenueEvent
-from app.domains.orders.schemas import OrderCreate, OrderUpdate, OrderResponse, RevenueSummary, AttributionSummary
-from app.domains.orders.revenue import RevenueAttributionEngine
-from app.domains.orders import status_flow, table as orders_table
-from app.domains.automations.models import Workflow
-from app.domains.services.models import ServiceDelivery, ServiceDeliveryStatus, Appointment, AppointmentStatus
-from app.domains.services.schemas import ServiceDeliveryResponse, AppointmentResponse
 from app.core.events import emit_order_created
+from app.domains.automations.models import Workflow
+from app.domains.orders import status_flow
+from app.domains.orders import table as orders_table
+from app.domains.orders.models import Order, OrderStatus, PaymentStatus, RevenueEvent
+from app.domains.orders.revenue import RevenueAttributionEngine
+from app.domains.orders.schemas import (
+    AttributionSummary,
+    OrderCreate,
+    OrderResponse,
+    OrderUpdate,
+    RevenueSummary,
+)
+from app.domains.services.models import (
+    Appointment,
+    ServiceDelivery,
+    ServiceDeliveryStatus,
+)
+from app.domains.users.models import User
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -31,8 +40,8 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 @router.get("", response_model=list[OrderResponse])
 async def list_orders(
     business_id: UUID = Query(...),
-    status: Optional[str] = None,
-    search: Optional[str] = None,
+    status: str | None = None,
+    search: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -83,7 +92,7 @@ async def create_order(
 
     order = Order(**payload)
     if order.payment_status == PaymentStatus.COMPLETED and not order.paid_at:
-        order.paid_at = datetime.now(timezone.utc)
+        order.paid_at = datetime.now(UTC)
 
     # Run revenue attribution
     engine = RevenueAttributionEngine(db)
@@ -154,23 +163,23 @@ async def create_order(
 
 
 def _table_query(
-    search: Optional[str],
-    status_in: Optional[str],
-    payment_status: Optional[str],
-    platform: Optional[str],
-    channel: Optional[str],
-    currency: Optional[str],
-    date_from: Optional[datetime],
-    date_to: Optional[datetime],
-    amount_min: Optional[float],
-    amount_max: Optional[float],
-    has_tracking: Optional[bool],
+    search: str | None,
+    status_in: str | None,
+    payment_status: str | None,
+    platform: str | None,
+    channel: str | None,
+    currency: str | None,
+    date_from: datetime | None,
+    date_to: datetime | None,
+    amount_min: float | None,
+    amount_max: float | None,
+    has_tracking: bool | None,
     sort_by: str,
     sort_dir: str,
     page: int,
     page_size: int,
 ) -> orders_table.TableQuery:
-    def split(raw: Optional[str]) -> list[str]:
+    def split(raw: str | None) -> list[str]:
         return [part.strip() for part in raw.split(",") if part.strip()] if raw else []
 
     return orders_table.TableQuery(
@@ -195,17 +204,17 @@ def _table_query(
 @router.get("/table")
 async def orders_spreadsheet(
     business_id: UUID = Query(...),
-    search: Optional[str] = None,
-    status_in: Optional[str] = Query(None, description="Lista separada por comas"),
-    payment_status: Optional[str] = None,
-    platform: Optional[str] = None,
-    channel: Optional[str] = None,
-    currency: Optional[str] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
-    amount_min: Optional[float] = None,
-    amount_max: Optional[float] = None,
-    has_tracking: Optional[bool] = None,
+    search: str | None = None,
+    status_in: str | None = Query(None, description="Lista separada por comas"),
+    payment_status: str | None = None,
+    platform: str | None = None,
+    channel: str | None = None,
+    currency: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    amount_min: float | None = None,
+    amount_max: float | None = None,
+    has_tracking: bool | None = None,
     sort_by: str = "created_at",
     sort_dir: str = "desc",
     page: int = Query(1, ge=1),
@@ -231,17 +240,17 @@ async def orders_spreadsheet(
 @router.get("/export.csv")
 async def export_orders_csv(
     business_id: UUID = Query(...),
-    search: Optional[str] = None,
-    status_in: Optional[str] = None,
-    payment_status: Optional[str] = None,
-    platform: Optional[str] = None,
-    channel: Optional[str] = None,
-    currency: Optional[str] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
-    amount_min: Optional[float] = None,
-    amount_max: Optional[float] = None,
-    has_tracking: Optional[bool] = None,
+    search: str | None = None,
+    status_in: str | None = None,
+    payment_status: str | None = None,
+    platform: str | None = None,
+    channel: str | None = None,
+    currency: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    amount_min: float | None = None,
+    amount_max: float | None = None,
+    has_tracking: bool | None = None,
     sort_by: str = "created_at",
     sort_dir: str = "desc",
     limit: int = Query(5000, ge=1, le=20000),
@@ -276,7 +285,7 @@ async def export_orders_csv(
         writer.writerow([f"Exportadas {len(data['rows'])} de {data['total']} órdenes del filtro"])
 
     payload = "﻿" + buffer.getvalue()
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    stamp = datetime.now(UTC).strftime("%Y%m%d")
     return StreamingResponse(
         iter([payload]),
         media_type="text/csv; charset=utf-8",
@@ -417,7 +426,7 @@ async def get_revenue_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Total revenue
     total_result = await db.execute(
@@ -505,7 +514,7 @@ async def get_attribution_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Total
     total_result = await db.execute(
@@ -617,7 +626,10 @@ async def schedule_service_for_order(
     if not order:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-    from app.domains.services.services import create_service_delivery, create_appointment
+    from app.domains.services.services import (
+        create_appointment,
+        create_service_delivery,
+    )
 
     # Create service delivery
     delivery_data = {
@@ -661,7 +673,7 @@ async def schedule_service_for_order(
     # Update order status
     if order.status == OrderStatus.PAID:
         order.status = OrderStatus.SHIPPED
-        order.shipped_at = datetime.now(timezone.utc)
+        order.shipped_at = datetime.now(UTC)
     await db.commit()
 
     return {
@@ -687,7 +699,7 @@ async def start_service_for_order(
         raise HTTPException(status_code=404, detail="No hay entrega de servicio para esta orden")
 
     delivery.status = ServiceDeliveryStatus.IN_PROGRESS
-    delivery.started_at = datetime.now(timezone.utc)
+    delivery.started_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(delivery)
 
@@ -715,7 +727,7 @@ async def complete_service_for_order(
     order = await db.get(Order, order_id)
     if order and order.status == OrderStatus.SHIPPED:
         order.status = OrderStatus.DELIVERED
-        order.delivered_at = datetime.now(timezone.utc)
+        order.delivered_at = datetime.now(UTC)
         await db.commit()
 
     return {"success": True, "message": "Servicio completado", "delivery": delivery}

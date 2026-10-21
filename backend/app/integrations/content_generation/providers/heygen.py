@@ -4,10 +4,10 @@ Pricing: ~$2/min video
 Strengths: Realistic avatars, multilingual, lip sync
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -27,7 +27,7 @@ class HeyGenProvider(BaseProvider):
         duration = config.duration_seconds or 30
         return (duration / 60) * 2.0  # ~$2/min
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"heygen-avatar": 2.0}  # per minute
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -50,13 +50,12 @@ class HeyGenProvider(BaseProvider):
                 "dimension": {"width": 1080, "height": 1920},
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.heygen.com/v2/video/generate",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.heygen.com/v2/video/generate",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             video_id = data.get("data", {}).get("video_id")
             if not video_id:

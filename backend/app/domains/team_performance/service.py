@@ -25,7 +25,7 @@ the gap out loud.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -114,7 +114,7 @@ async def board(db: AsyncSession, business_id: uuid.UUID, days: int = 30) -> dic
     from app.domains.channels.models import Conversation, Message, MessageDirection
     from app.domains.data_science.stats import MIN_TO_READ, median
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     since = now - timedelta(days=days)
     people = await _members(db, business_id)
     if not people:

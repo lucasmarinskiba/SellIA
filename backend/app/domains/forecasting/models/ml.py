@@ -40,7 +40,7 @@ class GBMForecaster(Forecaster):
         self.light = light   # backtest mode: skip quantile sub-models, fewer iters
 
     # ------------------------------------------------------------------
-    def fit(self, ts: TimeSeries) -> "GBMForecaster":
+    def fit(self, ts: TimeSeries) -> GBMForecaster:
         self.country = ts.spec.country
         self.grain = ts.spec.grain.value
         self.history = ts.values.astype(float)

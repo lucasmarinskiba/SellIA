@@ -3,8 +3,8 @@ Educational Responder — Micro-teaching, resources, FAQ integration.
 """
 
 import logging
-from typing import Dict, List, Any, Tuple
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class EducationalResponder:
     }
 
     @staticmethod
-    def analyze_question(question_text: str) -> Dict[str, Any]:
+    def analyze_question(question_text: str) -> dict[str, Any]:
         """
         Analyze question to identify learning need.
 
@@ -124,7 +124,7 @@ class EducationalResponder:
         }
 
     @staticmethod
-    def extract_learning_goals(question_text: str) -> List[str]:
+    def extract_learning_goals(question_text: str) -> list[str]:
         """Extract what user wants to learn."""
 
         goals = []
@@ -143,7 +143,7 @@ class EducationalResponder:
         return goals
 
     @staticmethod
-    def find_relevant_faq(question_text: str) -> Dict[str, Any]:
+    def find_relevant_faq(question_text: str) -> dict[str, Any]:
         """
         Find relevant FAQ entries for question.
 
@@ -187,7 +187,7 @@ class EducationalResponder:
         }
 
     @staticmethod
-    def generate_learning_path(skill_level: str, topic: str) -> Dict[str, Any]:
+    def generate_learning_path(skill_level: str, topic: str) -> dict[str, Any]:
         """
         Generate personalized learning path.
 
@@ -226,7 +226,7 @@ class EducationalResponder:
     def create_educational_response(
         question_text: str,
         skill_level: str = "intermediate",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create complete educational response.
 
@@ -276,7 +276,7 @@ class EducationalResponder:
         }
 
     @staticmethod
-    def suggest_resources(topic: str, skill_level: str) -> List[Dict[str, Any]]:
+    def suggest_resources(topic: str, skill_level: str) -> list[dict[str, Any]]:
         """Suggest best resources for topic."""
 
         resources = {

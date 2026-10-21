@@ -9,13 +9,12 @@ This engine creates contextual, warm voice note scripts that:
 """
 
 import uuid
-from typing import Optional, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import get_logger
 from app.domains.agents.ai_reply import generate_raw_ai_response
 from app.domains.outreach.service import FatigueScoringService
-from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 

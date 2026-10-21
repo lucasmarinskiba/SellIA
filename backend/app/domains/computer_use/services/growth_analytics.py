@@ -4,9 +4,9 @@ Monitora crecimiento + propone optimizaciones.
 """
 
 import logging
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class GrowthAnalytics:
         platform: str,
         account_id: str,
         limit: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Obtiene posts con mejor engagement."""
         return [
             {
@@ -118,7 +118,7 @@ class GrowthAnalytics:
         platform: str,
         account_id: str,
         days: int = 7,
-    ) -> Dict[str, EngagementMetrics]:
+    ) -> dict[str, EngagementMetrics]:
         """Obtiene engagement por día."""
         return {
             "2026-07-04": EngagementMetrics(
@@ -135,7 +135,7 @@ class GrowthAnalytics:
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analiza qué tipo de contenido funciona mejor."""
         return {
             "top_content_type": "educational_tips",
@@ -161,7 +161,7 @@ class GrowthAnalytics:
         historical_growth_rate: float,
         posting_frequency: int,  # posts per week
         days_forward: int = 30,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Predice crecimiento futuro."""
         # Simple linear prediction
         daily_rate = (historical_growth_rate / 100.0) * (posting_frequency / 7.0)
@@ -193,7 +193,7 @@ class GrowthAnalytics:
         conversions: int,
         revenue: float,
         marketing_spend: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula ROI de campaña."""
         conversion_rate = (conversions / followers) * 100 if followers > 0 else 0
         roi = ((revenue - marketing_spend) / marketing_spend) * 100 if marketing_spend > 0 else 0
@@ -215,7 +215,7 @@ class GrowthAnalytics:
         self,
         platform: str,
         account_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Genera reporte completo de crecimiento."""
         metrics = await self.get_account_metrics(platform, account_id)
         performance = await self.analyze_content_performance(platform, account_id)

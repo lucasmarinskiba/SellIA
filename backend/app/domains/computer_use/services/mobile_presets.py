@@ -4,9 +4,9 @@ Perfiles predefinidos de dispositivos móviles populares para emulación
 en sesiones de Computer Use.
 """
 
-from typing import Dict, Any
+from typing import Any
 
-MOBILE_PRESETS: Dict[str, Dict[str, Any]] = {
+MOBILE_PRESETS: dict[str, dict[str, Any]] = {
     "iphone_14": {
         "name": "iPhone 14",
         "viewport_width": 390,
@@ -73,7 +73,7 @@ MOBILE_PRESETS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_mobile_preset(preset_id: str) -> Dict[str, Any]:
+def get_mobile_preset(preset_id: str) -> dict[str, Any]:
     """Obtiene un preset por ID."""
     preset = MOBILE_PRESETS.get(preset_id)
     if not preset:
@@ -81,6 +81,6 @@ def get_mobile_preset(preset_id: str) -> Dict[str, Any]:
     return preset
 
 
-def list_presets() -> Dict[str, str]:
+def list_presets() -> dict[str, str]:
     """Lista todos los presets disponibles."""
     return {k: v["name"] for k, v in MOBILE_PRESETS.items()}

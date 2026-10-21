@@ -1,10 +1,10 @@
 """Models for publication link performance analytics."""
 
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, String, ForeignKey, func, Float, Integer, Index, Date
+from sqlalchemy import Date, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 

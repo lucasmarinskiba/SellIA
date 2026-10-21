@@ -2,13 +2,13 @@
 
 import asyncio
 import logging
+import statistics
 import time
-import random
-from typing import Dict, List, Any, Optional, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import statistics
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,10 @@ class RequestMetrics:
     response_time_ms: float
     status_code: int
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "request_id": self.request_id,
             "endpoint": self.endpoint,
@@ -66,9 +66,9 @@ class LoadTestResult:
     test_duration_seconds: float
     started_at: datetime
     completed_at: datetime
-    bottlenecks: List[str] = field(default_factory=list)
+    bottlenecks: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_name": self.test_name,
             "total_requests": self.total_requests,
@@ -118,13 +118,13 @@ class LoadTestRunner:
 
     def __init__(self):
         """Initialize load test runner."""
-        self.results: Dict[str, LoadTestResult] = {}
-        self.running_tests: Dict[str, bool] = {}
+        self.results: dict[str, LoadTestResult] = {}
+        self.running_tests: dict[str, bool] = {}
 
     async def run_load_test(
         self,
         config: LoadTestConfig,
-        request_generator: Callable[[], Dict[str, Any]],
+        request_generator: Callable[[], dict[str, Any]],
     ) -> LoadTestResult:
         """Run a load test."""
 
@@ -134,7 +134,7 @@ class LoadTestRunner:
         logger.info(f"  Duration: {config.duration_seconds}s")
 
         start_time = datetime.utcnow()
-        metrics: List[RequestMetrics] = []
+        metrics: list[RequestMetrics] = []
 
         # Create user tasks
         user_tasks = [
@@ -155,7 +155,7 @@ class LoadTestRunner:
                 asyncio.gather(*user_tasks),
                 timeout=config.duration_seconds + config.ramp_down_seconds + 5,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         finally:
             # Cancel remaining tasks
@@ -186,9 +186,9 @@ class LoadTestRunner:
     async def _user_session(
         self,
         config: LoadTestConfig,
-        request_generator: Callable[[], Dict[str, Any]],
+        request_generator: Callable[[], dict[str, Any]],
         user_id: int,
-        metrics: List[RequestMetrics],
+        metrics: list[RequestMetrics],
     ) -> None:
         """Simulate a single user session."""
 
@@ -231,7 +231,7 @@ class LoadTestRunner:
     async def _send_request(
         self,
         config: LoadTestConfig,
-        request_data: Dict[str, Any],
+        request_data: dict[str, Any],
         user_id: int,
     ) -> RequestMetrics:
         """Send a single request."""
@@ -270,7 +270,7 @@ class LoadTestRunner:
     def _analyze_results(
         self,
         config: LoadTestConfig,
-        metrics: List[RequestMetrics],
+        metrics: list[RequestMetrics],
         started_at: datetime,
         completed_at: datetime,
         test_duration: float,
@@ -337,10 +337,10 @@ class LoadTestRunner:
 
     def _detect_bottlenecks(
         self,
-        response_times: List[float],
+        response_times: list[float],
         error_rate: float,
         rps: float,
-    ) -> List[str]:
+    ) -> list[str]:
         """Detect bottlenecks in load test results."""
 
         bottlenecks = []
@@ -366,7 +366,7 @@ class LoadTestRunner:
 
         return bottlenecks
 
-    def get_test_results(self, test_name: str) -> Optional[Dict[str, Any]]:
+    def get_test_results(self, test_name: str) -> dict[str, Any] | None:
         """Get results for a test."""
 
         if test_name not in self.results:
@@ -374,7 +374,7 @@ class LoadTestRunner:
 
         return self.results[test_name].to_dict()
 
-    def get_all_results(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_results(self) -> dict[str, dict[str, Any]]:
         """Get all test results."""
 
         return {
@@ -382,7 +382,7 @@ class LoadTestRunner:
             for name, result in self.results.items()
         }
 
-    def compare_results(self, test_name_1: str, test_name_2: str) -> Dict[str, Any]:
+    def compare_results(self, test_name_1: str, test_name_2: str) -> dict[str, Any]:
         """Compare two test results."""
 
         result1 = self.results.get(test_name_1)

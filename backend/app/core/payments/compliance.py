@@ -17,13 +17,13 @@ Note: For production AML/KYC, integrate with services like:
 - Socure
 """
 
+import hashlib
 import logging
 import os
 import re
-from typing import Dict, Any, Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-import hashlib
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,9 @@ class ComplianceChecker:
     def validate_customer_data(
         customer_name: str,
         customer_email: str,
-        customer_phone: Optional[str] = None,
-        customer_country: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        customer_phone: str | None = None,
+        customer_country: str | None = None,
+    ) -> dict[str, Any]:
         """
         Validate customer data for compliance.
 
@@ -117,7 +117,7 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error validating customer: {str(e)}")
+            logger.error(f"Error validating customer: {e!s}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -130,9 +130,9 @@ class ComplianceChecker:
         amount_usd: float,
         currency: str = "USD",
         payment_method: str = "card",
-        ip_address: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        ip_address: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Screen transaction for suspicious activity.
 
@@ -218,14 +218,14 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error screening transaction: {str(e)}")
+            logger.error(f"Error screening transaction: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def mask_payment_data(
-        card_number: Optional[str] = None,
-        account_number: Optional[str] = None,
-    ) -> Dict[str, str]:
+        card_number: str | None = None,
+        account_number: str | None = None,
+    ) -> dict[str, str]:
         """
         Mask sensitive payment data for logging/display.
 
@@ -259,8 +259,8 @@ class ComplianceChecker:
         customer_email: str,
         transaction_id: str,
         severity: str,
-        details: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        details: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Log compliance/security event for audit trail.
 
@@ -301,7 +301,7 @@ class ComplianceChecker:
             }
 
         except Exception as e:
-            logger.error(f"Error logging compliance event: {str(e)}")
+            logger.error(f"Error logging compliance event: {e!s}")
             return {"status": "error", "error": str(e)}
 
     # Private helper methods
@@ -360,7 +360,7 @@ class PciDssCompliance:
     """PCI-DSS compliance checks and enforcement."""
 
     @staticmethod
-    def validate_pci_compliance() -> Dict[str, Any]:
+    def validate_pci_compliance() -> dict[str, Any]:
         """
         Validate system PCI-DSS compliance.
 
@@ -422,7 +422,7 @@ class PciDssCompliance:
     @staticmethod
     def ensure_data_minimization(
         stored_card_data: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Ensure PCI-DSS data minimization (don't store card data).
 

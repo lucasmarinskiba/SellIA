@@ -5,16 +5,15 @@ using conversation data, memory, and emotions.
 """
 
 import uuid
-from typing import Dict, Any, Optional
-from datetime import datetime, timezone, timedelta
+from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
 
 from app.core.logger import get_logger
 from app.domains.channels.models import Conversation, Message
-from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
 from app.domains.crm.models import Deal, LeadStage
+from app.domains.memory.models import ConversationMemoryChunk, CustomerMemory
 
 try:
     from app.domains.emotion.models import EmotionDetection
@@ -174,10 +173,10 @@ class DealScoreResult:
         self,
         score: int,
         category: str,
-        factors: Dict[str, Any],
+        factors: dict[str, Any],
         recommendation: str,
-        previous_score: Optional[int] = None,
-        score_change: Optional[int] = None,
+        previous_score: int | None = None,
+        score_change: int | None = None,
     ):
         self.score = score
         self.category = category
@@ -193,12 +192,13 @@ class DealScorer:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def _get_business_type(self, business_id: Optional[uuid.UUID]) -> Optional[str]:
+    async def _get_business_type(self, business_id: uuid.UUID | None) -> str | None:
         """Load specific business type from BusinessContext."""
         if not business_id:
             return None
         try:
             from sqlalchemy import select
+
             from app.domains.business_context.models import BusinessContext
             result = await self.db.execute(
                 select(BusinessContext.business_type).where(
@@ -268,7 +268,7 @@ class DealScorer:
         deal = deal_result.scalar_one_or_none()
 
         # ── Compute factors ────────────────────────────────────────────
-        factors: Dict[str, Any] = {}
+        factors: dict[str, Any] = {}
 
         factors["engagement_rate"] = self._compute_engagement(messages)
         factors["objection_handling"] = self._compute_objection_handling(
@@ -302,7 +302,7 @@ class DealScorer:
             recommendation=recommendation,
         )
 
-    def generate_recommendation(self, score: int, factors: Dict[str, Any]) -> str:
+    def generate_recommendation(self, score: int, factors: dict[str, Any]) -> str:
         """Generate a recommendation based on score and factors."""
         if score <= 25:
             return "Enviar contenido de valor, no presionar"
@@ -375,7 +375,7 @@ class DealScorer:
             if getattr(mem, "memory_type", None) == "objection":
                 objections_raised += 1
                 content = (mem.content or "").lower()
-                if any(w in content for w in {"superado", "overcome", "resuelto", "resolved", "aceptado", "accepted"}):
+                if any(w in content for w in ("superado", "overcome", "resuelto", "resolved", "aceptado", "accepted")):
                     objections_overcome += 1
 
         # Fallback: scan messages for objection keywords
@@ -435,7 +435,7 @@ class DealScorer:
         }
         negative_words = {
             "malo", "bad", "terrible", "horrible", "odio", "hate", "no", "never",
-            "nunca", "jamás", "jamás", "peor", "worst", "molesto", "annoyed",
+            "nunca", "jamás", "peor", "worst", "molesto", "annoyed",
             "enojado", "angry", "frustrado", "frustrated", "decepcionado", "disappointed",
             "caro", "expensive", "estafa", "scam", "basura", "trash",
         }
@@ -498,7 +498,7 @@ class DealScorer:
 
         return min(100, type_score + conf_score)
 
-    def _compute_conversation_stage(self, deal: Optional[Deal]) -> int:
+    def _compute_conversation_stage(self, deal: Deal | None) -> int:
         """More advanced pipeline stage = better → 0-100."""
         if deal and deal.stage:
             return _LEAD_STAGE_SCORES.get(deal.stage, 25)
@@ -551,11 +551,11 @@ class DealScorer:
             content = (m.content or "").lower()
             if any(kw in content for kw in _PRICE_KEYWORDS):
                 price_mentions += 1
-            if any(kw in content for kw in {
+            if any(kw in content for kw in (
                 "más barato", "cheaper", "descuento", "discount",
                 "mejor precio", "better price", "competencia", "competitor",
                 "otro lugar", "somewhere else", "oferta", "ofertas", "offers",
-            }):
+            )):
                 negotiation_signals += 1
 
         # More price talk = lower score (but some is normal)

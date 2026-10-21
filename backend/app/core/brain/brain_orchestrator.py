@@ -16,13 +16,10 @@ Proporciona:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Coroutine
-from enum import Enum
-from datetime import datetime, timedelta
-import json
-import asyncio
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
 # Imports from evolution modules
 # from app.core.brain.agents_evolution import (
@@ -45,8 +42,8 @@ class ContextSnapshot:
     user_id: str
     deal_id: str
     stage: str  # onboarding, engagement, upsell, retention, churn_risk
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    signals: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    signals: dict[str, Any] = field(default_factory=dict)
 
     def merge(self, other: ContextSnapshot) -> ContextSnapshot:
         """Fusiona dos contextos."""
@@ -66,10 +63,10 @@ class ContextEngine:
     """Motor de contexto: mantiene estado compartido entre agentes."""
 
     def __init__(self):
-        self.contexts: Dict[str, ContextSnapshot] = {}
-        self.history: List[Dict[str, Any]] = []
+        self.contexts: dict[str, ContextSnapshot] = {}
+        self.history: list[dict[str, Any]] = []
 
-    def get_context(self, context_key: str) -> Optional[ContextSnapshot]:
+    def get_context(self, context_key: str) -> ContextSnapshot | None:
         """Obtiene contexto por clave."""
         return self.contexts.get(context_key)
 
@@ -95,7 +92,7 @@ class ContextEngine:
             context.signals[signal_name] = signal_value
             self.set_context(context_key, context)
 
-    def get_stage(self, context_key: str) -> Optional[str]:
+    def get_stage(self, context_key: str) -> str | None:
         """Obtiene stage actual."""
         context = self.get_context(context_key)
         return context.stage if context else None
@@ -112,7 +109,7 @@ class AgentSelector:
     def __init__(self):
         self.routing_rules = self._build_routing_rules()
 
-    def _build_routing_rules(self) -> Dict[str, List[str]]:
+    def _build_routing_rules(self) -> dict[str, list[str]]:
         """Mapea stage → agentes primarios."""
         return {
             "prospecting": [
@@ -163,13 +160,13 @@ class AgentSelector:
             ],
         }
 
-    def select_agents(self, stage: str, context: Dict[str, Any]) -> List[str]:
+    def select_agents(self, stage: str, context: dict[str, Any]) -> list[str]:
         """Selecciona agentes primarios + secundarios."""
         primary = self.routing_rules.get(stage, [])
         secondary = self._select_secondary(stage, context)
         return primary + secondary
 
-    def _select_secondary(self, stage: str, context: Dict[str, Any]) -> List[str]:
+    def _select_secondary(self, stage: str, context: dict[str, Any]) -> list[str]:
         """Selecciona agentes secundarios basado en contexto."""
         secondary = []
 
@@ -201,7 +198,7 @@ class OrchestratedDecision:
     stage: str
     primary_decision: str
     primary_agent: str
-    secondary_inputs: List[Dict[str, Any]] = field(default_factory=list)
+    secondary_inputs: list[dict[str, Any]] = field(default_factory=list)
     confidence: float = 0.0
     action_recommended: str = ""
 
@@ -216,7 +213,7 @@ class BrainOrchestrator:
     def __init__(self):
         self.context_engine = ContextEngine()
         self.agent_selector = AgentSelector()
-        self.decisions: List[OrchestratedDecision] = []
+        self.decisions: list[OrchestratedDecision] = []
         self.logger = logging.getLogger(__name__)
 
         # Refs to registries (inyectadas en init real)
@@ -226,7 +223,7 @@ class BrainOrchestrator:
         # self.capabilities: CapabilitiesOrchestrator
 
     async def decide(self, context_key: str, stage: str,
-                    signals: Dict[str, Any]) -> OrchestratedDecision:
+                    signals: dict[str, Any]) -> OrchestratedDecision:
         """
         Toma decisión coordinada:
         1. Actualiza contexto
@@ -284,7 +281,7 @@ class BrainOrchestrator:
         return orchestrated
 
     async def _execute_agent(self, agent_id: str,
-                            context: ContextSnapshot) -> Optional[Dict[str, Any]]:
+                            context: ContextSnapshot) -> dict[str, Any] | None:
         """Ejecuta un agente (mock)."""
         # En production, invoca real agent
         return {
@@ -293,8 +290,8 @@ class BrainOrchestrator:
             "confidence": 0.8,
         }
 
-    def _integrate_decisions(self, primary: Dict[str, Any],
-                            secondary: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _integrate_decisions(self, primary: dict[str, Any],
+                            secondary: list[dict[str, Any]]) -> dict[str, Any]:
         """Integra múltiples decisiones en una sola."""
         # Weighted average de confidencias
         confidences = [primary.get("confidence", 0.5)]
@@ -313,8 +310,8 @@ class BrainOrchestrator:
             "secondary_alignment": self._check_alignment(primary, secondary),
         }
 
-    def _check_alignment(self, primary: Dict[str, Any],
-                        secondary: List[Dict[str, Any]]) -> bool:
+    def _check_alignment(self, primary: dict[str, Any],
+                        secondary: list[dict[str, Any]]) -> bool:
         """¿Agentes alineados?"""
         if not secondary:
             return True
@@ -337,7 +334,7 @@ class DecisionOutcome:
     decision_id: str
     successful: bool
     stage: str
-    agents_involved: List[str]
+    agents_involved: list[str]
     actual_outcome: str
     timestamp: str = ""
 
@@ -350,8 +347,8 @@ class LearningLoopManager:
     """Gestor de loops de aprendizaje."""
 
     def __init__(self):
-        self.outcomes: List[DecisionOutcome] = []
-        self.agent_performance: Dict[str, Dict[str, float]] = {}
+        self.outcomes: list[DecisionOutcome] = []
+        self.agent_performance: dict[str, dict[str, float]] = {}
 
     def record_outcome(self, outcome: DecisionOutcome) -> None:
         """Registra outcome."""
@@ -375,7 +372,7 @@ class LearningLoopManager:
             stats["successes"] += success_points
             stats["success_rate"] = stats["successes"] / stats["decisions"]
 
-    def get_agent_performance(self, agent_id: str) -> Dict[str, float]:
+    def get_agent_performance(self, agent_id: str) -> dict[str, float]:
         """Obtiene performance de un agente."""
         return self.agent_performance.get(agent_id, {
             "decisions": 0,
@@ -383,7 +380,7 @@ class LearningLoopManager:
             "success_rate": 0.5,
         })
 
-    def suggest_improvements(self, stage: str) -> List[str]:
+    def suggest_improvements(self, stage: str) -> list[str]:
         """Sugiere mejoras basadas en aprendizajes."""
         improvements = []
 
@@ -424,8 +421,8 @@ class BrainHealthMonitor:
     """Monitor de salud del cerebro."""
 
     def __init__(self):
-        self.metrics: Dict[str, List[HealthMetric]] = {}
-        self.alerts: List[str] = []
+        self.metrics: dict[str, list[HealthMetric]] = {}
+        self.alerts: list[str] = []
 
     def record_metric(self, metric: HealthMetric) -> None:
         """Registra métrica."""
@@ -452,7 +449,7 @@ class BrainHealthMonitor:
 
         return sum(recent_metrics) / len(recent_metrics) if recent_metrics else 0.5
 
-    def generate_health_report(self) -> Dict[str, Any]:
+    def generate_health_report(self) -> dict[str, Any]:
         """Genera reporte de salud."""
         return {
             "timestamp": datetime.utcnow().isoformat(),
@@ -479,7 +476,7 @@ class UnifiedBrainController:
         self.health_monitor = BrainHealthMonitor()
 
     async def process(self, context_key: str, stage: str,
-                     signals: Dict[str, Any]) -> Dict[str, Any]:
+                     signals: dict[str, Any]) -> dict[str, Any]:
         """Procesa señal + toma decisión."""
 
         # 1. Orquesta decisión
@@ -499,7 +496,7 @@ class UnifiedBrainController:
         }
 
     def record_outcome(self, decision_id: str, successful: bool,
-                      stage: str, agents: List[str]) -> None:
+                      stage: str, agents: list[str]) -> None:
         """Registra outcome para aprendizaje."""
         outcome = DecisionOutcome(
             decision_id=decision_id,
@@ -510,17 +507,21 @@ class UnifiedBrainController:
         )
         self.learning_manager.record_outcome(outcome)
 
-    def get_health(self) -> Dict[str, Any]:
+    def get_health(self) -> dict[str, Any]:
         """Obtiene estado de salud."""
         return self.health_monitor.generate_health_report()
 
 
 # Export
 __all__ = [
-    "ContextSnapshot", "ContextEngine",
     "AgentSelector",
-    "OrchestratedDecision", "BrainOrchestrator",
-    "DecisionOutcome", "LearningLoopManager",
-    "HealthMetric", "BrainHealthMonitor",
+    "BrainHealthMonitor",
+    "BrainOrchestrator",
+    "ContextEngine",
+    "ContextSnapshot",
+    "DecisionOutcome",
+    "HealthMetric",
+    "LearningLoopManager",
+    "OrchestratedDecision",
     "UnifiedBrainController",
 ]

@@ -4,9 +4,9 @@ Performance Optimization Engine — 10x faster, 10x more sales.
 Caching, database optimization, async operations, batch processing.
 """
 
-import logging
-from typing import Dict, Any, Optional
 import hashlib
+import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class OptimizationEngine:
     }
 
     @staticmethod
-    def cache_key(prefix: str, data: Dict[str, Any]) -> str:
+    def cache_key(prefix: str, data: dict[str, Any]) -> str:
         """Genera cache key determinístico."""
 
         data_str = str(sorted(data.items()))
@@ -32,7 +32,7 @@ class OptimizationEngine:
         return f"{prefix}:{hash_digest}"
 
     @staticmethod
-    async def get_cached(cache, key: str, ttl: int) -> Optional[Dict[str, Any]]:
+    async def get_cached(cache, key: str, ttl: int) -> dict[str, Any] | None:
         """Obtiene de cache, si existe y no expiró."""
 
         # TODO: Implementar con Redis
@@ -43,11 +43,10 @@ class OptimizationEngine:
         return None
 
     @staticmethod
-    async def set_cached(cache, key: str, value: Dict[str, Any], ttl: int):
+    async def set_cached(cache, key: str, value: dict[str, Any], ttl: int):
         """Guarda en cache con TTL."""
 
         # TODO: await cache.set(key, value, ex=ttl)
-        pass
 
     # Database optimization
     DB_INDEXES = {
@@ -60,7 +59,7 @@ class OptimizationEngine:
 
     # Batch operations
     @staticmethod
-    def batch_size_config() -> Dict[str, int]:
+    def batch_size_config() -> dict[str, int]:
         """Configuración batch para máximo throughput."""
 
         return {
@@ -98,7 +97,7 @@ class ConversionRateOptimizer:
         variant_a: str,
         variant_b: str,
         hypothesis: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Crea A/B test automático.
 
@@ -116,7 +115,7 @@ class ConversionRateOptimizer:
         }
 
     @staticmethod
-    def personalize_offer(buyer: Dict[str, Any]) -> Dict[str, Any]:
+    def personalize_offer(buyer: dict[str, Any]) -> dict[str, Any]:
         """Personaliza oferta basada en buyer profile."""
 
         # Buyer types
@@ -146,7 +145,7 @@ class ConversionRateOptimizer:
             }
 
     @staticmethod
-    def optimize_email_send_time(buyer: Dict[str, Any]) -> str:
+    def optimize_email_send_time(buyer: dict[str, Any]) -> str:
         """Calcula mejor momento enviar email."""
 
         # Heurístico: envía cuando buyer suele estar activo
@@ -163,8 +162,8 @@ class ConversionRateOptimizer:
 
     @staticmethod
     def dynamic_pricing_optimization(
-        product: Dict[str, Any],
-        buyer: Dict[str, Any],
+        product: dict[str, Any],
+        buyer: dict[str, Any],
     ) -> float:
         """Optimiza precio por buyer (price discrimination legal)."""
 

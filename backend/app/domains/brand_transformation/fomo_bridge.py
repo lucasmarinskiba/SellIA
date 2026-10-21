@@ -15,10 +15,9 @@ mechanism never blocks the rest.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
@@ -99,7 +98,7 @@ def build_specs(playbook: FOMOPlaybook, levers: list[str] | None = None) -> dict
             "config": config,
         }
         if mapping["type"] in ("countdown", "flash_sale"):
-            spec["ends_at"] = (datetime.now(timezone.utc) + timedelta(hours=config["countdownHours"])).isoformat()
+            spec["ends_at"] = (datetime.now(UTC) + timedelta(hours=config["countdownHours"])).isoformat()
         specs.append(spec)
 
     return {

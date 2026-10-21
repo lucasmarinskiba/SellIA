@@ -6,9 +6,8 @@ Reemplaza todos los print() dispersos por logging profesional.
 """
 
 import logging
-import sys
 import re
-from datetime import datetime, timezone
+import sys
 
 
 class SensitiveDataFilter(logging.Filter):

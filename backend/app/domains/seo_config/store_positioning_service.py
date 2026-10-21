@@ -13,7 +13,7 @@ nothing cross-checks connection vs platform; same pre-existing gap as the
 link-level service).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -22,10 +22,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logger import get_logger
 from app.domains.seo_config.agent_guard import SEOAgentGuard
 from app.domains.seo_config.platform_algorithm_knowledge import canonical_platform
-from app.domains.seo_config.platform_store_ranking_amazon import AmazonStoreRankingConnector
+from app.domains.seo_config.platform_store_ranking_amazon import (
+    AmazonStoreRankingConnector,
+)
 from app.domains.seo_config.platform_store_ranking_base import StorePositioningConnector
-from app.domains.seo_config.positioning_models import PositioningRecommendation, StorePositioningScore
-from app.domains.seo_config.positioning_scoring_utils import composite_from_sub_scores, measured_pct
+from app.domains.seo_config.positioning_models import (
+    PositioningRecommendation,
+    StorePositioningScore,
+)
+from app.domains.seo_config.positioning_scoring_utils import (
+    composite_from_sub_scores,
+    measured_pct,
+)
 
 logger = get_logger(__name__)
 
@@ -51,7 +59,9 @@ class StorePositioningScoreService:
             return None
 
         try:
-            from app.domains.integrations.integration_models import IntegrationConnection
+            from app.domains.integrations.integration_models import (
+                IntegrationConnection,
+            )
 
             result = await self.db.execute(
                 select(IntegrationConnection).where(IntegrationConnection.id == connection_id)
@@ -156,7 +166,7 @@ class StorePositioningScoreService:
         open_recs = {r.signal_key: r for r in result.scalars().all()}
 
         triggered_keys = {r["signal_key"] for r in rules}
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for signal_key, rec in open_recs.items():
             if signal_key not in triggered_keys:
@@ -198,7 +208,7 @@ class StorePositioningScoreService:
         self, business_id: UUID, platform_name: str, days: int = 30
     ) -> list[StorePositioningScore]:
         platform_name = canonical_platform(platform_name) or platform_name
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         result = await self.db.execute(
             select(StorePositioningScore)
             .where(

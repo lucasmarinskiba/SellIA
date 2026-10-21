@@ -3,14 +3,15 @@ Other Expert Voice Prompts (Robbins, GaryVee, Dalio, Miner, Elliott, Loidi, Riba
 Consolidated stubs for remaining 14 experts
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, Any, Callable, List
+
 
 @dataclass
 class ExpertPrompt:
     name: str
     context: str
-    variables: Dict[str, str]
+    variables: dict[str, str]
     expert_voice: str
     tactic: str
     success_metric: str
@@ -207,8 +208,20 @@ ALL_OTHER_EXPERT_PROMPTS = (
 )
 
 __all__ = [
-    "ROBBINS_PROMPTS", "GARYVEE_PROMPTS", "DALIO_PROMPTS", "MINER_PROMPTS",
-    "ELLIOTT_PROMPTS", "LOIDI_PROMPTS", "RIBAS_PROMPTS", "GALPERIN_PROMPTS",
-    "ROCCA_PROMPTS", "GALUCCIO_PROMPTS", "RAVIKANT_PROMPTS", "TALEB_PROMPTS",
-    "GRAHAM_PROMPTS", "BENIOFF_PROMPTS", "ALL_OTHER_EXPERT_PROMPTS", "ExpertPrompt"
+    "ALL_OTHER_EXPERT_PROMPTS",
+    "BENIOFF_PROMPTS",
+    "DALIO_PROMPTS",
+    "ELLIOTT_PROMPTS",
+    "GALPERIN_PROMPTS",
+    "GALUCCIO_PROMPTS",
+    "GARYVEE_PROMPTS",
+    "GRAHAM_PROMPTS",
+    "LOIDI_PROMPTS",
+    "MINER_PROMPTS",
+    "RAVIKANT_PROMPTS",
+    "RIBAS_PROMPTS",
+    "ROBBINS_PROMPTS",
+    "ROCCA_PROMPTS",
+    "TALEB_PROMPTS",
+    "ExpertPrompt"
 ]

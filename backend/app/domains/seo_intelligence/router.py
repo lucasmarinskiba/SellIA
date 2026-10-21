@@ -5,24 +5,24 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.cache import cached
 from app.domains.seo_intelligence.schemas import (
+    CompetitorAnalysisCreate,
+    CompetitorAnalysisOut,
     KeywordCreate,
     KeywordOut,
     PageOptimizationCreate,
-    PageOptimizationUpdate,
     PageOptimizationOut,
-    CompetitorAnalysisCreate,
-    CompetitorAnalysisOut,
-    SEORecommendationOut,
+    PageOptimizationUpdate,
     SEOHealthResponse,
+    SEORecommendationOut,
 )
 from app.domains.seo_intelligence.service import (
+    CompetitorAnalysisService,
     KeywordService,
     PageOptimizationService,
-    CompetitorAnalysisService,
     SEORecommendationService,
 )
 from app.domains.users.models import User

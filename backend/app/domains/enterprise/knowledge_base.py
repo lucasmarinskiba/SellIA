@@ -13,14 +13,13 @@ their Deal's Conversation and Messages.
 import re
 import uuid
 from collections import Counter
-from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.channels.models import Conversation, Message, MessageDirection
 from app.domains.crm.models import Deal
 from app.domains.enterprise.forecasting_models import DealOutcome
-from app.domains.channels.models import Conversation, Message, MessageDirection
 
 # Small, pragmatic ES+EN stopword list for word-frequency counting -- not a
 # linguistics library, just enough to keep "que", "the", "de" etc. from
@@ -30,8 +29,8 @@ _STOPWORDS = {
     "que", "y", "o", "a", "en", "es", "por", "para", "con", "su", "sus", "se",
     "lo", "le", "les", "te", "me", "mi", "tu", "nos", "si", "no", "ya", "muy",
     "mas", "más", "pero", "como", "cuando", "donde", "qué", "esta", "este",
-    "esa", "ese", "eso", "esto", "hay", "ha", "he", "vas", "voy", "es", "son",
-    "the", "a", "an", "to", "of", "for", "and", "or", "is", "are", "in", "on",
+    "esa", "ese", "eso", "esto", "hay", "ha", "he", "vas", "voy", "son",
+    "the", "an", "to", "of", "for", "and", "or", "is", "are", "in", "on",
     "it", "you", "your", "we", "our", "i", "this", "that", "with", "be", "at",
     "hola", "gracias", "buenas", "buenos", "dias", "días", "tardes", "noches",
 }
@@ -62,7 +61,7 @@ class ConversationPatternAnalyzer:
         won = [(o, d) for o, d in rows if o.outcome == "won"]
         lost = [(o, d) for o, d in rows if o.outcome == "lost"]
 
-        async def _avg_message_count(pairs: list) -> Optional[float]:
+        async def _avg_message_count(pairs: list) -> float | None:
             conv_ids = [d.conversation_id for _, d in pairs if d.conversation_id]
             if not conv_ids:
                 return None

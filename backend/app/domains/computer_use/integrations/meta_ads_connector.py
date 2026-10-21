@@ -5,8 +5,9 @@ Soporta: Facebook, Instagram, Audience Network, Messenger.
 """
 
 import logging
-from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
+from typing import Any
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,7 @@ class MetaAdsConnector:
         """
         self.access_token = access_token
         self.ad_account_id = ad_account_id  # sin 'act_' prefix
-        if self.ad_account_id.startswith("act_"):
-            self.ad_account_id = self.ad_account_id[4:]
+        self.ad_account_id = self.ad_account_id.removeprefix("act_")
 
         self.client = httpx.AsyncClient(
             timeout=30.0,
@@ -38,8 +38,8 @@ class MetaAdsConnector:
         self,
         name: str,
         objective: str,  # REACH, LINK_CLICKS, CONVERSIONS, VIDEO_VIEWS, etc
-        special_ad_categories: Optional[List[str]] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        special_ad_categories: list[str] | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Crea campaign.
 
@@ -86,9 +86,9 @@ class MetaAdsConnector:
         campaign_id: str,
         name: str,
         daily_budget: float,
-        targeting: Dict[str, Any],
+        targeting: dict[str, Any],
         billing_event: str = "IMPRESSIONS",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Crea adset (targeting + budget).
 
@@ -143,7 +143,7 @@ class MetaAdsConnector:
         name: str,
         creative_id: str,  # ID de creative (imagen/video)
         status: str = "PAUSED",
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Crea ad (vincula creative a adset).
 
@@ -186,7 +186,7 @@ class MetaAdsConnector:
         self,
         image_url: str,
         body: str,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Sube imagen + copy como creative.
 
@@ -230,9 +230,9 @@ class MetaAdsConnector:
     async def get_insights(
         self,
         campaign_id: str,
-        fields: Optional[List[str]] = None,
-        time_range: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        fields: list[str] | None = None,
+        time_range: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Obtiene metrics del campaign.
 

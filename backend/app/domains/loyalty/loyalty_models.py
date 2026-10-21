@@ -1,12 +1,22 @@
 """Loyalty program models — customer retention + rewards."""
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Decimal, Enum as SQLEnum, Index, Boolean, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Decimal,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -66,8 +76,8 @@ class LoyaltyProgram(Base):
     require_account_to_earn = Column(Boolean, default=True)
     send_point_reminders = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 
@@ -86,7 +96,7 @@ class LoyaltyMember(Base):
     # Membership
     member_number = Column(String(50), nullable=False, unique=True)  # Membership ID
     current_tier = Column(SQLEnum(MembershipTier), default=MembershipTier.BRONZE)
-    tier_since = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    tier_since = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     # Points
     lifetime_points_earned = Column(Integer, default=0)
@@ -97,7 +107,7 @@ class LoyaltyMember(Base):
     lifetime_spend = Column(Decimal(12, 2), default=0)
     total_purchases = Column(Integer, default=0)
     avg_purchase_value = Column(Decimal(10, 2), default=0)
-    last_purchase_date = Column(DateTime(timezone.utc), nullable=True)
+    last_purchase_date = Column(DateTime(UTC), nullable=True)
     days_since_purchase = Column(Integer, nullable=True)  # For churn detection
 
     # Engagement
@@ -107,11 +117,11 @@ class LoyaltyMember(Base):
 
     # Status
     is_active = Column(Boolean, default=True)
-    enrollment_date = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    enrollment_date = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
     churn_risk = Column(Boolean, default=False)  # ML flag for at-risk customers
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(UTC), onupdate=lambda: datetime.now(UTC))
 
     customer = relationship("Customer", foreign_keys=[customer_id])
     loyalty_program = relationship("LoyaltyProgram", foreign_keys=[loyalty_program_id])
@@ -150,10 +160,10 @@ class LoyaltyReward(Base):
     redemptions_count = Column(Integer, default=0)
 
     # Dates
-    valid_from = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
-    valid_until = Column(DateTime(timezone.utc), nullable=True)
+    valid_from = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
+    valid_until = Column(DateTime(UTC), nullable=True)
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     loyalty_program = relationship("LoyaltyProgram", foreign_keys=[loyalty_program_id])
 
@@ -182,7 +192,7 @@ class LoyaltyTransaction(Base):
     description = Column(String(255), nullable=True)
 
     # Dates
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC), index=True)
 
     member = relationship("LoyaltyMember", foreign_keys=[loyalty_member_id])
     reward = relationship("LoyaltyReward", foreign_keys=[reward_id])
@@ -230,7 +240,7 @@ class LoyaltyMetrics(Base):
     non_member_revenue_month = Column(Decimal(12, 2), default=0)
     member_vs_nonmember_aov = Column(Decimal(8, 2), nullable=True)  # Member AOV / NonMember AOV ratio
 
-    created_at = Column(DateTime(timezone.utc), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(UTC), default=lambda: datetime.now(UTC))
 
     business = relationship("Business", foreign_keys=[business_id])
 

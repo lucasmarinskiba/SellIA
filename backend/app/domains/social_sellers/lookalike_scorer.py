@@ -2,8 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Any, Dict, List
-
+from typing import Any
 
 BUYING_INTENT_KEYWORDS = [
     'precio', 'precios', 'cuanto', 'cuesta', 'costo', 'valor',
@@ -19,7 +18,7 @@ BUYING_INTENT_KEYWORDS = [
 PRICE_KEYWORDS = ['precio', 'precios', 'cuanto', 'cuesta', 'costo', 'valor', 'cuánto']
 
 
-def calculate_similarity_score(lead_data: Dict[str, Any], ideal_profile: Dict[str, Any]) -> int:
+def calculate_similarity_score(lead_data: dict[str, Any], ideal_profile: dict[str, Any]) -> int:
     """Puntaje 0-100 de qué tan similar es un lead al perfil ideal.
 
     Factores:
@@ -106,7 +105,7 @@ def calculate_similarity_score(lead_data: Dict[str, Any], ideal_profile: Dict[st
     return max(0, min(100, score))
 
 
-def extract_behavioral_features(conversation_messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+def extract_behavioral_features(conversation_messages: list[dict[str, Any]]) -> dict[str, Any]:
     """Extrae features comportamentales de una lista de mensajes.
 
     Returns:
@@ -200,7 +199,7 @@ def extract_behavioral_features(conversation_messages: List[Dict[str, Any]]) -> 
     }
 
 
-def match_platform_preference(lead_platform: str, ideal_platforms: List[str]) -> float:
+def match_platform_preference(lead_platform: str, ideal_platforms: list[str]) -> float:
     """Devuelve 1.0 si la plataforma está en las preferidas, 0.5 si es similar, 0.0 si no."""
     lead = (lead_platform or '').lower().strip()
     ideals = [p.lower().strip() for p in (ideal_platforms or [])]

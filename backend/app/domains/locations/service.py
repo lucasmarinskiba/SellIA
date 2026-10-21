@@ -1,10 +1,17 @@
 """Phase 5A: Location Management Service - Async."""
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import and_, select
-from app.domains.locations.models import LocationProfile, BusinessModel, ProximityEvent, OfflineConversion, LocationVisit
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.locations.models import (
+    BusinessModel,
+    LocationProfile,
+    LocationVisit,
+    OfflineConversion,
+    ProximityEvent,
+)
 
 
 class LocationService:
@@ -17,9 +24,9 @@ class LocationService:
         latitude: float,
         longitude: float,
         location_type: str,
-        phone: Optional[str] = None,
-        email: Optional[str] = None,
-        hours_json: Optional[dict] = None,
+        phone: str | None = None,
+        email: str | None = None,
+        hours_json: dict | None = None,
         capacity: int = 0,
         geofence_radius_km: float = 5,
     ) -> LocationProfile:
@@ -42,7 +49,7 @@ class LocationService:
         return loc
 
     @staticmethod
-    async def list_locations(db: AsyncSession, business_id: UUID) -> List[LocationProfile]:
+    async def list_locations(db: AsyncSession, business_id: UUID) -> list[LocationProfile]:
         result = await db.execute(
             select(LocationProfile).where(LocationProfile.business_id == business_id)
         )
@@ -105,11 +112,11 @@ class LocationService:
         business_id: UUID,
         location_id: UUID,
         visit_type: str,
-        user_id: Optional[UUID] = None,
-        entry_method: Optional[str] = None,
-        phone: Optional[str] = None,
-        email: Optional[str] = None,
-        notes: Optional[str] = None,
+        user_id: UUID | None = None,
+        entry_method: str | None = None,
+        phone: str | None = None,
+        email: str | None = None,
+        notes: str | None = None,
     ) -> OfflineConversion:
         conversion = OfflineConversion(
             business_id=business_id,
@@ -120,7 +127,7 @@ class LocationService:
             phone=phone,
             email=email,
             notes=notes,
-            entry_time=datetime.now(timezone.utc),
+            entry_time=datetime.now(UTC),
         )
         db.add(conversion)
         await db.commit()
@@ -133,13 +140,13 @@ class LocationService:
         business_id: UUID,
         location_id: UUID,
         user_id: UUID,
-        entry_channel: Optional[str] = None,
+        entry_channel: str | None = None,
     ) -> LocationVisit:
         visit = LocationVisit(
             business_id=business_id,
             location_id=location_id,
             user_id=user_id,
-            entry_time=datetime.now(timezone.utc),
+            entry_time=datetime.now(UTC),
             entry_channel=entry_channel,
         )
         db.add(visit)
@@ -154,7 +161,7 @@ class LocationService:
         )
         visit = result.scalar()
         if visit:
-            visit.exit_time = datetime.now(timezone.utc)
+            visit.exit_time = datetime.now(UTC)
             if visit.entry_time:
                 delta = visit.exit_time - visit.entry_time
                 visit.dwell_minutes = int(delta.total_seconds() / 60)

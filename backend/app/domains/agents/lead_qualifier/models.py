@@ -1,10 +1,18 @@
 """Lead Qualifier Auto-Agent Models"""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Numeric, Integer, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -27,7 +35,7 @@ class LeadQualification(Base):
     status = Column(String(20), nullable=False, default="nurture")  # qualified | disqualified | nurture
     routing_destination = Column(String(100), nullable=True)  # e.g. "sales_team", "drip_sequence"
     summary = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_lead_qualifications_score", "qualification_score"),

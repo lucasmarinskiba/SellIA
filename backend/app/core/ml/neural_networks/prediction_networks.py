@@ -2,22 +2,12 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
 
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPRegressor, MLPClassifier
-
-from .base_networks import (
-    NeuralNetworkBase,
-    NetworkConfig,
-    TrainingConfig,
-    ActivationFunction,
-    SimpleFeedForwardNetwork,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +21,12 @@ class SalesPrediction:
     estimated_timeline_days: int
     confidence: float  # 0-1
     deal_size_estimate: float
-    risk_factors: List[str] = field(default_factory=list)
-    opportunity_factors: List[str] = field(default_factory=list)
-    recommended_actions: List[str] = field(default_factory=list)
+    risk_factors: list[str] = field(default_factory=list)
+    opportunity_factors: list[str] = field(default_factory=list)
+    recommended_actions: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "will_close": self.will_close,
             "close_probability": float(self.close_probability),
@@ -56,14 +46,14 @@ class ChurnPrediction:
 
     will_churn: bool
     churn_probability: float  # 0-1
-    estimated_churn_days: Optional[int]
+    estimated_churn_days: int | None
     confidence: float
-    churn_reasons: List[str] = field(default_factory=list)
-    retention_actions: List[str] = field(default_factory=list)
-    retention_offer: Optional[str] = None
+    churn_reasons: list[str] = field(default_factory=list)
+    retention_actions: list[str] = field(default_factory=list)
+    retention_offer: str | None = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "will_churn": self.will_churn,
             "churn_probability": float(self.churn_probability),
@@ -82,14 +72,14 @@ class DemandForecast:
 
     next_30_days_revenue: float
     next_30_days_transactions: int
-    daily_forecast: List[float]  # 30 values
-    confidence_interval: Tuple[float, float]
+    daily_forecast: list[float]  # 30 values
+    confidence_interval: tuple[float, float]
     growth_trend: float  # -1 to 1
     seasonality_factor: float
-    external_factors: List[str] = field(default_factory=list)
+    external_factors: list[str] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "next_30_days_revenue": float(self.next_30_days_revenue),
             "next_30_days_transactions": int(self.next_30_days_transactions),
@@ -118,7 +108,7 @@ class LeadQuality:
     next_best_action: str
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "quality_score": float(self.quality_score),
             "close_probability": float(self.close_probability),
@@ -141,12 +131,12 @@ class ContactTiming:
     best_hour: int  # 0-23
     best_day_of_week: str  # Monday-Sunday
     response_probability: float  # 0-1
-    alternative_times: List[Dict[str, Any]] = field(default_factory=list)
-    avoid_times: List[Dict[str, Any]] = field(default_factory=list)
+    alternative_times: list[dict[str, Any]] = field(default_factory=list)
+    avoid_times: list[dict[str, Any]] = field(default_factory=list)
     timezone_adjusted: bool = False
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "best_hour": self.best_hour,
             "best_day_of_week": self.best_day_of_week,
@@ -166,12 +156,12 @@ class PriceElasticity:
     optimal_price: float
     current_price: float
     price_sensitivity: str  # "high", "medium", "low"
-    demand_curve: List[Tuple[float, float]]  # (price, demand) pairs
+    demand_curve: list[tuple[float, float]]  # (price, demand) pairs
     revenue_impact_if_increase_10pct: float
     revenue_impact_if_decrease_10pct: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "elasticity_coefficient": float(self.elasticity_coefficient),
             "optimal_price": float(self.optimal_price),
@@ -204,7 +194,7 @@ class SalesPredictionNetwork:
         logger.info("Sales prediction network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[SalesPrediction]:
+    def predict(self, X: np.ndarray) -> list[SalesPrediction]:
         """Predict sales outcomes."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -271,7 +261,7 @@ class ChurnPredictionNetwork:
         logger.info("Churn prediction network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ChurnPrediction]:
+    def predict(self, X: np.ndarray) -> list[ChurnPrediction]:
         """Predict churn."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -328,7 +318,7 @@ class DemandForecastingNetwork:
         logger.info("Demand forecasting network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[DemandForecast]:
+    def predict(self, X: np.ndarray) -> list[DemandForecast]:
         """Forecast demand."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -376,7 +366,7 @@ class LeadQualityNetwork:
         logger.info("Lead quality network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[LeadQuality]:
+    def predict(self, X: np.ndarray) -> list[LeadQuality]:
         """Predict lead quality."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -433,7 +423,7 @@ class ContactTimingNetwork:
         logger.info("Contact timing network trained")
         return self
 
-    def predict(self, X: np.ndarray) -> List[ContactTiming]:
+    def predict(self, X: np.ndarray) -> list[ContactTiming]:
         """Predict best contact timing."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")
@@ -487,7 +477,7 @@ class PriceElasticityNetwork:
         logger.info("Price elasticity network trained")
         return self
 
-    def predict(self, X: np.ndarray, current_price: float) -> List[PriceElasticity]:
+    def predict(self, X: np.ndarray, current_price: float) -> list[PriceElasticity]:
         """Predict price elasticity."""
         if not self.is_trained:
             raise ValueError("Network must be trained first")

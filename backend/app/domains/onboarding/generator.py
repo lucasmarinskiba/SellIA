@@ -2,15 +2,16 @@
 
 import uuid
 from typing import Any
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.businesses.models import Business, BusinessType
-from app.domains.business_context.models import BusinessContext as BizCtxModel
-from app.domains.catalogs.models import CatalogItem, CatalogItemType
-from app.domains.agents.models import AgentPersonality, AgentConfig
+from app.domains.agents.models import AgentConfig, AgentPersonality
 from app.domains.automations.models import Workflow
+from app.domains.business_context.models import BusinessContext as BizCtxModel
+from app.domains.businesses.models import Business, BusinessType
+from app.domains.catalogs.models import CatalogItem, CatalogItemType
 from app.domains.onboarding.schemas import BusinessDiscovery
 
 logger = get_logger(__name__)

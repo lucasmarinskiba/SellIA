@@ -3,24 +3,24 @@ Real-world implementation example: Complete tenant endpoints.
 Shows how to integrate multi-tenant into your FastAPI app.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.domains.users.models import User
-from .tenant_manager import TenantService, TenantTier
-from .tenant_isolation import TenantIsolation
+
+from .api_key_management import APIKeyService
+from .audit_logging import AuditAction, AuditService, AuditStatus
+from .billing_integration import BillingService
+from .models import TenantMember
 from .tenant_context import (
-    require_tenant_context,
+    TenantContext,
     require_admin_access,
     require_owner_access,
-    TenantContext,
+    require_tenant_context,
 )
-from .api_key_management import APIKeyService
-from .billing_integration import BillingService
-from .audit_logging import AuditService, AuditAction, AuditStatus
-from .models import Tenant, TenantMember, TenantAPIKey
+from .tenant_manager import TenantService, TenantTier
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["multi-tenant"])
 

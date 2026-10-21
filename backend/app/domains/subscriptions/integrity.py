@@ -6,15 +6,15 @@ Genera logs de uso para evidencia ante disputas.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from app.domains.subscriptions.models import Subscription, SubscriptionPlan
-from app.domains.security.models import SubscriptionAccessLog
 from app.core.logger import get_logger
+from app.domains.security.models import SubscriptionAccessLog
+from app.domains.subscriptions.models import Subscription
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,7 @@ async def validate_subscription_access(
     db: AsyncSession,
     user_id: uuid.UUID,
     feature_name: str,
-) -> tuple[bool, Optional[str]]:
+) -> tuple[bool, str | None]:
     """
     Valida si el usuario puede acceder a una feature.
 
@@ -59,11 +59,11 @@ async def validate_subscription_access(
             return False, f"La feature '{feature_name}' no está incluida en tu plan {plan.name}"
 
     # Check if subscription period is active
-    if sub.current_period_end and sub.current_period_end < datetime.now(timezone.utc):
+    if sub.current_period_end and sub.current_period_end < datetime.now(UTC):
         return False, "Tu suscripción expiró. Renová para continuar."
 
     if sub.cancel_at_period_end and sub.current_period_end:
-        days_remaining = (sub.current_period_end - datetime.now(timezone.utc)).days
+        days_remaining = (sub.current_period_end - datetime.now(UTC)).days
         if days_remaining <= 0:
             return False, "Tu suscripción fue cancelada y ya venció."
 
@@ -100,9 +100,9 @@ async def generate_usage_report(
     db: AsyncSession,
     user_id: uuid.UUID,
     days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Genera un reporte de uso para disputas de pago."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     result = await db.execute(
         select(
@@ -128,7 +128,7 @@ async def generate_usage_report(
     return {
         "user_id": str(user_id),
         "period_days": days,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "total_requests": total_requests,
         "features_usage": features_usage,
     }

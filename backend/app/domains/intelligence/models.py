@@ -5,12 +5,19 @@ ConversationIntelligence — aggregated intelligence per conversation.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Numeric, Integer, Boolean, Index, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -49,7 +56,7 @@ class MessageAnalysis(Base):
     # Raw AI response for debugging
     raw_analysis = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_message_analyses_business_intent", "business_id", "intent_type"),
@@ -87,7 +94,7 @@ class ConversationIntelligence(Base):
     negative_messages_count = Column(Integer, default=0, nullable=False)
     buying_signals_count = Column(Integer, default=0, nullable=False)
 
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_conv_intel_business_readiness", "business_id", "buying_readiness_score"),

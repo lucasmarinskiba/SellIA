@@ -1,27 +1,27 @@
 """Customer Identity Unification — reconoce que María de IG es María de WA."""
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Any, List, Dict
+from datetime import UTC, datetime
 from decimal import Decimal
 from difflib import SequenceMatcher
+from typing import Any
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.social_sellers.models import UnifiedCustomer
 from app.core.logger import get_logger
+from app.domains.social_sellers.models import UnifiedCustomer
 
 logger = get_logger(__name__)
 
 
-def _normalize_name(name: Optional[str]) -> str:
+def _normalize_name(name: str | None) -> str:
     if not name:
         return ''
     return name.strip().lower()
 
 
-def _name_similarity(a: Optional[str], b: Optional[str]) -> float:
+def _name_similarity(a: str | None, b: str | None) -> float:
     na = _normalize_name(a)
     nb = _normalize_name(b)
     if not na or not nb:
@@ -40,9 +40,9 @@ class CustomerIdentityMatcher:
         business_id: uuid.UUID,
         platform: str,
         external_id: str,
-        name: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
+        name: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
     ) -> UnifiedCustomer:
         """Busca un cliente unificado por email, teléfono o nombre fuzzy.
         Si encuentra, agrega la plataforma al identity_map.
@@ -72,7 +72,7 @@ class CustomerIdentityMatcher:
                 return matched
 
         # 4. Crear nuevo UnifiedCustomer
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         identity_map = {platform: external_id}
         if email and platform != 'email':
             identity_map['email'] = email
@@ -87,7 +87,7 @@ class CustomerIdentityMatcher:
             identity_map=identity_map,
             first_seen_at=now,
             last_seen_at=now,
-            total_lifetime_value=Decimal('0'),
+            total_lifetime_value=Decimal(0),
             preferred_platforms=[platform],
             total_purchases=0,
         )
@@ -102,9 +102,9 @@ class CustomerIdentityMatcher:
         customer: UnifiedCustomer,
         platform: str,
         external_id: str,
-        name: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
+        name: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
     ) -> None:
         """Agrega una plataforma al identity_map y actualiza campos derivados."""
         identity_map = dict(customer.identity_map or {})
@@ -123,7 +123,7 @@ class CustomerIdentityMatcher:
             preferred.append(platform)
             customer.preferred_platforms = preferred
 
-        customer.last_seen_at = datetime.now(timezone.utc)
+        customer.last_seen_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(customer)
         logger.info(f'Plataforma {platform} agregada a unified customer {customer.id}')
@@ -132,7 +132,7 @@ class CustomerIdentityMatcher:
         self,
         business_id: uuid.UUID,
         email: str,
-    ) -> Optional[UnifiedCustomer]:
+    ) -> UnifiedCustomer | None:
         """Encuentra un cliente unificado por email exacto."""
         result = await self.db.execute(
             select(UnifiedCustomer).where(
@@ -148,7 +148,7 @@ class CustomerIdentityMatcher:
         self,
         business_id: uuid.UUID,
         phone: str,
-    ) -> Optional[UnifiedCustomer]:
+    ) -> UnifiedCustomer | None:
         """Encuentra un cliente unificado por teléfono exacto."""
         normalized = phone.strip().replace(' ', '').replace('-', '')
         result = await self.db.execute(
@@ -168,7 +168,7 @@ class CustomerIdentityMatcher:
         business_id: uuid.UUID,
         name: str,
         threshold: float = 0.85,
-    ) -> Optional[UnifiedCustomer]:
+    ) -> UnifiedCustomer | None:
         """Busca clientes del mismo negocio con nombre similar."""
         result = await self.db.execute(
             select(UnifiedCustomer).where(
@@ -193,7 +193,7 @@ class CustomerIdentityMatcher:
         business_id: uuid.UUID,
         customer_a_id: uuid.UUID,
         customer_b_id: uuid.UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calcula un puntaje de confianza (0-100) para fusionar dos clientes."""
         if customer_a_id == customer_b_id:
             return {"score": 0, "reasons": ['Los IDs son idénticos']}
@@ -260,7 +260,7 @@ class CustomerIdentityMatcher:
         business_id: uuid.UUID,
         target_id: uuid.UUID,
         source_id: uuid.UUID,
-    ) -> Optional[UnifiedCustomer]:
+    ) -> UnifiedCustomer | None:
         """Fusiona source en target: combina identity_maps, suma LTV, mantiene first_seen más antiguo."""
         if target_id == source_id:
             return None
@@ -307,8 +307,7 @@ class CustomerIdentityMatcher:
 
         # Mantener first_seen más antiguo
         if source.first_seen_at and target.first_seen_at:
-            if source.first_seen_at < target.first_seen_at:
-                target.first_seen_at = source.first_seen_at
+            target.first_seen_at = min(target.first_seen_at, source.first_seen_at)
         elif source.first_seen_at and not target.first_seen_at:
             target.first_seen_at = source.first_seen_at
 
@@ -322,12 +321,11 @@ class CustomerIdentityMatcher:
 
         # last_purchase_at más reciente
         if source.last_purchase_at and target.last_purchase_at:
-            if source.last_purchase_at > target.last_purchase_at:
-                target.last_purchase_at = source.last_purchase_at
+            target.last_purchase_at = max(target.last_purchase_at, source.last_purchase_at)
         elif source.last_purchase_at and not target.last_purchase_at:
             target.last_purchase_at = source.last_purchase_at
 
-        target.updated_at = datetime.now(timezone.utc)
+        target.updated_at = datetime.now(UTC)
 
         # Eliminar source
         await self.db.delete(source)
@@ -340,7 +338,7 @@ class CustomerIdentityMatcher:
     async def get_unified_profile(
         self,
         unified_customer_id: uuid.UUID,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Devuelve el perfil completo con todas las plataformas, LTV total, plataforma preferida, etc."""
         result = await self.db.execute(
             select(UnifiedCustomer).where(UnifiedCustomer.id == unified_customer_id)
@@ -378,7 +376,7 @@ class CustomerIdentityMatcher:
         business_id: uuid.UUID,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[UnifiedCustomer]:
+    ) -> list[UnifiedCustomer]:
         """Lista todos los clientes unificados de un negocio."""
         result = await self.db.execute(
             select(UnifiedCustomer)
@@ -393,7 +391,7 @@ class CustomerIdentityMatcher:
         self,
         business_id: uuid.UUID,
         unified_customer_id: uuid.UUID,
-    ) -> Optional[UnifiedCustomer]:
+    ) -> UnifiedCustomer | None:
         """Obtiene un cliente unificado por ID y negocio."""
         result = await self.db.execute(
             select(UnifiedCustomer).where(

@@ -6,14 +6,15 @@ Professional approach: SQLAlchemy + declarative models.
 
 from datetime import datetime, timedelta
 from uuid import uuid4
+
 from sqlalchemy.orm import Session
 
 # Import models
 from app.models.platform_integration import (
-    Product,
-    PlatformListing,
     CustomerReview,
     Order,
+    PlatformListing,
+    Product,
     SellerMetrics,
 )
 

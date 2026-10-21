@@ -1,15 +1,16 @@
 """Phase 51: Content Generation Service."""
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.domains.ai_content_generation.models import (
-    ContentTemplate,
-    GeneratedContent,
-    ContentPerformance,
     BulkContentGeneration,
+    ContentPerformance,
+    ContentTemplate,
     ContentVariant,
+    GeneratedContent,
 )
 
 
@@ -21,7 +22,7 @@ class ContentGenerationService:
         template_name: str,
         template_type: str,
         template_prompt: str,
-        platform: Optional[str] = None,
+        platform: str | None = None,
     ) -> ContentTemplate:
         template = ContentTemplate(
             business_id=business_id,
@@ -41,9 +42,9 @@ class ContentGenerationService:
         business_id: UUID,
         content_type: str,
         generated_content: str,
-        product_id: Optional[UUID] = None,
-        platform: Optional[str] = None,
-        original_content: Optional[str] = None,
+        product_id: UUID | None = None,
+        platform: str | None = None,
+        original_content: str | None = None,
         seo_score: float = 0,
         engagement_score: float = 0,
     ) -> GeneratedContent:
@@ -68,8 +69,8 @@ class ContentGenerationService:
         db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
-        variants: List[dict],  # [{"text": "...", "style": "formal"}, ...]
-    ) -> List[ContentVariant]:
+        variants: list[dict],  # [{"text": "...", "style": "formal"}, ...]
+    ) -> list[ContentVariant]:
         created = []
         for idx, variant in enumerate(variants, 1):
             cv = ContentVariant(
@@ -95,7 +96,7 @@ class ContentGenerationService:
         if content:
             content.is_approved = True
             content.is_published = True
-            content.published_at = datetime.now(timezone.utc)
+            content.published_at = datetime.now(UTC)
             await db.commit()
             await db.refresh(content)
         return content
@@ -106,8 +107,8 @@ class ContentGenerationService:
         business_id: UUID,
         batch_name: str,
         content_type: str,
-        product_ids: List[UUID],
-        platform: Optional[str] = None,
+        product_ids: list[UUID],
+        platform: str | None = None,
     ) -> BulkContentGeneration:
         job = BulkContentGeneration(
             business_id=business_id,
@@ -130,7 +131,7 @@ class ContentGenerationService:
         generated_count: int = 0,
         approved_count: int = 0,
         published_count: int = 0,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> BulkContentGeneration:
         result = await db.execute(
             select(BulkContentGeneration).where(BulkContentGeneration.id == job_id)
@@ -144,7 +145,7 @@ class ContentGenerationService:
             if error_message:
                 job.error_message = error_message
             if status == "completed":
-                job.completed_at = datetime.now(timezone.utc)
+                job.completed_at = datetime.now(UTC)
             db.commit()
             db.refresh(job)
         return job
@@ -154,7 +155,7 @@ class ContentGenerationService:
         db: AsyncSession,
         business_id: UUID,
         generated_content_id: UUID,
-        product_id: Optional[UUID],
+        product_id: UUID | None,
         platform: str,
         views: int = 0,
         clicks: int = 0,
@@ -186,9 +187,9 @@ class ContentGenerationService:
         db: AsyncSession,
         business_id: UUID,
         content_type: str,
-        platform: Optional[str] = None,
+        platform: str | None = None,
         is_published: bool = True,
-    ) -> List[GeneratedContent]:
+    ) -> list[GeneratedContent]:
         where_clause = and_(
             GeneratedContent.business_id == business_id,
             GeneratedContent.content_type == content_type,

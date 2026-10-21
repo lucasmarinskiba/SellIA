@@ -1,12 +1,22 @@
+import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Numeric, Integer, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-import enum
 
 
 class PaymentProvider(str, enum.Enum):
@@ -66,8 +76,8 @@ class SubscriptionPlan(Base):
     billing_cycle_options = Column(JSONB, default=list, nullable=False)
     target_regions = Column(JSONB, default=list, nullable=False)
     trial_days = Column(Integer, default=14, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     subscriptions = relationship("Subscription", back_populates="plan", foreign_keys="Subscription.plan_id")
 
@@ -98,8 +108,8 @@ class Subscription(Base):
     invoice_data = Column(JSONB, default=dict, nullable=False)
     downgrade_to_plan_id = Column(UUID(as_uuid=True), ForeignKey("subscription_plans.id", ondelete="SET NULL"), nullable=True)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="subscription")
     plan = relationship("SubscriptionPlan", back_populates="subscriptions", foreign_keys="[Subscription.plan_id]")
@@ -115,8 +125,8 @@ class UserAPIKey(Base):
     api_key_fernet = Column(Text, nullable=True)  # Fernet encrypted (reversible)
     is_active = Column(Boolean, default=True, nullable=False)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 class UsageTracking(Base):
@@ -128,7 +138,7 @@ class UsageTracking(Base):
     metric_type = Column(String(50), nullable=False, index=True)
     quantity = Column(Integer, default=0, nullable=False)
     period_month = Column(String(7), nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
 
 # Default limits per plan
@@ -310,7 +320,7 @@ class PaymentTransaction(Base):
     extra_data = Column(JSONB, default=dict, nullable=False)
     error_message = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
 
@@ -340,7 +350,7 @@ class Invoice(Base):
     pdf_url = Column(Text, nullable=True)
     extra_data = Column(JSONB, default=dict, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     emitted_at = Column(DateTime(timezone=True), nullable=True)
 
 
@@ -351,7 +361,7 @@ class UsageAlert(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     metric_type = Column(String(50), nullable=False)
     threshold_percent = Column(Integer, nullable=False)  # 80, 100
-    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     acknowledged = Column(Boolean, default=False, nullable=False)
 
 
@@ -395,8 +405,8 @@ class BankTransferPayment(Base):
     # Expiration
     expires_at = Column(DateTime(timezone=True), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
 
 # =============================================================================
@@ -416,5 +426,5 @@ class CancellationFeedback(Base):
     improvement_suggestion = Column(Text, nullable=True)
     rating_nps = Column(Integer, nullable=True)  # 0-10
 
-    cancelled_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    cancelled_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

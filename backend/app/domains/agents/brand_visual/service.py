@@ -3,24 +3,23 @@
 Handles brand kit generation via DALL-E 3 / Stable Diffusion.
 """
 
-import uuid
-import json
-import zipfile
 import io
-from datetime import datetime, timezone
+import json
+import uuid
+import zipfile
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 
 import httpx
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logger import get_logger
-from app.domains.agents.brand_visual.models import BrandKitJob, BrandAsset
+from app.domains.agents.brand_visual.models import BrandAsset, BrandKitJob
 from app.domains.agents.prompts.business_context_adapter import (
-    get_agent_prompt_context,
     format_business_context_for_prompt,
+    get_agent_prompt_context,
 )
 
 logger = get_logger(__name__)
@@ -40,7 +39,7 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Optional[Dict[str, Any]] = None,
+        style_preferences: dict[str, Any] | None = None,
     ) -> BrandKitJob:
         """Generate a complete brand kit."""
         settings = get_settings()
@@ -56,7 +55,7 @@ class BrandVisualService:
         await self.db.commit()
         await self.db.refresh(job)
 
-        assets: List[BrandAsset] = []
+        assets: list[BrandAsset] = []
 
         # 1. Generate 3 logo concepts via DALL-E 3
         logo_urls = await self._generate_logos(
@@ -148,13 +147,13 @@ class BrandVisualService:
         await self.db.refresh(job)
         return job
 
-    async def get_brand_kit(self, job_id: uuid.UUID) -> Optional[BrandKitJob]:
+    async def get_brand_kit(self, job_id: uuid.UUID) -> BrandKitJob | None:
         result = await self.db.execute(
             select(BrandKitJob).where(BrandKitJob.id == job_id)
         )
         return result.scalar_one_or_none()
 
-    async def list_kits(self, business_id: uuid.UUID) -> List[BrandKitJob]:
+    async def list_kits(self, business_id: uuid.UUID) -> list[BrandKitJob]:
         result = await self.db.execute(
             select(BrandKitJob)
             .where(BrandKitJob.business_id == business_id)
@@ -162,7 +161,7 @@ class BrandVisualService:
         )
         return result.scalars().all()
 
-    async def get_assets(self, job_id: uuid.UUID) -> List[BrandAsset]:
+    async def get_assets(self, job_id: uuid.UUID) -> list[BrandAsset]:
         result = await self.db.execute(
             select(BrandAsset).where(BrandAsset.job_id == job_id)
         )
@@ -194,10 +193,10 @@ class BrandVisualService:
         self,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[str]:
-        urls: List[str] = []
+    ) -> list[str]:
+        urls: list[str] = []
         style = style_preferences.get("style", "modern minimalistic")
         for idx in range(1, 4):
             prompt = (
@@ -217,9 +216,9 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """Generate a 5-color palette. Uses OpenAI if available, else heuristic."""
         ctx = await get_agent_prompt_context(self.db, business_id)
         context_block = format_business_context_for_prompt(ctx)
@@ -275,9 +274,9 @@ class BrandVisualService:
         business_id: uuid.UUID,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return typography recommendations."""
         ctx = await get_agent_prompt_context(self.db, business_id)
         context_block = format_business_context_for_prompt(ctx)
@@ -331,7 +330,7 @@ class BrandVisualService:
         brand_name: str,
         industry: str,
         platform: str,
-        colors: List[Dict[str, str]],
+        colors: list[dict[str, str]],
         settings: Any,
     ) -> str:
         primary_color = colors[0]["hex"] if colors else "#1E3A8A"
@@ -346,7 +345,7 @@ class BrandVisualService:
         self,
         brand_name: str,
         industry: str,
-        style_preferences: Dict[str, Any],
+        style_preferences: dict[str, Any],
         settings: Any,
     ) -> str:
         prompt = (
@@ -355,7 +354,7 @@ class BrandVisualService:
         )
         return await self._generate_image(prompt, settings, "mockup") or ""
 
-    async def _generate_image(self, prompt: str, settings: Any, suffix: str) -> Optional[str]:
+    async def _generate_image(self, prompt: str, settings: Any, suffix: str) -> str | None:
         """Generate image via DALL-E 3 or Stable Diffusion fallback."""
         job_id = uuid.uuid4()
         file_name = f"brand_{job_id}_{suffix}.png"
@@ -422,17 +421,17 @@ class BrandVisualService:
         self,
         brand_name: str,
         industry: str,
-        colors: List[Dict[str, str]],
-        fonts: List[Dict[str, Any]],
-        logo_urls: List[str],
+        colors: list[dict[str, str]],
+        fonts: list[dict[str, Any]],
+        logo_urls: list[str],
     ) -> str:
         lines = [
             f"# Brand Guidelines — {brand_name}",
-            f"",
-            f"## Industry",
+            "",
+            "## Industry",
             f"{industry}",
-            f"",
-            f"## Color Palette",
+            "",
+            "## Color Palette",
         ]
         for c in colors:
             lines.append(f"- **{c.get('name', 'Color')}**: {c.get('hex', '')}")

@@ -15,9 +15,9 @@ Status: 500L strategic optimizer
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class AffiliateStrategyEngine:
             "low": 1.2,
         }
 
-    def rank_niches(self, niches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_niches(self, niches: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank niches by profitability potential."""
         ranked = []
 
@@ -80,7 +80,7 @@ class AffiliateStrategyEngine:
 
         return sorted(ranked, key=lambda x: x["profitability_score"], reverse=True)
 
-    def rank_products(self, products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank_products(self, products: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Rank products by profitability."""
         ranked = []
 
@@ -110,7 +110,7 @@ class AffiliateStrategyEngine:
         return sorted(ranked, key=lambda x: x["profitability_score"], reverse=True)
 
     def select_channels(self, niche: str, budget: float = 0,
-                       timeline: str = "3_months") -> List[Dict[str, Any]]:
+                       timeline: str = "3_months") -> list[dict[str, Any]]:
         """Recommend channels based on niche and resources."""
         # Channel recommendations by niche and timeline
         channel_matrix = {
@@ -152,7 +152,7 @@ class AffiliateStrategyEngine:
             for channel in channels
         ]
 
-    def create_content_strategy(self, niche: str, channels: List[str]) -> Dict[str, Any]:
+    def create_content_strategy(self, niche: str, channels: list[str]) -> dict[str, Any]:
         """Create content strategy for niche."""
         content_pillars = {
             "education": {
@@ -220,7 +220,7 @@ class AffiliateStrategyEngine:
             ],
         }
 
-    def create_promotion_calendar(self, month: int, year: int) -> Dict[str, Any]:
+    def create_promotion_calendar(self, month: int, year: int) -> dict[str, Any]:
         """Create promotion calendar for the month."""
         seasonal_focus = {
             1: "New Year, New Goals, Productivity",
@@ -292,7 +292,7 @@ class AffiliateStrategyEngine:
         }
 
     def create_scaling_playbook(self, current_monthly_income: float,
-                               target_monthly_income: float) -> Dict[str, Any]:
+                               target_monthly_income: float) -> dict[str, Any]:
         """Create playbook for scaling affiliate income."""
         growth_phases = []
 
@@ -300,10 +300,10 @@ class AffiliateStrategyEngine:
         growth_phases.append({
             "phase": "Phase 1: Foundation (0-3 months)",
             "goals": [
-                f"Build email list to 500 subscribers",
-                f"Create 10-15 piece of core content",
-                f"Get first 10 affiliate sales",
-                f"Establish affiliate relationships",
+                "Build email list to 500 subscribers",
+                "Create 10-15 piece of core content",
+                "Get first 10 affiliate sales",
+                "Establish affiliate relationships",
             ],
             "focus": "Quality over quantity, build foundation",
             "expected_income": current_monthly_income,
@@ -319,10 +319,10 @@ class AffiliateStrategyEngine:
         growth_phases.append({
             "phase": "Phase 2: Growth (3-6 months)",
             "goals": [
-                f"Grow email list to 2000 subscribers",
-                f"Launch email affiliate campaigns (3x/month)",
-                f"Get 50 monthly affiliate sales",
-                f"3 ranking blog posts on Google",
+                "Grow email list to 2000 subscribers",
+                "Launch email affiliate campaigns (3x/month)",
+                "Get 50 monthly affiliate sales",
+                "3 ranking blog posts on Google",
             ],
             "focus": "Consistency and optimization",
             "expected_income": current_monthly_income * 2,
@@ -338,10 +338,10 @@ class AffiliateStrategyEngine:
         growth_phases.append({
             "phase": "Phase 3: Scale (6-12 months)",
             "goals": [
-                f"Grow email list to 5000+ subscribers",
-                f"200+ monthly affiliate sales",
-                f"5+ ranking blog posts (page 1 Google)",
-                f"Multiple income streams active",
+                "Grow email list to 5000+ subscribers",
+                "200+ monthly affiliate sales",
+                "5+ ranking blog posts (page 1 Google)",
+                "Multiple income streams active",
             ],
             "focus": "Systematization and leverage",
             "expected_income": current_monthly_income * 5,
@@ -357,9 +357,9 @@ class AffiliateStrategyEngine:
         growth_phases.append({
             "phase": "Phase 4: Optimize (12+ months)",
             "goals": [
-                f"10000+ email subscribers",
-                f"500+ monthly sales",
-                f"Top 3 ranking for target keywords",
+                "10000+ email subscribers",
+                "500+ monthly sales",
+                "Top 3 ranking for target keywords",
                 f"Consistent ${target_monthly_income:,}/month",
             ],
             "focus": "Efficiency and network effects",
@@ -386,7 +386,7 @@ class AffiliateStrategyEngine:
             ],
         }
 
-    def identify_pivot_triggers(self, days_testing: int = 30) -> Dict[str, Any]:
+    def identify_pivot_triggers(self, days_testing: int = 30) -> dict[str, Any]:
         """Identify when to pivot strategy."""
         return {
             "testing_period": f"{days_testing} days",
@@ -434,7 +434,7 @@ class AffiliateStrategyEngine:
         }
 
     def generate_full_strategy(self, niche: str, budget: float = 0,
-                              target_income: float = 5000) -> Dict[str, Any]:
+                              target_income: float = 5000) -> dict[str, Any]:
         """Generate complete affiliate strategy."""
         channels = self.select_channels(niche, budget, "3_months")
         channel_names = [c["channel"] for c in channels]

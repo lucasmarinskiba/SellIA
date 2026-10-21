@@ -1,12 +1,14 @@
 """Phase X7: Perception Engineering Agent API."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import Dict, List, Optional
-from app.core.database import get_db
-from app.domains.perception_engineering.service import PerceptionEngineeringAgent
-from app.domains.perception_engineering.models import PerceptionDimension, PerceptionShiftTechnique
 
+from app.core.database import get_db
+from app.domains.perception_engineering.models import (
+    PerceptionDimension,
+    PerceptionShiftTechnique,
+)
+from app.domains.perception_engineering.service import PerceptionEngineeringAgent
 
 router = APIRouter(prefix="/api/v1/perception-engineering", tags=["perception-engineering"])
 
@@ -15,7 +17,7 @@ router = APIRouter(prefix="/api/v1/perception-engineering", tags=["perception-en
 async def analyze_perception_gap(
     business_id: str,
     product_id: str,
-    current_perception: Dict[str, float],
+    current_perception: dict[str, float],
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Analyze gap between current and desired customer perception."""
@@ -79,7 +81,7 @@ async def optimize_value_perception(
     product_id: str,
     base_price: float,
     current_perceived_value: float,
-    competitor_prices: List[float],
+    competitor_prices: list[float],
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Optimize perceived value using psychological techniques."""

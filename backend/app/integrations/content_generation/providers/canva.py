@@ -4,10 +4,10 @@ Pricing: Free tier available, Pro ~$12.99/mo
 Strengths: Templates, brand kits, social graphics, quick designs
 """
 
-from typing import Dict, Any
 
 from app.core.config import get_settings
-from ..base import BaseProvider, GenerationConfig, GenerationResult, ContentQuality, ContentType
+
+from ..base import BaseProvider, ContentType, GenerationConfig, GenerationResult
 
 settings = get_settings()
 
@@ -26,7 +26,7 @@ class CanvaProvider(BaseProvider):
     def estimate_cost(self, config: GenerationConfig) -> float:
         return 0.0  # Free tier or plan-based
 
-    def get_pricing_table(self) -> Dict[str, float]:
+    def get_pricing_table(self) -> dict[str, float]:
         return {"canva-design": 0.0}
 
     async def generate(self, config: GenerationConfig) -> GenerationResult:
@@ -46,13 +46,12 @@ class CanvaProvider(BaseProvider):
                 "type": config.extra_params.get("design_type", "social_media"),
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.canva.com/rest/v1/designs",
-                    headers=headers,
-                    json=payload,
-                ) as resp:
-                    data = await resp.json()
+            async with aiohttp.ClientSession() as session, session.post(
+                "https://api.canva.com/rest/v1/designs",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                data = await resp.json()
 
             design_url = data.get("design", {}).get("url") if isinstance(data.get("design"), dict) else data.get("url")
             if not design_url:

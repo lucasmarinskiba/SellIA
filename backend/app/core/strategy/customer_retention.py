@@ -1,10 +1,9 @@
 """Customer Retention — Fidelización, contención churn, upsell."""
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
 import logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +23,9 @@ class ChurnScore:
     customer_name: str
     risk_level: ChurnRiskLevel
     score: float  # 0-1, higher = more risk
-    risk_factors: List[str]
+    risk_factors: list[str]
     confidence: float  # 0-1
-    recommended_actions: List[str]
+    recommended_actions: list[str]
     expected_ltv_if_retained: float
     intervention_urgency: str  # low, medium, high, critical
 
@@ -37,11 +36,11 @@ class HappinessTactic:
     tactic_id: str
     name: str
     description: str
-    implementation_steps: List[str]
+    implementation_steps: list[str]
     cost: float
     expected_nps_lift: int  # Points
     timeline_days: int
-    success_metrics: List[str]
+    success_metrics: list[str]
 
 
 @dataclass
@@ -49,7 +48,7 @@ class ReactivationOffer:
     """Offer to reactivate churned customer."""
     customer_id: str
     discount_percent: float
-    new_features: List[str]
+    new_features: list[str]
     special_treatment: str
     offer_duration_days: int
     expected_reactivation_rate: float
@@ -61,12 +60,11 @@ class RetentionEngine:
 
     def __init__(self):
         """Initialize retention engine."""
-        pass
 
     def calculate_churn_risk(
         self,
-        customer_data: Dict[str, Any],
-        historical_data: List[Dict[str, Any]],
+        customer_data: dict[str, Any],
+        historical_data: list[dict[str, Any]],
     ) -> ChurnScore:
         """
         Identify customers at churn risk.
@@ -137,9 +135,9 @@ class RetentionEngine:
 
     def happiness_strategy(
         self,
-        customer_data: Dict[str, Any],
+        customer_data: dict[str, Any],
         business_profile: "BusinessProfile",
-    ) -> List[HappinessTactic]:
+    ) -> list[HappinessTactic]:
         """
         Convert satisfied → promoter (NPS 9-10).
 
@@ -183,7 +181,7 @@ class RetentionEngine:
 
     def win_back_campaign(
         self,
-        churned_customer_data: Dict[str, Any],
+        churned_customer_data: dict[str, Any],
         business_profile: "BusinessProfile",
     ) -> ReactivationOffer:
         """
@@ -241,9 +239,9 @@ class RetentionEngine:
 
     def upsell_opportunity(
         self,
-        customer_data: Dict[str, Any],
-        available_products: List[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+        customer_data: dict[str, Any],
+        available_products: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
         """
         Identify upsell/cross-sell opportunities.
 
@@ -283,8 +281,8 @@ class RetentionEngine:
 
     def _analyze_usage_churn(
         self,
-        customer_data: Dict[str, Any],
-        historical_data: List[Dict[str, Any]],
+        customer_data: dict[str, Any],
+        historical_data: list[dict[str, Any]],
     ) -> float:
         """Analyze usage decline."""
         if not historical_data or len(historical_data) < 2:
@@ -299,7 +297,7 @@ class RetentionEngine:
         decline_percent = (previous_usage - current_usage) / previous_usage
         return max(min(decline_percent, 1.0), 0.0)
 
-    def _analyze_billing_churn(self, customer_data: Dict[str, Any]) -> float:
+    def _analyze_billing_churn(self, customer_data: dict[str, Any]) -> float:
         """Analyze billing issues."""
         recent_failures = customer_data.get("payment_failures_last_90_days", 0)
         failed_cards = customer_data.get("failed_cards", 0)
@@ -310,8 +308,8 @@ class RetentionEngine:
 
     def _analyze_inactivity(
         self,
-        customer_data: Dict[str, Any],
-        historical_data: List[Dict[str, Any]],
+        customer_data: dict[str, Any],
+        historical_data: list[dict[str, Any]],
     ) -> float:
         """Analyze customer inactivity."""
         last_activity = customer_data.get("last_activity_days_ago", 365)
@@ -327,8 +325,8 @@ class RetentionEngine:
     def _generate_retention_actions(
         self,
         risk_level: ChurnRiskLevel,
-        risk_factors: Dict[str, float],
-    ) -> List[str]:
+        risk_factors: dict[str, float],
+    ) -> list[str]:
         """Generate recommended retention actions."""
         actions = []
 
@@ -355,7 +353,7 @@ class RetentionEngine:
         """Determine intervention urgency."""
         return str(risk_level.value)
 
-    def _delighter_tactics(self, customer_data: Dict[str, Any]) -> List[HappinessTactic]:
+    def _delighter_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
         """Generate tactics to delight promoters."""
         return [
             HappinessTactic(
@@ -388,7 +386,7 @@ class RetentionEngine:
             ),
         ]
 
-    def _passive_conversion_tactics(self, customer_data: Dict[str, Any]) -> List[HappinessTactic]:
+    def _passive_conversion_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
         """Generate tactics to convert passives to promoters."""
         return [
             HappinessTactic(
@@ -407,7 +405,7 @@ class RetentionEngine:
             ),
         ]
 
-    def _detractor_recovery_tactics(self, customer_data: Dict[str, Any]) -> List[HappinessTactic]:
+    def _detractor_recovery_tactics(self, customer_data: dict[str, Any]) -> list[HappinessTactic]:
         """Generate tactics to recover detractors."""
         return [
             HappinessTactic(
@@ -478,7 +476,7 @@ class RetentionEngine:
         self,
         business_profile: "BusinessProfile",
         churn_reason: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """Identify new features to highlight."""
         if "features" in churn_reason.lower():
             return ["New advanced analytics", "API access", "Custom integrations"]
@@ -505,7 +503,7 @@ class RetentionEngine:
     def _estimate_reactivation_rate(
         self,
         discount_percent: float,
-        new_features: List[str],
+        new_features: list[str],
         churn_reason: str,
     ) -> float:
         """Estimate probability of reactivation."""
@@ -524,7 +522,7 @@ class RetentionEngine:
 
         return min(rate, 0.60)
 
-    def _upsell_fit_score(self, customer_data: Dict[str, Any], product: Dict[str, Any]) -> float:
+    def _upsell_fit_score(self, customer_data: dict[str, Any], product: dict[str, Any]) -> float:
         """Calculate fit score for upsell."""
         score = 0.0
 

@@ -16,14 +16,13 @@ Env vars:
 - STRIPE_API_VERSION: API version (default: 2023-10-16)
 """
 
-import os
 import logging
-import stripe
-import json
-import hashlib
-from typing import Dict, Any, Optional, List
+import os
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
+
+import stripe
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +71,9 @@ class StripeProcessor:
         order_id: str,
         success_url: str,
         cancel_url: str,
-        payment_methods: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        payment_methods: list[str] | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create Stripe checkout session.
 
@@ -162,7 +161,7 @@ class StripeProcessor:
             logger.error(f"Stripe error: {e.message}")
             return {"status": "error", "error": str(e.message)}
         except Exception as e:
-            logger.error(f"Unexpected error creating checkout: {str(e)}")
+            logger.error(f"Unexpected error creating checkout: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -171,9 +170,9 @@ class StripeProcessor:
         amount_usd: float,
         product_name: str,
         order_id: str,
-        description: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create Stripe payment intent (for custom form integration).
 
@@ -222,11 +221,11 @@ class StripeProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating payment intent: {str(e)}")
+            logger.error(f"Error creating payment intent: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def retrieve_session(session_id: str) -> Dict[str, Any]:
+    def retrieve_session(session_id: str) -> dict[str, Any]:
         """Retrieve checkout session details."""
         try:
             session = stripe.checkout.Session.retrieve(session_id)
@@ -240,11 +239,11 @@ class StripeProcessor:
                 "metadata": session.metadata,
             }
         except Exception as e:
-            logger.error(f"Error retrieving session: {str(e)}")
+            logger.error(f"Error retrieving session: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
-    def retrieve_payment_intent(intent_id: str) -> Dict[str, Any]:
+    def retrieve_payment_intent(intent_id: str) -> dict[str, Any]:
         """Retrieve payment intent details."""
         try:
             intent = stripe.PaymentIntent.retrieve(intent_id)
@@ -266,16 +265,16 @@ class StripeProcessor:
                 ],
             }
         except Exception as e:
-            logger.error(f"Error retrieving payment intent: {str(e)}")
+            logger.error(f"Error retrieving payment intent: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
     def refund_payment(
         payment_intent_id: str,
-        amount_usd: Optional[float] = None,
-        reason: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        amount_usd: float | None = None,
+        reason: str | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Refund a payment (full or partial).
 
@@ -327,7 +326,7 @@ class StripeProcessor:
             logger.error(f"Invalid refund request: {e.message}")
             return {"status": "error", "error": e.message}
         except Exception as e:
-            logger.error(f"Error refunding payment: {str(e)}")
+            logger.error(f"Error refunding payment: {e!s}")
             return {"status": "error", "error": str(e)}
 
     @staticmethod
@@ -338,8 +337,8 @@ class StripeProcessor:
         description: str,
         order_id: str,
         due_days: int = 7,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create Stripe invoice (for subscriptions or quotes).
 
@@ -400,7 +399,7 @@ class StripeProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Error creating invoice: {str(e)}")
+            logger.error(f"Error creating invoice: {e!s}")
             return {"status": "error", "error": str(e)}
 
 
@@ -421,11 +420,11 @@ class StripeWebhookHandler:
             logger.warning(f"Invalid webhook signature: {e}")
             return False
         except Exception as e:
-            logger.error(f"Webhook verification error: {str(e)}")
+            logger.error(f"Webhook verification error: {e!s}")
             return False
 
     @staticmethod
-    def construct_event(payload: bytes, signature: str) -> Optional[Dict[str, Any]]:
+    def construct_event(payload: bytes, signature: str) -> dict[str, Any] | None:
         """
         Construct and return Stripe event object.
 
@@ -440,11 +439,11 @@ class StripeWebhookHandler:
             logger.warning("Invalid webhook signature")
             return None
         except Exception as e:
-            logger.error(f"Error constructing event: {str(e)}")
+            logger.error(f"Error constructing event: {e!s}")
             return None
 
     @staticmethod
-    def handle_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_event(event: dict[str, Any]) -> dict[str, Any]:
         """
         Route webhook event to appropriate handler.
 
@@ -477,7 +476,7 @@ class StripeWebhookHandler:
                 }
 
         except Exception as e:
-            logger.error(f"Error handling event {event_id}: {str(e)}")
+            logger.error(f"Error handling event {event_id}: {e!s}")
             return {
                 "status": "error",
                 "event_type": event_type,
@@ -486,7 +485,7 @@ class StripeWebhookHandler:
             }
 
     @staticmethod
-    def _handle_payment_succeeded(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_succeeded(event: dict[str, Any]) -> dict[str, Any]:
         """Handle payment_intent.succeeded event."""
         intent = event["data"]["object"]
         order_id = intent.get("metadata", {}).get("order_id")
@@ -508,7 +507,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_payment_failed(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_payment_failed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle payment_intent.payment_failed event."""
         intent = event["data"]["object"]
         order_id = intent.get("metadata", {}).get("order_id")
@@ -528,7 +527,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_charge_refunded(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_charge_refunded(event: dict[str, Any]) -> dict[str, Any]:
         """Handle charge.refunded event."""
         charge = event["data"]["object"]
         amount = charge.get("amount", 0) / 100
@@ -545,7 +544,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_charge_dispute(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_charge_dispute(event: dict[str, Any]) -> dict[str, Any]:
         """Handle charge.dispute.created event (chargeback/dispute)."""
         dispute = event["data"]["object"]
 
@@ -565,7 +564,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_invoice_paid(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_invoice_paid(event: dict[str, Any]) -> dict[str, Any]:
         """Handle invoice.payment_succeeded event."""
         invoice = event["data"]["object"]
         order_id = invoice.get("metadata", {}).get("order_id")
@@ -587,7 +586,7 @@ class StripeWebhookHandler:
         }
 
     @staticmethod
-    def _handle_invoice_failed(event: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_invoice_failed(event: dict[str, Any]) -> dict[str, Any]:
         """Handle invoice.payment_failed event."""
         invoice = event["data"]["object"]
         order_id = invoice.get("metadata", {}).get("order_id")

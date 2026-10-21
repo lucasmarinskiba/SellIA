@@ -1,8 +1,10 @@
 """Phase 3: Smart Channel Routing - Intelligent Message Delivery."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -47,8 +49,8 @@ class ChannelAffinityModel(Base):
     sms_trend = Column(String(20), default="stable")
     engagement_trend_days = Column(Integer, default=30)  # window for trend calculation
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class MessageRouting(Base):
@@ -85,8 +87,8 @@ class MessageRouting(Base):
     response_time_seconds = Column(Integer, nullable=True)
     feedback_positive = Column(Boolean, nullable=True)  # True = good, False = bad, None = neutral
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class ChannelPerformanceMetrics(Base):
@@ -121,5 +123,5 @@ class ChannelPerformanceMetrics(Base):
     week_over_week_growth = Column(Float, default=0)
     quality_score = Column(Float, default=0)  # 0-100
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))

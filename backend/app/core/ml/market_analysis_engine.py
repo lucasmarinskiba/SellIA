@@ -2,9 +2,9 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -33,11 +33,11 @@ class CompetitorProfile:
     name: str
     market_share: float
     pricing_strategy: str
-    strengths: List[str] = field(default_factory=list)
-    weaknesses: List[str] = field(default_factory=list)
-    recent_moves: List[Dict[str, Any]] = field(default_factory=list)
-    estimated_revenue: Optional[float] = None
-    customer_satisfaction: Optional[float] = None
+    strengths: list[str] = field(default_factory=list)
+    weaknesses: list[str] = field(default_factory=list)
+    recent_moves: list[dict[str, Any]] = field(default_factory=list)
+    estimated_revenue: float | None = None
+    customer_satisfaction: float | None = None
     last_updated: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -46,28 +46,28 @@ class MarketTrend:
     """Market trend data."""
 
     metric_name: str
-    values: List[float]
-    timestamps: List[datetime]
+    values: list[float]
+    timestamps: list[datetime]
     direction: TrendDirection
     strength: float  # 0.0 to 1.0
     slope: float
-    forecast_next_30_days: List[float] = field(default_factory=list)
+    forecast_next_30_days: list[float] = field(default_factory=list)
 
 
 class CompetitiveIntelligence:
     """Track competitor pricing, strategies, market moves."""
 
     def __init__(self):
-        self.competitors: Dict[str, CompetitorProfile] = {}
-        self.price_history: Dict[str, List[Tuple[datetime, float]]] = {}
-        self.move_log: List[Dict[str, Any]] = []
+        self.competitors: dict[str, CompetitorProfile] = {}
+        self.price_history: dict[str, list[tuple[datetime, float]]] = {}
+        self.move_log: list[dict[str, Any]] = []
 
     def add_competitor(self, profile: CompetitorProfile) -> None:
         """Register competitor."""
         self.competitors[profile.competitor_id] = profile
         logger.info(f"Added competitor: {profile.name}")
 
-    def track_price_change(self, competitor_id: str, price: float, timestamp: Optional[datetime] = None) -> None:
+    def track_price_change(self, competitor_id: str, price: float, timestamp: datetime | None = None) -> None:
         """Track price changes over time."""
         if competitor_id not in self.price_history:
             self.price_history[competitor_id] = []
@@ -82,7 +82,7 @@ class CompetitiveIntelligence:
             if abs(change_pct) > 5:
                 self.log_move(competitor_id, "price_change", {"from": prev_price, "to": price, "change_pct": change_pct})
 
-    def log_move(self, competitor_id: str, move_type: str, details: Dict[str, Any]) -> None:
+    def log_move(self, competitor_id: str, move_type: str, details: dict[str, Any]) -> None:
         """Log strategic move."""
         move = {
             "competitor_id": competitor_id,
@@ -97,7 +97,7 @@ class CompetitiveIntelligence:
 
         logger.info(f"Logged move for {competitor_id}: {move_type}")
 
-    def get_price_trends(self, competitor_id: str, days: int = 30) -> Optional[Dict[str, Any]]:
+    def get_price_trends(self, competitor_id: str, days: int = 30) -> dict[str, Any] | None:
         """Analyze price trends for competitor."""
         if competitor_id not in self.price_history:
             return None
@@ -125,7 +125,7 @@ class CompetitiveIntelligence:
             "direction": "uptrend" if slope > 0 else "downtrend" if slope < 0 else "stable",
         }
 
-    def competitive_positioning(self) -> Dict[str, Any]:
+    def competitive_positioning(self) -> dict[str, Any]:
         """Analyze overall competitive landscape."""
         if not self.competitors:
             return {}
@@ -150,14 +150,14 @@ class MarketTrendsAnalyzer:
     """Analyze seasonal patterns, demand curves, growth rates."""
 
     def __init__(self):
-        self.trends: Dict[str, MarketTrend] = {}
-        self.seasonality_patterns: Dict[str, Dict[str, float]] = {}
+        self.trends: dict[str, MarketTrend] = {}
+        self.seasonality_patterns: dict[str, dict[str, float]] = {}
 
     def add_trend_data(
         self,
         metric_name: str,
-        values: List[float],
-        timestamps: List[datetime],
+        values: list[float],
+        timestamps: list[datetime],
     ) -> MarketTrend:
         """Add trend data and analyze."""
         if len(values) < 2:
@@ -191,7 +191,7 @@ class MarketTrendsAnalyzer:
 
         return trend
 
-    def detect_seasonality(self, metric_name: str, period: int = 12) -> Dict[str, float]:
+    def detect_seasonality(self, metric_name: str, period: int = 12) -> dict[str, float]:
         """Detect seasonal patterns (e.g., monthly for annual data)."""
         if metric_name not in self.trends:
             return {}
@@ -213,7 +213,7 @@ class MarketTrendsAnalyzer:
 
         return seasonal_factors
 
-    def forecast_trend(self, metric_name: str, periods: int = 30) -> List[float]:
+    def forecast_trend(self, metric_name: str, periods: int = 30) -> list[float]:
         """Forecast future values using linear regression + seasonality."""
         if metric_name not in self.trends:
             return []
@@ -242,7 +242,7 @@ class MarketTrendsAnalyzer:
         self.trends[metric_name].forecast_next_30_days = forecast[:30]
         return forecast
 
-    def growth_rate(self, metric_name: str) -> Optional[float]:
+    def growth_rate(self, metric_name: str) -> float | None:
         """Calculate compound growth rate."""
         if metric_name not in self.trends:
             return None
@@ -267,13 +267,13 @@ class OwnAnalyzer:
 
     def __init__(self, seller_id: str):
         self.seller_id = seller_id
-        self.sales_history: List[Dict[str, Any]] = []
+        self.sales_history: list[dict[str, Any]] = []
         self.conversion_rate: float = 0.0
         self.avg_deal_value: float = 0.0
         self.sales_velocity: float = 0.0  # deals per day
         self.customer_satisfaction: float = 0.0
 
-    def add_sales_records(self, records: List[Dict[str, Any]]) -> None:
+    def add_sales_records(self, records: list[dict[str, Any]]) -> None:
         """Add historical sales records."""
         self.sales_history.extend(records)
         self._calculate_metrics()
@@ -307,7 +307,7 @@ class OwnAnalyzer:
             f"Seller {self.seller_id} metrics: CR={self.conversion_rate:.2%}, ADV=${self.avg_deal_value:.2f}, Velocity={self.sales_velocity:.2f}"
         )
 
-    def performance_summary(self) -> Dict[str, Any]:
+    def performance_summary(self) -> dict[str, Any]:
         """Get seller performance summary."""
         return {
             "seller_id": self.seller_id,
@@ -341,10 +341,10 @@ class SWOTAnalyzer:
     """Strengths, Weaknesses, Opportunities, Threats analysis."""
 
     def __init__(self):
-        self.swot_analyses: Dict[str, Dict[str, List[str]]] = {}
+        self.swot_analyses: dict[str, dict[str, list[str]]] = {}
 
-    def analyze_market(self, market_id: str, seller_profile: Dict[str, Any], competitive_intel: CompetitiveIntelligence,
-                       market_trends: MarketTrendsAnalyzer) -> Dict[str, List[str]]:
+    def analyze_market(self, market_id: str, seller_profile: dict[str, Any], competitive_intel: CompetitiveIntelligence,
+                       market_trends: MarketTrendsAnalyzer) -> dict[str, list[str]]:
         """Comprehensive SWOT analysis for seller in market."""
 
         swot = {
@@ -396,10 +396,10 @@ class ForecastingEngine:
     """Predict demand, prices, market conditions."""
 
     def __init__(self):
-        self.forecast_models: Dict[str, Any] = {}
-        self.predictions: Dict[str, List[float]] = {}
+        self.forecast_models: dict[str, Any] = {}
+        self.predictions: dict[str, list[float]] = {}
 
-    def forecast_demand(self, historical_demand: List[float], periods: int = 90) -> Dict[str, Any]:
+    def forecast_demand(self, historical_demand: list[float], periods: int = 90) -> dict[str, Any]:
         """Forecast demand using exponential smoothing."""
         if len(historical_demand) < 3:
             return {"error": "Insufficient historical data"}
@@ -426,7 +426,7 @@ class ForecastingEngine:
             "trend": "uptrend" if np.mean(forecasts[:15]) > np.mean(forecasts[15:30]) else "downtrend",
         }
 
-    def forecast_prices(self, historical_prices: List[float], periods: int = 90) -> Dict[str, Any]:
+    def forecast_prices(self, historical_prices: list[float], periods: int = 90) -> dict[str, Any]:
         """Forecast price movements."""
         if len(historical_prices) < 3:
             return {"error": "Insufficient historical data"}

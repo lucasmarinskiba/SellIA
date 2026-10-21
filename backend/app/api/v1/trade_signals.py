@@ -14,31 +14,29 @@ proponen ni aprueban operaciones.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.core.deps import get_current_active_user, RateLimit
-from app.domains.users.models import User
+from app.core.deps import RateLimit, get_current_active_user
 from app.domains.computer_use.skills import (
-    AssetClass,
-    TradeSide,
+    ANALYSIS_BY_ASSET,
     AnalysisStyle,
+    AssetClass,
     RiskRating,
     TradeProposal,
-    ANALYSIS_BY_ASSET,
+    TradeSide,
 )
 from app.domains.computer_use.skills.trade_store import RedisCopyTradeStore
+from app.domains.users.models import User
 
 settings = get_settings()
 router = APIRouter()
 
 
 # ── store respaldado en Redis (compartido entre procesos) ─────────────────
-_store: Optional[RedisCopyTradeStore] = None
+_store: RedisCopyTradeStore | None = None
 
 
 def get_store() -> RedisCopyTradeStore:
@@ -65,14 +63,14 @@ class TradeProposalCreate(BaseModel):
     asset_class: AssetClass
     side: TradeSide
     rationale: str = Field(..., min_length=1, max_length=2000)
-    analysis_styles: List[AnalysisStyle] = Field(default_factory=list)
+    analysis_styles: list[AnalysisStyle] = Field(default_factory=list)
     risk: RiskRating
     confidence: float = Field(..., ge=0.0, le=1.0)
     market: str = Field("", max_length=120)
-    suggested_allocation_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
-    stop_loss: Optional[str] = Field(None, max_length=120)
-    take_profit: Optional[str] = Field(None, max_length=120)
-    ttl_sec: Optional[int] = Field(None, ge=1, le=86400)
+    suggested_allocation_pct: float | None = Field(None, ge=0.0, le=100.0)
+    stop_loss: str | None = Field(None, max_length=120)
+    take_profit: str | None = Field(None, max_length=120)
+    ttl_sec: int | None = Field(None, ge=1, le=86400)
 
 
 # ── presencia ─────────────────────────────────────────────────────────────

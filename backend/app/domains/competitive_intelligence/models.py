@@ -1,8 +1,19 @@
 """Phase 4: Competitive Intelligence - Market Analysis & Price Optimization."""
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, ForeignKey, Float, Integer, Boolean, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from datetime import UTC, datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.database import Base
 
 
@@ -38,8 +49,8 @@ class CompetitorProfile(Base):
     last_analyzed_at = Column(DateTime(timezone=True), nullable=True)
     data_source = Column(String(50), default="manual")  # "manual", "web_scrape", "api", "survey"
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class PriceOptimization(Base):
@@ -74,8 +85,8 @@ class PriceOptimization(Base):
     implemented_at = Column(DateTime(timezone=True), nullable=True)
     actual_performance = Column(JSONB, nullable=True)  # track real results
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class MarketAnalysis(Base):
@@ -110,8 +121,8 @@ class MarketAnalysis(Base):
     market_outlook = Column(String(20), default="stable")  # "declining", "stable", "growing", "explosive"
     forecast_12m_share = Column(Float, default=0)  # predicted market share in 12m
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))
 
 
 class CompetitiveIntelligenceFeed(Base):
@@ -141,5 +152,5 @@ class CompetitiveIntelligenceFeed(Base):
     is_acknowledged = Column(Boolean, default=False)
     action_taken = Column(String(255), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(UTC))

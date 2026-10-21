@@ -1,6 +1,7 @@
 """Smart defaults — auto-create SEO config when platforms connect."""
 
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

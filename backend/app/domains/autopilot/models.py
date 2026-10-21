@@ -3,14 +3,23 @@
 AutopilotConfig, AutopilotActionLog, AutopilotDailyReport.
 """
 
-import uuid
 import enum
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Enum, Integer, Boolean, Numeric, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 
@@ -78,8 +87,8 @@ class AutopilotConfig(Base):
     require_ai_explanation = Column(Boolean, default=True, nullable=False)  # Always explain why
     explanation_language = Column(String(10), default="es", nullable=False)  # es, en, pt
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_autopilot_configs_business_active", "business_id", "is_active"),
@@ -118,7 +127,7 @@ class AutopilotActionLog(Base):
     # Revenue impact
     revenue_impact = Column(Numeric(14, 2), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     executed_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
@@ -158,7 +167,7 @@ class AutopilotDailyReport(Base):
     ai_summary = Column(Text, nullable=True)  # "Hoy contactaste 12 leads, cerraste 3 deals..."
     highlights = Column(JSONB, default=list, nullable=False)  # [{"type": "deal_closed", "description": "..."}]
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 
     __table_args__ = (
         Index("ix_autopilot_reports_business_date", "business_id", "report_date", unique=True),

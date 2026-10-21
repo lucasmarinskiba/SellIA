@@ -1,9 +1,8 @@
 """Procurement API — /api/v1/businesses/{business_id}/procurement/*"""
 
-from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -19,7 +18,11 @@ from app.domains.procurement.schemas import (
     VendorOut,
     VendorScoreUpdate,
 )
-from app.domains.procurement.service import PurchaseOrderService, RFQService, VendorService
+from app.domains.procurement.service import (
+    PurchaseOrderService,
+    RFQService,
+    VendorService,
+)
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/{business_id}/procurement", tags=["Procurement"])

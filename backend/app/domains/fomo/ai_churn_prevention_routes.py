@@ -1,9 +1,9 @@
 """Fase G: AI Predictive Churn-to-FOMO Agent — API routes"""
 
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, Body, Query
+from fastapi import APIRouter, Body, Depends, Query
 
 from app.core.deps import get_current_user
 from app.domains.fomo.ai_churn_prevention_agent import (
@@ -16,8 +16,8 @@ router = APIRouter(prefix="/fomo/ai/churn", tags=["fomo-ai-churn"])
 
 @router.post("/score")
 async def score_customer(
-    purchases: List[Dict[str, Any]] = Body(..., description='[{"date": iso8601, "amount": float}]'),
-    send_history: Optional[List[Dict[str, Any]]] = Body(None),
+    purchases: list[dict[str, Any]] = Body(..., description='[{"date": iso8601, "amount": float}]'),
+    send_history: list[dict[str, Any]] | None = Body(None),
     current_user=Depends(get_current_user),
 ):
     """Score one customer's churn risk (heuristic — no labeled training data needed)"""
@@ -29,9 +29,9 @@ async def score_customer(
 @router.post("/evaluate-and-trigger")
 async def evaluate_and_trigger(
     customer_id: str = Query(...),
-    purchases: List[Dict[str, Any]] = Body(...),
-    batch_monetary_values: List[float] = Body(...),
-    send_history: Optional[List[Dict[str, Any]]] = Body(None),
+    purchases: list[dict[str, Any]] = Body(...),
+    batch_monetary_values: list[float] = Body(...),
+    send_history: list[dict[str, Any]] | None = Body(None),
     threshold: float = Query(WinBackTriggerEngine.DEFAULT_THRESHOLD, ge=0.0, le=1.0),
     current_user=Depends(get_current_user),
 ):
@@ -49,10 +49,10 @@ async def evaluate_and_trigger(
 
 @router.post("/batch-evaluate")
 async def batch_evaluate(
-    customers: List[Dict[str, Any]] = Body(
+    customers: list[dict[str, Any]] = Body(
         ..., description='[{"customer_id": str, "purchases": [{"date": iso8601, "amount": float}]}]'
     ),
-    fatigue_data: Optional[Dict[str, List[Dict[str, Any]]]] = Body(None),
+    fatigue_data: dict[str, list[dict[str, Any]]] | None = Body(None),
     threshold: float = Query(WinBackTriggerEngine.DEFAULT_THRESHOLD, ge=0.0, le=1.0),
     current_user=Depends(get_current_user),
 ):
@@ -75,7 +75,7 @@ async def batch_evaluate(
     )
 
 
-def _parse_dates(records: List[Dict[str, Any]], key: str) -> List[Dict[str, Any]]:
+def _parse_dates(records: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
     parsed = []
     for r in records:
         item = dict(r)

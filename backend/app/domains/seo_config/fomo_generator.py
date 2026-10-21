@@ -4,16 +4,23 @@ Integrates with brand_transformation.FOMOEngineAgent to generate
 FOMO-optimized descriptions for each PublicationLink.
 """
 
-import json
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
-from app.domains.seo_config.agent_guard import SEOAgentGuard
-from app.domains.seo_config.brain_toggles import FOMO_PUBLICATIONS, is_brain_capability_enabled
-from app.domains.seo_config.models import PublicationLink, PublicationLinkFOMO, SEOConfig
 from app.domains.brand_transformation.service import FOMOEngineAgent
+from app.domains.seo_config.agent_guard import SEOAgentGuard
+from app.domains.seo_config.brain_toggles import (
+    FOMO_PUBLICATIONS,
+    is_brain_capability_enabled,
+)
+from app.domains.seo_config.models import (
+    PublicationLink,
+    PublicationLinkFOMO,
+    SEOConfig,
+)
 
 logger = get_logger(__name__)
 
