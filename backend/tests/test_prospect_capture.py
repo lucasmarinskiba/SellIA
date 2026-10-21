@@ -5,6 +5,7 @@ AsyncSession with mocks. Nothing here should ever produce contact data that was
 not in the input.
 """
 
+import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
@@ -122,8 +123,9 @@ async def test_search_sends_key_mask_and_clamped_limit(monkeypatch):
     assert seen["url"] == places_source.PLACES_TEXT_SEARCH_URL
     assert seen["key"] == "test-key"
     assert "places.nationalPhoneNumber" in seen["mask"]
-    assert '"textQuery":"peluquería Rosario"' in seen["body"]
-    assert '"maxResultCount":20' in seen["body"]
+    body = json.loads(seen["body"])
+    assert body["textQuery"] == "peluquería Rosario"
+    assert body["maxResultCount"] == 20
 
 
 async def test_search_error_maps_to_places_api_error_without_leaking_key(monkeypatch):
