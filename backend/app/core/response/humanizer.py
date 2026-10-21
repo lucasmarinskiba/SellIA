@@ -301,11 +301,12 @@ class Humanizer:
         user_profile: PersonalityProfile
     ) -> str:
         """Humanize based on specific user profile"""
-        filler_intensity = {
+        intensity_levels = {
             0.2: "heavy",
             0.5: "medium",
             0.8: "light"
-        }[min(filler_intensity.keys(),
+        }
+        filler_intensity = intensity_levels[min(intensity_levels.keys(),
               key=lambda x: abs(x - user_profile.formality_level))]
 
         return self.humanize(

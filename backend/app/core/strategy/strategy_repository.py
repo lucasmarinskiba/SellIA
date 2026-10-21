@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from app.core.strategy.business_analyzer import BusinessProfile
+
 logger = logging.getLogger(__name__)
 
 

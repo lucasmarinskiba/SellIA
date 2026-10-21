@@ -115,7 +115,7 @@ class FOOMMLModels:
 
             if fomo_score > 0.6:
                 segments["high"].append(user["id"])
-            elif foom_score > 0.4:
+            elif fomo_score > 0.4:
                 segments["medium"].append(user["id"])
             elif fomo_score > 0.2:
                 segments["low"].append(user["id"])

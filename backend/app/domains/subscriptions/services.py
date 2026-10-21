@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.subscriptions.models import (
     DEFAULT_PLAN_FEATURES,
     DEFAULT_PLAN_LIMITS,
+    BankTransferPayment,
     Invoice,
     Subscription,
     SubscriptionPlan,

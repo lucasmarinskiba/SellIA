@@ -323,7 +323,7 @@ class TenantIsolationService:
         business_id: UUID,
         request_business_id: UUID,
         db: Session = None
-    ) -> Tuple[bool, str | None]:
+    ) -> tuple[bool, str | None]:
         """Verify request is not accessing another tenant's data."""
         if not db:
             raise ValueError("Database session required")

@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any
 
 from app.core.clock import utc_now
+from app.core.strategy.business_analyzer import BusinessProfile
 
 logger = logging.getLogger(__name__)
 
